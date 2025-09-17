@@ -1,0 +1,46 @@
+# Stage 1: Build ZeroMQ from source
+FROM ubuntu:22.04 AS zeromq-build
+
+RUN apt-get update && apt-get install -y \
+    build-essential pkg-config git cmake libtool autoconf automake
+
+WORKDIR /tmp
+
+# Clonar ZeroMQ C library
+RUN git clone --depth 1 https://github.com/zeromq/libzmq.git
+WORKDIR /tmp/libzmq
+RUN mkdir build && cd build && cmake .. && make -j$(nproc) && make install
+
+# Clonar cppzmq (header-only)
+WORKDIR /tmp
+RUN git clone --depth 1 https://github.com/zeromq/cppzmq.git
+RUN cp cppzmq/zmq.hpp /usr/local/include/
+
+# Stage 2: Build our service
+FROM ubuntu:22.04 AS builder
+
+RUN apt-get update && apt-get install -y build-essential cmake pkg-config
+
+WORKDIR /app
+COPY service1/main.cpp ./main.cpp
+COPY service1/main.h ./main.h
+
+# Copiar headers y librería ZeroMQ del stage anterior
+COPY --from=zeromq-build /usr/local/include/ /usr/local/include/
+COPY --from=zeromq-build /usr/local/lib/ /usr/local/lib/
+
+# Compilar ejecutable
+RUN g++ -std=c++20 main.cpp -lzmq -o service1_exe
+
+# Stage 3: Runtime minimal
+FROM ubuntu:22.04
+
+# Copiar librerías ZeroMQ al runtime
+COPY --from=zeromq-build /usr/local/lib/ /usr/local/lib/
+
+# Actualizar ldconfig
+RUN ldconfig
+
+COPY --from=builder /app/service1_exe /usr/local/bin/service1_exe
+EXPOSE 5555
+CMD ["/usr/local/bin/service1_exe"]

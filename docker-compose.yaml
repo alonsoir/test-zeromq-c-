@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  service1:
+    build:
+      context: .
+      dockerfile: Dockerfile.service1
+    ports:
+      - "5555:5555"
+    networks:
+      - zeromq-net
+  service2:
+    build:
+      context: .
+      dockerfile: Dockerfile.service2
+    depends_on:
+      - service1
+    networks:
+      - zeromq-net
+
+networks:
+  zeromq-net:
+    driver: bridge
