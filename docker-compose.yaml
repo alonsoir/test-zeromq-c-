@@ -8,15 +8,35 @@ services:
       - "5555:5555"
     networks:
       - zeromq-net
+    environment:
+      - NODE_ID=service1_node
+      - NODE_ROLE=PACKET_SNIFFER
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5555"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
   service2:
     build:
       context: .
       dockerfile: Dockerfile.service2
     depends_on:
-      - service1
+      service1:
+        condition: service_healthy
     networks:
       - zeromq-net
+    environment:
+      - NODE_ID=service2_node
+      - NODE_ROLE=FEATURE_PROCESSOR
+    # Añadir delay para asegurar que service1 está listo
+    command: >
+      sh -c "sleep 5 && /usr/local/bin/service2_exe"
 
 networks:
   zeromq-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16

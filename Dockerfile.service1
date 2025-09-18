@@ -1,44 +1,68 @@
-# Stage 1: Build ZeroMQ from source
-FROM ubuntu:22.04 AS zeromq-build
+# Dockerfile.service1
+# Stage 1: Build ZeroMQ and Protobuf from source
+FROM ubuntu:22.04 AS deps-build
 
 RUN apt-get update && apt-get install -y \
-    build-essential pkg-config git cmake libtool autoconf automake
+    build-essential pkg-config git cmake libtool autoconf automake \
+    wget unzip
 
 WORKDIR /tmp
 
-# Clonar ZeroMQ C library
+# Build ZeroMQ C library
 RUN git clone --depth 1 https://github.com/zeromq/libzmq.git
 WORKDIR /tmp/libzmq
 RUN mkdir build && cd build && cmake .. && make -j$(nproc) && make install
 
-# Clonar cppzmq (header-only)
+# Build cppzmq (header-only)
 WORKDIR /tmp
 RUN git clone --depth 1 https://github.com/zeromq/cppzmq.git
 RUN cp cppzmq/zmq.hpp /usr/local/include/
 
-# Stage 2: Build our service
+# Build Protobuf from source
+WORKDIR /tmp
+RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protobuf-cpp-3.21.12.tar.gz
+RUN tar -xzf protobuf-cpp-3.21.12.tar.gz
+WORKDIR /tmp/protobuf-3.21.12
+RUN ./configure --prefix=/usr/local && make -j$(nproc) && make install
+
+# Stage 2: Build our service with protobuf compilation
 FROM ubuntu:22.04 AS builder
 
 RUN apt-get update && apt-get install -y build-essential cmake pkg-config
 
 WORKDIR /app
+
+# Copy proto file first
+COPY protobuf/network_security.proto ./protobuf/
+
+# Copy dependencies from previous stage
+COPY --from=deps-build /usr/local/include/ /usr/local/include/
+COPY --from=deps-build /usr/local/lib/ /usr/local/lib/
+COPY --from=deps-build /usr/local/bin/protoc /usr/local/bin/
+
+# Update library cache
+RUN ldconfig
+
+# Compile protobuf file inside Ubuntu container
+RUN protoc --cpp_out=. protobuf/network_security.proto
+
+# Now copy our source files
 COPY service1/main.cpp ./main.cpp
 COPY service1/main.h ./main.h
 
-# Copiar headers y librería ZeroMQ del stage anterior
-COPY --from=zeromq-build /usr/local/include/ /usr/local/include/
-COPY --from=zeromq-build /usr/local/lib/ /usr/local/lib/
-
-# Compilar ejecutable
-RUN g++ -std=c++20 main.cpp -lzmq -o service1_exe
+# Compile executable with protobuf
+RUN g++ -std=c++20 main.cpp protobuf/network_security.pb.cc -lzmq -lprotobuf -pthread -o service1_exe
 
 # Stage 3: Runtime minimal
 FROM ubuntu:22.04
 
-# Copiar librerías ZeroMQ al runtime
-COPY --from=zeromq-build /usr/local/lib/ /usr/local/lib/
+# Install netcat for healthcheck
+RUN apt-get update && apt-get install -y netcat && rm -rf /var/lib/apt/lists/*
 
-# Actualizar ldconfig
+# Copy libraries from build stage
+COPY --from=deps-build /usr/local/lib/ /usr/local/lib/
+
+# Update ldconfig
 RUN ldconfig
 
 COPY --from=builder /app/service1_exe /usr/local/bin/service1_exe
