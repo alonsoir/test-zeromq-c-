@@ -11,7 +11,7 @@ namespace protobuf {
     class GeoEnrichment;
 }
 
-// Function declarations
+// Function declarations for service1
 std::string generateRandomIP();
 uint32_t generateRandomPort();
 void populateNetworkFeatures(protobuf::NetworkFeatures* features);

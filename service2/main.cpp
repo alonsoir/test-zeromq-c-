@@ -3,7 +3,7 @@
 #include <string>
 #include <iomanip>
 #include "protobuf/network_security.pb.h"
-#include "main.h"
+#include "service2_main.h"
 
 // Función para mostrar información de NetworkFeatures
 void displayNetworkFeatures(const protobuf::NetworkFeatures& features) {

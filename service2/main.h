@@ -10,7 +10,7 @@ namespace protobuf {
     class DistributedNode;
 }
 
-// Function declarations
+// Function declarations for service2
 void displayNetworkFeatures(const protobuf::NetworkFeatures& features);
 void displayGeoEnrichment(const protobuf::GeoEnrichment& geo);
 void displayDistributedNode(const protobuf::DistributedNode& node);

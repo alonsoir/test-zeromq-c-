@@ -4,7 +4,7 @@
 #include <random>
 #include <chrono>
 #include "protobuf/network_security.pb.h"
-#include "main.h"
+#include "service1_main.h"
 
 // Generador de números aleatorios
 std::random_device rd;
