@@ -1,46 +1,41 @@
-# Stage 1: Build ZeroMQ from source
-FROM ubuntu:22.04 AS zeromq-build
-
-RUN apt-get update && apt-get install -y \
-    build-essential pkg-config git cmake libtool autoconf automake
-
-WORKDIR /tmp
-
-# Clonar ZeroMQ C library
-RUN git clone --depth 1 https://github.com/zeromq/libzmq.git
-WORKDIR /tmp/libzmq
-RUN mkdir build && cd build && cmake .. && make -j$(nproc) && make install
-
-# Clonar cppzmq (header-only)
-WORKDIR /tmp
-RUN git clone --depth 1 https://github.com/zeromq/cppzmq.git
-RUN cp cppzmq/zmq.hpp /usr/local/include/
-
-# Stage 2: Build our service
+# Dockerfile.service2 - Versión simplificada
 FROM ubuntu:22.04 AS builder
 
-RUN apt-get update && apt-get install -y build-essential cmake pkg-config
+# Instalar dependencias desde repositorios
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    pkg-config \
+    git \
+    libzmq3-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY service2/main.cpp ./main.cpp
-COPY service2/main.h ./main.h
 
-# Copiar headers y librería ZeroMQ del stage anterior
-COPY --from=zeromq-build /usr/local/include/ /usr/local/include/
-COPY --from=zeromq-build /usr/local/lib/ /usr/local/lib/
+# Copiar el archivo proto
+COPY protobuf/network_security.proto ./protobuf/
 
-# Compilar ejecutable
-RUN g++ -std=c++20 main.cpp -lzmq -o service2_exe
+# Generar archivos C++ desde protobuf
+RUN protoc --cpp_out=. protobuf/network_security.proto
 
-# Stage 3: Runtime minimal
+# Copiar archivos fuente
+COPY service2/main.cpp ./service2_main.cpp
+COPY service2/main.h ./service2_main.h
+
+# Compilar el ejecutable
+RUN g++ -std=c++20 -I. service2_main.cpp protobuf/network_security.pb.cc \
+    -lzmq -lprotobuf -pthread -o service2_exe
+
+# Stage 2: Runtime
 FROM ubuntu:22.04
 
-# Copiar librerías ZeroMQ al runtime
-COPY --from=zeromq-build /usr/local/lib/ /usr/local/lib/
-
-# Actualizar ldconfig
-RUN ldconfig
+RUN apt-get update && apt-get install -y \
+    libzmq5 \
+    libprotobuf23 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/service2_exe /usr/local/bin/service2_exe
-EXPOSE 5555
+
 CMD ["/usr/local/bin/service2_exe"]
