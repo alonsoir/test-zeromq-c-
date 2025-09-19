@@ -48,6 +48,9 @@ test-zeromq-c-/
 
 ### Pasos de Ejecución
 ```bash
+# 0. Levantar el laboratorio (Recomendado)
+make lab-start
+make lab-stop
 # 1. Levantar entorno Ubuntu
 vagrant up && vagrant ssh
 
