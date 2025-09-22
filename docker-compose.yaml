@@ -1,38 +1,108 @@
-version: "3.9"
 services:
+  # Servicio etcd - Fundacional para service discovery
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: etcd
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd0
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --initial-cluster=etcd0=http://etcd:2380
+      - --initial-cluster-token=etcd-cluster-1
+      - --initial-cluster-state=new
+      - --log-level=info
+      - --logger=zap
+      - --log-outputs=stderr
+    ports:
+      - "2379:2379"  # Puerto para cliente
+      - "2380:2380"  # Puerto para peer
+    networks:
+      - zeromq-net
+    volumes:
+      - etcd_data:/etcd-data
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/etcd", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Service1 - PACKET_SNIFFER con integración etcd
   service1:
     build:
       context: .
       dockerfile: Dockerfile.service1
+    container_name: service1
     ports:
       - "5555:5555"
     networks:
       - zeromq-net
     environment:
-      - NODE_ID=service1_node
+      - NODE_ID=service1_node_${RANDOM:-001}
       - NODE_ROLE=PACKET_SNIFFER
+      - ETCD_ENDPOINTS=http://etcd:2379
+      - SERVICE_NAME=packet_sniffer
+      - ZMQ_BIND_PORT=5555
+    depends_on:
+      etcd:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "5555"]
       interval: 5s
       timeout: 3s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    restart: unless-stopped
 
+  # Service2 - FEATURE_PROCESSOR con integración etcd
   service2:
     build:
       context: .
       dockerfile: Dockerfile.service2
-    depends_on:
-      service1:
-        condition: service_healthy
+    container_name: service2
     networks:
       - zeromq-net
     environment:
-      - NODE_ID=service2_node
+      - NODE_ID=service2_node_${RANDOM:-001}
       - NODE_ROLE=FEATURE_PROCESSOR
-    # Añadir delay para asegurar que service1 está listo
+      - ETCD_ENDPOINTS=http://etcd:2379
+      - SERVICE_NAME=feature_processor
+      - ZMQ_CONNECT_ENDPOINT=tcp://service1:5555
+    depends_on:
+      etcd:
+        condition: service_healthy
+      service1:
+        condition: service_healthy
+    # Añadir delay para asegurar que service1 está completamente listo
     command: >
-      sh -c "sleep 5 && /usr/local/bin/service2_exe"
+      sh -c "sleep 8 && /usr/local/bin/service2_exe"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps aux | grep service2_exe | grep -v grep"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Herramienta opcional para debug/monitoreo de etcd
+  etcd-browser:
+    image: buddho/etcd-browser:latest
+    container_name: etcd-browser
+    ports:
+      - "8082:8080"
+    environment:
+      - ETCD_ENDPOINTS=http://etcd:2379
+    networks:
+      - zeromq-net
+    depends_on:
+      etcd:
+        condition: service_healthy
+    profiles:
+      - debug  # Solo se levanta con: docker-compose --profile debug up
 
 networks:
   zeromq-net:
@@ -40,3 +110,7 @@ networks:
     ipam:
       config:
         - subnet: 172.18.0.0/16
+
+volumes:
+  etcd_data:
+    driver: local

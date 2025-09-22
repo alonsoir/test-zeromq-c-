@@ -1,7 +1,9 @@
-# Dockerfile.service1 - Versión simplificada
+# ============================================================================
+# Dockerfile.service1 - SOLO SERVICE1
+# ============================================================================
 FROM ubuntu:22.04 AS builder
 
-# Instalar dependencias desde repositorios (más rápido y confiable)
+# Instalar dependencias
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -10,23 +12,29 @@ RUN apt-get update && apt-get install -y \
     libzmq3-dev \
     libprotobuf-dev \
     protobuf-compiler \
+    libjsoncpp-dev \
+    libcurl4-openssl-dev \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copiar el archivo proto
+# Copiar archivos del proyecto
 COPY protobuf/network_security.proto ./protobuf/
-
-# Generar archivos C++ desde protobuf
 RUN protoc --cpp_out=. protobuf/network_security.proto
 
-# Copiar archivos fuente
 COPY service1/main.cpp ./service1_main.cpp
 COPY service1/main.h ./service1_main.h
+COPY common/EtcdServiceRegistry.h ./EtcdServiceRegistry.h
+COPY common/EtcdServiceRegistry.cpp ./EtcdServiceRegistry.cpp
 
-# Compilar el ejecutable
-RUN g++ -std=c++20 -I. service1_main.cpp protobuf/network_security.pb.cc \
-    -lzmq -lprotobuf -pthread -o service1_exe
+# Compilar service1
+RUN g++ -std=c++20 -I. -I/usr/include/jsoncpp \
+    service1_main.cpp \
+    EtcdServiceRegistry.cpp \
+    protobuf/network_security.pb.cc \
+    -lzmq -lprotobuf -ljsoncpp -lcurl -pthread \
+    -o service1_exe
 
 # Stage 2: Runtime
 FROM ubuntu:22.04
@@ -34,10 +42,14 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
     libzmq5 \
     libprotobuf23 \
-    netcat \
+    libjsoncpp25 \
+    libcurl4 \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/service1_exe /usr/local/bin/service1_exe
 
-EXPOSE 5555
+HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=3 \
+  CMD nc -z localhost 5555 || exit 1
+
 CMD ["/usr/local/bin/service1_exe"]

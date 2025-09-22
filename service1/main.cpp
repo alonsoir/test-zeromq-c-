@@ -1,231 +1,296 @@
+// service1/main.cpp - CORREGIDO con includes correctos
+#include "service1_main.h"  // No "main.h", usar nombre específico
+#include "EtcdServiceRegistry.h"  // Sin "../common/" - mismo directorio en Docker
 #include <zmq.hpp>
+#include <protobuf/network_security.pb.h>
 #include <iostream>
-#include <string>
 #include <random>
+#include <thread>
 #include <chrono>
-#include "protobuf/network_security.pb.h"
-#include "service1_main.h"
+#include <csignal>
+#include <atomic>
+#include <cstdlib>
+#include <json/json.h>
 
-// Generador de números aleatorios
-std::random_device rd;
-std::mt19937 gen(rd());
+std::atomic<bool> g_running(true);
 
-// Función para generar IP aleatoria
-std::string generateRandomIP() {
-    std::uniform_int_distribution<> dis(1, 254);
-    return std::to_string(dis(gen)) + "." +
-           std::to_string(dis(gen)) + "." +
-           std::to_string(dis(gen)) + "." +
-           std::to_string(dis(gen));
+void signalHandler(int signum) {
+    std::cout << "\n[Service1] Señal recibida: " << signum << ". Iniciando shutdown..." << std::endl;
+    g_running = false;
 }
 
-// Función para generar puerto aleatorio
-uint32_t generateRandomPort() {
-    std::uniform_int_distribution<> dis(1024, 65535);
-    return dis(gen);
+std::string createServiceConfig() {
+    Json::Value config;
+
+    // Configuración básica del servicio
+    config["service_type"] = "packet_sniffer";
+    config["version"] = "1.0.0";
+    config["capabilities"] = Json::Value(Json::arrayValue);
+    config["capabilities"].append("ddos_detection");
+    config["capabilities"].append("packet_analysis");
+    config["capabilities"].append("feature_extraction");
+
+    // Configuración ZeroMQ
+    config["zeromq"]["bind_address"] = "tcp://*:5555";
+    config["zeromq"]["socket_type"] = "PUSH";
+    config["zeromq"]["hwm"] = 10000;
+
+    // Configuración de rendimiento
+    config["performance"]["max_packets_per_second"] = 100000;
+    config["performance"]["batch_size"] = 100;
+    config["performance"]["thread_pool_size"] = 4;
+
+    // Configuración de detección DDOS
+    config["ddos_detection"]["threshold_pps"] = 10000;
+    config["ddos_detection"]["suspicious_ratio"] = 0.8;
+    config["ddos_detection"]["analysis_window_seconds"] = 60;
+
+    // Features que extrae (83 features como mencionaste)
+    config["feature_extraction"]["features_count"] = 83;
+    config["feature_extraction"]["include_geo_enrichment"] = true;
+    config["feature_extraction"]["include_flow_stats"] = true;
+
+    Json::StreamWriterBuilder builder;
+    return Json::writeString(builder, config);
 }
 
-// Función para generar NetworkFeatures con datos aleatorios coherentes
-void populateNetworkFeatures(protobuf::NetworkFeatures* features) {
-    // IPs y puertos
-    features->set_source_ip(generateRandomIP());
-    features->set_destination_ip(generateRandomIP());
-    features->set_source_port(generateRandomPort());
-    features->set_destination_port(generateRandomPort());
+// Función para generar datos de prueba
+protobuf::NetworkSecurityEvent generateNetworkEvent() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> ip_dist(1, 254);
+    static std::uniform_int_distribution<> port_dist(1024, 65535);
+    static std::uniform_int_distribution<> packet_size_dist(64, 1500);
+    static std::uniform_real_distribution<> suspicious_dist(0.0, 1.0);
+    static std::uniform_int_distribution<> flow_dist(1, 10000);
 
-    // Protocolo TCP (6)
-    features->set_protocol_number(6);
+    protobuf::NetworkSecurityEvent event;
+
+    // Identificación única del evento
+    event.set_event_id("evt_" + std::to_string(std::time(nullptr)) + "_" + std::to_string(rd()));
+
+    // Timestamp usando protobuf timestamp
+    auto* timestamp = event.mutable_event_timestamp();
+    auto now = std::chrono::system_clock::now();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+    timestamp->set_seconds(seconds.count());
+
+    std::string node_id = std::getenv("NODE_ID") ? std::getenv("NODE_ID") : "service1_node_001";
+    event.set_originating_node_id(node_id);
+
+    // Configurar NetworkFeatures
+    auto* features = event.mutable_network_features();
+
+    // IPs de origen y destino
+    std::string source_ip = std::to_string(ip_dist(gen)) + "." +
+                           std::to_string(ip_dist(gen)) + "." +
+                           std::to_string(ip_dist(gen)) + "." +
+                           std::to_string(ip_dist(gen));
+    std::string destination_ip = "192.168.1." + std::to_string(ip_dist(gen));
+
+    features->set_source_ip(source_ip);
+    features->set_destination_ip(destination_ip);
+    features->set_source_port(port_dist(gen));
+    features->set_destination_port(80);
+    features->set_protocol_number(6); // TCP
     features->set_protocol_name("TCP");
 
-    // Timing
-    auto now = std::chrono::system_clock::now();
-    auto timestamp = google::protobuf::util::TimeUtil::TimeTToTimestamp(
-        std::chrono::system_clock::to_time_t(now));
-    *features->mutable_flow_start_time() = timestamp;
+    // Timing con protobuf Duration
+    auto* flow_start = features->mutable_flow_start_time();
+    flow_start->set_seconds(seconds.count());
 
-    auto duration = google::protobuf::util::TimeUtil::MillisecondsToDuration(
-        std::uniform_int_distribution<>(100, 5000)(gen));
-    *features->mutable_flow_duration() = duration;
+    auto* duration = features->mutable_flow_duration();
+    uint64_t duration_ms = static_cast<uint64_t>(suspicious_dist(gen) * 1000);
+    duration->set_seconds(duration_ms / 1000);
+    duration->set_nanos((duration_ms % 1000) * 1000000);
+    features->set_flow_duration_microseconds(duration_ms * 1000);
 
-    features->set_flow_duration_microseconds(
-        std::uniform_int_distribution<uint64_t>(100000, 5000000)(gen));
-
-    // Estadísticas de paquetes (coherentes entre forward/backward)
-    uint64_t forward_packets = std::uniform_int_distribution<uint64_t>(10, 1000)(gen);
-    uint64_t backward_packets = std::uniform_int_distribution<uint64_t>(5, forward_packets)(gen);
+    // Estadísticas de flujo
+    uint64_t forward_packets = flow_dist(gen);
+    uint64_t backward_packets = forward_packets * (suspicious_dist(gen) > 0.7 ? 0.1 : 0.8);
 
     features->set_total_forward_packets(forward_packets);
     features->set_total_backward_packets(backward_packets);
-
-    // Bytes (coherentes con número de paquetes)
-    uint64_t avg_packet_size = std::uniform_int_distribution<uint64_t>(64, 1500)(gen);
-    features->set_total_forward_bytes(forward_packets * avg_packet_size);
-    features->set_total_backward_bytes(backward_packets * avg_packet_size);
-
-    // Estadísticas de longitud - Forward
-    features->set_forward_packet_length_max(1500);
-    features->set_forward_packet_length_min(64);
-    features->set_forward_packet_length_mean(avg_packet_size);
-    features->set_forward_packet_length_std(
-        std::uniform_real_distribution<>(50.0, 200.0)(gen));
-
-    // Estadísticas de longitud - Backward
-    features->set_backward_packet_length_max(1500);
-    features->set_backward_packet_length_min(64);
-    features->set_backward_packet_length_mean(avg_packet_size * 0.8); // Algo menor
-    features->set_backward_packet_length_std(
-        std::uniform_real_distribution<>(40.0, 180.0)(gen));
+    features->set_total_forward_bytes(forward_packets * packet_size_dist(gen));
+    features->set_total_backward_bytes(backward_packets * packet_size_dist(gen));
 
     // Velocidades y ratios
-    double flow_duration_sec = duration.seconds() + (duration.nanos() / 1e9);
-    features->set_flow_bytes_per_second(
-        (features->total_forward_bytes() + features->total_backward_bytes()) / flow_duration_sec);
-    features->set_flow_packets_per_second(
-        (forward_packets + backward_packets) / flow_duration_sec);
+    features->set_flow_bytes_per_second(suspicious_dist(gen) * 100000);
+    features->set_flow_packets_per_second(suspicious_dist(gen) * 1000);
+    features->set_forward_packets_per_second(suspicious_dist(gen) > 0.8 ? 10000 : 100);
+    features->set_backward_packets_per_second(forward_packets * 0.1);
 
-    // TCP Flags (números realistas)
-    features->set_syn_flag_count(std::uniform_int_distribution<>(1, 3)(gen));
-    features->set_ack_flag_count(forward_packets + backward_packets); // Mayoría tienen ACK
-    features->set_fin_flag_count(std::uniform_int_distribution<>(0, 2)(gen));
-    features->set_psh_flag_count(std::uniform_int_distribution<>(1, 10)(gen));
-    features->set_rst_flag_count(0); // Normal traffic
+    // TCP Flags (simulados)
+    features->set_syn_flag_count(suspicious_dist(gen) > 0.9 ? 1000 : 1);
+    features->set_ack_flag_count(forward_packets);
+    features->set_fin_flag_count(suspicious_dist(gen) > 0.5 ? 1 : 0);
+    features->set_rst_flag_count(suspicious_dist(gen) > 0.8 ? 10 : 0);
 
-    // Features para DDOS (83 features simuladas)
-    for (int i = 0; i < 83; i++) {
-        features->add_ddos_features(std::uniform_real_distribution<>(0.0, 1.0)(gen));
+    // 83 features DDOS específicas
+    for (int i = 0; i < 83; ++i) {
+        features->add_ddos_features(suspicious_dist(gen));
     }
 
-    std::cout << "📊 Generated NetworkFeatures:" << std::endl;
-    std::cout << "   Source: " << features->source_ip() << ":" << features->source_port() << std::endl;
-    std::cout << "   Destination: " << features->destination_ip() << ":" << features->destination_port() << std::endl;
-    std::cout << "   Protocol: " << features->protocol_name() << std::endl;
-    std::cout << "   Forward packets: " << features->total_forward_packets() << std::endl;
-    std::cout << "   Backward packets: " << features->total_backward_packets() << std::endl;
-    std::cout << "   Forward bytes: " << features->total_forward_bytes() << std::endl;
-    std::cout << "   Backward bytes: " << features->total_backward_bytes() << std::endl;
-}
+    // Configurar GeoEnrichment
+    auto* geo = event.mutable_geo_enrichment();
 
-// Función para generar información geográfica
-void populateGeoEnrichment(protobuf::GeoEnrichment* geo) {
-    // Source IP Geo
+    // Source IP geo
     auto* source_geo = geo->mutable_source_ip_geo();
-    source_geo->set_country_name("Spain");
-    source_geo->set_country_code("ES");
-    source_geo->set_region_name("Andalusia");
-    source_geo->set_city_name("Sevilla");
-    source_geo->set_latitude(37.3886);
-    source_geo->set_longitude(-5.9823);
-    source_geo->set_isp_name("Telefonica");
+    if (suspicious_dist(gen) > 0.9) {
+        source_geo->set_country_name("China");
+        source_geo->set_country_code("CN");
+        source_geo->set_city_name("Beijing");
+        source_geo->set_threat_level(protobuf::GeoLocationInfo::HIGH);
+    } else {
+        source_geo->set_country_name("United States");
+        source_geo->set_country_code("US");
+        source_geo->set_city_name("New York");
+        source_geo->set_threat_level(protobuf::GeoLocationInfo::LOW);
+    }
 
-    // Destination IP Geo
+    source_geo->set_is_tor_exit_node(suspicious_dist(gen) > 0.95);
+    source_geo->set_is_known_malicious(suspicious_dist(gen) > 0.98);
+
+    // Destination IP geo
     auto* dest_geo = geo->mutable_destination_ip_geo();
-    dest_geo->set_country_name("United States");
-    dest_geo->set_country_code("US");
-    dest_geo->set_region_name("California");
-    dest_geo->set_city_name("San Francisco");
-    dest_geo->set_latitude(37.7749);
-    dest_geo->set_longitude(-122.4194);
-    dest_geo->set_isp_name("Cloudflare");
-
-    // Sniffer Node Geo
-    auto* sniffer_geo = geo->mutable_sniffer_node_geo();
-    sniffer_geo->set_country_name("Spain");
-    sniffer_geo->set_country_code("ES");
-    sniffer_geo->set_region_name("Andalusia");
-    sniffer_geo->set_city_name("Sevilla");
-    sniffer_geo->set_latitude(37.3886);
-    sniffer_geo->set_longitude(-5.9823);
+    dest_geo->set_country_name("Spain");
+    dest_geo->set_country_code("ES");
+    dest_geo->set_city_name("Madrid");
+    dest_geo->set_threat_level(protobuf::GeoLocationInfo::LOW);
 
     // Análisis geográfico
-    geo->set_source_destination_distance_km(9000.5); // Sevilla to SF
-    geo->set_source_destination_same_country(false);
-    geo->set_distance_category("international");
+    geo->set_source_destination_distance_km(suspicious_dist(gen) > 0.8 ? 8000 : 500);
+    geo->set_source_destination_same_country(suspicious_dist(gen) > 0.8 ? false : true);
+    geo->set_distance_category(suspicious_dist(gen) > 0.8 ? "international" : "national");
     geo->set_enrichment_complete(true);
+    geo->set_source_ip_enriched(true);
+    geo->set_destination_ip_enriched(true);
 
-    std::cout << "🌍 Generated GeoEnrichment:" << std::endl;
-    std::cout << "   Source: " << source_geo->city_name() << ", " << source_geo->country_name() << std::endl;
-    std::cout << "   Destination: " << dest_geo->city_name() << ", " << dest_geo->country_name() << std::endl;
-    std::cout << "   Distance: " << geo->source_destination_distance_km() << " km" << std::endl;
+    // Configurar Node info
+    auto* capturing_node = event.mutable_capturing_node();
+    capturing_node->set_node_id(node_id);
+    capturing_node->set_node_hostname("service1-container");
+    capturing_node->set_node_role(protobuf::DistributedNode::PACKET_SNIFFER);
+    capturing_node->set_node_status(protobuf::DistributedNode::ACTIVE);
+    capturing_node->set_agent_version("1.0.0");
+
+    auto* last_heartbeat = capturing_node->mutable_last_heartbeat();
+    last_heartbeat->set_seconds(seconds.count());
+
+    // Scoring final
+    double threat_score = suspicious_dist(gen);
+    event.set_overall_threat_score(threat_score);
+
+    if (threat_score > 0.9) {
+        event.set_final_classification("MALICIOUS");
+        event.set_threat_category("DDOS");
+    } else if (threat_score > 0.6) {
+        event.set_final_classification("SUSPICIOUS");
+        event.set_threat_category("POTENTIAL_ATTACK");
+    } else {
+        event.set_final_classification("BENIGN");
+        event.set_threat_category("NORMAL");
+    }
+
+    event.set_schema_version(31);
+    event.set_protobuf_version("3.1.0");
+
+    return event;
 }
 
 int main() {
-    // Inicializar libprotobuf
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
 
-    std::cout << "🚀 Service1 starting - Protobuf + ZeroMQ Producer" << std::endl;
+    std::cout << "[Service1] Iniciando Packet Sniffer con integración etcd..." << std::endl;
 
-    // Configurar ZeroMQ
-    zmq::context_t context{1};
-    zmq::socket_t socket{context, zmq::socket_type::push};
-    socket.bind("tcp://*:5555");
+    try {
+        std::string node_id = std::getenv("NODE_ID") ? std::getenv("NODE_ID") : "service1_node_001";
+        std::string service_name = std::getenv("SERVICE_NAME") ? std::getenv("SERVICE_NAME") : "packet_sniffer";
+        std::string etcd_endpoint = std::getenv("ETCD_ENDPOINTS") ? std::getenv("ETCD_ENDPOINTS") : "http://etcd:2379";
+        int zmq_port = std::getenv("ZMQ_BIND_PORT") ? std::stoi(std::getenv("ZMQ_BIND_PORT")) : 5555;
 
-    std::cout << "✅ Service1 bound to tcp://*:5555, waiting for consumer..." << std::endl;
+        std::cout << "[Service1] Configuración:" << std::endl;
+        std::cout << "  - Node ID: " << node_id << std::endl;
+        std::cout << "  - Service Name: " << service_name << std::endl;
+        std::cout << "  - etcd Endpoint: " << etcd_endpoint << std::endl;
+        std::cout << "  - ZMQ Port: " << zmq_port << std::endl;
 
-    // Dar tiempo para que service2 se conecte
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+        // Registrarse en etcd
+        auto& etcd_registry = EtcdServiceRegistry::getInstance(etcd_endpoint);
 
-    // Crear el mensaje principal
-    protobuf::NetworkSecurityEvent event;
+        std::string service_config = createServiceConfig();
 
-    // Generar ID único
-    event.set_event_id("evt_" + std::to_string(
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count()));
+        if (!etcd_registry.registerService(service_name, node_id, service_config, 30)) {
+            std::cerr << "[Service1] ERROR: No se pudo registrar en etcd" << std::endl;
+            return 1;
+        }
 
-    // Timestamp del evento
-    auto now = std::chrono::system_clock::now();
-    auto timestamp = google::protobuf::util::TimeUtil::TimeTToTimestamp(
-        std::chrono::system_clock::to_time_t(now));
-    *event.mutable_event_timestamp() = timestamp;
+        std::cout << "[Service1] ✅ Registrado exitosamente en etcd" << std::endl;
 
-    event.set_originating_node_id("service1_node");
-    event.set_final_classification("BENIGN");
-    event.set_threat_category("NORMAL");
-    event.set_overall_threat_score(0.05); // Low threat score
-    event.set_schema_version(31); // v3.1
-    event.set_protobuf_version("3.1.0");
+        // Configurar ZeroMQ
+        zmq::context_t context(1);
+        zmq::socket_t socket(context, ZMQ_PUSH);
 
-    // Llenar con datos aleatorios coherentes
-    populateNetworkFeatures(event.mutable_network_features());
-    populateGeoEnrichment(event.mutable_geo_enrichment());
+        std::string bind_address = "tcp://*:" + std::to_string(zmq_port);
+        socket.bind(bind_address);
 
-    // Información del nodo capturador
-    auto* node = event.mutable_capturing_node();
-    node->set_node_id("service1_node");
-    node->set_node_hostname("service1_container");
-    node->set_node_ip_address("172.18.0.2"); // IP típica de Docker
-    node->set_physical_location("Sevilla, Spain");
-    node->set_node_role(protobuf::DistributedNode::PACKET_SNIFFER);
-    node->set_node_status(protobuf::DistributedNode::ACTIVE);
+        std::cout << "[Service1] ✅ ZeroMQ socket enlazado en: " << bind_address << std::endl;
+        std::cout << "[Service1] 🚀 Iniciando generación de eventos..." << std::endl;
 
-    std::cout << "\n🎯 Main Event Details:" << std::endl;
-    std::cout << "   Event ID: " << event.event_id() << std::endl;
-    std::cout << "   Classification: " << event.final_classification() << std::endl;
-    std::cout << "   Threat Score: " << event.overall_threat_score() << std::endl;
-    std::cout << "   Schema Version: " << event.schema_version() << std::endl;
+        int events_sent = 0;
+        auto start_time = std::chrono::steady_clock::now();
 
-    // Serializar el mensaje
-    std::string serialized_data;
-    if (!event.SerializeToString(&serialized_data)) {
-        std::cerr << "❌ Error: Failed to serialize protobuf message" << std::endl;
+        while (g_running) {
+            try {
+                auto network_event = generateNetworkEvent();
+
+                std::string serialized_data;
+                if (!network_event.SerializeToString(&serialized_data)) {
+                    std::cerr << "[Service1] Error serializando evento" << std::endl;
+                    continue;
+                }
+
+                zmq::message_t message(serialized_data.size());
+                memcpy(message.data(), serialized_data.c_str(), serialized_data.size());
+
+                socket.send(message, zmq::send_flags::dontwait);
+                events_sent++;
+
+                if (events_sent % 100 == 0) {
+                    auto current_time = std::chrono::steady_clock::now();
+                    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+                    double rate = elapsed > 0 ? events_sent / static_cast<double>(elapsed) : 0;
+
+                    std::cout << "[Service1] 📊 Eventos enviados: " << events_sent
+                             << " | Rate: " << std::fixed << std::setprecision(1) << rate << " events/sec" << std::endl;
+
+                    // Actualizar estadísticas en etcd
+                    Json::Value stats;
+                    stats["events_sent"] = events_sent;
+                    stats["events_per_second"] = rate;
+                    stats["uptime_seconds"] = static_cast<int>(elapsed);
+                    stats["last_update"] = std::time(nullptr);
+
+                    Json::StreamWriterBuilder builder;
+                    std::string stats_json = Json::writeString(builder, stats);
+
+                    etcd_registry.updateServiceConfig(service_name, stats_json, "stats");
+                }
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+            } catch (const std::exception& e) {
+                std::cerr << "[Service1] Error en loop principal: " << e.what() << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Service1] Error crítico: " << e.what() << std::endl;
         return 1;
     }
 
-    // Enviar vía ZeroMQ
-    zmq::message_t zmq_msg(serialized_data.data(), serialized_data.size());
-    auto result = socket.send(zmq_msg, zmq::send_flags::none);
-
-    if (result) {
-        std::cout << "\n✅ Successfully sent NetworkSecurityEvent (" << serialized_data.size() << " bytes)" << std::endl;
-        std::cout << "📤 Message serialized and sent via ZeroMQ to service2" << std::endl;
-    } else {
-        std::cerr << "❌ Error: Failed to send message via ZeroMQ" << std::endl;
-        return 1;
-    }
-
-    // Cleanup
-    google::protobuf::ShutdownProtobufLibrary();
-
-    std::cout << "🔚 Service1 finished successfully" << std::endl;
+    std::cout << "[Service1] 🛑 Shutdown completado" << std::endl;
     return 0;
 }

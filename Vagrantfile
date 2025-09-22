@@ -24,6 +24,9 @@ Vagrant.configure("2") do |config|
   # Port forwarding para acceder desde host si necesario
   config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"
 
+  # Necesario para etcd
+  config.vm.network "forwarded_port", guest: 2379, host: 2379, protocol: "tcp"
+
   # Sincronizar el directorio del proyecto
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
 

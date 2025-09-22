@@ -1,7 +1,5 @@
-# Dockerfile.service2 - Versión simplificada
 FROM ubuntu:22.04 AS builder
 
-# Instalar dependencias desde repositorios
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -10,23 +8,28 @@ RUN apt-get update && apt-get install -y \
     libzmq3-dev \
     libprotobuf-dev \
     protobuf-compiler \
+    libjsoncpp-dev \
+    libcurl4-openssl-dev \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copiar el archivo proto
 COPY protobuf/network_security.proto ./protobuf/
-
-# Generar archivos C++ desde protobuf
 RUN protoc --cpp_out=. protobuf/network_security.proto
 
-# Copiar archivos fuente
 COPY service2/main.cpp ./service2_main.cpp
 COPY service2/main.h ./service2_main.h
+COPY common/EtcdServiceRegistry.h ./EtcdServiceRegistry.h
+COPY common/EtcdServiceRegistry.cpp ./EtcdServiceRegistry.cpp
 
-# Compilar el ejecutable
-RUN g++ -std=c++20 -I. service2_main.cpp protobuf/network_security.pb.cc \
-    -lzmq -lprotobuf -pthread -o service2_exe
+# Compilar service2
+RUN g++ -std=c++20 -I. -I/usr/include/jsoncpp \
+    service2_main.cpp \
+    EtcdServiceRegistry.cpp \
+    protobuf/network_security.pb.cc \
+    -lzmq -lprotobuf -ljsoncpp -lcurl -pthread \
+    -o service2_exe
 
 # Stage 2: Runtime
 FROM ubuntu:22.04
@@ -34,6 +37,9 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
     libzmq5 \
     libprotobuf23 \
+    libjsoncpp25 \
+    libcurl4 \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/service2_exe /usr/local/bin/service2_exe
