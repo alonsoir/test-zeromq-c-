@@ -1,228 +1,241 @@
+// ============================================================================
+// service2/main.cpp - CORREGIDO con includes correctos
+// ============================================================================
+
+#include "service2_main.h"  // No "main.h", usar nombre específico
+#include "EtcdServiceRegistry.h"  // Sin "../common/" - mismo directorio en Docker
 #include <zmq.hpp>
+#include <protobuf/network_security.pb.h>
 #include <iostream>
-#include <string>
+#include <thread>
+#include <chrono>
+#include <csignal>
+#include <atomic>
+#include <cstdlib>
+#include <json/json.h>
 #include <iomanip>
-#include "protobuf/network_security.pb.h"
-#include "service2_main.h"
 
-// Función para mostrar información de NetworkFeatures
-void displayNetworkFeatures(const protobuf::NetworkFeatures& features) {
-    std::cout << "\n📊 NETWORK FEATURES ANALYSIS" << std::endl;
-    std::cout << "═══════════════════════════════════════════════════" << std::endl;
+std::atomic<bool> g_running(true);
 
-    // Información básica del flujo
-    std::cout << "🔍 Flow Identification:" << std::endl;
-    std::cout << "   Source IP:Port      → " << features.source_ip() << ":" << features.source_port() << std::endl;
-    std::cout << "   Destination IP:Port → " << features.destination_ip() << ":" << features.destination_port() << std::endl;
-    std::cout << "   Protocol           → " << features.protocol_name() << " (" << features.protocol_number() << ")" << std::endl;
+void signalHandler(int signum) {
+    std::cout << "\n[Service2] Señal recibida: " << signum << ". Iniciando shutdown..." << std::endl;
+    g_running = false;
+}
 
-    // Estadísticas de paquetes
-    std::cout << "\n📦 Packet Statistics:" << std::endl;
-    std::cout << "   Forward Packets  → " << features.total_forward_packets() << std::endl;
-    std::cout << "   Backward Packets → " << features.total_backward_packets() << std::endl;
-    std::cout << "   Forward Bytes    → " << features.total_forward_bytes() << " bytes" << std::endl;
-    std::cout << "   Backward Bytes   → " << features.total_backward_bytes() << " bytes" << std::endl;
-    std::cout << "   Total Data       → " << (features.total_forward_bytes() + features.total_backward_bytes()) << " bytes" << std::endl;
+AnalysisResult analyzeNetworkEvent(const protobuf::NetworkSecurityEvent& event) {
+    AnalysisResult result;
+    result.ddos_probability = 0.0;
+    result.anomaly_score = 0.0;
+    result.should_block = false;
 
-    // Estadísticas de longitud
-    std::cout << "\n📏 Packet Length Statistics:" << std::endl;
-    std::cout << "   Forward  → Min:" << features.forward_packet_length_min()
-              << " Max:" << features.forward_packet_length_max()
-              << " Mean:" << std::fixed << std::setprecision(2) << features.forward_packet_length_mean() << std::endl;
-    std::cout << "   Backward → Min:" << features.backward_packet_length_min()
-              << " Max:" << features.backward_packet_length_max()
-              << " Mean:" << std::fixed << std::setprecision(2) << features.backward_packet_length_mean() << std::endl;
+    const auto& features = event.network_features();
+    const auto& geo = event.geo_enrichment();
 
-    // TCP Flags
-    if (features.protocol_name() == "TCP") {
-        std::cout << "\n🏳️  TCP Flags Analysis:" << std::endl;
-        std::cout << "   SYN: " << features.syn_flag_count() << std::endl;
-        std::cout << "   ACK: " << features.ack_flag_count() << std::endl;
-        std::cout << "   FIN: " << features.fin_flag_count() << std::endl;
-        std::cout << "   PSH: " << features.psh_flag_count() << std::endl;
-        std::cout << "   RST: " << features.rst_flag_count() << std::endl;
+    double suspicious_score = 0.0;
+
+    // Análisis de tasa de paquetes
+    if (features.forward_packets_per_second() > 1000) {
+        suspicious_score += 0.3;
+        result.suspicious_features.push_back("high_packet_rate");
     }
 
-    // Velocidades
-    std::cout << "\n🚀 Flow Speeds:" << std::endl;
-    std::cout << "   Bytes/sec    → " << std::fixed << std::setprecision(2) << features.flow_bytes_per_second() << std::endl;
-    std::cout << "   Packets/sec  → " << std::fixed << std::setprecision(2) << features.flow_packets_per_second() << std::endl;
+    // Ratio anómalo de paquetes
+    double packet_ratio = features.total_backward_packets() > 0 ?
+        static_cast<double>(features.total_forward_packets()) / features.total_backward_packets() :
+        features.total_forward_packets();
 
-    // Features ML
-    if (features.ddos_features_size() > 0) {
-        std::cout << "\n🧠 ML Features:" << std::endl;
-        std::cout << "   DDOS Features → " << features.ddos_features_size() << " features extracted" << std::endl;
-        std::cout << "   Sample values → [";
-        for (int i = 0; i < std::min(5, features.ddos_features_size()); i++) {
-            std::cout << std::fixed << std::setprecision(3) << features.ddos_features(i);
-            if (i < 4 && i < features.ddos_features_size() - 1) std::cout << ", ";
+    if (packet_ratio > 50) {
+        suspicious_score += 0.4;
+        result.suspicious_features.push_back("abnormal_packet_ratio");
+    }
+
+    // Duración de flujo
+    if (features.has_flow_duration()) {
+        auto duration_seconds = features.flow_duration().seconds() +
+                               (features.flow_duration().nanos() / 1000000000.0);
+        if (duration_seconds < 0.1) {
+            suspicious_score += 0.2;
+            result.suspicious_features.push_back("short_flow_duration");
         }
-        std::cout << "...]" << std::endl;
     }
-}
 
-// Función para mostrar información geográfica
-void displayGeoEnrichment(const protobuf::GeoEnrichment& geo) {
-    std::cout << "\n🌍 GEOGRAPHICAL ENRICHMENT" << std::endl;
-    std::cout << "═══════════════════════════════════════════════════" << std::endl;
-
-    // Source IP Geography
+    // Análisis geográfico
     if (geo.has_source_ip_geo()) {
-        const auto& source = geo.source_ip_geo();
-        std::cout << "📤 Source Location:" << std::endl;
-        std::cout << "   Country → " << source.country_name() << " (" << source.country_code() << ")" << std::endl;
-        std::cout << "   City    → " << source.city_name() << ", " << source.region_name() << std::endl;
-        std::cout << "   ISP     → " << source.isp_name() << std::endl;
-        std::cout << "   Coords  → " << std::fixed << std::setprecision(4)
-                  << source.latitude() << ", " << source.longitude() << std::endl;
+        const auto& source_geo = geo.source_ip_geo();
+
+        if (source_geo.is_known_malicious()) {
+            suspicious_score += 0.5;
+            result.suspicious_features.push_back("known_malicious_ip");
+        }
+
+        if (source_geo.is_tor_exit_node()) {
+            suspicious_score += 0.3;
+            result.suspicious_features.push_back("tor_exit_node");
+        }
+
+        if (source_geo.threat_level() == protobuf::GeoLocationInfo::HIGH ||
+            source_geo.threat_level() == protobuf::GeoLocationInfo::CRITICAL) {
+            suspicious_score += 0.4;
+            result.suspicious_features.push_back("high_threat_country");
+        }
     }
 
-    // Destination IP Geography
-    if (geo.has_destination_ip_geo()) {
-        const auto& dest = geo.destination_ip_geo();
-        std::cout << "\n📥 Destination Location:" << std::endl;
-        std::cout << "   Country → " << dest.country_name() << " (" << dest.country_code() << ")" << std::endl;
-        std::cout << "   City    → " << dest.city_name() << ", " << dest.region_name() << std::endl;
-        std::cout << "   ISP     → " << dest.isp_name() << std::endl;
-        std::cout << "   Coords  → " << std::fixed << std::setprecision(4)
-                  << dest.latitude() << ", " << dest.longitude() << std::endl;
+    // SYN flood detection
+    if (features.syn_flag_count() > 100 && features.ack_flag_count() < 10) {
+        suspicious_score += 0.6;
+        result.suspicious_features.push_back("syn_flood_pattern");
     }
 
-    // Geographic Analysis
-    std::cout << "\n📏 Geographic Analysis:" << std::endl;
-    std::cout << "   Distance        → " << std::fixed << std::setprecision(1) << geo.source_destination_distance_km() << " km" << std::endl;
-    std::cout << "   Same Country    → " << (geo.source_destination_same_country() ? "Yes" : "No") << std::endl;
-    std::cout << "   Category        → " << geo.distance_category() << std::endl;
-    std::cout << "   Enriched        → " << (geo.enrichment_complete() ? "✅ Complete" : "❌ Incomplete") << std::endl;
+    result.ddos_probability = std::min(suspicious_score, 1.0);
+    result.anomaly_score = result.ddos_probability;
+
+    if (result.ddos_probability > 0.9) {
+        result.threat_type = "DDOS_HIGH_CONFIDENCE";
+        result.should_block = true;
+    } else if (result.ddos_probability > 0.7) {
+        result.threat_type = "DDOS_MEDIUM_CONFIDENCE";
+    } else if (result.ddos_probability > 0.4) {
+        result.threat_type = "SUSPICIOUS_ACTIVITY";
+    } else {
+        result.threat_type = "NORMAL_TRAFFIC";
+    }
+
+    return result;
 }
 
-// Función para mostrar información del nodo distribuido
+void displayNetworkFeatures(const protobuf::NetworkFeatures& features) {
+    std::cout << "    🌐 Network Features:" << std::endl;
+    std::cout << "      Flow: " << features.source_ip() << ":" << features.source_port()
+              << " → " << features.destination_ip() << ":" << features.destination_port() << std::endl;
+    std::cout << "      Protocol: " << features.protocol_name() << " (" << features.protocol_number() << ")" << std::endl;
+    std::cout << "      Packets: F=" << features.total_forward_packets()
+              << ", B=" << features.total_backward_packets() << std::endl;
+    std::cout << "      Rate: " << features.forward_packets_per_second() << " pps" << std::endl;
+    std::cout << "      TCP Flags: SYN=" << features.syn_flag_count()
+              << ", ACK=" << features.ack_flag_count() << std::endl;
+}
+
+void displayGeoEnrichment(const protobuf::GeoEnrichment& geo) {
+    std::cout << "    🗺️ Geo Enrichment:" << std::endl;
+
+    if (geo.has_source_ip_geo()) {
+        const auto& source_geo = geo.source_ip_geo();
+        std::cout << "      Origin: " << source_geo.city_name() << ", " << source_geo.country_name() << std::endl;
+    }
+
+    std::cout << "      Distance: " << std::fixed << std::setprecision(1)
+              << geo.source_destination_distance_km() << " km" << std::endl;
+}
+
 void displayDistributedNode(const protobuf::DistributedNode& node) {
-    std::cout << "\n🌐 DISTRIBUTED NODE INFORMATION" << std::endl;
-    std::cout << "═══════════════════════════════════════════════════" << std::endl;
-
-    std::cout << "🖥️  Node Details:" << std::endl;
-    std::cout << "   Node ID      → " << node.node_id() << std::endl;
-    std::cout << "   Hostname     → " << node.node_hostname() << std::endl;
-    std::cout << "   IP Address   → " << node.node_ip_address() << std::endl;
-    std::cout << "   Location     → " << node.physical_location() << std::endl;
-
-    // Role mapping
-    std::string role_name;
-    switch (node.node_role()) {
-        case protobuf::DistributedNode::PACKET_SNIFFER: role_name = "Packet Sniffer"; break;
-        case protobuf::DistributedNode::FEATURE_PROCESSOR: role_name = "Feature Processor"; break;
-        case protobuf::DistributedNode::GEOIP_ENRICHER: role_name = "GeoIP Enricher"; break;
-        case protobuf::DistributedNode::ML_ANALYZER: role_name = "ML Analyzer"; break;
-        case protobuf::DistributedNode::THREAT_DETECTOR: role_name = "Threat Detector"; break;
-        default: role_name = "Unknown"; break;
-    }
-
-    // Status mapping
-    std::string status_name, status_emoji;
-    switch (node.node_status()) {
-        case protobuf::DistributedNode::ACTIVE:
-            status_name = "Active"; status_emoji = "✅"; break;
-        case protobuf::DistributedNode::STARTING:
-            status_name = "Starting"; status_emoji = "🔄"; break;
-        case protobuf::DistributedNode::ERROR:
-            status_name = "Error"; status_emoji = "❌"; break;
-        default: status_name = "Unknown"; status_emoji = "❓"; break;
-    }
-
-    std::cout << "   Role         → " << role_name << std::endl;
-    std::cout << "   Status       → " << status_emoji << " " << status_name << std::endl;
+    std::cout << "    🖥️ Node: " << node.node_id() << " (" << node.node_hostname() << ")" << std::endl;
 }
 
 int main() {
-    // Inicializar libprotobuf
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    std::signal(SIGINT, signalHandler);
+    std::signal(SIGTERM, signalHandler);
 
-    std::cout << "🎯 Service2 starting - Protobuf + ZeroMQ Consumer" << std::endl;
-
-    // Configurar ZeroMQ
-    zmq::context_t context{1};
-    zmq::socket_t socket{context, zmq::socket_type::pull};
-    socket.connect("tcp://service1:5555");
-
-    std::cout << "✅ Service2 connected to tcp://service1:5555, waiting for messages..." << std::endl;
+    std::cout << "[Service2] Iniciando Feature Processor con integración etcd..." << std::endl;
 
     try {
-        while (true) {
-            // Recibir mensaje
-            zmq::message_t message;
-            auto result = socket.recv(message, zmq::recv_flags::none);
+        std::string node_id = std::getenv("NODE_ID") ? std::getenv("NODE_ID") : "service2_node_001";
+        std::string service_name = std::getenv("SERVICE_NAME") ? std::getenv("SERVICE_NAME") : "feature_processor";
+        std::string etcd_endpoint = std::getenv("ETCD_ENDPOINTS") ? std::getenv("ETCD_ENDPOINTS") : "http://etcd:2379";
+        std::string zmq_endpoint = std::getenv("ZMQ_CONNECT_ENDPOINT") ? std::getenv("ZMQ_CONNECT_ENDPOINT") : "tcp://service1:5555";
 
-            if (!result) {
-                std::cerr << "❌ Error: Failed to receive message" << std::endl;
-                continue;
+        std::cout << "[Service2] Conectando a: " << zmq_endpoint << std::endl;
+
+        // Registrarse en etcd
+        auto& etcd_registry = EtcdServiceRegistry::getInstance(etcd_endpoint);
+        std::string service_config = "{}"; // Config básico por ahora
+
+        if (!etcd_registry.registerService(service_name, node_id, service_config, 30)) {
+            std::cerr << "[Service2] ERROR: No se pudo registrar en etcd" << std::endl;
+            return 1;
+        }
+
+        std::cout << "[Service2] ✅ Registrado en etcd" << std::endl;
+
+        // Esperar a que service1 esté listo
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        zmq::context_t context(1);
+        zmq::socket_t socket(context, ZMQ_PULL);
+        socket.connect(zmq_endpoint);
+        socket.set(zmq::sockopt::rcvtimeo, 1000);
+
+        std::cout << "[Service2] ✅ Conectado. Iniciando procesamiento..." << std::endl;
+
+        int events_processed = 0;
+        int suspicious_events = 0;
+        int high_risk_events = 0;
+        auto start_time = std::chrono::steady_clock::now();
+
+        while (g_running) {
+            try {
+                zmq::message_t message;
+                auto result = socket.recv(message, zmq::recv_flags::dontwait);
+
+                if (!result) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    continue;
+                }
+
+                protobuf::NetworkSecurityEvent event;
+                std::string data(static_cast<char*>(message.data()), message.size());
+
+                if (!event.ParseFromString(data)) {
+                    std::cerr << "[Service2] Error deserializando evento" << std::endl;
+                    continue;
+                }
+
+                events_processed++;
+                auto analysis = analyzeNetworkEvent(event);
+
+                if (analysis.ddos_probability > 0.8) {
+                    high_risk_events++;
+                    suspicious_events++;
+                } else if (analysis.ddos_probability > 0.4) {
+                    suspicious_events++;
+                }
+
+                // Log eventos sospechosos
+                if (analysis.ddos_probability > 0.6) {
+                    std::cout << "\n[Service2] 🚨 EVENTO SOSPECHOSO:" << std::endl;
+                    std::cout << "  📊 DDOS Probability: " << std::fixed << std::setprecision(2)
+                             << (analysis.ddos_probability * 100) << "%" << std::endl;
+                    std::cout << "  🏷️ Threat Type: " << analysis.threat_type << std::endl;
+                    std::cout << "  🚫 Should Block: " << (analysis.should_block ? "YES" : "NO") << std::endl;
+
+                    displayNetworkFeatures(event.network_features());
+                    displayGeoEnrichment(event.geo_enrichment());
+                    displayDistributedNode(event.capturing_node());
+                    std::cout << std::endl;
+                }
+
+                // Estadísticas cada 25 eventos
+                if (events_processed % 25 == 0) {
+                    auto current_time = std::chrono::steady_clock::now();
+                    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+                    double rate = elapsed > 0 ? events_processed / static_cast<double>(elapsed) : 0;
+
+                    std::cout << "[Service2] 📈 Processed: " << events_processed
+                             << " | Suspicious: " << suspicious_events
+                             << " | High-Risk: " << high_risk_events
+                             << " | Rate: " << std::fixed << std::setprecision(1) << rate << " events/sec" << std::endl;
+                }
+
+            } catch (const std::exception& e) {
+                std::cerr << "[Service2] Error procesando evento: " << e.what() << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-
-            std::cout << "\n📥 Received message (" << message.size() << " bytes)" << std::endl;
-
-            // Deserializar el mensaje protobuf
-            protobuf::NetworkSecurityEvent event;
-            std::string received_data(static_cast<char*>(message.data()), message.size());
-
-            if (!event.ParseFromString(received_data)) {
-                std::cerr << "❌ Error: Failed to parse protobuf message" << std::endl;
-                continue;
-            }
-
-            std::cout << "✅ Successfully parsed NetworkSecurityEvent protobuf message" << std::endl;
-
-            // Mostrar información principal del evento
-            std::cout << "\n🎯 MAIN EVENT INFORMATION" << std::endl;
-            std::cout << "═══════════════════════════════════════════════════" << std::endl;
-            std::cout << "🆔 Event Details:" << std::endl;
-            std::cout << "   Event ID         → " << event.event_id() << std::endl;
-            std::cout << "   Originating Node → " << event.originating_node_id() << std::endl;
-            std::cout << "   Classification   → " << event.final_classification() << std::endl;
-            std::cout << "   Threat Category  → " << event.threat_category() << std::endl;
-            std::cout << "   Threat Score     → " << std::fixed << std::setprecision(3) << event.overall_threat_score() << std::endl;
-            std::cout << "   Schema Version   → v" << (event.schema_version() / 10.0) << std::endl;
-            std::cout << "   Protobuf Version → " << event.protobuf_version() << std::endl;
-
-            // Mostrar timestamp del evento
-            if (event.has_event_timestamp()) {
-                auto timestamp = event.event_timestamp();
-                std::time_t time = timestamp.seconds();
-                std::cout << "   Timestamp        → " << std::ctime(&time);
-            }
-
-            // Mostrar NetworkFeatures si existe
-            if (event.has_network_features()) {
-                displayNetworkFeatures(event.network_features());
-            }
-
-            // Mostrar GeoEnrichment si existe
-            if (event.has_geo_enrichment()) {
-                displayGeoEnrichment(event.geo_enrichment());
-            }
-
-            // Mostrar información del nodo capturador si existe
-            if (event.has_capturing_node()) {
-                displayDistributedNode(event.capturing_node());
-            }
-
-            std::cout << "\n🔍 MESSAGE PROCESSING COMPLETE" << std::endl;
-            std::cout << "═══════════════════════════════════════════════════" << std::endl;
-            std::cout << "✅ Successfully processed NetworkSecurityEvent" << std::endl;
-            std::cout << "📊 Total message size: " << message.size() << " bytes" << std::endl;
-            std::cout << "🎯 All protobuf fields parsed and displayed" << std::endl;
-
-            // Para POC, procesamos un mensaje y salimos
-            std::cout << "\n🔚 Service2 finished successfully (POC mode - processing one message)" << std::endl;
-            break;
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "❌ Exception caught: " << e.what() << std::endl;
-        google::protobuf::ShutdownProtobufLibrary();
+        std::cerr << "[Service2] Error crítico: " << e.what() << std::endl;
         return 1;
     }
 
-    // Cleanup
-    google::protobuf::ShutdownProtobufLibrary();
+    std::cout << "[Service2] 🛑 Shutdown completado" << std::endl;
     return 0;
 }
