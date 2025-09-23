@@ -1,119 +1,139 @@
-cmake_minimum_required(VERSION 3.16)
-project(DDOSPipeline VERSION 1.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.20)
+project(cpp_evolutionary_sniffer VERSION 3.1.0 LANGUAGES C CXX)
 
-# Configuración del compilador
+# C++20 requirement
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Configuración de build
+# Build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+# Compiler-specific options
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3 -march=native)
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3 -march=native)
+    endif()
+endif()
 
-# Buscar dependencias
+# Find required programs
+find_program(CLANG clang REQUIRED)
+find_program(LLVM_STRIP llvm-strip REQUIRED)
+find_program(BPFTOOL bpftool REQUIRED)
+
+# Find required packages
+find_package(PkgConfig REQUIRED)
 find_package(Protobuf REQUIRED)
-find_package(PkgConfig REQUIRED)
-
-# ZeroMQ
-pkg_check_modules(ZMQ REQUIRED libzmq)
-
-# JsonCpp
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp)
-
-# Threads
 find_package(Threads REQUIRED)
 
-# Generar archivos protobuf
-set(PROTO_FILES protobuf/network_security.proto)
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
+# Find libbpf
+pkg_check_modules(LIBBPF REQUIRED libbpf>=0.8)
 
-# Directorio para archivos generados
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+# Find ZeroMQ
+pkg_check_modules(ZMQ REQUIRED libzmq>=4.3)
 
-# Archivos comunes
-set(COMMON_SOURCES
-        common/EtcdServiceRegistry.cpp
-        ${PROTO_SRCS}
+# Find jsoncpp
+pkg_check_modules(JSONCPP REQUIRED jsoncpp>=1.9)
+
+# Include directories
+include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_BINARY_DIR}/proto)
+include_directories(${LIBBPF_INCLUDE_DIRS})
+include_directories(${ZMQ_INCLUDE_DIRS})
+include_directories(${JSONCPP_INCLUDE_DIRS})
+
+# eBPF compilation
+set(BPF_SOURCE ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c)
+set(BPF_OBJECT ${CMAKE_BINARY_DIR}/sniffer.bpf.o)
+
+add_custom_command(
+        OUTPUT ${BPF_OBJECT}
+        COMMAND ${CLANG}
+        -O2
+        -target bpf
+        -D__TARGET_ARCH_x86
+        -I${LIBBPF_INCLUDE_DIRS}
+        -I/usr/include/x86_64-linux-gnu
+        -c ${BPF_SOURCE}
+        -o ${BPF_OBJECT}
+        DEPENDS ${BPF_SOURCE}
+        COMMENT "Compiling eBPF program"
 )
 
-# Service1 executable
-add_executable(service1_exe
-        service1/main.cpp
-        ${COMMON_SOURCES}
+add_custom_target(bpf_program DEPENDS ${BPF_OBJECT})
+
+# Protobuf compilation
+set(PROTO_SOURCE ${CMAKE_SOURCE_DIR}/src/proto/network_security_v31.proto)
+set(PROTO_BINARY_DIR ${CMAKE_BINARY_DIR}/proto)
+set(PROTO_SOURCES ${PROTO_BINARY_DIR}/network_security_v31.pb.cc)
+set(PROTO_HEADERS ${PROTO_BINARY_DIR}/network_security_v31.pb.h)
+
+file(MAKE_DIRECTORY ${PROTO_BINARY_DIR})
+
+add_custom_command(
+        OUTPUT ${PROTO_SOURCES} ${PROTO_HEADERS}
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+        --cpp_out=${PROTO_BINARY_DIR}
+        --proto_path=${CMAKE_SOURCE_DIR}/src/proto
+        ${PROTO_SOURCE}
+        DEPENDS ${PROTO_SOURCE}
+        COMMENT "Compiling protobuf"
 )
 
-target_link_libraries(service1_exe
-        ${Protobuf_LIBRARIES}
+add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
+
+# Main sniffer executable - only existing files
+set(SNIFFER_SOURCES
+        src/userspace/main.cpp
+        src/userspace/config_manager.cpp
+        ${PROTO_SOURCES}
+)
+
+add_executable(sniffer ${SNIFFER_SOURCES})
+
+add_dependencies(sniffer bpf_program proto_compilation)
+
+target_link_libraries(sniffer
+        ${LIBBPF_LIBRARIES}
         ${ZMQ_LIBRARIES}
         ${JSONCPP_LIBRARIES}
-        etcd-cpp-api
-        Threads::Threads
-)
-
-target_include_directories(service1_exe PRIVATE
-        ${Protobuf_INCLUDE_DIRS}
-        ${ZMQ_INCLUDE_DIRS}
-        ${JSONCPP_INCLUDE_DIRS}
-)
-
-# Service2 executable
-add_executable(service2_exe
-        service2/main.cpp
-        ${COMMON_SOURCES}
-)
-
-target_link_libraries(service2_exe
         ${Protobuf_LIBRARIES}
-        ${ZMQ_LIBRARIES}
-        ${JSONCPP_LIBRARIES}
-        etcd-cpp-api
         Threads::Threads
+        elf
+        z
 )
 
-target_include_directories(service2_exe PRIVATE
-        ${Protobuf_INCLUDE_DIRS}
-        ${ZMQ_INCLUDE_DIRS}
-        ${JSONCPP_INCLUDE_DIRS}
+target_link_directories(sniffer PRIVATE
+        ${LIBBPF_LIBRARY_DIRS}
+        ${ZMQ_LIBRARY_DIRS}
+        ${JSONCPP_LIBRARY_DIRS}
 )
 
-# Configurar propiedades de los ejecutables
-set_target_properties(service1_exe service2_exe PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+target_compile_definitions(sniffer PRIVATE
+        ${LIBBPF_CFLAGS_OTHER}
+        ${ZMQ_CFLAGS_OTHER}
+        ${JSONCPP_CFLAGS_OTHER}
 )
 
-# Instalar ejecutables
-install(TARGETS service1_exe service2_exe
-        RUNTIME DESTINATION bin
-)
-
-# Target para tests
-enable_testing()
-
-add_custom_target(check
-        COMMAND echo "Verificando compilación..."
-        COMMAND test -f ${CMAKE_BINARY_DIR}/bin/service1_exe && echo "✅ service1_exe OK" || echo "❌ service1_exe faltante"
-        COMMAND test -f ${CMAKE_BINARY_DIR}/bin/service2_exe && echo "✅ service2_exe OK" || echo "❌ service2_exe faltante"
-        DEPENDS service1_exe service2_exe
-)
-
-# Target para limpiar todo
-add_custom_target(clean-all
-        COMMAND ${CMAKE_BUILD_TOOL} clean
-        COMMAND rm -rf ${CMAKE_BINARY_DIR}/bin
-)
-
-# Información de debug
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Protobuf version: ${Protobuf_VERSION}")
-message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
-
-# Crear directorio de salida
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# Print configuration summary
+message(STATUS "")
+message(STATUS "Configuration Summary:")
+message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "  Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "  Clang: ${CLANG}")
+message(STATUS "  LLVM strip: ${LLVM_STRIP}")
+message(STATUS "  bpftool: ${BPFTOOL}")
+message(STATUS "  libbpf version: ${LIBBPF_VERSION}")
+message(STATUS "  ZeroMQ version: ${ZMQ_VERSION}")
+message(STATUS "  jsoncpp version: ${JSONCPP_VERSION}")
+message(STATUS "  Protobuf version: ${Protobuf_VERSION}")
+message(STATUS "")

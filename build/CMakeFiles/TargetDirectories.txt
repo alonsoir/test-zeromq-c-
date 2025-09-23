@@ -1,0 +1,5 @@
+/vagrant/build/CMakeFiles/bpf_program.dir
+/vagrant/build/CMakeFiles/proto_compilation.dir
+/vagrant/build/CMakeFiles/sniffer.dir
+/vagrant/build/CMakeFiles/edit_cache.dir
+/vagrant/build/CMakeFiles/rebuild_cache.dir
