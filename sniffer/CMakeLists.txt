@@ -69,11 +69,11 @@ add_custom_command(
 
 add_custom_target(bpf_program DEPENDS ${BPF_OBJECT})
 
-# Protobuf compilation
-set(PROTO_SOURCE ${CMAKE_SOURCE_DIR}/src/proto/network_security_v31.proto)
+# Protobuf compilation - using shared schema
+set(PROTO_SOURCE ${CMAKE_SOURCE_DIR}/../protobuf/network_security.proto)
 set(PROTO_BINARY_DIR ${CMAKE_BINARY_DIR}/proto)
-set(PROTO_SOURCES ${PROTO_BINARY_DIR}/network_security_v31.pb.cc)
-set(PROTO_HEADERS ${PROTO_BINARY_DIR}/network_security_v31.pb.h)
+set(PROTO_SOURCES ${PROTO_BINARY_DIR}/network_security.pb.cc)
+set(PROTO_HEADERS ${PROTO_BINARY_DIR}/network_security.pb.h)
 
 file(MAKE_DIRECTORY ${PROTO_BINARY_DIR})
 
@@ -81,10 +81,10 @@ add_custom_command(
         OUTPUT ${PROTO_SOURCES} ${PROTO_HEADERS}
         COMMAND ${Protobuf_PROTOC_EXECUTABLE}
         --cpp_out=${PROTO_BINARY_DIR}
-        --proto_path=${CMAKE_SOURCE_DIR}/src/proto
+        --proto_path=${CMAKE_SOURCE_DIR}/../protobuf
         ${PROTO_SOURCE}
         DEPENDS ${PROTO_SOURCE}
-        COMMENT "Compiling protobuf"
+        COMMENT "Compiling protobuf from shared schema"
 )
 
 add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})

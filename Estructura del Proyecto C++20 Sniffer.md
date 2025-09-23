@@ -159,9 +159,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # eBPF compilation
 find_program(CLANG clang REQUIRED)
 add_custom_command(
-    OUTPUT sniffer.bpf.o
-    COMMAND ${CLANG} -O2 -target bpf -c ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c -o sniffer.bpf.o
-    DEPENDS src/kernel/sniffer.bpf.c
+        OUTPUT sniffer.bpf.o
+        COMMAND ${CLANG} -O2 -target bpf -c ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c -o sniffer.bpf.o
+        DEPENDS sniffer/src/kernel/sniffer.bpf.c
 )
 
 # Dependencies
@@ -172,25 +172,25 @@ pkg_check_modules(ZMQ REQUIRED libzmq)
 
 # Main sniffer executable
 add_executable(sniffer
-    src/userspace/main.cpp
-    src/userspace/config_manager.cpp
-    src/userspace/sniffer_engine.cpp
-    # ... otros archivos
-    sniffer.bpf.o
+        sniffer/src/userspace/main.cpp
+        sniffer/src/userspace/config_manager.cpp
+        sniffer/src/userspace/sniffer_engine.cpp
+        # ... otros archivos
+        sniffer.bpf.o
 )
 
-target_link_libraries(sniffer 
-    ${LIBBPF_LIBRARIES} 
-    ${Protobuf_LIBRARIES}
-    ${ZMQ_LIBRARIES}
-    jsoncpp
+target_link_libraries(sniffer
+        ${LIBBPF_LIBRARIES}
+        ${Protobuf_LIBRARIES}
+        ${ZMQ_LIBRARIES}
+        jsoncpp
 )
 
 # Service3 executable
 add_executable(service3
-    src/services/service3/main.cpp
-    src/services/service3/zmq_receiver.cpp
-    src/services/service3/event_processor.cpp
+        sniffer/src/services/service3/main.cpp
+        sniffer/src/services/service3/zmq_receiver.cpp
+        sniffer/src/services/service3/event_processor.cpp
 )
 ```
 
