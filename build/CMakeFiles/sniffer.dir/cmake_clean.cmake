@@ -3,8 +3,12 @@ file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/proto/network_security_v31.pb.cc.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o.d"
   "sniffer"
   "sniffer.pdb"
 )

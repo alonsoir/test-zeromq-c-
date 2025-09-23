@@ -17,7 +17,7 @@
   "kernel_space": {
     "ebpf_program": "sniffer_xdp.o",
     "xdp_mode": "native",
-    "interface": "eth0",
+    "interface": "eth1",
     "ring_buffer_size": 1048576,
     "max_flows_in_kernel": 100000,
     "flow_timeout_seconds": 300,
@@ -185,7 +185,7 @@
   "_comment_capture": "🎯 CAPTURE - eBPF/XDP optimized",
   "capture": {
     "mode": "ebpf_xdp",
-    "interface": "eth0",
+    "interface": "eth1",
     "xdp_flags": ["XDP_FLAGS_UPDATE_IF_NOEXIST"],
     "promiscuous_mode": true,
     "filter_expression": "",

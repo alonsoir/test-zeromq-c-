@@ -50,22 +50,21 @@ include_directories(${LIBBPF_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
 
-# eBPF compilation
+# eBPF compilation with proper BTF support
 set(BPF_SOURCE ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c)
 set(BPF_OBJECT ${CMAKE_BINARY_DIR}/sniffer.bpf.o)
 
 add_custom_command(
         OUTPUT ${BPF_OBJECT}
         COMMAND ${CLANG}
-        -O2
-        -target bpf
-        -D__TARGET_ARCH_x86
+        -O2 -target bpf -D__TARGET_ARCH_x86 -g
         -I${LIBBPF_INCLUDE_DIRS}
         -I/usr/include/x86_64-linux-gnu
+        -I/usr/include/bpf
         -c ${BPF_SOURCE}
         -o ${BPF_OBJECT}
         DEPENDS ${BPF_SOURCE}
-        COMMENT "Compiling eBPF program"
+        COMMENT "Compiling eBPF program with BTF support"
 )
 
 add_custom_target(bpf_program DEPENDS ${BPF_OBJECT})
@@ -90,10 +89,12 @@ add_custom_command(
 
 add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
 
-# Main sniffer executable - only existing files
+# Main sniffer executable - now with eBPF loader and ring consumer
 set(SNIFFER_SOURCES
         src/userspace/main.cpp
         src/userspace/config_manager.cpp
+        src/userspace/ebpf_loader.cpp
+        src/userspace/ring_consumer.cpp
         ${PROTO_SOURCES}
 )
 
@@ -117,7 +118,8 @@ target_link_directories(sniffer PRIVATE
         ${JSONCPP_LIBRARY_DIRS}
 )
 
-target_compile_definitions(sniffer PRIVATE
+# Use target_compile_options instead of target_compile_definitions for CFLAGS_OTHER
+target_compile_options(sniffer PRIVATE
         ${LIBBPF_CFLAGS_OTHER}
         ${ZMQ_CFLAGS_OTHER}
         ${JSONCPP_CFLAGS_OTHER}

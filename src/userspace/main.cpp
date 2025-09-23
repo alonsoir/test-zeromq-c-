@@ -1,3 +1,5 @@
+#include <arpa/inet.h>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <memory>
@@ -11,6 +13,8 @@
 #include <chrono>
 
 #include "config_manager.hpp"
+#include "ebpf_loader.hpp"
+#include "ring_consumer.hpp"
 
 // Global flag para shutdown limpio
 static volatile bool g_running = true;
@@ -275,46 +279,120 @@ int main(int argc, char* argv[]) {
 
     std::cout << "\n[6/6] Initializing sniffer components..." << std::endl;
 
-    // TODO: Aquí irían las inicializaciones de los componentes principales:
-    // - SnifferEngine
-    // - eBPF program loading
-    // - Ring buffer setup
-    // - Feature aggregator
-    // - ZeroMQ output socket
-    // - Auto-tuner (if enabled)
+    // Cargar y adjuntar programa eBPF
+    sniffer::EbpfLoader ebpf_loader;
+    if (!ebpf_loader.load_program("sniffer.bpf.o")) {
+        std::cerr << "[FATAL] Failed to load eBPF program" << std::endl;
+        return 1;
+    }
+
+    if (!ebpf_loader.attach_xdp(config->capture.interface)) {
+        std::cerr << "[FATAL] Failed to attach XDP program to interface" << std::endl;
+        return 1;
+    }
+
+    // Inicializar ring buffer consumer
+    sniffer::RingBufferConsumer ring_consumer;
+    if (!ring_consumer.initialize(ebpf_loader.get_ringbuf_fd())) {
+        std::cerr << "[FATAL] Failed to initialize ring buffer consumer" << std::endl;
+        return 1;
+    }
+
+    // Configurar callback personalizado si verbose está habilitado
+    if (verbose) {
+        ring_consumer.set_event_callback([](const sniffer::SimpleEvent& event) {
+            char src_ip_str[16], dst_ip_str[16];
+            struct in_addr src_addr = {.s_addr = event.src_ip};
+            struct in_addr dst_addr = {.s_addr = event.dst_ip};
+
+            inet_ntop(AF_INET, &src_addr, src_ip_str, sizeof(src_ip_str));
+            inet_ntop(AF_INET, &dst_addr, dst_ip_str, sizeof(dst_ip_str));
+
+            const char* proto_str = "Unknown";
+            if (event.protocol == 6) proto_str = "TCP";
+            else if (event.protocol == 17) proto_str = "UDP";
+            else if (event.protocol == 1) proto_str = "ICMP";
+
+            std::cout << "[VERBOSE] " << src_ip_str << ":" << event.src_port
+                      << " -> " << dst_ip_str << ":" << event.dst_port
+                      << " (" << proto_str << ", " << event.packet_len << " bytes)" << std::endl;
+        });
+    }
+
+    // Iniciar consumo de eventos
+    if (!ring_consumer.start()) {
+        std::cerr << "[FATAL] Failed to start ring buffer consumer" << std::endl;
+        return 1;
+    }
 
     std::cout << "\n=== Sniffer Ready ===" << std::endl;
     std::cout << "Capturing packets on interface: " << config->capture.interface << std::endl;
+    std::cout << "eBPF program loaded and attached successfully" << std::endl;
+    std::cout << "Ring buffer consumer started" << std::endl;
     std::cout << "Output socket: " << config->network.output_socket.address
               << ":" << config->network.output_socket.port
               << " (" << config->network.output_socket.socket_type << ")" << std::endl;
-    std::cout << "Kernel features: " << config->features.kernel_feature_count << " (configured)" << std::endl;
-    std::cout << "User features: " << config->features.user_feature_count << " (configured)" << std::endl;
-    std::cout << "Performance target: 10M pps (default target)" << std::endl;
-    std::cout << "Auto-tuner: NOT IMPLEMENTED YET" << std::endl;
-
+    if (verbose) {
+        std::cout << "Verbose mode: ON - showing all captured packets" << std::endl;
+    }
     std::cout << "\nPress Ctrl+C to stop...\n" << std::endl;
 
-    // Main loop - por ahora solo esperar señales
+    // Main loop - ahora con estadísticas reales
+    uint64_t last_packet_count = 0;
+    int loop_counter = 0;
     while (g_running) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000)); // 5 segundos
 
-        // TODO: Aquí iría el processing loop principal:
-        // - Consume ring buffer events
-        // - Process features
-        // - Send to ZeroMQ
-        // - Update metrics
+        uint64_t current_packet_count = ebpf_loader.get_packet_count();
+        uint64_t events_processed = ring_consumer.get_events_processed();
+        uint64_t events_dropped = ring_consumer.get_events_dropped();
+
+        loop_counter++;
+        std::cout << "[STATS] Packets processed: " << current_packet_count
+                  << " (+" << (current_packet_count - last_packet_count) << "/5s), "
+                  << "Events: " << events_processed;
+
+        if (events_dropped > 0) {
+            std::cout << ", Dropped: " << events_dropped;
+        }
+
+        if (current_packet_count > 0) {
+            double pps = (current_packet_count - last_packet_count) / 5.0;
+            std::cout << " (" << std::fixed << std::setprecision(1) << pps << " pps)";
+        }
+
+        std::cout << std::endl;
+
+        last_packet_count = current_packet_count;
+
+        // Mostrar mensaje de actividad cada minuto si no hay tráfico
+        if (loop_counter % 12 == 0 && current_packet_count == 0) {
+            std::cout << "[INFO] Sniffer active, waiting for IPv4 traffic on " << config->capture.interface << std::endl;
+        }
     }
 
-    // Cleanup
+    // Cleanup mejorado
     std::cout << "\n=== Shutting down ===" << std::endl;
-    std::cout << "[INFO] Cleaning up resources..." << std::endl;
+    std::cout << "[INFO] Stopping ring buffer consumer..." << std::endl;
+    ring_consumer.stop();
 
-    // TODO: Cleanup de componentes:
-    // - Detach eBPF program
-    // - Close ring buffer
-    // - Close ZeroMQ sockets
-    // - Stop threads
+    std::cout << "[INFO] Detaching eBPF program..." << std::endl;
+    ebpf_loader.detach_xdp(config->capture.interface);
+
+    // Estadísticas finales
+    uint64_t final_packets = ebpf_loader.get_packet_count();
+    uint64_t final_events = ring_consumer.get_events_processed();
+    uint64_t final_dropped = ring_consumer.get_events_dropped();
+
+    std::cout << "\n=== Final Statistics ===" << std::endl;
+    std::cout << "Total packets processed: " << final_packets << std::endl;
+    std::cout << "Total events generated: " << final_events << std::endl;
+    std::cout << "Total events dropped: " << final_dropped << std::endl;
+
+    if (final_packets > 0) {
+        double event_rate = (double)final_events / final_packets * 100.0;
+        std::cout << "Event generation rate: " << std::fixed << std::setprecision(1) << event_rate << "%" << std::endl;
+    }
 
     std::cout << "[INFO] Sniffer stopped cleanly." << std::endl;
     return 0;

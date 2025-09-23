@@ -203,6 +203,30 @@ src/userspace/config_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.s
 .PHONY : src/userspace/config_manager.cpp.s
 
+src/userspace/ebpf_loader.o: src/userspace/ebpf_loader.cpp.o
+.PHONY : src/userspace/ebpf_loader.o
+
+# target to build an object file
+src/userspace/ebpf_loader.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o
+.PHONY : src/userspace/ebpf_loader.cpp.o
+
+src/userspace/ebpf_loader.i: src/userspace/ebpf_loader.cpp.i
+.PHONY : src/userspace/ebpf_loader.i
+
+# target to preprocess a source file
+src/userspace/ebpf_loader.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.i
+.PHONY : src/userspace/ebpf_loader.cpp.i
+
+src/userspace/ebpf_loader.s: src/userspace/ebpf_loader.cpp.s
+.PHONY : src/userspace/ebpf_loader.s
+
+# target to generate assembly for a file
+src/userspace/ebpf_loader.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.s
+.PHONY : src/userspace/ebpf_loader.cpp.s
+
 src/userspace/main.o: src/userspace/main.cpp.o
 .PHONY : src/userspace/main.o
 
@@ -227,6 +251,30 @@ src/userspace/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.s
 .PHONY : src/userspace/main.cpp.s
 
+src/userspace/ring_consumer.o: src/userspace/ring_consumer.cpp.o
+.PHONY : src/userspace/ring_consumer.o
+
+# target to build an object file
+src/userspace/ring_consumer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o
+.PHONY : src/userspace/ring_consumer.cpp.o
+
+src/userspace/ring_consumer.i: src/userspace/ring_consumer.cpp.i
+.PHONY : src/userspace/ring_consumer.i
+
+# target to preprocess a source file
+src/userspace/ring_consumer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.i
+.PHONY : src/userspace/ring_consumer.cpp.i
+
+src/userspace/ring_consumer.s: src/userspace/ring_consumer.cpp.s
+.PHONY : src/userspace/ring_consumer.s
+
+# target to generate assembly for a file
+src/userspace/ring_consumer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s
+.PHONY : src/userspace/ring_consumer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -244,9 +292,15 @@ help:
 	@echo "... src/userspace/config_manager.o"
 	@echo "... src/userspace/config_manager.i"
 	@echo "... src/userspace/config_manager.s"
+	@echo "... src/userspace/ebpf_loader.o"
+	@echo "... src/userspace/ebpf_loader.i"
+	@echo "... src/userspace/ebpf_loader.s"
 	@echo "... src/userspace/main.o"
 	@echo "... src/userspace/main.i"
 	@echo "... src/userspace/main.s"
+	@echo "... src/userspace/ring_consumer.o"
+	@echo "... src/userspace/ring_consumer.i"
+	@echo "... src/userspace/ring_consumer.s"
 .PHONY : help
 
 

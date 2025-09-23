@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/vagrant/src -I/vagrant/build/proto -I/usr/include/pgm-5.3 -I/usr/include/libxml2 -I/usr/include/mit-krb5 -I/usr/include/jsoncpp
+CXX_INCLUDES = -I/vagrant/src -I/vagrant/build/proto -I/usr/include/pgm-5.3 -I/usr/include/libxml2 -I/usr/include/jsoncpp
 
-CXX_FLAGS = -O3 -DNDEBUG -Wall -Wextra -Wpedantic -O3 -march=native -std=c++20
+CXX_FLAGS = -O3 -DNDEBUG -Wall -Wextra -Wpedantic -O3 -march=native -isystem /usr/include/mit-krb5 -std=c++20
 

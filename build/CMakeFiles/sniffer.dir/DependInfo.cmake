@@ -10,7 +10,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/vagrant/build/proto/network_security_v31.pb.cc" "CMakeFiles/sniffer.dir/proto/network_security_v31.pb.cc.o" "gcc" "CMakeFiles/sniffer.dir/proto/network_security_v31.pb.cc.o.d"
   "/vagrant/src/userspace/config_manager.cpp" "CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o.d"
+  "/vagrant/src/userspace/ebpf_loader.cpp" "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o.d"
   "/vagrant/src/userspace/main.cpp" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o.d"
+  "/vagrant/src/userspace/ring_consumer.cpp" "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o.d"
   )
 
 # Targets to which this target links.

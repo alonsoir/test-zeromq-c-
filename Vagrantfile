@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
 
   # Synced folder with better performance
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox",
-    mount_options: ["dmode=775,fmode=664"]
+      mount_options: ["dmode=775,fmode=775,exec"]
 
   # Provisioning script
   config.vm.provision "shell", inline: <<-SHELL

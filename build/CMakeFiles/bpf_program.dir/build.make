@@ -69,8 +69,8 @@ include CMakeFiles/bpf_program.dir/progress.make
 CMakeFiles/bpf_program: sniffer.bpf.o
 
 sniffer.bpf.o: /vagrant/src/kernel/sniffer.bpf.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/vagrant/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Compiling eBPF program"
-	/usr/bin/clang -O2 -target bpf -D__TARGET_ARCH_x86 -I -I/usr/include/x86_64-linux-gnu -c /vagrant/src/kernel/sniffer.bpf.c -o /vagrant/build/sniffer.bpf.o
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/vagrant/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Compiling eBPF program with BTF support"
+	/usr/bin/clang -O2 -target bpf -D__TARGET_ARCH_x86 -g -I -I/usr/include/x86_64-linux-gnu -I/usr/include/bpf -c /vagrant/src/kernel/sniffer.bpf.c -o /vagrant/build/sniffer.bpf.o
 
 bpf_program: CMakeFiles/bpf_program
 bpf_program: sniffer.bpf.o
