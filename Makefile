@@ -83,7 +83,7 @@ check-deps: ## Verificar dependencias del pipeline completo
 sniffer-deps: ## Verificar dependencias específicas del sniffer eBPF
 	@echo "$(BLUE)Verificando dependencias del sniffer eBPF...$(NC)"
 	@vagrant ssh -c "command -v clang >/dev/null 2>&1" || (echo "$(RED)Error: clang no instalado en VM$(NC)" && exit 1)
-	@vagrant ssh -c "command -v bpftool >/dev/null 2>&1" || (echo "$(RED)Error: bpftool no instalado en VM$(NC)" && exit 1)
+	@vagrant ssh -c "sudo bpftool version >/dev/null 2>&1" || (echo "$(RED)Error: bpftool no instalado en VM$(NC)" && exit 1)
 	@vagrant ssh -c "command -v cmake >/dev/null 2>&1" || (echo "$(RED)Error: cmake no instalado en VM$(NC)" && exit 1)
 	@vagrant ssh -c "pkg-config --exists libbpf" || (echo "$(RED)Error: libbpf-dev no instalado$(NC)" && exit 1)
 	@vagrant ssh -c "pkg-config --exists libzmq" || (echo "$(RED)Error: libzmq-dev no instalado$(NC)" && exit 1)
@@ -214,7 +214,7 @@ sniffer-status: ## Ver estado detallado del sniffer eBPF
 	@echo "$(BLUE)2. 🔧 Capacidades eBPF:$(NC)"
 	@vagrant ssh -c "sudo sysctl kernel.bpf_jit_enable 2>/dev/null | sed 's/^/  JIT: /' || echo '  JIT: No disponible'"
 	@vagrant ssh -c "ls -d /sys/fs/bpf >/dev/null 2>&1 && echo '  ✅ BPF filesystem: /sys/fs/bpf' || echo '  ❌ BPF filesystem: No montado'"
-	@vagrant ssh -c "command -v bpftool >/dev/null && bpftool version | head -1 | sed 's/^/  /' || echo '  ❌ bpftool: No disponible'"
+	@vagrant ssh -c "sudo bpftool version >/dev/null && sudo bpftool version | head -1 | sed 's/^/  /' || echo '  ❌ bpftool: No disponible'"
 	@echo ""
 	@echo "$(BLUE)3. 📊 Programas eBPF cargados:$(NC)"
 	@vagrant ssh -c "sudo bpftool prog show 2>/dev/null | grep -A3 -B1 xdp || echo '  📝 No hay programas XDP cargados'"
@@ -297,3 +297,58 @@ service3-stop: ## Parar service3
 service3-logs: ## Ver logs de service3
 	@echo "$(BLUE)📋 Logs de Service3...$(NC)"
 	@vagrant ssh -c "cd /vagrant && docker-compose logs -f service3"
+
+lab-logs: ## Ver logs en tiempo real
+	@echo "$(BLUE)📋 Logs del pipeline (Ctrl+C para salir)...$(NC)"
+	@vagrant ssh -c "cd /vagrant && docker-compose logs -f --tail=50"
+
+lab-test: ## Ejecutar tests de comunicación
+	@echo "$(BLUE)🧪 Ejecutando tests de comunicación...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Test 1: Verificar que etcd responde...$(NC)"
+	@vagrant ssh -c "cd /vagrant && docker-compose exec etcd /usr/local/bin/etcdctl --endpoints=http://localhost:2379 endpoint health" || (echo "$(RED)❌ etcd no responde$(NC)" && exit 1)
+	@echo "$(GREEN)✅ etcd funcionando$(NC)"
+	@echo ""
+	@echo "$(BLUE)Test 2: Verificar servicios registrados...$(NC)"
+	@sleep 3
+	@vagrant ssh -c "cd /vagrant && docker-compose exec etcd /usr/local/bin/etcdctl --endpoints=http://localhost:2379 get --prefix /services/heartbeat/" || echo "$(YELLOW)⚠️ Servicios aún registrándose...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Test 3: Verificar comunicación ZeroMQ...$(NC)"
+	@vagrant ssh -c "cd /vagrant && timeout 10 docker-compose logs service2 | grep -i 'evento\|sospechoso\|processed'" || echo "$(YELLOW)⚠️ Aún no hay tráfico ZeroMQ$(NC)"
+	@echo ""
+	@echo "$(BLUE)Test 4: Estado de contenedores...$(NC)"
+	@vagrant ssh -c "cd /vagrant && docker-compose ps"
+	@echo ""
+	@echo "$(BLUE)Test 5: Verificar capacidades eBPF...$(NC)"
+	@vagrant ssh -c "sudo bpftool version" || echo "$(YELLOW)⚠️ bpftool no disponible$(NC)"
+	@echo ""
+	@echo "$(GREEN)🧪 Tests completados$(NC)"
+
+status: ## Ver estado del laboratorio
+	@echo "$(GREEN)📊 Estado del Pipeline DDOS Completo:$(NC)"
+	@echo ""
+	@echo "$(BLUE)1. Vagrant VM:$(NC)"
+	@vagrant status 2>/dev/null || echo "  $(RED)VM no disponible$(NC)"
+	@echo ""
+	@echo "$(BLUE)2. Docker Containers:$(NC)"
+	@vagrant ssh -c "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" 2>/dev/null || echo "  $(RED)No se puede conectar a VM$(NC)"
+	@echo ""
+	@echo "$(BLUE)3. etcd Health:$(NC)"
+	@vagrant ssh -c "cd /vagrant && docker-compose exec etcd /usr/local/bin/etcdctl --endpoints=http://localhost:2379 endpoint health" 2>/dev/null || echo "  $(RED)etcd no disponible$(NC)"
+	@echo ""
+	@echo "$(BLUE)4. eBPF Sniffer:$(NC)"
+	@vagrant ssh -c "pgrep -f sniffer" >/dev/null 2>&1 && echo "  $(GREEN)✅ Sniffer ejecutándose$(NC)" || echo "  $(YELLOW)⚠️ Sniffer parado$(NC)"
+	@vagrant ssh -c "sudo bpftool prog show type xdp | wc -l" 2>/dev/null | sed 's/^/  Programas XDP: /' || echo "  $(RED)No se puede verificar eBPF$(NC)"
+	@echo ""
+	@echo "$(BLUE)5. Servicios Registrados:$(NC)"
+	@vagrant ssh -c "cd /vagrant && docker-compose exec etcd /usr/local/bin/etcdctl --endpoints=http://localhost:2379 get --prefix /services/heartbeat/ --keys-only" 2>/dev/null | sed 's|/services/heartbeat/|  - |' || echo "  $(RED)No se pueden obtener servicios$(NC)"
+
+clean: ## Limpiar todo (VM, contenedores, imágenes, eBPF)
+	@echo "$(YELLOW)🧹 Limpieza completa del pipeline...$(NC)"
+	@$(MAKE) sniffer-stop 2>/dev/null || true
+	@vagrant ssh -c "cd /vagrant && docker-compose down --remove-orphans --volumes && docker system prune -af && docker volume prune -f" 2>/dev/null || true
+	@vagrant ssh -c "cd /vagrant/sniffer && rm -rf build/* 2>/dev/null" || true
+	@vagrant destroy -f 2>/dev/null || true
+	@echo "$(GREEN)✅ Limpieza completada$(NC)"
+
+
