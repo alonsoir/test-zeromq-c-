@@ -16,7 +16,7 @@
   "kernel_space": {
     "ebpf_program": "sniffer_xdp.o",
     "xdp_mode": "native",
-    "interface": "eth1",
+    "interface": "eth0",
     "ring_buffer_size": 1048576,
     "max_flows_in_kernel": 100000,
     "flow_timeout_seconds": 300,
@@ -131,7 +131,7 @@
   "_comment_network": "🔌 NETWORK - ZeroMQ Configuration",
   "network": {
     "output_socket": {
-      "address": "0.0.0.0",
+      "address": "localhost",
       "port": 5571,
       "mode": "bind",
       "socket_type": "PUSH",
@@ -258,7 +258,7 @@
   "_comment_capture": "🎯 CAPTURE - eBPF/XDP optimized",
   "capture": {
     "mode": "ebpf_xdp",
-    "interface": "eth1",
+    "interface": "eth0",
     "xdp_flags": [
       "XDP_FLAGS_UPDATE_IF_NOEXIST"
     ],
@@ -475,5 +475,5 @@
       "half_open_max_calls": 5
     }
   },
-  "interface": "eth1"
+  "interface": "🌐 Selecting optimal network interface...\n   🖥️  Bare metal environment - using primary interface detection\n   🔍 Using route-based interface detection...\n   ✅ Selected eth0 (route-based detection)\neth0"
 }

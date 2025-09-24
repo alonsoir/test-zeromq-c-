@@ -9,7 +9,7 @@ RED = \033[0;31m
 PURPLE = \033[0;35m
 NC = \033[0m
 
-.PHONY: all lab-start lab-stop clean help check-deps status lab-logs lab-test lab-debug sniffer-build sniffer-start sniffer-stop sniffer-status
+.PHONY: all lab-start lab-stop clean help check-deps status lab-logs lab-test lab-debug sniffer-build sniffer-start sniffer-stop sniffer-status service3-build service3-start service3-stop service3-logs
 
 # Target por defecto
 all: lab-start
@@ -73,7 +73,7 @@ lab-start: check-deps ## Iniciar laboratorio completo (comando principal)
 	@vagrant ssh -c "cd /vagrant && docker-compose build --parallel"
 	@echo ""
 	@echo "$(BLUE)Paso 4: Iniciando pipeline distribuido...$(NC)"
-	@vagrant ssh -c "cd /vagrant && docker-compose up -d"
+	@vagrant ssh -c "cd /vagrant && docker-compose up -d etcd service1 service2 service3"
 	@echo ""
 	@echo "$(BLUE)Paso 5: Esperando inicialización de servicios...$(NC)"
 	@sleep 15
@@ -89,6 +89,8 @@ lab-start: check-deps ## Iniciar laboratorio completo (comando principal)
 	@echo "  - ZeroMQ Pipeline:    service1 → service2"
 	@echo "  - eBPF Sniffer:       make sniffer-start"
 	@echo "  - etcd Browser:       http://192.168.56.20:8082 (con lab-debug)"
+	@echo "  - eBPF Sniffer:       sniffer -> service3"
+	@echo "$(RED)✅ Laboratorio iniciado$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Comandos útiles:$(NC)"
 	@echo "  make lab-logs       # Ver logs en tiempo real"
@@ -246,3 +248,19 @@ lab-emergency-restart: ## Reinicio completo forzado
 	@vagrant reload
 	@sleep 10
 	@$(MAKE) lab-start
+
+service3-build:
+	@echo "🔨 Construyendo Service3..."
+	docker-compose build service3
+
+service3-start: service3-build
+	@echo "🚀 Iniciando Service3..."
+	docker-compose up -d service3
+
+service3-stop:
+	@echo "🛑 Deteniendo Service3..."
+	docker-compose stop service3
+
+service3-logs:
+	@echo "📋 Logs de Service3..."
+	docker-compose logs -f service3

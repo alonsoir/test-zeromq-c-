@@ -188,7 +188,7 @@ target_link_libraries(sniffer
 
 # Service3 executable
 add_executable(service3
-        sniffer/src/services/service3/main.cpp
+        sniffer/src/services/service3/main_simple_fixed.cpp
         sniffer/src/services/service3/zmq_receiver.cpp
         sniffer/src/services/service3/event_processor.cpp
 )

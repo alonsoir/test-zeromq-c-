@@ -1,5 +1,5 @@
 // ============================================================================
-// service2/main.cpp - CORREGIDO con includes correctos
+// service2/main_simple_fixed.cpp - CORREGIDO con includes correctos
 // ============================================================================
 
 #include "service2_main.h"  // No "main.h", usar nombre específico

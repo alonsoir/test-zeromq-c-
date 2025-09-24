@@ -1,4 +1,4 @@
-// service1/main.cpp - CORREGIDO con includes correctos
+// service1/main_simple_fixed.cpp - CORREGIDO con includes correctos
 #include "service1_main.h"  // No "main.h", usar nombre específico
 #include "EtcdServiceRegistry.h"  // Sin "../common/" - mismo directorio en Docker
 #include <zmq.hpp>

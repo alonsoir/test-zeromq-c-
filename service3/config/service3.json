@@ -1,0 +1,32 @@
+{
+  "service_info": {
+    "name": "service3_sniffer_consumer",
+    "version": "1.0.0",
+    "description": "Consumer de eventos del sniffer eBPF"
+  },
+  "node_id": "service3_consumer_001",
+  "cluster_name": "upgraded-happiness-cluster",
+  "connection": {
+    "sniffer_endpoint": "tcp://host.docker.internal:5571",
+    "socket_type": "PULL",
+    "connection_type": "connect",
+    "receive_timeout_ms": 1000,
+    "receive_hwm": 10000
+  },
+  "stats_interval_seconds": 5,
+  "verbose": true,
+  "logging": {
+    "level": "info",
+    "show_packet_details": false,
+    "stats_frequency": 100
+  },
+  "processing": {
+    "max_queue_size": 1000,
+    "batch_processing": false,
+    "batch_size": 10
+  },
+  "protocol": {
+    "format": "protobuf",
+    "fallback_to_json": true
+  }
+}

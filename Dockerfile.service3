@@ -1,0 +1,41 @@
+FROM ubuntu:22.04
+
+# Evitar prompts interactivos
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Instalar dependencias básicas
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libzmq3-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libjsoncpp-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar el esquema protobuf compartido
+COPY protobuf/ /app/protobuf/
+COPY common/ /app/common/
+
+# Copiar código fuente del service3
+COPY service3/ /app/service3/
+
+# Compilar protobuf
+WORKDIR /app/protobuf
+RUN protoc --cpp_out=. *.proto
+
+# Compilar service3
+WORKDIR /app/service3
+RUN mkdir -p build && cd build && \
+    cmake .. && \
+    make -j$(nproc)
+
+# Exponer puerto si es necesario
+EXPOSE 5571
+
+# Ejecutar service3
+CMD ["./build/service3"]
