@@ -2,120 +2,163 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  # Ubuntu 22.04 LTS - Necesario para C++20 y herramientas modernas
-  config.vm.box = "ubuntu/jammy64"
-  config.vm.box_version = "20231215.0.0"
+  # Debian 12 Bookworm (kernel 6.1 base → upgrade to 6.12 mainline)
+  config.vm.box = "debian/bookworm64"
+  config.vm.box_version = "12.20240905.1"  # Latest stable Debian 12
 
-  # Configuración de la VM
+  # VM Configuration
   config.vm.provider "virtualbox" do |vb|
-    vb.name = "zeromq-protobuf-dev"
-    vb.memory = "4096"  # 4GB RAM para compilación cómoda
+    vb.name = "zeromq-etcd-lab-debian"
+    vb.memory = "6144"  # 6GB RAM para mejor performance con kernel 6.12
     vb.cpus = 4         # 4 cores para compilación paralela
 
-    # Optimizaciones para desarrollo
+    # VirtualBox optimizations for Debian Bookworm
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--audio", "none"]  # Disable audio for performance
+    vb.customize ["modifyvm", :id, "--usb", "off"]     # Disable USB for performance
+    vb.customize ["modifyvm", :id, "--usbehci", "off"] # Disable USB 2.0
+
+    # Enable nested virtualization for better Docker performance
+    vb.customize ["modifyvm", :id, "--nested-hw-virt", "on"]
   end
 
-  # Configurar red - Importante para ZeroMQ
-  config.vm.network "private_network", ip: "192.168.56.10"
+  # Network configuration
+  config.vm.network "private_network", ip: "192.168.56.20"  # Different IP to avoid conflicts
 
-  # Port forwarding para acceder desde host si necesario
-  config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"
+  # Port forwarding for services
+  config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"  # ZeroMQ
+  config.vm.network "forwarded_port", guest: 2379, host: 2379, protocol: "tcp"  # etcd client
+  config.vm.network "forwarded_port", guest: 2380, host: 2380, protocol: "tcp"  # etcd peer
+  config.vm.network "forwarded_port", guest: 3000, host: 3000, protocol: "tcp"  # Future monitoring
+  config.vm.network "forwarded_port", guest: 5571, host: 5571, protocol: "tcp"  # Sniffer output
 
-  # Necesario para etcd
-  config.vm.network "forwarded_port", guest: 2379, host: 2379, protocol: "tcp"
+  # Synced folder with better performance
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox",
+      mount_options: ["dmode=775,fmode=775,exec"]
 
-  # Sincronizar el directorio del proyecto
-  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
-
-  # Provisioning script
+  # Enhanced provisioning with dynamic IP detection
   config.vm.provision "shell", inline: <<-SHELL
-    set -e  # Exit on any error
+    set -euo pipefail
 
-    echo "🚀 Setting up ZeroMQ + Protobuf Development Environment"
-    echo "======================================================"
+    echo "🔧 Configurando entorno para comunicación Sniffer <-> Service3..."
 
-    # Update system
-    echo "📦 Updating package lists..."
-    apt-get update
+    # 1. Detectar IP del host dinámicamente (más robusto que hardcodear)
+    echo "🔍 Detectando IP del host..."
 
-    # Install essential development tools
-    echo "🔧 Installing development tools..."
-    apt-get install -y \
-      curl \
-      wget \
-      vim \
-      git \
-      htop \
-      net-tools \
-      tree \
-      unzip
+    # Método 1: IP del gateway por defecto (más confiable)
+    HOST_IP=$(ip route | grep '^default' | awk '{print $3}' | head -1)
 
-    # Install Docker
-    echo "🐳 Installing Docker..."
-    apt-get install -y apt-transport-https ca-certificates gnupg lsb-release
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    if [ -z "$HOST_IP" ]; then
+      # Método 2: Fallback a la IP estándar de VirtualBox NAT
+      echo "⚠️  No se pudo detectar gateway, usando IP estándar de VirtualBox NAT"
+      HOST_IP="10.0.2.2"
+    fi
 
-    apt-get update
-    apt-get install -y docker-ce docker-ce-cli containerd.io
+    echo "✅ IP del host detectada: $HOST_IP"
 
-    # Install Docker Compose (latest version)
-    echo "🔧 Installing Docker Compose..."
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
+    # 2. Configurar variables de entorno del sistema
+    echo "📝 Configurando variables de entorno..."
+    {
+      echo "# Host IP for Docker containers to access Vagrant host"
+      echo "VAGRANT_HOST_IP=$HOST_IP"
+      echo "SNIFFER_HOST_IP=$HOST_IP"
+      echo "SNIFFER_ENDPOINT=tcp://$HOST_IP:5571"
+    } >> /etc/environment
 
-    # Add vagrant user to docker group
-    usermod -aG docker vagrant
+    # 3. Configurar Docker para resolver host.docker.internal
+    echo "🐳 Configurando Docker host resolution..."
+    {
+      echo "# Map host.docker.internal to Vagrant host IP"
+      echo "$HOST_IP host.docker.internal"
+      echo "$HOST_IP docker.host.internal"  # Alternative name
+    } >> /etc/hosts
 
-    # Install build tools for potential debugging
-    echo "🛠️ Installing build tools..."
-    apt-get install -y \
-      build-essential \
-      cmake \
-      pkg-config \
-      protobuf-compiler \
-      libprotobuf-dev
+    # 4. Configurar script para actualizar service3 config dinámicamente
+    echo "📋 Creando script de configuración automática..."
+    cat > /usr/local/bin/update-service3-config << 'EOF'
+#!/bin/bash
+# Script para actualizar automáticamente la configuración de service3
+set -euo pipefail
 
-    # Enable Docker service
-    systemctl enable docker
-    systemctl start docker
+CONFIG_FILE="/vagrant/service3/config/service3.json"
+HOST_IP=${1:-$(ip route | grep '^default' | awk '{print $3}' | head -1)}
 
-    # Optimize system for container development
-    echo "⚡ Optimizing system..."
-    echo 'vm.max_map_count=262144' >> /etc/sysctl.conf
-    echo 'fs.file-max=65536' >> /etc/sysctl.conf
-    sysctl -p
+if [ -z "$HOST_IP" ]; then
+  HOST_IP="10.0.2.2"  # Fallback
+fi
 
-    # Verify installations
+echo "🔧 Actualizando configuración de service3 con IP: $HOST_IP"
+
+# Backup del config original
+cp "$CONFIG_FILE" "$CONFIG_FILE.backup.$(date +%Y%m%d_%H%M%S)"
+
+# Usar jq si está disponible, sino sed
+if command -v jq >/dev/null 2>&1; then
+  # Método preferido con jq
+  tmp_file=$(mktemp)
+  jq --arg ip "$HOST_IP" '.connection.sniffer_endpoint = "tcp://\($ip):5571"' "$CONFIG_FILE" > "$tmp_file"
+  mv "$tmp_file" "$CONFIG_FILE"
+else
+  # Fallback con sed
+  sed -i.bak "s|\"sniffer_endpoint\": *\"[^\"]*\"|\"sniffer_endpoint\": \"tcp://$HOST_IP:5571\"|g" "$CONFIG_FILE"
+fi
+
+echo "✅ Configuración actualizada: tcp://$HOST_IP:5571"
+EOF
+
+    chmod +x /usr/local/bin/update-service3-config
+
+    # 5. Ejecutar el script de actualización inmediatamente
+    if [ -f "/vagrant/service3/config/service3.json" ]; then
+      /usr/local/bin/update-service3-config "$HOST_IP"
+    else
+      echo "⚠️  Archivo service3.json no encontrado, se configurará cuando se cree"
+    fi
+
+    # 6. Mostrar información de configuración
     echo ""
-    echo "✅ Installation verification:"
-    echo "   Docker version: $(docker --version)"
-    echo "   Docker Compose version: $(docker-compose --version)"
-    echo "   Protoc version: $(protoc --version)"
-    echo "   G++ version: $(g++ --version | head -1)"
-
-    # Set up convenient aliases
-    echo 'alias ll="ls -la"' >> /home/vagrant/.bashrc
-    echo 'alias dc="docker-compose"' >> /home/vagrant/.bashrc
-    echo 'alias dps="docker ps"' >> /home/vagrant/.bashrc
-
+    echo "=== 🌐 Configuración de Red ==="
+    echo "Host IP (para Docker): $HOST_IP"
+    echo "Sniffer endpoint: tcp://$HOST_IP:5571"
+    echo "Variables configuradas en /etc/environment"
+    echo "host.docker.internal → $HOST_IP"
     echo ""
-    echo "🎉 Setup completed successfully!"
-    echo ""
-    echo "📋 Next steps:"
-    echo "   1. vagrant ssh"
-    echo "   2. cd /vagrant"
-    echo "   3. chmod +x build_and_run.sh"
-    echo "   4. ./build_and_run.sh"
-    echo ""
-    echo "🔧 Useful commands:"
-    echo "   - docker-compose build --no-cache"
-    echo "   - docker-compose up"
-    echo "   - docker-compose logs -f service1"
-    echo "   - ./debug.sh"
-
+    echo "💡 Para reconfigurar manualmente:"
+    echo "   sudo /usr/local/bin/update-service3-config [nueva_ip]"
+    echo "==============================="
   SHELL
+
+  # Provisioning script original (si existe)
+  if File.exist?("scripts/vagrant-provision.sh")
+    config.vm.provision "shell", path: "scripts/vagrant-provision.sh"
+  else
+    # Provisioning básico en caso de que no exista el script
+    config.vm.provision "shell", inline: <<-SHELL
+      echo "📦 Instalando dependencias básicas..."
+      apt-get update
+      apt-get install -y curl wget git vim jq
+
+      # Instalar Docker si no está instalado
+      if ! command -v docker >/dev/null 2>&1; then
+        echo "🐳 Instalando Docker..."
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+        usermod -aG docker vagrant
+        systemctl enable docker
+        systemctl start docker
+        rm get-docker.sh
+      fi
+
+      # Instalar Docker Compose si no está instalado
+      if ! command -v docker-compose >/dev/null 2>&1; then
+        echo "🐙 Instalando Docker Compose..."
+        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      fi
+
+      echo "✅ Provisioning básico completado"
+    SHELL
+  end
 end

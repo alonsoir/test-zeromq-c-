@@ -78,12 +78,12 @@ uptime
 echo ""
 echo "🔍 Proto file validation:"
 if [[ -f "protobuf/network_security.proto" ]]; then
-    echo "Proto file size: $(wc -c < protobuf/network_security.proto) bytes"
-    echo "Proto file lines: $(wc -l < protobuf/network_security.proto) lines"
+    echo "Proto file size: $(wc -c < protobuf/network_security_v31.proto) bytes"
+    echo "Proto file lines: $(wc -l < protobuf/network_security_v31.proto) lines"
     echo "Package declaration:"
-    grep -n "^package " protobuf/network_security.proto || echo "   No package declaration found"
+    grep -n "^package " protobuf/network_security_v31.proto || echo "   No package declaration found"
     echo "Main message types found:"
-    grep -n "^message " protobuf/network_security.proto || echo "   No message types found"
+    grep -n "^message " protobuf/network_security_v31.proto || echo "   No message types found"
 else
     echo "   ❌ protobuf/network_security.proto not found"
 fi

@@ -1,0 +1,479 @@
+{
+  "_comment_header": "🚀 C++20 SNIFFER v3.1 CONFIG - Kernel 6.12 + eBPF/XDP + User Space",
+  "_philosophy": "Kernel/User split optimal - eBPF para speed, C++ para complex features",
+  "component": {
+    "name": "cpp_evolutionary_sniffer",
+    "version": "3.1.0",
+    "mode": "kernel_user_hybrid",
+    "description": "C++20 Sniffer with eBPF/XDP kernel processing and user space feature aggregation",
+    "kernel_version_required": "6.12.0",
+    "ebpf_features": "XDP_REDIRECT, AF_XDP, RING_BUFFER"
+  },
+  "node_id": "cpp_sniffer_v31_001",
+  "version": "3.1.0",
+  "cluster_name": "upgraded-happiness-cluster",
+  "_comment_kernel_config": "🔥 KERNEL SPACE - eBPF/XDP Configuration",
+  "kernel_space": {
+    "ebpf_program": "sniffer_xdp.o",
+    "xdp_mode": "native",
+    "interface": "eth0",
+    "ring_buffer_size": 1048576,
+    "max_flows_in_kernel": 100000,
+    "flow_timeout_seconds": 300,
+    "kernel_features": [
+      "source_ip",
+      "destination_ip",
+      "source_port",
+      "destination_port",
+      "protocol_number",
+      "total_forward_packets",
+      "total_backward_packets",
+      "total_forward_bytes",
+      "total_backward_bytes",
+      "fin_flag_count",
+      "syn_flag_count",
+      "rst_flag_count",
+      "psh_flag_count",
+      "ack_flag_count",
+      "urg_flag_count",
+      "cwe_flag_count",
+      "ece_flag_count",
+      "forward_psh_flags",
+      "backward_psh_flags",
+      "forward_urg_flags",
+      "backward_urg_flags",
+      "forward_packet_length_max",
+      "forward_packet_length_min",
+      "backward_packet_length_max",
+      "backward_packet_length_min",
+      "minimum_packet_length",
+      "maximum_packet_length"
+    ],
+    "performance": {
+      "cpu_budget_us_per_packet": 50,
+      "max_instructions_per_program": 1000000,
+      "map_update_batch_size": 100
+    }
+  },
+  "_comment_user_config": "💻 USER SPACE - C++20 Feature Processing",
+  "user_space": {
+    "processing_threads": 4,
+    "ring_buffer_consumer_threads": 2,
+    "feature_aggregation_threads": 2,
+    "flow_table_size": 1000000,
+    "time_window_buffer_size": 10000,
+    "user_features": [
+      "forward_packet_length_mean",
+      "forward_packet_length_std",
+      "backward_packet_length_mean",
+      "backward_packet_length_std",
+      "packet_length_mean",
+      "packet_length_std",
+      "packet_length_variance",
+      "flow_bytes_per_second",
+      "flow_packets_per_second",
+      "forward_packets_per_second",
+      "backward_packets_per_second",
+      "download_upload_ratio",
+      "average_packet_size",
+      "average_forward_segment_size",
+      "average_backward_segment_size",
+      "flow_inter_arrival_time_mean",
+      "flow_inter_arrival_time_std",
+      "flow_inter_arrival_time_max",
+      "flow_inter_arrival_time_min",
+      "forward_inter_arrival_time_total",
+      "forward_inter_arrival_time_mean",
+      "forward_inter_arrival_time_std",
+      "forward_inter_arrival_time_max",
+      "forward_inter_arrival_time_min",
+      "backward_inter_arrival_time_total",
+      "backward_inter_arrival_time_mean",
+      "backward_inter_arrival_time_std",
+      "backward_inter_arrival_time_max",
+      "backward_inter_arrival_time_min",
+      "forward_header_length",
+      "backward_header_length",
+      "forward_average_bytes_bulk",
+      "forward_average_packets_bulk",
+      "forward_average_bulk_rate",
+      "backward_average_bytes_bulk",
+      "backward_average_packets_bulk",
+      "backward_average_bulk_rate",
+      "ddos_features",
+      "ransomware_features",
+      "general_attack_features",
+      "internal_traffic_features"
+    ],
+    "memory_management": {
+      "flow_eviction_policy": "lru",
+      "max_memory_usage_mb": 2048,
+      "gc_interval_seconds": 60
+    }
+  },
+  "_comment_auto_tuner": "🎯 AUTO-TUNER - Dynamic Feature Placement",
+  "auto_tuner": {
+    "enabled": false,
+    "calibration_on_startup": true,
+    "benchmark_iterations": 100000,
+    "recalibration_interval_hours": 24,
+    "safety_margin_factor": 1.2,
+    "feature_placement_strategy": "cost_benefit_optimization",
+    "fallback_config": "conservative_user_space"
+  },
+  "_comment_etcd_crypto": "🔐 ETCD CRYPTO - Unchanged from Python version",
+  "etcd_crypto": {
+    "etcd_host": "localhost",
+    "etcd_port": 2379,
+    "cluster_name": "upgraded-happiness-cluster",
+    "node_id": "cpp_sniffer_v31_001"
+  },
+  "_comment_network": "🔌 NETWORK - ZeroMQ Configuration",
+  "network": {
+    "output_socket": {
+      "address": "localhost",
+      "port": 5571,
+      "mode": "bind",
+      "socket_type": "PUSH",
+      "description": "Sends NetworkSecurityEvent v3.1 to next pipeline component",
+      "high_water_mark": 2000,
+      "expected_subscribers": 1
+    }
+  },
+  "zmq": {
+    "sndhwm": 10000,
+    "linger_ms": 0,
+    "send_timeout_ms": 100,
+    "rcvhwm": 10000,
+    "recv_timeout_ms": 100,
+    "io_threads": 2,
+    "tcp_keepalive": 1,
+    "tcp_keepalive_idle": 600,
+    "tcp_keepalive_cnt": 3,
+    "tcp_keepalive_intvl": 60,
+    "immediate": 1,
+    "tcp_nodelay": 1,
+    "sndbuf": 1048576,
+    "rcvbuf": 1048576,
+    "affinity": 1,
+    "rate": 100000,
+    "recovery_ivl": 10000,
+    "multicast_hops": 1,
+    "maxmsgsize": 1048576,
+    "recv_buffer_size": 262144,
+    "send_buffer_size": 262144
+  },
+  "_comment_time_windows": "⏰ TIME WINDOWS - Adapted for C++20 processing",
+  "time_windows": {
+    "ddos_detection": {
+      "window_size_seconds": 10,
+      "slide_interval_seconds": 2,
+      "max_flows_per_window": 1000,
+      "processing_strategy": "kernel_prefilter_user_aggregate",
+      "kernel_triggers": [
+        "high_packet_rate",
+        "syn_flood_pattern",
+        "unusual_flag_combinations"
+      ],
+      "features_required": [
+        "flow_duration",
+        "total_forward_packets",
+        "total_backward_packets",
+        "total_forward_bytes",
+        "total_backward_bytes",
+        "forward_packet_length_max",
+        "forward_packet_length_min",
+        "forward_packet_length_mean",
+        "forward_packet_length_std",
+        "backward_packet_length_max",
+        "backward_packet_length_min",
+        "backward_packet_length_mean",
+        "backward_packet_length_std",
+        "flow_bytes_per_second",
+        "flow_packets_per_second",
+        "forward_packets_per_second",
+        "backward_packets_per_second",
+        "download_upload_ratio",
+        "average_packet_size",
+        "average_forward_segment_size",
+        "average_backward_segment_size"
+      ],
+      "model_types": [
+        "ddos_83"
+      ],
+      "description": "DDOS detection with kernel pre-filtering and user space aggregation"
+    },
+    "general_attack_detection": {
+      "window_size_seconds": 30,
+      "slide_interval_seconds": 5,
+      "max_flows_per_window": 500,
+      "processing_strategy": "balanced_kernel_user",
+      "features_required": [
+        "flow_duration",
+        "total_forward_packets",
+        "total_backward_packets",
+        "total_forward_bytes",
+        "total_backward_bytes",
+        "flow_bytes_per_second",
+        "forward_packet_length_mean",
+        "backward_packet_length_mean",
+        "flow_inter_arrival_time_mean",
+        "flow_inter_arrival_time_std",
+        "forward_psh_flags",
+        "backward_psh_flags",
+        "forward_urg_flags",
+        "backward_urg_flags",
+        "packet_length_mean",
+        "packet_length_std",
+        "packet_length_variance",
+        "fin_flag_count",
+        "syn_flag_count",
+        "rst_flag_count",
+        "psh_flag_count",
+        "ack_flag_count",
+        "urg_flag_count"
+      ],
+      "model_types": [
+        "rf_23"
+      ],
+      "description": "General attack detection with balanced kernel/user processing"
+    },
+    "internal_traffic_analysis": {
+      "window_size_seconds": 60,
+      "slide_interval_seconds": 15,
+      "max_flows_per_window": 200,
+      "processing_strategy": "mostly_kernel",
+      "features_required": [
+        "flow_duration",
+        "total_forward_packets",
+        "total_backward_packets",
+        "total_forward_bytes"
+      ],
+      "model_types": [
+        "internal_4"
+      ],
+      "description": "Internal traffic analysis - mostly kernel space processing"
+    }
+  },
+  "_comment_capture": "🎯 CAPTURE - eBPF/XDP optimized",
+  "capture": {
+    "mode": "ebpf_xdp",
+    "interface": "eth0",
+    "xdp_flags": [
+      "XDP_FLAGS_UPDATE_IF_NOEXIST"
+    ],
+    "promiscuous_mode": true,
+    "filter_expression": "",
+    "buffer_size": 65536,
+    "min_packet_size": 20,
+    "max_packet_size": 65536,
+    "excluded_ports": [
+      22
+    ],
+    "included_protocols": [
+      "tcp",
+      "udp",
+      "icmp"
+    ],
+    "af_xdp": {
+      "enabled": true,
+      "queue_id": 0,
+      "frame_size": 2048,
+      "fill_ring_size": 2048,
+      "comp_ring_size": 2048,
+      "tx_ring_size": 2048,
+      "rx_ring_size": 2048,
+      "umem_size": 16777216
+    }
+  },
+  "_comment_processing": "⚙️ PROCESSING - C++20 optimized",
+  "processing": {
+    "kernel_processing": {
+      "max_map_entries": 1000000,
+      "flow_hash_table_size": 1000000,
+      "counter_map_size": 100000,
+      "stats_collection_interval_ms": 1000
+    },
+    "user_processing": {
+      "internal_queue_size": 10000,
+      "processing_threads": 4,
+      "window_processing_threads": 2,
+      "queue_timeout_seconds": 1,
+      "max_packets_per_second": 1000000,
+      "batch_size": 100,
+      "lockfree_queues": true,
+      "numa_aware_allocation": true
+    },
+    "feature_extraction": {
+      "enabled": true,
+      "extract_all_features": true,
+      "cache_flow_states": true,
+      "flow_timeout_seconds": 300,
+      "max_concurrent_flows": 1000000,
+      "statistics_engine": "high_performance_cpp",
+      "simd_optimization": true
+    }
+  },
+  "_comment_features": "🧠 FEATURES - Kernel/User split configuration",
+  "features": {
+    "extraction_enabled": true,
+    "kernel_feature_count": 25,
+    "user_feature_count": 58,
+    "ddos_features_count": 83,
+    "rf_features_count": 23,
+    "internal_features_count": 4,
+    "custom_features_enabled": true,
+    "statistical_features_enabled": true,
+    "tcp_flags_analysis": true,
+    "inter_arrival_time_analysis": true,
+    "bulk_transfer_analysis": true,
+    "feature_placement_optimization": true
+  },
+  "_comment_performance": "⚡ PERFORMANCE - High-performance C++ optimizations",
+  "performance": {
+    "ebpf_optimizations": {
+      "enable_flow_caching": true,
+      "flow_cache_size": 1000000,
+      "enable_batch_updates": true,
+      "batch_size": 100,
+      "enable_percpu_maps": true
+    },
+    "userspace_optimizations": {
+      "enable_feature_caching": true,
+      "feature_cache_ttl_seconds": 60,
+      "enable_batch_processing": true,
+      "memory_pool_allocation": true,
+      "lock_free_data_structures": true,
+      "cpu_affinity_binding": true,
+      "numa_topology_awareness": true
+    },
+    "targets": {
+      "max_throughput_pps": 10000000,
+      "max_latency_us": 100,
+      "max_memory_usage_gb": 4,
+      "max_cpu_usage_percent": 80
+    }
+  },
+  "_comment_monitoring": "📊 MONITORING - Enhanced for kernel/user metrics",
+  "monitoring": {
+    "stats_interval_seconds": 30,
+    "performance_tracking": true,
+    "kernel_metrics": {
+      "ebpf_program_stats": true,
+      "map_utilization": true,
+      "instruction_count": true,
+      "processing_time_per_packet": true
+    },
+    "user_metrics": {
+      "feature_extraction_rate": true,
+      "queue_depth": true,
+      "memory_usage": true,
+      "thread_utilization": true
+    },
+    "alerts": {
+      "max_drop_rate_percent": 1,
+      "max_queue_usage_percent": 85,
+      "max_memory_usage_mb": 4096,
+      "max_cpu_usage_percent": 80,
+      "max_processing_latency_us": 100,
+      "min_feature_extraction_rate": 100,
+      "max_window_processing_delay_seconds": 2,
+      "ebpf_instruction_limit_warning": 900000
+    }
+  },
+  "_comment_build": "🔨 BUILD - Compilation configuration",
+  "build": {
+    "cpp_standard": "c++20",
+    "compiler": "g++-12",
+    "ebpf_compiler": "clang-15",
+    "optimization_level": "-O3",
+    "debug_symbols": true,
+    "link_time_optimization": true,
+    "profile_guided_optimization": false,
+    "dependencies": [
+      "libbpf",
+      "libprotobuf",
+      "libzmq",
+      "libjsoncpp",
+      "catch2"
+    ]
+  },
+  "_comment_unchanged": "Following sections unchanged from Python version",
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)-25s - %(levelname)-8s - [node_id:{node_id}] [pid:{pid}] [v3.1] - %(message)s",
+    "file": "logs/cpp_evolutionary_sniffer_v31.log",
+    "max_file_size_mb": 200,
+    "backup_count": 10,
+    "include_performance_logs": true,
+    "include_feature_logs": false,
+    "include_window_logs": true,
+    "include_kernel_logs": true
+  },
+  "distributed": {
+    "cluster_name": "upgraded-happiness-cluster",
+    "node_role": "packet_sniffer_cpp",
+    "enable_container_detection": true,
+    "enable_system_info_collection": true,
+    "heartbeat_interval_seconds": 30,
+    "pipeline_position": 1,
+    "next_components": [
+      "geoip_enricher",
+      "ml_detector"
+    ]
+  },
+  "protobuf": {
+    "schema_version": "v3.1.0",
+    "compression": false,
+    "validate_before_send": true,
+    "error_handling": "log_and_drop",
+    "serialization_timeout_ms": 50,
+    "max_event_size_bytes": 100000
+  },
+  "security": {
+    "input_validation": {
+      "enabled": true,
+      "max_packet_size_bytes": 65536,
+      "validate_ip_addresses": true,
+      "validate_ports": true,
+      "sanitize_inputs": true
+    },
+    "ebpf_security": {
+      "verify_programs": true,
+      "sandbox_mode": true,
+      "instruction_limit": 1000000,
+      "map_access_control": true
+    }
+  },
+  "crypto": {
+    "enabled": true,
+    "role": "sender",
+    "use_etcd_pipeline_key": true,
+    "channels": {
+      "output": {
+        "encrypt": true,
+        "description": "Encrypt events to next component"
+      }
+    },
+    "component_crypto_id": "cpp_sniffer_v31_001"
+  },
+  "backpressure": {
+    "enabled": true,
+    "kernel_backpressure": {
+      "ring_buffer_full_action": "drop_oldest",
+      "flow_table_full_action": "evict_lru"
+    },
+    "user_backpressure": {
+      "max_drops_per_second": 1000,
+      "drop_threshold_percent": 2,
+      "adaptive_rate_limiting": true
+    },
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 50,
+      "recovery_timeout": 30,
+      "half_open_max_calls": 5
+    }
+  },
+  "interface": "🌐 Selecting optimal network interface...\n   🖥️  Bare metal environment - using primary interface detection\n   🔍 Using route-based interface detection...\n   ✅ Selected eth0 (route-based detection)\neth0"
+}
