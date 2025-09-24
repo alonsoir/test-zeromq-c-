@@ -23,6 +23,7 @@ set(PROTO_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/../protobuf/network_security.pb.h")
 add_executable(service3
         src/main_simple_fixed.cpp
         src/config_manager.cpp
+        ${PROTO_SRCS}
 )
 
 # Link libraries
@@ -39,6 +40,7 @@ target_include_directories(service3 PRIVATE
         ${JSONCPP_INCLUDE_DIRS}
         ${Protobuf_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf
+        ${CMAKE_CURRENT_SOURCE_DIR}/../
 )
 
 # Compiler flags

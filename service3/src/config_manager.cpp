@@ -60,11 +60,3 @@ std::string ConfigManager::getNodeId() const {
 std::string ConfigManager::getClusterName() const {
     return config_.get("cluster_name", "upgraded-happiness-cluster").asString();
 }
-
-std::string ConfigManager::getProtocolFormat() const {
-    return config_["protocol"].get("format", "protobuf").asString();
-}
-
-bool ConfigManager::shouldFallbackToJson() const {
-    return config_["protocol"].get("fallback_to_json", true).asBool();
-}

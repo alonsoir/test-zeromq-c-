@@ -1,5 +1,4 @@
 #include <zmq.hpp>
-#include <jsoncpp/json/json.h>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -8,6 +7,7 @@
 #include <signal.h>
 #include <fstream>
 #include "config_manager.h"
+#include "protobuf/network_security.pb.h"
 
 class SnifferEventConsumer {
 private:
@@ -15,6 +15,7 @@ private:
     zmq::socket_t socket_;
     std::atomic<bool> running_;
     uint64_t events_processed_;
+    uint64_t events_failed_;
     std::chrono::steady_clock::time_point start_time_;
     ConfigManager config_;
 
@@ -24,6 +25,7 @@ public:
         , socket_(context_, ZMQ_PULL)
         , running_(true)
         , events_processed_(0)
+        , events_failed_(0)
         , start_time_(std::chrono::steady_clock::now())
         , config_(config_file)
     {
@@ -54,6 +56,7 @@ public:
         std::cout << " (socket: " << config_.getSocketType() << ")" << std::endl;
         std::cout << "[Service3] Node ID: " << config_.getNodeId() << std::endl;
         std::cout << "[Service3] Cluster: " << config_.getClusterName() << std::endl;
+        std::cout << "[Service3] PROTOCOLO: SOLO PROTOBUF - Sin fallbacks JSON" << std::endl;
         std::cout << "[Service3] Iniciando consumo de eventos..." << std::endl;
     }
 
@@ -76,8 +79,11 @@ public:
                 zmq::recv_result_t result = socket_.recv(message, zmq::recv_flags::dontwait);
 
                 if (result) {
-                    processEvent(message);
-                    events_processed_++;
+                    if (processEvent(message)) {
+                        events_processed_++;
+                    } else {
+                        events_failed_++;
+                    }
                 } else {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
@@ -89,7 +95,13 @@ public:
                     double rate = static_cast<double>(current_count - last_count) / stats_interval;
 
                     std::cout << "[Service3] Eventos procesados: " << current_count
-                              << " | Rate: " << rate << " events/sec" << std::endl;
+                              << " | Rate: " << rate << " events/sec";
+
+                    if (events_failed_ > 0) {
+                        std::cout << " | Fallos: " << events_failed_;
+                    }
+
+                    std::cout << std::endl;
 
                     last_stats = now;
                     last_count = current_count;
@@ -112,49 +124,69 @@ public:
 
         std::cout << "[Service3] Finalizando..." << std::endl;
         std::cout << "[Service3] Total procesados: " << events_processed_ << std::endl;
+        std::cout << "[Service3] Total fallidos: " << events_failed_ << std::endl;
         std::cout << "[Service3] Tiempo total: " << duration.count() << " segundos" << std::endl;
         std::cout << "[Service3] Rate promedio: " << avg_rate << " events/sec" << std::endl;
-    }
 
-private:
-    void processEvent(const zmq::message_t& message) {
-        try {
-            std::string data(static_cast<const char*>(message.data()), message.size());
-
-            // Solo procesar JSON por ahora - versión simple para el consumer de apoyo
-            Json::Value root;
-            Json::CharReaderBuilder builder;
-            std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-            std::string errors;
-
-            if (reader->parse(data.c_str(), data.c_str() + data.length(), &root, &errors)) {
-                processJsonEvent(root);
-            } else {
-                // Si no es JSON, asumir que es texto plano del sniffer
-                if (config_.isVerboseMode() && events_processed_ % 100 == 0) {
-                    std::cout << "[Service3] Evento de texto: " << data.substr(0, 100) << "..." << std::endl;
-                }
-            }
-
-        } catch (const std::exception& e) {
-            std::cerr << "[Service3] Error procesando evento: " << e.what() << std::endl;
+        if (events_processed_ > 0) {
+            double success_rate = (double)events_processed_ / (events_processed_ + events_failed_) * 100.0;
+            std::cout << "[Service3] Tasa éxito protobuf: " << success_rate << "%" << std::endl;
         }
     }
 
-    void processJsonEvent(const Json::Value& event) {
-        std::string src_ip = event.get("src_ip", "unknown").asString();
-        std::string dst_ip = event.get("dst_ip", "unknown").asString();
-        int src_port = event.get("src_port", 0).asInt();
-        int dst_port = event.get("dst_port", 0).asInt();
-        std::string protocol = event.get("protocol", "unknown").asString();
-        int packet_size = event.get("packet_size", 0).asInt();
+private:
+    bool processEvent(const zmq::message_t& message) {
+        try {
+            // Deserializar protobuf binario ÚNICAMENTE
+            protobuf::NetworkSecurityEvent event;
+            std::string binary_data(static_cast<const char*>(message.data()), message.size());
 
+            if (!event.ParseFromString(binary_data)) {
+                std::cerr << "[Service3] FALLO: Datos no son protobuf válido ("
+                          << message.size() << " bytes recibidos)" << std::endl;
+                return false;
+            }
+
+            // Procesar evento protobuf exitosamente deserializado
+            processProtobufEvent(event);
+            return true;
+
+        } catch (const std::exception& e) {
+            std::cerr << "[Service3] Error procesando protobuf: " << e.what() << std::endl;
+            return false;
+        }
+    }
+
+    void processProtobufEvent(const protobuf::NetworkSecurityEvent& event) {
         bool verbose = config_.isVerboseMode();
+
         if (verbose && events_processed_ % 100 == 0) {
-            std::cout << "[Service3] JSON Event: "
-                      << src_ip << ":" << src_port << " -> "
-                      << dst_ip << ":" << dst_port
-                      << " (" << protocol << ", " << packet_size << " bytes)" << std::endl;
+            std::cout << "[Service3] Protobuf Event: ID=" << event.event_id();
+
+            if (!event.originating_node_id().empty()) {
+                std::cout << ", Node=" << event.originating_node_id();
+            }
+
+            if (!event.final_classification().empty()) {
+                std::cout << ", Classification=" << event.final_classification();
+            }
+
+            std::cout << std::endl;
+
+            // Mostrar network features si están disponibles
+            if (event.has_network_features()) {
+                const auto& features = event.network_features();
+                std::cout << "[Service3] Network: "
+                          << features.source_ip() << ":" << features.source_port()
+                          << " -> " << features.destination_ip() << ":" << features.destination_port()
+                          << " (" << features.protocol_name() << ")";
+
+                if (features.total_forward_bytes() > 0) {
+                    std::cout << ", " << features.total_forward_bytes() << " bytes";
+                }
+
+                std::cout << std::endl;
+            }
         }
     }
 
@@ -180,8 +212,9 @@ void signalHandler(int signal) {
 }
 
 int main(int argc, char* argv[]) {
-    std::cout << "=== Service3: Sniffer Event Consumer (Simple Version) ===" << std::endl;
+    std::cout << "=== Service3: Sniffer Event Consumer (PROTOBUF ONLY) ===" << std::endl;
     std::cout << "[Service3] Iniciando consumidor de eventos del sniffer..." << std::endl;
+    std::cout << "[Service3] ARQUITECTURA: ZeroMQ + Protobuf binario - Alto rendimiento" << std::endl;
 
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);

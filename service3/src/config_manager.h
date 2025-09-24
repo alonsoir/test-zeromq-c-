@@ -23,6 +23,7 @@ public:
     bool isVerboseMode() const;
     std::string getNodeId() const;
     std::string getClusterName() const;
-    std::string getProtocolFormat() const;
-    bool shouldFallbackToJson() const;
+
+    // Eliminados: getProtocolFormat() y shouldFallbackToJson()
+    // Service3 ahora SOLO acepta protobuf binario
 };

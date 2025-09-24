@@ -15,7 +15,7 @@
 #include "config_manager.hpp"
 #include "ebpf_loader.hpp"
 #include "ring_consumer.hpp"
-
+//sniffer/src/userspace/main.cpp
 // Global flag para shutdown limpio
 static volatile bool g_running = true;
 
@@ -292,7 +292,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Inicializar ring buffer consumer
-    sniffer::RingBufferConsumer ring_consumer;
+    sniffer::RingBufferConsumer ring_consumer(config->network);
     if (!ring_consumer.initialize(ebpf_loader.get_ringbuf_fd())) {
         std::cerr << "[FATAL] Failed to initialize ring buffer consumer" << std::endl;
         return 1;

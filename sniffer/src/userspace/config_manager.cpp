@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
-
+// sniffer/src/userspace/config_manager.cpp
 namespace sniffer {
 
 // Cargar configuración desde archivo JSON

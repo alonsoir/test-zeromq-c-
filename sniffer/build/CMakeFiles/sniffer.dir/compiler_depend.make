@@ -1309,7 +1309,84 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/c++/12/bits/stl_algo.h \
   /usr/include/c++/12/bits/algorithmfwd.h \
   /usr/include/c++/12/bits/stl_heap.h \
-  /usr/include/c++/12/bits/uniform_int_dist.h
+  /usr/include/c++/12/bits/uniform_int_dist.h \
+  /usr/include/zmq.hpp \
+  /usr/include/zmq.h \
+  /usr/include/c++/12/cassert \
+  /usr/include/assert.h \
+  /usr/include/c++/12/algorithm \
+  /usr/include/c++/12/bits/ranges_algo.h \
+  /usr/include/c++/12/bits/ranges_util.h \
+  /usr/include/c++/12/pstl/glue_algorithm_defs.h \
+  /usr/include/c++/12/optional \
+  /vagrant/protobuf/network_security.pb.h \
+  /usr/include/google/protobuf/port_def.inc \
+  /usr/include/google/protobuf/port_undef.inc \
+  /usr/include/google/protobuf/io/coded_stream.h \
+  /usr/include/c++/12/utility \
+  /usr/include/c++/12/bits/stl_relops.h \
+  /usr/include/google/protobuf/stubs/common.h \
+  /usr/include/c++/12/set \
+  /usr/include/c++/12/bits/stl_set.h \
+  /usr/include/c++/12/bits/stl_multiset.h \
+  /usr/include/google/protobuf/stubs/macros.h \
+  /usr/include/google/protobuf/stubs/platform_macros.h \
+  /usr/include/google/protobuf/stubs/port.h \
+  /usr/include/c++/12/stdlib.h \
+  /usr/include/byteswap.h \
+  /usr/include/google/protobuf/stubs/stringpiece.h \
+  /usr/include/google/protobuf/stubs/hash.h \
+  /usr/include/c++/12/unordered_set \
+  /usr/include/c++/12/bits/unordered_set.h \
+  /usr/include/google/protobuf/stubs/logging.h \
+  /usr/include/google/protobuf/stubs/status.h \
+  /usr/include/google/protobuf/stubs/strutil.h \
+  /usr/include/google/protobuf/port.h \
+  /usr/include/google/protobuf/arena.h \
+  /usr/include/google/protobuf/arena_impl.h \
+  /usr/include/google/protobuf/arenaz_sampler.h \
+  /usr/include/google/protobuf/arenastring.h \
+  /usr/include/google/protobuf/explicitly_constructed.h \
+  /usr/include/google/protobuf/generated_message_util.h \
+  /usr/include/google/protobuf/stubs/once.h \
+  /usr/include/c++/12/mutex \
+  /usr/include/c++/12/bits/unique_lock.h \
+  /usr/include/google/protobuf/any.h \
+  /usr/include/google/protobuf/message_lite.h \
+  /usr/include/google/protobuf/metadata_lite.h \
+  /usr/include/google/protobuf/has_bits.h \
+  /usr/include/google/protobuf/implicit_weak_message.h \
+  /usr/include/google/protobuf/repeated_field.h \
+  /usr/include/c++/12/iterator \
+  /usr/include/c++/12/bits/stream_iterator.h \
+  /usr/include/google/protobuf/repeated_ptr_field.h \
+  /usr/include/google/protobuf/wire_format_lite.h \
+  /usr/include/google/protobuf/stubs/casts.h \
+  /usr/include/google/protobuf/generated_message_reflection.h \
+  /usr/include/google/protobuf/descriptor.h \
+  /usr/include/google/protobuf/stubs/mutex.h \
+  /usr/include/google/protobuf/generated_enum_reflection.h \
+  /usr/include/google/protobuf/generated_enum_util.h \
+  /usr/include/google/protobuf/unknown_field_set.h \
+  /usr/include/google/protobuf/io/zero_copy_stream_impl_lite.h \
+  /usr/include/google/protobuf/stubs/callback.h \
+  /usr/include/google/protobuf/io/zero_copy_stream.h \
+  /usr/include/google/protobuf/stubs/stl_util.h \
+  /usr/include/google/protobuf/parse_context.h \
+  /usr/include/google/protobuf/endian.h \
+  /usr/include/google/protobuf/inlined_string_field.h \
+  /usr/include/google/protobuf/message.h \
+  /usr/include/google/protobuf/map.h \
+  /usr/include/google/protobuf/map_type_handler.h \
+  /usr/include/google/protobuf/extension_set.h \
+  /usr/include/google/protobuf/map_entry.h \
+  /usr/include/google/protobuf/map_entry_lite.h \
+  /usr/include/google/protobuf/reflection_ops.h \
+  /usr/include/google/protobuf/map_field_inl.h \
+  /usr/include/google/protobuf/map_field.h \
+  /usr/include/google/protobuf/map_field_lite.h \
+  /usr/include/google/protobuf/timestamp.pb.h \
+  /usr/include/google/protobuf/duration.pb.h
 
 CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: /vagrant/sniffer/src/userspace/ring_consumer.cpp \
   /usr/include/stdc-predef.h \
@@ -1603,10 +1680,31 @@ CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: /vagrant/sniffer/src/u
   /usr/include/strings.h \
   /usr/include/bpf/libbpf_version.h \
   /usr/include/bpf/libbpf_legacy.h \
-  /usr/include/c++/12/iostream \
+  /usr/include/zmq.hpp \
+  /usr/include/zmq.h \
+  /usr/include/c++/12/cassert \
+  /usr/include/assert.h \
+  /usr/include/c++/12/cstring \
+  /usr/include/c++/12/algorithm \
+  /usr/include/c++/12/bits/ranges_algo.h \
+  /usr/include/c++/12/bits/ranges_util.h \
+  /usr/include/c++/12/pstl/glue_algorithm_defs.h \
+  /usr/include/c++/12/iomanip \
+  /usr/include/c++/12/locale \
+  /usr/include/c++/12/bits/locale_facets_nonio.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/time_members.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/messages_members.h \
+  /usr/include/libintl.h \
+  /usr/include/c++/12/bits/codecvt.h \
+  /usr/include/c++/12/bits/locale_facets_nonio.tcc \
+  /usr/include/c++/12/bits/locale_conv.h \
+  /usr/include/c++/12/bits/quoted_string.h \
+  /usr/include/c++/12/sstream \
   /usr/include/c++/12/istream \
   /usr/include/c++/12/bits/istream.tcc \
-  /usr/include/c++/12/cstring \
+  /usr/include/c++/12/bits/sstream.tcc \
+  /usr/include/c++/12/chrono \
+  /usr/include/c++/12/optional \
   /usr/include/arpa/inet.h \
   /usr/include/netinet/in.h \
   /usr/include/x86_64-linux-gnu/sys/socket.h \
@@ -1619,10 +1717,103 @@ CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: /vagrant/sniffer/src/u
   /usr/lib/linux/uapi/x86/asm/sockios.h \
   /usr/include/asm-generic/sockios.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
-  /usr/include/x86_64-linux-gnu/bits/in.h
+  /usr/include/x86_64-linux-gnu/bits/in.h \
+  /vagrant/sniffer/src/userspace/config_manager.hpp \
+  /usr/include/jsoncpp/json/json.h \
+  /usr/include/jsoncpp/json/config.h \
+  /usr/include/c++/12/cstddef \
+  /usr/include/jsoncpp/json/allocator.h \
+  /usr/include/jsoncpp/json/version.h \
+  /usr/include/jsoncpp/json/json_features.h \
+  /usr/include/jsoncpp/json/forwards.h \
+  /usr/include/jsoncpp/json/reader.h \
+  /usr/include/jsoncpp/json/value.h \
+  /usr/include/c++/12/map \
+  /usr/include/c++/12/bits/stl_tree.h \
+  /usr/include/c++/12/bits/stl_map.h \
+  /usr/include/c++/12/bits/stl_multimap.h \
+  /usr/include/c++/12/deque \
+  /usr/include/c++/12/bits/stl_deque.h \
+  /usr/include/c++/12/bits/deque.tcc \
+  /usr/include/c++/12/stack \
+  /usr/include/c++/12/bits/stl_stack.h \
+  /usr/include/jsoncpp/json/writer.h \
+  /vagrant/protobuf/network_security.pb.h \
+  /usr/include/google/protobuf/port_def.inc \
+  /usr/include/google/protobuf/port_undef.inc \
+  /usr/include/google/protobuf/io/coded_stream.h \
+  /usr/include/c++/12/utility \
+  /usr/include/c++/12/bits/stl_relops.h \
+  /usr/include/google/protobuf/stubs/common.h \
+  /usr/include/c++/12/iostream \
+  /usr/include/c++/12/set \
+  /usr/include/c++/12/bits/stl_set.h \
+  /usr/include/c++/12/bits/stl_multiset.h \
+  /usr/include/google/protobuf/stubs/macros.h \
+  /usr/include/google/protobuf/stubs/platform_macros.h \
+  /usr/include/google/protobuf/stubs/port.h \
+  /usr/include/c++/12/stdlib.h \
+  /usr/include/byteswap.h \
+  /usr/include/google/protobuf/stubs/stringpiece.h \
+  /usr/include/google/protobuf/stubs/hash.h \
+  /usr/include/c++/12/unordered_set \
+  /usr/include/c++/12/bits/unordered_set.h \
+  /usr/include/google/protobuf/stubs/logging.h \
+  /usr/include/google/protobuf/stubs/status.h \
+  /usr/include/google/protobuf/stubs/strutil.h \
+  /usr/include/google/protobuf/port.h \
+  /usr/include/google/protobuf/arena.h \
+  /usr/include/google/protobuf/arena_impl.h \
+  /usr/include/google/protobuf/arenaz_sampler.h \
+  /usr/include/google/protobuf/arenastring.h \
+  /usr/include/google/protobuf/explicitly_constructed.h \
+  /usr/include/google/protobuf/generated_message_util.h \
+  /usr/include/google/protobuf/stubs/once.h \
+  /usr/include/c++/12/mutex \
+  /usr/include/c++/12/bits/unique_lock.h \
+  /usr/include/google/protobuf/any.h \
+  /usr/include/google/protobuf/message_lite.h \
+  /usr/include/google/protobuf/metadata_lite.h \
+  /usr/include/google/protobuf/has_bits.h \
+  /usr/include/google/protobuf/implicit_weak_message.h \
+  /usr/include/google/protobuf/repeated_field.h \
+  /usr/include/c++/12/iterator \
+  /usr/include/c++/12/bits/stream_iterator.h \
+  /usr/include/google/protobuf/repeated_ptr_field.h \
+  /usr/include/google/protobuf/wire_format_lite.h \
+  /usr/include/google/protobuf/stubs/casts.h \
+  /usr/include/google/protobuf/generated_message_reflection.h \
+  /usr/include/google/protobuf/descriptor.h \
+  /usr/include/google/protobuf/stubs/mutex.h \
+  /usr/include/google/protobuf/generated_enum_reflection.h \
+  /usr/include/google/protobuf/generated_enum_util.h \
+  /usr/include/google/protobuf/unknown_field_set.h \
+  /usr/include/google/protobuf/io/zero_copy_stream_impl_lite.h \
+  /usr/include/google/protobuf/stubs/callback.h \
+  /usr/include/google/protobuf/io/zero_copy_stream.h \
+  /usr/include/google/protobuf/stubs/stl_util.h \
+  /usr/include/google/protobuf/parse_context.h \
+  /usr/include/google/protobuf/endian.h \
+  /usr/include/google/protobuf/inlined_string_field.h \
+  /usr/include/google/protobuf/message.h \
+  /usr/include/google/protobuf/map.h \
+  /usr/include/google/protobuf/map_type_handler.h \
+  /usr/include/google/protobuf/extension_set.h \
+  /usr/include/google/protobuf/map_entry.h \
+  /usr/include/google/protobuf/map_entry_lite.h \
+  /usr/include/google/protobuf/reflection_ops.h \
+  /usr/include/google/protobuf/map_field_inl.h \
+  /usr/include/google/protobuf/map_field.h \
+  /usr/include/google/protobuf/map_field_lite.h \
+  /usr/include/google/protobuf/timestamp.pb.h \
+  /usr/include/google/protobuf/duration.pb.h
 
 
 /vagrant/sniffer/src/userspace/ring_consumer.cpp:
+
+/vagrant/protobuf/network_security.pb.h:
+
+/usr/include/c++/12/optional:
 
 /usr/include/x86_64-linux-gnu/bits/semaphore.h:
 
@@ -1729,6 +1920,8 @@ CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: /vagrant/sniffer/src/u
 /usr/include/c++/12/bits/sstream.tcc:
 
 /usr/include/jsoncpp/json/config.h:
+
+/usr/include/zmq.hpp:
 
 /usr/include/jsoncpp/json/json.h:
 
@@ -2099,6 +2292,8 @@ proto/network_security.pb.h:
 /usr/include/c++/12/new:
 
 /usr/include/features.h:
+
+/usr/include/zmq.h:
 
 /usr/include/c++/12/bits/refwrap.h:
 
