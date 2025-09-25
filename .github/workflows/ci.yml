@@ -1,12 +1,14 @@
-name: C++20 Sniffer CI/CD Pipeline - v3 Ultra
+---
+name: C++20 Sniffer CI/CD Pipeline - v3 Ultra-Linted
 
 on:
   push:
     branches:
-      - '*'          # cualquier rama
+      - '*'            # cualquier rama
     tags:
       - 'v*.*.*'
   pull_request:
+  workflow_dispatch:   # permite ejecución manual desde GitHub
 
 jobs:
   build-and-test:
@@ -25,9 +27,17 @@ jobs:
           sudo apt-get update -y
           echo virtualbox-ext-pack virtualbox-ext-pack/license select true | sudo debconf-set-selections
           sudo apt-get install -y \
-            build-essential curl jq netcat-openbsd \
-            qemu-kvm libvirt-daemon-system libvirt-clients virt-manager \
-            virtualbox virtualbox-dkms virtualbox-ext-pack
+            build-essential \
+            curl \
+            jq \
+            netcat-openbsd \
+            qemu-kvm \
+            libvirt-daemon-system \
+            libvirt-clients \
+            virt-manager \
+            virtualbox \
+            virtualbox-dkms \
+            virtualbox-ext-pack
           sudo modprobe kvm
           echo "✅ Virtualization environment ready"
 
@@ -43,7 +53,9 @@ jobs:
           sudo apt-get install -y docker.io
           sudo systemctl enable --now docker
           sudo usermod -aG docker $USER
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          curl -L \
+            "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker --version
           docker-compose --version
@@ -75,7 +87,9 @@ jobs:
           set -e
           for i in {1..3}; do
             echo "⏳ Attempt $i: Building & launching Docker Compose..."
-            if vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml build && docker-compose -f docker-compose.yaml up -d"; then
+            if vagrant ssh -c "cd /vagrant && \
+              docker-compose -f docker-compose.yaml build && \
+              docker-compose -f docker-compose.yaml up -d"; then
               echo "✅ Docker Compose launched"
               break
             else
@@ -89,30 +103,8 @@ jobs:
           set -e
           echo "⏳ Waiting for Docker services to become healthy..."
           vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml ps"
-          # Loop check for health status
           vagrant ssh -c "cd /vagrant && \
-          for svc in \$(docker-compose -f docker-compose.yaml ps --services); do \
-            echo '⏳ Waiting for service: '$svc; \
-            until [ \"\$(docker inspect --format='{{.State.Health.Status}}' \$svc)\" == 'healthy' ]; do \
-              echo '   ❌ Not healthy yet'; sleep 5; \
-            done; \
-            echo '✅ Service '$svc' is healthy'; \
-          done"
-
-      - name: Run Tests or Checks
-        run: |
-          set -e
-          echo "🧪 Running test scripts..."
-          vagrant ssh -c "cd /vagrant && ./scripts/run_tests.sh || echo '⚠️ Tests script not found, skipping'"
-
-      - name: Capture logs if failure
-        if: failure()
-        run: |
-          echo "⚠️ Job failed, capturing container logs..."
-          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml logs"
-
-      - name: Pipeline Summary
-        run: |
-          echo "====================================="
-          echo "✅ CI/CD pipeline completed for branch/tag: $GITHUB_REF"
-          echo "====================================="
+            for svc in \$(docker-compose -f docker-compose.yaml ps --services); do \
+              echo '⏳ Waiting for service: '$svc; \
+              until [ \"\$(docker inspect --format='{{.State.Health.Status}}' \$svc)\" == 'healthy' ]; do \
+                echo '   ❌ Not healthy yet'; sleep 5
