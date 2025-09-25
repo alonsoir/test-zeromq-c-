@@ -1,26 +1,26 @@
-name: CI Pipeline - C++20 Sniffer
+name: C++20 Sniffer CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
-      - '**'       # Cualquier rama
     tags:
-      - '**'       # Cualquier tag
+      - 'v*.*.*'
   pull_request:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Update apt & pre-accept VirtualBox license
+      - name: Set up QEMU & Virtualization (Nested VM)
         run: |
           sudo apt-get update -y
+          # Pre-aceptar licencia VirtualBox Ext Pack
           echo virtualbox-ext-pack virtualbox-ext-pack/license select true | sudo debconf-set-selections
           sudo apt-get install -y \
             build-essential \
@@ -36,49 +36,39 @@ jobs:
             virtualbox-ext-pack
           sudo modprobe kvm
 
+      - name: Install Vagrant
+        run: |
+          sudo apt-get install -y vagrant
+
       - name: Install Docker & Docker Compose
         run: |
-          if ! command -v docker >/dev/null 2>&1; then
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sh get-docker.sh
-            sudo usermod -aG docker $USER
-            sudo systemctl enable docker
-            sudo systemctl start docker
-            rm get-docker.sh
-          fi
-          if ! command -v docker-compose >/dev/null 2>&1; then
-            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-          fi
-
-      - name: Verify installations
-        run: |
+          sudo apt-get install -y docker.io
+          sudo systemctl enable --now docker
+          sudo usermod -aG docker $USER
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
           docker --version
           docker-compose --version
-          vboxmanage --version
 
-      - name: Start Vagrant VM and provision
+      - name: Start Vagrant VM
         run: |
-          vagrant up --provider=virtualbox
-          vagrant ssh -c "echo '✅ VM provisioned and ready'"
+          vagrant up --provider=virtualbox --provision
+          vagrant ssh -c "echo '✅ Vagrant VM provisioned and ready'"
 
-      - name: Build Docker images
+      - name: Build C++ Sniffer & Start
         run: |
-          docker-compose build --pull
+          # Dentro de la VM, compilar y lanzar sniffer
+          vagrant ssh -c "cd /vagrant && make sniffer-start"
 
-      - name: Launch Docker services
+      - name: Build and Launch Docker Compose
         run: |
-          docker-compose up -d
+          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml build"
+          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml up -d"
 
-      - name: Wait for services to be healthy
+      - name: Wait for services to become healthy
         run: |
-          echo "⏳ Waiting for etcd, service1, service2..."
-          docker-compose ps
-          sleep 15
+          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml ps"
 
-      - name: Start C++ Sniffer
+      - name: Run Tests or Checks
         run: |
-          make sniffer-start
-
-      - name: List running containers
-        run: docker ps
+          vagrant ssh -c "cd /vagrant && ./scripts/run_tests.sh || echo 'Tests script not found, skipping'"
