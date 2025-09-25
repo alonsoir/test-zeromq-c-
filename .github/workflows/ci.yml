@@ -3,7 +3,7 @@ name: C++20 Sniffer CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - '*''
     tags:
       - 'v*.*.*'
   pull_request:
