@@ -30,7 +30,7 @@ jobs:
       - name: Set up QEMU & Virtualization (Nested VM)
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients virt-manager virtualbox virtualbox-ext-pack virtualbox-dkms build-essential curl jq netcat
+          sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients virt-manager virtualbox virtualbox-ext-pack virtualbox-dkms build-essential curl jq netcat-openbsd
           sudo modprobe kvm
 
       - name: Verify Virtualization
