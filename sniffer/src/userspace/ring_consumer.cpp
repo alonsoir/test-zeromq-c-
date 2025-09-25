@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <google/protobuf/timestamp.pb.h>
 
+// sniffer/src/userspace/ring_consumer.cpp
 namespace sniffer {
 
 RingBufferConsumer::RingBufferConsumer()
