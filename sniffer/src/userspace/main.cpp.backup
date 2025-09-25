@@ -1,0 +1,371 @@
+// Enhanced eBPF Sniffer - Main Application (Versión compatible)
+// Integra componentes existentes + nuevos componentes
+
+#include <iostream>
+#include <memory>
+#include <csignal>
+#include <atomic>
+#include <thread>
+#include <chrono>
+
+#include "config_manager.hpp"
+#include "ebpf_loader.hpp"
+#include "ring_consumer.hpp"
+#include "thread_manager.hpp"
+#include "compression_handler.hpp"
+#include "zmq_pool_manager.hpp"
+
+#ifdef ETCD_SUPPORT
+#include "etcd_client.hpp"
+#endif
+
+// Global shutdown flag
+std::atomic<bool> g_shutdown{false};
+
+// Signal handler for graceful shutdown
+void signal_handler(int signal) {
+    std::cout << "\n🛑 Received signal " << signal << ", shutting down gracefully..." << std::endl;
+    g_shutdown = true;
+}
+
+// Application context to manage all components
+struct SnifferContext {
+    std::unique_ptr<sniffer::ConfigManager> config_manager;
+    std::unique_ptr<sniffer::EbpfLoader> ebpf_loader;  // Usar nombre correcto
+    std::unique_ptr<sniffer::RingBufferConsumer> ring_consumer;  // Usar nombre correcto
+    std::unique_ptr<sniffer::ThreadManager> thread_manager;
+    std::unique_ptr<sniffer::CompressionHandler> compression_handler;
+    std::unique_ptr<sniffer::ZMQPoolManager> zmq_pool;
+
+#ifdef ETCD_SUPPORT
+    std::unique_ptr<sniffer::EtcdClient> etcd_client;
+#endif
+
+    // Runtime configuration
+    std::string interface{"eth0"};
+    std::string zmq_endpoint{"tcp://192.168.56.20:5571"};
+    bool compression_enabled{true};
+    sniffer::CompressionType compression_type{sniffer::CompressionType::LZ4};
+
+    // Statistics
+    std::atomic<uint64_t> packets_processed{0};
+    std::atomic<uint64_t> packets_compressed{0};
+    std::atomic<uint64_t> packets_sent{0};
+    std::atomic<uint64_t> bytes_processed{0};
+    std::atomic<uint64_t> bytes_compressed{0};
+};
+
+// Initialize configuration from file and etcd
+bool initialize_configuration(SnifferContext& ctx, const std::string& config_file) {
+    try {
+        // Load base configuration from file
+        ctx.config_manager = std::make_unique<sniffer::ConfigManager>();
+        if (!ctx.config_manager->load_from_file(config_file)) {  // Usar método correcto
+            std::cerr << "❌ Failed to load configuration from " << config_file << std::endl;
+            return false;
+        }
+
+        std::cout << "✅ Base configuration loaded from " << config_file << std::endl;
+
+        // Validar configuración
+        if (!ctx.config_manager->validate()) {
+            std::cerr << "❌ Configuration validation failed" << std::endl;
+            return false;
+        }
+
+#ifdef ETCD_SUPPORT
+        // Initialize etcd client if available
+        auto config = ctx.config_manager->get_config();
+        if (config.etcd.enabled) {
+            std::string etcd_endpoint = config.etcd.host + ":" + std::to_string(config.etcd.port);
+            ctx.etcd_client = std::make_unique<sniffer::EtcdClient>("http://" + etcd_endpoint);
+
+            if (ctx.etcd_client->test_connection()) {
+                std::cout << "✅ Connected to etcd at " << etcd_endpoint << std::endl;
+
+                // Get encryption token if available
+                std::string token = ctx.etcd_client->get_encryption_token("sniffer");
+                if (!token.empty()) {
+                    std::cout << "🔐 Encryption token retrieved from etcd" << std::endl;
+                }
+
+            } else {
+                std::cout << "⚠️ Could not connect to etcd, using file configuration only" << std::endl;
+            }
+        }
+#endif
+
+        // Extract runtime configuration from loaded config
+        auto config = ctx.config_manager->get_config();
+        ctx.interface = config.network.interface;
+        ctx.zmq_endpoint = config.zmq.endpoint;
+        ctx.compression_enabled = config.compression.enabled;
+
+        // Map compression algorithm
+        if (config.compression.algorithm == "lz4") {
+            ctx.compression_type = sniffer::CompressionType::LZ4;
+        } else if (config.compression.algorithm == "zstd") {
+            ctx.compression_type = sniffer::CompressionType::ZSTD;
+        } else if (config.compression.algorithm == "snappy") {
+            ctx.compression_type = sniffer::CompressionType::SNAPPY;
+        }
+
+        std::cout << "📋 Configuration summary:" << std::endl;
+        std::cout << "  Interface: " << ctx.interface << std::endl;
+        std::cout << "  ZMQ endpoint: " << ctx.zmq_endpoint << std::endl;
+        std::cout << "  Compression: " << (ctx.compression_enabled ? "enabled" : "disabled") << std::endl;
+        if (ctx.compression_enabled) {
+            std::cout << "  Compression algorithm: " << config.compression.algorithm << std::endl;
+        }
+
+        return true;
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Configuration error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+// Initialize all components
+bool initialize_components(SnifferContext& ctx) {
+    try {
+        // Initialize compression handler
+        std::cout << "🗜️ Initializing compression handler..." << std::endl;
+        ctx.compression_handler = std::make_unique<sniffer::CompressionHandler>();
+
+        // Initialize ZMQ pool
+        std::cout << "📡 Initializing ZeroMQ pool..." << std::endl;
+        auto config = ctx.config_manager->get_config();
+        int pool_size = config.threading.worker_threads;  // Use thread count as pool size
+        ctx.zmq_pool = std::make_unique<sniffer::ZMQPoolManager>(pool_size);
+
+        if (!ctx.zmq_pool->connect(ctx.zmq_endpoint)) {
+            std::cerr << "❌ Failed to connect to ZMQ endpoint: " << ctx.zmq_endpoint << std::endl;
+            return false;
+        }
+        std::cout << "✅ ZMQ pool connected to " << ctx.zmq_endpoint << std::endl;
+
+        // Initialize thread manager
+        std::cout << "🧵 Initializing thread manager..." << std::endl;
+        sniffer::ThreadingConfig threading_config;
+        threading_config.worker_threads = config.threading.worker_threads;
+        threading_config.processing_threads = config.threading.processing_threads;
+        threading_config.ring_consumer_threads = config.threading.ring_consumer_threads;
+        threading_config.cpu_affinity_enabled = config.threading.cpu_affinity_enabled;
+
+        ctx.thread_manager = std::make_unique<sniffer::ThreadManager>(threading_config);
+
+        // Initialize eBPF loader
+        std::cout << "🔧 Initializing eBPF loader..." << std::endl;
+        ctx.ebpf_loader = std::make_unique<sniffer::EbpfLoader>();  // Usar nombre correcto
+
+        if (!ctx.ebpf_loader->load_program("sniffer.bpf.o")) {
+            std::cerr << "❌ Failed to load eBPF program" << std::endl;
+            return false;
+        }
+
+        if (!ctx.ebpf_loader->attach_to_interface(ctx.interface)) {  // Usar método correcto
+            std::cerr << "❌ Failed to attach XDP to interface " << ctx.interface << std::endl;
+            return false;
+        }
+        std::cout << "✅ eBPF program attached to " << ctx.interface << std::endl;
+
+        // Initialize ring buffer consumer
+        std::cout << "🔄 Initializing ring buffer consumer..." << std::endl;
+        ctx.ring_consumer = std::make_unique<sniffer::RingBufferConsumer>();  // Usar nombre correcto
+
+        // Configure ring consumer
+        sniffer::RingBufferConfig ring_config;
+        ring_config.ring_buffer_size = config.ring_buffer.buffer_size;
+        ring_config.batch_size = config.ring_buffer.batch_size;
+        ring_config.timeout_ms = config.ring_buffer.timeout_ms;
+
+        if (!ctx.ring_consumer->initialize(ring_config)) {
+            std::cerr << "❌ Failed to initialize ring buffer consumer" << std::endl;
+            return false;
+        }
+
+        std::cout << "✅ All components initialized successfully" << std::endl;
+        return true;
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Component initialization error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+// Packet processing callback
+void process_packet(SnifferContext& ctx, const void* packet_data, size_t packet_size) {
+    ctx.packets_processed++;
+    ctx.bytes_processed += packet_size;
+
+    try {
+        std::vector<uint8_t> processed_data;
+
+        // Apply compression if enabled
+        if (ctx.compression_enabled) {
+            processed_data = ctx.compression_handler->compress(
+                packet_data, packet_size, ctx.compression_type
+            );
+            ctx.packets_compressed++;
+            ctx.bytes_compressed += processed_data.size();
+        } else {
+            // Copy data without compression
+            const uint8_t* data_ptr = static_cast<const uint8_t*>(packet_data);
+            processed_data.assign(data_ptr, data_ptr + packet_size);
+        }
+
+        // Send via ZMQ pool
+        if (ctx.zmq_pool->send_message(processed_data.data(), processed_data.size())) {
+            ctx.packets_sent++;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "⚠️ Packet processing error: " << e.what() << std::endl;
+    }
+}
+
+// Statistics reporting thread
+void statistics_thread(SnifferContext& ctx) {
+    auto start_time = std::chrono::steady_clock::now();
+
+    while (!g_shutdown) {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
+
+        if (elapsed > 0) {
+            uint64_t packets = ctx.packets_processed.load();
+            uint64_t bytes = ctx.bytes_processed.load();
+            uint64_t compressed = ctx.packets_compressed.load();
+            uint64_t sent = ctx.packets_sent.load();
+
+            double pps = static_cast<double>(packets) / elapsed;
+            double mbps = static_cast<double>(bytes) / (elapsed * 1024 * 1024);
+            double compression_ratio = 0.0;
+
+            if (ctx.bytes_processed > 0 && ctx.bytes_compressed > 0) {
+                compression_ratio = static_cast<double>(ctx.bytes_compressed) / ctx.bytes_processed;
+            }
+
+            std::cout << "\n📊 Statistics (after " << elapsed << "s):" << std::endl;
+            std::cout << "  Packets processed: " << packets << " (" << pps << " pps)" << std::endl;
+            std::cout << "  Data processed: " << bytes << " bytes (" << mbps << " MB/s)" << std::endl;
+            std::cout << "  Packets compressed: " << compressed << std::endl;
+            std::cout << "  Packets sent: " << sent << std::endl;
+
+            if (compression_ratio > 0) {
+                std::cout << "  Compression ratio: " << (compression_ratio * 100) << "%" << std::endl;
+            }
+        }
+    }
+}
+
+// Service registration and heartbeat thread
+void service_management_thread(SnifferContext& ctx) {
+#ifdef ETCD_SUPPORT
+    if (!ctx.etcd_client) {
+        return;
+    }
+
+    // Register sniffer service
+    std::string service_endpoint = "sniffer://" + ctx.interface;
+    if (!ctx.etcd_client->register_service("sniffer", service_endpoint, 30)) {
+        std::cout << "⚠️ Failed to register sniffer service" << std::endl;
+        return;
+    }
+
+    std::cout << "✅ Sniffer service registered with etcd" << std::endl;
+
+    // Heartbeat loop
+    while (!g_shutdown) {
+        std::this_thread::sleep_for(std::chrono::seconds(20));
+
+        if (!ctx.etcd_client->renew_service("sniffer")) {
+            std::cout << "⚠️ Failed to renew service registration" << std::endl;
+        }
+    }
+#endif
+}
+
+int main(int argc, char* argv[]) {
+    // Parse command line arguments
+    std::string config_file = "config/sniffer.json";
+
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--config" && i + 1 < argc) {
+            config_file = argv[++i];
+        } else if (arg == "--help" || arg == "-h") {
+            std::cout << "Usage: " << argv[0] << " [--config <config_file>]" << std::endl;
+            return 0;
+        }
+    }
+
+    // Setup signal handlers
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
+    std::cout << "🕷️ Enhanced eBPF Sniffer v3.1 starting..." << std::endl;
+    std::cout << "Configuration: " << config_file << std::endl;
+
+    try {
+        SnifferContext ctx;
+
+        // Initialize configuration
+        if (!initialize_configuration(ctx, config_file)) {
+            return 1;
+        }
+
+        // Initialize all components
+        if (!initialize_components(ctx)) {
+            return 1;
+        }
+
+        // Start background threads
+        std::thread stats_thread(statistics_thread, std::ref(ctx));
+        std::thread service_thread(service_management_thread, std::ref(ctx));
+
+        std::cout << "\n🚀 Sniffer running - capturing packets on " << ctx.interface << std::endl;
+        std::cout << "Press Ctrl+C to stop gracefully" << std::endl;
+
+        // Main processing loop
+        while (!g_shutdown) {
+            // Process events from ring buffer
+            if (!ctx.ring_consumer->poll_and_process(100)) {  // 100ms timeout
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+
+        // Graceful shutdown
+        std::cout << "\n🛑 Shutting down..." << std::endl;
+
+        // Wait for background threads
+        if (stats_thread.joinable()) {
+            stats_thread.join();
+        }
+        if (service_thread.joinable()) {
+            service_thread.join();
+        }
+
+        // Cleanup components in reverse order
+        ctx.ring_consumer.reset();
+        ctx.ebpf_loader.reset();
+        ctx.zmq_pool.reset();
+        ctx.compression_handler.reset();
+        ctx.thread_manager.reset();
+
+#ifdef ETCD_SUPPORT
+        ctx.etcd_client.reset();
+#endif
+
+        std::cout << "✅ Sniffer shutdown complete" << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Fatal error: " << e.what() << std::endl;
+        return 1;
+    }
+
+    return 0;
+}

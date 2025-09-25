@@ -12,7 +12,8 @@ NC = \033[0m
 .PHONY: all lab-start lab-stop clean help check-deps status lab-logs lab-test lab-debug \
         sniffer-build sniffer-start sniffer-stop sniffer-status sniffer-clean \
         service3-build service3-start service3-stop service3-logs sniffer-docs \
-        sniffer-test sniffer-install sniffer-package lab-full-stack
+        sniffer-test sniffer-install sniffer-package lab-full-stack \
+        sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup
 
 # Target por defecto
 all: lab-start
@@ -80,6 +81,7 @@ check-deps: ## Verificar dependencias del pipeline completo
 	@test -f sniffer/src/kernel/sniffer.bpf.c || (echo "$(RED)Error: sniffer.bpf.c no encontrado$(NC)" && exit 1)
 	@echo "$(GREEN)Todas las dependencias del pipeline OK$(NC)"
 
+# Verificar dependencias específicas del sniffer eBPF en VM (mantenido para compatibilidad)
 sniffer-deps: ## Verificar dependencias específicas del sniffer eBPF
 	@echo "$(BLUE)Verificando dependencias del sniffer eBPF...$(NC)"
 	@vagrant ssh -c "command -v clang >/dev/null 2>&1" || (echo "$(RED)Error: clang no instalado en VM$(NC)" && exit 1)
@@ -145,8 +147,13 @@ lab-full-stack: check-deps sniffer-deps ## Iniciar stack completo (pipeline + sn
 	@echo "  Kernel eBPF → Ring Buffer → Userspace → ZeroMQ → Service3"
 	@echo "  Packets captured in kernel space → Protobuf messages"
 
-sniffer-build: sniffer-deps ## Compilar sniffer eBPF con verificación completa
+# COMPILAR SNIFFER - Target unificado y optimizado
+sniffer-build: sniffer-check-deps ## Compilar sniffer eBPF con verificación completa
 	@echo "$(BLUE)🔨 Compilando sniffer eBPF...$(NC)"
+	@if [ ! -f "sniffer/.deps-installed" ]; then \
+		echo "⚠️  Dependencias no instaladas via script oficial"; \
+		echo "   Se recomienda ejecutar: make sniffer-install-deps"; \
+	fi
 	@echo ""
 	@echo "$(BLUE)Verificando capacidades eBPF del kernel...$(NC)"
 	@vagrant ssh -c "uname -r && sudo sysctl kernel.bpf_jit_enable || echo 'JIT not available'"
@@ -351,4 +358,38 @@ clean: ## Limpiar todo (VM, contenedores, imágenes, eBPF)
 	@vagrant destroy -f 2>/dev/null || true
 	@echo "$(GREEN)✅ Limpieza completada$(NC)"
 
+# Instalar dependencias específicas del sniffer EN LA VM
+sniffer-install-deps:
+	@echo "📦 Instalando dependencias del sniffer eBPF en VM..."
+	@if [ ! -f "scripts/install-sniffer-deps.sh" ]; then \
+		echo "❌ Script de instalación no encontrado en scripts/"; \
+		echo "   Crea el archivo scripts/install-sniffer-deps.sh"; \
+		exit 1; \
+	fi
+	@echo "🚀 Copiando script e instalando en VM Vagrant..."
+	@vagrant ssh -c "cd /vagrant && chmod +x scripts/install-sniffer-deps.sh"
+	@vagrant ssh -c "cd /vagrant && sudo scripts/install-sniffer-deps.sh"
+
+sniffer-check-deps:
+	@echo "🔍 Verificando dependencias del sniffer en VM Vagrant..."
+	@vagrant ssh -c 'pkg-config --exists libbpf && echo "✅ libbpf disponible" || echo "❌ libbpf no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists libzmq3 && echo "✅ libzmq disponible" || echo "❌ libzmq no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists jsoncpp && echo "✅ jsoncpp disponible" || echo "❌ jsoncpp no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists liblz4 && echo "✅ liblz4 disponible" || echo "❌ liblz4 no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists libzstd && echo "✅ libzstd disponible" || echo "❌ libzstd no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists protobuf && echo "✅ protobuf disponible" || echo "❌ protobuf no encontrada"'
+	@vagrant ssh -c 'command -v clang >/dev/null && echo "✅ clang disponible" || echo "❌ clang no encontrado"'
+	@vagrant ssh -c 'sudo bpftool version >/dev/null && echo "✅ bpftool disponible" || echo "❌ bpftool no encontrado"'
+	@vagrant ssh -c 'command -v protoc >/dev/null && echo "✅ protoc disponible" || echo "❌ protoc no encontrado"'
+	@echo "🎉 Verificación completada"
+
+# Limpiar archivos de estado de dependencias EN LA VM
+sniffer-clean-deps:
+	@echo "🧹 Limpiando archivos de estado de dependencias en VM..."
+	@vagrant ssh -c "rm -f /vagrant/sniffer/.deps-installed"
+	@echo "✅ Limpieza completada"
+
+# Setup completo del sniffer EN LA VM
+sniffer-setup: sniffer-install-deps sniffer-build ## Setup completo del sniffer
+	@echo "🎉 Sniffer listo para usar - ejecuta: make sniffer-start"
 

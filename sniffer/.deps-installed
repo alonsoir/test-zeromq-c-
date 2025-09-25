@@ -1,0 +1,7 @@
+# Dependencias del sniffer instaladas
+# Generado automáticamente por install-sniffer-deps.sh
+INSTALL_DATE=2025-09-25T16:59:25+00:00
+SYSTEM=Debian GNU/Linux 12 (bookworm)
+COMPRESSION_MANDATORY=true
+ENCRYPTION_SUPPORT=true
+ETCD_INTEGRATION=true

@@ -9,6 +9,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeCache.txt"
   "/usr/share/cmake-3.25/Modules/CMakeCInformation.cmake"
   "/usr/share/cmake-3.25/Modules/CMakeCXXInformation.cmake"
+  "/usr/share/cmake-3.25/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake"
   "/usr/share/cmake-3.25/Modules/CMakeCommonLanguageInclude.cmake"
   "/usr/share/cmake-3.25/Modules/CMakeGenericSystem.cmake"
   "/usr/share/cmake-3.25/Modules/CMakeInitializeConfigs.cmake"
@@ -16,6 +17,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.25/Modules/CMakeSystemSpecificInformation.cmake"
   "/usr/share/cmake-3.25/Modules/CMakeSystemSpecificInitialize.cmake"
   "/usr/share/cmake-3.25/Modules/CheckCSourceCompiles.cmake"
+  "/usr/share/cmake-3.25/Modules/CheckCXXCompilerFlag.cmake"
+  "/usr/share/cmake-3.25/Modules/CheckCXXSourceCompiles.cmake"
   "/usr/share/cmake-3.25/Modules/CheckIncludeFile.cmake"
   "/usr/share/cmake-3.25/Modules/CheckLibraryExists.cmake"
   "/usr/share/cmake-3.25/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
@@ -27,6 +30,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.25/Modules/FindPkgConfig.cmake"
   "/usr/share/cmake-3.25/Modules/FindProtobuf.cmake"
   "/usr/share/cmake-3.25/Modules/FindThreads.cmake"
+  "/usr/share/cmake-3.25/Modules/Internal/CheckCompilerFlag.cmake"
+  "/usr/share/cmake-3.25/Modules/Internal/CheckFlagCommonConfig.cmake"
   "/usr/share/cmake-3.25/Modules/Internal/CheckSourceCompiles.cmake"
   "/usr/share/cmake-3.25/Modules/Platform/Linux-GNU-C.cmake"
   "/usr/share/cmake-3.25/Modules/Platform/Linux-GNU-CXX.cmake"
@@ -38,6 +43,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.25.1/CMakeCCompiler.cmake"
   "CMakeFiles/3.25.1/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.25.1/CMakeSystem.cmake"
+  "/vagrant/sniffer/config/sniffer-proposal.json"
   )
 
 # The corresponding makefile is:
@@ -48,6 +54,7 @@ set(CMAKE_MAKEFILE_OUTPUTS
 
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
+  "config/sniffer.json"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
