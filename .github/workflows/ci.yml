@@ -1,92 +1,84 @@
-name: CI/CD Pipeline v3.1 - Sniffer & Docker
+name: CI Pipeline - C++20 Sniffer
 
 on:
   push:
     branches:
-      - '**'
+      - main
+      - '**'       # Cualquier rama
     tags:
-      - '*'
+      - '**'       # Cualquier tag
   pull_request:
-    branches:
-      - '**'
 
 jobs:
-  build-and-run:
-    name: Build & Run Full Environment
+  build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 180  # 3 horas, ajustable según compilación y VM
-
-    env:
-      VAGRANT_DEBIAN_BOX: "debian/bookworm64"
-      VAGRANT_DEBIAN_VERSION: "12.20240905.1"
-      DOCKER_COMPOSE_FILE: "./docker-compose.yaml"
+    timeout-minutes: 120
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Necesario para tags y ramas completas
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up QEMU & Virtualization (Nested VM)
+      - name: Update apt & pre-accept VirtualBox license
         run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-kvm libvirt-daemon-system libvirt-clients virt-manager virtualbox virtualbox-ext-pack virtualbox-dkms build-essential curl jq netcat-openbsd
+          sudo apt-get update -y
+          echo virtualbox-ext-pack virtualbox-ext-pack/license select true | sudo debconf-set-selections
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            jq \
+            netcat-openbsd \
+            qemu-kvm \
+            libvirt-daemon-system \
+            libvirt-clients \
+            virt-manager \
+            virtualbox \
+            virtualbox-dkms \
+            virtualbox-ext-pack
           sudo modprobe kvm
 
-      - name: Verify Virtualization
+      - name: Install Docker & Docker Compose
         run: |
-          if grep -E -c '(vmx|svm)' /proc/cpuinfo; then
-            echo "✅ Virtualization supported"
-          else
-            echo "⚠️ Virtualization NOT detected"
+          if ! command -v docker >/dev/null 2>&1; then
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            sudo usermod -aG docker $USER
+            sudo systemctl enable docker
+            sudo systemctl start docker
+            rm get-docker.sh
+          fi
+          if ! command -v docker-compose >/dev/null 2>&1; then
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
           fi
 
-      - name: Install Vagrant
+      - name: Verify installations
         run: |
-          sudo apt-get install -y vagrant
+          docker --version
+          docker-compose --version
+          vboxmanage --version
 
-      - name: Install VirtualBox
-        run: |
-          sudo apt-get install -y virtualbox virtualbox-ext-pack
-
-      - name: Bring up Vagrant VM
+      - name: Start Vagrant VM and provision
         run: |
           vagrant up --provider=virtualbox
+          vagrant ssh -c "echo '✅ VM provisioned and ready'"
 
-      - name: SSH into Vagrant & Update Debian
+      - name: Build Docker images
         run: |
-          vagrant ssh -c "sudo apt-get update && sudo apt-get upgrade -y"
+          docker-compose build --pull
 
-      - name: Build Docker Images
+      - name: Launch Docker services
         run: |
-          vagrant ssh -c "cd /vagrant && docker-compose -f $DOCKER_COMPOSE_FILE build --pull --no-cache"
+          docker-compose up -d
 
-      - name: Start Docker Compose Services
+      - name: Wait for services to be healthy
         run: |
-          vagrant ssh -c "cd /vagrant && docker-compose -f $DOCKER_COMPOSE_FILE up -d etcd service1 service2 service3"
+          echo "⏳ Waiting for etcd, service1, service2..."
+          docker-compose ps
+          sleep 15
 
-      - name: Wait for services to become healthy
+      - name: Start C++ Sniffer
         run: |
-          echo "⏳ Esperando que etcd y servicios estén listos..."
-          vagrant ssh -c "docker-compose -f $DOCKER_COMPOSE_FILE ps"
+          make sniffer-start
 
-      - name: Start Sniffer
-        run: |
-          vagrant ssh -c "cd /vagrant && make sniffer-start"
-
-      - name: Verify Sniffer & Services
-        run: |
-          vagrant ssh -c "docker ps -a"
-          vagrant ssh -c "ps aux | grep sniffer || true"
-
-      - name: Collect Logs
-        run: |
-          mkdir -p ./ci-logs
-          vagrant ssh -c "cp -r /vagrant/logs/* /vagrant/ci-logs/" || true
-          cp -r ./ci-logs ./logs || true
-
-      - name: Cleanup (optional)
-        if: always()
-        run: |
-          echo "💡 Puedes comentar esto para mantener VM activa"
-          # vagrant destroy -f
+      - name: List running containers
+        run: docker ps
