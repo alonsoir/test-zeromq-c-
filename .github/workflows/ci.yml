@@ -1,4 +1,4 @@
-name: CI Vagrant + Docker Compose (Robust)
+name: CI Vagrant + Docker Compose (Professional)
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
   pull_request:
 
 jobs:
-  build-and-up:
+  build-and-test:
     runs-on: ubuntu-latest
     env:
       VAGRANT_DEFAULT_PROVIDER: virtualbox
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Install dependencies
@@ -20,7 +20,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y virtualbox vagrant curl unzip netcat jq rsync
 
-      - name: Ensure VirtualBox kernel modules are loaded
+      - name: Load VirtualBox kernel modules
         run: |
           sudo modprobe vboxdrv
           sudo modprobe vboxnetflt
@@ -30,31 +30,45 @@ jobs:
         run: |
           vagrant up --provider=virtualbox
 
-      - name: Provision & Build Docker Images inside VM
+      - name: Build Docker images inside VM
         run: |
           vagrant ssh -c "cd /vagrant && docker-compose build"
 
-      - name: Launch Docker Compose services inside VM
+      - name: Start Docker Compose services inside VM
         run: |
           vagrant ssh -c "cd /vagrant && docker-compose up -d"
 
-      - name: Wait for service1
+      - name: Wait for services to be ready
+        run: |
+          echo "⏳ Waiting for services to be healthy..."
+          vagrant ssh -c "
+            for service in service1 service2 service3; do
+              echo \"Checking \$service...\"
+              RETRIES=15
+              until docker exec -it \$service sh -c 'exit 0' || [ \$RETRIES -eq 0 ]; do
+                sleep 5
+                RETRIES=\$((RETRIES-1))
+              done
+              if [ \$RETRIES -eq 0 ]; then
+                echo \"⚠️  \$service failed to start.\"
+                exit 1
+              fi
+            done
+          "
+
+      - name: Capture logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-logs
+          path: |
+            $(vagrant ssh -c "docker-compose logs --no-color > /vagrant/logs/docker_logs.txt && echo /vagrant/logs/docker_logs.txt" | tr -d '\r')
+
+      - name: Optional smoke test
         run: |
           vagrant ssh -c "docker exec -it service1 nc -zv localhost 5555"
-
-      - name: Wait for service2
-        run: |
           vagrant ssh -c "docker exec -it service2 sh -c 'ps aux | grep service2_exe | grep -v grep'"
-
-      - name: Wait for service3
-        run: |
           vagrant ssh -c "docker exec -it service3 sh -c 'echo OK'"
-
-      - name: Capture Docker logs on failure
-        if: failure()
-        run: |
-          echo "📋 Capturando logs de contenedores..."
-          vagrant ssh -c "docker-compose logs"
 
       - name: Teardown Vagrant VM
         if: always()
