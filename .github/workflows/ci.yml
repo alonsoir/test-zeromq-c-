@@ -4,7 +4,7 @@ name: C++20 Sniffer CI/CD Pipeline - v3 Ultra
 on:
   push:
     branches:
-      - "*"           # cualquier rama
+      - "**"           # cualquier rama
     tags:
       - "v*.*.*"
   pull_request:
