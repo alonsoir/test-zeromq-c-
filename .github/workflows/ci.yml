@@ -1,0 +1,62 @@
+name: CI Vagrant + Docker Compose (Robust)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-and-up:
+    runs-on: ubuntu-latest
+    env:
+      VAGRANT_DEFAULT_PROVIDER: virtualbox
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y virtualbox vagrant curl unzip netcat jq rsync
+
+      - name: Ensure VirtualBox kernel modules are loaded
+        run: |
+          sudo modprobe vboxdrv
+          sudo modprobe vboxnetflt
+          sudo modprobe vboxnetadp
+
+      - name: Start Vagrant VM
+        run: |
+          vagrant up --provider=virtualbox
+
+      - name: Provision & Build Docker Images inside VM
+        run: |
+          vagrant ssh -c "cd /vagrant && docker-compose build"
+
+      - name: Launch Docker Compose services inside VM
+        run: |
+          vagrant ssh -c "cd /vagrant && docker-compose up -d"
+
+      - name: Wait for service1
+        run: |
+          vagrant ssh -c "docker exec -it service1 nc -zv localhost 5555"
+
+      - name: Wait for service2
+        run: |
+          vagrant ssh -c "docker exec -it service2 sh -c 'ps aux | grep service2_exe | grep -v grep'"
+
+      - name: Wait for service3
+        run: |
+          vagrant ssh -c "docker exec -it service3 sh -c 'echo OK'"
+
+      - name: Capture Docker logs on failure
+        if: failure()
+        run: |
+          echo "📋 Capturando logs de contenedores..."
+          vagrant ssh -c "docker-compose logs"
+
+      - name: Teardown Vagrant VM
+        if: always()
+        run: |
+          vagrant destroy -f
