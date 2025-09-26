@@ -1678,21 +1678,9 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/c++/12/bits/ostream.tcc \
   /usr/include/c++/12/istream \
   /usr/include/c++/12/bits/istream.tcc \
-  /usr/include/c++/12/memory \
-  /usr/include/c++/12/bits/stl_uninitialized.h \
-  /usr/include/c++/12/bits/stl_tempbuf.h \
-  /usr/include/c++/12/bits/stl_raw_storage_iter.h \
-  /usr/include/c++/12/bits/align.h \
-  /usr/include/c++/12/bit \
-  /usr/include/c++/12/bits/uses_allocator.h \
-  /usr/include/c++/12/bits/unique_ptr.h \
-  /usr/include/c++/12/tuple \
-  /usr/include/c++/12/bits/shared_ptr.h \
-  /usr/include/c++/12/bits/shared_ptr_base.h \
-  /usr/include/c++/12/bits/allocated_ptr.h \
-  /usr/include/c++/12/ext/aligned_buffer.h \
-  /usr/include/c++/12/ext/concurrence.h \
-  /usr/include/c++/12/bits/shared_ptr_atomic.h \
+  /usr/include/c++/12/thread \
+  /usr/include/c++/12/stop_token \
+  /usr/include/c++/12/atomic \
   /usr/include/c++/12/bits/atomic_base.h \
   /usr/include/c++/12/bits/atomic_lockfree_defines.h \
   /usr/include/c++/12/bits/atomic_wait.h \
@@ -1720,6 +1708,41 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/lib/linux/uapi/x86/asm/unistd_64.h \
   /usr/include/x86_64-linux-gnu/bits/syscall.h \
   /usr/include/c++/12/bits/std_mutex.h \
+  /usr/include/c++/12/bits/std_thread.h \
+  /usr/include/c++/12/tuple \
+  /usr/include/c++/12/bits/uses_allocator.h \
+  /usr/include/c++/12/bits/unique_ptr.h \
+  /usr/include/c++/12/semaphore \
+  /usr/include/c++/12/bits/semaphore_base.h \
+  /usr/include/c++/12/bits/chrono.h \
+  /usr/include/c++/12/ratio \
+  /usr/include/c++/12/limits \
+  /usr/include/c++/12/ctime \
+  /usr/include/c++/12/bits/parse_numbers.h \
+  /usr/include/c++/12/bits/atomic_timed_wait.h \
+  /usr/include/c++/12/bits/this_thread_sleep.h \
+  /usr/include/x86_64-linux-gnu/sys/time.h \
+  /usr/include/semaphore.h \
+  /usr/include/x86_64-linux-gnu/bits/semaphore.h \
+  /usr/include/c++/12/chrono \
+  /usr/include/c++/12/sstream \
+  /usr/include/c++/12/bits/sstream.tcc \
+  /usr/include/c++/12/vector \
+  /usr/include/c++/12/bits/stl_uninitialized.h \
+  /usr/include/c++/12/bits/stl_vector.h \
+  /usr/include/c++/12/bits/stl_bvector.h \
+  /usr/include/c++/12/bits/vector.tcc \
+  /usr/include/c++/12/memory \
+  /usr/include/c++/12/bits/stl_tempbuf.h \
+  /usr/include/c++/12/bits/stl_raw_storage_iter.h \
+  /usr/include/c++/12/bits/align.h \
+  /usr/include/c++/12/bit \
+  /usr/include/c++/12/bits/shared_ptr.h \
+  /usr/include/c++/12/bits/shared_ptr_base.h \
+  /usr/include/c++/12/bits/allocated_ptr.h \
+  /usr/include/c++/12/ext/aligned_buffer.h \
+  /usr/include/c++/12/ext/concurrence.h \
+  /usr/include/c++/12/bits/shared_ptr_atomic.h \
   /usr/include/c++/12/backward/auto_ptr.h \
   /usr/include/c++/12/bits/ranges_uninitialized.h \
   /usr/include/c++/12/bits/ranges_algobase.h \
@@ -1749,136 +1772,84 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
   /usr/include/x86_64-linux-gnu/bits/sigthread.h \
   /usr/include/x86_64-linux-gnu/bits/signal_ext.h \
-  /usr/include/c++/12/atomic \
-  /usr/include/c++/12/thread \
-  /usr/include/c++/12/stop_token \
-  /usr/include/c++/12/bits/std_thread.h \
-  /usr/include/c++/12/semaphore \
-  /usr/include/c++/12/bits/semaphore_base.h \
-  /usr/include/c++/12/bits/chrono.h \
-  /usr/include/c++/12/ratio \
-  /usr/include/c++/12/limits \
-  /usr/include/c++/12/ctime \
-  /usr/include/c++/12/bits/parse_numbers.h \
-  /usr/include/c++/12/bits/atomic_timed_wait.h \
-  /usr/include/c++/12/bits/this_thread_sleep.h \
-  /usr/include/x86_64-linux-gnu/sys/time.h \
-  /usr/include/semaphore.h \
-  /usr/include/x86_64-linux-gnu/bits/semaphore.h \
-  /usr/include/c++/12/chrono \
-  /usr/include/c++/12/sstream \
-  /usr/include/c++/12/bits/sstream.tcc \
-  /vagrant/sniffer/src/userspace/config_manager.hpp \
-  /usr/include/c++/12/vector \
-  /usr/include/c++/12/bits/stl_vector.h \
-  /usr/include/c++/12/bits/stl_bvector.h \
-  /usr/include/c++/12/bits/vector.tcc \
-  /usr/include/c++/12/unordered_map \
-  /usr/include/c++/12/bits/hashtable.h \
-  /usr/include/c++/12/bits/hashtable_policy.h \
-  /usr/include/c++/12/bits/enable_special_members.h \
-  /usr/include/c++/12/bits/node_handle.h \
-  /usr/include/c++/12/bits/unordered_map.h \
-  /usr/include/c++/12/bits/erase_if.h \
-  /usr/include/jsoncpp/json/json.h \
-  /usr/include/jsoncpp/json/config.h \
-  /usr/include/c++/12/cstddef \
-  /usr/include/jsoncpp/json/allocator.h \
   /usr/include/c++/12/cstring \
   /usr/include/string.h \
   /usr/include/strings.h \
-  /usr/include/jsoncpp/json/version.h \
-  /usr/include/jsoncpp/json/json_features.h \
-  /usr/include/jsoncpp/json/forwards.h \
-  /usr/include/jsoncpp/json/reader.h \
-  /usr/include/jsoncpp/json/value.h \
-  /usr/include/c++/12/array \
-  /usr/include/c++/12/map \
-  /usr/include/c++/12/bits/stl_tree.h \
-  /usr/include/c++/12/bits/stl_map.h \
-  /usr/include/c++/12/bits/stl_multimap.h \
-  /usr/include/c++/12/deque \
-  /usr/include/c++/12/bits/stl_deque.h \
-  /usr/include/c++/12/bits/deque.tcc \
-  /usr/include/c++/12/stack \
-  /usr/include/c++/12/bits/stl_stack.h \
-  /usr/include/jsoncpp/json/writer.h \
-  /vagrant/sniffer/src/userspace/ebpf_loader.hpp \
-  /usr/include/bpf/libbpf.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdbool.h \
-  /usr/include/linux/bpf.h \
-  /usr/include/linux/types.h \
-  /usr/lib/linux/uapi/x86/asm/types.h \
-  /usr/include/asm-generic/types.h \
-  /usr/include/asm-generic/int-ll64.h \
-  /usr/lib/linux/uapi/x86/asm/bitsperlong.h \
-  /usr/include/asm-generic/bitsperlong.h \
-  /usr/include/linux/posix_types.h \
-  /usr/include/linux/stddef.h \
-  /usr/lib/linux/uapi/x86/asm/posix_types.h \
-  /usr/lib/linux/uapi/x86/asm/posix_types_64.h \
-  /usr/include/asm-generic/posix_types.h \
-  /usr/include/linux/bpf_common.h \
-  /usr/include/bpf/libbpf_common.h \
-  /usr/include/bpf/libbpf_version.h \
-  /usr/include/bpf/libbpf_legacy.h \
-  /usr/include/bpf/bpf.h \
-  /vagrant/sniffer/src/userspace/ring_consumer.hpp \
-  /usr/include/c++/12/functional \
-  /usr/include/c++/12/bits/std_function.h \
-  /usr/include/c++/12/bits/stl_algo.h \
-  /usr/include/c++/12/bits/algorithmfwd.h \
-  /usr/include/c++/12/bits/stl_heap.h \
+  /usr/include/c++/12/random \
+  /usr/include/c++/12/cmath \
+  /usr/include/math.h \
+  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+  /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+  /usr/include/c++/12/bits/specfun.h \
+  /usr/include/c++/12/tr1/gamma.tcc \
+  /usr/include/c++/12/tr1/special_function_util.h \
+  /usr/include/c++/12/tr1/bessel_function.tcc \
+  /usr/include/c++/12/tr1/beta_function.tcc \
+  /usr/include/c++/12/tr1/ell_integral.tcc \
+  /usr/include/c++/12/tr1/exp_integral.tcc \
+  /usr/include/c++/12/tr1/hypergeometric.tcc \
+  /usr/include/c++/12/tr1/legendre_function.tcc \
+  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
+  /usr/include/c++/12/tr1/poly_hermite.tcc \
+  /usr/include/c++/12/tr1/poly_laguerre.tcc \
+  /usr/include/c++/12/tr1/riemann_zeta.tcc \
+  /usr/include/c++/12/bits/random.h \
   /usr/include/c++/12/bits/uniform_int_dist.h \
-  /usr/include/c++/12/queue \
-  /usr/include/c++/12/bits/stl_queue.h \
-  /usr/include/c++/12/mutex \
-  /usr/include/c++/12/bits/unique_lock.h \
-  /usr/include/c++/12/condition_variable \
-  /usr/include/c++/12/future \
-  /usr/include/c++/12/bits/atomic_futex.h \
-  /usr/include/zmq.hpp \
-  /usr/include/zmq.h \
-  /usr/include/c++/12/cassert \
-  /usr/include/assert.h \
-  /usr/include/c++/12/algorithm \
-  /usr/include/c++/12/bits/ranges_algo.h \
-  /usr/include/c++/12/bits/ranges_util.h \
-  /usr/include/c++/12/pstl/glue_algorithm_defs.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/opt_random.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/pmmintrin.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/emmintrin.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/xmmintrin.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/mmintrin.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/mm_malloc.h \
+  /usr/include/c++/12/stdlib.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/mwaitintrin.h \
+  /usr/include/c++/12/bits/random.tcc \
+  /usr/include/c++/12/numeric \
+  /usr/include/c++/12/bits/stl_numeric.h \
+  /usr/include/c++/12/pstl/glue_numeric_defs.h \
+  /usr/include/c++/12/fstream \
+  /usr/include/c++/12/bits/codecvt.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/basic_file.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/c++io.h \
+  /usr/include/c++/12/bits/fstream.tcc \
   /usr/include/c++/12/iomanip \
   /usr/include/c++/12/locale \
   /usr/include/c++/12/bits/locale_facets_nonio.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/time_members.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/messages_members.h \
   /usr/include/libintl.h \
-  /usr/include/c++/12/bits/codecvt.h \
   /usr/include/c++/12/bits/locale_facets_nonio.tcc \
   /usr/include/c++/12/bits/locale_conv.h \
   /usr/include/c++/12/bits/quoted_string.h \
-  /usr/include/c++/12/optional \
-  /usr/include/arpa/inet.h \
-  /usr/include/netinet/in.h \
-  /usr/include/x86_64-linux-gnu/sys/socket.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
-  /usr/include/x86_64-linux-gnu/bits/socket.h \
-  /usr/include/x86_64-linux-gnu/bits/socket_type.h \
-  /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
-  /usr/lib/linux/uapi/x86/asm/socket.h \
-  /usr/include/asm-generic/socket.h \
-  /usr/lib/linux/uapi/x86/asm/sockios.h \
-  /usr/include/asm-generic/sockios.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
-  /usr/include/x86_64-linux-gnu/bits/in.h \
-  /vagrant/sniffer/src/userspace/thread_manager.hpp \
-  /usr/include/numa.h \
-  /usr/include/c++/12/stdlib.h \
-  /vagrant/protobuf/network_security.pb.h \
+  proto/network_security.pb.h \
   /usr/include/google/protobuf/port_def.inc \
   /usr/include/google/protobuf/port_undef.inc \
   /usr/include/google/protobuf/io/coded_stream.h \
+  /usr/include/assert.h \
+  /usr/include/c++/12/cstddef \
   /usr/include/c++/12/utility \
   /usr/include/c++/12/bits/stl_relops.h \
   /usr/include/google/protobuf/stubs/common.h \
+  /usr/include/c++/12/algorithm \
+  /usr/include/c++/12/bits/stl_algo.h \
+  /usr/include/c++/12/bits/algorithmfwd.h \
+  /usr/include/c++/12/bits/stl_heap.h \
+  /usr/include/c++/12/bits/ranges_algo.h \
+  /usr/include/c++/12/bits/ranges_util.h \
+  /usr/include/c++/12/pstl/glue_algorithm_defs.h \
+  /usr/include/c++/12/map \
+  /usr/include/c++/12/bits/stl_tree.h \
+  /usr/include/c++/12/bits/node_handle.h \
+  /usr/include/c++/12/bits/stl_map.h \
+  /usr/include/c++/12/bits/stl_multimap.h \
+  /usr/include/c++/12/bits/erase_if.h \
   /usr/include/c++/12/set \
   /usr/include/c++/12/bits/stl_set.h \
   /usr/include/c++/12/bits/stl_multiset.h \
@@ -1888,6 +1859,11 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/byteswap.h \
   /usr/include/google/protobuf/stubs/stringpiece.h \
   /usr/include/google/protobuf/stubs/hash.h \
+  /usr/include/c++/12/unordered_map \
+  /usr/include/c++/12/bits/hashtable.h \
+  /usr/include/c++/12/bits/hashtable_policy.h \
+  /usr/include/c++/12/bits/enable_special_members.h \
+  /usr/include/c++/12/bits/unordered_map.h \
   /usr/include/c++/12/unordered_set \
   /usr/include/c++/12/bits/unordered_set.h \
   /usr/include/google/protobuf/stubs/logging.h \
@@ -1901,6 +1877,8 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/google/protobuf/explicitly_constructed.h \
   /usr/include/google/protobuf/generated_message_util.h \
   /usr/include/google/protobuf/stubs/once.h \
+  /usr/include/c++/12/mutex \
+  /usr/include/c++/12/bits/unique_lock.h \
   /usr/include/google/protobuf/any.h \
   /usr/include/google/protobuf/message_lite.h \
   /usr/include/google/protobuf/metadata_lite.h \
@@ -1927,8 +1905,12 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/google/protobuf/inlined_string_field.h \
   /usr/include/google/protobuf/message.h \
   /usr/include/google/protobuf/map.h \
+  /usr/include/c++/12/functional \
+  /usr/include/c++/12/bits/std_function.h \
+  /usr/include/c++/12/array \
   /usr/include/google/protobuf/map_type_handler.h \
   /usr/include/google/protobuf/extension_set.h \
+  /usr/include/c++/12/cassert \
   /usr/include/google/protobuf/map_entry.h \
   /usr/include/google/protobuf/map_entry_lite.h \
   /usr/include/google/protobuf/reflection_ops.h \
@@ -1937,8 +1919,78 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/google/protobuf/map_field_lite.h \
   /usr/include/google/protobuf/timestamp.pb.h \
   /usr/include/google/protobuf/duration.pb.h \
+  /vagrant/sniffer/src/userspace/config_manager.hpp \
+  /usr/include/jsoncpp/json/json.h \
+  /usr/include/jsoncpp/json/config.h \
+  /usr/include/jsoncpp/json/allocator.h \
+  /usr/include/jsoncpp/json/version.h \
+  /usr/include/jsoncpp/json/json_features.h \
+  /usr/include/jsoncpp/json/forwards.h \
+  /usr/include/jsoncpp/json/reader.h \
+  /usr/include/jsoncpp/json/value.h \
+  /usr/include/c++/12/deque \
+  /usr/include/c++/12/bits/stl_deque.h \
+  /usr/include/c++/12/bits/deque.tcc \
+  /usr/include/c++/12/stack \
+  /usr/include/c++/12/bits/stl_stack.h \
+  /usr/include/jsoncpp/json/writer.h \
   /vagrant/sniffer/src/userspace/compression_handler.hpp \
-  /vagrant/sniffer/src/userspace/zmq_pool_manager.hpp
+  /vagrant/sniffer/src/userspace/zmq_pool_manager.hpp \
+  /usr/include/x86_64-linux-gnu/sys/socket.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
+  /usr/include/x86_64-linux-gnu/bits/socket.h \
+  /usr/include/x86_64-linux-gnu/bits/socket_type.h \
+  /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
+  /usr/lib/linux/uapi/x86/asm/socket.h \
+  /usr/include/asm-generic/socket.h \
+  /usr/include/linux/posix_types.h \
+  /usr/include/linux/stddef.h \
+  /usr/lib/linux/uapi/x86/asm/posix_types.h \
+  /usr/lib/linux/uapi/x86/asm/posix_types_64.h \
+  /usr/include/asm-generic/posix_types.h \
+  /usr/lib/linux/uapi/x86/asm/bitsperlong.h \
+  /usr/include/asm-generic/bitsperlong.h \
+  /usr/lib/linux/uapi/x86/asm/sockios.h \
+  /usr/include/asm-generic/sockios.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
+  /usr/include/netinet/in.h \
+  /usr/include/x86_64-linux-gnu/bits/in.h \
+  /usr/include/arpa/inet.h \
+  /usr/include/netinet/ip.h \
+  /usr/include/netinet/tcp.h \
+  /usr/include/netinet/udp.h \
+  /usr/include/netinet/ether.h \
+  /usr/include/netinet/if_ether.h \
+  /usr/include/linux/if_ether.h \
+  /usr/include/linux/types.h \
+  /usr/lib/linux/uapi/x86/asm/types.h \
+  /usr/include/asm-generic/types.h \
+  /usr/include/asm-generic/int-ll64.h \
+  /usr/include/net/ethernet.h \
+  /usr/include/net/if_arp.h \
+  /usr/include/linux/if_packet.h \
+  /usr/lib/linux/uapi/x86/asm/byteorder.h \
+  /usr/include/linux/byteorder/little_endian.h \
+  /usr/include/linux/swab.h \
+  /usr/lib/linux/uapi/x86/asm/swab.h \
+  /usr/include/net/if.h \
+  /usr/include/x86_64-linux-gnu/sys/ioctl.h \
+  /usr/include/x86_64-linux-gnu/bits/ioctls.h \
+  /usr/lib/linux/uapi/x86/asm/ioctls.h \
+  /usr/include/asm-generic/ioctls.h \
+  /usr/include/linux/ioctl.h \
+  /usr/lib/linux/uapi/x86/asm/ioctl.h \
+  /usr/include/asm-generic/ioctl.h \
+  /usr/include/x86_64-linux-gnu/bits/ioctl-types.h \
+  /usr/include/x86_64-linux-gnu/sys/ttydefaults.h \
+  /usr/include/linux/bpf.h \
+  /usr/include/linux/bpf_common.h \
+  /usr/include/bpf/bpf.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdbool.h \
+  /usr/include/bpf/libbpf_common.h \
+  /usr/include/bpf/libbpf_version.h \
+  /usr/include/bpf/libbpf_legacy.h \
+  /usr/include/bpf/libbpf.h
 
 CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/src/userspace/zmq_pool_manager.cpp \
   /usr/include/stdc-predef.h \
@@ -2197,19 +2249,75 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /vagrant/sniffer/src/userspace/zmq_pool_manager.cpp:
 
-/vagrant/sniffer/src/userspace/zmq_pool_manager.hpp:
+/usr/include/asm-generic/ioctl.h:
 
-/vagrant/protobuf/network_security.pb.h:
+/usr/lib/linux/uapi/x86/asm/ioctl.h:
 
-/usr/include/numa.h:
+/usr/include/asm-generic/ioctls.h:
 
-/usr/include/x86_64-linux-gnu/bits/in.h:
+/usr/lib/linux/uapi/x86/asm/swab.h:
+
+/usr/lib/linux/uapi/x86/asm/byteorder.h:
+
+/usr/include/linux/if_packet.h:
+
+/usr/include/net/if_arp.h:
+
+/usr/include/linux/if_ether.h:
+
+/usr/include/netinet/if_ether.h:
+
+/usr/include/netinet/ether.h:
+
+/usr/include/netinet/udp.h:
+
+/usr/include/netinet/ip.h:
 
 /usr/include/netinet/in.h:
 
-/usr/include/c++/12/optional:
+/vagrant/sniffer/src/userspace/zmq_pool_manager.hpp:
 
-/usr/include/c++/12/bits/atomic_futex.h:
+/usr/include/c++/12/pstl/glue_numeric_defs.h:
+
+/usr/include/c++/12/bits/stl_numeric.h:
+
+/usr/include/c++/12/numeric:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/mm_malloc.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/emmintrin.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/pmmintrin.h:
+
+/usr/include/c++/12/tr1/poly_laguerre.tcc:
+
+/usr/include/c++/12/tr1/poly_hermite.tcc:
+
+/usr/include/c++/12/tr1/legendre_function.tcc:
+
+/usr/include/linux/byteorder/little_endian.h:
+
+/usr/include/c++/12/tr1/exp_integral.tcc:
+
+/usr/include/c++/12/tr1/ell_integral.tcc:
+
+/usr/include/c++/12/tr1/beta_function.tcc:
+
+/usr/include/c++/12/tr1/gamma.tcc:
+
+/usr/include/c++/12/bits/specfun.h:
+
+/usr/include/x86_64-linux-gnu/bits/iscanonical.h:
+
+/usr/include/x86_64-linux-gnu/bits/in.h:
+
+/usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h:
+
+/usr/include/x86_64-linux-gnu/bits/mathcalls.h:
+
+/usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h:
+
+/usr/include/x86_64-linux-gnu/bits/fp-logb.h:
 
 /usr/include/x86_64-linux-gnu/bits/signal_ext.h:
 
@@ -2225,9 +2333,11 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/x86_64-linux-gnu/bits/siginfo-consts-arch.h:
 
+/usr/include/x86_64-linux-gnu/bits/ioctls.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h:
 
-/vagrant/sniffer/src/userspace/ring_consumer.hpp:
+/usr/include/net/ethernet.h:
 
 /usr/include/x86_64-linux-gnu/bits/ss_flags.h:
 
@@ -2260,6 +2370,8 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 /usr/include/linux/socket.h:
 
 /usr/include/linux/const.h:
+
+/usr/include/x86_64-linux-gnu/bits/ioctl-types.h:
 
 /usr/include/linux/netlink.h:
 
@@ -2303,7 +2415,11 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/time_members.h:
 
+/usr/include/x86_64-linux-gnu/bits/flt-eval-method.h:
+
 /usr/include/c++/12/bits/fs_fwd.h:
+
+/usr/include/x86_64-linux-gnu/c++/12/bits/opt_random.h:
 
 /usr/include/c++/12/bits/fstream.tcc:
 
@@ -2321,9 +2437,11 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/jsoncpp/json/config.h:
 
-/usr/include/zmq.hpp:
+/usr/include/x86_64-linux-gnu/bits/math-vector.h:
 
 /usr/include/jsoncpp/json/json.h:
+
+/usr/include/linux/swab.h:
 
 /vagrant/sniffer/src/userspace/config_manager.hpp:
 
@@ -2383,6 +2501,8 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/google/protobuf/generated_enum_reflection.h:
 
+/usr/lib/gcc/x86_64-linux-gnu/12/include/mmintrin.h:
+
 /usr/include/google/protobuf/stubs/casts.h:
 
 /usr/include/google/protobuf/repeated_field.h:
@@ -2400,8 +2520,6 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 /usr/include/asm-generic/sockios.h:
 
 /usr/include/c++/12/mutex:
-
-/vagrant/sniffer/src/userspace/thread_manager.hpp:
 
 /usr/include/google/protobuf/stubs/once.h:
 
@@ -2501,9 +2619,13 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/x86_64-linux-gnu/bits/waitflags.h:
 
+/usr/include/c++/12/tr1/modified_bessel_func.tcc:
+
 /usr/include/stdlib.h:
 
 /usr/include/c++/12/cctype:
+
+/usr/lib/linux/uapi/x86/asm/ioctls.h:
 
 /usr/include/google/protobuf/duration.pb.h:
 
@@ -2514,6 +2636,8 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 /usr/include/jsoncpp/json/forwards.h:
 
 /usr/include/c++/12/bits/basic_string.h:
+
+/usr/include/linux/ioctl.h:
 
 /usr/include/c++/12/bits/iterator_concepts.h:
 
@@ -2536,6 +2660,10 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 /usr/include/c++/12/bits/ranges_util.h:
 
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/xmmintrin.h:
+
+/usr/include/c++/12/random:
 
 /usr/include/google/protobuf/reflection_ops.h:
 
@@ -2587,6 +2715,8 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/c++locale.h:
 
+/usr/include/netinet/tcp.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/FILE.h:
 
 /usr/include/c++/12/bits/exception_defines.h:
@@ -2611,9 +2741,9 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/ctype_inline.h:
 
-/usr/include/c++/12/cwchar:
+/usr/include/c++/12/tr1/bessel_function.tcc:
 
-/usr/include/c++/12/future:
+/usr/include/c++/12/cwchar:
 
 /usr/include/x86_64-linux-gnu/bits/waitstatus.h:
 
@@ -2715,6 +2845,8 @@ proto/network_security.pb.h:
 
 /usr/include/x86_64-linux-gnu/bits/locale.h:
 
+/usr/include/c++/12/tr1/special_function_util.h:
+
 /usr/include/google/protobuf/explicitly_constructed.h:
 
 proto/network_security.pb.cc:
@@ -2722,6 +2854,8 @@ proto/network_security.pb.cc:
 /usr/include/bpf/libbpf_legacy.h:
 
 /usr/include/c++/12/bits/std_mutex.h:
+
+/usr/include/c++/12/cmath:
 
 /usr/include/c++/12/stop_token:
 
@@ -2740,6 +2874,8 @@ proto/network_security.pb.cc:
 /usr/include/x86_64-linux-gnu/c++/12/bits/os_defines.h:
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/c++config.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/mwaitintrin.h:
 
 /usr/include/c++/12/bits/concept_check.h:
 
@@ -2787,6 +2923,8 @@ proto/network_security.pb.cc:
 
 /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h:
 
+/usr/include/c++/12/bits/random.tcc:
+
 /usr/include/google/protobuf/arena_impl.h:
 
 /usr/include/c++/12/algorithm:
@@ -2819,6 +2957,8 @@ proto/network_security.pb.cc:
 
 /usr/include/x86_64-linux-gnu/bits/types/clock_t.h:
 
+/usr/include/math.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/__FILE.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h:
@@ -2828,6 +2968,8 @@ proto/network_security.pb.cc:
 /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h:
 
 /usr/include/c++/12/bits/ranges_cmp.h:
+
+/usr/include/c++/12/bits/random.h:
 
 /usr/include/x86_64-linux-gnu/bits/sched.h:
 
@@ -2905,11 +3047,17 @@ proto/network_security.pb.cc:
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
 
+/usr/include/x86_64-linux-gnu/sys/ttydefaults.h:
+
+/usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h:
+
 /usr/include/x86_64-linux-gnu/c++/12/bits/cpu_defines.h:
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/error_constants.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:
+
+/usr/include/x86_64-linux-gnu/bits/fp-fast.h:
 
 /usr/include/google/protobuf/stubs/mutex.h:
 
@@ -2939,7 +3087,7 @@ proto/network_security.pb.cc:
 
 /usr/include/c++/12/bits/ranges_algo.h:
 
-/usr/include/c++/12/queue:
+/usr/include/x86_64-linux-gnu/sys/ioctl.h:
 
 /usr/include/syscall.h:
 
@@ -3014,8 +3162,6 @@ proto/network_security.pb.cc:
 /usr/include/x86_64-linux-gnu/bits/timex.h:
 
 /usr/include/c++/12/climits:
-
-/usr/include/c++/12/bits/stl_queue.h:
 
 /usr/include/lz4hc.h:
 
@@ -3149,9 +3295,13 @@ proto/network_security.pb.cc:
 
 /usr/include/c++/12/tuple:
 
+/usr/include/c++/12/tr1/hypergeometric.tcc:
+
 /usr/include/c++/12/cwctype:
 
 /usr/include/c++/12/bits/streambuf_iterator.h:
+
+/usr/include/c++/12/tr1/riemann_zeta.tcc:
 
 /usr/include/c++/12/bits/basic_ios.tcc:
 
@@ -3160,8 +3310,6 @@ proto/network_security.pb.cc:
 /usr/include/features-time64.h:
 
 /usr/include/c++/12/ext/aligned_buffer.h:
-
-/usr/include/c++/12/condition_variable:
 
 /usr/include/c++/12/bits/stl_multimap.h:
 
