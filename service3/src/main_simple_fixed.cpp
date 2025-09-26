@@ -6,8 +6,11 @@
 #include <atomic>
 #include <signal.h>
 #include <fstream>
+#include <lz4.h>
 #include "config_manager.h"
 #include "protobuf/network_security.pb.h"
+
+//service3/src/main_simple_fixed.cpp - MODIFICADO PARA LZ4 DECOMPRESSION
 
 class SnifferEventConsumer {
 private:
@@ -16,6 +19,7 @@ private:
     std::atomic<bool> running_;
     uint64_t events_processed_;
     uint64_t events_failed_;
+    uint64_t compression_errors_;
     std::chrono::steady_clock::time_point start_time_;
     ConfigManager config_;
 
@@ -26,6 +30,7 @@ public:
         , running_(true)
         , events_processed_(0)
         , events_failed_(0)
+        , compression_errors_(0)
         , start_time_(std::chrono::steady_clock::now())
         , config_(config_file)
     {
@@ -56,7 +61,7 @@ public:
         std::cout << " (socket: " << config_.getSocketType() << ")" << std::endl;
         std::cout << "[Service3] Node ID: " << config_.getNodeId() << std::endl;
         std::cout << "[Service3] Cluster: " << config_.getClusterName() << std::endl;
-        std::cout << "[Service3] PROTOCOLO: SOLO PROTOBUF - Sin fallbacks JSON" << std::endl;
+        std::cout << "[Service3] PROTOCOLO: LZ4 + PROTOBUF - Datos comprimidos del sniffer" << std::endl;
         std::cout << "[Service3] Iniciando consumo de eventos..." << std::endl;
     }
 
@@ -79,7 +84,7 @@ public:
                 zmq::recv_result_t result = socket_.recv(message, zmq::recv_flags::dontwait);
 
                 if (result) {
-                    if (processEvent(message)) {
+                    if (processCompressedEvent(message)) {
                         events_processed_++;
                     } else {
                         events_failed_++;
@@ -99,6 +104,10 @@ public:
 
                     if (events_failed_ > 0) {
                         std::cout << " | Fallos: " << events_failed_;
+                    }
+
+                    if (compression_errors_ > 0) {
+                        std::cout << " | Errores LZ4: " << compression_errors_;
                     }
 
                     std::cout << std::endl;
@@ -125,34 +134,75 @@ public:
         std::cout << "[Service3] Finalizando..." << std::endl;
         std::cout << "[Service3] Total procesados: " << events_processed_ << std::endl;
         std::cout << "[Service3] Total fallidos: " << events_failed_ << std::endl;
+        std::cout << "[Service3] Errores compresión: " << compression_errors_ << std::endl;
         std::cout << "[Service3] Tiempo total: " << duration.count() << " segundos" << std::endl;
         std::cout << "[Service3] Rate promedio: " << avg_rate << " events/sec" << std::endl;
 
         if (events_processed_ > 0) {
             double success_rate = (double)events_processed_ / (events_processed_ + events_failed_) * 100.0;
-            std::cout << "[Service3] Tasa éxito protobuf: " << success_rate << "%" << std::endl;
+            std::cout << "[Service3] Tasa éxito total: " << success_rate << "%" << std::endl;
         }
     }
 
 private:
-    bool processEvent(const zmq::message_t& message) {
+    bool processCompressedEvent(const zmq::message_t& message) {
         try {
-            // Deserializar protobuf binario ÚNICAMENTE
-            protobuf::NetworkSecurityEvent event;
-            std::string binary_data(static_cast<const char*>(message.data()), message.size());
+            // PASO 1: Descomprimir LZ4
+            const char* compressed_data = static_cast<const char*>(message.data());
+            size_t compressed_size = message.size();
 
-            if (!event.ParseFromString(binary_data)) {
-                std::cerr << "[Service3] FALLO: Datos no son protobuf válido ("
-                          << message.size() << " bytes recibidos)" << std::endl;
+            // Intentar determinar tamaño descomprimido (estimación conservadora)
+            size_t estimated_uncompressed_size = compressed_size * 4; // Estimación
+            std::vector<char> decompressed_buffer(estimated_uncompressed_size);
+
+            int decompressed_size = LZ4_decompress_safe(
+                compressed_data,
+                decompressed_buffer.data(),
+                static_cast<int>(compressed_size),
+                static_cast<int>(estimated_uncompressed_size)
+            );
+
+            if (decompressed_size < 0) {
+                // Intentar con buffer más grande
+                estimated_uncompressed_size = compressed_size * 10;
+                decompressed_buffer.resize(estimated_uncompressed_size);
+
+                decompressed_size = LZ4_decompress_safe(
+                    compressed_data,
+                    decompressed_buffer.data(),
+                    static_cast<int>(compressed_size),
+                    static_cast<int>(estimated_uncompressed_size)
+                );
+
+                if (decompressed_size < 0) {
+                    std::cerr << "[Service3] ERROR LZ4: No se pudo descomprimir ("
+                              << compressed_size << " bytes comprimidos)" << std::endl;
+                    compression_errors_++;
+                    return false;
+                }
+            }
+
+            if (config_.isVerboseMode() && events_processed_ % 100 == 0) {
+                std::cout << "[Service3] LZ4: " << compressed_size
+                          << " bytes -> " << decompressed_size << " bytes" << std::endl;
+            }
+
+            // PASO 2: Deserializar protobuf desde datos descomprimidos
+            protobuf::NetworkSecurityEvent event;
+            std::string protobuf_data(decompressed_buffer.data(), decompressed_size);
+
+            if (!event.ParseFromString(protobuf_data)) {
+                std::cerr << "[Service3] FALLO: Datos descomprimidos no son protobuf válido ("
+                          << decompressed_size << " bytes descomprimidos)" << std::endl;
                 return false;
             }
 
-            // Procesar evento protobuf exitosamente deserializado
+            // PASO 3: Procesar evento protobuf exitosamente deserializado
             processProtobufEvent(event);
             return true;
 
         } catch (const std::exception& e) {
-            std::cerr << "[Service3] Error procesando protobuf: " << e.what() << std::endl;
+            std::cerr << "[Service3] Error procesando evento comprimido: " << e.what() << std::endl;
             return false;
         }
     }
@@ -185,7 +235,28 @@ private:
                     std::cout << ", " << features.total_forward_bytes() << " bytes";
                 }
 
+                // Mostrar features ML si están disponibles
+                if (features.ddos_features_size() > 0) {
+                    std::cout << ", DDOS features: " << features.ddos_features_size();
+                }
+                if (features.ransomware_features_size() > 0) {
+                    std::cout << ", Ransomware features: " << features.ransomware_features_size();
+                }
+                if (features.general_attack_features_size() > 0) {
+                    std::cout << ", RF features: " << features.general_attack_features_size();
+                }
+
                 std::cout << std::endl;
+            }
+
+            // Mostrar geo enrichment si está disponible
+            if (event.has_geo_enrichment()) {
+                const auto& geo = event.geo_enrichment();
+                if (geo.has_sniffer_node_geo()) {
+                    const auto& sniffer_geo = geo.sniffer_node_geo();
+                    std::cout << "[Service3] Geo: " << sniffer_geo.city_name()
+                              << ", " << sniffer_geo.country_code() << std::endl;
+                }
             }
         }
     }
@@ -212,9 +283,9 @@ void signalHandler(int signal) {
 }
 
 int main(int argc, char* argv[]) {
-    std::cout << "=== Service3: Sniffer Event Consumer (PROTOBUF ONLY) ===" << std::endl;
+    std::cout << "=== Service3: Sniffer Event Consumer (LZ4 + PROTOBUF) ===" << std::endl;
     std::cout << "[Service3] Iniciando consumidor de eventos del sniffer..." << std::endl;
-    std::cout << "[Service3] ARQUITECTURA: ZeroMQ + Protobuf binario - Alto rendimiento" << std::endl;
+    std::cout << "[Service3] ARQUITECTURA: ZeroMQ + LZ4 + Protobuf - Alto rendimiento" << std::endl;
 
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);

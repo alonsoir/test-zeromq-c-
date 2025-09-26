@@ -1,5 +1,0 @@
-# Hashes of file build rules.
-1d47a78d8d67a32cf172c4c80576c3d2 CMakeFiles/bpf_program
-1d47a78d8d67a32cf172c4c80576c3d2 CMakeFiles/proto_compilation
-845790480f1905875b87e98d287ffedd proto/network_security.pb.cc
-2baf7d27909c2b68c861038cc8a7c746 sniffer.bpf.o

@@ -1,0 +1,3 @@
+/vagrant/service3/CMakeFiles/service3.dir
+/vagrant/service3/CMakeFiles/edit_cache.dir
+/vagrant/service3/CMakeFiles/rebuild_cache.dir

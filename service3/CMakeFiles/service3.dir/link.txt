@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/service3.dir/src/main_simple_fixed.cpp.o CMakeFiles/service3.dir/src/config_manager.cpp.o CMakeFiles/service3.dir/vagrant/protobuf/network_security.pb.cc.o -o build/service3  -lzmq -ljsoncpp /usr/lib/x86_64-linux-gnu/libprotobuf.so -llz4 -lpthread 

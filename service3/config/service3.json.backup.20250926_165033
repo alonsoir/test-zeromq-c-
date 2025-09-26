@@ -7,7 +7,7 @@
   "node_id": "service3_consumer_001",
   "cluster_name": "upgraded-happiness-cluster",
   "connection": {
-    "sniffer_endpoint": "tcp://10.0.2.2:5571",
+    "sniffer_endpoint": "tcp://host.docker.internal:5571",
     "socket_type": "PULL",
     "connection_type": "connect",
     "receive_timeout_ms": 1000,
