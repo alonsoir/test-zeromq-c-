@@ -1,5 +1,5 @@
 #pragma once
-
+// sniffer/src/userspace/ring_consumer.hpp
 #include <functional>
 #include <atomic>
 #include <thread>
@@ -13,7 +13,7 @@
 #include <zmq.hpp>
 #include <string>
 #include <arpa/inet.h>
-
+#include <array>
 #include "config_manager.hpp"
 #include "thread_manager.hpp"
 #include "../../protobuf/network_security.pb.h"
@@ -37,7 +37,6 @@ struct SimpleEvent {
 // Callback para procesar eventos
 using EventCallback = std::function<void(const SimpleEvent& event)>;
 
-// Statistics for ring buffer consumer
 struct RingConsumerStats {
     std::atomic<uint64_t> events_processed{0};
     std::atomic<uint64_t> events_dropped{0};
@@ -47,10 +46,41 @@ struct RingConsumerStats {
     std::atomic<uint64_t> ring_buffer_polls{0};
     std::atomic<uint64_t> ring_buffer_timeouts{0};
     std::atomic<double> average_processing_time_us{0.0};
-
-    // Performance metrics
     std::chrono::steady_clock::time_point start_time;
     std::atomic<uint64_t> total_processing_time_us{0};
+
+    // Constructor por defecto
+    RingConsumerStats() : start_time(std::chrono::steady_clock::now()) {}
+
+    // Constructor de copia
+    RingConsumerStats(const RingConsumerStats& other)
+        : events_processed(other.events_processed.load())
+        , events_dropped(other.events_dropped.load())
+        , events_sent(other.events_sent.load())
+        , protobuf_serialization_failures(other.protobuf_serialization_failures.load())
+        , zmq_send_failures(other.zmq_send_failures.load())
+        , ring_buffer_polls(other.ring_buffer_polls.load())
+        , ring_buffer_timeouts(other.ring_buffer_timeouts.load())
+        , average_processing_time_us(other.average_processing_time_us.load())
+        , start_time(other.start_time)
+        , total_processing_time_us(other.total_processing_time_us.load()) {}
+
+    // Operador de asignación
+    RingConsumerStats& operator=(const RingConsumerStats& other) {
+        if (this != &other) {
+            events_processed.store(other.events_processed.load());
+            events_dropped.store(other.events_dropped.load());
+            events_sent.store(other.events_sent.load());
+            protobuf_serialization_failures.store(other.protobuf_serialization_failures.load());
+            zmq_send_failures.store(other.zmq_send_failures.load());
+            ring_buffer_polls.store(other.ring_buffer_polls.load());
+            ring_buffer_timeouts.store(other.ring_buffer_timeouts.load());
+            average_processing_time_us.store(other.average_processing_time_us.load());
+            start_time = other.start_time;
+            total_processing_time_us.store(other.total_processing_time_us.load());
+        }
+        return *this;
+    }
 };
 
 // Enhanced ring buffer consumer with multi-threading
@@ -140,9 +170,8 @@ private:
     std::unique_ptr<EventBatch> current_batch_;
     std::mutex batch_mutex_;
 
-    // Pre-allocated buffers for performance
-    std::vector<char[16]> ip_buffers_src_;  // One per consumer thread
-    std::vector<char[16]> ip_buffers_dst_;  // One per consumer thread
+    mutable std::vector<std::array<char, 16>> ip_buffers_src_;  // One per consumer thread
+    mutable std::vector<std::array<char, 16>> ip_buffers_dst_;  // One per consumer thread
 
     // Optional external callback
     EventCallback external_callback_;

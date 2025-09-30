@@ -1,10 +1,12 @@
 #include "thread_manager.hpp"
+#include "ring_consumer.hpp"
+#include <iomanip>
 #include <iostream>
 #include <sched.h>
 #include <sys/resource.h>
 #include <unistd.h>
 #include <cstring>
-
+// sniffer/src/userspace/thread_manager.cpp
 #ifdef __linux__
 #include <sys/syscall.h>
 #include <linux/sched.h>

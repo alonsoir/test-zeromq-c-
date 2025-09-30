@@ -320,6 +320,54 @@ src/userspace/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.s
 .PHONY : src/userspace/main.cpp.s
 
+src/userspace/ring_consumer.o: src/userspace/ring_consumer.cpp.o
+.PHONY : src/userspace/ring_consumer.o
+
+# target to build an object file
+src/userspace/ring_consumer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o
+.PHONY : src/userspace/ring_consumer.cpp.o
+
+src/userspace/ring_consumer.i: src/userspace/ring_consumer.cpp.i
+.PHONY : src/userspace/ring_consumer.i
+
+# target to preprocess a source file
+src/userspace/ring_consumer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.i
+.PHONY : src/userspace/ring_consumer.cpp.i
+
+src/userspace/ring_consumer.s: src/userspace/ring_consumer.cpp.s
+.PHONY : src/userspace/ring_consumer.s
+
+# target to generate assembly for a file
+src/userspace/ring_consumer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s
+.PHONY : src/userspace/ring_consumer.cpp.s
+
+src/userspace/thread_manager.o: src/userspace/thread_manager.cpp.o
+.PHONY : src/userspace/thread_manager.o
+
+# target to build an object file
+src/userspace/thread_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o
+.PHONY : src/userspace/thread_manager.cpp.o
+
+src/userspace/thread_manager.i: src/userspace/thread_manager.cpp.i
+.PHONY : src/userspace/thread_manager.i
+
+# target to preprocess a source file
+src/userspace/thread_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.i
+.PHONY : src/userspace/thread_manager.cpp.i
+
+src/userspace/thread_manager.s: src/userspace/thread_manager.cpp.s
+.PHONY : src/userspace/thread_manager.s
+
+# target to generate assembly for a file
+src/userspace/thread_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
+.PHONY : src/userspace/thread_manager.cpp.s
+
 src/userspace/zmq_pool_manager.o: src/userspace/zmq_pool_manager.cpp.o
 .PHONY : src/userspace/zmq_pool_manager.o
 
@@ -374,6 +422,12 @@ help:
 	@echo "... src/userspace/main.o"
 	@echo "... src/userspace/main.i"
 	@echo "... src/userspace/main.s"
+	@echo "... src/userspace/ring_consumer.o"
+	@echo "... src/userspace/ring_consumer.i"
+	@echo "... src/userspace/ring_consumer.s"
+	@echo "... src/userspace/thread_manager.o"
+	@echo "... src/userspace/thread_manager.i"
+	@echo "... src/userspace/thread_manager.s"
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"

@@ -143,6 +143,8 @@ set(SNIFFER_CORE_SOURCES
         src/userspace/ebpf_loader.cpp
         src/userspace/compression_handler.cpp
         src/userspace/zmq_pool_manager.cpp
+        src/userspace/ring_consumer.cpp
+        src/userspace/thread_manager.cpp
         ${PROTO_SOURCES}
 )
 

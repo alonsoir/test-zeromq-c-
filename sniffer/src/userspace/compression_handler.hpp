@@ -1,5 +1,5 @@
 #pragma once
-
+// sniffer/src/userspace/compression_handler.hpp
 #include <vector>
 #include <cstdint>
 #include <cstddef>
@@ -72,7 +72,6 @@ public:
      */
     static CompressionType get_best_compression_type(const void* data, size_t size);
 
-private:
     // LZ4 compression/decompression
     std::vector<uint8_t> compress_lz4(const void* data, size_t size);
     std::vector<uint8_t> decompress_lz4(const void* data, size_t size);
@@ -84,6 +83,9 @@ private:
     // Snappy compression/decompression
     std::vector<uint8_t> compress_snappy(const void* data, size_t size);
     std::vector<uint8_t> decompress_snappy(const void* data, size_t size);
+
+private:
+
 
     // Compression contexts (for thread-safety and performance)
     void* zstd_cctx_{nullptr};  ///< Zstd compression context

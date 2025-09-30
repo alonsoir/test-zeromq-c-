@@ -177,10 +177,10 @@ bool RingBufferConsumer::initialize_zmq() {
             auto socket = std::make_unique<zmq::socket_t>(*zmq_context_, ZMQ_PUSH);
 
             // Configure socket with enhanced settings
-            socket->set(zmq::sockopt::sndhwm, config_.zmq.connection_settings.sndhwm);
-            socket->set(zmq::sockopt::linger, config_.zmq.connection_settings.linger_ms);
-            socket->set(zmq::sockopt::sndbuf, config_.zmq.connection_settings.sndbuf);
-            socket->set(zmq::sockopt::tcp_keepalive, config_.zmq.connection_settings.tcp_keepalive);
+socket->set(zmq::sockopt::sndhwm, static_cast<int>(config_.zmq.connection_settings.sndhwm));
+socket->set(zmq::sockopt::linger, static_cast<int>(config_.zmq.connection_settings.linger_ms));
+socket->set(zmq::sockopt::sndbuf, static_cast<int>(config_.zmq.connection_settings.sndbuf));
+socket->set(zmq::sockopt::tcp_keepalive, static_cast<int>(config_.zmq.connection_settings.tcp_keepalive));
 
             // Bind socket
             if (config_.network.output_socket.mode == "bind") {
@@ -395,18 +395,19 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
             serialized_data.size() >= config_.transport.compression.min_compress_size) {
 
             try {
-                // Usar CompressionHandler para comprimir
-                auto compressed = CompressionHandler::compress_lz4(
-                    serialized_data.data(),
-                    serialized_data.size()
-                );
+                // Crear instancia de CompressionHandler y comprimir
+                CompressionHandler compressor;
+                auto compressed = compressor.compress_lz4(
+                serialized_data.data(),
+                serialized_data.size()
+            );
 
                 data_to_send = std::move(compressed);
 
             } catch (const std::exception& e) {
                 // Si falla la compresión, envía sin comprimir
                 std::cerr << "[WARNING] LZ4 compression failed: " << e.what()
-                         << ", sending uncompressed" << std::endl;
+                 << ", sending uncompressed" << std::endl;
                 data_to_send = serialized_data;
             }
         } else {
@@ -472,8 +473,8 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     struct in_addr src_addr = {.s_addr = event.src_ip};
     struct in_addr dst_addr = {.s_addr = event.dst_ip};
 
-    char* src_buffer = const_cast<char*>(ip_buffers_src_[buffer_index % ip_buffers_src_.size()]);
-    char* dst_buffer = const_cast<char*>(ip_buffers_dst_[buffer_index % ip_buffers_dst_.size()]);
+    char* src_buffer = ip_buffers_src_[buffer_index % ip_buffers_src_.size()].data();
+    char* dst_buffer = ip_buffers_dst_[buffer_index % ip_buffers_dst_.size()].data();
 
     inet_ntop(AF_INET, &src_addr, src_buffer, 16);
     inet_ntop(AF_INET, &dst_addr, dst_buffer, 16);

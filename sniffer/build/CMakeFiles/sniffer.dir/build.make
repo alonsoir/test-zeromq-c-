@@ -139,10 +139,38 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/src/userspace/zmq_pool_manager.cpp -o CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s
 
+CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: /vagrant/sniffer/src/userspace/ring_consumer.cpp
+CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o -MF CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o.d -o CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o -c /vagrant/sniffer/src/userspace/ring_consumer.cpp
+
+CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/sniffer/src/userspace/ring_consumer.cpp > CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.i
+
+CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/src/userspace/ring_consumer.cpp -o CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s
+
+CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o: /vagrant/sniffer/src/userspace/thread_manager.cpp
+CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o -MF CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o.d -o CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o -c /vagrant/sniffer/src/userspace/thread_manager.cpp
+
+CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/sniffer/src/userspace/thread_manager.cpp > CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.i
+
+CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/src/userspace/thread_manager.cpp -o CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
+
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o: CMakeFiles/sniffer.dir/flags.make
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o: proto/network_security.pb.cc
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o: CMakeFiles/sniffer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o -MF CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o.d -o CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o -c /vagrant/sniffer/build/proto/network_security.pb.cc
 
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.i: cmake_force
@@ -160,6 +188,8 @@ sniffer_OBJECTS = \
 "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o" \
+"CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o" \
+"CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o" \
 "CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
 
 # External object files for target sniffer
@@ -170,11 +200,13 @@ sniffer: CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o
+sniffer: CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o
+sniffer: CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o
 sniffer: CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
 sniffer: CMakeFiles/sniffer.dir/build.make
 sniffer: /usr/lib/x86_64-linux-gnu/libprotobuf.so
 sniffer: CMakeFiles/sniffer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable sniffer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable sniffer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sniffer.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

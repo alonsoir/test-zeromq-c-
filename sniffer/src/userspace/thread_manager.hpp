@@ -1,5 +1,5 @@
 #pragma once
-
+// sniffer/src/userspace/thread_manager.hpp
 #include <thread>
 #include <vector>
 #include <memory>
@@ -11,18 +11,17 @@
 #include <future>
 #include <unordered_map>
 #include <string>
-
+#include <iomanip>
 #ifdef NUMA_SUPPORT
 #include <numa.h>
 #endif
 
 #include "config_manager.hpp"
 
+
 namespace sniffer {
 
-// Forward declaration
 struct SimpleEvent;
-
 // Thread priority levels
 enum class ThreadPriority {
     LOW = 0,
@@ -57,14 +56,41 @@ struct WorkItem {
     WorkItem(std::function<void(T&)> t, T d) : task(std::move(t)), data(std::move(d)) {}
 };
 
-// Thread worker statistics
 struct ThreadStats {
-    std::atomic<uint64_t> tasks_processed{0};
-    std::atomic<uint64_t> tasks_failed{0};
-    std::atomic<uint64_t> total_processing_time_us{0};
-    std::atomic<double> cpu_usage_percent{0.0};
-    std::chrono::steady_clock::time_point start_time;
-    std::atomic<bool> active{false};
+        std::atomic<size_t> tasks_processed{0};
+        std::atomic<size_t> tasks_queued{0};
+        std::atomic<size_t> tasks_failed{0};
+        std::atomic<double> cpu_usage_percent{0.0};
+        std::atomic<bool> active{true};
+        std::atomic<uint64_t> total_processing_time_us{0};
+        std::chrono::steady_clock::time_point start_time;
+
+        // Constructor por defecto
+        ThreadStats() : start_time(std::chrono::steady_clock::now()) {}
+
+        // Constructor de copia
+        ThreadStats(const ThreadStats& other)
+            : tasks_processed(other.tasks_processed.load())
+            , tasks_queued(other.tasks_queued.load())
+            , tasks_failed(other.tasks_failed.load())
+            , cpu_usage_percent(other.cpu_usage_percent.load())
+            , active(other.active.load())
+            , total_processing_time_us(other.total_processing_time_us.load())
+            , start_time(other.start_time) {}
+
+        // Operador de asignación
+        ThreadStats& operator=(const ThreadStats& other) {
+            if (this != &other) {
+                tasks_processed.store(other.tasks_processed.load());
+                tasks_queued.store(other.tasks_queued.load());
+                tasks_failed.store(other.tasks_failed.load());
+                cpu_usage_percent.store(other.cpu_usage_percent.load());
+                active.store(other.active.load());
+                total_processing_time_us.store(other.total_processing_time_us.load());
+                start_time = other.start_time;
+            }
+            return *this;
+        }
 };
 
 // CPU affinity manager
@@ -149,7 +175,7 @@ private:
     std::vector<std::unique_ptr<ThreadStats>> thread_stats_;
 
     std::queue<std::unique_ptr<WorkItem<WorkDataType>>> work_queue_;
-    std::mutex queue_mutex_;
+    mutable std::mutex queue_mutex_;
     std::condition_variable work_condition_;
 
     std::atomic<bool> running_{false};
