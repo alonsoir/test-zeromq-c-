@@ -7,7 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <cstring>
-
+// sniffer/src/userspace/zmq_pool_manager.cpp
 namespace sniffer {
 
 ZMQPoolManager::ZMQPoolManager(int pool_size)
@@ -98,6 +98,21 @@ size_t ZMQPoolManager::get_pool_size() const {
 
 bool ZMQPoolManager::is_connected() const {
     return connected_;
+}
+
+bool ZMQPoolManager::bind(const std::string& endpoint) {
+    endpoint_ = endpoint;
+
+    for (auto socket : sockets_) {
+        if (zmq_bind(socket, endpoint.c_str()) != 0) {
+            std::cerr << "Failed to bind socket to " << endpoint
+                      << ": " << zmq_strerror(errno) << std::endl;
+            return false;
+        }
+    }
+
+    connected_ = true;
+    return true;
 }
 
 } // namespace sniffer

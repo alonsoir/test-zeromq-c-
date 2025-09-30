@@ -48,7 +48,7 @@
     "buffer_size": 65536,
     "min_packet_size": 20,
     "max_packet_size": 65536,
-    "excluded_ports": [],
+    "excluded_ports": [22],
     "included_protocols": ["tcp", "udp", "icmp"],
     "af_xdp": {
       "enabled": true,
@@ -69,7 +69,7 @@
     "zmq_send_buffer_size": 1048576,
     "flow_state_buffer_entries": 1000000,
     "statistics_buffer_entries": 100000,
-    "batch_processing_size": 1
+    "batch_processing_size": 100
   },
 
   "threading": {
@@ -162,10 +162,10 @@
   },
 
   "sniffer_time_windows": {
-    "flow_tracking_window_seconds": 10,
-    "statistics_collection_window_seconds": 5,
-    "feature_aggregation_window_seconds": 5,
-    "cleanup_interval_seconds": 5,
+    "flow_tracking_window_seconds": 300,
+    "statistics_collection_window_seconds": 60,
+    "feature_aggregation_window_seconds": 30,
+    "cleanup_interval_seconds": 30,
     "max_flows_per_window": 100000,
     "window_overlap_seconds": 10
   },
@@ -174,7 +174,7 @@
     "output_socket": {
       "address": "0.0.0.0",
       "port": 5571,
-      "mode": "connect",
+      "mode": "bind",
       "socket_type": "PUSH",
       "high_water_mark": 2000
     }
@@ -208,8 +208,9 @@
     },
     "batch_processing": {
       "enabled": true,
-      "batch_size": 1,
-      "batch_timeout_ms": 10
+      "batch_size": 50,
+      "batch_timeout_ms": 10,
+      "max_batches_queued": 100
     }
   },
 
@@ -218,7 +219,7 @@
       "enabled": true,
       "algorithm": "lz4",          // Alternatives: "zstd", "snappy", "lzo", "gzip", "brotli"
       "level": 1,                  // lz4: 1-12, zstd: 1-22, gzip: 1-9, brotli: 1-11
-      "min_compress_size": 0,
+      "min_compress_size": 1024,
       "compression_ratio_threshold": 0.8,
       "adaptive_compression": false // Switch algorithm based on data patterns
     },
@@ -312,7 +313,7 @@
   },
 
   "logging": {
-    "level": "DEBUG",
+    "level": "INFO",
     "file": "logs/cpp_evolutionary_sniffer_v31.log",
     "max_file_size_mb": 200,
     "backup_count": 10,

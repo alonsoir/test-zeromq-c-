@@ -1,3 +1,4 @@
+#include "compression_handler.hpp"
 #include "ring_consumer.hpp"
 #include <iostream>
 #include <cstring>
@@ -106,26 +107,24 @@ bool RingBufferConsumer::start() {
         active_consumers_++;
     }
 
-    // Submit feature processing work to thread manager
+	// Start feature processor threads
     for (int i = 0; i < config_.threading.feature_processor_threads; ++i) {
-        thread_manager_->submit_processing_work(
-            [this](SimpleEvent& event) { this->process_event_features(event); },
-            SimpleEvent{}  // Dummy event - real events come from queue
-        );
+        consumer_threads_.emplace_back(&RingBufferConsumer::feature_processor_loop, this);
     }
 
-    // Submit ZMQ sending work to thread manager
+	// Start ZMQ sender threads
     for (int i = 0; i < config_.threading.zmq_sender_threads; ++i) {
-        thread_manager_->submit_zmq_work(
-            [this](std::vector<uint8_t>& data) { this->send_protobuf_message(data); },
-            std::vector<uint8_t>{}  // Dummy data - real data comes from queue
-        );
+        consumer_threads_.emplace_back(&RingBufferConsumer::zmq_sender_loop, this);
     }
 
     stats_.start_time = std::chrono::steady_clock::now();
 
     std::cout << "[INFO] Enhanced RingBufferConsumer started with " << consumer_count
-              << " consumer threads" << std::endl;
+              << " ring consumer threads" << std::endl;
+    std::cout << "[INFO] + " << config_.threading.feature_processor_threads
+              << " feature processor threads" << std::endl;
+    std::cout << "[INFO] + " << config_.threading.zmq_sender_threads
+              << " ZMQ sender threads" << std::endl;
     std::cout << "[INFO] Multi-threaded protobuf pipeline active" << std::endl;
 
     return true;
@@ -315,6 +314,10 @@ int RingBufferConsumer::handle_event(void* ctx, void* data, size_t data_sz) {
     const SimpleEvent* event = static_cast<const SimpleEvent*>(data);
     consumer->stats_.events_processed++;
 
+    if (consumer->stats_.events_processed % 10 == 0) {
+        std::cout << "[DEBUG] Eventos procesados: " << consumer->stats_.events_processed << std::endl;
+    }
+
     // Process the event in the current consumer thread context
     consumer->process_raw_event(*event, consumer->active_consumers_.load());
 
@@ -385,13 +388,39 @@ void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events
 
 bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& serialized_data) {
     try {
-        zmq::message_t message(serialized_data.size());
-        memcpy(message.data(), serialized_data.data(), serialized_data.size());
+        std::vector<uint8_t> data_to_send;
+
+        // Comprimir si está habilitado y el tamaño es mayor al mínimo
+        if (config_.transport.compression.enabled &&
+            serialized_data.size() >= config_.transport.compression.min_compress_size) {
+
+            try {
+                // Usar CompressionHandler para comprimir
+                auto compressed = CompressionHandler::compress_lz4(
+                    serialized_data.data(),
+                    serialized_data.size()
+                );
+
+                data_to_send = std::move(compressed);
+
+            } catch (const std::exception& e) {
+                // Si falla la compresión, envía sin comprimir
+                std::cerr << "[WARNING] LZ4 compression failed: " << e.what()
+                         << ", sending uncompressed" << std::endl;
+                data_to_send = serialized_data;
+            }
+        } else {
+            // No comprimir
+            data_to_send = serialized_data;
+        }
+
+        zmq::message_t message(data_to_send.size());
+        memcpy(message.data(), data_to_send.data(), data_to_send.size());
 
         // Get next socket using round-robin
         zmq::socket_t* socket = get_next_socket();
-
         auto result = socket->send(message, zmq::send_flags::dontwait);
+
         if (result.has_value()) {
             stats_.events_sent++;
             return true;

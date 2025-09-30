@@ -4,7 +4,7 @@
 #include <string>
 #include <mutex>
 #include <atomic>
-
+// sniffer/src/userspace/zmq_pool_manager.hpp
 namespace sniffer {
 
 /**
@@ -67,6 +67,8 @@ public:
      * @return true if connected
      */
     bool is_connected() const;
+	// En la clase ZMQPoolManager, agregar este método público:
+	bool bind(const std::string& endpoint);
 
 private:
     void* context_;                    ///< ZMQ context

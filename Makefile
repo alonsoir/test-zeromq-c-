@@ -13,7 +13,8 @@ NC = \033[0m
         sniffer-build sniffer-start sniffer-stop sniffer-status sniffer-clean \
         service3-build service3-start service3-stop service3-logs sniffer-docs \
         sniffer-test sniffer-install sniffer-package lab-full-stack \
-        sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup
+        sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup \
+        sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local
 
 # Target por defecto
 all: lab-start
@@ -175,6 +176,96 @@ sniffer-build: sniffer-check-deps ## Compilar sniffer eBPF con verificación com
 	@echo "$(YELLOW)Archivos generados:$(NC)"
 	@echo "  - sniffer.bpf.o (programa eBPF para kernel)"
 	@echo "  - sniffer (aplicación userspace)"
+
+# Agregar estos targets al Makefile existente, después de sniffer-build
+
+# Target para compilar DENTRO de la VM (sin usar vagrant ssh)
+sniffer-build-local: sniffer-install-deps-local ## Compilar sniffer eBPF localmente (desde dentro de la VM)
+	@echo "$(BLUE)🔨 Compilando sniffer eBPF localmente...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Verificando capacidades eBPF del kernel...$(NC)"
+	@uname -r && sudo sysctl kernel.bpf_jit_enable || echo 'JIT not available'
+	@ls /sys/fs/bpf/ >/dev/null 2>&1 && echo '✅ BPF filesystem mounted' || echo '⚠️ BPF filesystem not mounted'
+	@echo ""
+	@echo "$(BLUE)Preparando entorno de compilación...$(NC)"
+	@cd sniffer && mkdir -p build
+	@echo ""
+	@echo "$(BLUE)Ejecutando CMake configure...$(NC)"
+	@cd sniffer/build && cmake .. -DCMAKE_BUILD_TYPE=Release
+	@echo ""
+	@echo "$(BLUE)Compilando con make -j4...$(NC)"
+	@cd sniffer/build && make -j4
+	@echo ""
+	@echo "$(BLUE)Verificando artefactos generados...$(NC)"
+	@cd sniffer/build && ls -la sniffer sniffer.bpf.o 2>/dev/null || echo 'Error: binarios no generados'
+	@echo ""
+	@echo "$(GREEN)✅ Sniffer eBPF compilado exitosamente$(NC)"
+	@echo "$(YELLOW)Archivos generados:$(NC)"
+	@echo "  - sniffer.bpf.o (programa eBPF para kernel)"
+	@echo "  - sniffer (aplicación userspace)"
+	@echo ""
+	@echo "Para iniciar el sniffer:"
+	@echo "  sudo ./scripts/run_sniffer_with_iface.sh"
+
+# Instalar dependencias localmente (sin vagrant ssh)
+sniffer-install-deps-local: ## Instalar dependencias del sniffer localmente
+	@echo "$(BLUE)📦 Instalando dependencias del sniffer eBPF...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Actualizando repositorios...$(NC)"
+	@sudo apt-get update -qq
+	@echo ""
+	@echo "$(YELLOW)Instalando paquetes requeridos...$(NC)"
+	@sudo apt-get install -y \
+		cmake \
+		pkg-config \
+		libbpf-dev \
+		libzmq3-dev \
+		libjsoncpp-dev \
+		liblz4-dev \
+		libzstd-dev \
+		libprotobuf-dev \
+		protobuf-compiler \
+		clang \
+		llvm \
+		bpftool \
+		linux-headers-$$(uname -r) || true
+	@echo ""
+	@echo "$(YELLOW)Verificando llvm-strip...$(NC)"
+	@if ! command -v llvm-strip >/dev/null 2>&1; then \
+		echo "Buscando llvm-strip..."; \
+		for version in 15 14 13 12 11; do \
+			if [ -f "/usr/bin/llvm-strip-$$version" ]; then \
+				sudo ln -sf "/usr/bin/llvm-strip-$$version" /usr/bin/llvm-strip; \
+				echo "✅ Creado symlink: llvm-strip -> llvm-strip-$$version"; \
+				break; \
+			fi; \
+		done; \
+	else \
+		echo "✅ llvm-strip ya disponible"; \
+	fi
+	@echo ""
+	@echo "$(GREEN)✅ Dependencias instaladas$(NC)"
+
+# Verificar dependencias localmente (sin vagrant ssh)
+sniffer-check-deps-local: ## Verificar dependencias del sniffer localmente
+	@echo "$(BLUE)🔍 Verificando dependencias del sniffer...$(NC)"
+	@pkg-config --exists libbpf && echo "✅ libbpf disponible" || echo "❌ libbpf no encontrada"
+	@pkg-config --exists libzmq && echo "✅ libzmq disponible" || echo "❌ libzmq no encontrada"
+	@pkg-config --exists jsoncpp && echo "✅ jsoncpp disponible" || echo "❌ jsoncpp no encontrada"
+	@pkg-config --exists liblz4 && echo "✅ liblz4 disponible" || echo "❌ liblz4 no encontrada"
+	@pkg-config --exists libzstd && echo "✅ libzstd disponible" || echo "❌ libzstd no encontrada"
+	@pkg-config --exists protobuf && echo "✅ protobuf disponible" || echo "❌ protobuf no encontrada"
+	@command -v clang >/dev/null && echo "✅ clang disponible" || echo "❌ clang no encontrado"
+	@command -v llvm-strip >/dev/null && echo "✅ llvm-strip disponible" || echo "❌ llvm-strip no encontrado"
+	@sudo bpftool version >/dev/null && echo "✅ bpftool disponible" || echo "❌ bpftool no encontrado"
+	@command -v protoc >/dev/null && echo "✅ protoc disponible" || echo "❌ protoc no encontrado"
+	@echo "$(GREEN)🎉 Verificación completada$(NC)"
+
+# Limpiar build localmente
+sniffer-clean-local: ## Limpiar build artifacts del sniffer localmente
+	@echo "$(YELLOW)🧹 Limpiando build artifacts del sniffer...$(NC)"
+	@rm -rf sniffer/build/* || echo "$(YELLOW)Build directory ya estaba limpio$(NC)"
+	@echo "$(GREEN)✅ Build artifacts limpiados$(NC)"
 
 sniffer-start: ## Iniciar sniffer eBPF con detección automática
 	@echo "$(BLUE)🕷️ Iniciando sniffer eBPF...$(NC)"
@@ -392,4 +483,6 @@ sniffer-clean-deps:
 # Setup completo del sniffer EN LA VM
 sniffer-setup: sniffer-install-deps sniffer-build ## Setup completo del sniffer
 	@echo "🎉 Sniffer listo para usar - ejecuta: make sniffer-start"
+
+
 

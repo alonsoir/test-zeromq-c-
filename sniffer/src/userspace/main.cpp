@@ -5,7 +5,10 @@
 #include "main.h"
 #include "network_security.pb.h"
 #include "config_manager.hpp"
-
+#include "zmq_pool_manager.hpp"
+#include "ebpf_loader.hpp"
+#include "ring_consumer.hpp"
+#include "thread_manager.hpp"
 // Sistema y captura de red
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -733,8 +736,12 @@ void DetailedStats::reset() {
 
 // Función principal main()
 int main(int argc, char* argv[]) {
+    sniffer::EbpfLoader* ebpf_loader_ptr = nullptr;
+    std::shared_ptr<sniffer::ThreadManager> thread_manager;
+    sniffer::RingBufferConsumer* ring_consumer_ptr = nullptr;
+    std::thread* stats_thread_ptr = nullptr;
+
     try {
-        // Parsear argumentos
         parse_command_line(argc, argv, g_args);
 
         if (g_args.help) {
@@ -748,16 +755,13 @@ int main(int argc, char* argv[]) {
         std::cout << "Compilado: " << __DATE__ << " " << __TIME__ << "\n";
         std::cout << "Modo: JSON es la ley - falla rápido si falta algo\n\n";
 
-        // Verificar privilegios
         if (!g_args.dry_run && !g_args.show_config_only && geteuid() != 0) {
             throw std::runtime_error("PRIVILEGIOS INSUFICIENTES: Se requiere root para captura raw");
         }
 
-        // Configurar señales
         signal(SIGINT, signal_handler);
         signal(SIGTERM, signal_handler);
 
-        // Cargar y validar configuración JSON COMPLETA
         if (!strict_load_json_config(g_args.config_file, g_config, g_args.verbose)) {
             return 1;
         }
@@ -772,33 +776,27 @@ int main(int argc, char* argv[]) {
             return 0;
         }
 
-        // Inicializar subsistemas basado en configuración JSON
         std::cout << "\n🔄 Inicializando subsistemas según JSON...\n";
 
-        // Protobuf
         GOOGLE_PROTOBUF_VERIFY_VERSION;
         std::cout << "✅ Protobuf inicializado\n";
 
-        // etcd si está habilitado
         if (g_config.etcd.enabled) {
             if (initialize_etcd_connection(g_config, g_args.verbose)) {
                 std::cout << "✅ etcd conectado\n";
             }
         }
 
-        // Compresión si está habilitada
         if (g_config.compression.enabled) {
             if (initialize_compression(g_config, g_args.verbose)) {
                 std::cout << "✅ Compresión " << g_config.compression.algorithm << " inicializada\n";
             }
         }
 
-        // ZMQ
         if (initialize_zmq_pool(g_config, g_args.verbose)) {
             std::cout << "✅ ZMQ pool inicializado\n";
         }
 
-        // Resetear estadísticas
         g_stats.reset();
 
         std::cout << "\n🚀 SNIFFER OPERATIVO - Configuración del JSON aplicada\n";
@@ -807,30 +805,175 @@ int main(int argc, char* argv[]) {
         std::cout << "Profile: " << g_config.active_profile << "\n";
         std::cout << "Presiona Ctrl+C para detener\n\n";
 
-        // Iniciar threads según configuración
-        std::vector<std::thread> worker_threads;
+        // ============================================================================
+        // CARGAR E INICIALIZAR PROGRAMA EBPF
+        // ============================================================================
+        ebpf_loader_ptr = new sniffer::EbpfLoader();
+        auto& ebpf_loader = *ebpf_loader_ptr;
 
-        // Thread de captura principal
-        worker_threads.emplace_back(packet_capture_thread, std::cref(g_config), std::ref(g_stats));
+        std::string bpf_path = g_config.kernel_space.ebpf_program;
+        std::cout << "[eBPF] Cargando programa: " << bpf_path << std::endl;
 
-        // Threads de estadísticas
-        worker_threads.emplace_back(detailed_stats_display_thread, std::cref(g_config), std::ref(g_stats));
-
-        // Esperar threads
-        for (auto& thread : worker_threads) {
-            thread.join();
+        if (!ebpf_loader.load_program(bpf_path)) {
+            std::cerr << "❌ Failed to load eBPF program from " << bpf_path << std::endl;
+            return 1;
         }
 
-        // Estadísticas finales
+        std::cout << "[eBPF] Attaching XDP to interface: " << g_config.capture_interface << std::endl;
+        if (!ebpf_loader.attach_xdp(g_config.capture_interface)) {
+            std::cerr << "❌ Failed to attach XDP to " << g_config.capture_interface << std::endl;
+            return 1;
+        }
+
+        int ring_fd = ebpf_loader.get_ringbuf_fd();
+        std::cout << "✅ eBPF program loaded and attached (ring_fd=" << ring_fd << ")" << std::endl;
+
+        // ============================================================================
+        // INICIALIZAR THREAD MANAGER
+        // ============================================================================
+        std::cout << "\n[Threads] Inicializando Thread Manager..." << std::endl;
+
+        // Crear ThreadingConfig desde g_config
+        sniffer::ThreadingConfig threading_config;
+        threading_config.ring_consumer_threads = g_config.threading.ring_consumer_threads;
+        threading_config.feature_processor_threads = g_config.threading.feature_processor_threads;
+        threading_config.zmq_sender_threads = g_config.threading.zmq_sender_threads;
+        threading_config.statistics_collector_threads = g_config.threading.statistics_collector_threads;
+        threading_config.total_worker_threads = g_config.threading.total_worker_threads;
+        threading_config.cpu_affinity.enabled = g_config.threading.cpu_affinity_enabled;
+        threading_config.cpu_affinity.ring_consumers = g_config.threading.ring_consumers_affinity;
+        threading_config.cpu_affinity.processors = g_config.threading.processors_affinity;
+        threading_config.cpu_affinity.zmq_senders = g_config.threading.zmq_senders_affinity;
+        threading_config.cpu_affinity.statistics = g_config.threading.statistics_affinity;
+
+        thread_manager = std::make_shared<sniffer::ThreadManager>(threading_config);
+
+        if (!thread_manager->start()) {
+            std::cerr << "❌ Failed to start thread manager" << std::endl;
+            return 1;
+        }
+        std::cout << "✅ Thread manager started" << std::endl;
+
+        // ============================================================================
+        // INICIALIZAR RING BUFFER CONSUMER
+        // ============================================================================
+        std::cout << "\n[RingBuffer] Inicializando RingBufferConsumer..." << std::endl;
+
+        // Convertir StrictSnifferConfig a SnifferConfig
+        sniffer::SnifferConfig sniffer_config;
+        sniffer_config.node_id = g_config.node_id;
+        sniffer_config.cluster_name = g_config.cluster_name;
+
+        // Mapear buffers
+        sniffer_config.buffers.ring_buffer_entries = g_config.buffers.ring_buffer_entries;
+        sniffer_config.buffers.user_processing_queue_depth = g_config.buffers.user_processing_queue_depth;
+        sniffer_config.buffers.protobuf_serialize_buffer_size = g_config.buffers.protobuf_serialize_buffer_size;
+        sniffer_config.buffers.zmq_send_buffer_size = g_config.buffers.zmq_send_buffer_size;
+        sniffer_config.buffers.flow_state_buffer_entries = g_config.buffers.flow_state_buffer_entries;
+        sniffer_config.buffers.statistics_buffer_entries = g_config.buffers.statistics_buffer_entries;
+        sniffer_config.buffers.batch_processing_size = g_config.buffers.batch_processing_size;
+
+        // Mapear threading
+        sniffer_config.threading.ring_consumer_threads = g_config.threading.ring_consumer_threads;
+        sniffer_config.threading.feature_processor_threads = g_config.threading.feature_processor_threads;
+        sniffer_config.threading.zmq_sender_threads = g_config.threading.zmq_sender_threads;
+        sniffer_config.threading.statistics_collector_threads = g_config.threading.statistics_collector_threads;
+        sniffer_config.threading.total_worker_threads = g_config.threading.total_worker_threads;
+
+        // Mapear CPU affinity
+        sniffer_config.threading.cpu_affinity.enabled = g_config.threading.cpu_affinity_enabled;
+        sniffer_config.threading.cpu_affinity.ring_consumers = g_config.threading.ring_consumers_affinity;
+        sniffer_config.threading.cpu_affinity.processors = g_config.threading.processors_affinity;
+        sniffer_config.threading.cpu_affinity.zmq_senders = g_config.threading.zmq_senders_affinity;
+        sniffer_config.threading.cpu_affinity.statistics = g_config.threading.statistics_affinity;
+
+        // Mapear thread priorities
+        sniffer_config.threading.thread_priorities["ring_consumers"] = g_config.threading.ring_consumers_priority;
+        sniffer_config.threading.thread_priorities["processors"] = g_config.threading.processors_priority;
+        sniffer_config.threading.thread_priorities["zmq_senders"] = g_config.threading.zmq_senders_priority;
+
+        // Mapear transport/compression
+        /*
+		sniffer_config.transport.compression.enabled = g_config.transport.compression.enabled;
+        sniffer_config.transport.compression.algorithm = g_config.transport.compression.algorithm;
+        sniffer_config.transport.compression.level = g_config.transport.compression.level;
+
+        // Mapear network
+        sniffer_config.network.address = g_config.network_output.address;
+        sniffer_config.network.port = g_config.network_output.port;
+        sniffer_config.network.mode = g_config.network_output.mode;
+        sniffer_config.network.socket_type = g_config.network_output.socket_type;
+		*/
+        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config);
+        auto& ring_consumer = *ring_consumer_ptr;
+
+        if (!ring_consumer.initialize(ring_fd, thread_manager)) {
+            std::cerr << "❌ Failed to initialize RingBufferConsumer" << std::endl;
+            return 1;
+        }
+
+        if (!ring_consumer.start()) {
+            std::cerr << "❌ Failed to start RingBufferConsumer" << std::endl;
+            return 1;
+        }
+        std::cout << "✅ RingBufferConsumer started - capturing REAL packets from kernel" << std::endl;
+
+        // ============================================================================
+        // THREAD DE ESTADÍSTICAS
+        // ============================================================================
+        stats_thread_ptr = new std::thread(detailed_stats_display_thread, std::cref(g_config), std::ref(g_stats));
+
+        // ============================================================================
+        // LOOP PRINCIPAL - ESPERAR SEÑAL DE TERMINACIÓN
+        // ============================================================================
+        while (g_running) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        // ============================================================================
+        // CLEANUP
+        // ============================================================================
+        std::cout << "\n[Cleanup] Deteniendo componentes..." << std::endl;
+
+        if (ring_consumer_ptr) {
+            ring_consumer_ptr->stop();
+            delete ring_consumer_ptr;
+            ring_consumer_ptr = nullptr;
+        }
+
+        if (thread_manager) {
+            thread_manager->stop();
+            thread_manager.reset();
+        }
+
+        if (ebpf_loader_ptr) {
+            delete ebpf_loader_ptr;
+            ebpf_loader_ptr = nullptr;
+        }
+
+        std::cout << "✅ Componentes detenidos" << std::endl;
+
+        if (stats_thread_ptr) {
+            stats_thread_ptr->join();
+            delete stats_thread_ptr;
+            stats_thread_ptr = nullptr;
+        }
+
         print_final_statistics(g_config, g_stats);
 
     } catch (const std::exception& e) {
         std::cerr << "\n❌ ERROR FATAL: " << e.what() << "\n";
-        std::cerr << "El sniffer falló rápidamente debido a configuración JSON inválida\n";
+
+        if (ring_consumer_ptr) delete ring_consumer_ptr;
+        if (ebpf_loader_ptr) delete ebpf_loader_ptr;
+        if (stats_thread_ptr) {
+            if (stats_thread_ptr->joinable()) stats_thread_ptr->join();
+            delete stats_thread_ptr;
+        }
+
         return 1;
     }
 
-    // Cleanup
     google::protobuf::ShutdownProtobufLibrary();
     std::cout << "\n👋 Sniffer detenido correctamente\n";
     return 0;
