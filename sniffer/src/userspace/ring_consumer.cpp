@@ -172,15 +172,20 @@ bool RingBufferConsumer::initialize_zmq() {
 
         std::string endpoint = "tcp://" + config_.network.output_socket.address + ":" +
                               std::to_string(config_.network.output_socket.port);
+		std::cout << "[DEBUG] config_.network.output_socket.address: " << config_.network.output_socket.address << std::endl;
+		std::cout << "[DEBUG] endpoint: " << endpoint << std::endl;
+		std::cout << "[DEBUG] config_.network.output_socket.port: " << config_.network.output_socket.port << std::endl;
+		std::cout << "[DEBUG] to_string(config_.network.output_socket.port): " << std::to_string(config_.network.output_socket.port) << endpoint << std::endl;
+		std::cout << "[DEBUG] endpoint: " << endpoint << std::endl;
 
-        for (int i = 0; i < socket_count; ++i) {
+		for (int i = 0; i < socket_count; ++i) {
             auto socket = std::make_unique<zmq::socket_t>(*zmq_context_, ZMQ_PUSH);
 
             // Configure socket with enhanced settings
-socket->set(zmq::sockopt::sndhwm, static_cast<int>(config_.zmq.connection_settings.sndhwm));
-socket->set(zmq::sockopt::linger, static_cast<int>(config_.zmq.connection_settings.linger_ms));
-socket->set(zmq::sockopt::sndbuf, static_cast<int>(config_.zmq.connection_settings.sndbuf));
-socket->set(zmq::sockopt::tcp_keepalive, static_cast<int>(config_.zmq.connection_settings.tcp_keepalive));
+			socket->set(zmq::sockopt::sndhwm, static_cast<int>(config_.zmq.connection_settings.sndhwm));
+			socket->set(zmq::sockopt::linger, static_cast<int>(config_.zmq.connection_settings.linger_ms));
+			socket->set(zmq::sockopt::sndbuf, static_cast<int>(config_.zmq.connection_settings.sndbuf));
+			socket->set(zmq::sockopt::tcp_keepalive, static_cast<int>(config_.zmq.connection_settings.tcp_keepalive));
 
             // Bind socket
             if (config_.network.output_socket.mode == "bind") {
@@ -302,14 +307,16 @@ void RingBufferConsumer::zmq_sender_loop() {
 }
 
 int RingBufferConsumer::handle_event(void* ctx, void* data, size_t data_sz) {
+	std::cerr << "[DEBUG] CALLBACK CALLED! data_sz=" << data_sz << std::endl;
     RingBufferConsumer* consumer = static_cast<RingBufferConsumer*>(ctx);
 
     if (data_sz != sizeof(SimpleEvent)) {
-        std::cerr << "[WARNING] Unexpected event size: " << data_sz
-                  << ", expected: " << sizeof(SimpleEvent) << std::endl;
-        consumer->stats_.events_dropped++;
-        return 0;
-    }
+    	std::cerr << "[ERROR] SIZE MISMATCH! Received: " << data_sz
+              << " bytes, Expected: " << sizeof(SimpleEvent)
+              << " bytes - DROPPING EVENT" << std::endl;
+    	consumer->stats_.events_dropped++;
+    	return 0;
+}
 
     const SimpleEvent* event = static_cast<const SimpleEvent*>(data);
     consumer->stats_.events_processed++;

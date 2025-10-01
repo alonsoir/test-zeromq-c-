@@ -558,8 +558,71 @@ void validate_zmq_section(const Json::Value& root, StrictSnifferConfig& config, 
     config.zmq.worker_threads = zmq["worker_threads"].asInt();
     config.zmq.io_thread_pools = zmq["io_thread_pools"].asInt();
 
+    // Socket pools
+    REQUIRE_OBJECT(zmq, "socket_pools");
+    const auto& socket_pools = zmq["socket_pools"];
+    REQUIRE_FIELD(socket_pools, "push_sockets", Int);
+    REQUIRE_FIELD(socket_pools, "load_balancing", String);
+    REQUIRE_FIELD(socket_pools, "failover_enabled", Bool);
+
+    config.zmq.push_sockets = socket_pools["push_sockets"].asInt();
+    config.zmq.load_balancing = socket_pools["load_balancing"].asString();
+    config.zmq.failover_enabled = socket_pools["failover_enabled"].asBool();
+
+    // Queue management
+    REQUIRE_OBJECT(zmq, "queue_management");
+    const auto& queue_mgmt = zmq["queue_management"];
+    REQUIRE_FIELD(queue_mgmt, "internal_queues", Int);
+    REQUIRE_FIELD(queue_mgmt, "queue_size", Int);
+    REQUIRE_FIELD(queue_mgmt, "queue_timeout_ms", Int);
+    REQUIRE_FIELD(queue_mgmt, "overflow_policy", String);
+
+    config.zmq.internal_queues = queue_mgmt["internal_queues"].asInt();
+    config.zmq.queue_size = queue_mgmt["queue_size"].asInt();
+    config.zmq.queue_timeout_ms = queue_mgmt["queue_timeout_ms"].asInt();
+    config.zmq.overflow_policy = queue_mgmt["overflow_policy"].asString();
+
+    // Connection settings
+    REQUIRE_OBJECT(zmq, "connection_settings");
+    const auto& conn = zmq["connection_settings"];
+    REQUIRE_FIELD(conn, "sndhwm", Int);
+    REQUIRE_FIELD(conn, "linger_ms", Int);
+    REQUIRE_FIELD(conn, "send_timeout_ms", Int);
+    REQUIRE_FIELD(conn, "rcvhwm", Int);
+    REQUIRE_FIELD(conn, "recv_timeout_ms", Int);
+    REQUIRE_FIELD(conn, "tcp_keepalive", Int);
+    REQUIRE_FIELD(conn, "sndbuf", Int);
+    REQUIRE_FIELD(conn, "rcvbuf", Int);
+    REQUIRE_FIELD(conn, "reconnect_interval_ms", Int);
+    REQUIRE_FIELD(conn, "max_reconnect_attempts", Int);
+
+    config.zmq.sndhwm = conn["sndhwm"].asInt();
+    config.zmq.linger_ms = conn["linger_ms"].asInt();
+    config.zmq.send_timeout_ms = conn["send_timeout_ms"].asInt();
+    config.zmq.rcvhwm = conn["rcvhwm"].asInt();
+    config.zmq.recv_timeout_ms = conn["recv_timeout_ms"].asInt();
+    config.zmq.tcp_keepalive = conn["tcp_keepalive"].asInt();
+    config.zmq.sndbuf = conn["sndbuf"].asInt();
+    config.zmq.rcvbuf = conn["rcvbuf"].asInt();
+    config.zmq.reconnect_interval_ms = conn["reconnect_interval_ms"].asInt();
+    config.zmq.max_reconnect_attempts = conn["max_reconnect_attempts"].asInt();
+
+    // Batch processing
+    REQUIRE_OBJECT(zmq, "batch_processing");
+    const auto& batch = zmq["batch_processing"];
+    REQUIRE_FIELD(batch, "enabled", Bool);
+    REQUIRE_FIELD(batch, "batch_size", Int);
+    REQUIRE_FIELD(batch, "batch_timeout_ms", Int);
+    REQUIRE_FIELD(batch, "max_batches_queued", Int);
+
+    config.zmq.batch_enabled = batch["enabled"].asBool();
+    config.zmq.batch_size = batch["batch_size"].asInt();
+    config.zmq.batch_timeout_ms = batch["batch_timeout_ms"].asInt();
+    config.zmq.max_batches_queued = batch["max_batches_queued"].asInt();
+
     if (verbose) {
-        std::cout << "✓ ZMQ validado: " << config.zmq.worker_threads << " workers\n";
+        std::cout << "✓ ZMQ validado: " << config.zmq.worker_threads << " workers, "
+                  << config.zmq.push_sockets << " sockets\n";
     }
 }
 
@@ -892,18 +955,58 @@ int main(int argc, char* argv[]) {
         sniffer_config.threading.thread_priorities["processors"] = g_config.threading.processors_priority;
         sniffer_config.threading.thread_priorities["zmq_senders"] = g_config.threading.zmq_senders_priority;
 
-        // Mapear transport/compression
-        /*
-		sniffer_config.transport.compression.enabled = g_config.transport.compression.enabled;
-        sniffer_config.transport.compression.algorithm = g_config.transport.compression.algorithm;
-        sniffer_config.transport.compression.level = g_config.transport.compression.level;
+		// DEBUG: Verificar valores en g_config antes de mapear
+        // std::cout << "[DEBUG] g_config.zmq.push_sockets = " << g_config.zmq.push_sockets << std::endl;
+        // std::cout << "[DEBUG] g_config.zmq.worker_threads = " << g_config.zmq.worker_threads << std::endl;
+
+		// Mapear ZMQ
+        sniffer_config.zmq.worker_threads = g_config.zmq.worker_threads;
+        sniffer_config.zmq.io_thread_pools = g_config.zmq.io_thread_pools;
+
+        // Mapear socket pools
+        sniffer_config.zmq.socket_pools.push_sockets = g_config.zmq.push_sockets;
+        sniffer_config.zmq.socket_pools.load_balancing = g_config.zmq.load_balancing;
+        sniffer_config.zmq.socket_pools.failover_enabled = g_config.zmq.failover_enabled;
+
+        // Mapear queue management
+        sniffer_config.zmq.queue_management.internal_queues = g_config.zmq.internal_queues;
+        sniffer_config.zmq.queue_management.queue_size = g_config.zmq.queue_size;
+        sniffer_config.zmq.queue_management.queue_timeout_ms = g_config.zmq.queue_timeout_ms;
+        sniffer_config.zmq.queue_management.overflow_policy = g_config.zmq.overflow_policy;
+
+        // Mapear connection settings
+        sniffer_config.zmq.connection_settings.sndhwm = g_config.zmq.sndhwm;
+        sniffer_config.zmq.connection_settings.linger_ms = g_config.zmq.linger_ms;
+        sniffer_config.zmq.connection_settings.send_timeout_ms = g_config.zmq.send_timeout_ms;
+        sniffer_config.zmq.connection_settings.rcvhwm = g_config.zmq.rcvhwm;
+        sniffer_config.zmq.connection_settings.recv_timeout_ms = g_config.zmq.recv_timeout_ms;
+        sniffer_config.zmq.connection_settings.tcp_keepalive = g_config.zmq.tcp_keepalive;
+        sniffer_config.zmq.connection_settings.sndbuf = g_config.zmq.sndbuf;
+        sniffer_config.zmq.connection_settings.rcvbuf = g_config.zmq.rcvbuf;
+        sniffer_config.zmq.connection_settings.reconnect_interval_ms = g_config.zmq.reconnect_interval_ms;
+        sniffer_config.zmq.connection_settings.max_reconnect_attempts = g_config.zmq.max_reconnect_attempts;
+
+        // Mapear batch processing
+        sniffer_config.zmq.batch_processing.enabled = g_config.zmq.batch_enabled;
+        sniffer_config.zmq.batch_processing.batch_size = g_config.zmq.batch_size;
+        sniffer_config.zmq.batch_processing.batch_timeout_ms = g_config.zmq.batch_timeout_ms;
+        sniffer_config.zmq.batch_processing.max_batches_queued = g_config.zmq.max_batches_queued;
 
         // Mapear network
-        sniffer_config.network.address = g_config.network_output.address;
-        sniffer_config.network.port = g_config.network_output.port;
-        sniffer_config.network.mode = g_config.network_output.mode;
-        sniffer_config.network.socket_type = g_config.network_output.socket_type;
-		*/
+        sniffer_config.network.output_socket.address = g_config.network_output.address;
+        sniffer_config.network.output_socket.port = g_config.network_output.port;
+        sniffer_config.network.output_socket.mode = g_config.network_output.mode;
+        sniffer_config.network.output_socket.socket_type = g_config.network_output.socket_type;
+        sniffer_config.network.output_socket.high_water_mark = g_config.network_output.high_water_mark;
+
+        // Mapear transport/compression
+        sniffer_config.transport.compression.enabled = g_config.compression.enabled;
+        sniffer_config.transport.compression.algorithm = g_config.compression.algorithm;
+        sniffer_config.transport.compression.level = g_config.compression.level;
+
+		// DEBUG: Verificar valores ZMQ
+        std::cout << "[DEBUG] zmq.socket_pools.push_sockets = " << sniffer_config.zmq.socket_pools.push_sockets << std::endl;
+        std::cout << "[DEBUG] zmq.worker_threads = " << sniffer_config.zmq.worker_threads << std::endl;
         ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config);
         auto& ring_consumer = *ring_consumer_ptr;
 
