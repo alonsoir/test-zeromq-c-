@@ -172,7 +172,7 @@
 
   "network": {
     "output_socket": {
-      "address": "0.0.0.0",
+      "address": "172.18.0.3",
       "port": 5571,
       "mode": "connect",
       "socket_type": "PUSH",
@@ -219,7 +219,7 @@
       "enabled": true,
       "algorithm": "lz4",          // Alternatives: "zstd", "snappy", "lzo", "gzip", "brotli"
       "level": 1,                  // lz4: 1-12, zstd: 1-22, gzip: 1-9, brotli: 1-11
-      "min_compress_size": 1024,
+      "min_compress_size": 0,
       "compression_ratio_threshold": 0.8,
       "adaptive_compression": false // Switch algorithm based on data patterns
     },

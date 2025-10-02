@@ -7,9 +7,9 @@
   "node_id": "service3_consumer_001",
   "cluster_name": "upgraded-happiness-cluster",
   "connection": {
-    "sniffer_endpoint": "tcp://host.docker.internal:5571",
+    "sniffer_endpoint": "tcp://0.0.0.0:5571",
     "socket_type": "PULL",
-    "connection_type": "connect",
+    "connection_type": "bind",
     "receive_timeout_ms": 1000,
     "receive_hwm": 10000
   },
@@ -17,7 +17,7 @@
   "verbose": true,
   "logging": {
     "level": "info",
-    "show_packet_details": false,
+    "show_packet_details": true,
     "stats_frequency": 100
   },
   "processing": {

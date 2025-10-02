@@ -300,6 +300,7 @@ void RingBufferConsumer::zmq_sender_loop() {
 
             data = std::move(send_queue_.front());
             send_queue_.pop();
+			std::cerr << "[DEBUG] ZMQ sender obtuvo datos de la cola: " << data.size() << " bytes" << std::endl;
         }
 
         send_protobuf_message(data);
@@ -357,16 +358,19 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
         // Create protobuf message
         protobuf::NetworkSecurityEvent proto_event;
         populate_protobuf_event(event, proto_event, 0);  // Use buffer index 0 for feature processing
+		std::cerr << "[DEBUG] Protobuf creado, intentando serializar..." << std::endl;
 
         // Serialize to binary
         std::vector<uint8_t> serialized_data;
         std::string serialized_string;
 
         if (!proto_event.SerializeToString(&serialized_string)) {
+			std::cerr << "[ERROR] Protobuf serialization FAILED!" << std::endl;
             stats_.protobuf_serialization_failures++;
             return;
         }
 
+		std::cerr << "[DEBUG] Protobuf serializado: " << serialized_string.size() << " bytes" << std::endl;
         // Convert to vector for queue
         serialized_data.assign(serialized_string.begin(), serialized_string.end());
 
@@ -383,6 +387,7 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
 }
 
 void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events) {
+	std::cerr << "[DEBUG] send_event_batch() llamada con " << events.size() << " eventos" << std::endl;
     for (const auto& event : events) {
         // Submit to feature processing queue
         {
@@ -394,6 +399,7 @@ void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events
 }
 
 bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& serialized_data) {
+	std::cerr << "[DEBUG] send_protobuf_message() llamada, datos entrada: " << serialized_data.size() << " bytes" << std::endl;
     try {
         std::vector<uint8_t> data_to_send;
 
@@ -427,7 +433,16 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
 
         // Get next socket using round-robin
         zmq::socket_t* socket = get_next_socket();
-        auto result = socket->send(message, zmq::send_flags::dontwait);
+
+		std::cerr << "[DEBUG] Intentando enviar por ZMQ: " << message.size() << " bytes" << std::endl;
+
+		auto result = socket->send(message, zmq::send_flags::dontwait);
+
+		if (result) {
+    		std::cerr << "[DEBUG] ZMQ send exitoso: " << *result << " bytes enviados" << std::endl;
+		} else {
+    		std::cerr << "[ERROR] ZMQ send falló!" << std::endl;
+		}
 
         if (result.has_value()) {
             stats_.events_sent++;
@@ -444,7 +459,11 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
 }
 
 zmq::socket_t* RingBufferConsumer::get_next_socket() {
+	std::cerr << "[DEBUG] get_next_socket: " << std::endl;
+
     size_t current = socket_round_robin_.fetch_add(1) % zmq_sockets_.size();
+	std::cerr << "[DEBUG] get_next_socket: " << current << std::endl;
+	std::cerr << "[DEBUG] get_next_socket: " << zmq_sockets_[current].get() << std::endl;
     return zmq_sockets_[current].get();
 }
 
@@ -456,6 +475,8 @@ void RingBufferConsumer::add_to_batch(const SimpleEvent& event) {
     }
 
     current_batch_->events.push_back(event);
+
+	std::cerr << "[DEBUG] Evento añadido al batch. Total: " << current_batch_->events.size() << std::endl;
 
     if (current_batch_->is_ready()) {
         send_event_batch(current_batch_->events);
@@ -475,7 +496,7 @@ void RingBufferConsumer::flush_current_batch() {
 void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
                                                  protobuf::NetworkSecurityEvent& proto_event,
                                                  int buffer_index) const {
-
+	std::cerr << "[DEBUG] populate_protobuf_event() iniciada" << std::endl;
     // Use pre-allocated buffers for IP conversion
     struct in_addr src_addr = {.s_addr = event.src_ip};
     struct in_addr dst_addr = {.s_addr = event.dst_ip};
@@ -556,6 +577,7 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     proto_event.add_event_tags("raw_ebpf_capture");
     proto_event.add_event_tags("enhanced_multithreaded");
     proto_event.add_event_tags("requires_processing");
+    std::cerr << "[DEBUG] populate_protobuf_event() completada exitosamente" << std::endl;
 }
 
 std::string RingBufferConsumer::protocol_to_string(uint8_t protocol) const {
