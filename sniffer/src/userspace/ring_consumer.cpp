@@ -402,10 +402,16 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
 	std::cerr << "[DEBUG] send_protobuf_message() llamada, datos entrada: " << serialized_data.size() << " bytes" << std::endl;
     try {
         std::vector<uint8_t> data_to_send;
+        std::cerr << "[DEBUG] compression.enabled="
+          << (config_.transport.compression.enabled ? "true" : "false")
+          << " min_size=" << config_.transport.compression.min_compress_size
+          << " actual_size=" << serialized_data.size()
+          << std::endl;
 
         // Comprimir si está habilitado y el tamaño es mayor al mínimo
         if (config_.transport.compression.enabled &&
             serialized_data.size() >= config_.transport.compression.min_compress_size) {
+            std::cerr << "[DEBUG] send_protobuf_message() vamos a comprimir!, datos entrada: " << serialized_data.size() << " bytes" << std::endl;
 
             try {
                 // Crear instancia de CompressionHandler y comprimir
@@ -416,6 +422,7 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
             );
 
                 data_to_send = std::move(compressed);
+                std::cerr << "[DEBUG] send_protobuf_message() vamos a comprimir!" << std::endl;
 
             } catch (const std::exception& e) {
                 // Si falla la compresión, envía sin comprimir
@@ -425,6 +432,8 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
             }
         } else {
             // No comprimir
+            std::cerr << "[DEBUG] send_protobuf_message() NO vamos a comprimir!" << std::endl;
+
             data_to_send = serialized_data;
         }
 

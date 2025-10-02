@@ -1003,6 +1003,9 @@ int main(int argc, char* argv[]) {
         sniffer_config.transport.compression.enabled = g_config.compression.enabled;
         sniffer_config.transport.compression.algorithm = g_config.compression.algorithm;
         sniffer_config.transport.compression.level = g_config.compression.level;
+        sniffer_config.transport.compression.min_compress_size = g_config.compression.min_compress_size;
+        sniffer_config.transport.compression.compression_ratio_threshold = g_config.compression.compression_ratio_threshold;
+        sniffer_config.transport.compression.adaptive_compression = g_config.compression.adaptive_compression;
 
 		// DEBUG: Verificar valores ZMQ
         std::cout << "[DEBUG] zmq.socket_pools.push_sockets = " << sniffer_config.zmq.socket_pools.push_sockets << std::endl;

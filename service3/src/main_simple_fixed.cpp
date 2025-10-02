@@ -84,6 +84,7 @@ public:
                 zmq::recv_result_t result = socket_.recv(message, zmq::recv_flags::dontwait);
 
                 if (result) {
+                    std::cout << "[Service3] mensaje recibido!: " << message << std::endl;
                     if (processCompressedEvent(message)) {
                         events_processed_++;
                     } else {
@@ -146,6 +147,8 @@ public:
 
 private:
     bool processCompressedEvent(const zmq::message_t& message) {
+        std::cout << "[Service3] processCompressedEvent: " << std::endl;
+
         try {
             // PASO 1: Descomprimir LZ4
             const char* compressed_data = static_cast<const char*>(message.data());
@@ -154,6 +157,7 @@ private:
             // Intentar determinar tamaño descomprimido (estimación conservadora)
             size_t estimated_uncompressed_size = compressed_size * 4; // Estimación
             std::vector<char> decompressed_buffer(estimated_uncompressed_size);
+            std::cout << "[Service3] processCompressedEvent: " << compressed_data << " " << compressed_size << " " << estimated_uncompressed_size << std::endl;
 
             int decompressed_size = LZ4_decompress_safe(
                 compressed_data,
@@ -161,6 +165,7 @@ private:
                 static_cast<int>(compressed_size),
                 static_cast<int>(estimated_uncompressed_size)
             );
+            std::cout << "[Service3] processCompressedEvent: " << decompressed_size << " " << std::endl;
 
             if (decompressed_size < 0) {
                 // Intentar con buffer más grande

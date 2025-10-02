@@ -270,7 +270,17 @@ TransportConfig ConfigManager::parse_transport(const Json::Value& transport_json
     transport.compression.enabled = comp_json.get("enabled", true).asBool();
     transport.compression.algorithm = comp_json.get("algorithm", "lz4").asString();
     transport.compression.level = comp_json.get("level", 1).asInt();
-    transport.compression.min_compress_size = comp_json.get("min_compress_size", 1024).asUInt64();
+// esto es un bug, si en el campo transport.compression.min_compress_size vale 0, el parser lo convierte en basura!
+//    transport.compression.min_compress_size = comp_json.get("min_compress_size", 1024).asUInt64();
+    std::cerr << "[DEBUG] Raw min_compress_size JSON: " << comp_json["min_compress_size"] << std::endl;
+    transport.compression.min_compress_size = comp_json.isMember("min_compress_size")
+    ? static_cast<uint64_t>(
+          comp_json["min_compress_size"].isString()
+              ? std::stoull(comp_json["min_compress_size"].asString())
+              : comp_json["min_compress_size"].asInt64()
+      )
+    : 0;
+
     transport.compression.compression_ratio_threshold = comp_json.get("compression_ratio_threshold", 0.8).asDouble();
     transport.compression.adaptive_compression = comp_json.get("adaptive_compression", false).asBool();
 
