@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     libjsoncpp-dev \
     pkg-config \
+    liblz4-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Crear directorio de trabajo

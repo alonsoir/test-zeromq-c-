@@ -15,6 +15,9 @@ pkg_check_modules(ZMQ REQUIRED libzmq>=4.3)
 # Find jsoncpp
 pkg_check_modules(JSONCPP REQUIRED jsoncpp>=1.9)
 
+# Find LZ4 (NUEVO - REQUERIDO)
+pkg_check_modules(LZ4 REQUIRED liblz4>=1.9)
+
 # Use pre-compiled protobuf files
 set(PROTO_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../protobuf/network_security.pb.cc")
 set(PROTO_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/../protobuf/network_security.pb.h")
@@ -26,27 +29,30 @@ add_executable(service3
         ${PROTO_SRCS}
 )
 
-# Link libraries
+# Link libraries (LZ4 AÑADIDO)
 target_link_libraries(service3
         ${ZMQ_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         ${Protobuf_LIBRARIES}
+        ${LZ4_LIBRARIES}
         pthread
 )
 
-# Include directories for dependencies
+# Include directories for dependencies (LZ4 AÑADIDO)
 target_include_directories(service3 PRIVATE
         ${ZMQ_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
         ${Protobuf_INCLUDE_DIRS}
+        ${LZ4_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf
         ${CMAKE_CURRENT_SOURCE_DIR}/../
 )
 
-# Compiler flags
+# Compiler flags (LZ4 AÑADIDO)
 target_compile_options(service3 PRIVATE
         ${ZMQ_CFLAGS_OTHER}
         ${JSONCPP_CFLAGS_OTHER}
+        ${LZ4_CFLAGS_OTHER}
 )
 
 # Set output directory

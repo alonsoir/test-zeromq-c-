@@ -85,6 +85,51 @@ rebuild_cache:
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
 
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Available install components are: \"Unspecified\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip/fast
+
 # The main all target
 all: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles /vagrant/sniffer/build//CMakeFiles/progress.marks
@@ -178,6 +223,30 @@ proto/network_security.pb.s: proto/network_security.pb.cc.s
 proto/network_security.pb.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s
 .PHONY : proto/network_security.pb.cc.s
+
+src/userspace/compression_handler.o: src/userspace/compression_handler.cpp.o
+.PHONY : src/userspace/compression_handler.o
+
+# target to build an object file
+src/userspace/compression_handler.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.o
+.PHONY : src/userspace/compression_handler.cpp.o
+
+src/userspace/compression_handler.i: src/userspace/compression_handler.cpp.i
+.PHONY : src/userspace/compression_handler.i
+
+# target to preprocess a source file
+src/userspace/compression_handler.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.i
+.PHONY : src/userspace/compression_handler.cpp.i
+
+src/userspace/compression_handler.s: src/userspace/compression_handler.cpp.s
+.PHONY : src/userspace/compression_handler.s
+
+# target to generate assembly for a file
+src/userspace/compression_handler.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.s
+.PHONY : src/userspace/compression_handler.cpp.s
 
 src/userspace/config_manager.o: src/userspace/config_manager.cpp.o
 .PHONY : src/userspace/config_manager.o
@@ -275,6 +344,54 @@ src/userspace/ring_consumer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s
 .PHONY : src/userspace/ring_consumer.cpp.s
 
+src/userspace/thread_manager.o: src/userspace/thread_manager.cpp.o
+.PHONY : src/userspace/thread_manager.o
+
+# target to build an object file
+src/userspace/thread_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o
+.PHONY : src/userspace/thread_manager.cpp.o
+
+src/userspace/thread_manager.i: src/userspace/thread_manager.cpp.i
+.PHONY : src/userspace/thread_manager.i
+
+# target to preprocess a source file
+src/userspace/thread_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.i
+.PHONY : src/userspace/thread_manager.cpp.i
+
+src/userspace/thread_manager.s: src/userspace/thread_manager.cpp.s
+.PHONY : src/userspace/thread_manager.s
+
+# target to generate assembly for a file
+src/userspace/thread_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
+.PHONY : src/userspace/thread_manager.cpp.s
+
+src/userspace/zmq_pool_manager.o: src/userspace/zmq_pool_manager.cpp.o
+.PHONY : src/userspace/zmq_pool_manager.o
+
+# target to build an object file
+src/userspace/zmq_pool_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o
+.PHONY : src/userspace/zmq_pool_manager.cpp.o
+
+src/userspace/zmq_pool_manager.i: src/userspace/zmq_pool_manager.cpp.i
+.PHONY : src/userspace/zmq_pool_manager.i
+
+# target to preprocess a source file
+src/userspace/zmq_pool_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.i
+.PHONY : src/userspace/zmq_pool_manager.cpp.i
+
+src/userspace/zmq_pool_manager.s: src/userspace/zmq_pool_manager.cpp.s
+.PHONY : src/userspace/zmq_pool_manager.s
+
+# target to generate assembly for a file
+src/userspace/zmq_pool_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s
+.PHONY : src/userspace/zmq_pool_manager.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -282,6 +399,10 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
+	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... bpf_program"
 	@echo "... proto_compilation"
@@ -289,6 +410,9 @@ help:
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
 	@echo "... proto/network_security.pb.s"
+	@echo "... src/userspace/compression_handler.o"
+	@echo "... src/userspace/compression_handler.i"
+	@echo "... src/userspace/compression_handler.s"
 	@echo "... src/userspace/config_manager.o"
 	@echo "... src/userspace/config_manager.i"
 	@echo "... src/userspace/config_manager.s"
@@ -301,6 +425,12 @@ help:
 	@echo "... src/userspace/ring_consumer.o"
 	@echo "... src/userspace/ring_consumer.i"
 	@echo "... src/userspace/ring_consumer.s"
+	@echo "... src/userspace/thread_manager.o"
+	@echo "... src/userspace/thread_manager.i"
+	@echo "... src/userspace/thread_manager.s"
+	@echo "... src/userspace/zmq_pool_manager.o"
+	@echo "... src/userspace/zmq_pool_manager.i"
+	@echo "... src/userspace/zmq_pool_manager.s"
 .PHONY : help
 
 

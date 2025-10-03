@@ -3,3 +3,7 @@
 /vagrant/sniffer/build/CMakeFiles/sniffer.dir
 /vagrant/sniffer/build/CMakeFiles/edit_cache.dir
 /vagrant/sniffer/build/CMakeFiles/rebuild_cache.dir
+/vagrant/sniffer/build/CMakeFiles/list_install_components.dir
+/vagrant/sniffer/build/CMakeFiles/install.dir
+/vagrant/sniffer/build/CMakeFiles/install/local.dir
+/vagrant/sniffer/build/CMakeFiles/install/strip.dir

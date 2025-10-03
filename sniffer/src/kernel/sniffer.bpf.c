@@ -90,8 +90,10 @@ int xdp_sniffer_simple(struct xdp_md *ctx) {
         return XDP_PASS;
 
     struct simple_event *event = bpf_ringbuf_reserve(&events, sizeof(*event), 0);
-    if (!event)
+    if (!event) {
+        // Reserve falló - NO incrementar stats
         return XDP_PASS;
+    }
 
     // Extraer IPs (bytes 12-15 src, 16-19 dst)
     event->src_ip = (ip[12] << 24) | (ip[13] << 16) | (ip[14] << 8) | ip[15];
@@ -114,7 +116,7 @@ int xdp_sniffer_simple(struct xdp_md *ctx) {
 
     bpf_ringbuf_submit(event, 0);
 
-    // Actualizar estadísticas
+    // *** MOVER STATS AQUÍ - solo incrementar si submit fue exitoso ***
     __u32 key = 0;
     __u64 *count = bpf_map_lookup_elem(&stats, &key);
     if (count)
