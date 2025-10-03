@@ -1,128 +1,159 @@
 ---
-name: C++20 Sniffer CI/CD Pipeline - v3 Ultra
+name: C++20 Sniffer CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - "**"           # cualquier rama
-    tags:
-      - "v*.*.*"
+    branches: ["**"]
+    tags: ["v*.*.*"]
   pull_request:
-  workflow_dispatch:   # permite ejecución manual
+  workflow_dispatch:
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    env:
-      DEBIAN_FRONTEND: false
+  build-sniffer:
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Virtualization Environment
+      - name: Install build dependencies
         run: |
           set -e
-          echo "🚀 Updating system and installing virtualization packages..."
-          sudo apt-get update -y
-          echo virtualbox-ext-pack virtualbox-ext-pack/license select true \
-            | sudo debconf-set-selections
+          sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
-            curl \
-            jq \
-            netcat-openbsd \
-            qemu-kvm \
-            libvirt-daemon-system \
-            libvirt-clients \
-            virt-manager \
-            virtualbox \
-            virtualbox-dkms \
-            virtualbox-ext-pack
-          sudo modprobe kvm
-          echo "✅ Virtualization environment ready"
+            build-essential cmake pkg-config \
+            clang-14 llvm-14 \
+            libbpf-dev libzmq3-dev libprotobuf-dev \
+            libjsoncpp-dev liblz4-dev libzstd-dev \
+            protobuf-compiler bpftool \
+            linux-headers-$(uname -r)
 
-      - name: Install Vagrant
+      - name: Verify dependencies
         run: |
-          set -e
-          sudo apt-get install -y vagrant
-          echo "✅ Vagrant installed"
+          pkg-config --exists libbpf && echo "libbpf OK"
+          pkg-config --exists libzmq && echo "libzmq OK"
+          pkg-config --exists jsoncpp && echo "jsoncpp OK"
+          pkg-config --exists protobuf && echo "protobuf OK"
+          clang --version
 
-      - name: Install Docker & Docker Compose
+      - name: Build sniffer
         run: |
-          set -e
-          sudo apt-get install -y docker.io
-          sudo systemctl enable --now docker
-          sudo usermod -aG docker $USER
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
-            -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker --version
-          docker-compose --version
-          echo "✅ Docker & Docker Compose installed"
+          cd sniffer
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release \
+                   -DCMAKE_C_COMPILER=clang-14 \
+                   -DCMAKE_CXX_COMPILER=clang++-14
+          make -j$(nproc)
 
-      - name: Start Vagrant VM
+      - name: Verify build artifacts
         run: |
-          set -e
-          for i in {1..3}; do
-            echo "⏳ Attempt $i: Starting Vagrant VM..."
-            if vagrant up --provider=virtualbox --provision; then
-              echo "✅ Vagrant VM is up"
-              break
-            else
-              echo "⚠️ Vagrant up failed, retrying..."
-              sleep 10
-            fi
-          done
-          vagrant ssh -c "echo '✅ Vagrant VM provisioned and ready'"
+          test -f sniffer/build/sniffer || (echo "sniffer binary not found" && exit 1)
+          test -f sniffer/build/sniffer.bpf.o || (echo "eBPF program not found" && exit 1)
+          ls -lh sniffer/build/sniffer*
 
-      - name: Build & Start Sniffer
+      - name: Upload sniffer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sniffer-binaries
+          path: |
+            sniffer/build/sniffer
+            sniffer/build/sniffer.bpf.o
+          retention-days: 7
+
+  build-services:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
         run: |
-          set -e
-          echo "📦 Compiling & launching sniffer..."
-          vagrant ssh -c "cd /vagrant && make sniffer-start || echo '⚠️ Sniffer failed'"
+          docker compose build --parallel service1 service2 service3
 
-      - name: Build & Launch Docker Compose
+      - name: Verify Docker images
         run: |
-          set -e
-          for i in {1..3}; do
-            echo "⏳ Attempt $i: Building & launching Docker Compose..."
-            if vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml build \
-              && docker-compose -f docker-compose.yaml up -d"; then
-              echo "✅ Docker Compose launched"
-              break
-            else
-              echo "⚠️ Attempt $i failed, retrying..."
-              sleep 10
-            fi
-          done
+          docker images | grep -E "vagrant-service[1-3]"
 
-      - name: Wait for services to be healthy
+  integration-test:
+    runs-on: ubuntu-22.04
+    needs: [build-sniffer, build-services]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start etcd
         run: |
-          set -e
-          echo "⏳ Waiting for Docker services to become healthy..."
-          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml ps"
-          vagrant ssh -c "cd /vagrant && for svc in $(docker-compose -f docker-compose.yaml ps \
-            --services); do echo '⏳ Waiting service: '$svc; \
-            until [ \"$(docker inspect --format='{{.State.Health.Status}}' $svc)\" \
-            == 'healthy' ]; do echo '   ❌ Not healthy yet'; sleep 5; done; \
-            echo '✅ Service '$svc' is healthy'; done"
+          docker compose up -d etcd
+          sleep 10
 
-      - name: Run Tests or Checks
+      - name: Verify etcd health
         run: |
-          set -e
-          echo "🧪 Running test scripts..."
-          vagrant ssh -c "cd /vagrant && ./scripts/run_tests.sh || \
-            echo '⚠️ Tests script not found, skipping'"
+          docker compose exec -T etcd /usr/local/bin/etcdctl \
+            --endpoints=http://localhost:2379 endpoint health
 
-      - name: Capture logs if failure
+      - name: Start pipeline services
+        run: |
+          docker compose up -d service1 service2 service3
+          sleep 20
+
+      - name: Check services status
+        run: |
+          docker compose ps
+          docker compose logs --tail=50 service1
+          docker compose logs --tail=50 service2
+
+      - name: Verify service communication
+        run: |
+          docker compose logs service2 | grep -i "connected\|registered" || echo "Waiting for registration"
+          docker compose exec -T etcd /usr/local/bin/etcdctl \
+            --endpoints=http://localhost:2379 get --prefix /services/
+
+      - name: Show logs on failure
         if: failure()
         run: |
-          echo "⚠️ Job failed, capturing container logs..."
-          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml logs"
+          docker compose logs
+          docker compose ps -a
 
-      - name: Pipeline Summary
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  validate-configs:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate JSON configs
         run: |
-          echo "====================================="
-          echo "✅ CI/CD pipeline completed for branch/tag: $GITHUB_REF"
-          echo "====================================="
+          python3 -m json.tool sniffer/config/sniffer.json > /dev/null
+          echo "sniffer.json is valid"
+
+      - name: Check Makefile syntax
+        run: |
+          make help
+
+      - name: Validate docker-compose
+        run: |
+          docker compose config > /dev/null
+          echo "docker-compose.yaml is valid"
+
+  summary:
+    runs-on: ubuntu-22.04
+    needs: [build-sniffer, build-services, integration-test, validate-configs]
+    if: always()
+
+    steps:
+      - name: Pipeline summary
+        run: |
+          echo "======================================"
+          echo "CI/CD Pipeline Summary"
+          echo "Branch/Tag: $GITHUB_REF"
+          echo "Commit: $GITHUB_SHA"
+          echo "======================================"
