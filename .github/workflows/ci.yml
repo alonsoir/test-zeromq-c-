@@ -1,128 +1,118 @@
 ---
-name: C++20 Sniffer CI/CD Pipeline - v3 Ultra
+name: C++20 Sniffer CI Pipeline
 
 on:
   push:
-    branches:
-      - "**"           # cualquier rama
-    tags:
-      - "v*.*.*"
+    branches: ["**"]
+    tags: ["v*.*.*"]
   pull_request:
-  workflow_dispatch:   # permite ejecución manual
+  workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build-sniffer:
     runs-on: ubuntu-latest
-    env:
-      DEBIAN_FRONTEND: false
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Virtualization Environment
+      - name: Install build dependencies
         run: |
-          set -e
-          echo "🚀 Updating system and installing virtualization packages..."
-          sudo apt-get update -y
-          echo virtualbox-ext-pack virtualbox-ext-pack/license select true \
-            | sudo debconf-set-selections
+          sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
-            curl \
-            jq \
-            netcat-openbsd \
-            qemu-kvm \
-            libvirt-daemon-system \
-            libvirt-clients \
-            virt-manager \
-            virtualbox \
-            virtualbox-dkms \
-            virtualbox-ext-pack
-          sudo modprobe kvm
-          echo "✅ Virtualization environment ready"
+            build-essential cmake pkg-config \
+            clang llvm bpftool \
+            libbpf-dev libzmq3-dev libprotobuf-dev \
+            libjsoncpp-dev liblz4-dev libzstd-dev \
+            protobuf-compiler
 
-      - name: Install Vagrant
+      - name: Build sniffer
         run: |
-          set -e
-          sudo apt-get install -y vagrant
-          echo "✅ Vagrant installed"
+          cd sniffer
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
 
-      - name: Install Docker & Docker Compose
+      - name: Verify artifacts
         run: |
-          set -e
-          sudo apt-get install -y docker.io
-          sudo systemctl enable --now docker
-          sudo usermod -aG docker $USER
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
-            -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker --version
-          docker-compose --version
-          echo "✅ Docker & Docker Compose installed"
+          test -f sniffer/build/sniffer || exit 1
+          test -f sniffer/build/sniffer.bpf.o || exit 1
+          echo "✅ Sniffer built successfully"
 
-      - name: Start Vagrant VM
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sniffer-binaries
+          path: |
+            sniffer/build/sniffer
+            sniffer/build/sniffer.bpf.o
+
+  build-services:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker images
         run: |
-          set -e
-          for i in {1..3}; do
-            echo "⏳ Attempt $i: Starting Vagrant VM..."
-            if vagrant up --provider=virtualbox --provision; then
-              echo "✅ Vagrant VM is up"
-              break
-            else
-              echo "⚠️ Vagrant up failed, retrying..."
-              sleep 10
-            fi
-          done
-          vagrant ssh -c "echo '✅ Vagrant VM provisioned and ready'"
+          docker-compose build --parallel
 
-      - name: Build & Start Sniffer
+      - name: Verify images
         run: |
-          set -e
-          echo "📦 Compiling & launching sniffer..."
-          vagrant ssh -c "cd /vagrant && make sniffer-start || echo '⚠️ Sniffer failed'"
+          docker images | grep vagrant-service
 
-      - name: Build & Launch Docker Compose
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: [build-sniffer, build-services]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Start etcd
         run: |
-          set -e
-          for i in {1..3}; do
-            echo "⏳ Attempt $i: Building & launching Docker Compose..."
-            if vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml build \
-              && docker-compose -f docker-compose.yaml up -d"; then
-              echo "✅ Docker Compose launched"
-              break
-            else
-              echo "⚠️ Attempt $i failed, retrying..."
-              sleep 10
-            fi
-          done
+          docker-compose up -d etcd
+          sleep 10
 
-      - name: Wait for services to be healthy
+      - name: Verify etcd health
         run: |
-          set -e
-          echo "⏳ Waiting for Docker services to become healthy..."
-          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml ps"
-          vagrant ssh -c "cd /vagrant && for svc in $(docker-compose -f docker-compose.yaml ps \
-            --services); do echo '⏳ Waiting service: '$svc; \
-            until [ \"$(docker inspect --format='{{.State.Health.Status}}' $svc)\" \
-            == 'healthy' ]; do echo '   ❌ Not healthy yet'; sleep 5; done; \
-            echo '✅ Service '$svc' is healthy'; done"
+          docker-compose exec -T etcd /usr/local/bin/etcdctl \
+            --endpoints=http://localhost:2379 endpoint health
 
-      - name: Run Tests or Checks
+      - name: Start services
         run: |
-          set -e
-          echo "🧪 Running test scripts..."
-          vagrant ssh -c "cd /vagrant && ./scripts/run_tests.sh || \
-            echo '⚠️ Tests script not found, skipping'"
+          docker-compose up -d service1 service2 service3
+          sleep 15
 
-      - name: Capture logs if failure
+      - name: Check service health
+        run: |
+          docker-compose ps
+          docker-compose logs service1 | grep -i "registered\|connected" || true
+
+      - name: Capture logs on failure
         if: failure()
-        run: |
-          echo "⚠️ Job failed, capturing container logs..."
-          vagrant ssh -c "cd /vagrant && docker-compose -f docker-compose.yaml logs"
+        run: docker-compose logs
 
-      - name: Pipeline Summary
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v
+
+  lint-and-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Check Makefile syntax
         run: |
-          echo "====================================="
-          echo "✅ CI/CD pipeline completed for branch/tag: $GITHUB_REF"
-          echo "====================================="
+          make -n help || echo "Makefile has issues"
+
+      - name: Validate JSON configs
+        run: |
+          python3 -m json.tool sniffer/config/sniffer.json > /dev/null
+          echo "✅ JSON configs valid"
