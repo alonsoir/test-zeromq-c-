@@ -14,7 +14,7 @@ NC = \033[0m
         service3-build service3-start service3-stop service3-logs sniffer-docs \
         sniffer-test sniffer-install sniffer-package lab-full-stack \
         sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup \
-        sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local
+        sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local verify-bpf
 
 # Target por defecto
 all: lab-start
@@ -93,14 +93,14 @@ sniffer-deps: ## Verificar dependencias específicas del sniffer eBPF
 	@vagrant ssh -c "pkg-config --exists protobuf" || (echo "$(RED)Error: protobuf-dev no instalado$(NC)" && exit 1)
 	@echo "$(GREEN)Dependencias eBPF OK$(NC)"
 
-lab-start: check-deps ## Iniciar laboratorio básico (sin sniffer)
+lab-start: check-deps verify-bpf ## Iniciar laboratorio básico (sin sniffer)
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)🚀 DDOS Pipeline Laboratory$(NC)"
 	@echo "$(GREEN)   etcd + ZeroMQ + Protobuf + Docker$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
 	@echo ""
 	@echo "$(BLUE)Paso 1: Iniciando VM Debian 12...$(NC)"
-	@vagrant up
+	@vagrant up --provision
 	@echo ""
 	@echo "$(BLUE)Paso 2: Esperando que VM esté lista...$(NC)"
 	@sleep 8
@@ -464,7 +464,7 @@ sniffer-install-deps:
 sniffer-check-deps:
 	@echo "🔍 Verificando dependencias del sniffer en VM Vagrant..."
 	@vagrant ssh -c 'pkg-config --exists libbpf && echo "✅ libbpf disponible" || echo "❌ libbpf no encontrada"'
-	@vagrant ssh -c 'pkg-config --exists libzmq3 && echo "✅ libzmq disponible" || echo "❌ libzmq no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists libzmq && echo "✅ libzmq disponible" || echo "❌ libzmq no encontrada"'
 	@vagrant ssh -c 'pkg-config --exists jsoncpp && echo "✅ jsoncpp disponible" || echo "❌ jsoncpp no encontrada"'
 	@vagrant ssh -c 'pkg-config --exists liblz4 && echo "✅ liblz4 disponible" || echo "❌ liblz4 no encontrada"'
 	@vagrant ssh -c 'pkg-config --exists libzstd && echo "✅ libzstd disponible" || echo "❌ libzstd no encontrada"'
@@ -484,5 +484,20 @@ sniffer-clean-deps:
 sniffer-setup: sniffer-install-deps sniffer-build ## Setup completo del sniffer
 	@echo "🎉 Sniffer listo para usar - ejecuta: make sniffer-start"
 
+verify-bpf: ## Verificar configuración BPF JIT y filesystem
+	@echo "$(BLUE)Verificando configuración BPF...$(NC)"
+	@echo ""
+	@echo "$(BLUE)1. BPF JIT Status:$(NC)"
+	@vagrant ssh -c 'cat /proc/sys/net/core/bpf_jit_enable 2>/dev/null && echo "  ✅ BPF JIT habilitado" || echo "  ❌ BPF JIT no disponible"'
+	@echo ""
+	@echo "$(BLUE)2. BPF Filesystem montado:$(NC)"
+	@vagrant ssh -c 'mountpoint -q /sys/fs/bpf && echo "  ✅ /sys/fs/bpf montado" || echo "  ❌ /sys/fs/bpf NO montado"'
+	@vagrant ssh -c 'ls -la /sys/fs/bpf/ 2>/dev/null | head -5 || echo "  ⚠️  No se puede listar /sys/fs/bpf"'
+	@echo ""
+	@echo "$(BLUE)3. Entrada en /etc/fstab:$(NC)"
+	@vagrant ssh -c 'grep "/sys/fs/bpf" /etc/fstab && echo "  ✅ Configuración permanente en fstab" || echo "  ❌ NO está en fstab"'
+	@echo ""
+	@echo "$(BLUE)4. Capacidades del kernel:$(NC)"
+	@vagrant ssh -c 'grep CONFIG_BPF_JIT /boot/config-$$(uname -r) | head -3'
 
 

@@ -86,6 +86,23 @@ Vagrant.configure("2") do |config|
       chmod +x /usr/local/bin/docker-compose
     fi
 
+    # Habilitar BPF JIT si está disponible
+    if [ -f /proc/sys/net/core/bpf_jit_enable ]; then
+        echo "Habilitando BPF JIT si está disponible..."
+        echo 1 > /proc/sys/net/core/bpf_jit_enable
+        # Montar BPF filesystem
+        if ! mountpoint -q /sys/fs/bpf; then
+            echo "Montar BPF filesystem..."
+            mount -t bpf none /sys/fs/bpf
+        fi
+
+        # Hacerlo permanente en /etc/fstab
+        if ! grep -q "/sys/fs/bpf" /etc/fstab; then
+            echo "Hacerlo permanente en /etc/fstab..."
+            echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
+        fi
+    fi
+
     echo ""
     echo "=== VM LISTA ==="
     echo "Para usar el laboratorio:"

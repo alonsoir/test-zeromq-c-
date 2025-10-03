@@ -60,7 +60,7 @@
 struct CommandLineArgs {
     bool verbose = false;
     bool help = false;
-    std::string config_file = "../config/sniffer-proposal.json";
+    std::string config_file = "../config/sniffer.json";
     std::string interface_override = "";
     std::string profile_override = "";
     bool dry_run = false;

@@ -1,397 +1,149 @@
-# C++20 Evolutionary Sniffer v3.1
+### 1. README.md - 
 
-High-performance network packet sniffer with eBPF/XDP kernel space capture and protobuf messaging.
+```markdown
+## ✅ Estado Actual del Proyecto
 
-[![Build Status](https://img.shields.io/badge/build-passing-green)](https://github.com/your-repo/sniffer)
-[![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B20)
-[![Kernel](https://img.shields.io/badge/kernel-5.4%2B-orange)](https://www.kernel.org/)
-[![License](https://img.shields.io/badge/license-GPL-blue)](LICENSE)
+### Componentes Operativos
+- ✅ **Pipeline ZeroMQ + Protobuf**: service1 → service2 → service3 funcionando
+- ✅ **etcd Service Discovery**: Registro automático de servicios con heartbeat
+- ✅ **eBPF Sniffer v3.1**: Captura de paquetes en kernel space con XDP
+- ✅ **Compresión LZ4**: Protobuf messages comprimidos en tránsito
+- ✅ **Vagrant + Docker**: Entorno reproducible completo
 
-## 🚀 Overview
+### Configuración eBPF Optimizada
+- ✅ BPF JIT habilitado automáticamente en provisioning
+- ✅ BPF filesystem montado persistentemente en `/sys/fs/bpf`
+- ✅ Configuración permanente vía `/etc/fstab`
 
-The C++20 Evolutionary Sniffer is a high-performance network monitoring tool that captures packets at kernel level using eBPF/XDP technology and processes them in userspace with modern C++20 features. Designed for enterprise-grade packet analysis with Cloudflare-level performance aspirations.
-
-### Key Features
-
-- **🔥 Kernel-space capture**: eBPF/XDP programs for zero-copy packet processing
-- **⚡ High performance**: Optimized for 10Gbps+ network interfaces
-- **🧠 ML-ready**: Protobuf v3.1 with 83+ ML features for DDoS/ransomware detection
-- **📡 Distributed**: ZeroMQ messaging with service discovery via etcd
-- **🔧 Modern C++**: C++20 standard with advanced compiler optimizations
-- **🐋 Cloud-native**: Docker containerization with orchestration support
-
-## 📊 Architecture
-
-```mermaid
-graph TD
-    A[Network Interface] -->|XDP Hook| B[eBPF Program<br/>sniffer.bpf.c]
-    B -->|Ring Buffer| C[Userspace Consumer<br/>ring_consumer.cpp]
-    C -->|Protobuf| D[ZeroMQ Publisher]
-    D -->|TCP 5571| E[Service Pipeline]
-    
-    F[etcd Service Registry] -->|Discovery| C
-    C -->|Heartbeat| F
-    
-    style B fill:#f9f,stroke:#333,stroke-width:2px
-    style C fill:#bbf,stroke:#333,stroke-width:2px
-    style D fill:#bfb,stroke:#333,stroke-width:2px
+### Últimas Mejoras (2025-10-03)
+- Sincronización de archivos de configuración JSON (`sniffer.json` ↔ `sniffer-proposal.json`)
+- Eliminación de comentarios inline en JSON (parser estricto)
+- Corrección de pkg-config para libzmq (`libzmq3` → `libzmq`)
+- Provisioning automático de capacidades eBPF en Vagrant
+- Target `verify-bpf` para validación de configuración kernel
 ```
 
-### Data Flow
+### 2. DECISIONS.md - Nuevas secciones:
 
-1. **Kernel Space**: eBPF program captures packets via XDP hook
-2. **Ring Buffer**: Zero-copy transfer to userspace via BPF ring buffer
-3. **Processing**: C++20 userspace application processes events
-4. **Serialization**: Convert to protobuf `NetworkSecurityEvent` messages
-5. **Transport**: ZeroMQ PUSH/PULL pattern for distribution
-6. **Discovery**: etcd-based service registry for dynamic scaling
+```markdown
+### 7. Configuración JSON y Parsing Estricto
 
-## 🏗️ Components
+**Decisión**: Usar JSON puro sin comentarios
+- **Contexto**: El parser JSON estricto de jsoncpp no acepta comentarios inline (`//`)
+- **Solución**: Mantener dos archivos separados:
+  - `sniffer-proposal.json`: Versión documentada con comentarios (desarrollo)
+  - `sniffer.json`: Versión limpia para producción
+- **Alternativa considerada**: Usar JSONC, descartado por complejidad adicional
+- **Aprendizaje**: La documentación se mantendrá en archivos `.md` separados
 
-### Kernel Space (eBPF)
-- **File**: `src/kernel/sniffer.bpf.c`
-- **Function**: `xdp_sniffer_simple()`
-- **Features**: Extracts basic packet info (IPs, ports, protocol, size)
-- **Performance**: Optimized for minimal CPU cycles per packet
+### 8. Optimización eBPF en Vagrant
 
-### Userspace (C++20)
-- **Main**: `src/userspace/main.cpp` - Application lifecycle
-- **Consumer**: `src/userspace/ring_consumer.cpp` - Ring buffer processing
-- **Loader**: `src/userspace/ebpf_loader.cpp` - eBPF program management
-- **Config**: `src/userspace/config_manager.cpp` - JSON configuration
+**Decisión**: Habilitar BPF JIT y filesystem automáticamente
+- **Problema detectado**: `/proc/sys/kernel/bpf_jit_enable` no existía por defecto
+- **Solución implementada**:
+  ```bash
+  # En Vagrantfile provision:
+  echo 1 | tee /proc/sys/net/core/bpf_jit_enable
+  mount -t bpf none /sys/fs/bpf
+  echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
+  ```
+- **Impacto**: Mejora de rendimiento en compilación JIT de programas eBPF
+- **Verificación**: Target `make verify-bpf` para validar configuración
 
-### Protocol Schema
-- **File**: `../protobuf/network_security.proto`
-- **Package**: `protobuf`
-- **Message**: `NetworkSecurityEvent`
-- **Features**: 83+ ML features, geo-enrichment, distributed node info
+### 9. Gestión de Dependencias con pkg-config
 
-## 🛠️ Build Requirements
+**Decisión**: Usar nombres correctos de paquetes pkg-config
+- **Problema**: Confusion entre nombre de paquete Debian y archivo `.pc`
+    - Paquete Debian: `libzmq3-dev`
+    - Archivo pkg-config: `libzmq.pc` (no `libzmq3.pc`)
+- **Solución**: Actualizar Makefile para usar `pkg-config --exists libzmq`
+- **Lección**: Siempre verificar con `pkg-config --list-all | grep <lib>`
 
-### System Requirements
+### 10. Sincronización de Configuraciones
+
+**Decisión**: `sniffer.json` como single source of truth en producción
+- **Problema inicial**: Discrepancia entre archivos de configuración
+    - `main.h` apuntaba a `sniffer-proposal.json` (desarrollo)
+    - `run_sniffer_with_iface.sh` apuntaba a `sniffer.json` (producción)
+- **Solución**: Copiar `sniffer-proposal.json` → `sniffer.json` tras validación
+- **Proceso**:
+    1. Desarrollo en `sniffer-proposal.json` (con comentarios)
+    2. Validación y testing
+    3. Limpieza y copia a `sniffer.json`
+    4. Commit de ambos archivos sincronizados
+```
+
+### 3. Nuevo archivo: `docs/JSON_CONFIG.md`
+
+```markdown
+# JSON Configuration Guide
+
+## Archivos de Configuración
+
+### `sniffer-proposal.json` (Desarrollo)
+- Versión documentada con comentarios inline
+- Usada durante desarrollo y experimentación
+- **NO usar en producción** (comentarios no válidos en JSON estándar)
+
+### `sniffer.json` (Producción)
+- Versión limpia sin comentarios
+- Usada por el sniffer en runtime
+- Sincronizada desde `sniffer-proposal.json` tras validación
+
+## Proceso de Actualización
+
+1. Editar `sniffer-proposal.json` con comentarios
+2. Validar configuración: `make sniffer-test`
+3. Limpiar comentarios: `sed 's|//.*||g' sniffer-proposal.json > sniffer.json`
+4. Verificar JSON válido: `python3 -m json.tool sniffer.json`
+5. Commit ambos archivos
+
+## Campos Críticos
+
+### `batch.max_batches_queued`
+**Requerido**: Sí  
+**Tipo**: Integer  
+**Descripción**: Máximo número de batches en cola antes de backpressure
+
+### `compression.algorithm`
+**Requerido**: Sí  
+**Valores**: `lz4`, `zstd`, `snappy` (próximamente)  
+**Producción**: `lz4` (mejor balance rendimiento/compresión)
+```
+
+## Comandos para el commit:
+
 ```bash
-# Operating System
-Ubuntu 22.04+ / Debian 12+ / RHEL 9+
+# 1. Actualizar archivos
+git add README.md DECISIONS.md docs/JSON_CONFIG.md
 
-# Kernel Version
-Linux 5.4+ (recommended: 6.1+)
+# 2. Actualizar Makefile con verify-bpf y corrección libzmq
+git add Makefile
 
-# Hardware
-RAM: 4GB+ (recommended: 16GB+)
-CPU: x86_64 with eBPF JIT support
-Network: XDP-capable interface (recommended: 10Gbps+)
+# 3. Sincronizar configuraciones
+git add sniffer/config/sniffer.json sniffer/config/sniffer-proposal.json
+
+# 4. Commit descriptivo
+git commit -m "feat: BPF JIT optimization and JSON config synchronization
+
+- Enable BPF JIT automatically in Vagrant provisioning
+- Mount /sys/fs/bpf filesystem persistently
+- Add verify-bpf target for validation
+- Fix pkg-config libzmq detection (libzmq3 → libzmq)
+- Synchronize sniffer.json with sniffer-proposal.json
+- Remove inline comments from production JSON
+- Add JSON_CONFIG.md documentation
+- Update DECISIONS.md with latest learnings"
+
+# 5. Crear tag semántico
+git tag -a v3.1.1 -m "Version 3.1.1 - eBPF optimization and config fixes"
+
+# 6. Merge a main
+git checkout main
+git merge feature/enhanced-sniffer-config
+
+# 7. Push todo
+git push origin main
+git push origin v3.1.1
 ```
 
-### Dependencies
-```bash
-# Build tools
-cmake >= 3.20
-clang >= 10
-bpftool
-pkg-config
-
-# Libraries
-libbpf-dev >= 0.8
-libzmq3-dev >= 4.3
-libprotobuf-dev >= 3.12
-libjsoncpp-dev >= 1.9
-```
-
-## 🚀 Quick Start
-
-### Using the Laboratory Environment (Recommended)
-```bash
-# Start the complete DDOS pipeline + sniffer
-make lab-full-stack
-
-# Or step by step:
-make lab-start          # Start etcd + services
-make sniffer-build      # Compile eBPF sniffer
-make sniffer-start      # Start packet capture
-make status             # Verify everything is running
-```
-
-### Manual Build & Run
-```bash
-# 1. Install dependencies (Ubuntu)
-sudo apt update && sudo apt install -y \
-    libbpf-dev libzmq3-dev libprotobuf-dev libjsoncpp-dev \
-    clang bpftool cmake build-essential
-
-# 2. Build
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
-
-# 3. Run (requires root for eBPF)
-sudo ./sniffer --config=../config/sniffer.json
-```
-
-## 📁 Project Structure
-
-```
-sniffer/
-├── src/
-│   ├── kernel/
-│   │   └── sniffer.bpf.c           # eBPF XDP program
-│   └── userspace/
-│       ├── main.cpp                # Application entry point
-│       ├── ebpf_loader.{cpp,hpp}   # eBPF program loader
-│       ├── ring_consumer.{cpp,hpp} # Ring buffer consumer
-│       └── config_manager.{cpp,hpp}# Configuration management
-├── config/
-│   └── sniffer.json               # Default configuration
-├── docs/
-│   ├── BUILD.md                   # Detailed build guide
-│   └── BARE_METAL.md             # Physical deployment guide
-├── scripts/
-│   └── run_sniffer_with_iface.sh # Interface detection script
-└── CMakeLists.txt                # Build system
-```
-
-## ⚙️ Configuration
-
-### Basic Configuration (`config/sniffer.json`)
-```json
-{
-  "component": {
-    "name": "evolutionary_sniffer",
-    "version": "3.1.0"
-  },
-  "node_id": "sniffer_001",
-  "cluster_name": "production",
-  "capture": {
-    "interface": "eth0"
-  },
-  "network": {
-    "output_socket": {
-      "address": "127.0.0.1",
-      "port": 5571,
-      "socket_type": "PUSH"
-    }
-  }
-}
-```
-
-### Advanced Options
-- **Interface**: `"any"` for all interfaces, or specific like `"eth0"`
-- **Output socket**: ZeroMQ endpoint for protobuf messages
-- **Node ID**: Unique identifier for distributed deployments
-- **Debug mode**: `--verbose` flag for detailed packet logging
-
-## 🔬 Usage Examples
-
-### Basic Packet Capture
-```bash
-# Capture on default interface with verbose output
-sudo ./sniffer --config=config.json --verbose
-
-# Test configuration without running
-sudo ./sniffer --test-config --config=config.json
-
-# Capture for specific duration
-sudo ./sniffer --config=config.json --duration=300
-```
-
-### Integration with Pipeline
-```bash
-# Terminal 1: Start sniffer
-make sniffer-start
-
-# Terminal 2: Monitor protobuf messages
-make service3-logs
-
-# Terminal 3: View eBPF statistics
-make sniffer-status
-```
-
-### Performance Monitoring
-```bash
-# View captured packet statistics
-sudo bpftool map dump name stats
-
-# Monitor system resource usage
-htop -p $(pgrep sniffer)
-
-# Network interface statistics
-watch -n 1 'cat /proc/net/dev'
-```
-
-## 📊 Performance Characteristics
-
-### Benchmarks (10Gbps interface)
-- **Packet Rate**: Up to 14.88 Mpps (64-byte packets)
-- **CPU Usage**: <5% per core at 1Gbps
-- **Memory**: ~50MB baseline, +1MB per 100k packets/sec
-- **Latency**: <1μs kernel processing, <10μs userspace
-
-### Optimization Features
-- **Zero-copy**: Direct memory mapping from kernel
-- **JIT compilation**: eBPF programs compiled to native code
-- **CPU affinity**: Configurable core binding
-- **NUMA awareness**: Memory allocation optimization
-- **Ring buffer tuning**: Configurable sizes for different workloads
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### eBPF Program Loading Failed
-```bash
-# Check kernel support
-grep CONFIG_BPF /boot/config-$(uname -r)
-
-# Verify privileges
-sudo dmesg | grep -i bpf
-
-# Check program validity  
-bpftool btf dump file sniffer.bpf.o
-```
-
-#### Permission Denied
-```bash
-# Ensure root privileges
-sudo whoami
-
-# Check capability requirements
-sudo setcap 'cap_sys_admin,cap_net_admin+eip' sniffer
-
-# Verify BPF filesystem
-ls -la /sys/fs/bpf/
-```
-
-#### No Packets Captured
-```bash
-# Verify interface is up
-ip link show eth0
-
-# Check for existing XDP programs
-sudo bpftool net show
-
-# Generate test traffic
-ping -c 10 8.8.8.8
-```
-
-#### High CPU Usage
-```bash
-# Enable JIT compilation
-sudo sysctl net.core.bpf_jit_enable=1
-
-# Reduce ring buffer polling frequency
-# Edit config: increase timeout values
-
-# Check for infinite loops in eBPF code
-sudo bpftool prog tracelog
-```
-
-### Debug Mode
-```bash
-# Compile with debug symbols
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-
-# Run with debugger
-sudo gdb --args ./sniffer --config=config.json
-
-# Enable verbose eBPF logging
-echo 1 | sudo tee /sys/kernel/debug/tracing/events/bpf/enable
-```
-
-## 🚀 Performance Tuning
-
-### System Optimization
-```bash
-# Enable eBPF JIT
-sudo sysctl net.core.bpf_jit_enable=1
-
-# Increase memory limits
-ulimit -l unlimited
-
-# Configure CPU governor
-sudo cpupower frequency-set --governor performance
-```
-
-### Network Interface Tuning
-```bash
-# Increase ring buffer sizes
-sudo ethtool -G eth0 rx 4096 tx 4096
-
-# Disable hardware offloading for better capture
-sudo ethtool -K eth0 gro off lro off tso off gso off
-
-# Enable multi-queue
-sudo ethtool -L eth0 combined 4
-```
-
-### Application Tuning
-```bash
-# CPU affinity (bind to specific cores)
-taskset -c 0,1 ./sniffer --config=config.json
-
-# High priority scheduling
-sudo nice -n -20 ./sniffer --config=config.json
-
-# Memory allocation optimization
-export MALLOC_ARENA_MAX=1
-```
-
-## 📚 Documentation
-
-- **[BUILD.md](docs/BUILD.md)** - Detailed compilation guide
-- **[BARE_METAL.md](docs/BARE_METAL.md)** - Physical hardware deployment
-- **[API Reference]** - Generated from code comments
-- **[Examples]** - Sample configurations and use cases
-
-## 🤝 Contributing
-
-### Development Setup
-```bash
-# Clone with submodules
-git clone --recursive <repo-url>
-
-# Install pre-commit hooks
-pre-commit install
-
-# Run tests
-make test
-```
-
-### Code Style
-- **Standard**: C++20 with modern practices
-- **Formatting**: clang-format with Google style
-- **Linting**: clang-tidy with strict checks
-- **Testing**: Catch2 framework for unit tests
-
-## 📈 Roadmap
-
-### Version 3.2 (Planned)
-- [ ] Support for IPv6 packet capture
-- [ ] Multi-interface load balancing
-- [ ] Enhanced ML feature extraction
-- [ ] Real-time statistics dashboard
-
-### Version 4.0 (Future)
-- [ ] GPU acceleration for packet processing
-- [ ] Distributed capture across multiple nodes
-- [ ] Advanced threat detection algorithms
-- [ ] Integration with SIEM systems
-
-## 🏆 Acknowledgments
-
-- **eBPF Community** - For the amazing kernel technology
-- **libbpf Project** - User-space eBPF library
-- **ZeroMQ** - High-performance messaging
-- **Protocol Buffers** - Efficient serialization
-
-## 📄 License
-
-This project is licensed under the GPL License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/sniffer/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/sniffer/discussions)
-- **Documentation**: [Wiki](https://github.com/your-repo/sniffer/wiki)
-
----
-
-**Built with ❤️ for high-performance network monitoring**

@@ -1,8 +1,3 @@
-Perfecto 🚀
-Me gusta mucho cómo has resumido la evolución del repo y la idea inicial. Lo que propones de documentar las decisiones en un `DECISIONS.md` es clave para darle **rigurosidad científica** y para facilitar luego escribir el paper.
-
-Aquí te dejo una **primera versión de `DECISIONS.md`** adaptada a tu contexto actual:
-
 ---
 
 # DECISIONS.md
