@@ -14,7 +14,8 @@ NC = \033[0m
         service3-build service3-start service3-stop service3-logs sniffer-docs \
         sniffer-test sniffer-install sniffer-package lab-full-stack \
         sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup \
-        sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local verify-bpf
+        sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local verify-bpf \
+        check-deps-host check-deps-vm
 
 # Target por defecto
 all: lab-start
@@ -60,27 +61,27 @@ help: ## Mostrar ayuda completa
 	@echo "  3. make sniffer-start    # Captura de paquetes en kernel"
 	@echo "  4. make status           # Verificar todo funcionando"
 
-check-deps: ## Verificar dependencias del pipeline completo
-	@echo "$(BLUE)Verificando dependencias del pipeline...$(NC)"
+check-deps-host: ## Verificar dependencias en HOST
+	@echo "$(BLUE)Verificando dependencias del host...$(NC)"
 	@command -v vagrant >/dev/null 2>&1 || (echo "$(RED)Error: Vagrant no instalado$(NC)" && exit 1)
 	@command -v VBoxManage >/dev/null 2>&1 || (echo "$(RED)Error: VirtualBox no instalado$(NC)" && exit 1)
 	@test -f Vagrantfile || (echo "$(RED)Error: Vagrantfile no encontrado$(NC)" && exit 1)
+	@echo "$(GREEN)Dependencias del host OK$(NC)"
+
+check-deps-vm: ## Verificar dependencias dentro de la VM
+	@echo "$(BLUE)Verificando dependencias de la VM...$(NC)"
+	@command -v docker >/dev/null 2>&1 || (echo "$(RED)Error: Docker no instalado$(NC)" && exit 1)
+	@command -v docker-compose >/dev/null 2>&1 || (echo "$(RED)Error: Docker Compose no instalado$(NC)" && exit 1)
 	@test -f docker-compose.yaml || test -f docker-compose.yml || (echo "$(RED)Error: docker-compose.yaml no encontrado$(NC)" && exit 1)
-	@test -d protobuf || (echo "$(RED)Error: directorio protobuf/ no encontrado$(NC)" && exit 1)
-	@test -d service1 || (echo "$(RED)Error: directorio service1/ no encontrado$(NC)" && exit 1)
-	@test -d service2 || (echo "$(RED)Error: directorio service2/ no encontrado$(NC)" && exit 1)
-	@test -d common || (echo "$(RED)Error: directorio common/ no encontrado$(NC)" && exit 1)
-	@test -d sniffer || (echo "$(RED)Error: directorio sniffer/ no encontrado$(NC)" && exit 1)
-	@test -d scripts || (echo "$(RED)Error: directorio scripts/ no encontrado$(NC)" && exit 1)
-	@test -f common/EtcdServiceRegistry.h || (echo "$(RED)Error: EtcdServiceRegistry.h no encontrado$(NC)" && exit 1)
-	@test -f common/EtcdServiceRegistry.cpp || (echo "$(RED)Error: EtcdServiceRegistry.cpp no encontrado$(NC)" && exit 1)
-	@test -f protobuf/network_security.proto || (echo "$(RED)Error: network_security.proto no encontrado$(NC)" && exit 1)
-	@test -f sniffer/CMakeLists.txt || (echo "$(RED)Error: sniffer/CMakeLists.txt no encontrado$(NC)" && exit 1)
-	@test -f scripts/run_sniffer_with_iface.sh || (echo "$(RED)Error: run_sniffer_with_iface.sh no encontrado$(NC)" && exit 1)
-	@test -d sniffer/src/kernel || (echo "$(RED)Error: sniffer/src/kernel/ no encontrado$(NC)" && exit 1)
-	@test -d sniffer/src/userspace || (echo "$(RED)Error: sniffer/src/userspace/ no encontrado$(NC)" && exit 1)
-	@test -f sniffer/src/kernel/sniffer.bpf.c || (echo "$(RED)Error: sniffer.bpf.c no encontrado$(NC)" && exit 1)
-	@echo "$(GREEN)Todas las dependencias del pipeline OK$(NC)"
+	@echo "$(GREEN)Dependencias de la VM OK$(NC)"
+
+# Auto-detectar contexto
+check-deps: ## Verificar dependencias (auto-detecta contexto)
+	@if [ -d /vagrant ] && [ -f /vagrant/Vagrantfile ]; then \
+		$(MAKE) check-deps-vm; \
+	else \
+		$(MAKE) check-deps-host; \
+	fi
 
 # Verificar dependencias específicas del sniffer eBPF en VM (mantenido para compatibilidad)
 sniffer-deps: ## Verificar dependencias específicas del sniffer eBPF
