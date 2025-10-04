@@ -2365,9 +2365,5 @@ git push origin --tags --force
 
 ---
 
-Con este esquema, cada paso del proyecto queda **documentado y estable**, y podrás siempre volver a un estado anterior sin miedo a romper la demo.
 
-Si quieres, puedo preparar un **mini-diagrama de milestones + tags** visual para tu repo, que muestre qué tags corresponden a qué feature y cómo evoluciona el pipeline. Esto te deja un mapa claro de versiones.
-
-¿Quieres que haga ese diagrama?
 
