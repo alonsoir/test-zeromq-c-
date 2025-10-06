@@ -1,4 +1,6 @@
-//sniffer/src/kernel/sniffer.bpf.c
+//sniffer/src/bpf/sniffer.bpf.c
+// Enhanced eBPF sniffer with TCP flags extraction for ML features
+
 // Definiciones completas de tipos
 typedef unsigned char __u8;
 typedef unsigned short __u16;
@@ -33,6 +35,16 @@ struct __sk_buff;
 #define BPF_MAP_TYPE_ARRAY 2
 #define BPF_ANY 0
 
+// TCP flag definitions
+#define TCP_FLAG_FIN 0x01
+#define TCP_FLAG_SYN 0x02
+#define TCP_FLAG_RST 0x04
+#define TCP_FLAG_PSH 0x08
+#define TCP_FLAG_ACK 0x10
+#define TCP_FLAG_URG 0x20
+#define TCP_FLAG_ECE 0x40
+#define TCP_FLAG_CWR 0x80
+
 // Estructura del contexto XDP
 struct xdp_md {
     __u32 data;
@@ -43,21 +55,24 @@ struct xdp_md {
     __u32 egress_ifindex;
 };
 
-// Estructura simple para eventos
+// ⭐ NUEVA ESTRUCTURA - Enhanced event con TCP flags
 struct simple_event {
     __u32 src_ip;
     __u32 dst_ip;
     __u16 src_port;
     __u16 dst_port;
     __u8 protocol;
+    __u8 tcp_flags;          // ⭐ NUEVO: TCP flags para ML features
     __u32 packet_len;
+    __u16 ip_header_len;     // ⭐ NUEVO: IP header length
+    __u16 l4_header_len;     // ⭐ NUEVO: L4 header length (TCP/UDP)
     __u64 timestamp;
 } __attribute__((packed));
 
-// Ring buffer
+// Ring buffer (aumentado para mejor throughput)
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 1 << 20);
+    __uint(max_entries, 1 << 20);  // 1MB
 } events SEC(".maps");
 
 // Estadísticas
@@ -68,8 +83,42 @@ struct {
     __type(value, __u64);
 } stats SEC(".maps");
 
+// Helper: Extract TCP flags from TCP header
+static __always_inline __u8 extract_tcp_flags(void *tcp_start, void *data_end) {
+    // TCP header mínimo: 20 bytes
+    if (tcp_start + 20 > data_end)
+        return 0;
+
+    __u8 *tcp = (__u8*)tcp_start;
+
+    // TCP flags están en el byte 13 del TCP header
+    // Estructura TCP header:
+    // 0-1: src_port
+    // 2-3: dst_port
+    // 4-7: seq_num
+    // 8-11: ack_num
+    // 12: data_offset (4 bits) + reserved (3 bits) + NS flag (1 bit)
+    // 13: flags (CWR, ECE, URG, ACK, PSH, RST, SYN, FIN)
+
+    __u8 flags = tcp[13];
+    return flags;
+}
+
+// Helper: Get TCP header length
+static __always_inline __u16 get_tcp_header_len(void *tcp_start, void *data_end) {
+    if (tcp_start + 13 > data_end)
+        return 0;
+
+    __u8 *tcp = (__u8*)tcp_start;
+
+    // Data offset está en los primeros 4 bits del byte 12
+    // Se multiplica por 4 para obtener el tamaño en bytes
+    __u8 data_offset = (tcp[12] >> 4) & 0x0F;
+    return data_offset * 4;
+}
+
 SEC("xdp")
-int xdp_sniffer_simple(struct xdp_md *ctx) {
+int xdp_sniffer_enhanced(struct xdp_md *ctx) {
     void *data = (void *)(long)ctx->data;
     void *data_end = (void *)(long)ctx->data_end;
 
@@ -86,37 +135,93 @@ int xdp_sniffer_simple(struct xdp_md *ctx) {
 
     // Leer campos básicos del IP header
     __u8 *ip = (__u8*)ip_start;
-    if ((ip[0] >> 4) != 4) // Verificar IPv4
+
+    // Verificar IPv4
+    if ((ip[0] >> 4) != 4)
         return XDP_PASS;
 
+    // Reservar espacio en ring buffer
     struct simple_event *event = bpf_ringbuf_reserve(&events, sizeof(*event), 0);
     if (!event) {
-        // Reserve falló - NO incrementar stats
         return XDP_PASS;
     }
+
+    // Inicializar estructura
+    __builtin_memset(event, 0, sizeof(*event));
 
     // Extraer IPs (bytes 12-15 src, 16-19 dst)
     event->src_ip = (ip[12] << 24) | (ip[13] << 16) | (ip[14] << 8) | ip[15];
     event->dst_ip = (ip[16] << 24) | (ip[17] << 16) | (ip[18] << 8) | ip[19];
-    event->protocol = ip[9];
-    event->packet_len = data_end - data;
-    event->timestamp = bpf_ktime_get_ns();
-    event->src_port = 0;
-    event->dst_port = 0;
 
-    // Si es TCP o UDP, extraer puertos
-    if (event->protocol == 6 || event->protocol == 17) {
-        __u8 ihl = (ip[0] & 0x0F) * 4;
-        if (ip_start + ihl + 4 <= data_end) {
-            __u8 *l4 = (__u8*)(ip_start + ihl);
-            event->src_port = (l4[0] << 8) | l4[1];
-            event->dst_port = (l4[2] << 8) | l4[3];
+    // Protocolo
+    event->protocol = ip[9];
+
+    // Packet length total
+    event->packet_len = data_end - data;
+
+    // IP header length (IHL field * 4)
+    __u8 ihl = (ip[0] & 0x0F) * 4;
+    event->ip_header_len = ihl;
+
+    // Timestamp
+    event->timestamp = bpf_ktime_get_ns();
+
+    // ⭐ PROCESAMIENTO POR PROTOCOLO
+    void *l4_start = ip_start + ihl;
+
+    if (event->protocol == 6) {
+        // ============ TCP ============
+        // Verificar que tenemos suficiente espacio para puertos
+        if (l4_start + 4 > data_end) {
+            bpf_ringbuf_discard(event, 0);
+            return XDP_PASS;
         }
+
+        __u8 *tcp = (__u8*)l4_start;
+
+        // Extraer puertos
+        event->src_port = (tcp[0] << 8) | tcp[1];
+        event->dst_port = (tcp[2] << 8) | tcp[3];
+
+        // ⭐ EXTRAER TCP FLAGS (crítico para ML)
+        event->tcp_flags = extract_tcp_flags(l4_start, data_end);
+
+        // ⭐ TCP header length
+        event->l4_header_len = get_tcp_header_len(l4_start, data_end);
+
+    } else if (event->protocol == 17) {
+        // ============ UDP ============
+        // Verificar espacio para puertos
+        if (l4_start + 4 > data_end) {
+            bpf_ringbuf_discard(event, 0);
+            return XDP_PASS;
+        }
+
+        __u8 *udp = (__u8*)l4_start;
+
+        // Extraer puertos
+        event->src_port = (udp[0] << 8) | udp[1];
+        event->dst_port = (udp[2] << 8) | udp[3];
+
+        // UDP header es siempre 8 bytes
+        event->l4_header_len = 8;
+
+        // UDP no tiene flags
+        event->tcp_flags = 0;
+
+    } else {
+        // ============ OTROS PROTOCOLOS ============
+        // ICMP, GRE, etc - no tienen puertos ni flags
+        event->src_port = 0;
+        event->dst_port = 0;
+        event->tcp_flags = 0;
+        event->l4_header_len = 0;
     }
 
+    // Submit event al ring buffer
     bpf_ringbuf_submit(event, 0);
 
-    // *** MOVER STATS AQUÍ - solo incrementar si submit fue exitoso ***
+    // Actualizar estadísticas
     __u32 key = 0;
     __u64 *count = bpf_map_lookup_elem(&stats, &key);
     if (count)
