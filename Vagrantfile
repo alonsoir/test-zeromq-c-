@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
   # 3. Bridged network para acceso desde LAN
   # Vagrant preguntará qué interfaz usar durante 'vagrant up'
   # Útil para: acceso desde otros dispositivos, pruebas de red real
-  config.vm.network "public_network"
+  config.vm.network "public_network", bridge: "en0: Wi-Fi"
 
   # Port forwarding (útil cuando no se usa bridged o para acceso local)
   config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"  # ZeroMQ
