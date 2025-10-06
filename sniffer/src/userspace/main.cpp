@@ -1,7 +1,8 @@
 // main.cpp - Enhanced Sniffer v3.1 STRICT JSON
-// FECHA: 26 de Septiembre de 2025
+// FECHA: 6 de Octubre de 2025
 // FUNCIONALIDAD: Implementación limpia con validación estricta JSON
-
+// sniffer/src/userspace/main.cpp
+#include "config_types.h"
 #include "main.h"
 #include "network_security.pb.h"
 #include "config_manager.hpp"

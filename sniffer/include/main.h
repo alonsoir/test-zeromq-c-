@@ -1,4 +1,4 @@
-// sniffer/include/main.h
+// sniffer/include/config_types.h
 #pragma once
 
 #include <cstdint>
@@ -23,10 +23,10 @@ struct SimpleEvent {
     uint16_t src_port;
     uint16_t dst_port;
     uint8_t protocol;
-    uint8_t tcp_flags;       // ⭐ NEW: TCP flags for ML features
+    uint8_t tcp_flags;
     uint32_t packet_len;
-    uint16_t ip_header_len;  // ⭐ NEW: IP header length
-    uint16_t l4_header_len;  // ⭐ NEW: L4 (TCP/UDP) header length
+    uint16_t ip_header_len;
+    uint16_t l4_header_len;
     uint64_t timestamp;
 } __attribute__((packed));
 
