@@ -161,19 +161,19 @@ find_program(CLANG clang REQUIRED)
 add_custom_command(
         OUTPUT sniffer.bpf.o
         COMMAND ${CLANG} -O2 -target bpf -c ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c -o sniffer.bpf.o
-        DEPENDS sniffer/src/kernel/sniffer.bpf.c
+        DEPENDS ../sniffer/src/kernel/sniffer.bpf.c
 )
 
 # Dependencies
-find_package(Protobuf REQUIRED)
+find_package(../protobuf REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBBPF REQUIRED libbpf)
 pkg_check_modules(ZMQ REQUIRED libzmq)
 
 # Main sniffer executable
 add_executable(sniffer
-        sniffer/src/userspace/main.cpp
-        sniffer/src/userspace/config_manager.cpp
+        ../sniffer/src/userspace/main.cpp
+        ../sniffer/src/userspace/config_manager.cpp
         sniffer/src/userspace/sniffer_engine.cpp
         # ... otros archivos
         sniffer.bpf.o

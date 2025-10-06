@@ -146,4 +146,32 @@ git merge feature/enhanced-sniffer-config
 git push origin main
 git push origin v3.1.1
 ```
+## Red y Conectividad
 
+Esta VM tiene 3 interfaces configuradas:
+
+- **eth0** (10.0.2.15) - NAT para acceso a Internet
+- **eth1** (192.168.56.20) - Red privada host-only (IP fija)
+- **eth2** (DHCP) - Red bridged a tu LAN física
+
+### Diagnóstico de Red
+```bash
+# Dentro de la VM
+cd /vagrant
+./scripts/network_diagnostics.sh
+
+### Captura de Tráfico
+
+# Capturar en eth2 durante 60 segundos
+./scripts/capture_zeromq_traffic.sh eth2 60
+
+# Ver capturas guardadas
+ls -lh /tmp/zeromq_captures/
+
+### Verificación del Sniffer en eth2
+# Compilar sniffer
+make sniffer-build-local
+
+# Verificar que captura en eth2
+sudo ./sniffer/build/sniffer --verbose | grep eth2
+```

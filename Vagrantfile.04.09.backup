@@ -23,16 +23,9 @@ Vagrant.configure("2") do |config|
   end
 
   # Network configuration
-  # 1. NAT (implícita, siempre presente en interfaz 1)
-  # 2. Private network para acceso host-VM
   config.vm.network "private_network", ip: "192.168.56.20"
 
-  # 3. Bridged network para acceso desde LAN
-  # Vagrant preguntará qué interfaz usar durante 'vagrant up'
-  # Útil para: acceso desde otros dispositivos, pruebas de red real
-  config.vm.network "public_network", bridge: "en0: Wi-Fi"
-
-  # Port forwarding (útil cuando no se usa bridged o para acceso local)
+  # Port forwarding
   config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"  # ZeroMQ
   config.vm.network "forwarded_port", guest: 2379, host: 2379, protocol: "tcp"  # etcd client
   config.vm.network "forwarded_port", guest: 2380, host: 2380, protocol: "tcp"  # etcd peer
@@ -43,9 +36,9 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox",
       mount_options: ["dmode=775,fmode=775,exec"]
 
-  # Network environment setup for sniffer
+  # Configuración de red para sniffer
   config.vm.provision "shell", inline: <<-SHELL
-    echo "Configurando entorno de red para sniffer..."
+    echo "Configurando entorno para sniffer..."
 
     # Detectar IP del host
     HOST_IP=$(ip route | grep '^default' | awk '{print $3}' | head -1)
@@ -53,25 +46,13 @@ Vagrant.configure("2") do |config|
       HOST_IP="10.0.2.2"
     fi
 
-    echo "Host IP detectada: $HOST_IP"
-
-    # Detectar IPs de todas las interfaces
-    echo "Interfaces de red disponibles:"
-    ip -4 addr show | grep inet | awk '{print "  " $NF ": " $2}'
-
-    # Detectar IP de la interfaz bridged (si existe)
-    BRIDGED_IP=$(ip -4 addr show | grep "inet.*192.168\|inet.*10\." | grep -v "192.168.56" | awk '{print $2}' | cut -d'/' -f1 | head -1)
-    if [ -n "$BRIDGED_IP" ]; then
-      echo "IP bridged detectada: $BRIDGED_IP"
-    fi
+    echo "Host IP: $HOST_IP"
 
     # Variables de entorno
     {
       echo "VAGRANT_HOST_IP=$HOST_IP"
       echo "SNIFFER_HOST_IP=$HOST_IP"
       echo "SNIFFER_ENDPOINT=tcp://$HOST_IP:5571"
-      echo "PRIVATE_NETWORK_IP=192.168.56.20"
-      [ -n "$BRIDGED_IP" ] && echo "BRIDGED_NETWORK_IP=$BRIDGED_IP"
     } >> /etc/environment
 
     # Docker host resolution
@@ -81,7 +62,7 @@ Vagrant.configure("2") do |config|
     } >> /etc/hosts
   SHELL
 
-  # Basic provisioning
+  # Provisioning básico
   config.vm.provision "shell", inline: <<-SHELL
     echo "Instalando dependencias básicas..."
     apt-get update
@@ -107,28 +88,23 @@ Vagrant.configure("2") do |config|
 
     # Habilitar BPF JIT si está disponible
     if [ -f /proc/sys/net/core/bpf_jit_enable ]; then
-        echo "Habilitando BPF JIT..."
+        echo "Habilitando BPF JIT si está disponible..."
         echo 1 > /proc/sys/net/core/bpf_jit_enable
-
         # Montar BPF filesystem
         if ! mountpoint -q /sys/fs/bpf; then
-            echo "Montando BPF filesystem..."
+            echo "Montar BPF filesystem..."
             mount -t bpf none /sys/fs/bpf
         fi
 
-        # Hacerlo permanente
+        # Hacerlo permanente en /etc/fstab
         if ! grep -q "/sys/fs/bpf" /etc/fstab; then
-            echo "Configurando BPF en fstab..."
+            echo "Hacerlo permanente en /etc/fstab..."
             echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
         fi
     fi
 
     echo ""
     echo "=== VM LISTA ==="
-    echo "Configuración de red:"
-    echo "  - Private network: 192.168.56.20"
-    echo "  - Bridged network: $(ip -4 addr show | grep "inet.*192.168\|inet.*10\." | grep -v "192.168.56" | awk '{print $2}' | cut -d'/' -f1 | head -1 || echo 'no detectada')"
-    echo ""
     echo "Para usar el laboratorio:"
     echo "  vagrant ssh"
     echo "  cd /vagrant"
