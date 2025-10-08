@@ -166,7 +166,7 @@ if(CURL_LIBRARY)
 endif()
 
 # Combine all sources
-set(SNIFFER_SOURCES ${SNIFFER_CORE_SOURCES} ${SNIFFER_FEATURE_SOURCES})
+# set(SNIFFER_SOURCES ${SNIFFER_CORE_SOURCES} ${SNIFFER_FEATURE_SOURCES})
 
 # ============================================================================
 # EXECUTABLE TARGET

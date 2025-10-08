@@ -200,6 +200,30 @@ sniffer/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/build
 .PHONY : sniffer/fast
 
+proto/network_security.pb.o: proto/network_security.pb.cc.o
+.PHONY : proto/network_security.pb.o
+
+# target to build an object file
+proto/network_security.pb.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
+.PHONY : proto/network_security.pb.cc.o
+
+proto/network_security.pb.i: proto/network_security.pb.cc.i
+.PHONY : proto/network_security.pb.i
+
+# target to preprocess a source file
+proto/network_security.pb.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.i
+.PHONY : proto/network_security.pb.cc.i
+
+proto/network_security.pb.s: proto/network_security.pb.cc.s
+.PHONY : proto/network_security.pb.s
+
+# target to generate assembly for a file
+proto/network_security.pb.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s
+.PHONY : proto/network_security.pb.cc.s
+
 src/userspace/compression_handler.o: src/userspace/compression_handler.cpp.o
 .PHONY : src/userspace/compression_handler.o
 
@@ -223,6 +247,198 @@ src/userspace/compression_handler.s: src/userspace/compression_handler.cpp.s
 src/userspace/compression_handler.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.s
 .PHONY : src/userspace/compression_handler.cpp.s
+
+src/userspace/config_manager.o: src/userspace/config_manager.cpp.o
+.PHONY : src/userspace/config_manager.o
+
+# target to build an object file
+src/userspace/config_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o
+.PHONY : src/userspace/config_manager.cpp.o
+
+src/userspace/config_manager.i: src/userspace/config_manager.cpp.i
+.PHONY : src/userspace/config_manager.i
+
+# target to preprocess a source file
+src/userspace/config_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.i
+.PHONY : src/userspace/config_manager.cpp.i
+
+src/userspace/config_manager.s: src/userspace/config_manager.cpp.s
+.PHONY : src/userspace/config_manager.s
+
+# target to generate assembly for a file
+src/userspace/config_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.s
+.PHONY : src/userspace/config_manager.cpp.s
+
+src/userspace/ebpf_loader.o: src/userspace/ebpf_loader.cpp.o
+.PHONY : src/userspace/ebpf_loader.o
+
+# target to build an object file
+src/userspace/ebpf_loader.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o
+.PHONY : src/userspace/ebpf_loader.cpp.o
+
+src/userspace/ebpf_loader.i: src/userspace/ebpf_loader.cpp.i
+.PHONY : src/userspace/ebpf_loader.i
+
+# target to preprocess a source file
+src/userspace/ebpf_loader.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.i
+.PHONY : src/userspace/ebpf_loader.cpp.i
+
+src/userspace/ebpf_loader.s: src/userspace/ebpf_loader.cpp.s
+.PHONY : src/userspace/ebpf_loader.s
+
+# target to generate assembly for a file
+src/userspace/ebpf_loader.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.s
+.PHONY : src/userspace/ebpf_loader.cpp.s
+
+src/userspace/etcd_client.o: src/userspace/etcd_client.cpp.o
+.PHONY : src/userspace/etcd_client.o
+
+# target to build an object file
+src/userspace/etcd_client.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o
+.PHONY : src/userspace/etcd_client.cpp.o
+
+src/userspace/etcd_client.i: src/userspace/etcd_client.cpp.i
+.PHONY : src/userspace/etcd_client.i
+
+# target to preprocess a source file
+src/userspace/etcd_client.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.i
+.PHONY : src/userspace/etcd_client.cpp.i
+
+src/userspace/etcd_client.s: src/userspace/etcd_client.cpp.s
+.PHONY : src/userspace/etcd_client.s
+
+# target to generate assembly for a file
+src/userspace/etcd_client.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.s
+.PHONY : src/userspace/etcd_client.cpp.s
+
+src/userspace/feature_extractor.o: src/userspace/feature_extractor.cpp.o
+.PHONY : src/userspace/feature_extractor.o
+
+# target to build an object file
+src/userspace/feature_extractor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o
+.PHONY : src/userspace/feature_extractor.cpp.o
+
+src/userspace/feature_extractor.i: src/userspace/feature_extractor.cpp.i
+.PHONY : src/userspace/feature_extractor.i
+
+# target to preprocess a source file
+src/userspace/feature_extractor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.i
+.PHONY : src/userspace/feature_extractor.cpp.i
+
+src/userspace/feature_extractor.s: src/userspace/feature_extractor.cpp.s
+.PHONY : src/userspace/feature_extractor.s
+
+# target to generate assembly for a file
+src/userspace/feature_extractor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.s
+.PHONY : src/userspace/feature_extractor.cpp.s
+
+src/userspace/flow_manager.o: src/userspace/flow_manager.cpp.o
+.PHONY : src/userspace/flow_manager.o
+
+# target to build an object file
+src/userspace/flow_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o
+.PHONY : src/userspace/flow_manager.cpp.o
+
+src/userspace/flow_manager.i: src/userspace/flow_manager.cpp.i
+.PHONY : src/userspace/flow_manager.i
+
+# target to preprocess a source file
+src/userspace/flow_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.i
+.PHONY : src/userspace/flow_manager.cpp.i
+
+src/userspace/flow_manager.s: src/userspace/flow_manager.cpp.s
+.PHONY : src/userspace/flow_manager.s
+
+# target to generate assembly for a file
+src/userspace/flow_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.s
+.PHONY : src/userspace/flow_manager.cpp.s
+
+src/userspace/main.o: src/userspace/main.cpp.o
+.PHONY : src/userspace/main.o
+
+# target to build an object file
+src/userspace/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.o
+.PHONY : src/userspace/main.cpp.o
+
+src/userspace/main.i: src/userspace/main.cpp.i
+.PHONY : src/userspace/main.i
+
+# target to preprocess a source file
+src/userspace/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.i
+.PHONY : src/userspace/main.cpp.i
+
+src/userspace/main.s: src/userspace/main.cpp.s
+.PHONY : src/userspace/main.s
+
+# target to generate assembly for a file
+src/userspace/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.s
+.PHONY : src/userspace/main.cpp.s
+
+src/userspace/ring_consumer.o: src/userspace/ring_consumer.cpp.o
+.PHONY : src/userspace/ring_consumer.o
+
+# target to build an object file
+src/userspace/ring_consumer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o
+.PHONY : src/userspace/ring_consumer.cpp.o
+
+src/userspace/ring_consumer.i: src/userspace/ring_consumer.cpp.i
+.PHONY : src/userspace/ring_consumer.i
+
+# target to preprocess a source file
+src/userspace/ring_consumer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.i
+.PHONY : src/userspace/ring_consumer.cpp.i
+
+src/userspace/ring_consumer.s: src/userspace/ring_consumer.cpp.s
+.PHONY : src/userspace/ring_consumer.s
+
+# target to generate assembly for a file
+src/userspace/ring_consumer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.s
+.PHONY : src/userspace/ring_consumer.cpp.s
+
+src/userspace/thread_manager.o: src/userspace/thread_manager.cpp.o
+.PHONY : src/userspace/thread_manager.o
+
+# target to build an object file
+src/userspace/thread_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o
+.PHONY : src/userspace/thread_manager.cpp.o
+
+src/userspace/thread_manager.i: src/userspace/thread_manager.cpp.i
+.PHONY : src/userspace/thread_manager.i
+
+# target to preprocess a source file
+src/userspace/thread_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.i
+.PHONY : src/userspace/thread_manager.cpp.i
+
+src/userspace/thread_manager.s: src/userspace/thread_manager.cpp.s
+.PHONY : src/userspace/thread_manager.s
+
+# target to generate assembly for a file
+src/userspace/thread_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
+.PHONY : src/userspace/thread_manager.cpp.s
 
 src/userspace/zmq_pool_manager.o: src/userspace/zmq_pool_manager.cpp.o
 .PHONY : src/userspace/zmq_pool_manager.o
@@ -263,9 +479,36 @@ help:
 	@echo "... bpf_program"
 	@echo "... proto_compilation"
 	@echo "... sniffer"
+	@echo "... proto/network_security.pb.o"
+	@echo "... proto/network_security.pb.i"
+	@echo "... proto/network_security.pb.s"
 	@echo "... src/userspace/compression_handler.o"
 	@echo "... src/userspace/compression_handler.i"
 	@echo "... src/userspace/compression_handler.s"
+	@echo "... src/userspace/config_manager.o"
+	@echo "... src/userspace/config_manager.i"
+	@echo "... src/userspace/config_manager.s"
+	@echo "... src/userspace/ebpf_loader.o"
+	@echo "... src/userspace/ebpf_loader.i"
+	@echo "... src/userspace/ebpf_loader.s"
+	@echo "... src/userspace/etcd_client.o"
+	@echo "... src/userspace/etcd_client.i"
+	@echo "... src/userspace/etcd_client.s"
+	@echo "... src/userspace/feature_extractor.o"
+	@echo "... src/userspace/feature_extractor.i"
+	@echo "... src/userspace/feature_extractor.s"
+	@echo "... src/userspace/flow_manager.o"
+	@echo "... src/userspace/flow_manager.i"
+	@echo "... src/userspace/flow_manager.s"
+	@echo "... src/userspace/main.o"
+	@echo "... src/userspace/main.i"
+	@echo "... src/userspace/main.s"
+	@echo "... src/userspace/ring_consumer.o"
+	@echo "... src/userspace/ring_consumer.i"
+	@echo "... src/userspace/ring_consumer.s"
+	@echo "... src/userspace/thread_manager.o"
+	@echo "... src/userspace/thread_manager.i"
+	@echo "... src/userspace/thread_manager.s"
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"

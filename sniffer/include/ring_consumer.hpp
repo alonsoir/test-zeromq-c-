@@ -1,5 +1,9 @@
 #pragma once
 // sniffer/src/userspace/ring_consumer.hpp
+#include "config_manager.hpp"
+#include "thread_manager.hpp"
+#include "../../protobuf/network_security.pb.h"
+#include "main.h"
 #include <functional>
 #include <atomic>
 #include <thread>
@@ -14,25 +18,12 @@
 #include <string>
 #include <arpa/inet.h>
 #include <array>
-#include "config_manager.hpp"
-#include "thread_manager.hpp"
-#include "../../protobuf/network_security.pb.h"
+
 
 namespace sniffer {
 
 // Forward declarations
 class ThreadManager;
-
-// Estructura que coincide con el evento eBPF
-struct SimpleEvent {
-    uint32_t src_ip;
-    uint32_t dst_ip;
-    uint16_t src_port;
-    uint16_t dst_port;
-    uint8_t protocol;
-    uint32_t packet_len;
-    uint64_t timestamp;
-} __attribute__((packed));
 
 // Callback para procesar eventos
 using EventCallback = std::function<void(const SimpleEvent& event)>;

@@ -332,7 +332,7 @@ int RingBufferConsumer::handle_event(void* ctx, void* data, size_t data_sz) {
     return 0;
 }
 
-void RingBufferConsumer::process_raw_event(const SimpleEvent& event, int consumer_id) {
+void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unused]] int consumer_id) {
     auto start_time = std::chrono::steady_clock::now();
 
     // Call external callback if set

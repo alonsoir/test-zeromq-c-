@@ -194,7 +194,7 @@ public:
         bool enable_statistics = true;                   // Track FlowManager stats
     };
 
-    explicit FlowManager(const Config& config = Config());
+    explicit FlowManager(const Config& config);
     ~FlowManager();
 
     // Add packet to flow tracking

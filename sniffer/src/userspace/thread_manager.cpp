@@ -613,7 +613,7 @@ bool NumaAllocator::initialize_numa() {
 // Utility functions
 namespace thread_utils {
 
-double get_thread_cpu_usage(std::thread::native_handle_type handle) {
+double get_thread_cpu_usage([[maybe_unused]] std::thread::native_handle_type handle) {
     // This is a simplified implementation - real CPU monitoring would require
     // more complex system calls or /proc parsing
     return 0.0; // Placeholder
