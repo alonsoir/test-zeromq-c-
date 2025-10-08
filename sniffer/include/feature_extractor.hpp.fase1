@@ -9,12 +9,12 @@ namespace sniffer {
 
 class FeatureExtractor {
 public:
-    // ⭐ ACTUALIZADO: 23 -> 43 features (Fase 1)
-    static constexpr size_t FEATURE_COUNT = 43;
+    // ⭐ FASE 2: 43 -> 58 features (70% coverage!)
+    static constexpr size_t FEATURE_COUNT = 58;
 
     // Feature indices for the array
     enum FeatureIndex {
-        // === BÁSICAS (23 originales) ===
+        // === ORIGINALES 23 ===
         DURATION = 0,
         SPKTS,
         DPKTS,
@@ -39,42 +39,52 @@ public:
         ACK_FLAG_COUNT,
         URG_FLAG_COUNT,
 
-        // === FASE 1: NUEVAS 20 FEATURES ===
-        // Rates
-        DLOAD,              // 23: backward bits/sec
-        RATE,               // 24: total packets/sec
-        SRATE,              // 25: forward packets/sec
-        DRATE,              // 26: backward packets/sec
+        // === FASE 1: 20 features ===
+        DLOAD,
+        RATE,
+        SRATE,
+        DRATE,
+        SPKTS_RATIO,
+        SBYTES_RATIO,
+        FLOW_IAT_MAX,
+        FLOW_IAT_MIN,
+        PACKET_LEN_MAX,
+        PACKET_LEN_MIN,
+        FWD_LEN_MAX,
+        FWD_LEN_MIN,
+        FWD_LEN_TOT,
+        BWD_LEN_MAX,
+        BWD_LEN_MIN,
+        BWD_LEN_TOT,
+        ECE_FLAG_COUNT,
+        CWR_FLAG_COUNT,
+        FWD_HEADER_LEN_MEAN,
+        BWD_HEADER_LEN_MEAN,
 
-        // Ratios
-        SPKTS_RATIO,        // 27: spkts / (spkts + dpkts)
-        SBYTES_RATIO,       // 28: sbytes / (sbytes + dbytes)
+        // === FASE 2: 15 NUEVAS FEATURES ===
+        // Forward IAT (5)
+        FWD_IAT_MEAN,       // 43
+        FWD_IAT_STD,        // 44
+        FWD_IAT_MAX,        // 45
+        FWD_IAT_MIN,        // 46
+        FWD_IAT_TOT,        // 47
 
-        // Flow IAT extended
-        FLOW_IAT_MAX,       // 29
-        FLOW_IAT_MIN,       // 30
+        // Backward IAT (5)
+        BWD_IAT_MEAN,       // 48
+        BWD_IAT_STD,        // 49
+        BWD_IAT_MAX,        // 50
+        BWD_IAT_MIN,        // 51
+        BWD_IAT_TOT,        // 52
 
-        // Packet length extended
-        PACKET_LEN_MAX,     // 31
-        PACKET_LEN_MIN,     // 32
+        // Active/Idle time (4)
+        ACTIVE_MEAN,        // 53
+        ACTIVE_MAX,         // 54
+        IDLE_MEAN,          // 55
+        IDLE_MAX,           // 56
 
-        // Forward length stats
-        FWD_LEN_MAX,        // 33
-        FWD_LEN_MIN,        // 34
-        FWD_LEN_TOT,        // 35
-
-        // Backward length stats
-        BWD_LEN_MAX,        // 36
-        BWD_LEN_MIN,        // 37
-        BWD_LEN_TOT,        // 38
-
-        // TCP flags extended
-        ECE_FLAG_COUNT,     // 39
-        CWR_FLAG_COUNT,     // 40
-
-        // Header lengths
-        FWD_HEADER_LEN_MEAN, // 41
-        BWD_HEADER_LEN_MEAN  // 42
+        // Additional length stats (2)
+        FWD_LEN_STD         // 57
+        // BWD_LEN_STD sería 58, pero ya tenemos 58
     };
 
     FeatureExtractor() = default;
@@ -97,7 +107,7 @@ private:
     double extract_packet_len_std(const FlowStatistics& flow) const;
     double extract_packet_len_var(const FlowStatistics& flow) const;
 
-    // === FASE 1: NUEVOS EXTRACTORS ===
+    // === FASE 1 EXTRACTORS ===
     double extract_dload(const FlowStatistics& flow) const;
     double extract_rate(const FlowStatistics& flow) const;
     double extract_srate(const FlowStatistics& flow) const;
@@ -117,6 +127,30 @@ private:
     double extract_fwd_header_len_mean(const FlowStatistics& flow) const;
     double extract_bwd_header_len_mean(const FlowStatistics& flow) const;
 
+    // === FASE 2: NUEVOS EXTRACTORS ===
+    // Forward IAT
+    double extract_fwd_iat_mean(const FlowStatistics& flow) const;
+    double extract_fwd_iat_std(const FlowStatistics& flow) const;
+    double extract_fwd_iat_max(const FlowStatistics& flow) const;
+    double extract_fwd_iat_min(const FlowStatistics& flow) const;
+    double extract_fwd_iat_tot(const FlowStatistics& flow) const;
+
+    // Backward IAT
+    double extract_bwd_iat_mean(const FlowStatistics& flow) const;
+    double extract_bwd_iat_std(const FlowStatistics& flow) const;
+    double extract_bwd_iat_max(const FlowStatistics& flow) const;
+    double extract_bwd_iat_min(const FlowStatistics& flow) const;
+    double extract_bwd_iat_tot(const FlowStatistics& flow) const;
+
+    // Active/Idle time
+    double extract_active_mean(const FlowStatistics& flow) const;
+    double extract_active_max(const FlowStatistics& flow) const;
+    double extract_idle_mean(const FlowStatistics& flow) const;
+    double extract_idle_max(const FlowStatistics& flow) const;
+
+    // Additional length stats
+    double extract_fwd_len_std(const FlowStatistics& flow) const;
+
     // === STATISTICAL HELPERS ===
     double calculate_mean(const std::vector<uint32_t>& values) const;
     double calculate_mean_u16(const std::vector<uint16_t>& values) const;
@@ -132,6 +166,14 @@ private:
     double calculate_iat_std(const std::vector<uint64_t>& timestamps) const;
     double calculate_iat_max(const std::vector<uint64_t>& timestamps) const;
     double calculate_iat_min(const std::vector<uint64_t>& timestamps) const;
+    double calculate_iat_tot(const std::vector<uint64_t>& timestamps) const;
+
+    // === ACTIVE/IDLE HELPERS ===
+    struct ActiveIdleTimes {
+        std::vector<uint64_t> active_times;   // Periods of continuous activity
+        std::vector<uint64_t> idle_times;     // Periods of idleness
+    };
+    ActiveIdleTimes compute_active_idle_times(const std::vector<uint64_t>& timestamps) const;
 };
 
 } // namespace sniffer
