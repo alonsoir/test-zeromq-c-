@@ -62,11 +62,7 @@ struct FlowStatistics {
     std::vector<uint32_t> all_lengths;  // For packet_len_mean/std/var
 
     // ============ INTER-ARRIVAL TIMES ============
-    std::vector<uint64_t> packet_timestamps;  // ALL packet timestamps (for flow IAT)
-
-    // ⭐ FASE 2: TIMESTAMPS SEPARADOS POR DIRECCIÓN
-    std::vector<uint64_t> fwd_timestamps;     // Forward packet timestamps
-    std::vector<uint64_t> bwd_timestamps;     // Backward packet timestamps
+    std::vector<uint64_t> packet_timestamps;  // For IAT calculations
 
     // ============ TCP FLAGS COUNTERS ============
     uint32_t fin_count = 0;
@@ -117,9 +113,6 @@ struct FlowStatistics {
             uint16_t total_header = pkt.ip_header_len + pkt.l4_header_len;
             fwd_header_lengths.push_back(total_header);
 
-            // ⭐ FASE 2: Guardar timestamp forward
-            fwd_timestamps.push_back(pkt.timestamp);
-
             // Directional TCP flags
             if (has_tcp_flag(pkt, TCP_FLAG_PSH)) fwd_psh_flags++;
             if (has_tcp_flag(pkt, TCP_FLAG_URG)) fwd_urg_flags++;
@@ -131,9 +124,6 @@ struct FlowStatistics {
 
             uint16_t total_header = pkt.ip_header_len + pkt.l4_header_len;
             bwd_header_lengths.push_back(total_header);
-
-            // ⭐ FASE 2: Guardar timestamp backward
-            bwd_timestamps.push_back(pkt.timestamp);
 
             // Directional TCP flags
             if (has_tcp_flag(pkt, TCP_FLAG_PSH)) bwd_psh_flags++;
