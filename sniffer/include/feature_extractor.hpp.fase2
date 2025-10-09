@@ -9,12 +9,12 @@ namespace sniffer {
 
 class FeatureExtractor {
 public:
-    // Phase 4: 78 -> 83 features (100% COMPLETE!)
-    static constexpr size_t FEATURE_COUNT = 83;
+    // ⭐ FASE 2: 43 -> 58 features (70% coverage!)
+    static constexpr size_t FEATURE_COUNT = 58;
 
     // Feature indices for the array
     enum FeatureIndex {
-        // === ORIGINAL 23 ===
+        // === ORIGINALES 23 ===
         DURATION = 0,
         SPKTS,
         DPKTS,
@@ -39,7 +39,7 @@ public:
         ACK_FLAG_COUNT,
         URG_FLAG_COUNT,
 
-        // === PHASE 1: 20 features ===
+        // === FASE 1: 20 features ===
         DLOAD,
         RATE,
         SRATE,
@@ -61,7 +61,7 @@ public:
         FWD_HEADER_LEN_MEAN,
         BWD_HEADER_LEN_MEAN,
 
-        // === PHASE 2: 15 features ===
+        // === FASE 2: 15 NUEVAS FEATURES ===
         // Forward IAT (5)
         FWD_IAT_MEAN,       // 43
         FWD_IAT_STD,        // 44
@@ -82,37 +82,9 @@ public:
         IDLE_MEAN,          // 55
         IDLE_MAX,           // 56
 
-        // Additional length stats (1)
-        FWD_LEN_STD,        // 57
-
-        // === PHASE 3: 20 NEW FEATURES ===
-        SUBFLOW_FWD_PACKETS,    // 58
-        SUBFLOW_FWD_BYTES,      // 59
-        SUBFLOW_BWD_PACKETS,    // 60
-        SUBFLOW_BWD_BYTES,      // 61
-        FWD_BULK_RATE_AVG,      // 62
-        FWD_BULK_SIZE_AVG,      // 63
-        FWD_BULK_DURATION_AVG,  // 64
-        BWD_BULK_RATE_AVG,      // 65
-        BWD_BULK_SIZE_AVG,      // 66
-        BWD_BULK_DURATION_AVG,  // 67
-        INIT_FWD_WIN_BYTES,     // 68
-        INIT_BWD_WIN_BYTES,     // 69
-        BWD_LEN_STD,            // 70
-        FWD_HEADER_LEN_MAX,     // 71
-        FWD_HEADER_LEN_MIN,     // 72
-        BWD_HEADER_LEN_MAX,     // 73
-        BWD_HEADER_LEN_MIN,     // 74
-        FLOW_PKTS_PER_SEC,      // 75
-        FLOW_BYTES_PER_SEC,     // 76
-        DOWN_UP_RATIO,          // 77
-
-        // === PHASE 4: 5 FINAL FEATURES ===
-        AVG_PACKET_SIZE,                 // 78
-        AVG_FWD_SEGMENT_SIZE,            // 79
-        AVG_BWD_SEGMENT_SIZE,            // 80
-        FWD_AVG_PACKETS_BULK,            // 81
-        BWD_AVG_PACKETS_BULK             // 82
+        // Additional length stats (2)
+        FWD_LEN_STD         // 57
+        // BWD_LEN_STD sería 58, pero ya tenemos 58
     };
 
     FeatureExtractor() = default;
@@ -155,7 +127,7 @@ private:
     double extract_fwd_header_len_mean(const FlowStatistics& flow) const;
     double extract_bwd_header_len_mean(const FlowStatistics& flow) const;
 
-    // === PHASE 2 EXTRACTORS ===
+    // === FASE 2: NUEVOS EXTRACTORS ===
     // Forward IAT
     double extract_fwd_iat_mean(const FlowStatistics& flow) const;
     double extract_fwd_iat_std(const FlowStatistics& flow) const;
@@ -179,52 +151,13 @@ private:
     // Additional length stats
     double extract_fwd_len_std(const FlowStatistics& flow) const;
 
-    // === PHASE 3: NEW EXTRACTORS ===
-    // Subflow features
-    double extract_subflow_fwd_packets(const FlowStatistics& flow) const;
-    double extract_subflow_fwd_bytes(const FlowStatistics& flow) const;
-    double extract_subflow_bwd_packets(const FlowStatistics& flow) const;
-    double extract_subflow_bwd_bytes(const FlowStatistics& flow) const;
-
-    // Bulk transfer features
-    double extract_fwd_bulk_rate_avg(const FlowStatistics& flow) const;
-    double extract_fwd_bulk_size_avg(const FlowStatistics& flow) const;
-    double extract_fwd_bulk_duration_avg(const FlowStatistics& flow) const;
-    double extract_bwd_bulk_rate_avg(const FlowStatistics& flow) const;
-    double extract_bwd_bulk_size_avg(const FlowStatistics& flow) const;
-    double extract_bwd_bulk_duration_avg(const FlowStatistics& flow) const;
-
-    // Init window features
-    double extract_init_fwd_win_bytes(const FlowStatistics& flow) const;
-    double extract_init_bwd_win_bytes(const FlowStatistics& flow) const;
-
-    // Additional stats
-    double extract_bwd_len_std(const FlowStatistics& flow) const;
-    double extract_fwd_header_len_max(const FlowStatistics& flow) const;
-    double extract_fwd_header_len_min(const FlowStatistics& flow) const;
-    double extract_bwd_header_len_max(const FlowStatistics& flow) const;
-    double extract_bwd_header_len_min(const FlowStatistics& flow) const;
-    double extract_flow_pkts_per_sec(const FlowStatistics& flow) const;
-    double extract_flow_bytes_per_sec(const FlowStatistics& flow) const;
-    double extract_down_up_ratio(const FlowStatistics& flow) const;
-
-    // === PHASE 4: LAST 5 FEATURES ===
-    double extract_avg_packet_size(const FlowStatistics& flow) const;
-    double extract_avg_fwd_segment_size(const FlowStatistics& flow) const;
-    double extract_avg_bwd_segment_size(const FlowStatistics& flow) const;
-    double extract_fwd_avg_packets_bulk(const FlowStatistics& flow) const;
-    double extract_bwd_avg_packets_bulk(const FlowStatistics& flow) const;
-
     // === STATISTICAL HELPERS ===
     double calculate_mean(const std::vector<uint32_t>& values) const;
     double calculate_mean_u16(const std::vector<uint16_t>& values) const;
     double calculate_std(const std::vector<uint32_t>& values) const;
-    double calculate_std_u16(const std::vector<uint16_t>& values) const;
     double calculate_variance(const std::vector<uint32_t>& values) const;
     double calculate_max(const std::vector<uint32_t>& values) const;
-    double calculate_max_u16(const std::vector<uint16_t>& values) const;
     double calculate_min(const std::vector<uint32_t>& values) const;
-    double calculate_min_u16(const std::vector<uint16_t>& values) const;
     double calculate_sum(const std::vector<uint32_t>& values) const;
 
     // === IAT HELPERS ===

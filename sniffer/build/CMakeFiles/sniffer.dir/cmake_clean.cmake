@@ -19,6 +19,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o.d"
   "sniffer"

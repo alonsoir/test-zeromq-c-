@@ -272,7 +272,7 @@ TransportConfig ConfigManager::parse_transport(const Json::Value& transport_json
     transport.compression.level = comp_json.get("level", 1).asInt();
 // esto es un bug, si en el campo transport.compression.min_compress_size vale 0, el parser lo convierte en basura!
 //    transport.compression.min_compress_size = comp_json.get("min_compress_size", 1024).asUInt64();
-    std::cerr << "[DEBUG] Raw min_compress_size JSON: " << comp_json["min_compress_size"] << std::endl;
+    //std::cerr << "[DEBUG] Raw min_compress_size JSON: " << comp_json["min_compress_size"] << std::endl;
     transport.compression.min_compress_size = comp_json.isMember("min_compress_size")
     ? static_cast<uint64_t>(
           comp_json["min_compress_size"].isString()

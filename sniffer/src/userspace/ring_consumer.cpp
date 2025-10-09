@@ -1,3 +1,4 @@
+// sniffer/src/userspace/ring_consumer.cpp
 #include "compression_handler.hpp"
 #include "ring_consumer.hpp"
 #include <iostream>
@@ -6,7 +7,7 @@
 #include <google/protobuf/timestamp.pb.h>
 #include <chrono>
 #include <iomanip>
-// sniffer/src/userspace/ring_consumer.cpp
+
 namespace sniffer {
 
 RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
@@ -100,22 +101,28 @@ bool RingBufferConsumer::start() {
 
     // Start ring buffer consumer threads
     int consumer_count = config_.threading.ring_consumer_threads;
-    consumer_threads_.reserve(consumer_count);
+    consumer_threads_.reserve(consumer_count +
+                             config_.threading.feature_processor_threads +
+                             config_.threading.zmq_sender_threads +
+                             1);  // +1 for stats thread
 
     for (int i = 0; i < consumer_count; ++i) {
         consumer_threads_.emplace_back(&RingBufferConsumer::ring_consumer_loop, this, i);
         active_consumers_++;
     }
 
-	// Start feature processor threads
+    // Start feature processor threads
     for (int i = 0; i < config_.threading.feature_processor_threads; ++i) {
         consumer_threads_.emplace_back(&RingBufferConsumer::feature_processor_loop, this);
     }
 
-	// Start ZMQ sender threads
+    // Start ZMQ sender threads
     for (int i = 0; i < config_.threading.zmq_sender_threads; ++i) {
         consumer_threads_.emplace_back(&RingBufferConsumer::zmq_sender_loop, this);
     }
+
+    // Start statistics display thread
+    consumer_threads_.emplace_back(&RingBufferConsumer::stats_display_loop, this);
 
     stats_.start_time = std::chrono::steady_clock::now();
 
@@ -125,6 +132,7 @@ bool RingBufferConsumer::start() {
               << " feature processor threads" << std::endl;
     std::cout << "[INFO] + " << config_.threading.zmq_sender_threads
               << " ZMQ sender threads" << std::endl;
+    std::cout << "[INFO] + 1 statistics display thread" << std::endl;
     std::cout << "[INFO] Multi-threaded protobuf pipeline active" << std::endl;
 
     return true;
@@ -172,20 +180,15 @@ bool RingBufferConsumer::initialize_zmq() {
 
         std::string endpoint = "tcp://" + config_.network.output_socket.address + ":" +
                               std::to_string(config_.network.output_socket.port);
-		std::cout << "[DEBUG] config_.network.output_socket.address: " << config_.network.output_socket.address << std::endl;
-		std::cout << "[DEBUG] endpoint: " << endpoint << std::endl;
-		std::cout << "[DEBUG] config_.network.output_socket.port: " << config_.network.output_socket.port << std::endl;
-		std::cout << "[DEBUG] to_string(config_.network.output_socket.port): " << std::to_string(config_.network.output_socket.port) << endpoint << std::endl;
-		std::cout << "[DEBUG] endpoint: " << endpoint << std::endl;
 
-		for (int i = 0; i < socket_count; ++i) {
+        for (int i = 0; i < socket_count; ++i) {
             auto socket = std::make_unique<zmq::socket_t>(*zmq_context_, ZMQ_PUSH);
 
             // Configure socket with enhanced settings
-			socket->set(zmq::sockopt::sndhwm, static_cast<int>(config_.zmq.connection_settings.sndhwm));
-			socket->set(zmq::sockopt::linger, static_cast<int>(config_.zmq.connection_settings.linger_ms));
-			socket->set(zmq::sockopt::sndbuf, static_cast<int>(config_.zmq.connection_settings.sndbuf));
-			socket->set(zmq::sockopt::tcp_keepalive, static_cast<int>(config_.zmq.connection_settings.tcp_keepalive));
+            socket->set(zmq::sockopt::sndhwm, static_cast<int>(config_.zmq.connection_settings.sndhwm));
+            socket->set(zmq::sockopt::linger, static_cast<int>(config_.zmq.connection_settings.linger_ms));
+            socket->set(zmq::sockopt::sndbuf, static_cast<int>(config_.zmq.connection_settings.sndbuf));
+            socket->set(zmq::sockopt::tcp_keepalive, static_cast<int>(config_.zmq.connection_settings.tcp_keepalive));
 
             // Bind socket
             if (config_.network.output_socket.mode == "bind") {
@@ -300,31 +303,55 @@ void RingBufferConsumer::zmq_sender_loop() {
 
             data = std::move(send_queue_.front());
             send_queue_.pop();
-			std::cerr << "[DEBUG] ZMQ sender obtuvo datos de la cola: " << data.size() << " bytes" << std::endl;
         }
 
         send_protobuf_message(data);
     }
 }
 
+void RingBufferConsumer::stats_display_loop() {
+    std::cout << "[INFO] Statistics display thread started (interval: "
+              << stats_interval_seconds_ << "s)" << std::endl;
+
+    while (!should_stop_) {
+        std::this_thread::sleep_for(std::chrono::seconds(stats_interval_seconds_));
+
+        if (should_stop_) break;
+
+        // Calculate runtime and rates
+        auto now = std::chrono::steady_clock::now();
+        auto runtime = std::chrono::duration_cast<std::chrono::seconds>(
+            now - stats_.start_time).count();
+
+        std::cout << "\n=== ESTADÍSTICAS ===\n";
+        std::cout << "Paquetes procesados: " << stats_.events_processed << "\n";
+        std::cout << "Paquetes enviados: " << stats_.events_sent << "\n";
+        std::cout << "Tiempo activo: " << runtime << " segundos\n";
+
+        if (runtime > 0) {
+            double rate = static_cast<double>(stats_.events_processed.load()) / runtime;
+            std::cout << "Tasa: " << std::fixed << std::setprecision(2) << rate << " eventos/seg\n";
+        }
+
+        std::cout << "===================\n";
+    }
+
+    std::cout << "[INFO] Statistics display thread stopped" << std::endl;
+}
+
 int RingBufferConsumer::handle_event(void* ctx, void* data, size_t data_sz) {
-	std::cerr << "[DEBUG] CALLBACK CALLED! data_sz=" << data_sz << std::endl;
     RingBufferConsumer* consumer = static_cast<RingBufferConsumer*>(ctx);
 
     if (data_sz != sizeof(SimpleEvent)) {
-    	std::cerr << "[ERROR] SIZE MISMATCH! Received: " << data_sz
-              << " bytes, Expected: " << sizeof(SimpleEvent)
-              << " bytes - DROPPING EVENT" << std::endl;
-    	consumer->stats_.events_dropped++;
-    	return 0;
-}
+        std::cerr << "[ERROR] SIZE MISMATCH! Received: " << data_sz
+                  << " bytes, Expected: " << sizeof(SimpleEvent)
+                  << " bytes - DROPPING EVENT" << std::endl;
+        consumer->stats_.events_dropped++;
+        return 0;
+    }
 
     const SimpleEvent* event = static_cast<const SimpleEvent*>(data);
     consumer->stats_.events_processed++;
-
-    if (consumer->stats_.events_processed % 10 == 0) {
-        std::cout << "[DEBUG] Eventos procesados: " << consumer->stats_.events_processed << std::endl;
-    }
 
     // Process the event in the current consumer thread context
     consumer->process_raw_event(*event, consumer->active_consumers_.load());
@@ -357,20 +384,18 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
     try {
         // Create protobuf message
         protobuf::NetworkSecurityEvent proto_event;
-        populate_protobuf_event(event, proto_event, 0);  // Use buffer index 0 for feature processing
-		std::cerr << "[DEBUG] Protobuf creado, intentando serializar..." << std::endl;
+        populate_protobuf_event(event, proto_event, 0);
 
         // Serialize to binary
         std::vector<uint8_t> serialized_data;
         std::string serialized_string;
 
         if (!proto_event.SerializeToString(&serialized_string)) {
-			std::cerr << "[ERROR] Protobuf serialization FAILED!" << std::endl;
+            std::cerr << "[ERROR] Protobuf serialization FAILED!" << std::endl;
             stats_.protobuf_serialization_failures++;
             return;
         }
 
-		std::cerr << "[DEBUG] Protobuf serializado: " << serialized_string.size() << " bytes" << std::endl;
         // Convert to vector for queue
         serialized_data.assign(serialized_string.begin(), serialized_string.end());
 
@@ -387,7 +412,6 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
 }
 
 void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events) {
-	std::cerr << "[DEBUG] send_event_batch() llamada con " << events.size() << " eventos" << std::endl;
     for (const auto& event : events) {
         // Submit to feature processing queue
         {
@@ -399,41 +423,27 @@ void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events
 }
 
 bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& serialized_data) {
-	std::cerr << "[DEBUG] send_protobuf_message() llamada, datos entrada: " << serialized_data.size() << " bytes" << std::endl;
     try {
         std::vector<uint8_t> data_to_send;
-        std::cerr << "[DEBUG] compression.enabled="
-          << (config_.transport.compression.enabled ? "true" : "false")
-          << " min_size=" << config_.transport.compression.min_compress_size
-          << " actual_size=" << serialized_data.size()
-          << std::endl;
 
-        // Comprimir si está habilitado y el tamaño es mayor al mínimo
+        // Compress if enabled and size exceeds minimum
         if (config_.transport.compression.enabled &&
             serialized_data.size() >= config_.transport.compression.min_compress_size) {
-            std::cerr << "[DEBUG] send_protobuf_message() vamos a comprimir!, datos entrada: " << serialized_data.size() << " bytes" << std::endl;
 
             try {
-                // Crear instancia de CompressionHandler y comprimir
                 CompressionHandler compressor;
                 auto compressed = compressor.compress_lz4(
-                serialized_data.data(),
-                serialized_data.size()
-            );
-
+                    serialized_data.data(),
+                    serialized_data.size()
+                );
                 data_to_send = std::move(compressed);
-                std::cerr << "[DEBUG] send_protobuf_message() vamos a comprimir!" << std::endl;
 
             } catch (const std::exception& e) {
-                // Si falla la compresión, envía sin comprimir
                 std::cerr << "[WARNING] LZ4 compression failed: " << e.what()
-                 << ", sending uncompressed" << std::endl;
+                          << ", sending uncompressed" << std::endl;
                 data_to_send = serialized_data;
             }
         } else {
-            // No comprimir
-            std::cerr << "[DEBUG] send_protobuf_message() NO vamos a comprimir!" << std::endl;
-
             data_to_send = serialized_data;
         }
 
@@ -443,15 +453,7 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         // Get next socket using round-robin
         zmq::socket_t* socket = get_next_socket();
 
-		std::cerr << "[DEBUG] Intentando enviar por ZMQ: " << message.size() << " bytes" << std::endl;
-
-		auto result = socket->send(message, zmq::send_flags::dontwait);
-
-		if (result) {
-    		std::cerr << "[DEBUG] ZMQ send exitoso: " << *result << " bytes enviados" << std::endl;
-		} else {
-    		std::cerr << "[ERROR] ZMQ send falló!" << std::endl;
-		}
+        auto result = socket->send(message, zmq::send_flags::dontwait);
 
         if (result.has_value()) {
             stats_.events_sent++;
@@ -468,11 +470,7 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
 }
 
 zmq::socket_t* RingBufferConsumer::get_next_socket() {
-	std::cerr << "[DEBUG] get_next_socket: " << std::endl;
-
     size_t current = socket_round_robin_.fetch_add(1) % zmq_sockets_.size();
-	std::cerr << "[DEBUG] get_next_socket: " << current << std::endl;
-	std::cerr << "[DEBUG] get_next_socket: " << zmq_sockets_[current].get() << std::endl;
     return zmq_sockets_[current].get();
 }
 
@@ -484,8 +482,6 @@ void RingBufferConsumer::add_to_batch(const SimpleEvent& event) {
     }
 
     current_batch_->events.push_back(event);
-
-	std::cerr << "[DEBUG] Evento añadido al batch. Total: " << current_batch_->events.size() << std::endl;
 
     if (current_batch_->is_ready()) {
         send_event_batch(current_batch_->events);
@@ -505,7 +501,6 @@ void RingBufferConsumer::flush_current_batch() {
 void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
                                                  protobuf::NetworkSecurityEvent& proto_event,
                                                  int buffer_index) const {
-	std::cerr << "[DEBUG] populate_protobuf_event() iniciada" << std::endl;
     // Use pre-allocated buffers for IP conversion
     struct in_addr src_addr = {.s_addr = event.src_ip};
     struct in_addr dst_addr = {.s_addr = event.dst_ip};
@@ -586,7 +581,6 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     proto_event.add_event_tags("raw_ebpf_capture");
     proto_event.add_event_tags("enhanced_multithreaded");
     proto_event.add_event_tags("requires_processing");
-    std::cerr << "[DEBUG] populate_protobuf_event() completada exitosamente" << std::endl;
 }
 
 std::string RingBufferConsumer::protocol_to_string(uint8_t protocol) const {
@@ -603,8 +597,19 @@ std::string RingBufferConsumer::protocol_to_string(uint8_t protocol) const {
 }
 
 // Statistics and utility methods
-RingConsumerStats RingBufferConsumer::get_stats() const {
-    return stats_;
+RingConsumerStatsSnapshot RingBufferConsumer::get_stats() const {
+    RingConsumerStatsSnapshot snapshot;
+    snapshot.events_processed = stats_.events_processed.load();
+    snapshot.events_sent = stats_.events_sent.load();
+    snapshot.events_dropped = stats_.events_dropped.load();
+    snapshot.protobuf_serialization_failures = stats_.protobuf_serialization_failures.load();
+    snapshot.zmq_send_failures = stats_.zmq_send_failures.load();
+    snapshot.ring_buffer_polls = stats_.ring_buffer_polls.load();
+    snapshot.ring_buffer_timeouts = stats_.ring_buffer_timeouts.load();
+    snapshot.total_processing_time_us = stats_.total_processing_time_us.load();
+    snapshot.average_processing_time_us = stats_.average_processing_time_us.load();
+    snapshot.start_time = stats_.start_time;
+    return snapshot;
 }
 
 void RingBufferConsumer::print_stats() const {
@@ -633,7 +638,15 @@ void RingBufferConsumer::print_stats() const {
 }
 
 void RingBufferConsumer::reset_stats() {
-    stats_ = RingConsumerStats{};
+    stats_.events_processed = 0;
+    stats_.events_sent = 0;
+    stats_.events_dropped = 0;
+    stats_.protobuf_serialization_failures = 0;
+    stats_.zmq_send_failures = 0;
+    stats_.ring_buffer_polls = 0;
+    stats_.ring_buffer_timeouts = 0;
+    stats_.total_processing_time_us = 0;
+    stats_.average_processing_time_us = 0.0;
     stats_.start_time = std::chrono::steady_clock::now();
 }
 

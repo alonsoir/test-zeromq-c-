@@ -440,6 +440,30 @@ src/userspace/thread_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
 .PHONY : src/userspace/thread_manager.cpp.s
 
+src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
+.PHONY : src/userspace/time_window_manager.o
+
+# target to build an object file
+src/userspace/time_window_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o
+.PHONY : src/userspace/time_window_manager.cpp.o
+
+src/userspace/time_window_manager.i: src/userspace/time_window_manager.cpp.i
+.PHONY : src/userspace/time_window_manager.i
+
+# target to preprocess a source file
+src/userspace/time_window_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.i
+.PHONY : src/userspace/time_window_manager.cpp.i
+
+src/userspace/time_window_manager.s: src/userspace/time_window_manager.cpp.s
+.PHONY : src/userspace/time_window_manager.s
+
+# target to generate assembly for a file
+src/userspace/time_window_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.s
+.PHONY : src/userspace/time_window_manager.cpp.s
+
 src/userspace/zmq_pool_manager.o: src/userspace/zmq_pool_manager.cpp.o
 .PHONY : src/userspace/zmq_pool_manager.o
 
@@ -509,6 +533,9 @@ help:
 	@echo "... src/userspace/thread_manager.o"
 	@echo "... src/userspace/thread_manager.i"
 	@echo "... src/userspace/thread_manager.s"
+	@echo "... src/userspace/time_window_manager.o"
+	@echo "... src/userspace/time_window_manager.i"
+	@echo "... src/userspace/time_window_manager.s"
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"

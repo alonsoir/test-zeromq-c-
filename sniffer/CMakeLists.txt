@@ -148,6 +148,7 @@ set(SNIFFER_SOURCES
         src/userspace/etcd_client.cpp
         src/userspace/flow_manager.cpp
         src/userspace/feature_extractor.cpp
+        src/userspace/time_window_manager.cpp
         proto/network_security.pb.cc
 )
 
