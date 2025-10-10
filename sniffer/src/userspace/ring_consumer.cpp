@@ -266,6 +266,7 @@ void RingBufferConsumer::ring_consumer_loop(int consumer_id) {
 }
 
 void RingBufferConsumer::feature_processor_loop() {
+    std::cout << "[INFO] Feature processor thread started" << std::endl;
     while (!should_stop_) {
         SimpleEvent event;
 
@@ -281,13 +282,16 @@ void RingBufferConsumer::feature_processor_loop() {
 
             event = processing_queue_.front();
             processing_queue_.pop();
+            //std::cout << "[DEBUG] Feature processor obtuvo evento de la cola" << std::endl;
         }
 
         process_event_features(event);
     }
+    std::cout << "[INFO] Feature processor thread stopped" << std::endl;
 }
 
 void RingBufferConsumer::zmq_sender_loop() {
+    std::cout << "[INFO] ZMQ sender thread started" << std::endl;
     while (!should_stop_) {
         std::vector<uint8_t> data;
 
@@ -303,10 +307,12 @@ void RingBufferConsumer::zmq_sender_loop() {
 
             data = std::move(send_queue_.front());
             send_queue_.pop();
+            //std::cout << "[DEBUG] ZMQ sender obtuvo datos de la cola: " << data.size() << " bytes" << std::endl;
         }
 
         send_protobuf_message(data);
     }
+    std::cout << "[INFO] ZMQ sender thread stopped" << std::endl;
 }
 
 void RingBufferConsumer::stats_display_loop() {
@@ -381,6 +387,7 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
 }
 
 void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
+    //std::cout << "[DEBUG] process_event_features() iniciada" << std::endl;
     try {
         // Create protobuf message
         protobuf::NetworkSecurityEvent proto_event;
@@ -396,6 +403,8 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
             return;
         }
 
+        //std::cout << "[DEBUG] Protobuf serializado: " << serialized_string.size() << " bytes" << std::endl;
+
         // Convert to vector for queue
         serialized_data.assign(serialized_string.begin(), serialized_string.end());
 
@@ -403,6 +412,7 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
         {
             std::lock_guard<std::mutex> lock(send_queue_mutex_);
             send_queue_.push(std::move(serialized_data));
+            //std::cout << "[DEBUG] Añadido a send_queue_, size=" << send_queue_.size() << std::endl;
         }
         send_queue_cv_.notify_one();
 
@@ -412,6 +422,7 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
 }
 
 void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events) {
+    //std::cout << "[DEBUG] send_event_batch() con " << events.size() << " eventos" << std::endl;
     for (const auto& event : events) {
         // Submit to feature processing queue
         {
@@ -420,9 +431,11 @@ void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events
         }
         processing_queue_cv_.notify_one();
     }
+    //std::cout << "[DEBUG] Añadidos a processing_queue_, size=" << processing_queue_.size() << std::endl;
 }
 
 bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& serialized_data) {
+    //std::cout << "[DEBUG] send_protobuf_message() con " << serialized_data.size() << " bytes" << std::endl;
     try {
         std::vector<uint8_t> data_to_send;
 
@@ -430,6 +443,7 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         if (config_.transport.compression.enabled &&
             serialized_data.size() >= config_.transport.compression.min_compress_size) {
 
+            //std::cout << "[DEBUG] Comprimiendo datos..." << std::endl;
             try {
                 CompressionHandler compressor;
                 auto compressed = compressor.compress_lz4(
@@ -437,6 +451,7 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
                     serialized_data.size()
                 );
                 data_to_send = std::move(compressed);
+                //std::cout << "[DEBUG] Comprimido: " << data_to_send.size() << " bytes" << std::endl;
 
             } catch (const std::exception& e) {
                 std::cerr << "[WARNING] LZ4 compression failed: " << e.what()
@@ -444,6 +459,7 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
                 data_to_send = serialized_data;
             }
         } else {
+            //std::cout << "[DEBUG] Enviando sin comprimir" << std::endl;
             data_to_send = serialized_data;
         }
 
@@ -453,17 +469,21 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         // Get next socket using round-robin
         zmq::socket_t* socket = get_next_socket();
 
+        //std::cout << "[DEBUG] Enviando por ZMQ: " << message.size() << " bytes" << std::endl;
         auto result = socket->send(message, zmq::send_flags::dontwait);
 
         if (result.has_value()) {
+            //std::cout << "[DEBUG] ZMQ send exitoso!" << std::endl;
             stats_.events_sent++;
             return true;
         } else {
+            std::cerr << "[ERROR] ZMQ send falló!" << std::endl;
             stats_.zmq_send_failures++;
             return false;
         }
 
     } catch (const zmq::error_t& e) {
+        std::cerr << "[ERROR] ZMQ exception: " << e.what() << std::endl;
         handle_zmq_error(e);
         return false;
     }
@@ -483,7 +503,12 @@ void RingBufferConsumer::add_to_batch(const SimpleEvent& event) {
 
     current_batch_->events.push_back(event);
 
+    //std::cout << "[DEBUG] Batch size: " << current_batch_->events.size()
+    //          << "/" << get_optimal_batch_size() << std::endl;
+
     if (current_batch_->is_ready()) {
+        //std::cout << "[DEBUG] Batch ready! Sending " << current_batch_->events.size()
+        //          << " events" << std::endl;
         send_event_batch(current_batch_->events);
         current_batch_ = std::make_unique<EventBatch>(get_optimal_batch_size());
     }
@@ -493,8 +518,12 @@ void RingBufferConsumer::flush_current_batch() {
     std::lock_guard<std::mutex> lock(batch_mutex_);
 
     if (current_batch_ && !current_batch_->events.empty()) {
+        std::cout << "[INFO] flush_current_batch(): Flushing "
+                  << current_batch_->events.size() << " eventos pendientes" << std::endl;
         send_event_batch(current_batch_->events);
         current_batch_.reset();
+    } else {
+        std::cout << "[INFO] flush_current_batch(): No hay eventos pendientes" << std::endl;
     }
 }
 

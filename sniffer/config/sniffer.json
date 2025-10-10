@@ -72,7 +72,7 @@
     "zmq_send_buffer_size": 1048576,
     "flow_state_buffer_entries": 1000000,
     "statistics_buffer_entries": 100000,
-    "batch_processing_size": 100
+    "batch_processing_size": 4
   },
   "threading": {
     "ring_consumer_threads": 2,
