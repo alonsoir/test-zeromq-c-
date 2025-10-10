@@ -15,7 +15,7 @@ NC = \033[0m
         sniffer-test sniffer-install sniffer-package lab-full-stack \
         sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup \
         sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local verify-bpf \
-        check-deps-host check-deps-vm
+        check-deps-host check-deps-vm sniffer-package sniffer-package-deps sniffer-package-clean
 
 # Target por defecto
 all: lab-start
@@ -501,4 +501,47 @@ verify-bpf: ## Verificar configuración BPF JIT y filesystem
 	@echo "$(BLUE)4. Capacidades del kernel:$(NC)"
 	@vagrant ssh -c 'grep CONFIG_BPF_JIT /boot/config-$$(uname -r) | head -3'
 
+sniffer-package-deps: ## Instalar dependencias para crear paquete Debian
+	@echo "$(BLUE)📦 Instalando dependencias de empaquetado Debian...$(NC)"
+	@vagrant ssh -c "cd /vagrant && chmod +x scripts/install-debian-build-deps.sh && ./scripts/install-debian-build-deps.sh"
+	@echo "$(GREEN)✅ Dependencias instaladas$(NC)"
 
+sniffer-package: sniffer-package-deps ## Crear paquete Debian del sniffer
+	@echo "$(BLUE)📦 Creando paquete Debian...$(NC)"
+	@echo "$(YELLOW)Preparando entorno de compilación limpio (SOLO sniffer)...$(NC)"
+	@vagrant ssh -c "\
+		rm -rf ~/build-sniffer && \
+		mkdir -p ~/build-sniffer && \
+		echo 'Copiando SOLO archivos necesarios para el sniffer...' && \
+		mkdir -p ~/build-sniffer/sniffer && \
+		cp -r /vagrant/sniffer/* ~/build-sniffer/sniffer/ && \
+		mkdir -p ~/build-sniffer/debian && \
+		cp -r /vagrant/debian/* ~/build-sniffer/debian/ && \
+		cp /vagrant/Makefile.debian ~/build-sniffer/ && \
+		cp /vagrant/README.md ~/build-sniffer/ && \
+		cp /vagrant/README.debian.md ~/build-sniffer/ 2>/dev/null || true && \
+		echo 'Archivos copiados:' && \
+		du -sh ~/build-sniffer && \
+		cd ~/build-sniffer && \
+		echo 'Compilando paquete...' && \
+		dpkg-buildpackage -us -uc -b && \
+		echo 'Copiando paquetes generados...' && \
+		cp ../*.deb /vagrant/ && \
+		echo '✅ Compilación completada'"
+	@echo ""
+	@echo "$(GREEN)✅ Paquete Debian creado exitosamente$(NC)"
+	@echo ""
+	@echo "$(YELLOW)📦 Paquetes generados en $(PWD):$(NC)"
+	@ls -lh *.deb
+	@echo ""
+	@echo "$(BLUE)Tamaño del paquete:$(NC)"
+	@ls -lh sniffer-ebpf_*.deb | awk '{print "  " $$9 ": " $$5}'
+	@echo ""
+	@echo "$(BLUE)Para instalar:$(NC)"
+	@echo "  sudo dpkg -i sniffer-ebpf_0.83.0-1_amd64.deb"
+
+sniffer-package-clean: ## Limpiar build temporal del paquete
+	@echo "$(YELLOW)🧹 Limpiando build temporal del paquete...$(NC)"
+	@vagrant ssh -c "rm -rf ~/build-sniffer"
+	@rm -f *.deb *.buildinfo *.changes
+	@echo "$(GREEN)✅ Limpieza completada$(NC)"

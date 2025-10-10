@@ -81,6 +81,22 @@ Vagrant.configure("2") do |config|
     } >> /etc/hosts
   SHELL
 
+  config.vm.provision "shell", inline: <<-SHELL
+    # Instalar herramientas básicas
+    echo "Instalar rsync..."
+    apt-get update
+    apt-get install -y rsync
+
+    # Configurar locales españolas
+    echo "Instalar y configurar locales españolas..."
+    apt-get install -y locales
+    sed -i '/es_ES.UTF-8/s/^# //g' /etc/locale.gen
+    locale-gen es_ES.UTF-8
+    update-locale LANG=es_ES.UTF-8 LC_ALL=es_ES.UTF-8
+    echo 'export LANG=es_ES.UTF-8' >> /etc/profile.d/locale.sh
+    echo 'export LC_ALL=es_ES.UTF-8' >> /etc/profile.d/locale.sh
+  SHELL
+
   # Basic provisioning
   config.vm.provision "shell", inline: <<-SHELL
     echo "Instalando dependencias básicas..."

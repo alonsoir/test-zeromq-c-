@@ -1,0 +1,73 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Create configuration directory if it doesn't exist
+        if [ ! -d /etc/sniffer-ebpf ]; then
+            mkdir -p /etc/sniffer-ebpf
+            chmod 755 /etc/sniffer-ebpf
+        fi
+
+        # Create default configuration if it doesn't exist
+        if [ ! -f /etc/sniffer-ebpf/config.conf ]; then
+            cat > /etc/sniffer-ebpf/config.conf <<EOF
+# eBPF Sniffer Configuration
+# Network interface to monitor (e.g., eth0, ens33)
+INTERFACE=eth0
+
+# Batch size (number of packets per window)
+BATCH_SIZE=10
+
+# ZMQ endpoint for publishing
+ZMQ_ENDPOINT=tcp://*:5555
+
+# Enable/disable LZ4 compression
+ENABLE_COMPRESSION=true
+
+# Log level (DEBUG, INFO, WARN, ERROR)
+LOG_LEVEL=INFO
+EOF
+            chmod 644 /etc/sniffer-ebpf/config.conf
+        fi
+
+        # Reload systemd daemon
+        if [ -x /bin/systemctl ]; then
+            systemctl daemon-reload || true
+        fi
+
+        echo "eBPF Sniffer installed successfully!"
+        echo "Configuration file: /etc/sniffer-ebpf/config.conf"
+        echo "To start the service: sudo systemctl start sniffer-ebpf"
+        echo "To enable at boot: sudo systemctl enable sniffer-ebpf"
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+# Automatically added by dh_installsystemd/13.11.4
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'sniffer-ebpf.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'sniffer-ebpf.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'sniffer-ebpf.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'sniffer-ebpf.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

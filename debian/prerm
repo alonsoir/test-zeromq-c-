@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Stop the service if running
+        if [ -x /bin/systemctl ]; then
+            if systemctl is-active --quiet sniffer-ebpf; then
+                systemctl stop sniffer-ebpf || true
+            fi
+            if systemctl is-enabled --quiet sniffer-ebpf; then
+                systemctl disable sniffer-ebpf || true
+            fi
+        fi
+        ;;
+
+    failed-upgrade)
+        ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,28 @@
+[Unit]
+Description=eBPF Network Packet Sniffer with ML Features
+Documentation=https://github.com/alonsoir/test-zeromq-c-
+After=network.target
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=-/etc/sniffer-ebpf/config.conf
+ExecStart=/usr/bin/sniffer_ebpf ${INTERFACE:-eth0}
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_BPF CAP_SYS_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_BPF CAP_SYS_ADMIN
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log
+
+# Resource limits
+LimitNOFILE=65536
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target
