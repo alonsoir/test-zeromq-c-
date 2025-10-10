@@ -171,7 +171,7 @@ std::vector<uint8_t> CompressionHandler::decompress_zstd(const void* data, size_
 #endif
 }
 
-std::vector<uint8_t> CompressionHandler::compress_snappy(const void* data, size_t size) {
+std::vector<uint8_t> CompressionHandler::compress_snappy([[maybe_unused]] const void* data, [[maybe_unused]] size_t size) {
 #ifdef HAVE_SNAPPY
     std::string compressed;
     snappy::Compress(static_cast<const char*>(data), size, &compressed);
@@ -181,7 +181,7 @@ std::vector<uint8_t> CompressionHandler::compress_snappy(const void* data, size_
 #endif
 }
 
-std::vector<uint8_t> CompressionHandler::decompress_snappy(const void* data, size_t size) {
+std::vector<uint8_t> CompressionHandler::decompress_snappy([[maybe_unused]] const void* data,[[maybe_unused]] size_t size) {
 #ifdef HAVE_SNAPPY
     std::string decompressed;
     const std::string input(static_cast<const char*>(data), size);
@@ -201,7 +201,7 @@ double CompressionHandler::get_compression_ratio(size_t original_size, size_t co
     return static_cast<double>(compressed_size) / static_cast<double>(original_size);
 }
 
-CompressionType CompressionHandler::get_best_compression_type(const void* data, size_t size) {
+CompressionType CompressionHandler::get_best_compression_type([[maybe_unused]] const void* data, [[maybe_unused]] size_t size) {
     // For network packets, LZ4 is usually best balance of speed/compression
     // Zstd for better compression ratio if CPU allows
     if (size < 1024) {

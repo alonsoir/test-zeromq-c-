@@ -47,3 +47,32 @@ docker-compose.override.yml
 *~
 .DS_Store
 Thumbs.db
+
+# ML Models - too large for git, use Git LFS or external storage
+models/archive/
+models/experimental/
+models/backup_*/
+*.joblib
+*.pkl
+*.h5
+*.pb
+*.onnx
+
+# Keep only production models (uncomment if you want to track them)
+# !models/production/rf_production_sniffer_compatible.joblib
+# !models/production/rf_production_sniffer_compatible_scaler.joblib
+
+# Build artifacts
+sniffer/build/
+sniffer/cmake-build-*/
+**/CMakeCache.txt
+**/CMakeFiles/
+
+# Logs
+sniffer/logs/
+
+# Backup files
+*.backup
+
+# IDE
+.vscode/

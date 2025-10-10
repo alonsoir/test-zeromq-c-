@@ -46,10 +46,10 @@ bool EbpfLoader::load_program(const std::string& bpf_obj_path) {
         return false;
     }
     
-    // Obtener el programa XDP
-    xdp_prog_ = bpf_object__find_program_by_name(bpf_obj_, "xdp_sniffer_simple");
+    // Obtener el programa XDP. Está definido en src/kernel/sniffer.bpf.c
+    xdp_prog_ = bpf_object__find_program_by_name(bpf_obj_, "xdp_sniffer_enhanced");
     if (!xdp_prog_) {
-        std::cerr << "[ERROR] Failed to find XDP program 'xdp_sniffer_simple'" << std::endl;
+        std::cerr << "[ERROR] Failed to find XDP program 'xdp_sniffer_enhanced'" << std::endl;
         bpf_object__close(bpf_obj_);
         bpf_obj_ = nullptr;
         return false;

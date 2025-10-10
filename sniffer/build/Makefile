@@ -296,6 +296,78 @@ src/userspace/ebpf_loader.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.s
 .PHONY : src/userspace/ebpf_loader.cpp.s
 
+src/userspace/etcd_client.o: src/userspace/etcd_client.cpp.o
+.PHONY : src/userspace/etcd_client.o
+
+# target to build an object file
+src/userspace/etcd_client.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o
+.PHONY : src/userspace/etcd_client.cpp.o
+
+src/userspace/etcd_client.i: src/userspace/etcd_client.cpp.i
+.PHONY : src/userspace/etcd_client.i
+
+# target to preprocess a source file
+src/userspace/etcd_client.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.i
+.PHONY : src/userspace/etcd_client.cpp.i
+
+src/userspace/etcd_client.s: src/userspace/etcd_client.cpp.s
+.PHONY : src/userspace/etcd_client.s
+
+# target to generate assembly for a file
+src/userspace/etcd_client.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.s
+.PHONY : src/userspace/etcd_client.cpp.s
+
+src/userspace/feature_extractor.o: src/userspace/feature_extractor.cpp.o
+.PHONY : src/userspace/feature_extractor.o
+
+# target to build an object file
+src/userspace/feature_extractor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o
+.PHONY : src/userspace/feature_extractor.cpp.o
+
+src/userspace/feature_extractor.i: src/userspace/feature_extractor.cpp.i
+.PHONY : src/userspace/feature_extractor.i
+
+# target to preprocess a source file
+src/userspace/feature_extractor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.i
+.PHONY : src/userspace/feature_extractor.cpp.i
+
+src/userspace/feature_extractor.s: src/userspace/feature_extractor.cpp.s
+.PHONY : src/userspace/feature_extractor.s
+
+# target to generate assembly for a file
+src/userspace/feature_extractor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.s
+.PHONY : src/userspace/feature_extractor.cpp.s
+
+src/userspace/flow_manager.o: src/userspace/flow_manager.cpp.o
+.PHONY : src/userspace/flow_manager.o
+
+# target to build an object file
+src/userspace/flow_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o
+.PHONY : src/userspace/flow_manager.cpp.o
+
+src/userspace/flow_manager.i: src/userspace/flow_manager.cpp.i
+.PHONY : src/userspace/flow_manager.i
+
+# target to preprocess a source file
+src/userspace/flow_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.i
+.PHONY : src/userspace/flow_manager.cpp.i
+
+src/userspace/flow_manager.s: src/userspace/flow_manager.cpp.s
+.PHONY : src/userspace/flow_manager.s
+
+# target to generate assembly for a file
+src/userspace/flow_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.s
+.PHONY : src/userspace/flow_manager.cpp.s
+
 src/userspace/main.o: src/userspace/main.cpp.o
 .PHONY : src/userspace/main.o
 
@@ -368,6 +440,30 @@ src/userspace/thread_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
 .PHONY : src/userspace/thread_manager.cpp.s
 
+src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
+.PHONY : src/userspace/time_window_manager.o
+
+# target to build an object file
+src/userspace/time_window_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o
+.PHONY : src/userspace/time_window_manager.cpp.o
+
+src/userspace/time_window_manager.i: src/userspace/time_window_manager.cpp.i
+.PHONY : src/userspace/time_window_manager.i
+
+# target to preprocess a source file
+src/userspace/time_window_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.i
+.PHONY : src/userspace/time_window_manager.cpp.i
+
+src/userspace/time_window_manager.s: src/userspace/time_window_manager.cpp.s
+.PHONY : src/userspace/time_window_manager.s
+
+# target to generate assembly for a file
+src/userspace/time_window_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.s
+.PHONY : src/userspace/time_window_manager.cpp.s
+
 src/userspace/zmq_pool_manager.o: src/userspace/zmq_pool_manager.cpp.o
 .PHONY : src/userspace/zmq_pool_manager.o
 
@@ -419,6 +515,15 @@ help:
 	@echo "... src/userspace/ebpf_loader.o"
 	@echo "... src/userspace/ebpf_loader.i"
 	@echo "... src/userspace/ebpf_loader.s"
+	@echo "... src/userspace/etcd_client.o"
+	@echo "... src/userspace/etcd_client.i"
+	@echo "... src/userspace/etcd_client.s"
+	@echo "... src/userspace/feature_extractor.o"
+	@echo "... src/userspace/feature_extractor.i"
+	@echo "... src/userspace/feature_extractor.s"
+	@echo "... src/userspace/flow_manager.o"
+	@echo "... src/userspace/flow_manager.i"
+	@echo "... src/userspace/flow_manager.s"
 	@echo "... src/userspace/main.o"
 	@echo "... src/userspace/main.i"
 	@echo "... src/userspace/main.s"
@@ -428,6 +533,9 @@ help:
 	@echo "... src/userspace/thread_manager.o"
 	@echo "... src/userspace/thread_manager.i"
 	@echo "... src/userspace/thread_manager.s"
+	@echo "... src/userspace/time_window_manager.o"
+	@echo "... src/userspace/time_window_manager.i"
+	@echo "... src/userspace/time_window_manager.s"
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"

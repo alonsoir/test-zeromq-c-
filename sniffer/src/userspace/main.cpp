@@ -1,7 +1,9 @@
 // main.cpp - Enhanced Sniffer v3.1 STRICT JSON
-// FECHA: 26 de Septiembre de 2025
+// FECHA: 6 de Octubre de 2025
 // FUNCIONALIDAD: Implementación limpia con validación estricta JSON
-
+// Stats handled by RingBufferConsumer internally
+// sniffer/src/userspace/main.cpp
+#include "config_types.h"
 #include "main.h"
 #include "network_security.pb.h"
 #include "config_manager.hpp"
@@ -33,7 +35,6 @@
 // ============================================================================
 std::atomic<bool> g_running{true};
 StrictSnifferConfig g_config;
-DetailedStats g_stats;
 CommandLineArgs g_args;
 
 // ============================================================================
@@ -500,7 +501,6 @@ void validate_feature_groups_section(const Json::Value& root, StrictSnifferConfi
     }
 }
 
-// Implementaciones stub de las funciones restantes
 void validate_time_windows_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose) {
     REQUIRE_OBJECT(root, "sniffer_time_windows");
     const auto& time_windows = root["sniffer_time_windows"];
@@ -659,14 +659,13 @@ void validate_etcd_section(const Json::Value& root, StrictSnifferConfig& config,
     }
 }
 
-// Funciones stub para las validaciones restantes
 void validate_processing_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose) {
-    (void)root; (void)config; // Suprimir warnings
+    (void)root; (void)config;
     if (verbose) std::cout << "✓ Processing validado (stub)\n";
 }
 
 void validate_auto_tuner_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose) {
-    (void)root; (void)config; // Suprimir warnings
+    (void)root; (void)config;
     if (verbose) std::cout << "✓ Auto tuner validado (stub)\n";
 }
 
@@ -704,17 +703,17 @@ void validate_logging_section(const Json::Value& root, StrictSnifferConfig& conf
 }
 
 void validate_security_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose) {
-    (void)root; (void)config; // Suprimir warnings
+    (void)root; (void)config;
     if (verbose) std::cout << "✓ Security validado (stub)\n";
 }
 
 void validate_backpressure_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose) {
-    (void)root; (void)config; // Suprimir warnings
+    (void)root; (void)config;
     if (verbose) std::cout << "✓ Backpressure validado (stub)\n";
 }
 
 void print_complete_config(const StrictSnifferConfig& config, bool verbose) {
-    (void)verbose; // Suprimir warning
+    (void)verbose;
     std::cout << "\n=== CONFIGURACIÓN COMPLETA ===\n";
     std::cout << "Componente: " << config.component_name << " v" << config.component_version << "\n";
     std::cout << "Node: " << config.node_id << "\n";
@@ -724,77 +723,21 @@ void print_complete_config(const StrictSnifferConfig& config, bool verbose) {
 }
 
 bool initialize_etcd_connection(const StrictSnifferConfig& config, bool verbose) {
-    (void)config; // Suprimir warning
+    (void)config;
     if (verbose) std::cout << "Inicializando etcd (stub)\n";
     return true;
 }
 
 bool initialize_compression(const StrictSnifferConfig& config, bool verbose) {
-    (void)config; // Suprimir warning
+    (void)config;
     if (verbose) std::cout << "Inicializando compresión (stub)\n";
     return true;
 }
 
 bool initialize_zmq_pool(const StrictSnifferConfig& config, bool verbose) {
-    (void)config; // Suprimir warning
+    (void)config;
     if (verbose) std::cout << "Inicializando ZMQ (stub)\n";
     return true;
-}
-
-void packet_capture_thread(const StrictSnifferConfig& config, DetailedStats& stats) {
-    std::cout << "Thread de captura iniciado en " << config.capture_interface << "\n";
-
-    while (g_running) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        stats.incrementPacketsCaptured();
-    }
-
-    std::cout << "Thread de captura finalizado\n";
-}
-
-void detailed_stats_display_thread(const StrictSnifferConfig& config, DetailedStats& stats) {
-    while (g_running) {
-        std::this_thread::sleep_for(std::chrono::seconds(config.monitoring.stats_interval_seconds));
-
-        if (!g_running) break;
-
-        std::cout << "\n=== ESTADÍSTICAS ===\n";
-        std::cout << "Paquetes capturados: " << stats.getPacketsCaptured() << "\n";
-        std::cout << "Tiempo activo: " << stats.getUptime() << " segundos\n";
-        std::cout << "===================\n";
-    }
-}
-
-void print_final_statistics(const StrictSnifferConfig& config, const DetailedStats& stats) {
-    (void)config; // Suprimir warning
-    std::cout << "\n=== ESTADÍSTICAS FINALES ===\n";
-    std::cout << "Total paquetes: " << stats.getPacketsCaptured() << "\n";
-    std::cout << "Tiempo total: " << stats.getUptime() << " segundos\n";
-    std::cout << "============================\n";
-}
-
-void DetailedStats::reset() {
-    packets_captured = 0;
-    packets_processed = 0;
-    packets_sent = 0;
-    bytes_captured = 0;
-    bytes_compressed = 0;
-    errors = 0;
-    drops = 0;
-    kernel_packets_processed = 0;
-    kernel_map_updates = 0;
-    kernel_instructions_executed = 0;
-    user_flows_tracked = 0;
-    user_features_extracted = 0;
-    user_memory_usage_mb = 0;
-    zmq_messages_sent = 0;
-    zmq_send_errors = 0;
-    zmq_reconnections = 0;
-    compression_operations = 0;
-    compression_savings_bytes = 0;
-    etcd_token_requests = 0;
-    etcd_connection_errors = 0;
-    start_time = std::chrono::steady_clock::now();
 }
 
 // Función principal main()
@@ -802,7 +745,6 @@ int main(int argc, char* argv[]) {
     sniffer::EbpfLoader* ebpf_loader_ptr = nullptr;
     std::shared_ptr<sniffer::ThreadManager> thread_manager;
     sniffer::RingBufferConsumer* ring_consumer_ptr = nullptr;
-    std::thread* stats_thread_ptr = nullptr;
 
     try {
         parse_command_line(argc, argv, g_args);
@@ -860,8 +802,6 @@ int main(int argc, char* argv[]) {
             std::cout << "✅ ZMQ pool inicializado\n";
         }
 
-        g_stats.reset();
-
         std::cout << "\n🚀 SNIFFER OPERATIVO - Configuración del JSON aplicada\n";
         std::cout << "Interface: " << g_config.capture_interface << " (" << g_config.capture_mode << ")\n";
         std::cout << "Node: " << g_config.node_id << " (cluster: " << g_config.cluster_name << ")\n";
@@ -896,7 +836,6 @@ int main(int argc, char* argv[]) {
         // ============================================================================
         std::cout << "\n[Threads] Inicializando Thread Manager..." << std::endl;
 
-        // Crear ThreadingConfig desde g_config
         sniffer::ThreadingConfig threading_config;
         threading_config.ring_consumer_threads = g_config.threading.ring_consumer_threads;
         threading_config.feature_processor_threads = g_config.threading.feature_processor_threads;
@@ -922,7 +861,6 @@ int main(int argc, char* argv[]) {
         // ============================================================================
         std::cout << "\n[RingBuffer] Inicializando RingBufferConsumer..." << std::endl;
 
-        // Convertir StrictSnifferConfig a SnifferConfig
         sniffer::SnifferConfig sniffer_config;
         sniffer_config.node_id = g_config.node_id;
         sniffer_config.cluster_name = g_config.cluster_name;
@@ -955,11 +893,7 @@ int main(int argc, char* argv[]) {
         sniffer_config.threading.thread_priorities["processors"] = g_config.threading.processors_priority;
         sniffer_config.threading.thread_priorities["zmq_senders"] = g_config.threading.zmq_senders_priority;
 
-		// DEBUG: Verificar valores en g_config antes de mapear
-        // std::cout << "[DEBUG] g_config.zmq.push_sockets = " << g_config.zmq.push_sockets << std::endl;
-        // std::cout << "[DEBUG] g_config.zmq.worker_threads = " << g_config.zmq.worker_threads << std::endl;
-
-		// Mapear ZMQ
+        // Mapear ZMQ
         sniffer_config.zmq.worker_threads = g_config.zmq.worker_threads;
         sniffer_config.zmq.io_thread_pools = g_config.zmq.io_thread_pools;
 
@@ -1007,11 +941,11 @@ int main(int argc, char* argv[]) {
         sniffer_config.transport.compression.compression_ratio_threshold = g_config.compression.compression_ratio_threshold;
         sniffer_config.transport.compression.adaptive_compression = g_config.compression.adaptive_compression;
 
-		// DEBUG: Verificar valores ZMQ
-        std::cout << "[DEBUG] zmq.socket_pools.push_sockets = " << sniffer_config.zmq.socket_pools.push_sockets << std::endl;
-        std::cout << "[DEBUG] zmq.worker_threads = " << sniffer_config.zmq.worker_threads << std::endl;
         ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config);
         auto& ring_consumer = *ring_consumer_ptr;
+
+        // Configure stats interval from monitoring config
+        ring_consumer.set_stats_interval(g_config.monitoring.stats_interval_seconds);
 
         if (!ring_consumer.initialize(ring_fd, thread_manager)) {
             std::cerr << "❌ Failed to initialize RingBufferConsumer" << std::endl;
@@ -1023,11 +957,8 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         std::cout << "✅ RingBufferConsumer started - capturing REAL packets from kernel" << std::endl;
-
-        // ============================================================================
-        // THREAD DE ESTADÍSTICAS
-        // ============================================================================
-        stats_thread_ptr = new std::thread(detailed_stats_display_thread, std::cref(g_config), std::ref(g_stats));
+        std::cout << "✅ Statistics will be displayed every " << g_config.monitoring.stats_interval_seconds
+                  << " seconds" << std::endl;
 
         // ============================================================================
         // LOOP PRINCIPAL - ESPERAR SEÑAL DE TERMINACIÓN
@@ -1059,23 +990,11 @@ int main(int argc, char* argv[]) {
 
         std::cout << "✅ Componentes detenidos" << std::endl;
 
-        if (stats_thread_ptr) {
-            stats_thread_ptr->join();
-            delete stats_thread_ptr;
-            stats_thread_ptr = nullptr;
-        }
-
-        print_final_statistics(g_config, g_stats);
-
     } catch (const std::exception& e) {
         std::cerr << "\n❌ ERROR FATAL: " << e.what() << "\n";
 
         if (ring_consumer_ptr) delete ring_consumer_ptr;
         if (ebpf_loader_ptr) delete ebpf_loader_ptr;
-        if (stats_thread_ptr) {
-            if (stats_thread_ptr->joinable()) stats_thread_ptr->join();
-            delete stats_thread_ptr;
-        }
 
         return 1;
     }

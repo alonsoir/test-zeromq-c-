@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(cpp_evolutionary_sniffer VERSION 3.1.0 LANGUAGES C CXX)
-
+# sniffer/CMakeLists.txt
 # C++20 requirement
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -71,7 +71,7 @@ endif()
 # ============================================================================
 # INCLUDE DIRECTORIES
 # ============================================================================
-
+include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_BINARY_DIR}/proto)
 
@@ -137,15 +137,19 @@ add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
 # SOURCE FILES CONFIGURATION
 # ============================================================================
 
-set(SNIFFER_CORE_SOURCES
+set(SNIFFER_SOURCES
         src/userspace/main.cpp
         src/userspace/config_manager.cpp
         src/userspace/ebpf_loader.cpp
-        src/userspace/compression_handler.cpp
-        src/userspace/zmq_pool_manager.cpp
         src/userspace/ring_consumer.cpp
+        src/userspace/zmq_pool_manager.cpp
         src/userspace/thread_manager.cpp
-        ${PROTO_SOURCES}
+        src/userspace/compression_handler.cpp
+        src/userspace/etcd_client.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/feature_extractor.cpp
+        src/userspace/time_window_manager.cpp
+        proto/network_security.pb.cc
 )
 
 # Feature-specific sources
@@ -163,7 +167,7 @@ if(CURL_LIBRARY)
 endif()
 
 # Combine all sources
-set(SNIFFER_SOURCES ${SNIFFER_CORE_SOURCES} ${SNIFFER_FEATURE_SOURCES})
+# set(SNIFFER_SOURCES ${SNIFFER_CORE_SOURCES} ${SNIFFER_FEATURE_SOURCES})
 
 # ============================================================================
 # EXECUTABLE TARGET
