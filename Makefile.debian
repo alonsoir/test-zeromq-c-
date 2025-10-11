@@ -26,7 +26,6 @@ build:
 	@cd $(BUILD_DIR) && $(MAKE) -j$(shell nproc)
 	@echo "Build complete"
 
-# Install target for debian package
 install: build
 	@echo "Installing sniffer-ebpf to $(DESTDIR)..."
 
@@ -45,15 +44,20 @@ install: build
 	install -d $(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf
 	install -m 644 sniffer/config/sniffer.json $(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
 
-	# Update JSON paths for installed locations
+	# Update ALL JSON paths for installed locations (use 'g' flag for global replace)
+	sed -i 's|"sniffer.bpf.o"|"/usr/lib/bpf/sniffer.bpf.o"|g' \
+		$(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
+
+	# Also update any bpf_object fields
 	sed -i 's|"bpf_object": "sniffer.bpf.o"|"bpf_object": "/usr/lib/bpf/sniffer.bpf.o"|g' \
 		$(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
 
 	# Configure eth2 for Vagrant lab (change to eth0 for bare metal)
-	sed -i 's/"interface": "[^"]*"/"interface": "eth2"/g' \
+	sed -i 's/"interface": "eth[0-9]"/"interface": "eth2"/g' \
 		$(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
 
 	@echo "  → JSON configured for Vagrant lab (eth2)"
+	@echo "  → eBPF object path: /usr/lib/bpf/sniffer.bpf.o"
 
 	# Install systemd service
 	install -d $(DESTDIR)$(SYSTEMDDIR)

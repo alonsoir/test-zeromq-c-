@@ -508,19 +508,23 @@ sniffer-package-deps: ## Instalar dependencias para crear paquete Debian
 
 sniffer-package: sniffer-package-deps ## Crear paquete Debian del sniffer
 	@echo "$(BLUE)📦 Creando paquete Debian...$(NC)"
-	@echo "$(YELLOW)Preparando entorno de compilación limpio (SOLO sniffer)...$(NC)"
+	@echo "$(YELLOW)Preparando entorno de compilación limpio...$(NC)"
 	@vagrant ssh -c "\
 		rm -rf ~/build-sniffer && \
 		mkdir -p ~/build-sniffer && \
-		echo 'Copiando SOLO archivos necesarios para el sniffer...' && \
+		echo 'Copiando archivos necesarios para el sniffer...' && \
 		mkdir -p ~/build-sniffer/sniffer && \
+		mkdir -p ~/build-sniffer/protobuf && \
 		cp -r /vagrant/sniffer/* ~/build-sniffer/sniffer/ && \
+		cp -r /vagrant/protobuf/* ~/build-sniffer/protobuf/ && \
 		mkdir -p ~/build-sniffer/debian && \
 		cp -r /vagrant/debian/* ~/build-sniffer/debian/ && \
 		cp /vagrant/Makefile.debian ~/build-sniffer/ && \
 		cp /vagrant/README.md ~/build-sniffer/ && \
 		cp /vagrant/README.debian.md ~/build-sniffer/ 2>/dev/null || true && \
-		echo 'Archivos copiados:' && \
+		echo 'Estructura creada:' && \
+		ls -la ~/build-sniffer/ && \
+		echo 'Tamaño:' && \
 		du -sh ~/build-sniffer && \
 		cd ~/build-sniffer && \
 		echo 'Compilando paquete...' && \
