@@ -1,0 +1,27 @@
+[Unit]
+Description=eBPF Network Packet Sniffer with ML Features (Vagrant Lab)
+Documentation=https://github.com/alonsoir/test-zeromq-c-
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/sniffer_ebpf -c /etc/sniffer-ebpf/config.json --verbose
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_BPF CAP_SYS_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_BPF CAP_SYS_ADMIN
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log
+
+# Resource limits
+LimitNOFILE=65536
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

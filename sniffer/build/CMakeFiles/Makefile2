@@ -132,8 +132,8 @@ CMakeFiles/proto_compilation.dir/clean:
 # Target rules for target CMakeFiles/sniffer.dir
 
 # All Build rule for target.
-CMakeFiles/sniffer.dir/all: CMakeFiles/proto_compilation.dir/all
 CMakeFiles/sniffer.dir/all: CMakeFiles/bpf_program.dir/all
+CMakeFiles/sniffer.dir/all: CMakeFiles/proto_compilation.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=3,4,5,6,7,8,9,10,11,12,13,14,15 "Built target sniffer"

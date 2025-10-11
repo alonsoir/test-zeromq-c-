@@ -1,0 +1,46 @@
+MIT License
+
+Copyright (c) 2025 @alonso_isidoro
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+THE FOLLOWING RESTRICTION APPLIES IN ADDITION TO THE STANDARD TERMS ABOVE:
+
+This Software **shall not be used, by any individual, organization, government
+or entity**, for purposes that **violate, infringen, limiten o repriman los
+derechos y libertades fundamentales de las personas**, tal como están
+reconocidos en la Declaración Universal de los Derechos Humanos de las Naciones
+Unidas (1948), incluidos pero no limitados a:
+
+- El derecho a la privacidad y a la libertad de expresión (artículos 12 y 19),
+- La libertad de reunión pacífica y asociación (artículo 20),
+- La protección contra la detención arbitraria (artículo 9),
+- El derecho a un juicio justo y a la presunción de inocencia (artículo 10 y 11),
+- La protección contra la discriminación por motivos de raza, género, religión,
+  orientación política, o cualquier otra condición (artículo 2).
+
+Queda **prohibido** el uso del Software para facilitar:
+
+- Vigilancia masiva sin orden judicial,
+- Represión de la disidencia política o social,
+- Control o censura de información libre,
+- Desarrollo de tecnologías ofensivas contra poblaciones civiles.
+
+Any person or entity found using the Software in violation of these principles
+shall forfeit any rights granted under this License.
+
+---
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+

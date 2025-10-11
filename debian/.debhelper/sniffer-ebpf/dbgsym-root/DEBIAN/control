@@ -1,0 +1,12 @@
+Package: sniffer-ebpf-dbgsym
+Source: sniffer-ebpf
+Version: 0.83.0-1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Alonso <alonsoir@gmail.com>
+Installed-Size: 3569
+Depends: sniffer-ebpf (= 0.83.0-1)
+Section: debug
+Priority: optional
+Description: debug symbols for sniffer-ebpf
+Build-Ids: 25cb07845708e5ad79bb036e6554141bc9597228

@@ -1,0 +1,64 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Verify configuration file exists (installed by Makefile.debian)
+        if [ ! -f /etc/sniffer-ebpf/config.json ]; then
+            echo "ERROR: /etc/sniffer-ebpf/config.json was not installed correctly"
+            exit 1
+        fi
+
+        # Verify eBPF object exists
+        if [ ! -f /usr/lib/bpf/sniffer.bpf.o ]; then
+            echo "ERROR: /usr/lib/bpf/sniffer.bpf.o was not installed correctly"
+            exit 1
+        fi
+
+        # Set correct permissions
+        chmod 644 /etc/sniffer-ebpf/config.json
+        chmod 644 /usr/lib/bpf/sniffer.bpf.o
+
+        # Reload systemd daemon
+        if [ -x /bin/systemctl ]; then
+            systemctl daemon-reload || true
+        fi
+
+        echo ""
+        echo "=========================================="
+        echo "✅ eBPF Sniffer installed successfully!"
+        echo "=========================================="
+        echo ""
+        echo "📁 Installation:"
+        echo "   Binary:      /usr/bin/sniffer_ebpf"
+        echo "   eBPF object: /usr/lib/bpf/sniffer.bpf.o"
+        echo "   Config JSON: /etc/sniffer-ebpf/config.json"
+        echo "   Service:     /lib/systemd/system/sniffer-ebpf.service"
+        echo ""
+        echo "📋 Configuration:"
+        echo "   Interface:   eth2 (Vagrant lab)"
+        echo "   Profile:     lab"
+        echo "   Endpoint:    172.18.0.3:5571"
+        echo ""
+        echo "🚀 Quick start:"
+        echo "   1. Validate:  sudo sniffer_ebpf -c /etc/sniffer-ebpf/config.json --dry-run"
+        echo "   2. Start:     sudo systemctl start sniffer-ebpf"
+        echo "   3. Status:    sudo systemctl status sniffer-ebpf"
+        echo "   4. Logs:      sudo journalctl -u sniffer-ebpf -f"
+        echo ""
+        echo "⚙️  To edit config: sudo nano /etc/sniffer-ebpf/config.json"
+        echo ""
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

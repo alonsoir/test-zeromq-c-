@@ -1,0 +1,12 @@
+sniffer-ebpf (0.83.0-1) unstable; urgency=medium
+
+  * Versión inicial
+  * Captura de paquetes eBPF con XDP
+  * Extracción de 83 características de red por paquete
+  * Sistema de procesamiento por lotes dinámico
+  * Serialización Protobuf + compresión LZ4 (~20% reducción)
+  * Pipeline ZMQ PUB/SUB para procesamiento distribuido
+  * Integración con systemd
+  * Listo para ingesta en modelos ML
+
+ -- Alonso <alonsoir@gmail.com>  Fri, 10 Oct 2025 12:00:00 +0200

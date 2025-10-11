@@ -1,0 +1,32 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Number of parallel jobs
+export DEB_BUILD_OPTIONS=parallel=$(shell nproc)
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	dh_auto_clean
+	$(MAKE) -f Makefile.debian clean || true
+
+override_dh_auto_build:
+	$(MAKE) -f Makefile.debian build
+
+override_dh_auto_install:
+	$(MAKE) -f Makefile.debian install DESTDIR=$(CURDIR)/debian/sniffer-ebpf PREFIX=/usr
+
+override_dh_auto_test:
+	@echo "Skipping automated tests for initial release"
+
+override_dh_installinit:
+	dh_installinit --name=sniffer-ebpf --no-start
+
+override_dh_installsystemd:
+	dh_installsystemd --name=sniffer-ebpf --no-start
+
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info

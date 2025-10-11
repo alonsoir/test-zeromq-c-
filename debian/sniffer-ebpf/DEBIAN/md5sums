@@ -1,0 +1,7 @@
+d007ee32d42f87280fd629c12730117e  lib/systemd/system/sniffer-ebpf.service
+89a4854f9416830c25e11ca0287131fe  usr/bin/sniffer_ebpf
+630f2b2e1017d04e56033053a3745006  usr/lib/bpf/packet_sniffer.bpf.o
+d41d8cd98f00b204e9800998ecf8427e  usr/share/doc/sniffer-ebpf/README.debian.md
+e5134c382e35a576c516da7095a5f839  usr/share/doc/sniffer-ebpf/README.md.gz
+20d2f01477da3b9f790a76543bdc0107  usr/share/doc/sniffer-ebpf/changelog.Debian.gz
+58466f7eaa279fd042ba494f9d08b44a  usr/share/doc/sniffer-ebpf/copyright

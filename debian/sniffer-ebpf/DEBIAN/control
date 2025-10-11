@@ -1,0 +1,23 @@
+Package: sniffer-ebpf
+Version: 0.83.0-1
+Architecture: amd64
+Maintainer: Alonso <alonsoir@gmail.com>
+Installed-Size: 791
+Depends: libbpf1 (>= 1:1.0), libc6 (>= 2.34), libgcc-s1 (>= 3.3.1), libjsoncpp25 (>= 1.9.5), liblz4-1 (>= 1.9), libprotobuf32 (>= 3.21.12), libstdc++6 (>= 11), libzmq5 (>= 4.3), libzstd1 (>= 1.5.2), libprotobuf-c1 (>= 1.4)
+Section: net
+Priority: optional
+Homepage: https://github.com/alonsoir/test-zeromq-c-
+Description: eBPF-based network packet sniffer with ML features
+ High-performance packet sniffer using eBPF/XDP technology that
+ captures 83 network features per packet for machine learning analysis.
+ .
+ Features:
+  - Kernel-level packet capture with eBPF
+  - 83 network features extraction (TCP flags, ports, sizes, etc.)
+  - Dynamic batch processing with configurable windows
+  - Protobuf serialization with LZ4 compression
+  - ZMQ distributed pipeline for real-time processing
+  - Systemd integration for automatic startup
+ .
+ This package is designed for network monitoring, anomaly detection,
+ and machine learning model training on network traffic.

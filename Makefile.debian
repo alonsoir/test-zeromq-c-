@@ -1,0 +1,99 @@
+# Makefile for Debian package building
+# Specific for dpkg-buildpackage - DO NOT use for lab development
+
+# Installation directories
+PREFIX ?= /usr
+BINDIR = $(PREFIX)/bin
+LIBDIR = $(PREFIX)/lib
+SYSCONFDIR = /etc
+SYSTEMDDIR = /lib/systemd/system
+DOCDIR = $(PREFIX)/share/doc/sniffer-ebpf
+
+# CMake build directory
+BUILD_DIR = sniffer/build
+
+.PHONY: all build install uninstall clean
+
+# Default target - build using CMake
+all: build
+
+# Build using CMake
+build:
+	@echo "Building sniffer with CMake for Debian package..."
+	@mkdir -p $(BUILD_DIR)
+	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=$(PREFIX)
+	@cd $(BUILD_DIR) && $(MAKE) -j$(shell nproc)
+	@echo "Build complete"
+
+install: build
+	@echo "Installing sniffer-ebpf to $(DESTDIR)..."
+
+	# Install binary
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 $(BUILD_DIR)/sniffer $(DESTDIR)$(BINDIR)/sniffer_ebpf
+
+	# Install eBPF object with correct name
+	install -d $(DESTDIR)$(LIBDIR)/bpf
+	install -m 644 $(BUILD_DIR)/sniffer.bpf.o $(DESTDIR)$(LIBDIR)/bpf/sniffer.bpf.o
+
+	# Install configuration directory
+	install -d $(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf
+
+	# Install default JSON config with proper paths
+	install -d $(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf
+	install -m 644 sniffer/config/sniffer.json $(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
+
+	# Update ALL JSON paths for installed locations (use 'g' flag for global replace)
+	sed -i 's|"sniffer.bpf.o"|"/usr/lib/bpf/sniffer.bpf.o"|g' \
+		$(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
+
+	# Also update any bpf_object fields
+	sed -i 's|"bpf_object": "sniffer.bpf.o"|"bpf_object": "/usr/lib/bpf/sniffer.bpf.o"|g' \
+		$(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
+
+	# Configure eth2 for Vagrant lab (change to eth0 for bare metal)
+	sed -i 's/"interface": "eth[0-9]"/"interface": "eth2"/g' \
+		$(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf/config.json
+
+	@echo "  → JSON configured for Vagrant lab (eth2)"
+	@echo "  → eBPF object path: /usr/lib/bpf/sniffer.bpf.o"
+
+	# Install systemd service
+	install -d $(DESTDIR)$(SYSTEMDDIR)
+	install -m 644 debian/sniffer-ebpf.service $(DESTDIR)$(SYSTEMDDIR)/
+
+	# Install documentation
+	install -d $(DESTDIR)$(DOCDIR)
+	install -m 644 README.md $(DESTDIR)$(DOCDIR)/
+	[ -f README.debian.md ] && install -m 644 README.debian.md $(DESTDIR)$(DOCDIR)/ || true
+
+	@echo "Installation complete to $(DESTDIR)"
+
+# Uninstall target
+uninstall:
+	@echo "Uninstalling sniffer-ebpf..."
+	rm -f $(DESTDIR)$(BINDIR)/sniffer_ebpf
+	rm -f $(DESTDIR)$(LIBDIR)/bpf/packet_sniffer.bpf.o
+	rm -f $(DESTDIR)$(SYSTEMDDIR)/sniffer-ebpf.service
+	rm -rf $(DESTDIR)$(SYSCONFDIR)/sniffer-ebpf
+	rm -rf $(DESTDIR)$(DOCDIR)
+	rm -rf $(DESTDIR)$(PREFIX)/share/sniffer-ebpf
+	@echo "Uninstall complete"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	rm -rf $(BUILD_DIR)
+	@echo "Clean complete"
+
+# Test installation paths (useful for debugging)
+test-paths:
+	@echo "Installation paths that will be used:"
+	@echo "  DESTDIR:    $(DESTDIR)"
+	@echo "  PREFIX:     $(PREFIX)"
+	@echo "  BINDIR:     $(DESTDIR)$(BINDIR)"
+	@echo "  LIBDIR:     $(DESTDIR)$(LIBDIR)"
+	@echo "  SYSCONFDIR: $(DESTDIR)$(SYSCONFDIR)"
+	@echo "  SYSTEMDDIR: $(DESTDIR)$(SYSTEMDDIR)"
+	@echo "  DOCDIR:     $(DESTDIR)$(DOCDIR)"
