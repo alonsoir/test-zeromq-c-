@@ -29,6 +29,147 @@
 #include <iomanip>
 #include <random>
 #include <fstream>
+#include "feature_logger.hpp"
+
+FeatureLogger::VerbosityLevel g_verbosity = FeatureLogger::VerbosityLevel::NONE;
+
+// Modificar la función de ayuda (busca la función que imprime --help)
+void print_usage(const char* program_name) {
+    std::cout << "╔════════════════════════════════════════════╗\n";
+    std::cout << "║   Enhanced Sniffer v3.1 - STRICT JSON    ║\n";
+    std::cout << "╚════════════════════════════════════════════╝\n";
+    std::cout << "Compilado: " << __DATE__ << " " << __TIME__ << "\n";
+    std::cout << "Modo: JSON es la ley - falla si falta algo\n\n";
+
+    std::cout << "Usage: " << program_name << " [OPTIONS]\n\n";
+    std::cout << "Options:\n";
+    std::cout << "  -v, --verbose           Incrementar nivel de verbosity (usar hasta 3 veces)\n";
+    std::cout << "                          -v   : Resumen básico por paquete\n";
+    std::cout << "                          -vv  : Features agrupadas por categoría\n";
+    std::cout << "                          -vvv : Todas las features con detalle completo\n";
+    std::cout << "  -h, --help              Mostrar ayuda\n";
+    std::cout << "  -c, --config FILE       Archivo JSON (OBLIGATORIO)\n";
+    std::cout << "  -i, --interface IFACE   Override interface\n";
+    std::cout << "  -p, --profile PROFILE   Override perfil (lab/cloud/bare_metal)\n";
+    std::cout << "  -d, --dry-run           Solo validar JSON\n";
+    std::cout << "  -s, --show-config       Mostrar config parseada y salir\n\n";
+
+    std::cout << "Verbosity Examples:\n";
+    std::cout << "  " << program_name << " -c config.json -v\n";
+    std::cout << "    → [PKT #123] TCP 192.168.1.1:443→224.0.0.1:0 60B\n\n";
+    std::cout << "  " << program_name << " -c config.json -v -v\n";
+    std::cout << "    → Features agrupadas (Timing/Rates/TCP Flags/Arrays)\n\n";
+    std::cout << "  " << program_name << " -c config.json -v -v -v\n";
+    std::cout << "    → TODAS las ~193 features con índice y valor\n\n";
+
+    std::cout << "Full Examples:\n";
+    std::cout << "  " << program_name << " -c /etc/sniffer-ebpf/config.json\n";
+    std::cout << "  " << program_name << " -c config.json -v\n";
+    std::cout << "  " << program_name << " -c config.json -vv > features.log\n";
+}
+
+// Modificar el parseo de argumentos (busca donde parseas argc/argv)
+// Esta función debe estar en main() o cerca de donde parseas argumentos
+int parse_arguments(int argc, char* argv[], std::string& config_file,
+                   std::string& interface_override, std::string& profile_override,
+                   bool& dry_run, bool& show_config) {
+
+    // Resetear verbosity
+    g_verbosity = FeatureLogger::VerbosityLevel::NONE;
+    int verbosity_count = 0;
+
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+
+        // Ayuda
+        if (arg == "-h" || arg == "--help") {
+            print_usage(argv[0]);
+            return 1;
+        }
+
+        // Config file
+        else if (arg == "-c" || arg == "--config") {
+            if (i + 1 < argc) {
+                config_file = argv[++i];
+            } else {
+                std::cerr << "Error: -c requires a filename\n";
+                return -1;
+            }
+        }
+
+        // Verbosity (nuevo código)
+        else if (arg == "-v" || arg == "--verbose") {
+            verbosity_count = 1;
+            g_verbosity = FeatureLogger::VerbosityLevel::BASIC;
+        }
+        else if (arg == "-vv") {
+            verbosity_count = 2;
+            g_verbosity = FeatureLogger::VerbosityLevel::GROUPED;
+        }
+        else if (arg == "-vvv") {
+            verbosity_count = 3;
+            g_verbosity = FeatureLogger::VerbosityLevel::DETAILED;
+        }
+
+        // Interface override
+        else if (arg == "-i" || arg == "--interface") {
+            if (i + 1 < argc) {
+                interface_override = argv[++i];
+            } else {
+                std::cerr << "Error: -i requires interface name\n";
+                return -1;
+            }
+        }
+
+        // Profile override
+        else if (arg == "-p" || arg == "--profile") {
+            if (i + 1 < argc) {
+                profile_override = argv[++i];
+            } else {
+                std::cerr << "Error: -p requires profile name\n";
+                return -1;
+            }
+        }
+
+        // Dry run
+        else if (arg == "-d" || arg == "--dry-run") {
+            dry_run = true;
+        }
+
+        // Show config
+        else if (arg == "-s" || arg == "--show-config") {
+            show_config = true;
+        }
+
+        // Unknown argument
+        else {
+            std::cerr << "Unknown argument: " << arg << "\n";
+            print_usage(argv[0]);
+            return -1;
+        }
+    }
+
+    // Mostrar nivel de verbosity si está activo
+    if (verbosity_count > 0) {
+        std::cout << "🔊 Verbosity level " << verbosity_count << " activated";
+        switch (g_verbosity) {
+            case FeatureLogger::VerbosityLevel::BASIC:
+                std::cout << " (Basic packet summary)\n";
+                break;
+            case FeatureLogger::VerbosityLevel::GROUPED:
+                std::cout << " (Grouped features)\n";
+                break;
+            case FeatureLogger::VerbosityLevel::DETAILED:
+                std::cout << " (Full feature dump)\n";
+                break;
+            default:
+                break;
+        }
+        std::cout << "\n";
+    }
+
+    return 0;
+}
 
 // ============================================================================
 // VARIABLES GLOBALES - DEFINICIÓN (sin extern)
@@ -63,7 +204,10 @@ void parse_command_line(int argc, char* argv[], CommandLineArgs& args) {
 
     while ((c = getopt_long(argc, argv, "vhc:i:p:ds", long_options, &option_index)) != -1) {
         switch (c) {
-            case 'v': args.verbose = true; break;
+            case 'v':
+                args.verbose = true;
+                args.verbosity_level++;  // ← AÑADIR: Contar cada -v
+                break;
             case 'h': args.help = true; break;
             case 'c': args.config_file = optarg; break;
             case 'i': args.interface_override = optarg; break;
@@ -72,6 +216,11 @@ void parse_command_line(int argc, char* argv[], CommandLineArgs& args) {
             case 's': args.show_config_only = true; break;
             default: args.help = true; break;
         }
+    }
+
+    // ===== AÑADIR: Limitar verbosity a máximo 3 =====
+    if (args.verbosity_level > 3) {
+        args.verbosity_level = 3;
     }
 }
 
@@ -748,6 +897,26 @@ int main(int argc, char* argv[]) {
 
     try {
         parse_command_line(argc, argv, g_args);
+        // ===== AÑADIR: Configurar verbosity según nivel =====
+        switch (g_args.verbosity_level) {
+            case 0:
+                g_verbosity = FeatureLogger::VerbosityLevel::NONE;
+                break;
+            case 1:
+                g_verbosity = FeatureLogger::VerbosityLevel::BASIC;
+                std::cout << "🔊 Verbosity level 1: Basic packet summary\n\n";
+                break;
+            case 2:
+                g_verbosity = FeatureLogger::VerbosityLevel::GROUPED;
+                std::cout << "🔊 Verbosity level 2: Grouped features\n\n";
+                break;
+            case 3:
+            default:
+                g_verbosity = FeatureLogger::VerbosityLevel::DETAILED;
+                std::cout << "🔊 Verbosity level 3: Full feature dump\n\n";
+                break;
+        }
+        // =====================================================
 
         if (g_args.help) {
             print_help(argv[0]);

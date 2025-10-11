@@ -1,12 +1,15 @@
 // sniffer/src/userspace/ring_consumer.cpp
 #include "compression_handler.hpp"
 #include "ring_consumer.hpp"
+#include "feature_logger.hpp"
 #include <iostream>
 #include <cstring>
 #include <arpa/inet.h>
 #include <google/protobuf/timestamp.pb.h>
 #include <chrono>
 #include <iomanip>
+
+extern FeatureLogger::VerbosityLevel g_verbosity;
 
 namespace sniffer {
 
@@ -392,6 +395,11 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
         // Create protobuf message
         protobuf::NetworkSecurityEvent proto_event;
         populate_protobuf_event(event, proto_event, 0);
+
+        // Log features if verbosity is enabled
+        if (g_verbosity != FeatureLogger::VerbosityLevel::NONE) {
+            FeatureLogger::log_packet_features(proto_event, g_verbosity);
+        }
 
         // Serialize to binary
         std::vector<uint8_t> serialized_data;
