@@ -59,6 +59,7 @@
 
 struct CommandLineArgs {
     bool verbose = false;
+    int verbosity_level = 0;      // ← AÑADIR: 0=none, 1=basic, 2=grouped, 3=detailed
     bool help = false;
     std::string config_file = "../config/sniffer.json";
     std::string interface_override = "";

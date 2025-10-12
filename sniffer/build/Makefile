@@ -344,6 +344,30 @@ src/userspace/feature_extractor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.s
 .PHONY : src/userspace/feature_extractor.cpp.s
 
+src/userspace/feature_logger.o: src/userspace/feature_logger.cpp.o
+.PHONY : src/userspace/feature_logger.o
+
+# target to build an object file
+src/userspace/feature_logger.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o
+.PHONY : src/userspace/feature_logger.cpp.o
+
+src/userspace/feature_logger.i: src/userspace/feature_logger.cpp.i
+.PHONY : src/userspace/feature_logger.i
+
+# target to preprocess a source file
+src/userspace/feature_logger.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.i
+.PHONY : src/userspace/feature_logger.cpp.i
+
+src/userspace/feature_logger.s: src/userspace/feature_logger.cpp.s
+.PHONY : src/userspace/feature_logger.s
+
+# target to generate assembly for a file
+src/userspace/feature_logger.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.s
+.PHONY : src/userspace/feature_logger.cpp.s
+
 src/userspace/flow_manager.o: src/userspace/flow_manager.cpp.o
 .PHONY : src/userspace/flow_manager.o
 
@@ -521,6 +545,9 @@ help:
 	@echo "... src/userspace/feature_extractor.o"
 	@echo "... src/userspace/feature_extractor.i"
 	@echo "... src/userspace/feature_extractor.s"
+	@echo "... src/userspace/feature_logger.o"
+	@echo "... src/userspace/feature_logger.i"
+	@echo "... src/userspace/feature_logger.s"
 	@echo "... src/userspace/flow_manager.o"
 	@echo "... src/userspace/flow_manager.i"
 	@echo "... src/userspace/flow_manager.s"
