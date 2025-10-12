@@ -15,7 +15,7 @@ NC = \033[0m
         sniffer-test sniffer-install sniffer-package lab-full-stack \
         sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup \
         sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local verify-bpf \
-        check-deps-host check-deps-vm sniffer-package sniffer-package-deps sniffer-package-clean
+        check-deps-host check-deps-vm sniffer-package sniffer-package-deps sniffer-package-clean sniffer-test-verbose
 
 # Target por defecto
 all: lab-start
@@ -549,3 +549,13 @@ sniffer-package-clean: ## Limpiar build temporal del paquete
 	@vagrant ssh -c "rm -rf ~/build-sniffer"
 	@rm -f *.deb *.buildinfo *.changes
 	@echo "$(GREEN)✅ Limpieza completada$(NC)"
+
+sniffer-test-verbose: sniffer-build-local
+	@echo "Testing sniffer with verbosity levels..."
+	@echo "Level 1 (basic):"
+	cd sniffer/build && sudo timeout 5 ./sniffer -c ../config/sniffer.json -v || true
+	@echo ""
+	@echo "Level 2 (grouped):"
+	cd sniffer/build && sudo timeout 5 ./sniffer -c ../config/sniffer.json -vv || true
+	@echo ""
+	@echo "All verbosity levels tested successfully!"

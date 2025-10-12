@@ -9,6 +9,38 @@
 - ✅ **eBPF Sniffer v3.1**: Captura de paquetes en kernel space con XDP
 - ✅ **Compresión LZ4**: Protobuf messages comprimidos en tránsito
 - ✅ **Vagrant + Docker**: Entorno reproducible completo
+- ✅ **Verbose Feature Logging**: 3 niveles de inspección de ML features (NUEVO)
+
+### Configuración eBPF Optimizada
+- ✅ BPF JIT habilitado automáticamente en provisioning
+- ✅ BPF filesystem montado persistentemente en `/sys/fs/bpf`
+- ✅ Configuración permanente vía `/etc/fstab`
+- ✅ Sistema de logging configurable para debugging
+
+### Últimas Mejoras (2025-10-12)
+- **Sistema de Verbose Logging**: 3 niveles para inspección de features ML
+    - Nivel 1 (-v): Resumen básico por paquete
+    - Nivel 2 (-vv): Features agrupadas por categoría
+    - Nivel 3 (-vvv): Dump completo de ~193 features
+- Logging con colores y formato estructurado
+- Zero overhead cuando verbose está desactivado
+- Integración completa en paquete Debian
+
+### Mejoras Anteriores (2025-10-03)
+- Sincronización de archivos de configuración JSON (`sniffer.json` ↔ `sniffer-proposal.json`)
+- Eliminación de comentarios inline en JSON (parser estricto)
+- Corrección de pkg-config para libzmq (`libzmq3` → `libzmq`)
+- Provisioning automático de capacidades eBPF en Vagrant
+- Target `verify-bpf` para validación de configuración kernel
+
+## ✅ Estado Actual del Proyecto
+
+### Componentes Operativos
+- ✅ **Pipeline ZeroMQ + Protobuf**: service1 → service2 → service3 funcionando
+- ✅ **etcd Service Discovery**: Registro automático de servicios con heartbeat
+- ✅ **eBPF Sniffer v3.1**: Captura de paquetes en kernel space con XDP
+- ✅ **Compresión LZ4**: Protobuf messages comprimidos en tránsito
+- ✅ **Vagrant + Docker**: Entorno reproducible completo
 
 ### Configuración eBPF Optimizada
 - ✅ BPF JIT habilitado automáticamente en provisioning
@@ -175,3 +207,116 @@ make sniffer-build-local
 # Verificar que captura en eth2
 sudo ./sniffer/build/sniffer --verbose | grep eth2
 ```
+## 🔍 Debugging y Verbose Logging
+
+### Niveles de Verbosity
+
+El sniffer incluye un sistema de logging configurable para inspeccionar las features ML extraídas:
+
+#### Nivel 1: Resumen Básico (`-v`)
+```bash
+  sudo ./sniffer/build/sniffer -c sniffer/config/sniffer.json -v
+```
+
+Output:
+
+[PKT #312954584793_547881216] TCP 192.168.1.1:443 → 224.0.0.1:0 60B
+[PKT #332893414690_547881216] UDP 192.168.1.135:53 → 224.0.0.240:63715 86B
+
+### Uso: Monitoreo en tiempo real, verificación de captura
+Nivel 2: Features Agrupadas (-vv)
+```bash
+  sudo ./sniffer/build/sniffer -c sniffer/config/sniffer.json -vv
+```
+
+Output:
+
+=== PACKET #409255656473_130 ===
+[BASIC INFO]
+Timestamp: 2025-10-12 07:03:45.123456789
+Source: 192.168.1.1:443
+Destination: 224.0.0.1:0
+Protocol: TCP (6)
+Total Bytes: 60
+
+[TIMING]
+Flow duration: 0.000123 s
+Flow IAT mean: 45.6 µs
+
+[RATES & RATIOS]
+Bytes/sec: 487804.8
+Packets/sec: 8130.08
+Download/Upload ratio: 0.0
+
+[TCP FLAGS]
+SYN: 1  ACK: 0  FIN: 0  RST: 0
+
+[FEATURE ARRAYS]
+General Attack Features (RF): 23 features
+Internal Traffic: 4 features
+Ransomware Detection: 83 features
+DDoS Detection: 83 features
+
+### Uso: Debugging de pipeline, validación de features
+Nivel 3: Dump Completo (-vvv)
+
+```bash
+    sudo ./sniffer/build/sniffer -c sniffer/config/sniffer.json -vvv > features.log 2>&1
+```
+Output: ~193 features con índice y valor
+
+=== PACKET #543424975012_547881216 - FULL FEATURE DUMP ===
+[BASIC IDENTIFICATION]
+Event ID: 543424975012_547881216
+Node ID: cpp_sniffer_v31_001
+Timestamp: 2025-10-12 07:05:12.547881216
+Classification: UNCATEGORIZED
+Threat Score: 0.00
+
+[NETWORK FEATURES - BASIC]
+[src_ip] 192.168.1.1
+[dst_ip] 224.0.0.1
+[src_port] 443
+[dst_port] 0
+[protocol_number] 6
+[protocol_name] TCP
+
+[PACKET STATISTICS]
+[total_forward_packets] 1
+[total_backward_packets] 0
+[total_forward_bytes] 60
+[total_backward_bytes] 0
+[minimum_packet_length] 60
+[maximum_packet_length] 60
+[packet_length_mean] 60.00
+[packet_length_std] 0.00
+
+... (todas las features detalladas)
+
+[GENERAL ATTACK FEATURES] (23 features)
+[0] feature_0: 0.000000
+[1] feature_1: 1.000000
+...
+
+[RANSOMWARE DETECTION FEATURES] (83 features)
+[0] ransomware_0: 0.333333
+[1] ransomware_1: 0.000000
+...
+
+Uso: Análisis exhaustivo, training de modelos ML, documentación
+
+PEDTE
+
+Redirección y Filtrado
+
+# Guardar log completo
+sudo ./sniffer -c config.json -vvv > features_$(date +%Y%m%d_%H%M%S).log 2>&1
+
+# Solo paquetes TCP
+sudo ./sniffer -c config.json -v | grep TCP
+
+# Análisis de un paquete específico
+sudo ./sniffer -c config.json -vvv | grep -A 200 "PACKET #123"
+
+# Ver en tiempo real con colores
+sudo ./sniffer -c config.json -vv | less -R

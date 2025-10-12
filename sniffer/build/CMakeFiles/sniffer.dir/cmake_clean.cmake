@@ -11,6 +11,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o"

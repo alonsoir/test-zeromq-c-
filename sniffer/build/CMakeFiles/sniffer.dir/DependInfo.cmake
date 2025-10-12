@@ -14,6 +14,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/vagrant/sniffer/src/userspace/ebpf_loader.cpp" "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o.d"
   "/vagrant/sniffer/src/userspace/etcd_client.cpp" "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o.d"
   "/vagrant/sniffer/src/userspace/feature_extractor.cpp" "CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o.d"
+  "/vagrant/sniffer/src/userspace/feature_logger.cpp" "CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o.d"
   "/vagrant/sniffer/src/userspace/flow_manager.cpp" "CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o.d"
   "/vagrant/sniffer/src/userspace/main.cpp" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ring_consumer.cpp" "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o.d"

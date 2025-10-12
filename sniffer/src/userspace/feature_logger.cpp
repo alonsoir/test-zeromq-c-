@@ -1,5 +1,5 @@
 #include "feature_logger.hpp"
-#include "proto/network_security.pb.h"
+#include "network_security.pb.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
