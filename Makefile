@@ -55,6 +55,15 @@ help: ## Mostrar ayuda completa
 	@echo "  $(YELLOW)clean$(NC)             - Limpiar todo (VM + contenedores + build)"
 	@echo "  $(YELLOW)help$(NC)              - Esta ayuda"
 	@echo ""
+	@echo "$(BLUE)🧠 ML Detector (C++20 ONNX Runtime):$(NC)"
+	@echo "  $(YELLOW)ml-detector-build$(NC)     - Compilar ML Detector tricapa"
+	@echo "  $(YELLOW)ml-detector-start$(NC)     - Iniciar clasificación ML"
+	@echo "  $(YELLOW)ml-detector-stop$(NC)      - Parar ML Detector"
+	@echo "  $(YELLOW)ml-detector-status$(NC)    - Ver estado ML y modelos ONNX"
+	@echo "  $(YELLOW)ml-detector-test$(NC)      - Ejecutar test suite"
+	@echo "  $(YELLOW)ml-detector-clean$(NC)     - Limpiar build artifacts"
+	@echo "  $(YELLOW)ml-detector-logs$(NC)      - Ver logs en tiempo real"
+	@echo ""
 	@echo "$(PURPLE)🎯 Flujo típico:$(NC)"
 	@echo "  1. make lab-start        # Iniciar pipeline básico"
 	@echo "  2. make sniffer-build    # Compilar sniffer eBPF"
@@ -130,24 +139,30 @@ lab-start: check-deps verify-bpf ## Iniciar laboratorio básico (sin sniffer)
 	@echo "$(YELLOW)Siguiente paso:$(NC)"
 	@echo "  make sniffer-build && make sniffer-start  # Para captura eBPF"
 
-lab-full-stack: check-deps sniffer-deps ## Iniciar stack completo (pipeline + sniffer eBPF)
+lab-full-stack: check-deps sniffer-deps ## Iniciar stack completo (sniffer + ml-detector + pipeline)
 	@echo "$(GREEN)========================================$(NC)"
 	@echo "$(GREEN)🚀 FULL STACK DDOS PIPELINE$(NC)"
-	@echo "$(GREEN)   Kernel eBPF + Userspace + Docker$(NC)"
+	@echo "$(GREEN)   Kernel eBPF + ML + Userspace + Docker$(NC)"
 	@echo "$(GREEN)========================================$(NC)"
 	@$(MAKE) lab-start
 	@echo ""
 	@echo "$(BLUE)Paso 7: Compilando sniffer eBPF...$(NC)"
 	@$(MAKE) sniffer-build
 	@echo ""
-	@echo "$(BLUE)Paso 8: Iniciando captura eBPF...$(NC)"
+	@echo "$(BLUE)Paso 8: Compilando ML Detector...$(NC)"
+	@$(MAKE) ml-detector-build
+	@echo ""
+	@echo "$(BLUE)Paso 9: Iniciando captura eBPF...$(NC)"
 	@$(MAKE) sniffer-start
+	@echo ""
+	@echo "$(BLUE)Paso 10: Iniciando clasificación ML...$(NC)"
+	@$(MAKE) ml-detector-start
 	@echo ""
 	@echo "$(GREEN)🎉 FULL STACK OPERATIVO$(NC)"
 	@echo ""
-	@echo "$(PURPLE)🔥 Flujo de datos activo:$(NC)"
-	@echo "  Kernel eBPF → Ring Buffer → Userspace → ZeroMQ → Service3"
-	@echo "  Packets captured in kernel space → Protobuf messages"
+	@echo "$(PURPLE)🔥 Flujo de datos completo activo:$(NC)"
+	@echo "  Kernel eBPF → Sniffer → ML Detector → GeoIP → Scheduler → Firewall"
+	@echo "  Packets → Features → Classification → Enrichment → Decision → Action"
 
 # COMPILAR SNIFFER - Target unificado y optimizado
 sniffer-build: sniffer-check-deps ## Compilar sniffer eBPF con verificación completa
@@ -436,17 +451,23 @@ status: ## Ver estado del laboratorio
 	@vagrant ssh -c "cd /vagrant && docker-compose exec etcd /usr/local/bin/etcdctl --endpoints=http://localhost:2379 endpoint health" 2>/dev/null || echo "  $(RED)etcd no disponible$(NC)"
 	@echo ""
 	@echo "$(BLUE)4. eBPF Sniffer:$(NC)"
-	@vagrant ssh -c "pgrep -f sniffer" >/dev/null 2>&1 && echo "  $(GREEN)✅ Sniffer ejecutándose$(NC)" || echo "  $(YELLOW)⚠️ Sniffer parado$(NC)"
-	@vagrant ssh -c "sudo bpftool prog show type xdp | wc -l" 2>/dev/null | sed 's/^/  Programas XDP: /' || echo "  $(RED)No se puede verificar eBPF$(NC)"
+	@vagrant ssh -c "pgrep -f sniffer >/dev/null 2>&1 && echo '  ✅ Sniffer ejecutándose' || echo '  ⚠️ Sniffer parado'"
+	@vagrant ssh -c "sudo bpftool prog show type xdp 2>/dev/null | wc -l" | sed 's/^/  Programas XDP: /' || echo "  $(RED)No se puede verificar eBPF$(NC)"
 	@echo ""
-	@echo "$(BLUE)5. Servicios Registrados:$(NC)"
+	@echo "$(BLUE)5. ML Detector:$(NC)"
+	@vagrant ssh -c "pgrep -f 'ml-detector' >/dev/null 2>&1 && echo '  ✅ ML Detector ejecutándose' || echo '  ⚠️ ML Detector parado'"
+	@vagrant ssh -c "find /vagrant/ml-detector/models/production -name '*.onnx' 2>/dev/null | wc -l" | sed 's/^/  Modelos ONNX: /' || echo "  $(RED)No se pueden verificar modelos$(NC)"
+	@echo ""
+	@echo "$(BLUE)6. Servicios Registrados:$(NC)"
 	@vagrant ssh -c "cd /vagrant && docker-compose exec etcd /usr/local/bin/etcdctl --endpoints=http://localhost:2379 get --prefix /services/heartbeat/ --keys-only" 2>/dev/null | sed 's|/services/heartbeat/|  - |' || echo "  $(RED)No se pueden obtener servicios$(NC)"
 
-clean: ## Limpiar todo (VM, contenedores, imágenes, eBPF)
+clean: ## Limpiar todo (VM, contenedores, imágenes, eBPF, ML)
 	@echo "$(YELLOW)🧹 Limpieza completa del pipeline...$(NC)"
 	@$(MAKE) sniffer-stop 2>/dev/null || true
+	@$(MAKE) ml-detector-stop 2>/dev/null || true
 	@vagrant ssh -c "cd /vagrant && docker-compose down --remove-orphans --volumes && docker system prune -af && docker volume prune -f" 2>/dev/null || true
 	@vagrant ssh -c "cd /vagrant/sniffer && rm -rf build/* 2>/dev/null" || true
+	@vagrant ssh -c "cd /vagrant/ml-detector && rm -rf build/* 2>/dev/null" || true
 	@vagrant destroy -f 2>/dev/null || true
 	@echo "$(GREEN)✅ Limpieza completada$(NC)"
 
@@ -559,3 +580,175 @@ sniffer-test-verbose: sniffer-build-local
 	cd sniffer/build && sudo timeout 5 ./sniffer -c ../config/sniffer.json -vv || true
 	@echo ""
 	@echo "All verbosity levels tested successfully!"
+
+# ============================================================================
+# 🧠 ML DETECTOR TRICAPA (C++20 + ONNX Runtime)
+# ============================================================================
+
+ml-detector-install-deps: ## Instalar dependencias del ML Detector
+	@echo "$(BLUE)📦 Instalando dependencias del ML Detector...$(NC)"
+	@vagrant ssh -c "cd /vagrant && chmod +x scripts/install-ml-detector-deps.sh && sudo ./scripts/install-ml-detector-deps.sh"
+	@echo "$(GREEN)✅ Dependencias del ML Detector instaladas$(NC)"
+
+ml-detector-install-deps-local: ## Instalar dependencias del ML Detector localmente
+	@echo "$(BLUE)📦 Instalando dependencias del ML Detector localmente...$(NC)"
+	@cd scripts && chmod +x install-ml-detector-deps.sh && sudo ./install-ml-detector-deps.sh
+	@echo "$(GREEN)✅ Dependencias del ML Detector instaladas$(NC)"
+
+ml-detector-check-deps: ## Verificar dependencias del ML Detector
+	@echo "$(BLUE)🔍 Verificando dependencias del ML Detector...$(NC)"
+	@vagrant ssh -c 'command -v cmake >/dev/null && cmake --version | head -1 | sed "s/^/  ✅ /" || echo "  ❌ CMake no encontrado"'
+	@vagrant ssh -c 'pkg-config --exists libzmq && echo "  ✅ libzmq disponible" || echo "  ❌ libzmq no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists protobuf && echo "  ✅ protobuf disponible" || echo "  ❌ protobuf no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists liblz4 && echo "  ✅ liblz4 disponible" || echo "  ❌ liblz4 no encontrada"'
+	@vagrant ssh -c 'pkg-config --exists spdlog && echo "  ✅ spdlog disponible" || echo "  ❌ spdlog no encontrada"'
+	@vagrant ssh -c 'test -f /usr/include/nlohmann/json.hpp && echo "  ✅ nlohmann/json disponible" || echo "  ❌ nlohmann/json no encontrada"'
+	@vagrant ssh -c 'test -f /usr/local/lib/libonnxruntime.so && echo "  ✅ ONNX Runtime disponible" || echo "  ❌ ONNX Runtime no encontrado"'
+	@echo "$(GREEN)🎉 Verificación completada$(NC)"
+
+ml-detector-check-deps-local: ## Verificar dependencias del ML Detector localmente
+	@echo "$(BLUE)🔍 Verificando dependencias del ML Detector localmente...$(NC)"
+	@command -v cmake >/dev/null && cmake --version | head -1 | sed "s/^/  ✅ /" || echo "  ❌ CMake no encontrado"
+	@pkg-config --exists libzmq && echo "  ✅ libzmq disponible" || echo "  ❌ libzmq no encontrada"
+	@pkg-config --exists protobuf && echo "  ✅ protobuf disponible" || echo "  ❌ protobuf no encontrada"
+	@pkg-config --exists liblz4 && echo "  ✅ liblz4 disponible" || echo "  ❌ liblz4 no encontrada"
+	@pkg-config --exists spdlog && echo "  ✅ spdlog disponible" || echo "  ❌ spdlog no encontrada"
+	@test -f /usr/include/nlohmann/json.hpp && echo "  ✅ nlohmann/json disponible" || echo "  ❌ nlohmann/json no encontrada"
+	@test -f /usr/local/lib/libonnxruntime.so && echo "  ✅ ONNX Runtime disponible" || echo "  ❌ ONNX Runtime no encontrado"
+	@echo "$(GREEN)🎉 Verificación completada$(NC)"
+
+ml-detector-build: ml-detector-check-deps ## Compilar ML Detector con verificación completa
+	@echo "$(BLUE)🔨 Compilando ML Detector Tricapa...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Verificando protobuf compartido...$(NC)"
+	@vagrant ssh -c "test -f /vagrant/protobuf/network_security.pb.cc || (echo '❌ Protobuf no generado' && exit 1)"
+	@echo "$(GREEN)✅ Protobuf compartido disponible$(NC)"
+	@echo ""
+	@echo "$(BLUE)Preparando entorno de compilación...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector && mkdir -p build"
+	@echo ""
+	@echo "$(BLUE)Ejecutando CMake configure...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_SIMD=ON"
+	@echo ""
+	@echo "$(BLUE)Compilando con make -j4...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && make -j4"
+	@echo ""
+	@echo "$(BLUE)Verificando artefactos generados...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && ls -la ml-detector 2>/dev/null || echo 'Error: binario no generado'"
+	@echo ""
+	@echo "$(GREEN)✅ ML Detector compilado exitosamente$(NC)"
+	@echo "$(YELLOW)Archivos generados:$(NC)"
+	@echo "  - ml-detector (aplicación C++20)"
+	@echo "  - Modelos: ONNX (level1/level2/level3)"
+
+ml-detector-build-local: ml-detector-install-deps-local ## Compilar ML Detector localmente (desde dentro de la VM)
+	@echo "$(BLUE)🔨 Compilando ML Detector localmente...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Verificando protobuf compartido...$(NC)"
+	@test -f protobuf/network_security.pb.cc || (echo "❌ Protobuf no generado" && exit 1)
+	@echo "$(GREEN)✅ Protobuf compartido disponible$(NC)"
+	@echo ""
+	@echo "$(BLUE)Preparando entorno de compilación...$(NC)"
+	@cd ml-detector && mkdir -p build
+	@echo ""
+	@echo "$(BLUE)Ejecutando CMake configure...$(NC)"
+	@cd ml-detector/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_SIMD=ON
+	@echo ""
+	@echo "$(BLUE)Compilando con make -j4...$(NC)"
+	@cd ml-detector/build && make -j4
+	@echo ""
+	@echo "$(BLUE)Verificando artefactos generados...$(NC)"
+	@cd ml-detector/build && ls -la ml-detector 2>/dev/null || echo "Error: binario no generado"
+	@echo ""
+	@echo "$(GREEN)✅ ML Detector compilado exitosamente$(NC)"
+	@echo ""
+	@echo "Para iniciar el ML Detector:"
+	@echo "  cd ml-detector/build && ./ml-detector --config ../config/ml_detector.json"
+
+ml-detector-start: ## Iniciar ML Detector Tricapa
+	@echo "$(BLUE)🧠 Iniciando ML Detector Tricapa...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Verificando que el ML Detector esté compilado...$(NC)"
+	@vagrant ssh -c "test -f /vagrant/ml-detector/build/ml-detector" || (echo "$(RED)Error: ML Detector no compilado. Ejecuta 'make ml-detector-build' primero$(NC)" && exit 1)
+	@echo ""
+	@echo "$(YELLOW)Verificando modelos ONNX...$(NC)"
+	@vagrant ssh -c "ls /vagrant/ml-detector/models/production/*/*.onnx 2>/dev/null | wc -l | sed 's/^/  Modelos encontrados: /'" || echo "  $(YELLOW)⚠️ No se encontraron modelos ONNX$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Verificando configuración...$(NC)"
+	@vagrant ssh -c "test -f /vagrant/ml-detector/config/ml_detector.json" || (echo "$(RED)Error: Configuración no encontrada$(NC)" && exit 1)
+	@echo ""
+	@echo "$(BLUE)🚀 Iniciando clasificación ML tricapa...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && nohup ./ml-detector --config ../config/ml_detector.json > ml-detector.log 2>&1 & echo \$$! > ml-detector.pid"
+	@sleep 2
+	@vagrant ssh -c "test -f /vagrant/ml-detector/build/ml-detector.pid && echo '$(GREEN)✅ ML Detector iniciado con PID: '$(cat /vagrant/ml-detector/build/ml-detector.pid)'$(NC)' || echo '$(RED)❌ Error al iniciar ML Detector$(NC)'"
+
+ml-detector-stop: ## Parar ML Detector
+	@echo "$(YELLOW)🛑 Parando ML Detector...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Terminando procesos del ML Detector...$(NC)"
+	@vagrant ssh -c "if [ -f /vagrant/ml-detector/build/ml-detector.pid ]; then kill \$(cat /vagrant/ml-detector/build/ml-detector.pid) 2>/dev/null && rm /vagrant/ml-detector/build/ml-detector.pid; fi || sudo pkill -f ml-detector || echo 'No hay procesos ml-detector ejecutándose'"
+	@echo ""
+	@echo "$(GREEN)✅ ML Detector parado$(NC)"
+
+ml-detector-status: ## Ver estado detallado del ML Detector
+	@echo "$(BLUE)📊 Estado del ML Detector Tricapa:$(NC)"
+	@echo ""
+	@echo "$(BLUE)1. 🏃 Procesos:$(NC)"
+	@vagrant ssh -c "pgrep -f ml-detector >/dev/null 2>&1 && echo '  ✅ ML Detector ejecutándose (PID: '$(pgrep -f ml-detector)')' || echo '  ⏹️ ML Detector no está ejecutándose'"
+	@echo ""
+	@echo "$(BLUE)2. 📁 Artefactos de build:$(NC)"
+	@vagrant ssh -c "ls -lh /vagrant/ml-detector/build/ml-detector 2>/dev/null | sed 's|/vagrant/ml-detector/build/||' | sed 's/^/  ✅ Binary: /' || echo '  ❌ Binary: No compilado'"
+	@echo ""
+	@echo "$(BLUE)3. 🧠 Modelos ONNX:$(NC)"
+	@vagrant ssh -c "find /vagrant/ml-detector/models/production -name '*.onnx' 2>/dev/null | sed 's|/vagrant/ml-detector/models/production/||' | sed 's/^/  ✅ /' || echo '  ❌ No hay modelos ONNX'"
+	@echo ""
+	@echo "$(BLUE)4. 📋 Configuración:$(NC)"
+	@vagrant ssh -c "test -f /vagrant/ml-detector/config/ml_detector.json && echo '  ✅ Config: ml_detector.json' || echo '  ❌ Config: No encontrada'"
+	@echo ""
+	@echo "$(BLUE)5. 🔌 Sockets IPC:$(NC)"
+	@vagrant ssh -c "ls -l /tmp/sniffer.ipc 2>/dev/null | sed 's/^/  ✅ Input: /' || echo '  ❌ Input: /tmp/sniffer.ipc no existe'"
+	@vagrant ssh -c "ls -l /tmp/ml-detector.ipc 2>/dev/null | sed 's/^/  ✅ Output: /' || echo '  ⚠️ Output: /tmp/ml-detector.ipc no creado aún'"
+	@echo ""
+	@echo "$(BLUE)6. 📊 Logs recientes:$(NC)"
+	@vagrant ssh -c "tail -5 /vagrant/ml-detector/build/ml-detector.log 2>/dev/null | sed 's/^/  /' || echo '  ℹ️ No hay logs disponibles'"
+
+ml-detector-test: ## Ejecutar test suite del ML Detector
+	@echo "$(BLUE)🧪 Ejecutando test suite del ML Detector...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Test 1: Verificar compilación...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && test -x ml-detector && echo '✅ Binary ejecutable encontrado' || (echo '❌ Binary no encontrado' && exit 1)"
+	@echo ""
+	@echo "$(BLUE)Test 2: Verificar protobuf compartido...$(NC)"
+	@vagrant ssh -c "test -f /vagrant/protobuf/network_security.pb.cc && echo '✅ Protobuf compartido disponible' || (echo '❌ Protobuf no encontrado' && exit 1)"
+	@echo ""
+	@echo "$(BLUE)Test 3: Test de configuración...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && ./ml-detector --config ../config/ml_detector.json --test-config && echo '✅ Configuración válida' || echo '❌ Error en configuración'" || echo "⚠️ Test config no implementado aún"
+	@echo ""
+	@echo "$(BLUE)Test 4: Verificar dependencias runtime...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && ldd ml-detector | grep -E '(zmq|protobuf|onnxruntime|lz4)' | sed 's/^/  ✅ /'"
+	@echo ""
+	@echo "$(BLUE)Test 5: Verificar modelos ONNX...$(NC)"
+	@vagrant ssh -c "find /vagrant/ml-detector/models/production -name '*.onnx' | wc -l | sed 's/^/  Modelos encontrados: /'"
+	@echo ""
+	@echo "$(GREEN)🧪 Test suite completado$(NC)"
+
+ml-detector-clean: ## Limpiar build artifacts del ML Detector
+	@echo "$(YELLOW)🧹 Limpiando build artifacts del ML Detector...$(NC)"
+	@vagrant ssh -c "rm -rf /vagrant/ml-detector/build/*" || echo "$(YELLOW)Build directory ya estaba limpio$(NC)"
+	@vagrant ssh -c "rm -f /vagrant/ml-detector/build/ml-detector.log /vagrant/ml-detector/build/ml-detector.pid" 2>/dev/null || true
+	@echo "$(GREEN)✅ Build artifacts limpiados$(NC)"
+
+ml-detector-clean-local: ## Limpiar build artifacts del ML Detector localmente
+	@echo "$(YELLOW)🧹 Limpiando build artifacts del ML Detector localmente...$(NC)"
+	@rm -rf ml-detector/build/* || echo "$(YELLOW)Build directory ya estaba limpio$(NC)"
+	@rm -f ml-detector/build/ml-detector.log ml-detector/build/ml-detector.pid 2>/dev/null || true
+	@echo "$(GREEN)✅ Build artifacts limpiados$(NC)"
+
+ml-detector-logs: ## Ver logs del ML Detector en tiempo real
+	@echo "$(BLUE)📋 Logs del ML Detector (Ctrl+C para salir)...$(NC)"
+	@vagrant ssh -c "tail -f /vagrant/ml-detector/build/ml-detector.log" || echo "$(RED)No hay logs disponibles$(NC)"
+
+ml-detector-install: ml-detector-build ## Instalar ML Detector en el sistema de la VM
+	@echo "$(BLUE)📦 Instalando ML Detector en sistema...$(NC)"
+	@vagrant ssh -c "cd /vagrant/ml-detector/build && sudo make install"
+	@echo "$(GREEN)✅ ML Detector instalado$(NC)"
