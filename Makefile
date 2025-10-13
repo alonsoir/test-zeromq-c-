@@ -10,12 +10,22 @@ PURPLE = \033[0;35m
 NC = \033[0m
 
 .PHONY: all lab-start lab-stop clean help check-deps status lab-logs lab-test lab-debug \
-        sniffer-build sniffer-start sniffer-stop sniffer-status sniffer-clean \
-        service3-build service3-start service3-stop service3-logs sniffer-docs \
-        sniffer-test sniffer-install sniffer-package lab-full-stack \
-        sniffer-install-deps sniffer-check-deps sniffer-clean-deps sniffer-setup \
-        sniffer-build-local sniffer-install-deps-local sniffer-check-deps-local sniffer-clean-local verify-bpf \
-        check-deps-host check-deps-vm sniffer-package sniffer-package-deps sniffer-package-clean sniffer-test-verbose
+        lab-full-stack check-deps-host check-deps-vm verify-bpf \
+        \
+        service3-build service3-start service3-stop service3-logs \
+        \
+        sniffer-build sniffer-build-local \
+        sniffer-start sniffer-stop sniffer-status sniffer-clean sniffer-clean-local \
+        sniffer-test sniffer-test-verbose sniffer-docs sniffer-install sniffer-setup \
+        sniffer-install-deps sniffer-install-deps-local \
+        sniffer-check-deps sniffer-check-deps-local sniffer-clean-deps \
+        sniffer-package sniffer-package-deps sniffer-package-clean \
+        \
+        ml-detector-build ml-detector-build-local \
+        ml-detector-start ml-detector-stop ml-detector-status ml-detector-clean ml-detector-clean-local \
+        ml-detector-test ml-detector-logs ml-detector-install \
+        ml-detector-install-deps ml-detector-install-deps-local \
+        ml-detector-check-deps ml-detector-check-deps-local
 
 # Target por defecto
 all: lab-start
