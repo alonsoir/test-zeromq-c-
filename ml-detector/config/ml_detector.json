@@ -1,0 +1,325 @@
+{
+  "_header": "C++20 ML DETECTOR TRICAPA v1.0 - Production Config (Co-located with sniffer)",
+  "component": {
+    "name": "cpp_ml_detector_tricapa",
+    "version": "1.0.0",
+    "mode": "ml_inference_tricapa",
+    "onnx_runtime_version": "1.16.0"
+  },
+  "node_id": "cpp_ml_detector_v1_001",
+  "cluster_name": "upgraded-happiness-cluster",
+
+  "profiles": {
+    "lab": {
+      "worker_threads": 3,
+      "input_queue_size": 300,
+      "output_queue_size": 200,
+      "compression_level": 1,
+      "enable_all_models": true
+    },
+    "cloud": {
+      "worker_threads": 8,
+      "input_queue_size": 1000,
+      "output_queue_size": 500,
+      "compression_level": 3,
+      "enable_all_models": true
+    },
+    "bare_metal": {
+      "worker_threads": 16,
+      "input_queue_size": 2000,
+      "output_queue_size": 1000,
+      "compression_level": 1,
+      "enable_all_models": true,
+      "cpu_affinity_enabled": true
+    }
+  },
+  "profile": "lab",
+
+  "network": {
+    "input_socket": {
+      "endpoint": "ipc:///tmp/sniffer.ipc",
+      "mode": "connect",
+      "socket_type": "PULL",
+      "high_water_mark": 500
+    },
+    "output_socket": {
+      "endpoint": "ipc:///tmp/ml-detector.ipc",
+      "mode": "bind",
+      "socket_type": "PUB",
+      "high_water_mark": 1000
+    }
+  },
+
+  "zmq": {
+    "worker_threads": 2,
+    "io_thread_pools": 1,
+    "connection_settings": {
+      "sndhwm": 1000,
+      "rcvhwm": 500,
+      "linger_ms": 0,
+      "send_timeout_ms": 250,
+      "recv_timeout_ms": 500,
+      "sndbuf": 262144,
+      "rcvbuf": 131072,
+      "immediate": 0
+    },
+    "queue_management": {
+      "input_queue_size": 300,
+      "output_queue_size": 200,
+      "queue_timeout_ms": 100,
+      "overflow_policy": "drop_oldest"
+    }
+  },
+
+  "transport": {
+    "compression": {
+      "enabled": true,
+      "algorithm": "lz4",
+      "level": 1,
+      "min_compress_size": 0,
+      "compression_ratio_threshold": 0.8,
+      "adaptive_compression": false
+    },
+    "encryption": {
+      "enabled": false,
+      "etcd_token_required": false,
+      "algorithm": "chacha20-poly1305",
+      "key_size": 256,
+      "key_rotation_hours": 24,
+      "fallback_mode": "compression_only"
+    }
+  },
+
+  "etcd": {
+    "enabled": true,
+    "endpoints": [
+      "localhost:2379"
+    ],
+    "connection_timeout_ms": 5000,
+    "retry_attempts": 3,
+    "retry_interval_ms": 1000,
+    "crypto_token_path": "/crypto/ml-detector/tokens",
+    "config_sync_path": "/config/ml-detector",
+    "service_registration_path": "/services/ml-detector",
+    "required_for_encryption": false,
+    "fallback_mode": "standalone_compression_only",
+    "heartbeat_interval_seconds": 30,
+    "lease_ttl_seconds": 60
+  },
+
+  "threading": {
+    "worker_threads": 3,
+    "protobuf_deserializer_threads": 1,
+    "feature_extractor_threads": 2,
+    "ml_inference_threads": 3,
+    "zmq_sender_threads": 1,
+    "total_worker_threads": 10,
+    "cpu_affinity": {
+      "enabled": false,
+      "deserializers": [0],
+      "feature_extractors": [1, 2],
+      "ml_inference": [3, 4, 5],
+      "zmq_senders": [6]
+    },
+    "thread_priorities": {
+      "deserializers": "high",
+      "feature_extractors": "normal",
+      "ml_inference": "high",
+      "zmq_senders": "normal"
+    }
+  },
+
+  "ml": {
+    "models_base_dir": "../models/production",
+
+    "thresholds": {
+      "level1_attack": 0.65,
+      "level2_ddos": 0.70,
+      "level2_ransomware": 0.75,
+      "level3_anomaly": 0.80
+    },
+
+    "level1": {
+      "enabled": true,
+      "name": "attack_detector",
+      "model_file": "level1/attack_detector.onnx",
+      "scaler_file": "level1/scaler.json",
+      "features_count": 23,
+      "model_type": "RandomForest",
+      "description": "General attack detection - Random Forest (23 features)",
+      "requires_scaling": true,
+      "timeout_ms": 10
+    },
+
+    "level2": {
+      "ddos": {
+        "enabled": true,
+        "name": "ddos_detector",
+        "model_file": "level2/ddos_rf.onnx",
+        "features_count": 82,
+        "model_type": "RandomForest",
+        "description": "DDOS detection - Random Forest (82 features)",
+        "requires_scaling": false,
+        "timeout_ms": 10
+      },
+      "ransomware": {
+        "enabled": true,
+        "name": "ransomware_detector",
+        "model_file": "level2/ransomware_rf.onnx",
+        "features_count": 82,
+        "model_type": "RandomForest",
+        "description": "Ransomware detection - Random Forest (82 features)",
+        "requires_scaling": false,
+        "timeout_ms": 10
+      }
+    },
+
+    "level3": {
+      "internal": {
+        "enabled": true,
+        "name": "internal_anomaly_detector",
+        "model_file": "level3/internal_detector.onnx",
+        "features_count": 4,
+        "model_type": "RandomForest",
+        "description": "Internal traffic anomaly detection (4 features)",
+        "requires_scaling": false,
+        "timeout_ms": 5
+      },
+      "web": {
+        "enabled": false,
+        "name": "web_anomaly_detector",
+        "model_file": "level3/web_detector.onnx",
+        "features_count": 4,
+        "model_type": "RandomForest",
+        "description": "Web traffic anomaly detection (4 features)",
+        "requires_scaling": false,
+        "timeout_ms": 5
+      }
+    },
+
+    "inference": {
+      "batch_size": 1,
+      "enable_model_warmup": true,
+      "warmup_iterations": 3,
+      "onnx_optimization_level": "all",
+      "inter_op_threads": 2,
+      "intra_op_threads": 2,
+      "enable_cpu_mem_arena": true,
+      "enable_profiling": false
+    },
+
+    "feature_extraction": {
+      "validate_features": true,
+      "pad_missing": true,
+      "log_extraction_errors": false,
+      "cache_extractions": true,
+      "cache_size": 500,
+      "simd_optimization": true
+    },
+
+    "degraded_mode": {
+      "min_models_required": 1,
+      "continue_with_partial_models": true,
+      "fallback_to_heuristics": true,
+      "log_degraded_operations": true
+    }
+  },
+
+  "processing": {
+    "input_queue_size": 300,
+    "output_queue_size": 200,
+    "queue_timeout_ms": 100,
+    "batch_processing": {
+      "enabled": false,
+      "batch_size": 1,
+      "batch_timeout_ms": 10
+    },
+    "lockfree_queues": true,
+    "numa_aware_allocation": false,
+    "memory_prefaulting": false
+  },
+
+  "backpressure": {
+    "enabled": true,
+    "activation_threshold": 0.7,
+    "max_drops_per_second": 1000,
+    "adaptive_rate_limiting": true,
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 50,
+      "recovery_timeout_seconds": 30
+    }
+  },
+
+  "monitoring": {
+    "stats_interval_seconds": 60,
+    "performance_tracking": true,
+    "ml_metrics": {
+      "inference_time": true,
+      "model_accuracy": false,
+      "feature_importance": false,
+      "predictions_per_second": true,
+      "model_load_time": true
+    },
+    "system_metrics": {
+      "queue_depth": true,
+      "memory_usage": true,
+      "thread_utilization": true,
+      "compression_ratio": true,
+      "zmq_throughput": true
+    },
+    "alerts": {
+      "max_inference_latency_ms": 10,
+      "max_queue_usage_percent": 85,
+      "max_memory_usage_mb": 1024,
+      "max_cpu_usage_percent": 80,
+      "min_compression_ratio": 0.3,
+      "max_model_failures_per_minute": 10
+    }
+  },
+
+  "logging": {
+    "level": "INFO",
+    "file": "logs/cpp_ml_detector_tricapa_v1.log",
+    "max_file_size_mb": 200,
+    "backup_count": 10,
+    "include_performance_logs": true,
+    "include_compression_stats": true,
+    "include_thread_stats": true,
+    "include_ml_predictions": true,
+    "log_inference_scores": true,
+    "log_feature_extraction": false
+  },
+
+  "protobuf": {
+    "schema_version": "v3.1.0",
+    "validate_before_processing": true,
+    "validate_after_enrichment": true,
+    "max_event_size_bytes": 100000,
+    "deserialization_timeout_ms": 50,
+    "serialization_timeout_ms": 50,
+    "pool_size": 1000,
+    "reuse_objects": true
+  },
+
+  "security": {
+    "input_validation": {
+      "enabled": true,
+      "validate_protobuf_schema": true,
+      "sanitize_features": true,
+      "reject_malformed_events": true,
+      "max_feature_value": 1e9,
+      "min_features_required": 10
+    }
+  },
+
+  "performance": {
+    "enable_zero_copy": true,
+    "enable_memory_pools": true,
+    "preallocate_buffers": true,
+    "buffer_pool_size": 1000,
+    "enable_simd": true,
+    "enable_avx2": true,
+    "cache_line_size": 64
+  }
+}
