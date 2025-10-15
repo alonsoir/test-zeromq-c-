@@ -64,3 +64,6 @@ logs/
 tmp/
 temp/
 *.tmp
+# Permitir plots importantes (visualizaciones pequeñas)
+!outputs/plots/*.png
+!outputs/plots/*.jpg
