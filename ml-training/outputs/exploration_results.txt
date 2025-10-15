@@ -1,0 +1,174 @@
+================================================================================
+🔍 EXPLORACIÓN DE DATASETS CIC
+================================================================================
+
+Directorio de trabajo: /Users/aironman/CLionProjects/test-zeromq-docker/ml-training
+================================================================================
+📊 CIC-IDS-2017 DATASET
+================================================================================
+
+✅ Archivos encontrados: 8
+  [0] Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv: 73.6 MB
+  [1] Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv: 73.3 MB
+  [2] Friday-WorkingHours-Morning.pcap_ISCX.csv: 55.6 MB
+  [3] Monday-WorkingHours.pcap_ISCX.csv: 168.7 MB
+  [4] Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv: 79.3 MB
+  [5] Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv: 49.6 MB
+  [6] Tuesday-WorkingHours.pcap_ISCX.csv: 128.8 MB
+  [7] Wednesday-workingHours.pcap_ISCX.csv: 214.7 MB
+
+📋 Cargando Monday-WorkingHours.pcap_ISCX.csv...
+
+✅ Dimensiones: (529918, 79)
+   - Filas (flows): 529,918
+   - Columnas (features): 79
+
+📋 Primeras 10 columnas:
+  1.  Destination Port
+  2.  Flow Duration
+  3.  Total Fwd Packets
+  4.  Total Backward Packets
+  5. Total Length of Fwd Packets
+  6.  Total Length of Bwd Packets
+  7.  Fwd Packet Length Max
+  8.  Fwd Packet Length Min
+  9.  Fwd Packet Length Mean
+ 10.  Fwd Packet Length Std
+
+📋 Últimas 10 columnas:
+ 70.  min_seg_size_forward
+ 71. Active Mean
+ 72.  Active Std
+ 73.  Active Max
+ 74.  Active Min
+ 75. Idle Mean
+ 76.  Idle Std
+ 77.  Idle Max
+ 78.  Idle Min
+ 79.  Label
+
+📊 Tipos de datos:
+  int64: 54
+  float64: 24
+  object: 1
+
+🔍 Valores nulos:
+Total de valores nulos: 64
+
+Columnas con nulos (top 10):
+  Flow Bytes/s: 64 (0.01%)
+
+🔍 Valores infinitos:
+Total de valores infinitos: 810
+
+Columnas con infinitos (top 10):
+   Flow Packets/s: 437 (0.08%)
+  Flow Bytes/s: 373 (0.07%)
+
+🏷️ Distribución de Labels:
+Columna de labels: ' Label'
+
+Total de clases: 1
+
+Distribución:
+  BENIGN                        :    529,918 (100.00%)
+
+📊 Total de flows por archivo:
+  Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv            :    225,745 flows
+  Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv        :    286,467 flows
+  Friday-WorkingHours-Morning.pcap_ISCX.csv                   :    191,033 flows
+  Monday-WorkingHours.pcap_ISCX.csv                           :    529,918 flows
+  Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv :    288,602 flows
+  Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv      :    170,366 flows
+  Tuesday-WorkingHours.pcap_ISCX.csv                          :    445,909 flows
+  Wednesday-workingHours.pcap_ISCX.csv                        :    692,703 flows
+
+TOTAL                                                       :  2,830,743 flows
+
+================================================================================
+📊 CIC-DDoS-2019 DATASET
+================================================================================
+
+✅ Archivos encontrados: 18
+
+📁 01-12/:
+  - DrDoS_DNS.csv: 2034.5 MB
+  - DrDoS_LDAP.csv: 874.8 MB
+  - DrDoS_MSSQL.csv: 1801.7 MB
+  - DrDoS_NTP.csv: 615.1 MB
+  - DrDoS_NetBIOS.csv: 1618.8 MB
+  - DrDoS_SNMP.csv: 2071.9 MB
+  - DrDoS_SSDP.csv: 1194.7 MB
+  - DrDoS_UDP.csv: 1436.3 MB
+  - Syn.csv: 607.8 MB
+  - TFTP.csv: 8871.1 MB
+  - UDPLag.csv: 150.7 MB
+
+📁 03-11/:
+  - LDAP.csv: 831.0 MB
+  - MSSQL.csv: 2275.7 MB
+  - NetBIOS.csv: 1352.8 MB
+  - Portmap.csv: 75.0 MB
+  - Syn.csv: 1790.4 MB
+  - UDP.csv: 1709.7 MB
+  - UDPLag.csv: 305.0 MB
+
+📋 Cargando archivo de ejemplo (primeras 10,000 filas)...
+Archivo seleccionado: Syn.csv
+
+✅ Dimensiones (sample): (10000, 88)
+✅ Columnas: 88
+
+📋 Primeras 10 columnas:
+  1. Unnamed: 0
+  2. Flow ID
+  3.  Source IP
+  4.  Source Port
+  5.  Destination IP
+  6.  Destination Port
+  7.  Protocol
+  8.  Timestamp
+  9.  Flow Duration
+ 10.  Total Fwd Packets
+
+📋 Últimas 10 columnas:
+ 79.  Active Std
+ 80.  Active Max
+ 81.  Active Min
+ 82. Idle Mean
+ 83.  Idle Std
+ 84.  Idle Max
+ 85.  Idle Min
+ 86. SimillarHTTP
+ 87.  Inbound
+ 88.  Label
+
+🏷️ Labels en DDoS dataset (columna: ' Label'):
+  Syn                           :  9,998 ( 99.98%)
+  BENIGN                        :      2 (  0.02%)
+
+================================================================================
+🔗 COMPARACIÓN DE FEATURES
+================================================================================
+
+CIC-IDS-2017 features: 79
+CIC-DDoS-2019 features: 88
+
+Features comunes: 79
+Solo en IDS-2017: 0
+Solo en DDoS-2019: 9
+
+📋 Solo en DDoS-2019:
+  -  Destination IP
+  -  Inbound
+  -  Protocol
+  -  Source IP
+  -  Source Port
+  -  Timestamp
+  - Flow ID
+  - SimillarHTTP
+  - Unnamed: 0
+
+================================================================================
+✅ EXPLORACIÓN COMPLETADA
+================================================================================

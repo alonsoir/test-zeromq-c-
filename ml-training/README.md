@@ -153,6 +153,12 @@ CIC-IDS-2017 Paper
 CIC-DDoS-2019 Paper
 ONNX Documentation
 scikit-learn
+http://cicresearch.ca/CICDataset/CICDDoS2019/Dataset/CSVs/
+http://cicresearch.ca/CICDataset/CIC-IDS-2017/Dataset/CIC-IDS-2017/
+https://www.yorku.ca/research/bccc/ucs-technical/cybersecurity-datasets-cds/
+https://www.unb.ca/cic/datasets/ids-2017.html
+https://www.unb.ca/cic/datasets/ddos-2019.html
+https://github.com/showlab/Paper2Video
 
 📝 Licencia
 MIT License - Ver LICENSE en el directorio raíz del proyecto.
