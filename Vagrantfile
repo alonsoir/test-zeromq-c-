@@ -219,6 +219,79 @@ Vagrant.configure("2") do |config|
     echo "=========================================="
   SHELL
 
+# ========================================
+# Python Environment for ML Training
+# ========================================
+  config.vm.provision "shell", name: "python-ml-env", inline: <<-SHELL
+    echo ""
+    echo "=========================================="
+    echo "Instalando Python ML environment..."
+    echo "=========================================="
+
+    # Python 3.11 desde Debian repos
+    apt-get update
+    apt-get install -y \
+      python3 \
+      python3-pip \
+      python3-venv \
+      python3-dev \
+      python3-setuptools \
+      python3-wheel
+
+    # Actualizar pip
+    python3 -m pip install --upgrade pip --break-system-packages
+
+    # Crear venv para ml-training (como vagrant user)
+    if [ ! -d /vagrant/ml-training/.venv ]; then
+      echo "Creando Python venv en /vagrant/ml-training/.venv..."
+      su - vagrant -c "cd /vagrant/ml-training && python3 -m venv .venv"
+      echo "✅ Python venv creado"
+    else
+      echo "✅ Python venv ya existe"
+    fi
+
+    # Instalar dependencias ML (si existe requirements.txt)
+    if [ -f /vagrant/ml-training/requirements.txt ]; then
+      echo "Instalando dependencias Python..."
+      su - vagrant -c "cd /vagrant/ml-training && source .venv/bin/activate && pip install -r requirements.txt"
+      echo "✅ Dependencias Python instaladas"
+    else
+      echo "⚠️  requirements.txt no encontrado (se instalará manualmente)"
+    fi
+
+    # Añadir alias útiles al .bashrc
+    if ! grep -q "ml-activate" /home/vagrant/.bashrc; then
+      cat >> /home/vagrant/.bashrc << 'EOF'
+
+# ============================================================================
+# ML Training Environment Shortcuts
+# ============================================================================
+alias ml-activate='source /vagrant/ml-training/.venv/bin/activate'
+alias ml-explore='cd /vagrant/ml-training && ml-activate && python scripts/explore.py'
+alias ml-train='cd /vagrant/ml-training && ml-activate && python scripts/train_level1.py'
+alias ml-convert='cd /vagrant/ml-training && ml-activate && python scripts/convert_to_onnx.py'
+
+# Build shortcuts
+alias build-detector='cd /vagrant/ml-detector/build && cmake .. && make -j4'
+alias build-sniffer='cd /vagrant/sniffer-ebpf && make clean && make'
+
+export PROJECT_ROOT="/vagrant"
+EOF
+      echo "✅ Aliases añadidos a .bashrc"
+    fi
+
+    # Verificar
+    echo ""
+    echo "Verificando Python environment:"
+    echo "  - Python: $(python3 --version)"
+    echo "  - pip: $(python3 -m pip --version)"
+    echo "  - venv: $([ -d /vagrant/ml-training/.venv ] && echo 'created' || echo 'missing')"
+    echo ""
+    echo "=========================================="
+    echo "✅ Python ML environment ready"
+    echo "=========================================="
+  SHELL
+
   # Final message
   config.vm.provision "shell", inline: <<-SHELL
     echo ""
