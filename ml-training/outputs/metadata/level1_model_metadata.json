@@ -1,0 +1,63 @@
+{
+  "model_name": "level1_attack_detector",
+  "model_type": "RandomForest",
+  "version": "1.0.0",
+  "training_date": "2025-10-15T09:57:01.790333",
+  "dataset": "CIC-IDS-2017",
+  "n_features": 23,
+  "feature_names": [
+    " Packet Length Std",
+    " Subflow Fwd Bytes",
+    " Fwd Packet Length Max",
+    " Avg Fwd Segment Size",
+    " ACK Flag Count",
+    " Packet Length Variance",
+    " PSH Flag Count",
+    "Bwd Packet Length Max",
+    " act_data_pkt_fwd",
+    "Total Length of Fwd Packets",
+    " Fwd Packet Length Std",
+    "Fwd Packets/s",
+    " Subflow Bwd Bytes",
+    " Destination Port",
+    "Init_Win_bytes_forward",
+    "Subflow Fwd Packets",
+    " Fwd IAT Min",
+    " Packet Length Mean",
+    " Total Length of Bwd Packets",
+    " Bwd Packet Length Mean",
+    " Bwd Packet Length Min",
+    " Flow Duration",
+    " Flow Packets/s"
+  ],
+  "classes": [
+    "BENIGN",
+    "ATTACK"
+  ],
+  "rf_params": {
+    "n_estimators": 100,
+    "max_depth": 20,
+    "min_samples_split": 10,
+    "min_samples_leaf": 4,
+    "class_weight": "balanced"
+  },
+  "metrics": {
+    "accuracy": 0.9987529784562015,
+    "precision": 0.9944321010787804,
+    "recall": 0.999264765218015,
+    "f1_score": 0.9968425760286226,
+    "roc_auc": 0.9999393864175975,
+    "confusion_matrix": [
+      [
+        453996,
+        624
+      ],
+      [
+        82,
+        111447
+      ]
+    ]
+  },
+  "onnx_compatible": true,
+  "target_platform": "ml-detector-cpp"
+}
