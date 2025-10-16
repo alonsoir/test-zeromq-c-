@@ -78,7 +78,7 @@ La idea será crear un paquete debian como hicimos para el sniffer.
 
 ### 📊 Uso
 ```bash
-  ./ml-detector --config ../config/ml_detector.json
+  ./ml-detector --config ../config/ml_detector_config.json
 ```
 
 ### 🔧 Configuración
