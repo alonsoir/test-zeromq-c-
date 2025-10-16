@@ -142,7 +142,7 @@
     "level1": {
       "enabled": true,
       "name": "attack_detector",
-      "model_file": "level1/attack_detector.onnx",
+      "model_file": "level1/level1_attack_detector.onnx",
       "scaler_file": "level1/scaler.json",
       "features_count": 23,
       "model_type": "RandomForest",

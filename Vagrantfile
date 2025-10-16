@@ -190,7 +190,7 @@ Vagrant.configure("2") do |config|
     # ONNX Runtime (descarga e instalación)
     if [ ! -f /usr/local/lib/libonnxruntime.so ]; then
       echo "Instalando ONNX Runtime 1.16.0..."
-      ONNX_VERSION="1.16.0"
+      ONNX_VERSION="1.17.1"
       cd /tmp
       wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/onnxruntime-linux-x64-${ONNX_VERSION}.tgz
       tar -xzf onnxruntime-linux-x64-${ONNX_VERSION}.tgz
