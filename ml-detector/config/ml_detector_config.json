@@ -37,13 +37,13 @@
 
   "network": {
     "input_socket": {
-      "endpoint": "ipc:///tmp/sniffer.ipc",
+      "endpoint": "tcp://127.0.0.1:5571",
       "mode": "connect",
       "socket_type": "PULL",
       "high_water_mark": 500
     },
     "output_socket": {
-      "endpoint": "ipc:///tmp/ml-detector.ipc",
+      "endpoint": "tcp://0.0.0.0:5572",
       "mode": "bind",
       "socket_type": "PUB",
       "high_water_mark": 1000
