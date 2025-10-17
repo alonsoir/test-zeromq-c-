@@ -158,8 +158,11 @@ set(SOURCES
         src/ml_detector.cpp
         src/classifier_tricapa.cpp
         src/feature_extractor.cpp
+    src/zmq_handler.cpp
         src/model_loader.cpp
         src/onnx_model.cpp
+    src/feature_extractor.cpp
+    src/zmq_handler.cpp
         src/zmq_handler.cpp
         src/config_loader.cpp
         src/logger.cpp
