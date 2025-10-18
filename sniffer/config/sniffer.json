@@ -55,7 +55,7 @@
       "icmp"
     ],
     "af_xdp": {
-      "enabled": true,
+      "enabled": false,
       "queue_id": 0,
       "frame_size": 2048,
       "fill_ring_size": 2048,
@@ -193,7 +193,7 @@
     "worker_threads": 4,
     "io_thread_pools": 2,
     "socket_pools": {
-      "push_sockets": 4,
+      "push_sockets": 1,
       "load_balancing": "round_robin",
       "failover_enabled": true
     },
@@ -216,7 +216,7 @@
       "max_reconnect_attempts": 10
     },
     "batch_processing": {
-      "enabled": true,
+      "enabled": false,
       "batch_size": 50,
       "batch_timeout_ms": 10,
       "max_batches_queued": 100
@@ -224,7 +224,7 @@
   },
   "transport": {
     "compression": {
-      "enabled": true,
+      "enabled": false,
       "algorithm": "lz4",
       "level": 1,
       "min_compress_size": 0,
@@ -244,7 +244,7 @@
     }
   },
   "etcd": {
-    "enabled": true,
+    "enabled": false,
     "endpoints": [
       "localhost:2379"
     ],
@@ -274,7 +274,7 @@
       "memory_prefaulting": true
     },
     "feature_extraction": {
-      "enabled": true,
+      "enabled": false,
       "extract_all_features": true,
       "cache_flow_states": true,
       "flow_timeout_seconds": 300,
@@ -336,7 +336,7 @@
   },
   "security": {
     "input_validation": {
-      "enabled": true,
+      "enabled": false,
       "max_packet_size_bytes": 65536,
       "validate_ip_addresses": true,
       "validate_ports": true,
@@ -344,7 +344,7 @@
     }
   },
   "backpressure": {
-    "enabled": true,
+    "enabled": false,
     "kernel_backpressure": {
       "ring_buffer_full_action": "drop_oldest"
     },
@@ -353,7 +353,7 @@
       "adaptive_rate_limiting": true
     },
     "circuit_breaker": {
-      "enabled": true,
+      "enabled": false,
       "failure_threshold": 50,
       "recovery_timeout": 30
     }

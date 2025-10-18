@@ -185,6 +185,35 @@ set(HEADERS
 )
 
 # ============================================================================
+# PROTOBUF SETUP
+# ============================================================================
+
+set(PROTO_SHARED_DIR ${CMAKE_SOURCE_DIR}/../protobuf)
+set(PROTO_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/protobuf)
+
+# Check if protobuf files need to be copied/generated
+if(EXISTS ${PROTO_SHARED_DIR}/network_security.pb.cc)
+    message(STATUS "📦 Using shared protobuf files")
+
+    # Copy to src/protobuf
+    configure_file(
+            ${PROTO_SHARED_DIR}/network_security.pb.cc
+            ${PROTO_SOURCE_DIR}/network_security.pb.cc
+            COPYONLY
+    )
+    configure_file(
+            ${PROTO_SHARED_DIR}/network_security.pb.h
+            ${PROTO_SOURCE_DIR}/network_security.pb.h
+            COPYONLY
+    )
+else()
+    message(FATAL_ERROR "❌ Protobuf files not found. Run: cd ${PROTO_SHARED_DIR} && ./generate.sh")
+endif()
+
+# Add protobuf source directory to includes
+include_directories(${PROTO_SOURCE_DIR})
+
+# ============================================================================
 # MAIN EXECUTABLE
 # ============================================================================
 add_executable(ml-detector ${SOURCES} ${HEADERS})

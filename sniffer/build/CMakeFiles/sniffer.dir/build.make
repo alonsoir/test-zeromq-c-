@@ -285,6 +285,7 @@ sniffer: CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o
 sniffer: CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
 sniffer: CMakeFiles/sniffer.dir/build.make
 sniffer: /usr/lib/x86_64-linux-gnu/libprotobuf.so
+sniffer: /usr/lib/x86_64-linux-gnu/libcurl.so
 sniffer: CMakeFiles/sniffer.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX executable sniffer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sniffer.dir/link.txt --verbose=$(VERBOSE)

@@ -23,49 +23,33 @@ Vagrant.configure("2") do |config|
   end
 
   # Network configuration
-  # 1. NAT (implícita, siempre presente en interfaz 1)
-  # 2. Private network para acceso host-VM
   config.vm.network "private_network", ip: "192.168.56.20"
-
-  # 3. Bridged network para acceso desde LAN
-  # Vagrant preguntará qué interfaz usar durante 'vagrant up'
-  # Útil para: acceso desde otros dispositivos, pruebas de red real
   config.vm.network "public_network", bridge: "en0: Wi-Fi"
 
-  # Port forwarding (útil cuando no se usa bridged o para acceso local)
-  config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"  # ZeroMQ
-  config.vm.network "forwarded_port", guest: 2379, host: 2379, protocol: "tcp"  # etcd client
-  config.vm.network "forwarded_port", guest: 2380, host: 2380, protocol: "tcp"  # etcd peer
-  config.vm.network "forwarded_port", guest: 3000, host: 3000, protocol: "tcp"  # monitoring
-  config.vm.network "forwarded_port", guest: 5571, host: 5571, protocol: "tcp"  # sniffer
+  # Port forwarding
+  config.vm.network "forwarded_port", guest: 5555, host: 5555, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 2379, host: 2379, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 2380, host: 2380, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 3000, host: 3000, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 5571, host: 5571, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 5572, host: 5572, protocol: "tcp"
 
   # Synced folder
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox",
       mount_options: ["dmode=775,fmode=775,exec"]
 
-  # Network environment setup for sniffer
+  # Network environment setup
   config.vm.provision "shell", inline: <<-SHELL
-    echo "Configurando entorno de red para sniffer..."
-
-    # Detectar IP del host
+    echo "Configurando entorno de red..."
     HOST_IP=$(ip route | grep '^default' | awk '{print $3}' | head -1)
-    if [ -z "$HOST_IP" ]; then
-      HOST_IP="10.0.2.2"
-    fi
-
+    [ -z "$HOST_IP" ] && HOST_IP="10.0.2.2"
     echo "Host IP detectada: $HOST_IP"
-
-    # Detectar IPs de todas las interfaces
     echo "Interfaces de red disponibles:"
     ip -4 addr show | grep inet | awk '{print "  " $NF ": " $2}'
 
-    # Detectar IP de la interfaz bridged (si existe)
     BRIDGED_IP=$(ip -4 addr show | grep "inet.*192.168\|inet.*10\." | grep -v "192.168.56" | awk '{print $2}' | cut -d'/' -f1 | head -1)
-    if [ -n "$BRIDGED_IP" ]; then
-      echo "IP bridged detectada: $BRIDGED_IP"
-    fi
+    [ -n "$BRIDGED_IP" ] && echo "IP bridged detectada: $BRIDGED_IP"
 
-    # Variables de entorno
     {
       echo "VAGRANT_HOST_IP=$HOST_IP"
       echo "SNIFFER_HOST_IP=$HOST_IP"
@@ -74,34 +58,24 @@ Vagrant.configure("2") do |config|
       [ -n "$BRIDGED_IP" ] && echo "BRIDGED_NETWORK_IP=$BRIDGED_IP"
     } >> /etc/environment
 
-    # Docker host resolution
     {
       echo "$HOST_IP host.docker.internal"
       echo "$HOST_IP docker.host.internal"
     } >> /etc/hosts
   SHELL
 
+  # Locales y herramientas básicas
   config.vm.provision "shell", inline: <<-SHELL
-    # Instalar herramientas básicas
-    echo "Instalar rsync..."
+    echo "Instalando herramientas básicas..."
     apt-get update
-    apt-get install -y rsync
+    apt-get install -y rsync locales curl wget git vim jq make build-essential
 
     # Configurar locales españolas
-    echo "Instalar y configurar locales españolas..."
-    apt-get install -y locales
     sed -i '/es_ES.UTF-8/s/^# //g' /etc/locale.gen
     locale-gen es_ES.UTF-8
     update-locale LANG=es_ES.UTF-8 LC_ALL=es_ES.UTF-8
     echo 'export LANG=es_ES.UTF-8' >> /etc/profile.d/locale.sh
     echo 'export LC_ALL=es_ES.UTF-8' >> /etc/profile.d/locale.sh
-  SHELL
-
-  # Basic provisioning
-  config.vm.provision "shell", inline: <<-SHELL
-    echo "Instalando dependencias básicas..."
-    apt-get update
-    apt-get install -y curl wget git vim jq make build-essential
 
     # Docker
     if ! command -v docker >/dev/null 2>&1; then
@@ -121,22 +95,68 @@ Vagrant.configure("2") do |config|
       chmod +x /usr/local/bin/docker-compose
     fi
 
-    # Habilitar BPF JIT si está disponible
+    # BPF JIT y filesystem
     if [ -f /proc/sys/net/core/bpf_jit_enable ]; then
-        echo "Habilitando BPF JIT..."
         echo 1 > /proc/sys/net/core/bpf_jit_enable
-
-        # Montar BPF filesystem
         if ! mountpoint -q /sys/fs/bpf; then
-            echo "Montando BPF filesystem..."
             mount -t bpf none /sys/fs/bpf
         fi
-
-        # Hacerlo permanente
         if ! grep -q "/sys/fs/bpf" /etc/fstab; then
-            echo "Configurando BPF en fstab..."
             echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
         fi
+    fi
+  SHELL
+
+  # ========================================
+  # eBPF Sniffer Dependencies
+  # ========================================
+  config.vm.provision "shell", name: "sniffer-deps", inline: <<-SHELL
+    echo ""
+    echo "=========================================="
+    echo "Instalando dependencias Sniffer eBPF..."
+    echo "=========================================="
+
+    apt-get update
+    apt-get install -y \
+      clang \
+      llvm \
+      bpftool \
+      libbpf-dev \
+      linux-headers-$(uname -r) \
+      libjsoncpp-dev \
+      libcurl4-openssl-dev \
+      libzmq3-dev \
+      libprotobuf-dev \
+      protobuf-compiler \
+      liblz4-dev \
+      libzstd-dev
+
+    echo ""
+    echo "Verificando dependencias Sniffer:"
+    echo "  - clang: $(clang --version | head -1)"
+    echo "  - llvm: $(llc --version | head -1)"
+    echo "  - bpftool: $(bpftool version 2>/dev/null || echo 'installed')"
+    echo "  - libbpf: $(pkg-config --modversion libbpf)"
+    echo "  - jsoncpp: $(pkg-config --modversion jsoncpp)"
+    echo "  - curl: $(pkg-config --modversion libcurl)"
+    echo "  - ZeroMQ: $(pkg-config --modversion libzmq)"
+    echo "  - Protobuf: $(protoc --version)"
+    echo "  - LZ4: $(pkg-config --modversion liblz4)"
+    echo "  - Zstd: $(pkg-config --modversion libzstd)"
+    echo ""
+    echo "=========================================="
+    echo "✅ Sniffer dependencies installed"
+    echo "=========================================="
+  SHELL
+
+  config.vm.provision "shell", name: "protobuf-compiler", inline: <<-SHELL
+    echo "📦 Installing protobuf compiler..."
+    apt-get install -y protobuf-compiler
+
+    # Generate protobuf files on first boot
+    if [ ! -f /vagrant/protobuf/network_security.pb.cc ]; then
+      echo "🔨 Generating initial protobuf files..."
+      cd /vagrant/protobuf && ./generate.sh
     fi
   SHELL
 
@@ -156,7 +176,6 @@ Vagrant.configure("2") do |config|
     if [ -z "$CMAKE_VERSION" ]; then
       INSTALL_CMAKE=1
     else
-      # Comparar versiones
       if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$CMAKE_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
         INSTALL_CMAKE=1
       else
@@ -173,23 +192,17 @@ Vagrant.configure("2") do |config|
       rm cmake-3.25.0-linux-x86_64.sh
     fi
 
-    # Dependencias C++ para ML Detector
-    echo "Instalando librerías C++..."
-    apt-get update
+    # Dependencias C++ (ZMQ y Protobuf ya instalados por sniffer)
     apt-get install -y \
       pkg-config \
-      libzmq3-dev \
-      libprotobuf-dev \
-      protobuf-compiler \
-      liblz4-dev \
       libspdlog-dev \
       nlohmann-json3-dev \
       libgtest-dev \
       libbenchmark-dev
 
-    # ONNX Runtime (descarga e instalación)
+    # ONNX Runtime
     if [ ! -f /usr/local/lib/libonnxruntime.so ]; then
-      echo "Instalando ONNX Runtime 1.16.0..."
+      echo "Instalando ONNX Runtime 1.17.1..."
       ONNX_VERSION="1.17.1"
       cd /tmp
       wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/onnxruntime-linux-x64-${ONNX_VERSION}.tgz
@@ -203,13 +216,9 @@ Vagrant.configure("2") do |config|
       echo "✅ ONNX Runtime ya instalado"
     fi
 
-    # Verificar instalación
     echo ""
     echo "Verificando dependencias ML Detector:"
     echo "  - CMake: $(cmake --version | head -1)"
-    echo "  - ZeroMQ: $(pkg-config --modversion libzmq)"
-    echo "  - Protobuf: $(pkg-config --modversion protobuf)"
-    echo "  - LZ4: $(pkg-config --modversion liblz4)"
     echo "  - spdlog: $(pkg-config --modversion spdlog 2>/dev/null || echo 'header-only')"
     echo "  - nlohmann/json: $(dpkg -l | grep nlohmann-json3 | awk '{print $3}')"
     echo "  - ONNX Runtime: $([ -f /usr/local/lib/libonnxruntime.so ] && echo 'installed' || echo 'missing')"
@@ -219,16 +228,15 @@ Vagrant.configure("2") do |config|
     echo "=========================================="
   SHELL
 
-# ========================================
-# Python Environment for ML Training
-# ========================================
+  # ========================================
+  # Python Environment for ML Training
+  # ========================================
   config.vm.provision "shell", name: "python-ml-env", inline: <<-SHELL
     echo ""
     echo "=========================================="
     echo "Instalando Python ML environment..."
     echo "=========================================="
 
-    # Python 3.11 desde Debian repos
     apt-get update
     apt-get install -y \
       python3 \
@@ -238,49 +246,44 @@ Vagrant.configure("2") do |config|
       python3-setuptools \
       python3-wheel
 
-    # Actualizar pip
     python3 -m pip install --upgrade pip --break-system-packages
 
-    # Crear venv para ml-training (como vagrant user)
+    # Crear venv para ml-training
     if [ ! -d /vagrant/ml-training/.venv ]; then
-      echo "Creando Python venv en /vagrant/ml-training/.venv..."
+      echo "Creando Python venv..."
       su - vagrant -c "cd /vagrant/ml-training && python3 -m venv .venv"
       echo "✅ Python venv creado"
-    else
-      echo "✅ Python venv ya existe"
     fi
 
-    # Instalar dependencias ML (si existe requirements.txt)
+    # Instalar dependencias ML
     if [ -f /vagrant/ml-training/requirements.txt ]; then
       echo "Instalando dependencias Python..."
       su - vagrant -c "cd /vagrant/ml-training && source .venv/bin/activate && pip install -r requirements.txt"
       echo "✅ Dependencias Python instaladas"
-    else
-      echo "⚠️  requirements.txt no encontrado (se instalará manualmente)"
     fi
 
-    # Añadir alias útiles al .bashrc
+    # Aliases útiles
     if ! grep -q "ml-activate" /home/vagrant/.bashrc; then
       cat >> /home/vagrant/.bashrc << 'EOF'
 
 # ============================================================================
-# ML Training Environment Shortcuts
+# ML Training & Development Shortcuts
 # ============================================================================
 alias ml-activate='source /vagrant/ml-training/.venv/bin/activate'
 alias ml-explore='cd /vagrant/ml-training && ml-activate && python scripts/explore.py'
 alias ml-train='cd /vagrant/ml-training && ml-activate && python scripts/train_level1.py'
 alias ml-convert='cd /vagrant/ml-training && ml-activate && python scripts/convert_to_onnx.py'
 
-# Build shortcuts
 alias build-detector='cd /vagrant/ml-detector/build && cmake .. && make -j4'
-alias build-sniffer='cd /vagrant/sniffer-ebpf && make clean && make'
+alias build-sniffer='cd /vagrant/sniffer/build && cmake .. && make -j4'
+alias run-detector='cd /vagrant/ml-detector/build && ./ml-detector --verbose'
+alias run-sniffer='cd /vagrant/sniffer/build && sudo ./sniffer --verbose'
 
 export PROJECT_ROOT="/vagrant"
 EOF
-      echo "✅ Aliases añadidos a .bashrc"
+      echo "✅ Aliases añadidos"
     fi
 
-    # Verificar
     echo ""
     echo "Verificando Python environment:"
     echo "  - Python: $(python3 --version)"
@@ -295,18 +298,37 @@ EOF
   # Final message
   config.vm.provision "shell", inline: <<-SHELL
     echo ""
-    echo "=== VM LISTA ==="
-    echo "Configuración de red:"
-    echo "  - Private network: 192.168.56.20"
-    echo "  - Bridged network: $(ip -4 addr show | grep "inet.*192.168\|inet.*10\." | grep -v "192.168.56" | awk '{print $2}' | cut -d'/' -f1 | head -1 || echo 'no detectada')"
+    echo "╔════════════════════════════════════════════╗"
+    echo "║  VM LISTA - Upgraded Happiness Lab         ║"
+    echo "╚════════════════════════════════════════════╝"
     echo ""
-    echo "Para usar el laboratorio:"
-    echo "  vagrant ssh"
-    echo "  cd /vagrant"
-    echo "  make help                # Ver opciones disponibles"
-    echo "  make lab-start          # Iniciar pipeline básico"
-    echo "  make sniffer-build      # Compilar sniffer eBPF"
-    echo "  make ml-detector-build  # Compilar ML detector"
-    echo "================"
+    echo "📊 Configuración de red:"
+    echo "  • Private: 192.168.56.20"
+    echo "  • Bridged: $(ip -4 addr show | grep "inet.*192.168\|inet.*10\." | grep -v "192.168.56" | awk '{print $2}' | cut -d'/' -f1 | head -1 || echo 'no detectada')"
+    echo ""
+    echo "🔧 Componentes instalados:"
+    echo "  ✅ Docker + Docker Compose"
+    echo "  ✅ eBPF toolchain (clang, llvm, bpftool, libbpf)"
+    echo "  ✅ Sniffer dependencies (jsoncpp, curl, zmq, protobuf, lz4, zstd)"
+    echo "  ✅ ML Detector dependencies (CMake 3.25, spdlog, nlohmann-json, ONNX)"
+    echo "  ✅ Python ML environment (venv, pip packages)"
+    echo ""
+    echo "🚀 Comandos útiles:"
+    echo "  vagrant ssh              # Conectar a la VM"
+    echo "  build-sniffer            # Compilar sniffer"
+    echo "  build-detector           # Compilar ml-detector"
+    echo "  run-sniffer              # Ejecutar sniffer (necesita sudo)"
+    echo "  run-detector             # Ejecutar ml-detector"
+    echo "  ml-activate              # Activar Python venv"
+    echo ""
+    echo "📂 Estructura:"
+    echo "  /vagrant/sniffer/        # Sniffer eBPF"
+    echo "  /vagrant/ml-detector/    # ML Detector C++"
+    echo "  /vagrant/ml-training/    # Python ML training"
+    echo "  /vagrant/protobuf/       # Protobuf schemas"
+    echo ""
+    echo "═══════════════════════════════════════════════"
+    echo "✨ Ready for development!"
+    echo "═══════════════════════════════════════════════"
   SHELL
 end

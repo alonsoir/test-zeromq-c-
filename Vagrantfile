@@ -149,6 +149,17 @@ Vagrant.configure("2") do |config|
     echo "=========================================="
   SHELL
 
+  config.vm.provision "shell", name: "protobuf-compiler", inline: <<-SHELL
+    echo "📦 Installing protobuf compiler..."
+    apt-get install -y protobuf-compiler
+
+    # Generate protobuf files on first boot
+    if [ ! -f /vagrant/protobuf/network_security.pb.cc ]; then
+      echo "🔨 Generating initial protobuf files..."
+      cd /vagrant/protobuf && ./generate.sh
+    fi
+  SHELL
+
   # ========================================
   # ML Detector Dependencies
   # ========================================

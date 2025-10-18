@@ -71,7 +71,7 @@ CMakeFiles/proto_compilation: proto/network_security.pb.h
 
 proto/network_security.pb.cc: /vagrant/protobuf/network_security.proto
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Compiling protobuf from shared schema"
-	/usr/bin/protoc --cpp_out=/vagrant/sniffer/build/proto --proto_path=/vagrant/sniffer/../protobuf /vagrant/sniffer/../protobuf/network_security.proto
+	Protobuf_PROTOC_EXECUTABLE-NOTFOUND --cpp_out=/vagrant/sniffer/build/proto --proto_path=/vagrant/sniffer/../protobuf /vagrant/sniffer/../protobuf/network_security.proto
 
 proto/network_security.pb.h: proto/network_security.pb.cc
 	@$(CMAKE_COMMAND) -E touch_nocreate proto/network_security.pb.h
