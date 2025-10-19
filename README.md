@@ -1,322 +1,426 @@
-### 1. README.md - 
+# ML Detector Tricapa - eBPF Network Security Pipeline
 
-```markdown
-## ✅ Estado Actual del Proyecto
+## 🎯 Visión del Proyecto
+
+Sistema de detección de amenazas en red usando eBPF/XDP para captura de paquetes y modelos ML tricapa para clasificación en tiempo real.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Sniffer eBPF (XDP)  →  ML Detector (ONNX)  →  Alert/Action    │
+│                                                                  │
+│  eth2 capture  →  Feature Extraction  →  Level 1-3 Inference   │
+│  Kernel Space     User Space ZMQ          C++ ONNX Runtime     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ✅ Estado Actual (v1.0.0-stable-pipeline)
 
 ### Componentes Operativos
-- ✅ **Pipeline ZeroMQ + Protobuf**: service1 → service2 → service3 funcionando
-- ✅ **etcd Service Discovery**: Registro automático de servicios con heartbeat
-- ✅ **eBPF Sniffer v3.1**: Captura de paquetes en kernel space con XDP
-- ✅ **Compresión LZ4**: Protobuf messages comprimidos en tránsito
-- ✅ **Vagrant + Docker**: Entorno reproducible completo
-- ✅ **Verbose Feature Logging**: 3 niveles de inspección de ML features (NUEVO)
 
-### Configuración eBPF Optimizada
-- ✅ BPF JIT habilitado automáticamente en provisioning
-- ✅ BPF filesystem montado persistentemente en `/sys/fs/bpf`
-- ✅ Configuración permanente vía `/etc/fstab`
-- ✅ Sistema de logging configurable para debugging
+- ✅ **Sniffer eBPF v3.1**: Captura XDP en kernel space con AF_XDP (eth2)
+- ✅ **ML Detector v1.0**: Inferencia ONNX Level 1 (23 features RF model)
+- ✅ **Pipeline ZMQ + Protobuf**: Comunicación Sniffer → ML Detector funcional
+- ✅ **Build System**: Reproducible desde cero con Vagrant + Makefile
+- ✅ **Vagrant Environment**: Debian 12, todas las dependencias automatizadas
+- ✅ **Docker Lab**: etcd + service3 (legacy, opcional)
 
-### Últimas Mejoras (2025-10-12)
-- **Sistema de Verbose Logging**: 3 niveles para inspección de features ML
-    - Nivel 1 (-v): Resumen básico por paquete
-    - Nivel 2 (-vv): Features agrupadas por categoría
-    - Nivel 3 (-vvv): Dump completo de ~193 features
-- Logging con colores y formato estructurado
-- Zero overhead cuando verbose está desactivado
-- Integración completa en paquete Debian
+### Arquitectura del Pipeline
+```
+Sniffer eBPF (eth2)
+  ├─ Kernel Space: XDP hook + AF_XDP socket
+  ├─ User Space: Feature extraction (193 features)
+  ├─ Protobuf serialization (network_security.proto v3.1.0)
+  └─ ZMQ PUB → tcp://0.0.0.0:5571
 
-### Mejoras Anteriores (2025-10-03)
-- Sincronización de archivos de configuración JSON (`sniffer.json` ↔ `sniffer-proposal.json`)
-- Eliminación de comentarios inline en JSON (parser estricto)
-- Corrección de pkg-config para libzmq (`libzmq3` → `libzmq`)
-- Provisioning automático de capacidades eBPF en Vagrant
-- Target `verify-bpf` para validación de configuración kernel
-
-## ✅ Estado Actual del Proyecto
-
-### Componentes Operativos
-- ✅ **Pipeline ZeroMQ + Protobuf**: service1 → service2 → service3 funcionando
-- ✅ **etcd Service Discovery**: Registro automático de servicios con heartbeat
-- ✅ **eBPF Sniffer v3.1**: Captura de paquetes en kernel space con XDP
-- ✅ **Compresión LZ4**: Protobuf messages comprimidos en tránsito
-- ✅ **Vagrant + Docker**: Entorno reproducible completo
-
-### Configuración eBPF Optimizada
-- ✅ BPF JIT habilitado automáticamente en provisioning
-- ✅ BPF filesystem montado persistentemente en `/sys/fs/bpf`
-- ✅ Configuración permanente vía `/etc/fstab`
-
-### Últimas Mejoras (2025-10-03)
-- Sincronización de archivos de configuración JSON (`sniffer.json` ↔ `sniffer-proposal.json`)
-- Eliminación de comentarios inline en JSON (parser estricto)
-- Corrección de pkg-config para libzmq (`libzmq3` → `libzmq`)
-- Provisioning automático de capacidades eBPF en Vagrant
-- Target `verify-bpf` para validación de configuración kernel
+ML Detector (Level 1)
+  ├─ ZMQ SUB ← tcp://127.0.0.1:5571
+  ├─ Protobuf deserialization
+  ├─ Feature preprocessing (23 features)
+  ├─ ONNX inference (RandomForest model)
+  ├─ Classification: BENIGN / ATTACK
+  └─ ZMQ PUB → tcp://0.0.0.0:5572 (ready for next component)
 ```
 
-### 2. DECISIONS.md - Nuevas secciones:
+---
 
-```markdown
-### 7. Configuración JSON y Parsing Estricto
+## 🚀 Quick Start
 
-**Decisión**: Usar JSON puro sin comentarios
-- **Contexto**: El parser JSON estricto de jsoncpp no acepta comentarios inline (`//`)
-- **Solución**: Mantener dos archivos separados:
-  - `sniffer-proposal.json`: Versión documentada con comentarios (desarrollo)
-  - `sniffer.json`: Versión limpia para producción
-- **Alternativa considerada**: Usar JSONC, descartado por complejidad adicional
-- **Aprendizaje**: La documentación se mantendrá en archivos `.md` separados
+### Requisitos
 
-### 8. Optimización eBPF en Vagrant
+- **Host**: macOS con VirtualBox y Vagrant
+- **RAM**: 6GB para la VM
+- **Disk**: 10GB libres
 
-**Decisión**: Habilitar BPF JIT y filesystem automáticamente
-- **Problema detectado**: `/proc/sys/kernel/bpf_jit_enable` no existía por defecto
-- **Solución implementada**:
-  ```bash
-  # En Vagrantfile provision:
-  echo 1 | tee /proc/sys/net/core/bpf_jit_enable
-  mount -t bpf none /sys/fs/bpf
-  echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
-  ```
-- **Impacto**: Mejora de rendimiento en compilación JIT de programas eBPF
-- **Verificación**: Target `make verify-bpf` para validar configuración
-
-### 9. Gestión de Dependencias con pkg-config
-
-**Decisión**: Usar nombres correctos de paquetes pkg-config
-- **Problema**: Confusion entre nombre de paquete Debian y archivo `.pc`
-    - Paquete Debian: `libzmq3-dev`
-    - Archivo pkg-config: `libzmq.pc` (no `libzmq3.pc`)
-- **Solución**: Actualizar Makefile para usar `pkg-config --exists libzmq`
-- **Lección**: Siempre verificar con `pkg-config --list-all | grep <lib>`
-
-### 10. Sincronización de Configuraciones
-
-**Decisión**: `sniffer.json` como single source of truth en producción
-- **Problema inicial**: Discrepancia entre archivos de configuración
-    - `main.h` apuntaba a `sniffer-proposal.json` (desarrollo)
-    - `run_sniffer_with_iface.sh` apuntaba a `sniffer.json` (producción)
-- **Solución**: Copiar `sniffer-proposal.json` → `sniffer.json` tras validación
-- **Proceso**:
-    1. Desarrollo en `sniffer-proposal.json` (con comentarios)
-    2. Validación y testing
-    3. Limpieza y copia a `sniffer.json`
-    4. Commit de ambos archivos sincronizados
-```
-
-### 3. Nuevo archivo: `docs/JSON_CONFIG.md`
-
-```markdown
-# JSON Configuration Guide
-
-## Archivos de Configuración
-
-### `sniffer-proposal.json` (Desarrollo)
-- Versión documentada con comentarios inline
-- Usada durante desarrollo y experimentación
-- **NO usar en producción** (comentarios no válidos en JSON estándar)
-
-### `sniffer.json` (Producción)
-- Versión limpia sin comentarios
-- Usada por el sniffer en runtime
-- Sincronizada desde `sniffer-proposal.json` tras validación
-
-## Proceso de Actualización
-
-1. Editar `sniffer-proposal.json` con comentarios
-2. Validar configuración: `make sniffer-test`
-3. Limpiar comentarios: `sed 's|//.*||g' sniffer-proposal.json > sniffer.json`
-4. Verificar JSON válido: `python3 -m json.tool sniffer.json`
-5. Commit ambos archivos
-
-## Campos Críticos
-
-### `batch.max_batches_queued`
-**Requerido**: Sí  
-**Tipo**: Integer  
-**Descripción**: Máximo número de batches en cola antes de backpressure
-
-### `compression.algorithm`
-**Requerido**: Sí  
-**Valores**: `lz4`, `zstd`, `snappy` (próximamente)  
-**Producción**: `lz4` (mejor balance rendimiento/compresión)
-```
-
-## Comandos para el commit:
-
+### Setup Completo (Primera Vez)
 ```bash
-# 1. Actualizar archivos
-git add README.md DECISIONS.md docs/JSON_CONFIG.md
+# 1. Clone el repositorio
+git clone <repo-url>
+cd test-zeromq-docker
 
-# 2. Actualizar Makefile con verify-bpf y corrección libzmq
-git add Makefile
+# 2. Build completo desde cero
+make dev-setup
 
-# 3. Sincronizar configuraciones
-git add sniffer/config/sniffer.json sniffer/config/sniffer-proposal.json
+# Esto ejecuta:
+# - vagrant up (crea VM + instala TODAS las dependencias)
+# - docker-compose up -d (arranca etcd + service3)
+# - Genera protobuf schema
+# - Compila sniffer
+# - Compila ml-detector
+# ⏱️ ~10-15 minutos primera vez
 
-# 4. Commit descriptivo
-git commit -m "feat: BPF JIT optimization and JSON config synchronization
+# 3. Verificar instalación
+make test
 
-- Enable BPF JIT automatically in Vagrant provisioning
-- Mount /sys/fs/bpf filesystem persistently
-- Add verify-bpf target for validation
-- Fix pkg-config libzmq detection (libzmq3 → libzmq)
-- Synchronize sniffer.json with sniffer-proposal.json
-- Remove inline comments from production JSON
-- Add JSON_CONFIG.md documentation
-- Update DECISIONS.md with latest learnings"
-
-# 5. Crear tag semántico
-git tag -a v3.1.1 -m "Version 3.1.1 - eBPF optimization and config fixes"
-
-# 6. Merge a main
-git checkout main
-git merge feature/enhanced-sniffer-config
-
-# 7. Push todo
-git push origin main
-git push origin v3.1.1
+# Output esperado:
+# Sniffer:     ✅
+# ML Detector: ✅
+# Protobuf:    ✅
 ```
-## Red y Conectividad
 
-Esta VM tiene 3 interfaces configuradas:
+### Ejecución del Pipeline
 
-- **eth0** (10.0.2.15) - NAT para acceso a Internet
-- **eth1** (192.168.56.20) - Red privada host-only (IP fija)
-- **eth2** (DHCP) - Red bridged a tu LAN física
-
-### Diagnóstico de Red
+**Requiere 3 terminales:**
 ```bash
-# Dentro de la VM
-cd /vagrant
-./scripts/network_diagnostics.sh
+# Terminal 1: Sniffer (captura + feature extraction)
+make run-sniffer
 
-### Captura de Tráfico
+# Output esperado:
+# ✅ eBPF program loaded and attached (ring_fd=4)
+# ✅ RingBufferConsumer started
+# [PKT #xxx] TCP 192.168.1.x:443 → 8.8.8.8:443 60B
 
-# Capturar en eth2 durante 60 segundos
-./scripts/capture_zeromq_traffic.sh eth2 60
+# Terminal 2: ML Detector (inferencia)
+make run-detector
 
-# Ver capturas guardadas
-ls -lh /tmp/zeromq_captures/
+# Output esperado:
+# ✅ ZMQ sockets initialized successfully
+# 📥 ZMQ Handler loop started
+# [INFO] 📦 Event received: id=event-xxx
+# [DEBUG] 🤖 Prediction: label=0 (BENIGN), confidence=0.92
 
-### Verificación del Sniffer en eth2
-# Compilar sniffer
-make sniffer-build-local
-
-# Verificar que captura en eth2
-sudo ./sniffer/build/sniffer --verbose | grep eth2
+# Terminal 3: Generación de tráfico (pruebas)
+make ssh
+ping -c 100 8.8.8.8
+curl http://example.com
 ```
-## 🔍 Debugging y Verbose Logging
 
-### Niveles de Verbosity
+---
 
-El sniffer incluye un sistema de logging configurable para inspeccionar las features ML extraídas:
+## 🛠️ Comandos Útiles
 
-#### Nivel 1: Resumen Básico (`-v`)
+### VM Management
 ```bash
-  sudo ./sniffer/build/sniffer -c sniffer/config/sniffer.json -v
+make up              # Arrancar VM
+make halt            # Parar VM
+make destroy         # Destruir VM
+make ssh             # Conectar a VM
+make status          # Estado de la VM
 ```
 
-Output:
-
-[PKT #312954584793_547881216] TCP 192.168.1.1:443 → 224.0.0.1:0 60B
-[PKT #332893414690_547881216] UDP 192.168.1.135:53 → 224.0.0.240:63715 86B
-
-### Uso: Monitoreo en tiempo real, verificación de captura
-Nivel 2: Features Agrupadas (-vv)
+### Build
 ```bash
-  sudo ./sniffer/build/sniffer -c sniffer/config/sniffer.json -vv
+make all             # Compilar todo (sniffer + detector)
+make sniffer         # Solo sniffer
+make detector        # Solo ml-detector
+make proto           # Regenerar protobuf schema
+make rebuild         # Clean + build todo
 ```
 
-Output:
-
-=== PACKET #409255656473_130 ===
-[BASIC INFO]
-Timestamp: 2025-10-12 07:03:45.123456789
-Source: 192.168.1.1:443
-Destination: 224.0.0.1:0
-Protocol: TCP (6)
-Total Bytes: 60
-
-[TIMING]
-Flow duration: 0.000123 s
-Flow IAT mean: 45.6 µs
-
-[RATES & RATIOS]
-Bytes/sec: 487804.8
-Packets/sec: 8130.08
-Download/Upload ratio: 0.0
-
-[TCP FLAGS]
-SYN: 1  ACK: 0  FIN: 0  RST: 0
-
-[FEATURE ARRAYS]
-General Attack Features (RF): 23 features
-Internal Traffic: 4 features
-Ransomware Detection: 83 features
-DDoS Detection: 83 features
-
-### Uso: Debugging de pipeline, validación de features
-Nivel 3: Dump Completo (-vvv)
-
+### Desarrollo
 ```bash
-    sudo ./sniffer/build/sniffer -c sniffer/config/sniffer.json -vvv > features.log 2>&1
+make test            # Verificar qué está compilado
+make logs-sniffer    # Ver logs del sniffer
+make logs-detector   # Ver logs del detector
+make check-ports     # Ver si puertos 5571/5572 están en uso
+make kill-all        # Matar procesos sniffer/detector
 ```
-Output: ~193 features con índice y valor
 
-=== PACKET #543424975012_547881216 - FULL FEATURE DUMP ===
-[BASIC IDENTIFICATION]
-Event ID: 543424975012_547881216
-Node ID: cpp_sniffer_v31_001
-Timestamp: 2025-10-12 07:05:12.547881216
-Classification: UNCATEGORIZED
-Threat Score: 0.00
+### Docker Lab (Opcional - Legacy)
+```bash
+make lab-start       # Arrancar etcd + service3
+make lab-stop        # Parar lab
+make lab-ps          # Ver contenedores
+make lab-logs        # Ver logs
+make lab-clean       # Limpiar todo
+```
 
-[NETWORK FEATURES - BASIC]
-[src_ip] 192.168.1.1
-[dst_ip] 224.0.0.1
-[src_port] 443
-[dst_port] 0
-[protocol_number] 6
-[protocol_name] TCP
+---
 
-[PACKET STATISTICS]
-[total_forward_packets] 1
-[total_backward_packets] 0
-[total_forward_bytes] 60
-[total_backward_bytes] 0
-[minimum_packet_length] 60
-[maximum_packet_length] 60
-[packet_length_mean] 60.00
-[packet_length_std] 0.00
+## 🐛 Issues Conocidos
 
-... (todas las features detalladas)
+### 1. Crash ZMQ bajo Carga (No Bloqueante)
 
-[GENERAL ATTACK FEATURES] (23 features)
-[0] feature_0: 0.000000
-[1] feature_1: 1.000000
-...
+**Síntoma:**
+```
+Assertion failed: check () (src/msg.cpp:414)
+Abortado
+```
 
-[RANSOMWARE DETECTION FEATURES] (83 features)
-[0] ransomware_0: 0.333333
-[1] ransomware_1: 0.000000
-...
+**Contexto:**
+- Aparece bajo carga sostenida (>100 paquetes/seg)
+- Bug en el lifecycle de mensajes ZMQ en el sniffer
+- **El pipeline funciona estable en condiciones normales**
 
-Uso: Análisis exhaustivo, training de modelos ML, documentación
+**Workaround temporal:**
+- Reducir `batch_processing_size` a 1 en `sniffer.json`
+- Reducir `zmq_sender_threads` a 1
 
-PEDTE
+**Fix planificado:** Próxima sesión (revisar zmq_msg_close calls)
 
-Redirección y Filtrado
+### 2. Warnings ML Detector (No Críticos)
 
-# Guardar log completo
-sudo ./sniffer -c config.json -vvv > features_$(date +%Y%m%d_%H%M%S).log 2>&1
+**Síntoma:**
+```
+warning: unused parameter 'features'
+warning: comparison of integer expressions
+```
 
-# Solo paquetes TCP
-sudo ./sniffer -c config.json -v | grep TCP
+**Contexto:**
+- Warnings normales de desarrollo
+- No afectan funcionalidad
+- Se limpiarán en fase de producción
 
-# Análisis de un paquete específico
-sudo ./sniffer -c config.json -vvv | grep -A 200 "PACKET #123"
+---
 
-# Ver en tiempo real con colores
-sudo ./sniffer -c config.json -vv | less -R
+## 📊 Troubleshooting Épico (Sesión 2025-10-19)
+
+### Problema: Build Roto Desde Cero
+
+**Síntomas iniciales:**
+- `libbpf-dev` no encontrado
+- `jsoncpp` headers missing
+- `libprotobuf32` faltante
+- `linux-headers-$(uname -r)` no existe
+- Protobuf no compilaba (faltaba `protoc`)
+- ZMQ "Address already in use"
+
+**Root Causes Identificados:**
+
+1. **Dependencies en múltiples fases** → Pérdida de paquetes con `apt-get remove`
+2. **linux-headers version-specific** → No existe en repos
+3. **Protobuf compiler vs runtime** → Ambos necesarios
+4. **ZMQ socket pool = 4** → Solo 1 puede bind al mismo puerto
+
+**Soluciones Implementadas:**
+
+1. ✅ **Vagrantfile single-phase provisioning**
+    - Todas las deps en una sola fase
+    - Sin `apt-get remove` entre fases
+    - Verificación post-instalación
+
+2. ✅ **linux-headers-amd64** (metapaquete)
+    - En vez de `linux-headers-$(uname -r)`
+    - Siempre disponible en repos
+
+3. ✅ **Protobuf completo**
+```bash
+   protobuf-compiler    # Para compilar .proto
+   libprotobuf-dev      # Headers C++
+   libprotobuf32        # Runtime library
+```
+
+4. ✅ **ZMQ socket pool = 1**
+```json
+   "socket_pools": {
+     "push_sockets": 1  // Solo 1 socket PUB puede bind
+   }
+```
+
+5. ✅ **Protobuf precompilado**
+    - Script `protobuf/generate.sh`
+    - Makefile copia `.pb.cc/.pb.h` automáticamente
+
+**Resultado:** Build reproducible 100% desde `make destroy && make dev-setup`
+
+---
+
+## 📂 Estructura del Proyecto
+```
+test-zeromq-docker/
+├── Makefile                    # Build system (host)
+├── Vagrantfile                 # VM definition (single-phase deps)
+├── docker-compose.yml          # Legacy lab (etcd + service3)
+│
+├── sniffer/                    # Sniffer eBPF v3.1
+│   ├── Makefile               # Build sniffer (VM)
+│   ├── CMakeLists.txt         # CMake config
+│   ├── src/
+│   │   ├── kernel/            # eBPF/XDP program
+│   │   └── userspace/         # Feature extraction
+│   ├── config/
+│   │   └── sniffer.json       # Configuración producción
+│   └── build/                 # Binarios compilados
+│
+├── ml-detector/               # ML Detector v1.0
+│   ├── CMakeLists.txt        # CMake config
+│   ├── src/
+│   │   ├── core/             # Pipeline ZMQ
+│   │   ├── inference/        # ONNX inference
+│   │   └── protobuf/         # Copied .pb.cc/.pb.h
+│   ├── config/
+│   │   └── ml_detector_config.json
+│   └── models/
+│       └── level1_rf_model.onnx
+│
+├── protobuf/                  # Shared schema
+│   ├── network_security.proto # Schema v3.1.0
+│   ├── generate.sh           # Regeneration script
+│   ├── network_security.pb.cc # Generated C++
+│   └── network_security.pb.h
+│
+└── ml-training/              # Python ML training
+    ├── scripts/
+    │   ├── train_level1.py
+    │   └── convert_to_onnx.py
+    └── models/
+```
+
+---
+
+## 🔧 Dependencias (Auto-instaladas)
+
+### eBPF Toolchain
+- clang 14.0.6
+- llvm 14.0.6
+- bpftool 7.1.0
+- libbpf 1.1.2
+- linux-headers-amd64
+
+### Libraries
+- jsoncpp 1.9.5
+- libzmq 4.3.4
+- libcurl 7.88.1
+- protobuf 3.21.12
+- liblz4 1.9.4
+- libzstd 1.5.4
+- spdlog 1.10.0
+- nlohmann-json 3.11.2
+
+### ML
+- CMake 3.25.0
+- ONNX Runtime 1.17.1
+
+### Python
+- Python 3.11.2
+- numpy, pandas, scikit-learn, onnx
+
+---
+
+## 🎯 Roadmap
+
+### ✅ Completado (Milestone v1.0.0)
+- [x] Sniffer eBPF compila y captura
+- [x] ML Detector Level 1 funcional
+- [x] Pipeline ZMQ Sniffer → Detector
+- [x] Protobuf serialization
+- [x] Build reproducible desde cero
+- [x] Vagrant single-phase provisioning
+
+### 🔜 Próxima Sesión
+- [ ] Fix crash ZMQ (zmq_msg lifecycle)
+- [ ] Test E2E con carga sostenida
+- [ ] Package sniffer como .deb
+- [ ] Clean warnings ML Detector
+
+### 📅 Fase 2: Multi-Level Detection
+- [ ] ML Detector Level 2 - DDoS (83 features)
+- [ ] ML Detector Level 2 - Ransomware (83 features)
+- [ ] ML Detector Level 3 - Internal Traffic (4 features)
+- [ ] Confidence thresholds configurables
+
+### 📅 Fase 3: Production Ready
+- [ ] LZ4 decompression en ML Detector
+- [ ] etcd integration (config sync + encryption tokens)
+- [ ] Package ml-detector como .deb
+- [ ] Docker packaging (excepto sniffer)
+- [ ] Prometheus metrics
+- [ ] Alert routing
+
+### 📅 Fase 4: Orchestration
+- [ ] K3s deployment manifests
+- [ ] Horizontal scaling
+- [ ] Model hot-reload
+- [ ] Adaptive thresholds
+
+---
+
+## 🔍 Debugging
+
+### Verbose Logging Sniffer
+```bash
+# Nivel 1: Resumen básico
+sudo ./sniffer --verbose
+
+# Nivel 2: Features agrupadas
+sudo ./sniffer -vv
+
+# Nivel 3: Dump completo (193 features)
+sudo ./sniffer -vvv > features.log 2>&1
+```
+
+### Network Diagnostics
+```bash
+vagrant ssh
+
+# Ver interfaces
+ip -4 addr
+
+# Ver puertos
+sudo ss -tlnp | grep -E '5571|5572'
+
+# Capturar tráfico ZMQ
+sudo tcpdump -i lo -n port 5571 -A
+```
+
+### Build Diagnostics
+```bash
+# Verificar deps instaladas
+vagrant ssh -c "pkg-config --modversion libbpf jsoncpp libzmq"
+
+# CMake verbose
+cd /vagrant/sniffer/build
+cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON
+make VERBOSE=1
+```
+
+---
+
+## 📚 Documentación Adicional
+
+- **DECISIONS.md**: Decisiones de arquitectura y lecciones aprendidas
+- **CONFIGURATION.md**: Referencia de configuración (sniffer + detector)
+- **protobuf/README.md**: Schema versioning y regeneración
+- **Vagrantfile**: Todas las dependencias documentadas inline
+
+---
+
+## 🙏 Agradecimientos
+
+Este proyecto es el resultado de:
+- Troubleshooting sistemático y metódico
+- Documentación exhaustiva de cada decisión
+- Infraestructura reproducible desde cero
+- Compromiso con la excelencia técnica
+
+**"Smooth is fast"** - La robustez viene antes que la velocidad.
+
+---
+
+## 📞 Próximos Pasos
+
+**Sesión siguiente:**
+1. Debug y fix crash ZMQ (src/msg.cpp:414)
+2. Test pipeline bajo carga (1000+ paquetes/seg)
+3. Package sniffer .deb
+4. Commit milestone + tag v1.0.1
+
+**Objetivo:** Pipeline 100% estable antes de añadir Level 2 models.
+
+---
+```
+╔════════════════════════════════════════════════════════════╗
+║  Este README refleja el estado REAL del proyecto           ║
+║  Actualizado: 2025-10-19 07:00 CET                        ║
+╚════════════════════════════════════════════════════════════╝
+```

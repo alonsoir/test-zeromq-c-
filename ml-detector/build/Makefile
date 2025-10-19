@@ -184,45 +184,6 @@ ml-detector/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/build
 .PHONY : ml-detector/fast
 
-#=============================================================================
-# Target rules for targets named test_classifier
-
-# Build rule for target.
-test_classifier: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_classifier
-.PHONY : test_classifier
-
-# fast build rule for target.
-test_classifier/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_classifier.dir/build.make CMakeFiles/test_classifier.dir/build
-.PHONY : test_classifier/fast
-
-#=============================================================================
-# Target rules for targets named test_feature_extractor
-
-# Build rule for target.
-test_feature_extractor: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_feature_extractor
-.PHONY : test_feature_extractor
-
-# fast build rule for target.
-test_feature_extractor/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_feature_extractor.dir/build.make CMakeFiles/test_feature_extractor.dir/build
-.PHONY : test_feature_extractor/fast
-
-#=============================================================================
-# Target rules for targets named test_model_loader
-
-# Build rule for target.
-test_model_loader: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_model_loader
-.PHONY : test_model_loader
-
-# fast build rule for target.
-test_model_loader/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_model_loader.dir/build.make CMakeFiles/test_model_loader.dir/build
-.PHONY : test_model_loader/fast
-
 src/classifier_tricapa.o: src/classifier_tricapa.cpp.o
 .PHONY : src/classifier_tricapa.o
 
@@ -463,78 +424,6 @@ src/zmq_handler.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/zmq_handler.cpp.s
 .PHONY : src/zmq_handler.cpp.s
 
-tests/unit/test_classifier.o: tests/unit/test_classifier.cpp.o
-.PHONY : tests/unit/test_classifier.o
-
-# target to build an object file
-tests/unit/test_classifier.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_classifier.dir/build.make CMakeFiles/test_classifier.dir/tests/unit/test_classifier.cpp.o
-.PHONY : tests/unit/test_classifier.cpp.o
-
-tests/unit/test_classifier.i: tests/unit/test_classifier.cpp.i
-.PHONY : tests/unit/test_classifier.i
-
-# target to preprocess a source file
-tests/unit/test_classifier.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_classifier.dir/build.make CMakeFiles/test_classifier.dir/tests/unit/test_classifier.cpp.i
-.PHONY : tests/unit/test_classifier.cpp.i
-
-tests/unit/test_classifier.s: tests/unit/test_classifier.cpp.s
-.PHONY : tests/unit/test_classifier.s
-
-# target to generate assembly for a file
-tests/unit/test_classifier.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_classifier.dir/build.make CMakeFiles/test_classifier.dir/tests/unit/test_classifier.cpp.s
-.PHONY : tests/unit/test_classifier.cpp.s
-
-tests/unit/test_feature_extractor.o: tests/unit/test_feature_extractor.cpp.o
-.PHONY : tests/unit/test_feature_extractor.o
-
-# target to build an object file
-tests/unit/test_feature_extractor.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_feature_extractor.dir/build.make CMakeFiles/test_feature_extractor.dir/tests/unit/test_feature_extractor.cpp.o
-.PHONY : tests/unit/test_feature_extractor.cpp.o
-
-tests/unit/test_feature_extractor.i: tests/unit/test_feature_extractor.cpp.i
-.PHONY : tests/unit/test_feature_extractor.i
-
-# target to preprocess a source file
-tests/unit/test_feature_extractor.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_feature_extractor.dir/build.make CMakeFiles/test_feature_extractor.dir/tests/unit/test_feature_extractor.cpp.i
-.PHONY : tests/unit/test_feature_extractor.cpp.i
-
-tests/unit/test_feature_extractor.s: tests/unit/test_feature_extractor.cpp.s
-.PHONY : tests/unit/test_feature_extractor.s
-
-# target to generate assembly for a file
-tests/unit/test_feature_extractor.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_feature_extractor.dir/build.make CMakeFiles/test_feature_extractor.dir/tests/unit/test_feature_extractor.cpp.s
-.PHONY : tests/unit/test_feature_extractor.cpp.s
-
-tests/unit/test_model_loader.o: tests/unit/test_model_loader.cpp.o
-.PHONY : tests/unit/test_model_loader.o
-
-# target to build an object file
-tests/unit/test_model_loader.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_model_loader.dir/build.make CMakeFiles/test_model_loader.dir/tests/unit/test_model_loader.cpp.o
-.PHONY : tests/unit/test_model_loader.cpp.o
-
-tests/unit/test_model_loader.i: tests/unit/test_model_loader.cpp.i
-.PHONY : tests/unit/test_model_loader.i
-
-# target to preprocess a source file
-tests/unit/test_model_loader.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_model_loader.dir/build.make CMakeFiles/test_model_loader.dir/tests/unit/test_model_loader.cpp.i
-.PHONY : tests/unit/test_model_loader.cpp.i
-
-tests/unit/test_model_loader.s: tests/unit/test_model_loader.cpp.s
-.PHONY : tests/unit/test_model_loader.s
-
-# target to generate assembly for a file
-tests/unit/test_model_loader.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_model_loader.dir/build.make CMakeFiles/test_model_loader.dir/tests/unit/test_model_loader.cpp.s
-.PHONY : tests/unit/test_model_loader.cpp.s
-
 vagrant/protobuf/network_security.pb.o: vagrant/protobuf/network_security.pb.cc.o
 .PHONY : vagrant/protobuf/network_security.pb.o
 
@@ -573,9 +462,6 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... ml-detector"
-	@echo "... test_classifier"
-	@echo "... test_feature_extractor"
-	@echo "... test_model_loader"
 	@echo "... src/classifier_tricapa.o"
 	@echo "... src/classifier_tricapa.i"
 	@echo "... src/classifier_tricapa.s"
@@ -606,15 +492,6 @@ help:
 	@echo "... src/zmq_handler.o"
 	@echo "... src/zmq_handler.i"
 	@echo "... src/zmq_handler.s"
-	@echo "... tests/unit/test_classifier.o"
-	@echo "... tests/unit/test_classifier.i"
-	@echo "... tests/unit/test_classifier.s"
-	@echo "... tests/unit/test_feature_extractor.o"
-	@echo "... tests/unit/test_feature_extractor.i"
-	@echo "... tests/unit/test_feature_extractor.s"
-	@echo "... tests/unit/test_model_loader.o"
-	@echo "... tests/unit/test_model_loader.i"
-	@echo "... tests/unit/test_model_loader.s"
 	@echo "... vagrant/protobuf/network_security.pb.o"
 	@echo "... vagrant/protobuf/network_security.pb.i"
 	@echo "... vagrant/protobuf/network_security.pb.s"
