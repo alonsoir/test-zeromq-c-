@@ -106,7 +106,6 @@ private:
 
     // ZMQ
     bool send_protobuf_message(const std::vector<uint8_t>& data);
-    zmq::socket_t* get_next_socket();
 
     // Configuration helpers
     size_t get_optimal_batch_size() const;
@@ -156,6 +155,7 @@ private:
     // ZeroMQ
     std::unique_ptr<zmq::context_t> zmq_context_;
     std::vector<std::unique_ptr<zmq::socket_t>> zmq_sockets_;
+    std::vector<std::unique_ptr<std::mutex>> socket_mutexes_;
     std::atomic<size_t> socket_round_robin_{0};
 
     // Pre-allocated buffers for IP conversion

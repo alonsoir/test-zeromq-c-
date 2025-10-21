@@ -201,6 +201,7 @@ bool RingBufferConsumer::initialize_zmq() {
             }
 
             zmq_sockets_.push_back(std::move(socket));
+		    socket_mutexes_.push_back(std::make_unique<std::mutex>());
         }
 
         std::cout << "[INFO] ZeroMQ initialized with " << socket_count
@@ -474,11 +475,13 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         zmq::message_t message(data_to_send.size());
         memcpy(message.data(), data_to_send.data(), data_to_send.size());
 
-        // Get next socket using round-robin
-        zmq::socket_t* socket = get_next_socket();
+        // Get next socket using round-robin with proper locking
+		size_t idx = socket_round_robin_.fetch_add(1, std::memory_order_relaxed) % zmq_sockets_.size();
+		std::lock_guard<std::mutex> lock(*socket_mutexes_[idx]);
+		zmq::socket_t* socket = zmq_sockets_[idx].get();
 
-        //std::cout << "[DEBUG] Enviando por ZMQ: " << message.size() << " bytes" << std::endl;
-        auto result = socket->send(message, zmq::send_flags::dontwait);
+		//std::cout << "[DEBUG] Enviando por ZMQ: " << message.size() << " bytes" << std::endl;
+		auto result = socket->send(message, zmq::send_flags::dontwait);
 
         if (result.has_value()) {
             //std::cout << "[DEBUG] ZMQ send exitoso!" << std::endl;
@@ -495,11 +498,6 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         handle_zmq_error(e);
         return false;
     }
-}
-
-zmq::socket_t* RingBufferConsumer::get_next_socket() {
-    size_t current = socket_round_robin_.fetch_add(1) % zmq_sockets_.size();
-    return zmq_sockets_[current].get();
 }
 
 void RingBufferConsumer::add_to_batch(const SimpleEvent& event) {
@@ -739,6 +737,7 @@ void RingBufferConsumer::shutdown_zmq() {
         }
     }
     zmq_sockets_.clear();
+	socket_mutexes_.clear();
     zmq_context_.reset();
 }
 
