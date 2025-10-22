@@ -2,6 +2,7 @@
 """
 Feature Selection - Seleccionar top 23 features para Level 1
 Automatiza el proceso de feature engineering
+ml-training/scripts/select_features.py
 """
 
 import pandas as pd

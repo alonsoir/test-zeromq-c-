@@ -5,13 +5,15 @@
 
 namespace ml_detector {
 
-ZMQHandler::ZMQHandler(const DetectorConfig& config, 
-                       std::shared_ptr<ONNXModel> model,
-                       std::shared_ptr<FeatureExtractor> extractor)
-    : config_(config)
-    , context_(1)  // 1 IO thread
-    , model_(model)
-    , extractor_(extractor)
+    ZMQHandler::ZMQHandler(const DetectorConfig& config,
+                           std::shared_ptr<ONNXModel> level1_model,
+                           std::shared_ptr<FeatureExtractor> extractor,
+                           std::shared_ptr<ONNXModel> level2_ddos_model)
+      : config_(config)
+      , context_(1)  // 1 IO thread
+      , level1_model_(level1_model)
+      , level2_ddos_model_(level2_ddos_model)
+      , extractor_(extractor)
     , running_(false)
     , logger_(spdlog::get("ml-detector"))
     , last_stats_report_(std::chrono::steady_clock::now())
@@ -200,7 +202,7 @@ void ZMQHandler::process_event(const std::string& message) {
         float confidence = 0.0f;
         
         try {
-            auto [pred_label, pred_confidence] = model_->predict(features);
+            auto [pred_label, pred_confidence] = level1_model_->predict(features);
             label = pred_label;
             confidence = pred_confidence;
             
@@ -237,10 +239,50 @@ void ZMQHandler::process_event(const std::string& message) {
         event.set_overall_threat_score(label == 1 ? confidence : (1.0 - confidence));
         
         if (label == 1) {
+            // Level 1 detectó ATTACK - activar Level 2 DDoS si disponible
             event.set_threat_category("ATTACK");
-            
+
             std::lock_guard<std::mutex> lock(stats_mutex_);
             stats_.attacks_detected++;
+
+            // Level 2: DDoS Binary Classification
+            if (level2_ddos_model_) {
+                try {
+                    logger_->debug("🔍 Running Level 2 DDoS classification...");
+
+                    // Extraer features Level 2 DDoS (8 features)
+                    auto features_l2 = extractor_->extract_level2_ddos_features(event.network_features());
+
+                    // Predicción Level 2 DDoS
+                    auto [label_l2, confidence_l2] = level2_ddos_model_->predict(features_l2);
+
+                    logger_->debug("🤖 Level 2 DDoS prediction: label={} ({}), confidence={:.4f}",
+                                  label_l2, (label_l2 == 0 ? "NOT-DDOS" : "DDOS"), confidence_l2);
+
+                    // Enriquecer con Level 2 DDoS prediction
+                    auto* level2_ddos_pred = ml_analysis->add_level2_specialized_predictions();
+                    level2_ddos_pred->set_model_name("level2_ddos_binary_detector");
+                    level2_ddos_pred->set_model_version("1.0.0");
+                    level2_ddos_pred->set_model_type(protobuf::ModelPrediction::RANDOM_FOREST_DDOS);
+                    level2_ddos_pred->set_prediction_class(label_l2 == 0 ? "NOT-DDOS" : "DDOS");
+                    level2_ddos_pred->set_confidence_score(confidence_l2);
+
+                    // Actualizar threat category si es DDoS
+                    if (label_l2 == 1 && confidence_l2 >= config_.ml.thresholds.level2_ddos) {
+                        event.set_threat_category("DDOS");
+                        ml_analysis->set_final_threat_classification("DDOS");
+
+                        logger_->warn("🔴 DDoS ATTACK CONFIRMED: event={}, confidence={:.2f}%",
+                                     event.event_id(), confidence_l2 * 100);
+                    } else {
+                        logger_->info("🟡 Attack detected but NOT DDoS: event={}, confidence={:.2f}%",
+                                     event.event_id(), confidence_l2 * 100);
+                    }
+
+                } catch (const std::exception& e) {
+                    logger_->error("Level 2 DDoS inference failed: {}", e.what());
+                }
+            }
         } else {
             event.set_threat_category("NORMAL");
         }

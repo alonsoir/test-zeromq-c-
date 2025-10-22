@@ -2,6 +2,7 @@
 """
 Exploración de Datos - CIC-IDS-2017 y CIC-DDoS-2019
 Script para análisis inicial de los datasets
+ml-training/scripts/explore.py
 """
 
 import pandas as pd

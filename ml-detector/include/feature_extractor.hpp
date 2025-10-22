@@ -29,7 +29,13 @@ public:
      * @throws std::runtime_error si faltan campos críticos
      */
     std::vector<float> extract_level1_features(const protobuf::NetworkSecurityEvent& event);
-    
+
+    /**
+     * @brief Extrae las 8 features del Level 2 DDoS Binary
+     * @param nf NetworkFeatures del evento
+     * @return vector<float>[8] para predicción DDoS binaria (accuracy 98.61%)
+     */
+    std::vector<float> extract_level2_ddos_features(const protobuf::NetworkFeatures& nf);
     /**
      * @brief Valida que features sean válidas (no NaN, no Inf, rangos razonables)
      * @param features Vector de features a validar

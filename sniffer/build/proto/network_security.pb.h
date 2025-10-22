@@ -222,12 +222,14 @@ enum ModelPrediction_ModelType : int {
   ModelPrediction_ModelType_ENSEMBLE_TRICAPA = 3,
   ModelPrediction_ModelType_INTERNAL_TRAFFIC_CLASSIFIER = 4,
   ModelPrediction_ModelType_TRANSFORMER_ADVANCED = 5,
+  ModelPrediction_ModelType_RANDOM_FOREST_DDOS = 6,
+  ModelPrediction_ModelType_RANDOM_FOREST_RANSOMWARE = 7,
   ModelPrediction_ModelType_ModelPrediction_ModelType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ModelPrediction_ModelType_ModelPrediction_ModelType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool ModelPrediction_ModelType_IsValid(int value);
 constexpr ModelPrediction_ModelType ModelPrediction_ModelType_ModelType_MIN = ModelPrediction_ModelType_RANDOM_FOREST_GENERAL;
-constexpr ModelPrediction_ModelType ModelPrediction_ModelType_ModelType_MAX = ModelPrediction_ModelType_TRANSFORMER_ADVANCED;
+constexpr ModelPrediction_ModelType ModelPrediction_ModelType_ModelType_MAX = ModelPrediction_ModelType_RANDOM_FOREST_RANSOMWARE;
 constexpr int ModelPrediction_ModelType_ModelType_ARRAYSIZE = ModelPrediction_ModelType_ModelType_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ModelPrediction_ModelType_descriptor();
@@ -641,6 +643,8 @@ class NetworkFeatures final :
     kPacketLengthMeanFieldNumber = 97,
     kPacketLengthStdFieldNumber = 98,
     kPacketLengthVarianceFieldNumber = 99,
+    kActiveMeanFieldNumber = 104,
+    kIdleMeanFieldNumber = 105,
     kBackwardUrgFlagsFieldNumber = 81,
   };
   // repeated double ddos_features = 100;
@@ -1401,6 +1405,24 @@ class NetworkFeatures final :
   void _internal_set_packet_length_variance(double value);
   public:
 
+  // double active_mean = 104;
+  void clear_active_mean();
+  double active_mean() const;
+  void set_active_mean(double value);
+  private:
+  double _internal_active_mean() const;
+  void _internal_set_active_mean(double value);
+  public:
+
+  // double idle_mean = 105;
+  void clear_idle_mean();
+  double idle_mean() const;
+  void set_idle_mean(double value);
+  private:
+  double _internal_idle_mean() const;
+  void _internal_set_idle_mean(double value);
+  public:
+
   // uint32 backward_urg_flags = 81;
   void clear_backward_urg_flags();
   uint32_t backward_urg_flags() const;
@@ -1499,6 +1521,8 @@ class NetworkFeatures final :
     double packet_length_mean_;
     double packet_length_std_;
     double packet_length_variance_;
+    double active_mean_;
+    double idle_mean_;
     uint32_t backward_urg_flags_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -3252,6 +3276,10 @@ class ModelPrediction final :
     ModelPrediction_ModelType_INTERNAL_TRAFFIC_CLASSIFIER;
   static constexpr ModelType TRANSFORMER_ADVANCED =
     ModelPrediction_ModelType_TRANSFORMER_ADVANCED;
+  static constexpr ModelType RANDOM_FOREST_DDOS =
+    ModelPrediction_ModelType_RANDOM_FOREST_DDOS;
+  static constexpr ModelType RANDOM_FOREST_RANSOMWARE =
+    ModelPrediction_ModelType_RANDOM_FOREST_RANSOMWARE;
   static inline bool ModelType_IsValid(int value) {
     return ModelPrediction_ModelType_IsValid(value);
   }
@@ -3581,6 +3609,7 @@ class TricapaMLAnalysis final :
 
   enum : int {
     kLevel3SpecializedPredictionsFieldNumber = 6,
+    kLevel2SpecializedPredictionsFieldNumber = 9,
     kModelsActivatedFieldNumber = 11,
     kFeatureImportanceScoresFieldNumber = 12,
     kTrafficContextFieldNumber = 5,
@@ -3610,6 +3639,24 @@ class TricapaMLAnalysis final :
   ::protobuf::ModelPrediction* add_level3_specialized_predictions();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >&
       level3_specialized_predictions() const;
+
+  // repeated .protobuf.ModelPrediction level2_specialized_predictions = 9;
+  int level2_specialized_predictions_size() const;
+  private:
+  int _internal_level2_specialized_predictions_size() const;
+  public:
+  void clear_level2_specialized_predictions();
+  ::protobuf::ModelPrediction* mutable_level2_specialized_predictions(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >*
+      mutable_level2_specialized_predictions();
+  private:
+  const ::protobuf::ModelPrediction& _internal_level2_specialized_predictions(int index) const;
+  ::protobuf::ModelPrediction* _internal_add_level2_specialized_predictions();
+  public:
+  const ::protobuf::ModelPrediction& level2_specialized_predictions(int index) const;
+  ::protobuf::ModelPrediction* add_level2_specialized_predictions();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >&
+      level2_specialized_predictions() const;
 
   // repeated string models_activated = 11;
   int models_activated_size() const;
@@ -3779,6 +3826,7 @@ class TricapaMLAnalysis final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction > level3_specialized_predictions_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction > level2_specialized_predictions_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> models_activated_;
     ::PROTOBUF_NAMESPACE_ID::internal::MapField<
         TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse,
@@ -8644,6 +8692,46 @@ inline void NetworkFeatures::set_packet_length_variance(double value) {
   // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.packet_length_variance)
 }
 
+// double active_mean = 104;
+inline void NetworkFeatures::clear_active_mean() {
+  _impl_.active_mean_ = 0;
+}
+inline double NetworkFeatures::_internal_active_mean() const {
+  return _impl_.active_mean_;
+}
+inline double NetworkFeatures::active_mean() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.active_mean)
+  return _internal_active_mean();
+}
+inline void NetworkFeatures::_internal_set_active_mean(double value) {
+  
+  _impl_.active_mean_ = value;
+}
+inline void NetworkFeatures::set_active_mean(double value) {
+  _internal_set_active_mean(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.active_mean)
+}
+
+// double idle_mean = 105;
+inline void NetworkFeatures::clear_idle_mean() {
+  _impl_.idle_mean_ = 0;
+}
+inline double NetworkFeatures::_internal_idle_mean() const {
+  return _impl_.idle_mean_;
+}
+inline double NetworkFeatures::idle_mean() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.idle_mean)
+  return _internal_idle_mean();
+}
+inline void NetworkFeatures::_internal_set_idle_mean(double value) {
+  
+  _impl_.idle_mean_ = value;
+}
+inline void NetworkFeatures::set_idle_mean(double value) {
+  _internal_set_idle_mean(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.idle_mean)
+}
+
 // repeated double ddos_features = 100;
 inline int NetworkFeatures::_internal_ddos_features_size() const {
   return _impl_.ddos_features_.size();
@@ -12084,6 +12172,46 @@ inline void TricapaMLAnalysis::set_allocated_traffic_context(std::string* traffi
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:protobuf.TricapaMLAnalysis.traffic_context)
+}
+
+// repeated .protobuf.ModelPrediction level2_specialized_predictions = 9;
+inline int TricapaMLAnalysis::_internal_level2_specialized_predictions_size() const {
+  return _impl_.level2_specialized_predictions_.size();
+}
+inline int TricapaMLAnalysis::level2_specialized_predictions_size() const {
+  return _internal_level2_specialized_predictions_size();
+}
+inline void TricapaMLAnalysis::clear_level2_specialized_predictions() {
+  _impl_.level2_specialized_predictions_.Clear();
+}
+inline ::protobuf::ModelPrediction* TricapaMLAnalysis::mutable_level2_specialized_predictions(int index) {
+  // @@protoc_insertion_point(field_mutable:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _impl_.level2_specialized_predictions_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >*
+TricapaMLAnalysis::mutable_level2_specialized_predictions() {
+  // @@protoc_insertion_point(field_mutable_list:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return &_impl_.level2_specialized_predictions_;
+}
+inline const ::protobuf::ModelPrediction& TricapaMLAnalysis::_internal_level2_specialized_predictions(int index) const {
+  return _impl_.level2_specialized_predictions_.Get(index);
+}
+inline const ::protobuf::ModelPrediction& TricapaMLAnalysis::level2_specialized_predictions(int index) const {
+  // @@protoc_insertion_point(field_get:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _internal_level2_specialized_predictions(index);
+}
+inline ::protobuf::ModelPrediction* TricapaMLAnalysis::_internal_add_level2_specialized_predictions() {
+  return _impl_.level2_specialized_predictions_.Add();
+}
+inline ::protobuf::ModelPrediction* TricapaMLAnalysis::add_level2_specialized_predictions() {
+  ::protobuf::ModelPrediction* _add = _internal_add_level2_specialized_predictions();
+  // @@protoc_insertion_point(field_add:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >&
+TricapaMLAnalysis::level2_specialized_predictions() const {
+  // @@protoc_insertion_point(field_list:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _impl_.level2_specialized_predictions_;
 }
 
 // repeated .protobuf.ModelPrediction level3_specialized_predictions = 6;

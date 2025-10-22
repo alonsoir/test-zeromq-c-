@@ -30,8 +30,9 @@ namespace ml_detector {
 class ZMQHandler {
 public:
     ZMQHandler(const DetectorConfig& config, 
-               std::shared_ptr<ONNXModel> model,
-               std::shared_ptr<FeatureExtractor> extractor);
+           std::shared_ptr<ONNXModel> level1_model,
+           std::shared_ptr<FeatureExtractor> extractor,
+           std::shared_ptr<ONNXModel> level2_ddos_model = nullptr);
     
     ~ZMQHandler();
     
@@ -86,7 +87,8 @@ private:
     std::unique_ptr<zmq::socket_t> output_socket_;
     
     // ML Components
-    std::shared_ptr<ONNXModel> model_;
+    std::shared_ptr<ONNXModel> level1_model_;
+    std::shared_ptr<ONNXModel> level2_ddos_model_;
     std::shared_ptr<FeatureExtractor> extractor_;
     
     // Threading

@@ -218,4 +218,35 @@ bool FeatureExtractor::validate_features(const std::vector<float>& features) {
     return true;
 }
 
+    std::vector<float> FeatureExtractor::extract_level2_ddos_features(const protobuf::NetworkFeatures& nf) {
+    std::vector<float> features(8, 0.0f);
+
+    // Orden EXACTO según entrenamiento del modelo
+    // Level 2 DDoS Binary: 8 features
+
+    features[0] = static_cast<float>(nf.backward_packet_length_max());     // Bwd Packet Length Max
+    features[1] = static_cast<float>(nf.flow_bytes_per_second());          // Flow Bytes/s
+    features[2] = static_cast<float>(nf.forward_inter_arrival_time_total()); // Fwd IAT Total
+    features[3] = static_cast<float>(nf.backward_inter_arrival_time_total()); // Bwd IAT Total
+    features[4] = static_cast<float>(nf.fin_flag_count());                 // FIN Flag Count
+    features[5] = static_cast<float>(nf.forward_psh_flags());              // Fwd PSH Flags
+    features[6] = static_cast<float>(nf.active_mean());                    // Active Mean
+    features[7] = static_cast<float>(nf.idle_mean());                      // Idle Mean
+
+    // Logging detallado en modo debug
+    if (logger_->level() <= spdlog::level::debug) {
+        logger_->debug("Level 2 DDoS Feature Extraction:");
+        logger_->debug("  [0] Bwd Packet Length Max: {:.2f}", features[0]);
+        logger_->debug("  [1] Flow Bytes/s:          {:.2f}", features[1]);
+        logger_->debug("  [2] Fwd IAT Total:         {:.2f}", features[2]);
+        logger_->debug("  [3] Bwd IAT Total:         {:.2f}", features[3]);
+        logger_->debug("  [4] FIN Flag Count:        {:.0f}", features[4]);
+        logger_->debug("  [5] Fwd PSH Flags:         {:.0f}", features[5]);
+        logger_->debug("  [6] Active Mean:           {:.2f}", features[6]);
+        logger_->debug("  [7] Idle Mean:             {:.2f}", features[7]);
+    }
+
+    return features;
+}
+
 } // namespace ml_detector

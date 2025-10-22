@@ -4,7 +4,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.name = "ml-detector-lab"
-    vb.memory = "6144"  # 6GB - Suficiente para compilar C++ y ejecutar detector
+    vb.memory = "6144"
     vb.cpus = 4
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.network "private_network", ip: "192.168.56.20"
   config.vm.network "public_network", bridge: "en0: Wi-Fi"
-
+  
   config.vm.network "forwarded_port", guest: 5571, host: 5571
   config.vm.network "forwarded_port", guest: 5572, host: 5572
   config.vm.network "forwarded_port", guest: 2379, host: 2379
@@ -26,14 +26,14 @@ Vagrant.configure("2") do |config|
   # ========================================
   config.vm.provision "shell", name: "all-dependencies", inline: <<-SHELL
     set -e  # Exit on error
-
+    
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  Installing ALL dependencies - Single Phase                ║"
     echo "╚════════════════════════════════════════════════════════════╝"
-
+    
     # Update package lists
     apt-get update
-
+    
     # ========================================
     # CORE SYSTEM PACKAGES
     # ========================================
@@ -48,7 +48,7 @@ Vagrant.configure("2") do |config|
       make \
       rsync \
       locales
-
+    
     # ========================================
     # eBPF TOOLCHAIN
     # ========================================
@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
       bpftool \
       libbpf-dev \
       linux-headers-amd64
-
+    
     # ========================================
     # NETWORKING & COMMUNICATION LIBRARIES
     # ========================================
@@ -68,7 +68,7 @@ Vagrant.configure("2") do |config|
       libjsoncpp-dev \
       libcurl4-openssl-dev \
       libzmq3-dev
-
+    
     # ========================================
     # PROTOBUF (BOTH COMPILER AND RUNTIME)
     # ========================================
@@ -77,7 +77,7 @@ Vagrant.configure("2") do |config|
       protobuf-compiler \
       libprotobuf-dev \
       libprotobuf32
-
+    
     # ========================================
     # COMPRESSION LIBRARIES
     # ========================================
@@ -85,7 +85,7 @@ Vagrant.configure("2") do |config|
     apt-get install -y \
       liblz4-dev \
       libzstd-dev
-
+    
     # ========================================
     # ML DETECTOR SPECIFIC
     # ========================================
@@ -94,20 +94,17 @@ Vagrant.configure("2") do |config|
       pkg-config \
       libspdlog-dev \
       nlohmann-json3-dev
-
+    
     # ========================================
-    # PYTHON ENVIRONMENT (Minimal - only for scripts, not ML)
+    # PYTHON ENVIRONMENT
     # ========================================
-    echo "📦 Installing Python (minimal)..."
+    echo "📦 Installing Python..."
     apt-get install -y \
       python3 \
       python3-pip \
       python3-venv \
       python3-dev
-
-    # NOTE: ML training (pandas, sklearn, etc.) should be done on host macOS
-    # This Python is only for utility scripts in the VM
-
+    
     # ========================================
     # DOCKER & DOCKER COMPOSE
     # ========================================
@@ -128,7 +125,7 @@ Vagrant.configure("2") do |config|
     else
       echo "✅ Docker Compose already installed"
     fi
-
+    
     # ========================================
     # CMAKE 3.25+
     # ========================================
@@ -142,9 +139,9 @@ Vagrant.configure("2") do |config|
     else
       echo "✅ CMake $CMAKE_VERSION already installed"
     fi
-
+    
     # ========================================
-    # ONNX RUNTIME 1.17.1 (C++ only)
+    # ONNX RUNTIME 1.17.1
     # ========================================
     if [ ! -f /usr/local/lib/libonnxruntime.so ]; then
       echo "📦 Installing ONNX Runtime 1.17.1..."
@@ -158,24 +155,24 @@ Vagrant.configure("2") do |config|
     else
       echo "✅ ONNX Runtime already installed"
     fi
-
+    
     # ========================================
     # CONFIGURATION
     # ========================================
     echo "⚙️  Configuring system..."
-
+    
     # Locales
     sed -i '/es_ES.UTF-8/s/^# //g' /etc/locale.gen
     locale-gen es_ES.UTF-8
     update-locale LANG=es_ES.UTF-8 LC_ALL=es_ES.UTF-8
-
+    
     # BPF JIT
     if [ -f /proc/sys/net/core/bpf_jit_enable ]; then
       echo 1 > /proc/sys/net/core/bpf_jit_enable
       mountpoint -q /sys/fs/bpf || mount -t bpf none /sys/fs/bpf
       grep -q "/sys/fs/bpf" /etc/fstab || echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
     fi
-
+    
     # ========================================
     # PROTOBUF GENERATION
     # ========================================
@@ -183,80 +180,24 @@ Vagrant.configure("2") do |config|
       echo "🔨 Generating protobuf files..."
       cd /vagrant/protobuf && ./generate.sh
     fi
-
+    
     # ========================================
-    # DIRECTORY STRUCTURE FOR MODELS
-    # ========================================
-    echo "📁 Creating model directories..."
-    mkdir -p /vagrant/ml-detector/models/production/level1
-    mkdir -p /vagrant/ml-detector/models/production/level2
-    mkdir -p /vagrant/ml-detector/models/production/level3
-    mkdir -p /vagrant/ml-training/outputs/onnx
-
-    # ========================================
-    # BASH ALIASES (UPDATED WITH ML WORKFLOW)
+    # BASH ALIASES
     # ========================================
     if ! grep -q "build-sniffer" /home/vagrant/.bashrc; then
       cat >> /home/vagrant/.bashrc << 'EOF'
 
-# ========================================
 # ML Detector Development Aliases
-# ========================================
-
-# Building
 alias build-sniffer='cd /vagrant/sniffer && make'
 alias build-detector='cd /vagrant/ml-detector/build && rm -rf * && cmake .. && make -j4'
-alias proto-regen='cd /vagrant/protobuf && ./generate.sh'
-
-# Running
 alias run-sniffer='cd /vagrant/sniffer/build && sudo ./sniffer --verbose'
 alias run-detector='cd /vagrant/ml-detector/build && ./ml-detector --verbose'
+alias proto-regen='cd /vagrant/protobuf && ./generate.sh'
 
-# ML Model Deployment (from host macOS training)
-alias sync-models='rsync -av /vagrant/ml-training/outputs/onnx/*.onnx /vagrant/ml-detector/models/production/ 2>/dev/null && echo "✅ Models synced from host" || echo "⚠️  No models found in ml-training/outputs/onnx/"'
-alias list-models='echo "Available ONNX models:" && find /vagrant/ml-detector/models/production -name "*.onnx" -exec ls -lh {} \;'
-alias verify-onnx='python3 -c "import onnxruntime as rt; print(f\"ONNX Runtime: {rt.__version__}\")" 2>/dev/null || echo "⚠️  Python ONNX Runtime not needed (using C++)"'
-
-# Logs
-alias logs-sniffer='tail -f /vagrant/sniffer/build/logs/*.log 2>/dev/null || echo "No logs yet"'
-alias logs-detector='tail -f /vagrant/ml-detector/build/logs/*.log 2>/dev/null || echo "No logs yet"'
-
-# Shortcuts
 export PROJECT_ROOT="/vagrant"
-export MODELS_DIR="/vagrant/ml-detector/models/production"
-
-# Welcome message
-cat << 'WELCOME'
-
-╔════════════════════════════════════════════════════════════╗
-║  ML Network Security Detector - Development Environment    ║
-╚════════════════════════════════════════════════════════════╝
-
-🎯 Workflow:
-  1. Train models on HOST macOS:
-     cd ~/Code/test-zeromq-docker/ml-training
-     python scripts/train_level2_ddos_binary_optimized.py
-     python scripts/convert_level2_ddos_to_onnx.py
-
-  2. Models auto-sync via shared folder → /vagrant/ml-training/outputs/onnx/
-
-  3. Deploy to detector:
-     sync-models  # Copy ONNX to detector models/
-
-  4. Build & run:
-     build-detector
-     run-detector
-
-📚 Useful Commands:
-  build-sniffer, build-detector   - Compile components
-  run-sniffer, run-detector       - Execute components
-  sync-models, list-models        - Manage ML models
-  logs-sniffer, logs-detector     - View logs
-
-WELCOME
 EOF
     fi
-
+    
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  ✅ ALL DEPENDENCIES INSTALLED                             ║"
@@ -272,14 +213,14 @@ EOF
     echo "║  Dependency Verification                                   ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
-
+    
     echo "🔧 Core Tools:"
     echo "  clang:    $(clang --version 2>/dev/null | head -1 || echo '❌ MISSING')"
     echo "  cmake:    $(cmake --version 2>/dev/null | head -1 || echo '❌ MISSING')"
     echo "  protoc:   $(protoc --version 2>/dev/null || echo '❌ MISSING')"
     echo "  docker:   $(docker --version 2>/dev/null || echo '❌ MISSING')"
     echo ""
-
+    
     echo "📚 Libraries (pkg-config):"
     echo "  libbpf:   $(pkg-config --modversion libbpf 2>/dev/null || echo '❌ MISSING')"
     echo "  jsoncpp:  $(pkg-config --modversion jsoncpp 2>/dev/null || echo '❌ MISSING')"
@@ -289,36 +230,24 @@ EOF
     echo "  libzstd:  $(pkg-config --modversion libzstd 2>/dev/null || echo '❌ MISSING')"
     echo "  spdlog:   $(pkg-config --modversion spdlog 2>/dev/null || echo 'header-only')"
     echo ""
-
+    
     echo "📦 Protobuf:"
     echo "  Runtime:  $(dpkg -l | grep libprotobuf32 | awk '{print $3}' || echo '❌ MISSING')"
     echo "  Dev:      $(dpkg -l | grep libprotobuf-dev | awk '{print $3}' || echo '❌ MISSING')"
     echo ""
-
+    
     echo "🧠 ML:"
-    echo "  ONNX C++: $([ -f /usr/local/lib/libonnxruntime.so ] && echo 'v1.17.1 ✅' || echo '❌ MISSING')"
+    echo "  ONNX:     $([ -f /usr/local/lib/libonnxruntime.so ] && echo 'v1.17.1' || echo '❌ MISSING')"
     echo "  JSON:     $(dpkg -l | grep nlohmann-json3 | awk '{print $3}' || echo '❌ MISSING')"
     echo ""
-
-    echo "🐍 Python (minimal - ML training on host macOS):"
+    
+    echo "🐍 Python:"
     echo "  Version:  $(python3 --version 2>/dev/null || echo '❌ MISSING')"
     echo ""
-
-    echo "📁 Model Directories:"
-    ls -ld /vagrant/ml-detector/models/production/level{1,2,3} 2>/dev/null || echo "  Creating..."
-    echo ""
-
+    
     echo "╔════════════════════════════════════════════════════════════╗"
-    echo "║  ✅ VM Ready - Train models on HOST macOS                  ║"
+    echo "║  Ready for: make all                                       ║"
     echo "╚════════════════════════════════════════════════════════════╝"
-    echo ""
-    echo "Next steps:"
-    echo "  1. On macOS: cd ~/Code/test-zeromq-docker/ml-training"
-    echo "  2. On macOS: python3 -m venv .venv-macos && source .venv-macos/bin/activate"
-    echo "  3. On macOS: pip install pandas numpy scikit-learn onnx onnxruntime skl2onnx ..."
-    echo "  4. On macOS: python scripts/train_level2_ddos_binary_optimized.py"
-    echo "  5. In VM:    vagrant ssh"
-    echo "  6. In VM:    sync-models && build-detector && run-detector"
     echo ""
   SHELL
 end

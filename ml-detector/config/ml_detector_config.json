@@ -154,16 +154,16 @@
     "level2": {
       "ddos": {
         "enabled": true,
-        "name": "ddos_detector",
-        "model_file": "level2/ddos_rf.onnx",
-        "features_count": 82,
+        "name": "ddos_binary_detector",
+        "model_file": "level2/level2_ddos_binary_detector.onnx",
+        "features_count": 8,
         "model_type": "RandomForest",
-        "description": "DDOS detection - Random Forest (82 features)",
+        "description": "DDoS Binary detection - Random Forest (8 features, accuracy 98.61%)",
         "requires_scaling": false,
         "timeout_ms": 10
       },
       "ransomware": {
-        "enabled": true,
+        "enabled": false,
         "name": "ransomware_detector",
         "model_file": "level2/ransomware_rf.onnx",
         "features_count": 82,

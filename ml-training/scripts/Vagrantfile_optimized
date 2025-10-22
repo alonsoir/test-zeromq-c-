@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.network "private_network", ip: "192.168.56.20"
   config.vm.network "public_network", bridge: "en0: Wi-Fi"
-
+  
   config.vm.network "forwarded_port", guest: 5571, host: 5571
   config.vm.network "forwarded_port", guest: 5572, host: 5572
   config.vm.network "forwarded_port", guest: 2379, host: 2379
@@ -26,14 +26,14 @@ Vagrant.configure("2") do |config|
   # ========================================
   config.vm.provision "shell", name: "all-dependencies", inline: <<-SHELL
     set -e  # Exit on error
-
+    
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  Installing ALL dependencies - Single Phase                ║"
     echo "╚════════════════════════════════════════════════════════════╝"
-
+    
     # Update package lists
     apt-get update
-
+    
     # ========================================
     # CORE SYSTEM PACKAGES
     # ========================================
@@ -48,7 +48,7 @@ Vagrant.configure("2") do |config|
       make \
       rsync \
       locales
-
+    
     # ========================================
     # eBPF TOOLCHAIN
     # ========================================
@@ -59,7 +59,7 @@ Vagrant.configure("2") do |config|
       bpftool \
       libbpf-dev \
       linux-headers-amd64
-
+    
     # ========================================
     # NETWORKING & COMMUNICATION LIBRARIES
     # ========================================
@@ -68,7 +68,7 @@ Vagrant.configure("2") do |config|
       libjsoncpp-dev \
       libcurl4-openssl-dev \
       libzmq3-dev
-
+    
     # ========================================
     # PROTOBUF (BOTH COMPILER AND RUNTIME)
     # ========================================
@@ -77,7 +77,7 @@ Vagrant.configure("2") do |config|
       protobuf-compiler \
       libprotobuf-dev \
       libprotobuf32
-
+    
     # ========================================
     # COMPRESSION LIBRARIES
     # ========================================
@@ -85,7 +85,7 @@ Vagrant.configure("2") do |config|
     apt-get install -y \
       liblz4-dev \
       libzstd-dev
-
+    
     # ========================================
     # ML DETECTOR SPECIFIC
     # ========================================
@@ -94,7 +94,7 @@ Vagrant.configure("2") do |config|
       pkg-config \
       libspdlog-dev \
       nlohmann-json3-dev
-
+    
     # ========================================
     # PYTHON ENVIRONMENT (Minimal - only for scripts, not ML)
     # ========================================
@@ -104,10 +104,10 @@ Vagrant.configure("2") do |config|
       python3-pip \
       python3-venv \
       python3-dev
-
+    
     # NOTE: ML training (pandas, sklearn, etc.) should be done on host macOS
     # This Python is only for utility scripts in the VM
-
+    
     # ========================================
     # DOCKER & DOCKER COMPOSE
     # ========================================
@@ -128,7 +128,7 @@ Vagrant.configure("2") do |config|
     else
       echo "✅ Docker Compose already installed"
     fi
-
+    
     # ========================================
     # CMAKE 3.25+
     # ========================================
@@ -142,7 +142,7 @@ Vagrant.configure("2") do |config|
     else
       echo "✅ CMake $CMAKE_VERSION already installed"
     fi
-
+    
     # ========================================
     # ONNX RUNTIME 1.17.1 (C++ only)
     # ========================================
@@ -158,24 +158,24 @@ Vagrant.configure("2") do |config|
     else
       echo "✅ ONNX Runtime already installed"
     fi
-
+    
     # ========================================
     # CONFIGURATION
     # ========================================
     echo "⚙️  Configuring system..."
-
+    
     # Locales
     sed -i '/es_ES.UTF-8/s/^# //g' /etc/locale.gen
     locale-gen es_ES.UTF-8
     update-locale LANG=es_ES.UTF-8 LC_ALL=es_ES.UTF-8
-
+    
     # BPF JIT
     if [ -f /proc/sys/net/core/bpf_jit_enable ]; then
       echo 1 > /proc/sys/net/core/bpf_jit_enable
       mountpoint -q /sys/fs/bpf || mount -t bpf none /sys/fs/bpf
       grep -q "/sys/fs/bpf" /etc/fstab || echo "none /sys/fs/bpf bpf defaults 0 0" >> /etc/fstab
     fi
-
+    
     # ========================================
     # PROTOBUF GENERATION
     # ========================================
@@ -183,7 +183,7 @@ Vagrant.configure("2") do |config|
       echo "🔨 Generating protobuf files..."
       cd /vagrant/protobuf && ./generate.sh
     fi
-
+    
     # ========================================
     # DIRECTORY STRUCTURE FOR MODELS
     # ========================================
@@ -192,7 +192,7 @@ Vagrant.configure("2") do |config|
     mkdir -p /vagrant/ml-detector/models/production/level2
     mkdir -p /vagrant/ml-detector/models/production/level3
     mkdir -p /vagrant/ml-training/outputs/onnx
-
+    
     # ========================================
     # BASH ALIASES (UPDATED WITH ML WORKFLOW)
     # ========================================
@@ -256,7 +256,7 @@ cat << 'WELCOME'
 WELCOME
 EOF
     fi
-
+    
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  ✅ ALL DEPENDENCIES INSTALLED                             ║"
@@ -272,14 +272,14 @@ EOF
     echo "║  Dependency Verification                                   ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
-
+    
     echo "🔧 Core Tools:"
     echo "  clang:    $(clang --version 2>/dev/null | head -1 || echo '❌ MISSING')"
     echo "  cmake:    $(cmake --version 2>/dev/null | head -1 || echo '❌ MISSING')"
     echo "  protoc:   $(protoc --version 2>/dev/null || echo '❌ MISSING')"
     echo "  docker:   $(docker --version 2>/dev/null || echo '❌ MISSING')"
     echo ""
-
+    
     echo "📚 Libraries (pkg-config):"
     echo "  libbpf:   $(pkg-config --modversion libbpf 2>/dev/null || echo '❌ MISSING')"
     echo "  jsoncpp:  $(pkg-config --modversion jsoncpp 2>/dev/null || echo '❌ MISSING')"
@@ -289,25 +289,25 @@ EOF
     echo "  libzstd:  $(pkg-config --modversion libzstd 2>/dev/null || echo '❌ MISSING')"
     echo "  spdlog:   $(pkg-config --modversion spdlog 2>/dev/null || echo 'header-only')"
     echo ""
-
+    
     echo "📦 Protobuf:"
     echo "  Runtime:  $(dpkg -l | grep libprotobuf32 | awk '{print $3}' || echo '❌ MISSING')"
     echo "  Dev:      $(dpkg -l | grep libprotobuf-dev | awk '{print $3}' || echo '❌ MISSING')"
     echo ""
-
+    
     echo "🧠 ML:"
     echo "  ONNX C++: $([ -f /usr/local/lib/libonnxruntime.so ] && echo 'v1.17.1 ✅' || echo '❌ MISSING')"
     echo "  JSON:     $(dpkg -l | grep nlohmann-json3 | awk '{print $3}' || echo '❌ MISSING')"
     echo ""
-
+    
     echo "🐍 Python (minimal - ML training on host macOS):"
     echo "  Version:  $(python3 --version 2>/dev/null || echo '❌ MISSING')"
     echo ""
-
+    
     echo "📁 Model Directories:"
     ls -ld /vagrant/ml-detector/models/production/level{1,2,3} 2>/dev/null || echo "  Creating..."
     echo ""
-
+    
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  ✅ VM Ready - Train models on HOST macOS                  ║"
     echo "╚════════════════════════════════════════════════════════════╝"

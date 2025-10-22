@@ -2,6 +2,7 @@
 """
 Train Level 1 Model - Binary Attack Detector
 Fast training with 23 selected features
+ml-training/scripts/train_level1.py
 """
 
 import pandas as pd

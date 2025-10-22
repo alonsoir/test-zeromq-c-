@@ -9,6 +9,7 @@
 #include "feature_extractor.hpp"
 #include "zmq_handler.hpp"
 
+//ml-detector/src/main.cpp
 using namespace ml_detector;
 
 // Signal handling para shutdown graceful
@@ -206,10 +207,36 @@ int main(int argc, char* argv[]) {
         }
         
         // 4. Level 2 and Level 3 models (TODO: implement)
+        // 4. Load Level 2 DDoS model
+        std::shared_ptr<ONNXModel> level2_ddos_model;
+
         if (config.ml.level2.ddos.enabled) {
-            log->info("📦 Level 2 DDoS model: {} (TODO: implement)",
-                       config.ml.level2.ddos.name);
+            log->info("📦 Loading Level 2 DDoS model: {}", config.ml.level2.ddos.model_file);
+            log->info("   Name: {}", config.ml.level2.ddos.name);
+            log->info("   Type: {}", config.ml.level2.ddos.model_type);
+            log->info("   Features: {}", config.ml.level2.ddos.features_count);
+            log->info("   Threshold: {}", config.ml.thresholds.level2_ddos);
+
+            std::string model_path = config.ml.models_base_dir + "/" + config.ml.level2.ddos.model_file;
+            level2_ddos_model = std::make_shared<ONNXModel>(model_path, config.ml.inference.intra_op_threads);
+
+            // Warmup Level 2 DDoS
+            if (config.ml.inference.enable_model_warmup && config.ml.inference.warmup_iterations > 0) {
+                log->info("🧪 Warming up Level 2 DDoS model ({} iterations)...",
+                           config.ml.inference.warmup_iterations);
+
+                std::vector<float> dummy_features(static_cast<size_t>(config.ml.level2.ddos.features_count), 0.0f);
+                for (int i = 0; i < config.ml.inference.warmup_iterations; ++i) {
+                    level2_ddos_model->predict(dummy_features);
+                }
+
+                log->info("✅ Level 2 DDoS warmup complete");
+            }
+        } else {
+            log->warn("⚠️  Level 2 DDoS model is disabled in configuration");
         }
+
+        // Level 2 Ransomware and Level 3 (TODO: implement when models ready)
         if (config.ml.level2.ransomware.enabled) {
             log->info("📦 Level 2 Ransomware model: {} (TODO: implement)",
                        config.ml.level2.ransomware.name);
@@ -225,7 +252,7 @@ int main(int argc, char* argv[]) {
         
         // 6. Create and start ZMQ Handler
         log->info("🔌 Initializing ZMQ Handler...");
-        ZMQHandler zmq_handler(config, model, feature_extractor);
+        ZMQHandler zmq_handler(config, model, feature_extractor, level2_ddos_model);
         
         zmq_handler.start();
         

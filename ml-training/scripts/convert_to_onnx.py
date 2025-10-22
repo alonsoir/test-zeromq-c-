@@ -2,6 +2,7 @@
 """
 Convert Models to ONNX - Conversión de modelos sklearn a ONNX
 Para uso en ml-detector C++
+ml-training/scripts/convert_to_onnx.py
 """
 
 import numpy as np

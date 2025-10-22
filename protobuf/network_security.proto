@@ -115,6 +115,9 @@ message NetworkFeatures {
   double packet_length_mean = 97;
   double packet_length_std = 98;
   double packet_length_variance = 99;
+    // 🎯 FEATURES ADICIONALES PARA LEVEL 2 DDOS (TEMPORALES)
+    double active_mean = 104;    // Mean active time (microseconds)
+    double idle_mean = 105;      // Mean idle time (microseconds)
 
   // 🎯 FEATURES ESPECÍFICAS POR TIPO DE MODELO ML
   repeated double ddos_features = 100;           // 83 features para DDOS
@@ -258,30 +261,35 @@ message ModelPrediction {
   google.protobuf.Timestamp prediction_timestamp = 7;
   google.protobuf.Duration processing_duration = 8;
 
-  enum ModelType {
-    RANDOM_FOREST_GENERAL = 0;         // RF 23 features - detección general
-    LIGHTGBM_DDOS = 1;                 // LightGBM especializado DDOS
-    NEURAL_NETWORK_RANSOMWARE = 2;     // NN especializado Ransomware
-    ENSEMBLE_TRICAPA = 3;              // Ensemble de múltiples modelos
-    INTERNAL_TRAFFIC_CLASSIFIER = 4;   // Clasificador tráfico interno
-    TRANSFORMER_ADVANCED = 5;          // Modelo transformer avanzado
-  }
+    enum ModelType {
+        RANDOM_FOREST_GENERAL = 0;         // RF 23 features - detección general
+        LIGHTGBM_DDOS = 1;                 // LightGBM especializado DDOS
+        NEURAL_NETWORK_RANSOMWARE = 2;     // NN especializado Ransomware
+        ENSEMBLE_TRICAPA = 3;              // Ensemble de múltiples modelos
+        INTERNAL_TRAFFIC_CLASSIFIER = 4;   // Clasificador tráfico interno
+        TRANSFORMER_ADVANCED = 5;          // Modelo transformer avanzado
+        RANDOM_FOREST_DDOS = 6;            // RF Binary DDoS detector (8 features, 98.61% acc)
+        RANDOM_FOREST_RANSOMWARE = 7;      // RF Ransomware detector (future)
+    }
 }
 
 message TricapaMLAnalysis {
-  // 🥇 NIVEL 1 - Filtro General (RF con 23 features)
-  ModelPrediction level1_general_detection = 1;
-  bool attack_detected_level1 = 2;
-  double level1_confidence = 3;
+    // 🥇 NIVEL 1 - Filtro General (RF con 23 features)
+    ModelPrediction level1_general_detection = 1;
+    bool attack_detected_level1 = 2;
+    double level1_confidence = 3;
 
-  // 🥈 NIVEL 2 - Clasificación de Contexto
-  ModelPrediction level2_context_classification = 4;
-  string traffic_context = 5;           // "INTERNAL", "EXTERNAL_WEB", "EXTERNAL_OTHER"
+    // 🥈 NIVEL 2 - Clasificación de Contexto
+    ModelPrediction level2_context_classification = 4;
+    string traffic_context = 5;           // "INTERNAL", "EXTERNAL_WEB", "EXTERNAL_OTHER"
 
-  // 🥉 NIVEL 3 - Especialización por Amenaza (83 features)
-  repeated ModelPrediction level3_specialized_predictions = 6;
-  string final_threat_classification = 7;
-  double ensemble_confidence = 8;
+    // 🥈 NIVEL 2 - Clasificadores Especializados (DDoS, Ransomware)
+    repeated ModelPrediction level2_specialized_predictions = 9;
+
+    // 🥉 NIVEL 3 - Especialización por Amenaza (83 features)
+    repeated ModelPrediction level3_specialized_predictions = 6;
+    string final_threat_classification = 7;
+    double ensemble_confidence = 8;
 
   // 📊 ANÁLISIS AGREGADO
   google.protobuf.Duration total_analysis_duration = 10;
