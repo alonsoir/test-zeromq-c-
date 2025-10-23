@@ -10,7 +10,7 @@
   "cluster_name": "upgraded-happiness-cluster",
   "profiles": {
     "lab": {
-      "capture_interface": "eth2",
+      "capture_interface": "eth0",
       "promiscuous_mode": true,
       "af_xdp_enabled": true,
       "worker_threads": 2,
@@ -358,5 +358,5 @@
       "recovery_timeout": 30
     }
   },
-  "interface": "eth2"
+  "interface": "eth0"
 }

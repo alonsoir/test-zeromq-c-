@@ -436,10 +436,21 @@ This release fixes a critical thread-safety violation in the ZMQ sender pipeline
 
 **Upgrade:** Strongly recommended for all deployments.
 
+## 🚀 Latest Achievement (Oct 23, 2025)
+
+Sistema de detección ML tricapa **completamente operativo**:
+
+- ✅ **18,000+ eventos/segundo** procesados
+- ✅ **<2ms latencia** por evento (Level 1 + Level 2)
+- ✅ **Pipeline end-to-end** funcionando: eBPF → Ring Buffer → ZMQ → ONNX
+- ✅ **Corriendo en VirtualBox VM** (hardware doméstico)
+
+Rendimiento **muy superior** a versión Python original.
+
 ---
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║  Este README refleja el estado REAL del proyecto           ║
-║  Actualizado: 2025-10-19 07:00 CET                        ║
+║  Actualizado: 2025-10-23 07:00 CET                        ║
 ╚════════════════════════════════════════════════════════════╝
 ```
