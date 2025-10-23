@@ -4,12 +4,68 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.name = "ml-detector-lab"
-    vb.memory = "6144"  # 6GB - Suficiente para compilar C++ y ejecutar detector
-    vb.cpus = 4
-    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+    vb.memory = "8192"    # ← Cambiar de 4096 a 8192 (8GB)
+    vb.cpus = 6           # ← Cambiar de 4 a 6 CPUs
+
+    # Optimizaciones para red
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype3", "virtio"]
+    vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+
+    # Optimizaciones adicionales
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+    vb.customize ["modifyvm", :id, "--audio", "none"]
+    vb.customize ["modifyvm", :id, "--usb", "off"]
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
   end
+  # ════════════════════════════════════════════════════════════════════════
+    # Provisioning: Configuración de Red para Sniffer XDP + Modo Promiscuo
+    # ════════════════════════════════════════════════════════════════════════
+    config.vm.provision "shell", run: "always", inline: <<-SHELL
+      echo "🔧 Configurando eth2 para captura de tráfico..."
+
+      # 1. Instalar ethtool (idempotente)
+      if ! command -v ethtool &> /dev/null; then
+        echo "📦 Instalando ethtool..."
+        apt-get update -qq
+        apt-get install -y ethtool
+      else
+        echo "✅ ethtool ya instalado"
+      fi
+
+      # 2. Activar modo promiscuo en eth2
+      echo "🔍 Activando modo promiscuo en eth2..."
+      ip link set eth2 promisc on
+
+      # 3. Desactivar offloading features incompatibles con XDP
+      echo "⚙️  Desactivando offloading features..."
+      ethtool -K eth2 gro off 2>/dev/null || true
+      ethtool -K eth2 tx-checksum-ip-generic off 2>/dev/null || true
+      ethtool -K eth2 tso off 2>/dev/null || true
+      ethtool -K eth2 gso off 2>/dev/null || true
+
+      # 4. Verificar configuración
+      echo ""
+      echo "═══════════════════════════════════════════════════════════"
+      echo "✅ CONFIGURACIÓN DE eth2 APLICADA"
+      echo "═══════════════════════════════════════════════════════════"
+
+      # Modo promiscuo
+      if ip link show eth2 | grep -q PROMISC; then
+        echo "✅ Modo promiscuo: ACTIVO"
+      else
+        echo "❌ Modo promiscuo: INACTIVO"
+      fi
+
+      # Offloading features
+      echo ""
+      echo "Offloading features:"
+      ethtool -k eth2 | grep -E 'generic-receive-offload|tx-checksumming|tcp-segmentation-offload|generic-segmentation-offload' | head -4
+
+      echo "═══════════════════════════════════════════════════════════"
+      echo ""
+    SHELL
 
   config.vm.network "private_network", ip: "192.168.56.20"
   config.vm.network "public_network", bridge: "en0: Wi-Fi"

@@ -11,14 +11,23 @@ namespace sniffer {
 EbpfLoader::EbpfLoader() 
     : bpf_obj_(nullptr), xdp_prog_(nullptr), events_map_(nullptr), stats_map_(nullptr),
       prog_fd_(-1), events_fd_(-1), stats_fd_(-1),
-      program_loaded_(false), xdp_attached_(false), attached_ifindex_(-1) {
+      program_loaded_(false), xdp_attached_(false), skb_attached_(false), attached_ifindex_(-1) {
 }
 
 EbpfLoader::~EbpfLoader() {
-    if (xdp_attached_ && attached_ifindex_ > 0) {
-        // Detach XDP program
+    if (xdp_attached_ && attached_ifindex_ >= 0) {
+        // Desadjuntar XDP
         bpf_xdp_detach(attached_ifindex_, 0, nullptr);
-        std::cout << "[INFO] eBPF program detached from interface" << std::endl;
+    }
+
+    if (skb_attached_ && attached_ifindex_ >= 0) {
+        // Desadjuntar SKB (TC)
+        LIBBPF_OPTS(bpf_tc_hook, hook,
+                    .ifindex = attached_ifindex_,
+                    .attach_point = BPF_TC_INGRESS);
+        LIBBPF_OPTS(bpf_tc_opts, opts, .handle = 1, .priority = 1);
+        bpf_tc_detach(&hook, &opts);
+        bpf_tc_hook_destroy(&hook);
     }
     
     if (bpf_obj_) {
@@ -151,6 +160,69 @@ bool EbpfLoader::detach_xdp(const std::string& interface_name) {
     attached_ifindex_ = -1;
     
     std::cout << "[INFO] XDP program detached successfully" << std::endl;
+    return true;
+}
+
+bool EbpfLoader::attach_skb(const std::string& interface_name) {
+    if (!program_loaded_) {
+        std::cerr << "[ERROR] eBPF program not loaded" << std::endl;
+        return false;
+    }
+
+    if (skb_attached_) {
+        std::cout << "[WARN] SKB program already attached" << std::endl;
+        return true;
+    }
+
+    int ifindex = get_ifindex(interface_name);
+    if (ifindex < 0) {
+        std::cerr << "[ERROR] Failed to get interface index for " << interface_name << std::endl;
+        return false;
+    }
+
+    std::cout << "[INFO] Attaching XDP program in SKB/Generic mode to interface: " << interface_name
+              << " (ifindex: " << ifindex << ")" << std::endl;
+
+    // Usar XDP en modo genérico (software) - compatible con virtio_net
+    // XDP_FLAGS_SKB_MODE = (1U << 1) = modo genérico/software
+    __u32 xdp_flags = (1U << 1);  // XDP_FLAGS_SKB_MODE
+
+    int err = bpf_xdp_attach(ifindex, prog_fd_, xdp_flags, nullptr);
+    if (err) {
+        std::cerr << "[ERROR] Failed to attach XDP in SKB mode: " << strerror(-err) << std::endl;
+        return false;
+    }
+
+    skb_attached_ = true;
+    attached_ifindex_ = ifindex;
+
+    std::cout << "[INFO] XDP program attached successfully in SKB/Generic mode to " << interface_name << std::endl;
+    return true;
+}
+
+
+bool EbpfLoader::detach_skb(const std::string& interface_name) {
+    if (!skb_attached_) {
+        return true;
+    }
+
+    int ifindex = get_ifindex(interface_name);
+    if (ifindex < 0) {
+        return false;
+    }
+
+    std::cout << "[INFO] Detaching XDP program (SKB mode) from interface: " << interface_name << std::endl;
+
+    // Desadjuntar XDP
+    int err = bpf_xdp_detach(ifindex, 0, nullptr);
+    if (err) {
+        std::cerr << "[WARN] Failed to detach XDP (SKB mode): " << strerror(-err) << std::endl;
+    }
+
+    skb_attached_ = false;
+    attached_ifindex_ = -1;
+
+    std::cout << "[INFO] XDP program (SKB mode) detached from " << interface_name << std::endl;
     return true;
 }
 

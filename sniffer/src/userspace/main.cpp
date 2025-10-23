@@ -991,11 +991,35 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        std::cout << "[eBPF] Attaching XDP to interface: " << g_config.capture_interface << std::endl;
-        if (!ebpf_loader.attach_xdp(g_config.capture_interface)) {
-            std::cerr << "❌ Failed to attach XDP to " << g_config.capture_interface << std::endl;
+        // ═══════════════════════════════════════════════════════════════
+        // Adjuntar programa eBPF según el modo configurado en JSON
+        // ═══════════════════════════════════════════════════════════════
+        std::cout << "[eBPF] Attaching " << g_config.capture_mode
+                  << " to interface: " << g_config.capture_interface << std::endl;
+
+        if (g_config.capture_mode == "ebpf_xdp") {
+            // Modo XDP (Native)
+            if (!ebpf_loader.attach_xdp(g_config.capture_interface)) {
+                std::cerr << "❌ Failed to attach XDP to " << g_config.capture_interface << std::endl;
+                return 1;
+            }
+
+        } else if (g_config.capture_mode == "ebpf_skb") {
+            // Modo SKB (TC - Traffic Control)
+            if (!ebpf_loader.attach_skb(g_config.capture_interface)) {
+                std::cerr << "❌ Failed to attach SKB to " << g_config.capture_interface << std::endl;
+                return 1;
+            }
+
+        } else {
+            std::cerr << "❌ Unknown capture mode: " << g_config.capture_mode << std::endl;
+            std::cerr << "   Valid modes: ebpf_xdp, ebpf_skb" << std::endl;
             return 1;
         }
+
+        std::cout << "✅ eBPF program attached successfully ("
+                  << g_config.capture_mode << ")" << std::endl;
+        // ═══════════════════════════════════════════════════════════════
 
         int ring_fd = ebpf_loader.get_ringbuf_fd();
         std::cout << "✅ eBPF program loaded and attached (ring_fd=" << ring_fd << ")" << std::endl;

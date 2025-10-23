@@ -34,10 +34,10 @@
   },
   "profile": "lab",
   "capture": {
-    "interface": "eth2",
+    "interface": "eth0",
     "kernel_interface": null,
     "user_interface": null,
-    "mode": "ebpf_xdp",
+    "mode": "ebpf_skb",
     "xdp_flags": [
       "XDP_FLAGS_UPDATE_IF_NOEXIST"
     ],

@@ -237,29 +237,115 @@ void ZMQHandler::process_event(const std::string& message) {
         // Update overall event classification
         event.set_final_classification(label == 0 ? "BENIGN" : "MALICIOUS");
         event.set_overall_threat_score(label == 1 ? confidence : (1.0 - confidence));
-        
-        if (label == 1) {
+        // todo ojito, que esto es un hack para provocar que todo es un ataque y asi probar el modelo DDOS y Ransomware
+        if (true || label == 1) {
             // Level 1 detectó ATTACK - activar Level 2 DDoS si disponible
             event.set_threat_category("ATTACK");
 
-            std::lock_guard<std::mutex> lock(stats_mutex_);
-            stats_.attacks_detected++;
+            {
+                std::lock_guard<std::mutex> lock(stats_mutex_);
+                stats_.attacks_detected++;
+            }
 
-            // Level 2: DDoS Binary Classification
+            // ========== LEVEL 2: DDoS Binary Classification ==========
             if (level2_ddos_model_) {
                 try {
                     logger_->debug("🔍 Running Level 2 DDoS classification...");
 
-                    // Extraer features Level 2 DDoS (8 features)
-                    auto features_l2 = extractor_->extract_level2_ddos_features(event.network_features());
+                    // SAFETY CHECK 1: Verificar que network_features existe
+                    if (!event.has_network_features()) {
+                        logger_->error("❌ Event {} missing network_features, skipping Level 2 DDoS",
+                                      event.event_id());
+                        // Continuar sin Level 2, no crashear
+                        return;
+                    }
 
-                    // Predicción Level 2 DDoS
-                    auto [label_l2, confidence_l2] = level2_ddos_model_->predict(features_l2);
+                    const auto& nf = event.network_features();
+                    logger_->debug("   Network features available for Level 2 extraction");
 
-                    logger_->debug("🤖 Level 2 DDoS prediction: label={} ({}), confidence={:.4f}",
-                                  label_l2, (label_l2 == 0 ? "NOT-DDOS" : "DDOS"), confidence_l2);
+                    // SAFETY CHECK 2: Extraer features con manejo de errores
+                    std::vector<float> features_l2;
+                    try {
+                        features_l2 = extractor_->extract_level2_ddos_features(nf);
 
-                    // Enriquecer con Level 2 DDoS prediction
+                        // SAFETY CHECK 3: Validar tamaño de features
+                        if (features_l2.size() != 8) {
+                            logger_->error("❌ Level 2 DDoS feature extraction returned {} features, expected 8",
+                                          features_l2.size());
+                            return;
+                        }
+
+                        // Log features para debug (opcional, comentar en producción)
+                        logger_->debug("   Level 2 DDoS Features (8):");
+                        logger_->debug("     [0] Bwd Packet Length Max: {:.2f}", features_l2[0]);
+                        logger_->debug("     [1] Flow Bytes/s:          {:.2f}", features_l2[1]);
+                        logger_->debug("     [2] Fwd IAT Total:         {:.2f}", features_l2[2]);
+                        logger_->debug("     [3] Bwd IAT Total:         {:.2f}", features_l2[3]);
+                        logger_->debug("     [4] FIN Flag Count:        {:.2f}", features_l2[4]);
+                        logger_->debug("     [5] Fwd PSH Flags:         {:.2f}", features_l2[5]);
+                        logger_->debug("     [6] Active Mean:           {:.2f}", features_l2[6]);
+                        logger_->debug("     [7] Idle Mean:             {:.2f}", features_l2[7]);
+
+						// ═══════════════════════════════════════════════════════════
+                        // ANÁLISIS DE FEATURES PARA TOMA DE DECISIONES
+                        // ═══════════════════════════════════════════════════════════
+                        int zero_features = 0;
+                        int non_zero_features = 0;
+                        for (size_t i = 0; i < features_l2.size(); ++i) {
+                            if (features_l2[i] == 0.0f) {
+                                zero_features++;
+                            } else {
+                                non_zero_features++;
+                            }
+                        }
+                        logger_->debug("   📊 Feature Analysis: {} non-zero, {} zero ({}% coverage)",
+                                      non_zero_features, zero_features,
+                                      (non_zero_features * 100.0f / features_l2.size()));
+
+                        if (features_l2[6] == 0.0f && features_l2[7] == 0.0f) {
+                            logger_->debug("   ⚠️  Active Mean & Idle Mean = 0 (esperado, sniffer no las captura aún)");
+                        }
+                        // ═══════════════════════════════════════════════════════════
+
+
+                    } catch (const std::exception& e) {
+                        logger_->error("❌ Level 2 DDoS feature extraction failed: {}", e.what());
+                        std::lock_guard<std::mutex> lock(stats_mutex_);
+                        stats_.feature_extraction_errors++;
+                        return;
+                    }
+
+                    // SAFETY CHECK 4: Predicción con manejo de errores
+                    int64_t label_l2 = -1;
+                    float confidence_l2 = 0.0f;
+
+                    try {
+                        auto [pred_label, pred_confidence] = level2_ddos_model_->predict(features_l2);
+                        label_l2 = pred_label;
+                        confidence_l2 = pred_confidence;
+
+                        logger_->debug("🤖 Level 2 DDoS prediction: label={} ({}), confidence={:.4f}",
+                                      label_l2, (label_l2 == 0 ? "NOT-DDOS" : "DDOS"), confidence_l2);
+
+                    } catch (const std::exception& e) {
+                        logger_->error("❌ Level 2 DDoS inference failed: {}", e.what());
+                        std::lock_guard<std::mutex> lock(stats_mutex_);
+                        stats_.inference_errors++;
+                        return;
+                    }
+
+                    // SAFETY CHECK 5: Validar predicción
+                    if (label_l2 < 0 || label_l2 > 1) {
+                        logger_->error("❌ Invalid Level 2 DDoS prediction label: {}", label_l2);
+                        return;
+                    }
+
+                    if (confidence_l2 < 0.0f || confidence_l2 > 1.0f) {
+                        logger_->warn("⚠️  Invalid Level 2 DDoS confidence: {:.4f}, clamping", confidence_l2);
+                        confidence_l2 = std::max(0.0f, std::min(1.0f, confidence_l2));
+                    }
+
+                    // ========== ENRIQUECER EVENTO CON PREDICCIÓN LEVEL 2 ==========
                     auto* level2_ddos_pred = ml_analysis->add_level2_specialized_predictions();
                     level2_ddos_pred->set_model_name("level2_ddos_binary_detector");
                     level2_ddos_pred->set_model_version("1.0.0");
@@ -272,18 +358,35 @@ void ZMQHandler::process_event(const std::string& message) {
                         event.set_threat_category("DDOS");
                         ml_analysis->set_final_threat_classification("DDOS");
 
-                        logger_->warn("🔴 DDoS ATTACK CONFIRMED: event={}, confidence={:.2f}%",
-                                     event.event_id(), confidence_l2 * 100);
+                        logger_->warn("🔴 DDoS ATTACK CONFIRMED: event={}, L1_conf={:.2f}%, L2_conf={:.2f}%",
+                                     event.event_id(), confidence * 100, confidence_l2 * 100);
+                    } else if (label_l2 == 1) {
+                        // DDoS detectado pero bajo confianza
+                        logger_->info("🟡 Possible DDoS (low confidence): event={}, confidence={:.2f}% (threshold={:.2f}%)",
+                                     event.event_id(), confidence_l2 * 100, config_.ml.thresholds.level2_ddos * 100);
                     } else {
-                        logger_->info("🟡 Attack detected but NOT DDoS: event={}, confidence={:.2f}%",
+                        // NOT-DDOS
+                        logger_->info("🟢 Attack detected but NOT DDoS: event={}, confidence={:.2f}%",
                                      event.event_id(), confidence_l2 * 100);
                     }
 
+                    logger_->debug("✅ Level 2 DDoS classification completed successfully");
+
                 } catch (const std::exception& e) {
-                    logger_->error("Level 2 DDoS inference failed: {}", e.what());
+                    // Catch-all para cualquier error no manejado
+                    logger_->error("❌ Unexpected error in Level 2 DDoS processing: {}", e.what());
+                    std::lock_guard<std::mutex> lock(stats_mutex_);
+                    stats_.inference_errors++;
+                    // Continuar sin crashear
                 }
+            } else {
+                // Modelo Level 2 no cargado
+                logger_->debug("⚠️  Level 2 DDoS model not loaded, skipping specialized detection");
             }
+            // ========== FIN LEVEL 2 ==========
+
         } else {
+            // Label = 0 (BENIGN)
             event.set_threat_category("NORMAL");
         }
         

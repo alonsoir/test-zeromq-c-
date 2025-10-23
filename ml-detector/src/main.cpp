@@ -206,8 +206,18 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
-        // 4. Level 2 and Level 3 models (TODO: implement)
-        // 4. Load Level 2 DDoS model
+        // ═══════════════════════════════════════════════════════════════════════
+        // TODO: IMPLEMENTAR EN SNIFFER
+        // ═══════════════════════════════════════════════════════════════════════
+        // Level 2 DDoS model espera 8 features, pero sniffer solo captura 6:
+        //   ✅ [0-5]: backward_packet_length_max, flow_bytes_per_second, etc.
+        //   ❌ [6]: active_mean  - Requiere tracking temporal en user-space
+        //   ❌ [7]: idle_mean    - Requiere tracking temporal en user-space
+        //
+        // ESTADO ACTUAL: Model funciona con 6/8 features (active_mean=0, idle_mean=0)
+        // ACCIÓN PENDIENTE: Analizar accuracy del model antes de implementar
+        // ═══════════════════════════════════════════════════════════════════════
+
         std::shared_ptr<ONNXModel> level2_ddos_model;
 
         if (config.ml.level2.ddos.enabled) {

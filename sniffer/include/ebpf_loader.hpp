@@ -19,8 +19,14 @@ public:
     // Adjuntar programa XDP a interfaz
     bool attach_xdp(const std::string& interface_name);
     
+    // Adjuntar programa SKB (TC) a interfaz
+    bool attach_skb(const std::string& interface_name);
+
     // Desadjuntar programa XDP de interfaz
     bool detach_xdp(const std::string& interface_name);
+
+    // Desadjuntar programa SKB de interfaz
+    bool detach_skb(const std::string& interface_name);
     
     // Obtener file descriptor del ring buffer map
     int get_ringbuf_fd() const;
@@ -47,6 +53,7 @@ private:
     
     bool program_loaded_;
     bool xdp_attached_;
+    bool skb_attached_;
     int attached_ifindex_;
     
     // Helper para obtener ifindex desde nombre
