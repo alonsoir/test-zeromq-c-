@@ -42,7 +42,7 @@
       "XDP_FLAGS_UPDATE_IF_NOEXIST"
     ],
     "promiscuous_mode": true,
-    "filter_expression": "",
+    "filter_expression": "not port 22",
     "buffer_size": 65536,
     "min_packet_size": 20,
     "max_packet_size": 65536,
@@ -66,20 +66,20 @@
     }
   },
   "buffers": {
-    "ring_buffer_entries": 1048576,
-    "user_processing_queue_depth": 10000,
+    "ring_buffer_entries": 65536,
+    "user_processing_queue_depth": 300,
     "protobuf_serialize_buffer_size": 65536,
-    "zmq_send_buffer_size": 1048576,
-    "flow_state_buffer_entries": 1000000,
-    "statistics_buffer_entries": 100000,
+    "zmq_send_buffer_size": 262144,
+    "flow_state_buffer_entries": 100000,
+    "statistics_buffer_entries": 10000,
     "batch_processing_size": 4
   },
   "threading": {
-    "ring_consumer_threads": 2,
-    "feature_processor_threads": 4,
-    "zmq_sender_threads": 2,
+    "ring_consumer_threads": 1,
+    "feature_processor_threads": 1,
+    "zmq_sender_threads": 1,
     "statistics_collector_threads": 1,
-    "total_worker_threads": 9,
+    "total_worker_threads": 4,
     "cpu_affinity": {
       "enabled": false,
       "ring_consumers": [
@@ -182,36 +182,36 @@
   },
   "network": {
     "output_socket": {
-      "address": "0.0.0.0",
+      "address": "127.0.0.1",
       "port": 5571,
       "mode": "bind",
-      "socket_type": "PUB",
-      "high_water_mark": 2000
+      "socket_type": "PUSH",
+      "high_water_mark": 1000
     }
   },
   "zmq": {
-    "worker_threads": 4,
-    "io_thread_pools": 2,
+    "worker_threads": 1,
+    "io_thread_pools": 1,
     "socket_pools": {
       "push_sockets": 1,
       "load_balancing": "round_robin",
       "failover_enabled": true
     },
     "queue_management": {
-      "internal_queues": 4,
-      "queue_size": 10000,
+      "internal_queues": 2,
+      "queue_size": 300,
       "queue_timeout_ms": 100,
       "overflow_policy": "drop_oldest"
     },
     "connection_settings": {
-      "sndhwm": 10000,
-      "linger_ms": 0,
-      "send_timeout_ms": 100,
-      "rcvhwm": 10000,
-      "recv_timeout_ms": 100,
+      "sndhwm": 1000,
+      "linger_ms": 100,
+      "send_timeout_ms": 250,
+      "rcvhwm": 1000,
+      "recv_timeout_ms": 500,
       "tcp_keepalive": 1,
-      "sndbuf": 1048576,
-      "rcvbuf": 1048576,
+      "sndbuf": 262144,
+      "rcvbuf": 262144,
       "reconnect_interval_ms": 1000,
       "max_reconnect_attempts": 10
     },

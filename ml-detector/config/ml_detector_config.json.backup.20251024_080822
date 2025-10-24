@@ -8,9 +8,10 @@
   },
   "node_id": "cpp_ml_detector_v1_001",
   "cluster_name": "upgraded-happiness-cluster",
+
   "profiles": {
     "lab": {
-      "worker_threads": 2,
+      "worker_threads": 3,
       "input_queue_size": 300,
       "output_queue_size": 200,
       "compression_level": 1,
@@ -33,12 +34,13 @@
     }
   },
   "profile": "lab",
+
   "network": {
     "input_socket": {
       "endpoint": "tcp://127.0.0.1:5571",
       "mode": "connect",
       "socket_type": "PULL",
-      "high_water_mark": 1000
+      "high_water_mark": 500
     },
     "output_socket": {
       "endpoint": "tcp://0.0.0.0:5572",
@@ -47,17 +49,18 @@
       "high_water_mark": 1000
     }
   },
+
   "zmq": {
     "worker_threads": 2,
     "io_thread_pools": 1,
     "connection_settings": {
       "sndhwm": 1000,
-      "rcvhwm": 1000,
-      "linger_ms": 100,
+      "rcvhwm": 500,
+      "linger_ms": 0,
       "send_timeout_ms": 250,
       "recv_timeout_ms": 500,
       "sndbuf": 262144,
-      "rcvbuf": 262144,
+      "rcvbuf": 131072,
       "immediate": 0
     },
     "queue_management": {
@@ -67,9 +70,10 @@
       "overflow_policy": "drop_oldest"
     }
   },
+
   "transport": {
     "compression": {
-      "enabled": false,
+      "enabled": true,
       "algorithm": "lz4",
       "level": 1,
       "min_compress_size": 0,
@@ -85,6 +89,7 @@
       "fallback_mode": "compression_only"
     }
   },
+
   "etcd": {
     "enabled": true,
     "endpoints": [
@@ -101,30 +106,20 @@
     "heartbeat_interval_seconds": 30,
     "lease_ttl_seconds": 60
   },
+
   "threading": {
-    "worker_threads": 2,
+    "worker_threads": 3,
     "protobuf_deserializer_threads": 1,
-    "feature_extractor_threads": 1,
-    "ml_inference_threads": 2,
+    "feature_extractor_threads": 2,
+    "ml_inference_threads": 3,
     "zmq_sender_threads": 1,
-    "total_worker_threads": 7,
+    "total_worker_threads": 10,
     "cpu_affinity": {
       "enabled": false,
-      "deserializers": [
-        0
-      ],
-      "feature_extractors": [
-        1,
-        2
-      ],
-      "ml_inference": [
-        3,
-        4,
-        5
-      ],
-      "zmq_senders": [
-        6
-      ]
+      "deserializers": [0],
+      "feature_extractors": [1, 2],
+      "ml_inference": [3, 4, 5],
+      "zmq_senders": [6]
     },
     "thread_priorities": {
       "deserializers": "high",
@@ -133,14 +128,17 @@
       "zmq_senders": "normal"
     }
   },
+
   "ml": {
     "models_base_dir": "../models/production",
+
     "thresholds": {
       "level1_attack": 0.65,
-      "level2_ddos": 0.7,
+      "level2_ddos": 0.70,
       "level2_ransomware": 0.75,
-      "level3_anomaly": 0.8
+      "level3_anomaly": 0.80
     },
+
     "level1": {
       "enabled": true,
       "name": "attack_detector",
@@ -152,6 +150,7 @@
       "requires_scaling": true,
       "timeout_ms": 10
     },
+
     "level2": {
       "ddos": {
         "enabled": true,
@@ -174,6 +173,7 @@
         "timeout_ms": 10
       }
     },
+
     "level3": {
       "internal": {
         "enabled": true,
@@ -196,6 +196,7 @@
         "timeout_ms": 5
       }
     },
+
     "inference": {
       "batch_size": 1,
       "enable_model_warmup": true,
@@ -206,6 +207,7 @@
       "enable_cpu_mem_arena": true,
       "enable_profiling": false
     },
+
     "feature_extraction": {
       "validate_features": true,
       "pad_missing": true,
@@ -214,6 +216,7 @@
       "cache_size": 500,
       "simd_optimization": true
     },
+
     "degraded_mode": {
       "min_models_required": 1,
       "continue_with_partial_models": true,
@@ -221,6 +224,7 @@
       "log_degraded_operations": true
     }
   },
+
   "processing": {
     "input_queue_size": 300,
     "output_queue_size": 200,
@@ -234,6 +238,7 @@
     "numa_aware_allocation": false,
     "memory_prefaulting": false
   },
+
   "backpressure": {
     "enabled": true,
     "activation_threshold": 0.7,
@@ -245,6 +250,7 @@
       "recovery_timeout_seconds": 30
     }
   },
+
   "monitoring": {
     "stats_interval_seconds": 60,
     "performance_tracking": true,
@@ -271,6 +277,7 @@
       "max_model_failures_per_minute": 10
     }
   },
+
   "logging": {
     "level": "INFO",
     "file": "logs/cpp_ml_detector_tricapa_v1.log",
@@ -283,6 +290,7 @@
     "log_inference_scores": true,
     "log_feature_extraction": false
   },
+
   "protobuf": {
     "schema_version": "v3.1.0",
     "validate_before_processing": true,
@@ -293,16 +301,18 @@
     "pool_size": 1000,
     "reuse_objects": true
   },
+
   "security": {
     "input_validation": {
       "enabled": true,
       "validate_protobuf_schema": true,
       "sanitize_features": true,
       "reject_malformed_events": true,
-      "max_feature_value": 1000000000,
+      "max_feature_value": 1e9,
       "min_features_required": 10
     }
   },
+
   "performance": {
     "enable_zero_copy": true,
     "enable_memory_pools": true,
