@@ -9,9 +9,23 @@
 namespace sniffer {
 
 EbpfLoader::EbpfLoader() 
-    : bpf_obj_(nullptr), xdp_prog_(nullptr), events_map_(nullptr), stats_map_(nullptr),
-      prog_fd_(-1), events_fd_(-1), stats_fd_(-1),
-      program_loaded_(false), xdp_attached_(false), skb_attached_(false), attached_ifindex_(-1) {
+    : bpf_obj_(nullptr), 
+      xdp_prog_(nullptr), 
+      events_map_(nullptr), 
+      stats_map_(nullptr),
+      excluded_ports_map_(nullptr),
+      included_ports_map_(nullptr),
+      filter_settings_map_(nullptr),
+      prog_fd_(-1), 
+      events_fd_(-1), 
+      stats_fd_(-1),
+      excluded_ports_fd_(-1),
+      included_ports_fd_(-1),
+      filter_settings_fd_(-1),
+      program_loaded_(false),
+      xdp_attached_(false),
+      skb_attached_(false),
+      attached_ifindex_(-1) {
 }
 
 EbpfLoader::~EbpfLoader() {
@@ -98,7 +112,32 @@ bool EbpfLoader::load_program(const std::string& bpf_obj_path) {
         bpf_obj_ = nullptr;
         return false;
     }
-    
+
+    // Get filter maps
+    excluded_ports_map_ = bpf_object__find_map_by_name(bpf_obj_, "excluded_ports");
+    if (excluded_ports_map_) {
+        excluded_ports_fd_ = bpf_map__fd(excluded_ports_map_);
+        std::cout << "[INFO] Found excluded_ports map, FD: " << excluded_ports_fd_ << std::endl;
+    } else {
+        std::cerr << "[WARNING] excluded_ports map not found in eBPF program" << std::endl;
+    }
+
+    included_ports_map_ = bpf_object__find_map_by_name(bpf_obj_, "included_ports");
+    if (included_ports_map_) {
+        included_ports_fd_ = bpf_map__fd(included_ports_map_);
+        std::cout << "[INFO] Found included_ports map, FD: " << included_ports_fd_ << std::endl;
+    } else {
+        std::cerr << "[WARNING] included_ports map not found in eBPF program" << std::endl;
+    }
+
+    filter_settings_map_ = bpf_object__find_map_by_name(bpf_obj_, "filter_settings");
+    if (filter_settings_map_) {
+        filter_settings_fd_ = bpf_map__fd(filter_settings_map_);
+        std::cout << "[INFO] Found filter_settings map, FD: " << filter_settings_fd_ << std::endl;
+    } else {
+        std::cerr << "[WARNING] filter_settings map not found in eBPF program" << std::endl;
+    }
+
     program_loaded_ = true;
     std::cout << "[INFO] eBPF program loaded successfully" << std::endl;
     std::cout << "[INFO] Program FD: " << prog_fd_ << ", Events FD: " << events_fd_ 
@@ -252,6 +291,18 @@ uint64_t EbpfLoader::get_packet_count() {
 
 int EbpfLoader::get_ifindex(const std::string& interface_name) {
     return if_nametoindex(interface_name.c_str());
+}
+
+    int EbpfLoader::get_excluded_ports_fd() const {
+    return excluded_ports_fd_;
+}
+
+    int EbpfLoader::get_included_ports_fd() const {
+    return included_ports_fd_;
+}
+
+    int EbpfLoader::get_filter_settings_fd() const {
+    return filter_settings_fd_;
 }
 
 } // namespace sniffer

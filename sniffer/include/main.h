@@ -1,4 +1,4 @@
-// sniffer/include/config_types.h
+// sniffer/include/main.h
 #pragma once
 
 #include <cstdint>

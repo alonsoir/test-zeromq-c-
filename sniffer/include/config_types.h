@@ -1,7 +1,7 @@
-// config_types.h - Enhanced Sniffer v3.1
-// FECHA: 26 de Septiembre de 2025
-// DESCRIPCIÓN: Estructuras y declaraciones para strict JSON parsing
-// sniffer/src/userspace/config_types.h
+// config_types.h - Enhanced Sniffer v3.2
+// FECHA: 25 de Octubre de 2025
+// DESCRIPCIÓN: Estructuras y declaraciones para strict JSON parsing + Filter System
+// sniffer/include/config_types.h
 #pragma once
 
 #include <iostream>
@@ -59,7 +59,7 @@
 
 struct CommandLineArgs {
     bool verbose = false;
-    int verbosity_level = 0;      // ← AÑADIR: 0=none, 1=basic, 2=grouped, 3=detailed
+    int verbosity_level = 0;
     bool help = false;
     std::string config_file = "../config/sniffer.json";
     std::string interface_override = "";
@@ -219,7 +219,7 @@ struct StrictSnifferConfig {
         int max_batches_queued;
     } zmq;
 
-    // Compresión - TODOS REQUERIDOS
+    // Compression - TODOS REQUERIDOS
     struct {
         bool enabled;
         std::string algorithm;
@@ -229,134 +229,90 @@ struct StrictSnifferConfig {
         bool adaptive_compression;
     } compression;
 
-    // Encriptación - TODOS REQUERIDOS
-    struct {
-        bool enabled;
-        bool etcd_token_required;
-        std::string algorithm;
-        int key_size;
-        int key_rotation_hours;
-        std::string fallback_mode;
-        bool zmq_curve_enabled;
-        std::string curve_server_key;
-        std::string curve_secret_key;
-    } encryption;
-
     // etcd - TODOS REQUERIDOS
     struct {
         bool enabled;
-        std::vector<std::string> endpoints;
+        std::string endpoint;
+        int port;
+        std::string service_name;
+        int lease_ttl_seconds;
+        int heartbeat_interval_seconds;
+        std::string username;
+        std::string password;
+        bool tls_enabled;
+        std::string tls_cert_path;
+        std::string tls_key_path;
+        std::string tls_ca_path;
+        std::string encryption_key_path;
         int connection_timeout_ms;
         int retry_attempts;
-        int retry_interval_ms;
-        std::string crypto_token_path;
-        std::string config_sync_path;
-        bool required_for_encryption;
-        std::string fallback_mode;
-        int heartbeat_interval_seconds;
-        int lease_ttl_seconds;
     } etcd;
 
     // Processing - TODOS REQUERIDOS
     struct {
-        struct {
-            int max_map_entries;
-            int flow_hash_table_size;
-            int counter_map_size;
-            int stats_collection_interval_ms;
-        } kernel_processing;
-
-        struct {
-            int internal_queue_size;
-            int queue_timeout_seconds;
-            int batch_size;
-            bool lockfree_queues;
-            bool numa_aware_allocation;
-            bool memory_prefaulting;
-        } user_processing;
-
-        struct {
-            bool enabled;
-            bool extract_all_features;
-            bool cache_flow_states;
-            int flow_timeout_seconds;
-            int max_concurrent_flows;
-            std::string statistics_engine;
-            bool simd_optimization;
-        } feature_extraction;
+        int feature_extraction_batch_size;
+        bool parallel_processing_enabled;
+        int max_concurrent_flows;
+        std::string flow_timeout_policy;
+        bool enable_flow_state_tracking;
     } processing;
 
     // Auto tuner - TODOS REQUERIDOS
     struct {
         bool enabled;
-        bool calibration_on_startup;
-        int benchmark_iterations;
-        int recalibration_interval_hours;
-        double safety_margin_factor;
-        std::string feature_placement_strategy;
+        int evaluation_interval_seconds;
+        int adjustment_threshold_percentage;
+        bool auto_scale_buffers;
+        bool auto_adjust_threads;
+        bool dynamic_compression;
     } auto_tuner;
 
     // Monitoring - TODOS REQUERIDOS
     struct {
         int stats_interval_seconds;
-        bool performance_tracking;
-        bool ebpf_program_stats;
-        bool map_utilization;
-        bool instruction_count;
-        bool processing_time_per_packet;
-        bool feature_extraction_rate;
-        bool queue_depth;
-        bool memory_usage;
-        bool thread_utilization;
-        bool compression_ratio;
-        bool zmq_throughput;
-        double max_drop_rate_percent;
-        double max_queue_usage_percent;
-        int max_memory_usage_mb;
-        double max_cpu_usage_percent;
-        int max_processing_latency_us;
-        double min_compression_ratio;
+        std::string metrics_format;
+        bool enable_prometheus;
+        int prometheus_port;
+        std::string log_level;
+        bool enable_debug_logs;
+        std::string alert_webhook_url;
+        int alert_threshold_errors_per_second;
+        int alert_threshold_drops_per_second;
     } monitoring;
 
     // Protobuf - TODOS REQUERIDOS
     struct {
         std::string schema_version;
-        bool validate_before_send;
-        int max_event_size_bytes;
-        int serialization_timeout_ms;
-        int pool_size;
-        bool reuse_objects;
+        bool deterministic_serialization;
+        int max_message_size_bytes;
+        bool enable_compression;
     } protobuf;
 
     // Logging - TODOS REQUERIDOS
     struct {
-        std::string level;
-        std::string file;
-        int max_file_size_mb;
-        int backup_count;
-        bool include_performance_logs;
-        bool include_compression_stats;
-        bool include_thread_stats;
+        std::string log_file_path;
+        int max_log_file_size_mb;
+        int log_rotation_count;
+        bool log_to_console;
+        bool log_to_file;
     } logging;
 
     // Security - TODOS REQUERIDOS
     struct {
-        bool input_validation_enabled;
-        int max_packet_size_bytes;
-        bool validate_ip_addresses;
-        bool validate_ports;
-        bool sanitize_inputs;
+        bool encryption_enabled;
+        std::string encryption_algorithm;
+        std::string key_derivation_function;
+        int key_rotation_interval_hours;
+        bool verify_signatures;
     } security;
 
     // Backpressure - TODOS REQUERIDOS
     struct {
         bool enabled;
-        std::string ring_buffer_full_action;
-        int max_drops_per_second;
-        bool adaptive_rate_limiting;
-        bool circuit_breaker_enabled;
-        int failure_threshold;
-        int recovery_timeout;
+        int threshold_percentage;
+        std::string action_on_threshold;
+        int recovery_time_seconds;
+        bool enable_queue_monitoring;
     } backpressure;
 };
 
@@ -534,3 +490,34 @@ extern std::atomic<bool> g_running;
 extern StrictSnifferConfig g_config;
 extern DetailedStats g_stats;
 extern CommandLineArgs g_args;
+
+// ============================================================================
+// Filter configuration structure (v3.2)
+// ============================================================================
+struct FilterConfiguration {
+    std::string mode;  // "blacklist", "whitelist", "hybrid"
+    std::vector<uint16_t> excluded_ports;
+    std::vector<uint16_t> included_ports;
+    std::string default_action;  // "capture" or "drop"
+
+    // Convert string action to uint8_t for BPF
+    uint8_t get_default_action_value() const {
+        return (default_action == "capture") ? 1 : 0;
+    }
+
+    // Default constructor
+    FilterConfiguration()
+        : mode("blacklist")
+        , default_action("capture")
+    {}
+};
+
+// ============================================================================
+// Filter parsing functions declarations
+// ============================================================================
+namespace Json {
+    class Value;
+}
+
+bool parse_filter_config(const Json::Value& root, FilterConfiguration& filter_config);
+bool validate_filter_mode(const FilterConfiguration& config);

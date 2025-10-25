@@ -76,3 +76,8 @@ sniffer/logs/
 
 # IDE
 .vscode/
+sniffer/build/
+*.backup*
+*.orig
+*.rej
+*_INTEGRATION_EXAMPLE.cpp

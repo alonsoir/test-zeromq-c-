@@ -33,7 +33,12 @@ public:
     
     // Obtener file descriptor del stats map
     int get_stats_fd() const;
-    
+
+    // Get filter map file descriptors
+    int get_excluded_ports_fd() const;
+    int get_included_ports_fd() const;
+    int get_filter_settings_fd() const;
+
     // Verificar si el programa está cargado y adjuntado
     bool is_loaded() const { return program_loaded_; }
     bool is_attached() const { return xdp_attached_; }
@@ -46,11 +51,19 @@ private:
     struct bpf_program* xdp_prog_;
     struct bpf_map* events_map_;
     struct bpf_map* stats_map_;
-    
+
+    struct bpf_map* excluded_ports_map_;
+    struct bpf_map* included_ports_map_;
+    struct bpf_map* filter_settings_map_;
+
     int prog_fd_;
     int events_fd_;
     int stats_fd_;
-    
+
+    int excluded_ports_fd_;
+    int included_ports_fd_;
+    int filter_settings_fd_;
+
     bool program_loaded_;
     bool xdp_attached_;
     bool skb_attached_;

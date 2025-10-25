@@ -140,6 +140,7 @@ add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
 set(SNIFFER_SOURCES
         src/userspace/main.cpp
         src/userspace/config_manager.cpp
+        src/userspace/config_types.cpp
         src/userspace/ebpf_loader.cpp
         src/userspace/ring_consumer.cpp
         src/userspace/zmq_pool_manager.cpp
@@ -150,6 +151,7 @@ set(SNIFFER_SOURCES
         src/userspace/feature_extractor.cpp
         src/userspace/time_window_manager.cpp
         src/userspace/feature_logger.cpp
+        src/userspace/bpf_map_manager.cpp
         proto/network_security.pb.cc
 )
 
