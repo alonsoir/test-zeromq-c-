@@ -290,7 +290,7 @@ Warnings de compilación normales de desarrollo, no afectan funcionalidad.
 
 ## 📚 Documentación Adicional
 
-- **[CHANGELOG.md](CHANGELOG.md)** - Historial de cambios detallado
+- **[CHANGELOG.md](docs/CHANGELOG.md)** - Historial de cambios detallado
 - **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Guía de resolución de problemas
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Arquitectura técnica profunda
 - **[v3.2.1 Release Notes](https://github.com/alonsoir/test-zeromq-c-/releases/tag/v3.2.1-hybrid-filters)**

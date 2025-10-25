@@ -224,6 +224,30 @@ proto/network_security.pb.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s
 .PHONY : proto/network_security.pb.cc.s
 
+src/userspace/bpf_map_manager.o: src/userspace/bpf_map_manager.cpp.o
+.PHONY : src/userspace/bpf_map_manager.o
+
+# target to build an object file
+src/userspace/bpf_map_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o
+.PHONY : src/userspace/bpf_map_manager.cpp.o
+
+src/userspace/bpf_map_manager.i: src/userspace/bpf_map_manager.cpp.i
+.PHONY : src/userspace/bpf_map_manager.i
+
+# target to preprocess a source file
+src/userspace/bpf_map_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.i
+.PHONY : src/userspace/bpf_map_manager.cpp.i
+
+src/userspace/bpf_map_manager.s: src/userspace/bpf_map_manager.cpp.s
+.PHONY : src/userspace/bpf_map_manager.s
+
+# target to generate assembly for a file
+src/userspace/bpf_map_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.s
+.PHONY : src/userspace/bpf_map_manager.cpp.s
+
 src/userspace/compression_handler.o: src/userspace/compression_handler.cpp.o
 .PHONY : src/userspace/compression_handler.o
 
@@ -271,6 +295,30 @@ src/userspace/config_manager.s: src/userspace/config_manager.cpp.s
 src/userspace/config_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.s
 .PHONY : src/userspace/config_manager.cpp.s
+
+src/userspace/config_types.o: src/userspace/config_types.cpp.o
+.PHONY : src/userspace/config_types.o
+
+# target to build an object file
+src/userspace/config_types.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.o
+.PHONY : src/userspace/config_types.cpp.o
+
+src/userspace/config_types.i: src/userspace/config_types.cpp.i
+.PHONY : src/userspace/config_types.i
+
+# target to preprocess a source file
+src/userspace/config_types.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.i
+.PHONY : src/userspace/config_types.cpp.i
+
+src/userspace/config_types.s: src/userspace/config_types.cpp.s
+.PHONY : src/userspace/config_types.s
+
+# target to generate assembly for a file
+src/userspace/config_types.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.s
+.PHONY : src/userspace/config_types.cpp.s
 
 src/userspace/ebpf_loader.o: src/userspace/ebpf_loader.cpp.o
 .PHONY : src/userspace/ebpf_loader.o
@@ -530,12 +578,18 @@ help:
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
 	@echo "... proto/network_security.pb.s"
+	@echo "... src/userspace/bpf_map_manager.o"
+	@echo "... src/userspace/bpf_map_manager.i"
+	@echo "... src/userspace/bpf_map_manager.s"
 	@echo "... src/userspace/compression_handler.o"
 	@echo "... src/userspace/compression_handler.i"
 	@echo "... src/userspace/compression_handler.s"
 	@echo "... src/userspace/config_manager.o"
 	@echo "... src/userspace/config_manager.i"
 	@echo "... src/userspace/config_manager.s"
+	@echo "... src/userspace/config_types.o"
+	@echo "... src/userspace/config_types.i"
+	@echo "... src/userspace/config_types.s"
 	@echo "... src/userspace/ebpf_loader.o"
 	@echo "... src/userspace/ebpf_loader.i"
 	@echo "... src/userspace/ebpf_loader.s"

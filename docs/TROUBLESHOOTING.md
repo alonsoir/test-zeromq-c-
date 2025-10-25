@@ -659,7 +659,7 @@ cd /vagrant/sniffer
 
 3. **Consultar documentación:**
 - [README.md](../README.md)
-- [CHANGELOG.md](../CHANGELOG.md)
+- [CHANGELOG.md](CHANGELOG.md)
 - [Architecture Docs](./ARCHITECTURE.md)
 
 ---
