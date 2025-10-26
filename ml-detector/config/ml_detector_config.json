@@ -134,7 +134,7 @@
     }
   },
   "ml": {
-    "models_base_dir": "../models/production",
+    "models_base_dir": "models/production",
     "thresholds": {
       "level1_attack": 0.65,
       "level2_ddos": 0.7,
@@ -311,5 +311,8 @@
     "enable_simd": true,
     "enable_avx2": true,
     "cache_line_size": 64
+  },
+  "ml_models": {
+    "base_dir": "models/production"
   }
 }
