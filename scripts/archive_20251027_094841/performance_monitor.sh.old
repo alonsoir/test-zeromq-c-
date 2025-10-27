@@ -1,0 +1,178 @@
+#!/bin/bash
+
+╔════════════════════════════════════════════════════════════╗
+║  Performance Monitor - Continuous Metrics Collection       ║
+╚════════════════════════════════════════════════════════════╝
+
+MONITOR_DURATION=${1:-7200}  # Default 2 horas
+SAMPLE_INTERVAL=5  # Cada 5 segundos
+OUTPUT_DIR="/tmp/performance_metrics"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $OUTPUT_DIR
+
+echo "🔬 Iniciando monitoreo de performance..."
+echo "   Duración: $((MONITOR_DURATION / 60)) minutos"
+echo "   Intervalo: ${SAMPLE_INTERVAL}s"
+echo "   Output: $OUTPUT_DIR"
+echo ""
+
+# Archivos de salida
+CPU_LOG="$OUTPUT_DIR/cpu_${TIMESTAMP}.csv"
+MEM_LOG="$OUTPUT_DIR/memory_${TIMESTAMP}.csv"
+IO_LOG="$OUTPUT_DIR/io_${TIMESTAMP}.csv"
+NET_LOG="$OUTPUT_DIR/network_${TIMESTAMP}.csv"
+SUMMARY_LOG="$OUTPUT_DIR/summary_${TIMESTAMP}.txt"
+
+# Headers CSV
+echo "timestamp,sniffer_cpu,sniffer_mem_mb,detector_cpu,detector_mem_mb,system_cpu,system_mem_pct" > $CPU_LOG
+echo "timestamp,sniffer_rss,sniffer_vsz,detector_rss,detector_vsz,system_free,system_available" > $MEM_LOG
+echo "timestamp,disk_read_kb,disk_write_kb,disk_iops" > $IO_LOG
+echo "timestamp,net_rx_bytes,net_tx_bytes,net_rx_packets,net_tx_packets" > $NET_LOG
+
+# Detectar PIDs
+SNIFFER_PID=$(pgrep -f "sniffer -c" | head -1)
+DETECTOR_PID=$(pgrep -f "ml-detector -c" | head -1)
+
+if [ -z "$SNIFFER_PID" ] || [ -z "$DETECTOR_PID" ]; then
+    echo "❌ Error: Procesos no encontrados"
+    echo "   Sniffer: ${SNIFFER_PID:-NOT FOUND}"
+    echo "   Detector: ${DETECTOR_PID:-NOT FOUND}"
+    exit 1
+fi
+
+echo "✅ Monitoreando:"
+echo "   Sniffer PID: $SNIFFER_PID"
+echo "   ml-detector PID: $DETECTOR_PID"
+echo ""
+echo "⏱️  Recolectando métricas..."
+
+START_TIME=$(date +%s)
+END_TIME=$((START_TIME + MONITOR_DURATION))
+SAMPLES=0
+
+# Baseline network stats
+NET_BASELINE=$(cat /proc/net/dev | grep eth0 | awk '{print $2,$10}')
+NET_RX_START=$(echo $NET_BASELINE | awk '{print $1}')
+NET_TX_START=$(echo $NET_BASELINE | awk '{print $2}')
+
+while [ $(date +%s) -lt $END_TIME ]; do
+    SAMPLES=$((SAMPLES + 1))
+    NOW=$(date +%s)
+    TIMESTAMP=$(date +%Y-%m-%d\ %H:%M:%S)
+    
+    # Verificar que procesos siguen vivos
+    if ! kill -0 $SNIFFER_PID 2>/dev/null || ! kill -0 $DETECTOR_PID 2>/dev/null; then
+        echo -e "\n❌ Proceso murió en sample $SAMPLES"
+        break
+    fi
+    
+    # CPU & Memory (por proceso)
+    SNIFFER_STATS=$(ps -p $SNIFFER_PID -o %cpu,%mem,rss,vsz --no-headers 2>/dev/null)
+    DETECTOR_STATS=$(ps -p $DETECTOR_PID -o %cpu,%mem,rss,vsz --no-headers 2>/dev/null)
+    
+    SNIFFER_CPU=$(echo $SNIFFER_STATS | awk '{print $1}')
+    SNIFFER_MEM_PCT=$(echo $SNIFFER_STATS | awk '{print $2}')
+    SNIFFER_RSS=$(echo $SNIFFER_STATS | awk '{print $3/1024}')  # MB
+    SNIFFER_VSZ=$(echo $SNIFFER_STATS | awk '{print $4/1024}')  # MB
+    
+    DETECTOR_CPU=$(echo $DETECTOR_STATS | awk '{print $1}')
+    DETECTOR_MEM_PCT=$(echo $DETECTOR_STATS | awk '{print $2}')
+    DETECTOR_RSS=$(echo $DETECTOR_STATS | awk '{print $3/1024}')  # MB
+    DETECTOR_VSZ=$(echo $DETECTOR_STATS | awk '{print $4/1024}')  # MB
+    
+    # System-wide CPU & Memory
+    SYSTEM_CPU=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+    SYSTEM_MEM=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100}')
+    SYSTEM_FREE=$(free -m | grep Mem | awk '{print $4}')
+    SYSTEM_AVAILABLE=$(free -m | grep Mem | awk '{print $7}')
+    
+    # I/O stats
+    DISK_STATS=$(iostat -d -x 1 1 | grep -A1 vda | tail -1)
+    DISK_READ=$(echo $DISK_STATS | awk '{print $6}')
+    DISK_WRITE=$(echo $DISK_STATS | awk '{print $7}')
+    DISK_IOPS=$(echo $DISK_STATS | awk '{print $4}')
+    
+    # Network stats
+    NET_CURRENT=$(cat /proc/net/dev | grep eth0 | awk '{print $2,$10}')
+    NET_RX=$(echo $NET_CURRENT | awk '{print $1}')
+    NET_TX=$(echo $NET_CURRENT | awk '{print $2}')
+    NET_RX_DELTA=$((NET_RX - NET_RX_START))
+    NET_TX_DELTA=$((NET_TX - NET_TX_START))
+    
+    # Log a CSV
+    echo "$TIMESTAMP,$SNIFFER_CPU,$SNIFFER_RSS,$DETECTOR_CPU,$DETECTOR_RSS,$SYSTEM_CPU,$SYSTEM_MEM" >> $CPU_LOG
+    echo "$TIMESTAMP,$SNIFFER_RSS,$SNIFFER_VSZ,$DETECTOR_RSS,$DETECTOR_VSZ,$SYSTEM_FREE,$SYSTEM_AVAILABLE" >> $MEM_LOG
+    echo "$TIMESTAMP,$DISK_READ,$DISK_WRITE,$DISK_IOPS" >> $IO_LOG
+    echo "$TIMESTAMP,$NET_RX_DELTA,$NET_TX_DELTA,0,0" >> $NET_LOG
+    
+    # Progress
+    PROGRESS=$(($(date +%s) - START_TIME))
+    echo -ne "\r[$(date +%H:%M:%S)] Sample $SAMPLES | Elapsed: $((PROGRESS/60))m | Sniffer: ${SNIFFER_CPU}% CPU, ${SNIFFER_RSS}MB | Detector: ${DETECTOR_CPU}% CPU, ${DETECTOR_RSS}MB   "
+    
+    sleep $SAMPLE_INTERVAL
+done
+
+echo -e "\n\n✅ Monitoreo completado: $SAMPLES samples"
+echo ""
+
+# Generar resumen
+echo "╔════════════════════════════════════════════════════════════╗" > $SUMMARY_LOG
+echo "║  Performance Monitoring Summary                            ║" >> $SUMMARY_LOG
+echo "╚════════════════════════════════════════════════════════════╝" >> $SUMMARY_LOG
+echo "" >> $SUMMARY_LOG
+echo "Duration: $((SAMPLES * SAMPLE_INTERVAL / 60)) minutes ($SAMPLES samples)" >> $SUMMARY_LOG
+echo "Sample interval: ${SAMPLE_INTERVAL}s" >> $SUMMARY_LOG
+echo "Timestamp: $TIMESTAMP" >> $SUMMARY_LOG
+echo "" >> $SUMMARY_LOG
+
+# CPU stats
+echo "CPU USAGE:" >> $SUMMARY_LOG
+SNIFFER_AVG_CPU=$(awk -F',' 'NR>1 {sum+=$2; count++} END {print sum/count}' $CPU_LOG)
+DETECTOR_AVG_CPU=$(awk -F',' 'NR>1 {sum+=$4; count++} END {print sum/count}' $CPU_LOG)
+SNIFFER_MAX_CPU=$(awk -F',' 'NR>1 {if($2>max) max=$2} END {print max}' $CPU_LOG)
+DETECTOR_MAX_CPU=$(awk -F',' 'NR>1 {if($4>max) max=$4} END {print max}' $CPU_LOG)
+
+echo "  Sniffer:" >> $SUMMARY_LOG
+echo "    Average: ${SNIFFER_AVG_CPU}%" >> $SUMMARY_LOG
+echo "    Peak: ${SNIFFER_MAX_CPU}%" >> $SUMMARY_LOG
+echo "  ml-detector:" >> $SUMMARY_LOG
+echo "    Average: ${DETECTOR_AVG_CPU}%" >> $SUMMARY_LOG
+echo "    Peak: ${DETECTOR_MAX_CPU}%" >> $SUMMARY_LOG
+echo "" >> $SUMMARY_LOG
+
+# Memory stats
+echo "MEMORY USAGE (RSS):" >> $SUMMARY_LOG
+SNIFFER_AVG_MEM=$(awk -F',' 'NR>1 {sum+=$2; count++} END {print sum/count}' $MEM_LOG)
+DETECTOR_AVG_MEM=$(awk -F',' 'NR>1 {sum+=$4; count++} END {print sum/count}' $MEM_LOG)
+SNIFFER_MAX_MEM=$(awk -F',' 'NR>1 {if($2>max) max=$2} END {print max}' $MEM_LOG)
+DETECTOR_MAX_MEM=$(awk -F',' 'NR>1 {if($4>max) max=$4} END {print max}' $MEM_LOG)
+
+echo "  Sniffer:" >> $SUMMARY_LOG
+echo "    Average: ${SNIFFER_AVG_MEM} MB" >> $SUMMARY_LOG
+echo "    Peak: ${SNIFFER_MAX_MEM} MB" >> $SUMMARY_LOG
+echo "  ml-detector:" >> $SUMMARY_LOG
+echo "    Average: ${DETECTOR_AVG_MEM} MB" >> $SUMMARY_LOG
+echo "    Peak: ${DETECTOR_MAX_MEM} MB" >> $SUMMARY_LOG
+echo "" >> $SUMMARY_LOG
+
+# Network
+echo "NETWORK TRANSFER:" >> $SUMMARY_LOG
+TOTAL_RX=$(tail -1 $NET_LOG | awk -F',' '{print $2}')
+TOTAL_TX=$(tail -1 $NET_LOG | awk -F',' '{print $3}')
+echo "  RX: $((TOTAL_RX / 1024 / 1024)) MB" >> $SUMMARY_LOG
+echo "  TX: $((TOTAL_TX / 1024 / 1024)) MB" >> $SUMMARY_LOG
+echo "" >> $SUMMARY_LOG
+
+cat $SUMMARY_LOG
+
+echo ""
+echo "📊 Archivos generados:"
+echo "   $CPU_LOG"
+echo "   $MEM_LOG"
+echo "   $IO_LOG"
+echo "   $NET_LOG"
+echo "   $SUMMARY_LOG"
+echo ""
+echo "📈 Para análisis visual:"
+echo "   python3 /tmp/plot_metrics.py $OUTPUT_DIR"

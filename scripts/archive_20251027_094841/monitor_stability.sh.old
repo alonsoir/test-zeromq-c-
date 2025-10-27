@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Monitoreo en tiempo real del test de estabilidad
+
+watch -n 15 '
+clear
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║  Monitor de Estabilidad - Actualización cada 15s          ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+date
+echo ""
+
+# Uptime de procesos
+echo "🏃 PROCESOS ACTIVOS:"
+SNIFFER_PID=$(pgrep -f "sniffer -c")
+DETECTOR_PID=$(pgrep -f "ml-detector -c")
+
+if [ -n "$SNIFFER_PID" ]; then
+    SNIFFER_TIME=$(ps -p $SNIFFER_PID -o etime= | xargs)
+    SNIFFER_CPU=$(ps -p $SNIFFER_PID -o %cpu= | xargs)
+    SNIFFER_MEM=$(ps -p $SNIFFER_PID -o %mem= | xargs)
+    echo "  ✅ Sniffer (PID $SNIFFER_PID)"
+    echo "     Uptime: $SNIFFER_TIME | CPU: ${SNIFFER_CPU}% | MEM: ${SNIFFER_MEM}%"
+else
+    echo "  ❌ Sniffer: NO RUNNING"
+fi
+
+if [ -n "$DETECTOR_PID" ]; then
+    DETECTOR_TIME=$(ps -p $DETECTOR_PID -o etime= | xargs)
+    DETECTOR_CPU=$(ps -p $DETECTOR_PID -o %cpu= | xargs)
+    DETECTOR_MEM=$(ps -p $DETECTOR_PID -o %mem= | xargs)
+    echo "  ✅ ml-detector (PID $DETECTOR_PID)"
+    echo "     Uptime: $DETECTOR_TIME | CPU: ${DETECTOR_CPU}% | MEM: ${DETECTOR_MEM}%"
+else
+    echo "  ❌ ml-detector: NO RUNNING"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Stats del sniffer
+echo "📦 SNIFFER:"
+tail -5 /tmp/sniffer.log 2>/dev/null | grep "ESTADÍSTICAS" -A 2 | tail -3
+
+# Últimos errores ZMQ
+ZMQ_ERRORS=$(grep -c "ZMQ send falló" /tmp/sniffer.log 2>/dev/null || echo 0)
+if [ $ZMQ_ERRORS -eq 0 ]; then
+    echo "  ✅ Sin errores ZMQ"
+else
+    echo "  ⚠️  Errores ZMQ: $ZMQ_ERRORS (verificar si fueron antes de arrancar ml-detector)"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Stats del ml-detector
+echo "🤖 ML-DETECTOR:"
+TOTAL_ATTACKS=$(grep -c "Attack detected" /tmp/ml-detector.log 2>/dev/null || echo 0)
+echo "  Total attacks: $TOTAL_ATTACKS"
+
+# Últimas detecciones
+echo "  Últimas 3 detecciones:"
+grep "Attack detected" /tmp/ml-detector.log 2>/dev/null | tail -3 | while read line; do
+    echo "    - $(echo $line | cut -d\] -f3-)"
+done
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Memoria total del sistema
+echo "💾 SISTEMA:"
+free -h | grep Mem | awk "{print \"  RAM: \" \$3 \" usado de \" \$2 \" (\" int(\$3/\$2*100) \"%)\"}"
+
+echo ""
+echo "🏛️  Construyendo fundaciones para mil años de runtime..."
+'
