@@ -333,6 +333,136 @@ Las contribuciones son bienvenidas. Por favor:
 - Implementado BPFMapManager para gestión de maps
 - Mejoras en logging y diagnóstico
 
+### v3.3.1-rf-features-doc -m "Level 1 RF Features Documentation
+
+Added missing rf_23_features.json:
+- 23 features for Level 1 attack detection
+- Reconstructed from model metadata + C++ code
+- Complete documentation with mappings
+- Model accuracy: 99.88%
+
+Fixes technical debt violation of 'single source of truth'.
+
+🔍 What This JSON Contains
+Complete Documentation for Each Feature:
+
+{
+"id": 1,
+"name": "Packet Length Std",
+"model_name": " Packet Length Std",  // ← Exact name model expects
+"type": "float",
+"unit": "bytes",
+"description": "Standard deviation of packet lengths...",
+"cpp_mapping": "PACKET_LEN_STD (feature_extractor.cpp line 106)",
+"extraction_function": "extract_packet_len_std",
+"category": "packet_size",
+"expected_range": [0.0, 10000.0]
+}
+
+9 Feature Categories:
+
+Packet Size (10 features) - Size statistics
+TCP Flags (2 features) - ACK, PSH counts
+Volume (2 features) - Total bytes
+Rate (2 features) - Packets/s, bytes/s
+Timing (2 features) - Duration, IAT
+Subflow (3 features) - Window aggregations
+TCP Window (1 feature) - Initial window
+Network (1 feature) - Destination port
+Activity (1 feature) - Active packets
+
+Model Performance Metrics:
+
+Accuracy: 99.88%
+Precision: 99.44%
+Recall: 99.93%
+F1-Score: 99.68%
+ROC-AUC: 99.99%
+
+
+⚠️ Critical Notes
+1. Feature Order is SACRED
+   The order in the JSON MUST match the order the model expects:
+
+# Model expects this exact order:
+[" Packet Length Std", " Subflow Fwd Bytes", " Fwd Packet Length Max", ...]
+
+Do NOT reorder features - it will break inference.
+2. Leading Spaces in Names
+   Feature names have leading spaces (e.g., " Packet Length Std").
+   This comes from the original CIC-IDS2017 CSV and must be preserved.
+3. Code Extracts 83, Model Uses 23
+   The C++ code extracts 83 features total:
+
+Lines 90-113: ORIGINAL 23 (Level 1 uses these)
+Lines 115-135: PHASE 1 - 20 more features
+Lines 137-152: PHASE 2 - 15 more features
+Lines 154-174: PHASE 3 - 20 more features
+Lines 176-181: PHASE 4 - 5 final features
+
+Level 1 model only uses the first 23.
+4. Feature Name Mapping
+   Some feature names in metadata don't match C++ enum names exactly:
+
+Model: " Packet Length Std" → C++: PACKET_LEN_STD
+Model: "Fwd Packets/s" → C++: SRATE
+Model: " Flow Duration" → C++: DURATION
+
+The JSON documents both names for clarity.
+
+🎯 Verification Checklist
+Before pushing:
+
+JSON file exists in correct location
+JSON syntax is valid
+Feature count = 23
+Feature names match model metadata exactly
+sniffer.json references the file correctly
+System builds without errors
+Runtime test passes (no config errors)
+Committed with descriptive message
+(Optional) Tagged for documentation
+
+
+📊 Impact
+Before Fix:
+
+❌ No formal documentation of Level 1 features
+❌ Violated "single source of truth"
+❌ Impossible to reproduce training
+❌ Hard to validate feature extraction
+
+After Fix:
+
+✅ Complete documentation in JSON
+✅ Single source of truth restored
+✅ Clear mapping: JSON ↔ C++ ↔ Model
+✅ Can validate extraction logic
+✅ Can reproduce training
+
+Consider for other models:
+
+ddos_83_features.json - probably also missing
+internal_4_features.json - probably also missing
+Create these next to complete documentation
+💡 Lessons Learned
+"Via Appia Quality" means:
+
+Every model needs a corresponding JSON schema
+Code is NOT documentation
+Metadata is NOT documentation
+JSON schema IS the single source of truth
+
+For future models:
+
+Train model → Export ONNX
+Generate metadata.json
+Create feature_schema.json immediately
+Document mapping to C++ code
+Only then commit
+
+This prevents accumulating technical debt.
+
 ---
 
 ## 👥 Créditos

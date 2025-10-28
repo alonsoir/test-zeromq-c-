@@ -164,7 +164,7 @@
     "rf_feature_group": {
       "count": 23,
       "reference": "config/features/rf_23_features.json",
-      "description": "Random Forest general attack detection features"
+      "description": "Random Forest general attack detection (Level 1)"
     },
     "internal_traffic_feature_group": {
       "count": 4,
