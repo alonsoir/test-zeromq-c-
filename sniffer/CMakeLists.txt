@@ -309,7 +309,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
 
 # Copy configuration files
 configure_file(
-        ${CMAKE_SOURCE_DIR}/config/sniffer-proposal.json
+        ${CMAKE_SOURCE_DIR}/config/sniffer.json
         ${CMAKE_BINARY_DIR}/config/sniffer.json
         COPYONLY
 )

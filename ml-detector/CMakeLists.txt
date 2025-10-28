@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(ml-detector-tricapa VERSION 1.0.0 LANGUAGES CXX)
-
+#ml-detector/CMakeLists.txt
 # ============================================================================
 # C++20 STANDARD
 # ============================================================================
@@ -158,11 +158,11 @@ set(SOURCES
         src/ml_detector.cpp
         src/classifier_tricapa.cpp
         src/feature_extractor.cpp
-    src/zmq_handler.cpp
+        src/zmq_handler.cpp
         src/model_loader.cpp
         src/onnx_model.cpp
-    src/feature_extractor.cpp
-    src/zmq_handler.cpp
+        src/feature_extractor.cpp
+        src/zmq_handler.cpp
         src/zmq_handler.cpp
         src/config_loader.cpp
         src/logger.cpp
@@ -212,6 +212,66 @@ endif()
 
 # Add protobuf source directory to includes
 include_directories(${PROTO_SOURCE_DIR})
+
+# ============================================================================
+# MODELS SYMLINK (Single Source of Truth)
+# Philosophy: Make it impossible to fuck up
+# ============================================================================
+message(STATUS "")
+message(STATUS "🔗 Setting up models symlink...")
+message(STATUS "   Source: ${CMAKE_SOURCE_DIR}/models")
+message(STATUS "   Target: ${CMAKE_BINARY_DIR}/models")
+
+# Remove existing symlink/directory if it exists
+if(EXISTS ${CMAKE_BINARY_DIR}/models)
+    file(REMOVE ${CMAKE_BINARY_DIR}/models)
+endif()
+
+# Create symlink
+execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_SOURCE_DIR}/models
+        ${CMAKE_BINARY_DIR}/models
+        RESULT_VARIABLE SYMLINK_RESULT
+)
+
+if(SYMLINK_RESULT EQUAL 0)
+    message(STATUS "✅ Models symlink created successfully")
+    message(STATUS "   Config will use: models/production/")
+    message(STATUS "   Points to:       ../models/production/")
+else()
+    message(WARNING "⚠️  Failed to create models symlink")
+    message(WARNING "   Manual workaround: cp -r ${CMAKE_SOURCE_DIR}/models ${CMAKE_BINARY_DIR}/")
+endif()
+
+# ============================================================================
+# CONFIG SYMLINK (Single Source of Truth)
+# ============================================================================
+message(STATUS "")
+message(STATUS "🔗 Setting up config symlink...")
+message(STATUS "   Source: ${CMAKE_SOURCE_DIR}/config")
+message(STATUS "   Target: ${CMAKE_BINARY_DIR}/config")
+
+# Remove existing symlink/directory if it exists
+if(EXISTS ${CMAKE_BINARY_DIR}/config)
+    file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/config)
+endif()
+
+# Create symlink
+execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_SOURCE_DIR}/config
+        ${CMAKE_BINARY_DIR}/config
+        RESULT_VARIABLE CONFIG_SYMLINK_RESULT
+)
+
+if(CONFIG_SYMLINK_RESULT EQUAL 0)
+    message(STATUS "✅ Config symlink created successfully")
+else()
+    message(WARNING "⚠️  Failed to create config symlink")
+endif()
+
+message(STATUS "")
 
 # ============================================================================
 # MAIN EXECUTABLE
@@ -419,5 +479,9 @@ message(STATUS "Protobuf:")
 message(STATUS "  Proto dir:       ${PROTO_DIR}")
 message(STATUS "  Proto file:      ${PROTO_FILE}")
 message(STATUS "  Generated:       ${PROTO_SOURCES}")
+message(STATUS "")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Models:          ${CMAKE_SOURCE_DIR}/models → build/models (symlink)")
+message(STATUS "  Config:          ${CMAKE_SOURCE_DIR}/config → build/config (symlink)")
 message(STATUS "======================================")
 message(STATUS "")

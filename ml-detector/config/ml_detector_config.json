@@ -1,5 +1,13 @@
 {
-  "_header": "C++20 ML DETECTOR TRICAPA v1.0 - Production Config (Co-located with sniffer)",
+  "_header": "C++20 ML DETECTOR TRICAPA v1.0 - Production Config (REFACTORED)",
+  "_refactor_notes": {
+    "date": "2025-10-28",
+    "changes": [
+      "Removed redundant 'ml_models.base_dir' section (duplicated ml.models_base_dir)",
+      "All model paths now consistently use ml.models_base_dir",
+      "Model paths verified against actual filesystem structure"
+    ]
+  },
   "component": {
     "name": "cpp_ml_detector_tricapa",
     "version": "1.0.0",
@@ -311,8 +319,5 @@
     "enable_simd": true,
     "enable_avx2": true,
     "cache_line_size": 64
-  },
-  "ml_models": {
-    "base_dir": "models/production"
   }
 }

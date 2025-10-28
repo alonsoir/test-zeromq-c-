@@ -1,5 +1,15 @@
 {
-  "_header": "C++20 SNIFFER v3.2 - Production Config with Hybrid Filters",
+  "_header": "C++20 SNIFFER v3.2 - Production Config with Hybrid Filters (REFACTORED)",
+  "_refactor_notes": {
+    "date": "2025-10-28",
+    "changes": [
+      "Removed duplicate 'capture.interface' (redundant with profile.capture_interface)",
+      "Removed unused 'capture.kernel_interface' (not implemented)",
+      "Removed unused 'capture.user_interface' (not implemented)",
+      "Removed legacy root-level 'interface' field",
+      "Interface now defined ONLY in profiles.{profile}.capture_interface"
+    ]
+  },
   "component": {
     "name": "cpp_evolutionary_sniffer",
     "version": "3.2.0",
@@ -34,9 +44,6 @@
   },
   "profile": "lab",
   "capture": {
-    "interface": "eth0",
-    "kernel_interface": null,
-    "user_interface": null,
     "mode": "ebpf_skb",
     "xdp_flags": [
       "XDP_FLAGS_UPDATE_IF_NOEXIST"
@@ -348,6 +355,5 @@
       "failure_threshold": 50,
       "recovery_timeout": 30
     }
-  },
-  "interface": "eth0"
+  }
 }

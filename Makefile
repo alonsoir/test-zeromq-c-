@@ -142,7 +142,7 @@ rebuild: clean all
 
 run-sniffer:
 	  @echo "📡 Running Sniffer..."
-	  @vagrant ssh -c "cd /vagrant/sniffer/build && sudo ./sniffer --verbose"
+	  @vagrant ssh -c "cd /vagrant/sniffer/build && sudo ./sniffer -c config/sniffer.json --verbose"
 
 run-detector:
 	  @echo "🤖 Running ML Detector..."
