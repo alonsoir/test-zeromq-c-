@@ -199,14 +199,40 @@ Ejecutar:
 ```bash
 make rebuild  # Limpia y recompila todo
 ```
+## [3.2.1] - 2025-10-28
 
+### Changed
+- **BREAKING**: None - fully backward compatible
+- Refactored sniffer.json: eliminated 4 duplicate interface fields
+- Refactored ml_detector_config.json: eliminated duplicate base_dir
+- Enhanced CMakeLists.txt (sniffer): automatic config copying
+- Enhanced CMakeLists.txt (ml-detector): automatic symlink creation
+- Fixed Makefile: run-sniffer now includes config path
+
+### Philosophy
+- Enforced "single source of truth" across all configs
+- Eliminated manual copy requirements
+- Made it impossible to misconfigure
+
+### Technical Debt Eliminated
+- Config duplication (7 → 3 interface definitions)
+- Manual file copying (sniffer config)
+- Manual directory copying (ml-detector models)
+- Sync issues between source and build
+
+### Validation
+- ✅ Full rebuild successful
+- ✅ Sniffer operational (eth0 capture)
+- ✅ ML-Detector operational (2 models loaded)
+- ✅ End-to-end test: 8 events, 0 errors
+- ✅ Performance: 1.7ms latency, 93.67% accuracy
 ---
 
 ## Upcoming Changes
 
 ### v3.3.0 (Planned)
 
-- [ ] Integration of ML Level 2 (DDoS detection)
+- [X] Integration of ML Level 2 (DDoS detection)
 - [ ] Integration of ML Level 3 (Ransomware detection)
 - [ ] Multi-level decision pipeline
 - [ ] Enhanced logging with structured output
