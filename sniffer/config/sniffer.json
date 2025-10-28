@@ -157,9 +157,9 @@
       "description": "DDOS detection features including packet rates, flag patterns, timing analysis"
     },
     "ransomware_feature_group": {
-      "count": 83,
-      "reference": "config/features/ransomware_83_features.json",
-      "description": "Ransomware detection features including connection patterns, data transfer analysis"
+      "count": 20,
+      "reference": "config/features/ransomware_20_features.json",
+      "description": "Ransomware detection features (20 critical features optimized for RPi)"
     },
     "rf_feature_group": {
       "count": 23,
