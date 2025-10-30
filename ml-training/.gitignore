@@ -6,6 +6,7 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
 build/
 develop-eggs/
@@ -27,19 +28,71 @@ wheels/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Datasets (muy pesados, no versionar)
+# ============================================================================
+# DATASETS (NO VERSIONAR - Muy pesados)
+# ============================================================================
+# Directorios completos
 datasets/
+datasets_parquet/
+raw_data/
+data/
+
+# Archivos de datos
 *.csv
 *.pcap
+*.pcap.gz
+*.parquet
+*.arrow
+*.feather
+*.h5
+*.hdf5
+
+# Archivos comprimidos de datasets
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.7z
+
+# EXCEPCIONES: Permitir archivos pequeños de ejemplo o metadata
+!**/example*.csv
+!**/sample*.csv
+!**/test_small*.csv
+
+# Permitir README con URLs de descarga
+!datasets/README.md
+!datasets/DOWNLOAD_URLS.md
+# ============================================================================
 
 # Outputs (generados, no versionar)
 outputs/models/*.joblib
+outputs/models/*.pkl
+outputs/models/*.h5
 outputs/onnx/*.onnx
 outputs/plots/*.png
 outputs/plots/*.jpg
+outputs/plots/*.svg
 
-# Pero sí versionar metadata
+# Pero sí versionar metadata y configs
 !outputs/metadata/*.json
+!outputs/configs/*.yaml
+!outputs/configs/*.json
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary
+tmp/
+temp/
+*.tmp
+.cache/
 
 # IDEs
 .vscode/
@@ -47,23 +100,24 @@ outputs/plots/*.jpg
 *.swp
 *.swo
 *~
+.DS_Store
+Thumbs.db
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# MLflow
-mlruns/
-mlartifacts/
+# Model checkpoints (muy grandes)
+checkpoints/
+*.ckpt
+*.pth
+*.pt
 
-# Logs
-*.log
-logs/
+# Profiling
+*.prof
+*.lprof
 
-# Temporary
-tmp/
-temp/
-*.tmp
-# Permitir plots importantes (visualizaciones pequeñas)
-!outputs/plots/*.png
-!outputs/plots/*.jpg
+# Parquet files (definitivamente excluidos)
+*.parquet
+datasets_parquet/

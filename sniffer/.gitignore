@@ -1,0 +1,17 @@
+
+# Build artifacts (generados por CMake, no versionar)
+build/
+Makefile
+*.o
+*.so
+*.a
+sniffer
+*.bpf.o
+
+build/
+Makefile
+*.o
+*.so
+*.a
+sniffer
+*.bpf.o

@@ -151,6 +151,18 @@ set(SNIFFER_SOURCES
         src/userspace/feature_extractor.cpp
         src/userspace/time_window_manager.cpp
         src/userspace/feature_logger.cpp
+
+        # ====================================================================
+        # RANSOMWARE DETECTION SYSTEM - Phase 1A (3 Critical Features)
+        # ====================================================================
+        src/userspace/flow_tracker.cpp                      # Flow state tracking
+        src/userspace/dns_analyzer.cpp                      # DNS entropy analysis
+        src/userspace/ip_whitelist.cpp                      # External IP tracking
+        src/userspace/time_window_aggregator.cpp            # Time-windowed aggregation
+        src/userspace/ransomware_feature_extractor.cpp      # Feature extraction
+        src/userspace/ransomware_feature_processor.cpp      # Integration processor
+        # ====================================================================
+
         src/userspace/bpf_map_manager.cpp
         proto/network_security.pb.cc
 )

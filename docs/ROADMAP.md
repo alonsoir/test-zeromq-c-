@@ -515,6 +515,48 @@ tests/
 
 ---
 
+# ROADMAP: Ransomware Detection System
+
+## FASE 1: MVP ✅ (EN CURSO)
+- [x] Componentes base (FlowTracker, DNSAnalyzer, etc)
+- [x] Tests unitarios
+- [ ] RansomwareFeatureProcessor
+- [ ] Integración sniffer
+- [ ] Test end-to-end
+- [ ] Modelo entrenado
+
+**Limitaciones aceptadas:**
+- Buffer fijo 96 bytes
+- DNS básico (pseudo-domain)
+- Detección ~60-70%
+
+## FASE 2: Payload Adaptativo 🎯 (KILLER FEATURE)
+**Esperando estabilización de Fase 1**
+
+### Objetivo:
+- Detección 95-99%
+- Configuración por puerto
+- Threat profiles
+
+### Tareas:
+- [ ] Diseño de threat_profiles.json
+- [ ] Modificar SimpleEvent (payload variable)
+- [ ] BPF map para configuración dinámica
+- [ ] PayloadConfigManager
+- [ ] Tests adversarial evasion
+- [ ] Documentación operacional
+
+### Motivación:
+"Los atacantes no siguen reglas fijas. El payload malicioso
+puede estar en byte 200-296, no solo en los primeros 96 bytes.
+Necesitamos flexibilidad para adaptarnos a cada familia de ransomware."
+
+## FASE 3: Sistema Adaptativo 🚀 (FUTURO)
+- Auto-incremento basado en ML
+- Threat intel integration
+- Forensic mode
+- 99.999% detección
+
 ## 💡 Key Differentiators vs Cloudflare/Imperva
 
 | Feature | Cloudflare/Imperva | This Project |

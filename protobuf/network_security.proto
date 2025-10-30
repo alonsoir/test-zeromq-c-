@@ -121,9 +121,10 @@ message NetworkFeatures {
 
   // 🎯 FEATURES ESPECÍFICAS POR TIPO DE MODELO ML
   repeated double ddos_features = 100;           // 83 features para DDOS
-  repeated double ransomware_features = 101;     // 83 features para Ransomware
+  repeated double ransomware_features = 101;     // 83 features para Ransomware. Este sería para el modelo enterprise. Futuro
   repeated double general_attack_features = 102; // 23 features para RF general
   repeated double internal_traffic_features = 103; // 4-5 features tráfico interno
+    RansomwareFeatures ransomware = 106;            // 20 features para Ransomware. Este sería para la caja doméstica.
 
   // 🔧 FEATURES PERSONALIZADAS Y METADATOS
   map<string, double> custom_features = 110;
@@ -532,4 +533,34 @@ message SystemConfiguration {
   bool rag_analysis_enabled = 10;
   string rag_model_endpoint = 11;
   repeated string knowledge_base_sources = 12;
+}
+
+message RansomwareFeatures {
+    // C&C Communication
+    float dns_query_entropy = 1;
+    int32 new_external_ips_30s = 2;
+    float dns_query_rate_per_min = 3;
+    float failed_dns_queries_ratio = 4;
+    int32 tls_self_signed_cert_count = 5;
+    int32 non_standard_port_http_count = 6;
+
+    // Lateral Movement
+    int32 smb_connection_diversity = 7;
+    int32 rdp_failed_auth_count = 8;
+    int32 new_internal_connections_30s = 9;
+    float port_scan_pattern_score = 10;
+
+    // Exfiltration
+    float upload_download_ratio_30s = 11;
+    int32 burst_connections_count = 12;
+    int32 unique_destinations_30s = 13;
+    int32 large_upload_sessions_count = 14;
+
+    // Behavioral
+    bool nocturnal_activity_flag = 15;
+    float connection_rate_stddev = 16;
+    float protocol_diversity_score = 17;
+    float avg_flow_duration_seconds = 18;
+    float tcp_rst_ratio = 19;
+    float syn_without_ack_ratio = 20;
 }
