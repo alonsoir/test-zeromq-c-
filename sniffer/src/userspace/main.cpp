@@ -1,5 +1,5 @@
 // main.cpp - Enhanced Sniffer v3.2 with Hybrid Filtering
-// FECHA: 25 de Octubre de 2025
+// FECHA: 31 de Octubre de 2025
 // FUNCIONALIDAD: Sistema de filtros híbridos con BPF Maps
 // Stats handled by RingBufferConsumer internally
 // sniffer/src/userspace/main.cpp

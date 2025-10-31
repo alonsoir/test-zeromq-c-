@@ -200,6 +200,19 @@ sniffer/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/build
 .PHONY : sniffer/fast
 
+#=============================================================================
+# Target rules for targets named test_ransomware_feature_extractor
+
+# Build rule for target.
+test_ransomware_feature_extractor: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_ransomware_feature_extractor
+.PHONY : test_ransomware_feature_extractor
+
+# fast build rule for target.
+test_ransomware_feature_extractor/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/build
+.PHONY : test_ransomware_feature_extractor/fast
+
 proto/network_security.pb.o: proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.o
 
@@ -319,6 +332,33 @@ src/userspace/config_types.s: src/userspace/config_types.cpp.s
 src/userspace/config_types.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.s
 .PHONY : src/userspace/config_types.cpp.s
+
+src/userspace/dns_analyzer.o: src/userspace/dns_analyzer.cpp.o
+.PHONY : src/userspace/dns_analyzer.o
+
+# target to build an object file
+src/userspace/dns_analyzer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.o
+.PHONY : src/userspace/dns_analyzer.cpp.o
+
+src/userspace/dns_analyzer.i: src/userspace/dns_analyzer.cpp.i
+.PHONY : src/userspace/dns_analyzer.i
+
+# target to preprocess a source file
+src/userspace/dns_analyzer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.i
+.PHONY : src/userspace/dns_analyzer.cpp.i
+
+src/userspace/dns_analyzer.s: src/userspace/dns_analyzer.cpp.s
+.PHONY : src/userspace/dns_analyzer.s
+
+# target to generate assembly for a file
+src/userspace/dns_analyzer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.s
+.PHONY : src/userspace/dns_analyzer.cpp.s
 
 src/userspace/ebpf_loader.o: src/userspace/ebpf_loader.cpp.o
 .PHONY : src/userspace/ebpf_loader.o
@@ -440,6 +480,60 @@ src/userspace/flow_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.s
 .PHONY : src/userspace/flow_manager.cpp.s
 
+src/userspace/flow_tracker.o: src/userspace/flow_tracker.cpp.o
+.PHONY : src/userspace/flow_tracker.o
+
+# target to build an object file
+src/userspace/flow_tracker.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.o
+.PHONY : src/userspace/flow_tracker.cpp.o
+
+src/userspace/flow_tracker.i: src/userspace/flow_tracker.cpp.i
+.PHONY : src/userspace/flow_tracker.i
+
+# target to preprocess a source file
+src/userspace/flow_tracker.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.i
+.PHONY : src/userspace/flow_tracker.cpp.i
+
+src/userspace/flow_tracker.s: src/userspace/flow_tracker.cpp.s
+.PHONY : src/userspace/flow_tracker.s
+
+# target to generate assembly for a file
+src/userspace/flow_tracker.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.s
+.PHONY : src/userspace/flow_tracker.cpp.s
+
+src/userspace/ip_whitelist.o: src/userspace/ip_whitelist.cpp.o
+.PHONY : src/userspace/ip_whitelist.o
+
+# target to build an object file
+src/userspace/ip_whitelist.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.o
+.PHONY : src/userspace/ip_whitelist.cpp.o
+
+src/userspace/ip_whitelist.i: src/userspace/ip_whitelist.cpp.i
+.PHONY : src/userspace/ip_whitelist.i
+
+# target to preprocess a source file
+src/userspace/ip_whitelist.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.i
+.PHONY : src/userspace/ip_whitelist.cpp.i
+
+src/userspace/ip_whitelist.s: src/userspace/ip_whitelist.cpp.s
+.PHONY : src/userspace/ip_whitelist.s
+
+# target to generate assembly for a file
+src/userspace/ip_whitelist.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.s
+.PHONY : src/userspace/ip_whitelist.cpp.s
+
 src/userspace/main.o: src/userspace/main.cpp.o
 .PHONY : src/userspace/main.o
 
@@ -463,6 +557,57 @@ src/userspace/main.s: src/userspace/main.cpp.s
 src/userspace/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.s
 .PHONY : src/userspace/main.cpp.s
+
+src/userspace/ransomware_feature_extractor.o: src/userspace/ransomware_feature_extractor.cpp.o
+.PHONY : src/userspace/ransomware_feature_extractor.o
+
+# target to build an object file
+src/userspace/ransomware_feature_extractor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.o
+.PHONY : src/userspace/ransomware_feature_extractor.cpp.o
+
+src/userspace/ransomware_feature_extractor.i: src/userspace/ransomware_feature_extractor.cpp.i
+.PHONY : src/userspace/ransomware_feature_extractor.i
+
+# target to preprocess a source file
+src/userspace/ransomware_feature_extractor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.i
+.PHONY : src/userspace/ransomware_feature_extractor.cpp.i
+
+src/userspace/ransomware_feature_extractor.s: src/userspace/ransomware_feature_extractor.cpp.s
+.PHONY : src/userspace/ransomware_feature_extractor.s
+
+# target to generate assembly for a file
+src/userspace/ransomware_feature_extractor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.s
+.PHONY : src/userspace/ransomware_feature_extractor.cpp.s
+
+src/userspace/ransomware_feature_processor.o: src/userspace/ransomware_feature_processor.cpp.o
+.PHONY : src/userspace/ransomware_feature_processor.o
+
+# target to build an object file
+src/userspace/ransomware_feature_processor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o
+.PHONY : src/userspace/ransomware_feature_processor.cpp.o
+
+src/userspace/ransomware_feature_processor.i: src/userspace/ransomware_feature_processor.cpp.i
+.PHONY : src/userspace/ransomware_feature_processor.i
+
+# target to preprocess a source file
+src/userspace/ransomware_feature_processor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.i
+.PHONY : src/userspace/ransomware_feature_processor.cpp.i
+
+src/userspace/ransomware_feature_processor.s: src/userspace/ransomware_feature_processor.cpp.s
+.PHONY : src/userspace/ransomware_feature_processor.s
+
+# target to generate assembly for a file
+src/userspace/ransomware_feature_processor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.s
+.PHONY : src/userspace/ransomware_feature_processor.cpp.s
 
 src/userspace/ring_consumer.o: src/userspace/ring_consumer.cpp.o
 .PHONY : src/userspace/ring_consumer.o
@@ -512,6 +657,33 @@ src/userspace/thread_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.s
 .PHONY : src/userspace/thread_manager.cpp.s
 
+src/userspace/time_window_aggregator.o: src/userspace/time_window_aggregator.cpp.o
+.PHONY : src/userspace/time_window_aggregator.o
+
+# target to build an object file
+src/userspace/time_window_aggregator.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.o
+.PHONY : src/userspace/time_window_aggregator.cpp.o
+
+src/userspace/time_window_aggregator.i: src/userspace/time_window_aggregator.cpp.i
+.PHONY : src/userspace/time_window_aggregator.i
+
+# target to preprocess a source file
+src/userspace/time_window_aggregator.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.i
+.PHONY : src/userspace/time_window_aggregator.cpp.i
+
+src/userspace/time_window_aggregator.s: src/userspace/time_window_aggregator.cpp.s
+.PHONY : src/userspace/time_window_aggregator.s
+
+# target to generate assembly for a file
+src/userspace/time_window_aggregator.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.s
+.PHONY : src/userspace/time_window_aggregator.cpp.s
+
 src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
 .PHONY : src/userspace/time_window_manager.o
 
@@ -560,6 +732,30 @@ src/userspace/zmq_pool_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s
 .PHONY : src/userspace/zmq_pool_manager.cpp.s
 
+tests/test_ransomware_feature_extractor.o: tests/test_ransomware_feature_extractor.cpp.o
+.PHONY : tests/test_ransomware_feature_extractor.o
+
+# target to build an object file
+tests/test_ransomware_feature_extractor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/tests/test_ransomware_feature_extractor.cpp.o
+.PHONY : tests/test_ransomware_feature_extractor.cpp.o
+
+tests/test_ransomware_feature_extractor.i: tests/test_ransomware_feature_extractor.cpp.i
+.PHONY : tests/test_ransomware_feature_extractor.i
+
+# target to preprocess a source file
+tests/test_ransomware_feature_extractor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/tests/test_ransomware_feature_extractor.cpp.i
+.PHONY : tests/test_ransomware_feature_extractor.cpp.i
+
+tests/test_ransomware_feature_extractor.s: tests/test_ransomware_feature_extractor.cpp.s
+.PHONY : tests/test_ransomware_feature_extractor.s
+
+# target to generate assembly for a file
+tests/test_ransomware_feature_extractor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/tests/test_ransomware_feature_extractor.cpp.s
+.PHONY : tests/test_ransomware_feature_extractor.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -575,6 +771,7 @@ help:
 	@echo "... bpf_program"
 	@echo "... proto_compilation"
 	@echo "... sniffer"
+	@echo "... test_ransomware_feature_extractor"
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
 	@echo "... proto/network_security.pb.s"
@@ -590,6 +787,9 @@ help:
 	@echo "... src/userspace/config_types.o"
 	@echo "... src/userspace/config_types.i"
 	@echo "... src/userspace/config_types.s"
+	@echo "... src/userspace/dns_analyzer.o"
+	@echo "... src/userspace/dns_analyzer.i"
+	@echo "... src/userspace/dns_analyzer.s"
 	@echo "... src/userspace/ebpf_loader.o"
 	@echo "... src/userspace/ebpf_loader.i"
 	@echo "... src/userspace/ebpf_loader.s"
@@ -605,21 +805,39 @@ help:
 	@echo "... src/userspace/flow_manager.o"
 	@echo "... src/userspace/flow_manager.i"
 	@echo "... src/userspace/flow_manager.s"
+	@echo "... src/userspace/flow_tracker.o"
+	@echo "... src/userspace/flow_tracker.i"
+	@echo "... src/userspace/flow_tracker.s"
+	@echo "... src/userspace/ip_whitelist.o"
+	@echo "... src/userspace/ip_whitelist.i"
+	@echo "... src/userspace/ip_whitelist.s"
 	@echo "... src/userspace/main.o"
 	@echo "... src/userspace/main.i"
 	@echo "... src/userspace/main.s"
+	@echo "... src/userspace/ransomware_feature_extractor.o"
+	@echo "... src/userspace/ransomware_feature_extractor.i"
+	@echo "... src/userspace/ransomware_feature_extractor.s"
+	@echo "... src/userspace/ransomware_feature_processor.o"
+	@echo "... src/userspace/ransomware_feature_processor.i"
+	@echo "... src/userspace/ransomware_feature_processor.s"
 	@echo "... src/userspace/ring_consumer.o"
 	@echo "... src/userspace/ring_consumer.i"
 	@echo "... src/userspace/ring_consumer.s"
 	@echo "... src/userspace/thread_manager.o"
 	@echo "... src/userspace/thread_manager.i"
 	@echo "... src/userspace/thread_manager.s"
+	@echo "... src/userspace/time_window_aggregator.o"
+	@echo "... src/userspace/time_window_aggregator.i"
+	@echo "... src/userspace/time_window_aggregator.s"
 	@echo "... src/userspace/time_window_manager.o"
 	@echo "... src/userspace/time_window_manager.i"
 	@echo "... src/userspace/time_window_manager.s"
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"
+	@echo "... tests/test_ransomware_feature_extractor.o"
+	@echo "... tests/test_ransomware_feature_extractor.i"
+	@echo "... tests/test_ransomware_feature_extractor.s"
 .PHONY : help
 
 

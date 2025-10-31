@@ -413,3 +413,37 @@ message(STATUS "   ✅ ZeroMQ communication")
 message(STATUS "   🔐 Encryption ready (via etcd tokens)")
 message(STATUS "========================================")
 message(STATUS "")
+
+# ============================================================================
+# UNIT TESTS - Phase 1A Validation
+# ============================================================================
+
+# Test executable for ransomware feature extractor
+add_executable(test_ransomware_feature_extractor
+        tests/test_ransomware_feature_extractor.cpp
+
+        # Ransomware detection components (SIN processor)
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ransomware_feature_extractor.cpp
+        # ⚠️ NOTA: NO incluimos ransomware_feature_processor.cpp porque necesita protobuf
+        #          y este test solo valida el extractor
+)
+
+# Include directories
+target_include_directories(test_ransomware_feature_extractor PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+# Link libraries (solo threads, sin protobuf)
+target_link_libraries(test_ransomware_feature_extractor
+        Threads::Threads
+)
+
+message(STATUS "")
+message(STATUS "🧪 Unit Tests:")
+message(STATUS "   ✅ test_ransomware_feature_extractor configured")
+message(STATUS "")
