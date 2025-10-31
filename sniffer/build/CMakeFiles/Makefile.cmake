@@ -64,4 +64,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/proto_compilation.dir/DependInfo.cmake"
   "CMakeFiles/sniffer.dir/DependInfo.cmake"
   "CMakeFiles/test_ransomware_feature_extractor.dir/DependInfo.cmake"
+  "CMakeFiles/test_integration_simple_event.dir/DependInfo.cmake"
   )

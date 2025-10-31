@@ -447,3 +447,40 @@ message(STATUS "")
 message(STATUS "🧪 Unit Tests:")
 message(STATUS "   ✅ test_ransomware_feature_extractor configured")
 message(STATUS "")
+
+# ============================================================================
+# INTEGRATION TEST - Phase 1B (SimpleEvent pipeline validation)
+# ============================================================================
+
+add_executable(test_integration_simple_event
+        tests/test_integration_simple_event.cpp
+
+        # Ransomware detection components (NO processor - no protobuf needed)
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ransomware_feature_extractor.cpp
+        src/userspace/ransomware_feature_processor.cpp
+
+        # Protobuf (needed by processor)
+        proto/network_security.pb.cc
+)
+
+# Dependencies
+add_dependencies(test_integration_simple_event proto_compilation)
+
+# Include directories
+target_include_directories(test_integration_simple_event PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+)
+
+# Link libraries
+target_link_libraries(test_integration_simple_event
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+)
+
+message(STATUS "🧪 Integration Test: test_integration_simple_event configured")

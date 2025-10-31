@@ -29,6 +29,9 @@ namespace sniffer {
         // Get extracted features (for ZMQ sender)
         bool get_features_if_ready(protobuf::RansomwareFeatures& features);
 
+        // For testing: force immediate extraction without waiting for timer
+        void force_extraction_for_testing();
+
     private:
         // Components
         std::unique_ptr<FlowTracker> flow_tracker_;

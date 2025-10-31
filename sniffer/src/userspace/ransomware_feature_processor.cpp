@@ -179,4 +179,8 @@ bool RansomwareFeatureProcessor::get_features_if_ready(protobuf::RansomwareFeatu
     return true;
 }
 
+
+void RansomwareFeatureProcessor::force_extraction_for_testing() {
+    extract_and_store_features();
+}
 } // namespace sniffer

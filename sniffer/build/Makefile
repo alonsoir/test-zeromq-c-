@@ -213,12 +213,26 @@ test_ransomware_feature_extractor/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/build
 .PHONY : test_ransomware_feature_extractor/fast
 
+#=============================================================================
+# Target rules for targets named test_integration_simple_event
+
+# Build rule for target.
+test_integration_simple_event: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_integration_simple_event
+.PHONY : test_integration_simple_event
+
+# fast build rule for target.
+test_integration_simple_event/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/build
+.PHONY : test_integration_simple_event/fast
+
 proto/network_security.pb.o: proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.o
 
 # target to build an object file
 proto/network_security.pb.cc.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.cc.o
 
 proto/network_security.pb.i: proto/network_security.pb.cc.i
@@ -227,6 +241,7 @@ proto/network_security.pb.i: proto/network_security.pb.cc.i
 # target to preprocess a source file
 proto/network_security.pb.cc.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.i
 .PHONY : proto/network_security.pb.cc.i
 
 proto/network_security.pb.s: proto/network_security.pb.cc.s
@@ -235,6 +250,7 @@ proto/network_security.pb.s: proto/network_security.pb.cc.s
 # target to generate assembly for a file
 proto/network_security.pb.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.s
 .PHONY : proto/network_security.pb.cc.s
 
 src/userspace/bpf_map_manager.o: src/userspace/bpf_map_manager.cpp.o
@@ -340,6 +356,7 @@ src/userspace/dns_analyzer.o: src/userspace/dns_analyzer.cpp.o
 src/userspace/dns_analyzer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/dns_analyzer.cpp.o
 .PHONY : src/userspace/dns_analyzer.cpp.o
 
 src/userspace/dns_analyzer.i: src/userspace/dns_analyzer.cpp.i
@@ -349,6 +366,7 @@ src/userspace/dns_analyzer.i: src/userspace/dns_analyzer.cpp.i
 src/userspace/dns_analyzer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/dns_analyzer.cpp.i
 .PHONY : src/userspace/dns_analyzer.cpp.i
 
 src/userspace/dns_analyzer.s: src/userspace/dns_analyzer.cpp.s
@@ -358,6 +376,7 @@ src/userspace/dns_analyzer.s: src/userspace/dns_analyzer.cpp.s
 src/userspace/dns_analyzer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/dns_analyzer.cpp.s
 .PHONY : src/userspace/dns_analyzer.cpp.s
 
 src/userspace/ebpf_loader.o: src/userspace/ebpf_loader.cpp.o
@@ -487,6 +506,7 @@ src/userspace/flow_tracker.o: src/userspace/flow_tracker.cpp.o
 src/userspace/flow_tracker.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/flow_tracker.cpp.o
 .PHONY : src/userspace/flow_tracker.cpp.o
 
 src/userspace/flow_tracker.i: src/userspace/flow_tracker.cpp.i
@@ -496,6 +516,7 @@ src/userspace/flow_tracker.i: src/userspace/flow_tracker.cpp.i
 src/userspace/flow_tracker.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/flow_tracker.cpp.i
 .PHONY : src/userspace/flow_tracker.cpp.i
 
 src/userspace/flow_tracker.s: src/userspace/flow_tracker.cpp.s
@@ -505,6 +526,7 @@ src/userspace/flow_tracker.s: src/userspace/flow_tracker.cpp.s
 src/userspace/flow_tracker.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/flow_tracker.cpp.s
 .PHONY : src/userspace/flow_tracker.cpp.s
 
 src/userspace/ip_whitelist.o: src/userspace/ip_whitelist.cpp.o
@@ -514,6 +536,7 @@ src/userspace/ip_whitelist.o: src/userspace/ip_whitelist.cpp.o
 src/userspace/ip_whitelist.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ip_whitelist.cpp.o
 .PHONY : src/userspace/ip_whitelist.cpp.o
 
 src/userspace/ip_whitelist.i: src/userspace/ip_whitelist.cpp.i
@@ -523,6 +546,7 @@ src/userspace/ip_whitelist.i: src/userspace/ip_whitelist.cpp.i
 src/userspace/ip_whitelist.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ip_whitelist.cpp.i
 .PHONY : src/userspace/ip_whitelist.cpp.i
 
 src/userspace/ip_whitelist.s: src/userspace/ip_whitelist.cpp.s
@@ -532,6 +556,7 @@ src/userspace/ip_whitelist.s: src/userspace/ip_whitelist.cpp.s
 src/userspace/ip_whitelist.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ip_whitelist.cpp.s
 .PHONY : src/userspace/ip_whitelist.cpp.s
 
 src/userspace/main.o: src/userspace/main.cpp.o
@@ -565,6 +590,7 @@ src/userspace/ransomware_feature_extractor.o: src/userspace/ransomware_feature_e
 src/userspace/ransomware_feature_extractor.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_extractor.cpp.o
 .PHONY : src/userspace/ransomware_feature_extractor.cpp.o
 
 src/userspace/ransomware_feature_extractor.i: src/userspace/ransomware_feature_extractor.cpp.i
@@ -574,6 +600,7 @@ src/userspace/ransomware_feature_extractor.i: src/userspace/ransomware_feature_e
 src/userspace/ransomware_feature_extractor.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_extractor.cpp.i
 .PHONY : src/userspace/ransomware_feature_extractor.cpp.i
 
 src/userspace/ransomware_feature_extractor.s: src/userspace/ransomware_feature_extractor.cpp.s
@@ -583,6 +610,7 @@ src/userspace/ransomware_feature_extractor.s: src/userspace/ransomware_feature_e
 src/userspace/ransomware_feature_extractor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_extractor.cpp.s
 .PHONY : src/userspace/ransomware_feature_extractor.cpp.s
 
 src/userspace/ransomware_feature_processor.o: src/userspace/ransomware_feature_processor.cpp.o
@@ -591,6 +619,7 @@ src/userspace/ransomware_feature_processor.o: src/userspace/ransomware_feature_p
 # target to build an object file
 src/userspace/ransomware_feature_processor.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_processor.cpp.o
 .PHONY : src/userspace/ransomware_feature_processor.cpp.o
 
 src/userspace/ransomware_feature_processor.i: src/userspace/ransomware_feature_processor.cpp.i
@@ -599,6 +628,7 @@ src/userspace/ransomware_feature_processor.i: src/userspace/ransomware_feature_p
 # target to preprocess a source file
 src/userspace/ransomware_feature_processor.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_processor.cpp.i
 .PHONY : src/userspace/ransomware_feature_processor.cpp.i
 
 src/userspace/ransomware_feature_processor.s: src/userspace/ransomware_feature_processor.cpp.s
@@ -607,6 +637,7 @@ src/userspace/ransomware_feature_processor.s: src/userspace/ransomware_feature_p
 # target to generate assembly for a file
 src/userspace/ransomware_feature_processor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_processor.cpp.s
 .PHONY : src/userspace/ransomware_feature_processor.cpp.s
 
 src/userspace/ring_consumer.o: src/userspace/ring_consumer.cpp.o
@@ -664,6 +695,7 @@ src/userspace/time_window_aggregator.o: src/userspace/time_window_aggregator.cpp
 src/userspace/time_window_aggregator.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.o
 .PHONY : src/userspace/time_window_aggregator.cpp.o
 
 src/userspace/time_window_aggregator.i: src/userspace/time_window_aggregator.cpp.i
@@ -673,6 +705,7 @@ src/userspace/time_window_aggregator.i: src/userspace/time_window_aggregator.cpp
 src/userspace/time_window_aggregator.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.i
 .PHONY : src/userspace/time_window_aggregator.cpp.i
 
 src/userspace/time_window_aggregator.s: src/userspace/time_window_aggregator.cpp.s
@@ -682,6 +715,7 @@ src/userspace/time_window_aggregator.s: src/userspace/time_window_aggregator.cpp
 src/userspace/time_window_aggregator.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.s
 .PHONY : src/userspace/time_window_aggregator.cpp.s
 
 src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
@@ -732,6 +766,30 @@ src/userspace/zmq_pool_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s
 .PHONY : src/userspace/zmq_pool_manager.cpp.s
 
+tests/test_integration_simple_event.o: tests/test_integration_simple_event.cpp.o
+.PHONY : tests/test_integration_simple_event.o
+
+# target to build an object file
+tests/test_integration_simple_event.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/tests/test_integration_simple_event.cpp.o
+.PHONY : tests/test_integration_simple_event.cpp.o
+
+tests/test_integration_simple_event.i: tests/test_integration_simple_event.cpp.i
+.PHONY : tests/test_integration_simple_event.i
+
+# target to preprocess a source file
+tests/test_integration_simple_event.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/tests/test_integration_simple_event.cpp.i
+.PHONY : tests/test_integration_simple_event.cpp.i
+
+tests/test_integration_simple_event.s: tests/test_integration_simple_event.cpp.s
+.PHONY : tests/test_integration_simple_event.s
+
+# target to generate assembly for a file
+tests/test_integration_simple_event.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/tests/test_integration_simple_event.cpp.s
+.PHONY : tests/test_integration_simple_event.cpp.s
+
 tests/test_ransomware_feature_extractor.o: tests/test_ransomware_feature_extractor.cpp.o
 .PHONY : tests/test_ransomware_feature_extractor.o
 
@@ -771,6 +829,7 @@ help:
 	@echo "... bpf_program"
 	@echo "... proto_compilation"
 	@echo "... sniffer"
+	@echo "... test_integration_simple_event"
 	@echo "... test_ransomware_feature_extractor"
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
@@ -835,6 +894,9 @@ help:
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"
+	@echo "... tests/test_integration_simple_event.o"
+	@echo "... tests/test_integration_simple_event.i"
+	@echo "... tests/test_integration_simple_event.s"
 	@echo "... tests/test_ransomware_feature_extractor.o"
 	@echo "... tests/test_ransomware_feature_extractor.i"
 	@echo "... tests/test_ransomware_feature_extractor.s"

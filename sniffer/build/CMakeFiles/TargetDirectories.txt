@@ -2,6 +2,7 @@
 /vagrant/sniffer/build/CMakeFiles/proto_compilation.dir
 /vagrant/sniffer/build/CMakeFiles/sniffer.dir
 /vagrant/sniffer/build/CMakeFiles/test_ransomware_feature_extractor.dir
+/vagrant/sniffer/build/CMakeFiles/test_integration_simple_event.dir
 /vagrant/sniffer/build/CMakeFiles/edit_cache.dir
 /vagrant/sniffer/build/CMakeFiles/rebuild_cache.dir
 /vagrant/sniffer/build/CMakeFiles/list_install_components.dir
