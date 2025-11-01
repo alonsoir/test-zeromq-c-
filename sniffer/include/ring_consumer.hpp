@@ -1,9 +1,13 @@
 // sniffer/include/ring_consumer.hpp
 #pragma once
 
+#include "protocol_numbers.hpp"  // IANA protocol numbers
+
 #include "main.h"
 #include "network_security.pb.h"
 #include "thread_manager.hpp"
+#include "fast_detector.hpp"
+#include "ransomware_feature_processor.hpp"
 #include <bpf/libbpf.h>
 #include <zmq.hpp>
 #include <memory>
@@ -29,6 +33,11 @@ struct RingConsumerStats {
     std::atomic<uint64_t> total_processing_time_us{0};
     std::atomic<double> average_processing_time_us{0.0};
     std::chrono::steady_clock::time_point start_time;
+    // NEW: Ransomware detection stats
+    std::atomic<uint64_t> ransomware_fast_alerts{0};       // Layer 1 alerts
+    std::atomic<uint64_t> ransomware_feature_extractions{0}; // Layer 2 extractions
+    std::atomic<uint64_t> ransomware_confirmed_threats{0};  // High-confidence detections
+    std::atomic<uint64_t> ransomware_processing_time_us{0}; // Time spent on ransomware
 };
 
 // Snapshot for reading stats (non-atomic copy)
@@ -43,6 +52,11 @@ struct RingConsumerStatsSnapshot {
     uint64_t total_processing_time_us;
     double average_processing_time_us;
     std::chrono::steady_clock::time_point start_time;
+    // Ransomware stats
+    uint64_t ransomware_fast_alerts;
+    uint64_t ransomware_feature_extractions;
+    uint64_t ransomware_confirmed_threats;
+    uint64_t ransomware_processing_time_us;
 };
 
 struct EventBatch {
@@ -77,6 +91,13 @@ public:
     void set_stats_interval(int seconds) { stats_interval_seconds_ = seconds; }
 
 private:
+    // CONSTANTS - Processing statistics
+    static constexpr double EMA_SMOOTHING_FACTOR = 0.9;  // Exponential Moving Average weight
+    static constexpr double EMA_NEW_SAMPLE_WEIGHT = 0.1;  // Weight for new samples
+
+    // CONSTANTS - Ransomware detection
+    static constexpr int RANSOMWARE_EXTRACTION_INTERVAL_SEC = 30;  // Deep analysis interval
+
     // Core functionality
     bool initialize_zmq();
     bool initialize_buffers();
@@ -165,6 +186,21 @@ private:
     // Statistics
     RingConsumerStats stats_;
     EventCallback external_callback_;
+
+    // Layer 1 - Fast Detection (thread-local)
+    static thread_local FastDetector fast_detector_;
+
+    // Layer 2 - Deep Analysis (singleton)
+    std::unique_ptr<RansomwareFeatureProcessor> ransomware_processor_;
+    std::thread ransomware_processor_thread_;
+    std::atomic<bool> ransomware_enabled_{false};
+
+    // Ransomware-specific methods
+    void ransomware_processor_loop();
+    void send_fast_alert(const SimpleEvent& event);
+    void send_ransomware_features(const protobuf::RansomwareFeatures& features);
+    bool initialize_ransomware_detection();
+    void shutdown_ransomware_detection();
 };
 
 } // namespace sniffer

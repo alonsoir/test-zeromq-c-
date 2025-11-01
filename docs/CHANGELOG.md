@@ -228,6 +228,186 @@ make rebuild  # Limpia y recompila todo
 - ✅ Performance: 1.7ms latency, 93.67% accuracy
 ---
 
+## [v3.2.2-protocol-signed-map] - 2025-11-01
+
+### ✨ Added
+
+* **Protocol Map Future Extension (Design Stage)**
+  Añadido al backlog el diseño de un sistema de **extensión firmada** de la tabla de protocolos (`protocol_numbers.hpp`).
+  Aunque no se implementa en esta versión, se define la especificación técnica y filosofía de seguridad que lo guiará:
+
+    * Tabla principal sigue compilada en binario (inmutable, `constexpr`).
+    * Soporte futuro para **extensión mediante JSON firmado (ECDSA)**.
+    * Validación estricta de integridad:
+
+        * `SHA-256` del archivo debe coincidir con el firmado.
+        * Firma validada contra clave pública embebida.
+        * Si falla la verificación, se ignora la extensión y se continúa con la tabla estática.
+    * Modo *opt-in*, sin impacto en rendimiento por defecto.
+
+# Changelog
+
+All notable changes to the Enhanced Network Sniffer project.
+
+## [3.2.1] - 2025-11-01 - Phase 1E: Live Traffic Validation ✅
+
+### 🎉 Major Milestone: MVP Complete
+
+**Runtime:** 271 seconds (4.5 minutes)  
+**Events Processed:** 222  
+**Alerts Generated:** 150+  
+**Crashes:** 0  
+**Average Processing Time:** 229.66 μs/event
+
+### Added
+- ✅ **Live Traffic Validation**
+    - Tested with real network traffic for 271 seconds
+    - Generated 150+ ransomware alerts
+    - Zero crashes, zero memory leaks
+    - Graceful shutdown working perfectly
+
+### Performance
+- ⚡ 229.66 μs average processing time per event
+- 📊 0.82 events/second sustained rate
+- 🎯 <1ms latency end-to-end
+- 💪 Zero dropped events
+
+### Validated
+- Two-layer detection system working in production
+- FastDetector generating real-time alerts
+- FeatureProcessor extracting features every 30s
+- Thread-safe architecture under real load
+- Clean component shutdown
+
+---
+
+## [3.2.0] - 2025-11-01 - Phase 1D: Two-Layer Detection Integration ✅
+
+### Added
+- ✅ **Two-Layer Ransomware Detection System**
+    - Layer 1: FastDetector (10s window, heuristics)
+    - Layer 2: RansomwareFeatureProcessor (30s aggregation)
+    - Integrated in RingBufferConsumer main loop
+
+- ✅ **Protobuf Schema Compliance**
+    - `send_fast_alert()` using NetworkSecurityEvent
+    - `send_ransomware_features()` using NetworkFeatures.ransomware
+    - Correct field mapping: source_ip, destination_ip, protocol_number
+    - Threat scoring: overall_threat_score, final_classification
+
+- ✅ **Thread-Local FastDetector**
+    - Zero contention between threads
+    - Per-thread state isolation
+    - Definition: `thread_local FastDetector RingBufferConsumer::fast_detector_`
+
+- ✅ **Statistics Tracking**
+    - `stats_.ransomware_fast_alerts` - Layer 1 alerts
+    - `stats_.ransomware_feature_extractions` - Layer 2 extractions
+    - `stats_.ransomware_confirmed_threats` - High-confidence detections
+    - `stats_.ransomware_processing_time_us` - Performance metrics
+
+### Fixed
+- Namespace resolution for IPProtocol enum (sniffer::)
+- Protobuf field naming (source_ip vs src_ip)
+- thread_local static member definition
+- CMakeLists.txt: added fast_detector.cpp to SNIFFER_SOURCES
+- IP address conversion (htonl + inet_ntop)
+
+### Changed
+- feature_logger.cpp: uses sniffer::IPProtocol
+- flow_tracker.cpp: uses sniffer::protocol_to_string()
+- ransomware_feature_processor.cpp: uses IPProtocol enum
+
+---
+
+## [3.1.0] - 2025-11-01 - Phase 1C: FastDetector Implementation ✅
+
+### Added
+- ✅ **FastDetector Class** (`include/fast_detector.hpp`, `src/userspace/fast_detector.cpp`)
+    - 10-second sliding window
+    - 4 heuristic rules:
+        1. External IPs: >10 in 10s
+        2. SMB connections: >5 in 10s
+        3. Port scanning: >15 unique ports in 10s
+        4. RST ratio: >30% in 10s
+    - Thread-local storage for zero contention
+    - Microsecond-level latency
+
+- ✅ **Comprehensive Testing** (`tests/test_fast_detector.cpp`)
+    - 5 test cases covering all heuristics
+    - Window expiration logic
+    - Threshold validation
+    - All tests passing ✅
+
+### Performance
+- <1 microsecond per ingest() call
+- Zero memory allocations in fast path
+- Thread-safe via thread_local
+
+---
+
+## [3.0.0] - 2025-11-01 - Phase 1A: Protocol Numbers Standardization ✅
+
+### Added
+- ✅ **Protocol Numbers Header** (`include/protocol_numbers.hpp`)
+    - 30+ IANA standard protocol definitions
+    - Type-safe enum class `IPProtocol`
+    - Helper functions: `protocol_to_string()`, `protocol_to_number()`
+    - Complete documentation with RFC references
+
+### Changed
+- **Zero Magic Numbers Policy**
+    - Replaced all numeric protocol constants (6, 17, 1, etc.)
+    - Updated all comparisons to use IPProtocol enum
+    - Improved code readability and maintainability
+
+### Benefits
+- Type safety at compile time
+- Self-documenting code
+- Easy to extend with new protocols
+- Follows industry standards (IANA)
+
+---
+
+## [2.0.0] - 2025-09-18 - Base System
+
+### Features
+- eBPF/XDP packet capture
+- Ring buffer processing
+- Protobuf serialization
+- ZMQ communication
+- Basic feature extraction (83+ features)
+- LZ4/Zstd compression
+- Multi-threaded pipeline
+
+---
+
+## Version Format
+
+`[MAJOR.MINOR.PATCH] - YYYY-MM-DD - Description`
+
+- **MAJOR:** Breaking changes or major milestones
+- **MINOR:** New features, backwards compatible
+- **PATCH:** Bug fixes, minor improvements
+
+### 🧩 Motivation
+
+Permitir en el futuro la incorporación de **nuevos protocolos registrados por IANA o internos** sin recompilar el sistema, preservando la filosofía de **seguridad determinista y compatibilidad hacia adelante**.
+
+### 🧠 Philosophy
+
+> *“Smooth is fast — the future is modular but signed.”*
+> Toda ampliación en el IDS deberá ser verificable criptográficamente, incluso en runtime.
+
+### 📝 Status
+
+* **Implementation:** Deferred to Phase 4 (2026)
+* **Assigned:** Architecture Group (Claude + Alonso + GPT)
+* **Backlog Reference:** `ISSUE-012`
+
+---
+
+
 ## Upcoming Changes
 
 ### v3.3.0 (Planned)
@@ -255,9 +435,10 @@ make rebuild  # Limpia y recompila todo
 
 ## Contributors
 
-- **Alonso** (@alonsoir) - Project Lead & Development
-- **Claude** (Anthropic) - AI Assistant for Architecture & Debugging
-
+- **Alonso** (@alonsoir)          - Project Lead & Development
+- **Claude** (Anthropic)          - AI Assistant for Architecture & Debugging
+- **ChatGPT5** (OpenAI)           - AI Assistant for Architecture
+- **Parallels.ai** (Parallels.ai) - AI Assistant for Architecture
 ---
 
 ## License

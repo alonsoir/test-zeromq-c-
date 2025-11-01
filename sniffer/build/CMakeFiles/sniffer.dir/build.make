@@ -335,10 +335,24 @@ CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.s: cmake_f
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/src/userspace/ransomware_feature_processor.cpp -o CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.s
 
+CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o: /vagrant/sniffer/src/userspace/fast_detector.cpp
+CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o -MF CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o.d -o CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o -c /vagrant/sniffer/src/userspace/fast_detector.cpp
+
+CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/sniffer/src/userspace/fast_detector.cpp > CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.i
+
+CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/src/userspace/fast_detector.cpp -o CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.s
+
 CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o: CMakeFiles/sniffer.dir/flags.make
 CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o: /vagrant/sniffer/src/userspace/bpf_map_manager.cpp
 CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o -MF CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o.d -o CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o -c /vagrant/sniffer/src/userspace/bpf_map_manager.cpp
 
 CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.i: cmake_force
@@ -352,7 +366,7 @@ CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.s: cmake_force
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o: CMakeFiles/sniffer.dir/flags.make
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o: proto/network_security.pb.cc
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o: CMakeFiles/sniffer.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o -MF CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o.d -o CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o -c /vagrant/sniffer/build/proto/network_security.pb.cc
 
 CMakeFiles/sniffer.dir/proto/network_security.pb.cc.i: cmake_force
@@ -384,6 +398,7 @@ sniffer_OBJECTS = \
 "CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o" \
+"CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o" \
 "CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
 
@@ -409,13 +424,14 @@ sniffer: CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o
+sniffer: CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o
 sniffer: CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
 sniffer: CMakeFiles/sniffer.dir/build.make
 sniffer: /usr/lib/x86_64-linux-gnu/libprotobuf.so
 sniffer: /usr/lib/x86_64-linux-gnu/libcurl.so
 sniffer: CMakeFiles/sniffer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Linking CXX executable sniffer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Linking CXX executable sniffer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sniffer.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

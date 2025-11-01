@@ -1,6 +1,7 @@
 // sniffer/src/userspace/ring_consumer.cpp
 #include "compression_handler.hpp"
 #include "ring_consumer.hpp"
+#include "fast_detector.hpp"
 #include "feature_logger.hpp"
 #include <iostream>
 #include <cstring>
@@ -11,7 +12,14 @@
 
 extern FeatureLogger::VerbosityLevel g_verbosity;
 
+// Thread-local FastDetector instance (Layer 1 detection)
+
 namespace sniffer {
+// ============================================================================
+// Thread-Local FastDetector (Layer 1 Detection)
+// ============================================================================
+thread_local FastDetector RingBufferConsumer::fast_detector_;
+
 
 RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
     : config_(config), ring_buf_(nullptr), ring_fd_(-1) {
@@ -75,6 +83,13 @@ bool RingBufferConsumer::initialize(int ring_fd, std::shared_ptr<ThreadManager> 
         return false;
     }
 
+    // Initialize ransomware detection
+    if (!initialize_ransomware_detection()) {
+        std::cerr << "[WARNING] Ransomware detection disabled" << std::endl;
+    }else{
+        std::cout << "[INFO] Ransomware detection initialized successfully" << std::endl;
+    }
+
     // Initialize batching
     current_batch_ = std::make_unique<EventBatch>(get_optimal_batch_size());
 
@@ -124,6 +139,13 @@ bool RingBufferConsumer::start() {
         consumer_threads_.emplace_back(&RingBufferConsumer::zmq_sender_loop, this);
     }
 
+    // Start ransomware processor thread
+    if (ransomware_enabled_) {
+        ransomware_processor_->start();
+        consumer_threads_.emplace_back(&RingBufferConsumer::ransomware_processor_loop, this);
+        std::cout << "[INFO] + 1 ransomware detection thread (30s aggregation)" << std::endl;
+    }
+
     // Start statistics display thread
     consumer_threads_.emplace_back(&RingBufferConsumer::stats_display_loop, this);
 
@@ -141,7 +163,7 @@ bool RingBufferConsumer::start() {
     return true;
 }
 
-void RingBufferConsumer::stop() {
+    void RingBufferConsumer::stop() {
     if (!running_) {
         return;
     }
@@ -149,23 +171,28 @@ void RingBufferConsumer::stop() {
     std::cout << "[INFO] Stopping Enhanced RingBufferConsumer..." << std::endl;
     should_stop_ = true;
 
-    // Wake up all waiting threads
+    // ORDEN CORRECTO DE PARADA:
+
+    // 1️⃣ Parar ransomware detection PRIMERO (más costoso, tiene timer threads)
+    shutdown_ransomware_detection();
+
+    // 2️⃣ Notificar a todos los threads que deben parar
     processing_queue_cv_.notify_all();
     send_queue_cv_.notify_all();
 
-    // Flush any remaining batch
+    // 3️⃣ Flush batch pendiente (asegurar que no perdemos datos)
     flush_current_batch();
 
-    // Stop consumer threads
+    // 4️⃣ Parar consumer threads (ya no recibirán eventos)
     shutdown_consumers();
 
-    // Stop ZMQ
+    // 5️⃣ Parar ZMQ AL FINAL (flush final de colas)
     shutdown_zmq();
 
     running_ = false;
     active_consumers_ = 0;
 
-    // Print final statistics
+    // 6️⃣ Stats finales (incluye ransomware)
     print_stats();
 
     std::cout << "[INFO] Enhanced RingBufferConsumer stopped" << std::endl;
@@ -286,7 +313,6 @@ void RingBufferConsumer::feature_processor_loop() {
 
             event = processing_queue_.front();
             processing_queue_.pop();
-            //std::cout << "[DEBUG] Feature processor obtuvo evento de la cola" << std::endl;
         }
 
         process_event_features(event);
@@ -311,7 +337,6 @@ void RingBufferConsumer::zmq_sender_loop() {
 
             data = std::move(send_queue_.front());
             send_queue_.pop();
-            //std::cout << "[DEBUG] ZMQ sender obtuvo datos de la cola: " << data.size() << " bytes" << std::endl;
         }
 
         send_protobuf_message(data);
@@ -372,6 +397,17 @@ int RingBufferConsumer::handle_event(void* ctx, void* data, size_t data_sz) {
 void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unused]] int consumer_id) {
     auto start_time = std::chrono::steady_clock::now();
 
+    // Fast Detection (thread-local, O(1))
+    fast_detector_.ingest(event);
+    if (fast_detector_.is_suspicious()) {
+        send_fast_alert(event);  // Immediate ZMQ alert
+    }
+
+    // Deep Analysis (thread-safe)
+    if (ransomware_enabled_ && ransomware_processor_) {
+        ransomware_processor_->process_packet(event);
+    }
+
     // Call external callback if set
     if (external_callback_) {
         try {
@@ -391,7 +427,6 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
 }
 
 void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
-    //std::cout << "[DEBUG] process_event_features() iniciada" << std::endl;
     try {
         // Create protobuf message
         protobuf::NetworkSecurityEvent proto_event;
@@ -412,8 +447,6 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
             return;
         }
 
-        //std::cout << "[DEBUG] Protobuf serializado: " << serialized_string.size() << " bytes" << std::endl;
-
         // Convert to vector for queue
         serialized_data.assign(serialized_string.begin(), serialized_string.end());
 
@@ -421,7 +454,6 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
         {
             std::lock_guard<std::mutex> lock(send_queue_mutex_);
             send_queue_.push(std::move(serialized_data));
-            //std::cout << "[DEBUG] Añadido a send_queue_, size=" << send_queue_.size() << std::endl;
         }
         send_queue_cv_.notify_one();
 
@@ -431,7 +463,6 @@ void RingBufferConsumer::process_event_features(const SimpleEvent& event) {
 }
 
 void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events) {
-    //std::cout << "[DEBUG] send_event_batch() con " << events.size() << " eventos" << std::endl;
     for (const auto& event : events) {
         // Submit to feature processing queue
         {
@@ -440,11 +471,10 @@ void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events
         }
         processing_queue_cv_.notify_one();
     }
-    //std::cout << "[DEBUG] Añadidos a processing_queue_, size=" << processing_queue_.size() << std::endl;
+
 }
 
 bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& serialized_data) {
-    //std::cout << "[DEBUG] send_protobuf_message() con " << serialized_data.size() << " bytes" << std::endl;
     try {
         std::vector<uint8_t> data_to_send;
 
@@ -452,7 +482,6 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         if (config_.transport.compression.enabled &&
             serialized_data.size() >= config_.transport.compression.min_compress_size) {
 
-            //std::cout << "[DEBUG] Comprimiendo datos..." << std::endl;
             try {
                 CompressionHandler compressor;
                 auto compressed = compressor.compress_lz4(
@@ -460,7 +489,6 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
                     serialized_data.size()
                 );
                 data_to_send = std::move(compressed);
-                //std::cout << "[DEBUG] Comprimido: " << data_to_send.size() << " bytes" << std::endl;
 
             } catch (const std::exception& e) {
                 std::cerr << "[WARNING] LZ4 compression failed: " << e.what()
@@ -468,7 +496,6 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
                 data_to_send = serialized_data;
             }
         } else {
-            //std::cout << "[DEBUG] Enviando sin comprimir" << std::endl;
             data_to_send = serialized_data;
         }
 
@@ -480,11 +507,9 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
 		std::lock_guard<std::mutex> lock(*socket_mutexes_[idx]);
 		zmq::socket_t* socket = zmq_sockets_[idx].get();
 
-		//std::cout << "[DEBUG] Enviando por ZMQ: " << message.size() << " bytes" << std::endl;
 		auto result = socket->send(message, zmq::send_flags::dontwait);
 
         if (result.has_value()) {
-            //std::cout << "[DEBUG] ZMQ send exitoso!" << std::endl;
             stats_.events_sent++;
             return true;
         } else {
@@ -509,12 +534,7 @@ void RingBufferConsumer::add_to_batch(const SimpleEvent& event) {
 
     current_batch_->events.push_back(event);
 
-    //std::cout << "[DEBUG] Batch size: " << current_batch_->events.size()
-    //          << "/" << get_optimal_batch_size() << std::endl;
-
     if (current_batch_->is_ready()) {
-        //std::cout << "[DEBUG] Batch ready! Sending " << current_batch_->events.size()
-        //          << " events" << std::endl;
         send_event_batch(current_batch_->events);
         current_batch_ = std::make_unique<EventBatch>(get_optimal_batch_size());
     }
@@ -632,6 +652,7 @@ std::string RingBufferConsumer::protocol_to_string(uint8_t protocol) const {
 }
 
 // Statistics and utility methods
+
 RingConsumerStatsSnapshot RingBufferConsumer::get_stats() const {
     RingConsumerStatsSnapshot snapshot;
     snapshot.events_processed = stats_.events_processed.load();
@@ -644,6 +665,13 @@ RingConsumerStatsSnapshot RingBufferConsumer::get_stats() const {
     snapshot.total_processing_time_us = stats_.total_processing_time_us.load();
     snapshot.average_processing_time_us = stats_.average_processing_time_us.load();
     snapshot.start_time = stats_.start_time;
+
+    // ⭐ NEW: Ransomware stats
+    snapshot.ransomware_fast_alerts = stats_.ransomware_fast_alerts.load();
+    snapshot.ransomware_feature_extractions = stats_.ransomware_feature_extractions.load();
+    snapshot.ransomware_confirmed_threats = stats_.ransomware_confirmed_threats.load();
+    snapshot.ransomware_processing_time_us = stats_.ransomware_processing_time_us.load();
+
     return snapshot;
 }
 
@@ -651,28 +679,70 @@ void RingBufferConsumer::print_stats() const {
     auto now = std::chrono::steady_clock::now();
     auto runtime = std::chrono::duration_cast<std::chrono::seconds>(now - stats_.start_time).count();
 
-    std::cout << "\n=== Enhanced RingBufferConsumer Statistics ===" << std::endl;
-    std::cout << "Runtime: " << runtime << " seconds" << std::endl;
-    std::cout << "Events processed: " << stats_.events_processed << std::endl;
-    std::cout << "Events sent: " << stats_.events_sent << std::endl;
-    std::cout << "Events dropped: " << stats_.events_dropped << std::endl;
-    std::cout << "Protobuf failures: " << stats_.protobuf_serialization_failures << std::endl;
-    std::cout << "ZMQ send failures: " << stats_.zmq_send_failures << std::endl;
-    std::cout << "Ring buffer polls: " << stats_.ring_buffer_polls << std::endl;
-    std::cout << "Ring buffer timeouts: " << stats_.ring_buffer_timeouts << std::endl;
+    std::cout << "\n╔═══════════════════════════════════════════════════════╗\n";
+    std::cout << "║  Enhanced RingBufferConsumer Statistics              ║\n";
+    std::cout << "╚═══════════════════════════════════════════════════════╝\n";
+
+    std::cout << "\n📊 General Statistics:\n";
+    std::cout << "  Runtime: " << runtime << " seconds\n";
+    std::cout << "  Events processed: " << stats_.events_processed << "\n";
+    std::cout << "  Events sent: " << stats_.events_sent << "\n";
+    std::cout << "  Events dropped: " << stats_.events_dropped << "\n";
 
     if (runtime > 0) {
-        std::cout << "Events per second: " << (stats_.events_processed / runtime) << std::endl;
-        std::cout << "Send rate: " << (stats_.events_sent / runtime) << std::endl;
+        double eps = static_cast<double>(stats_.events_processed.load()) / runtime;
+        double send_rate = static_cast<double>(stats_.events_sent.load()) / runtime;
+        std::cout << "  Events per second: " << std::fixed << std::setprecision(2) << eps << "\n";
+        std::cout << "  Send rate: " << send_rate << "\n";
     }
 
-    std::cout << "Active consumers: " << active_consumers_ << std::endl;
-    std::cout << "Processing queue size: " << processing_queue_.size() << std::endl;
-    std::cout << "Send queue size: " << send_queue_.size() << std::endl;
-    std::cout << "=============================================" << std::endl;
+    std::cout << "\n🔧 Processing:\n";
+    std::cout << "  Protobuf failures: " << stats_.protobuf_serialization_failures << "\n";
+    std::cout << "  ZMQ send failures: " << stats_.zmq_send_failures << "\n";
+    std::cout << "  Ring buffer polls: " << stats_.ring_buffer_polls << "\n";
+    std::cout << "  Ring buffer timeouts: " << stats_.ring_buffer_timeouts << "\n";
+    std::cout << "  Avg processing time: " << std::fixed << std::setprecision(2)
+              << stats_.average_processing_time_us.load() << " μs\n";
+
+    // Ransomware statistics section
+    if (ransomware_enabled_) {
+        std::cout << "\n🚨 Ransomware Detection:\n";
+        std::cout << "  Fast alerts (Layer 1): " << stats_.ransomware_fast_alerts << "\n";
+        std::cout << "  Feature extractions (Layer 2): " << stats_.ransomware_feature_extractions << "\n";
+        std::cout << "  Confirmed threats: " << stats_.ransomware_confirmed_threats << "\n";
+
+        uint64_t ransom_time = stats_.ransomware_processing_time_us.load();
+        if (ransom_time > 0) {
+            std::cout << "  Ransomware processing time: "
+                      << (ransom_time / 1000.0) << " ms total\n";
+
+            if (stats_.ransomware_fast_alerts.load() > 0) {
+                double avg_alert_time = static_cast<double>(ransom_time) /
+                                       stats_.ransomware_fast_alerts.load();
+                std::cout << "  Avg alert time: " << std::fixed << std::setprecision(2)
+                          << avg_alert_time << " μs\n";
+            }
+        }
+
+        // Detection rates
+        if (runtime > 0 && stats_.ransomware_fast_alerts.load() > 0) {
+            double alerts_per_min = (stats_.ransomware_fast_alerts.load() * 60.0) / runtime;
+            std::cout << "  Alert rate: " << std::fixed << std::setprecision(2)
+                      << alerts_per_min << " alerts/min\n";
+        }
+    } else {
+        std::cout << "\n🚨 Ransomware Detection: DISABLED\n";
+    }
+
+    std::cout << "\n⚙️  System Status:\n";
+    std::cout << "  Active consumers: " << active_consumers_ << "\n";
+    std::cout << "  Processing queue size: " << processing_queue_.size() << "\n";
+    std::cout << "  Send queue size: " << send_queue_.size() << "\n";
+
+    std::cout << "╚═══════════════════════════════════════════════════════╝\n";
 }
 
-void RingBufferConsumer::reset_stats() {
+    void RingBufferConsumer::reset_stats() {
     stats_.events_processed = 0;
     stats_.events_sent = 0;
     stats_.events_dropped = 0;
@@ -682,6 +752,13 @@ void RingBufferConsumer::reset_stats() {
     stats_.ring_buffer_timeouts = 0;
     stats_.total_processing_time_us = 0;
     stats_.average_processing_time_us = 0.0;
+
+    // NEW: Reset ransomware stats
+    stats_.ransomware_fast_alerts = 0;
+    stats_.ransomware_feature_extractions = 0;
+    stats_.ransomware_confirmed_threats = 0;
+    stats_.ransomware_processing_time_us = 0;
+
     stats_.start_time = std::chrono::steady_clock::now();
 }
 
@@ -751,10 +828,183 @@ void RingBufferConsumer::cleanup_resources() {
 void RingBufferConsumer::update_processing_time(std::chrono::microseconds duration) {
     stats_.total_processing_time_us += duration.count();
 
-    // Update rolling average (simple exponential moving average)
+    // Update rolling average (exponential moving average)
     double current_avg = stats_.average_processing_time_us.load();
-    double new_avg = 0.9 * current_avg + 0.1 * duration.count();
+    double new_avg = EMA_SMOOTHING_FACTOR * current_avg +
+                     EMA_NEW_SAMPLE_WEIGHT * duration.count();
     stats_.average_processing_time_us = new_avg;
+}
+
+bool RingBufferConsumer::initialize_ransomware_detection() {
+    try {
+        ransomware_processor_ = std::make_unique<RansomwareFeatureProcessor>();
+
+        if (!ransomware_processor_->initialize()) {
+            std::cerr << "[ERROR] Failed to initialize RansomwareFeatureProcessor" << std::endl;
+            return false;
+        }
+
+        ransomware_enabled_ = true;
+        std::cout << "[INFO] ✅ Ransomware detection initialized (2-layer system)" << std::endl;
+        std::cout << "       Layer 1: FastDetector (10s window, heuristics)" << std::endl;
+        std::cout << "       Layer 2: FeatureProcessor (30s aggregation)" << std::endl;
+        return true;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Ransomware detection init failed: " << e.what() << std::endl;
+        ransomware_enabled_ = false;
+        return false;
+    }
+}
+
+void RingBufferConsumer::ransomware_processor_loop() {
+    std::cout << "[INFO] Ransomware processor thread started ("
+              << RANSOMWARE_EXTRACTION_INTERVAL_SEC << "s extraction)" << std::endl;
+
+    while (!should_stop_) {
+        std::this_thread::sleep_for(
+            std::chrono::seconds(RANSOMWARE_EXTRACTION_INTERVAL_SEC));
+
+        if (should_stop_) break;
+
+        protobuf::RansomwareFeatures features;
+        if (ransomware_processor_->get_features_if_ready(features)) {
+            send_ransomware_features(features);
+        }
+    }
+
+    std::cout << "[INFO] Ransomware processor thread stopped" << std::endl;
+}
+
+void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
+    auto start_time = std::chrono::steady_clock::now();
+    
+    try {
+        protobuf::NetworkSecurityEvent alert;
+        alert.set_event_id("fast-alert-" + std::to_string(event.timestamp));
+        
+        auto* ts = alert.mutable_event_timestamp();
+        ts->set_seconds(event.timestamp / 1'000'000'000ULL);
+        ts->set_nanos(event.timestamp % 1'000'000'000ULL);
+        
+        alert.set_originating_node_id(config_.node_id);
+        
+        auto* net_features = alert.mutable_network_features();
+        
+        char src_ip_str[INET_ADDRSTRLEN];
+        char dst_ip_str[INET_ADDRSTRLEN];
+        struct in_addr src_addr, dst_addr;
+        src_addr.s_addr = htonl(event.src_ip);
+        dst_addr.s_addr = htonl(event.dst_ip);
+        inet_ntop(AF_INET, &src_addr, src_ip_str, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &dst_addr, dst_ip_str, INET_ADDRSTRLEN);
+        
+        net_features->set_source_ip(src_ip_str);
+        net_features->set_destination_ip(dst_ip_str);
+        net_features->set_source_port(event.src_port);
+        net_features->set_destination_port(event.dst_port);
+        net_features->set_protocol_number(event.protocol);
+        net_features->set_protocol_name(sniffer::protocol_to_string(event.protocol));
+        
+        alert.set_overall_threat_score(0.75);
+        alert.set_final_classification("SUSPICIOUS");
+        alert.set_threat_category("RANSOMWARE_FAST_DETECTION");
+        
+        auto snapshot = fast_detector_.snapshot();
+        alert.set_correlation_id("ransomware-" + std::to_string(event.timestamp / 1'000'000'000ULL));
+        
+        std::string serialized;
+        if (alert.SerializeToString(&serialized)) {
+            std::vector<uint8_t> data(serialized.begin(), serialized.end());
+            
+            std::lock_guard<std::mutex> lock(send_queue_mutex_);
+            send_queue_.push(std::move(data));
+            send_queue_cv_.notify_one();
+            
+            stats_.ransomware_fast_alerts++;
+            
+            std::cout << "[FAST ALERT] Ransomware heuristic: "
+                      << "src=" << src_ip_str << ":" << event.src_port
+                      << " dst=" << dst_ip_str << ":" << event.dst_port
+                      << " (ExtIPs=" << snapshot.external_ips_10s
+                      << ", SMB=" << snapshot.smb_conns << ")" << std::endl;
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[WARNING] Fast alert failed: " << e.what() << std::endl;
+    }
+    
+    auto end_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    stats_.ransomware_processing_time_us += duration.count();
+}
+
+void RingBufferConsumer::send_ransomware_features(const protobuf::RansomwareFeatures& features) {
+    auto start_time = std::chrono::steady_clock::now();
+    
+    try {
+        protobuf::NetworkSecurityEvent event;
+        
+        uint64_t now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        event.set_event_id("ransomware-features-" + std::to_string(now_ns));
+        
+        auto* ts = event.mutable_event_timestamp();
+        ts->set_seconds(now_ns / 1'000'000'000ULL);
+        ts->set_nanos(now_ns % 1'000'000'000ULL);
+        
+        event.set_originating_node_id(config_.node_id);
+        
+        auto* net_features = event.mutable_network_features();
+        auto* ransom_features = net_features->mutable_ransomware();
+        ransom_features->CopyFrom(features);
+        
+        bool high_threat = (features.new_external_ips_30s() > 15 || 
+                           features.smb_connection_diversity() > 10);
+        
+        if (high_threat) {
+            event.set_overall_threat_score(0.95);
+            event.set_final_classification("MALICIOUS");
+            stats_.ransomware_confirmed_threats++;
+        } else {
+            event.set_overall_threat_score(0.70);
+            event.set_final_classification("SUSPICIOUS");
+        }
+        
+        event.set_threat_category("RANSOMWARE_CONFIRMED");
+        event.set_correlation_id("ransomware-analysis-" + std::to_string(now_ns / 1'000'000'000ULL));
+        
+        std::string serialized;
+        if (event.SerializeToString(&serialized)) {
+            std::vector<uint8_t> data(serialized.begin(), serialized.end());
+            
+            std::lock_guard<std::mutex> lock(send_queue_mutex_);
+            send_queue_.push(std::move(data));
+            send_queue_cv_.notify_one();
+            
+            stats_.ransomware_feature_extractions++;
+            
+            std::cout << "[RANSOMWARE] Features: ExtIPs=" << features.new_external_ips_30s()
+                      << ", SMB=" << features.smb_connection_diversity()
+                      << ", DNS=" << features.dns_query_entropy()
+                      << ", Score=" << event.overall_threat_score()
+                      << ", Class=" << event.final_classification() << std::endl;
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Ransomware features failed: " << e.what() << std::endl;
+    }
+    
+    auto end_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    stats_.ransomware_processing_time_us += duration.count();
+}
+void RingBufferConsumer::shutdown_ransomware_detection() {
+    if (ransomware_processor_) {
+        ransomware_processor_->stop();
+        ransomware_processor_.reset();
+    }
+    ransomware_enabled_ = false;
 }
 
 } // namespace sniffer

@@ -31,7 +31,7 @@ struct TimeWindowEvent {
     uint32_t dst_ip;            // Destination IP
     uint16_t src_port;          // Source port
     uint16_t dst_port;          // Destination port
-    uint8_t protocol;           // Protocol (6=TCP, 17=UDP)
+    uint8_t protocol;           // Protocol (see IPProtocol enum in protocol_numbers.hpp)
     uint32_t bytes;             // Bytes in event
 
     TimeWindowEvent(uint64_t ts, uint32_t sip, uint32_t dip,

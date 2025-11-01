@@ -1,3 +1,4 @@
+#include "protocol_numbers.hpp"
 #include "feature_logger.hpp"
 #include "network_security.pb.h"
 #include <iostream>
@@ -94,7 +95,7 @@ void print_basic_summary(const protobuf::NetworkSecurityEvent& event) {
               << nf.destination_ip() << ":" << nf.destination_port() << " "
               << YELLOW << nf.total_forward_bytes() + nf.total_backward_bytes() << "B" << RESET;
 
-    if (nf.protocol_number() == 6) {  // TCP
+    if (nf.protocol_number() == static_cast<uint8_t>(sniffer::IPProtocol::TCP)) {  // TCP
         std::cout << " flags:" << tcp_flags_string(
             nf.syn_flag_count() ? 0x02 : 0 |
             nf.ack_flag_count() ? 0x10 : 0 |
@@ -132,7 +133,7 @@ void print_grouped_features(const protobuf::NetworkSecurityEvent& event) {
     }
 
     // TCP Flags
-    if (nf.protocol_number() == 6) {
+    if (nf.protocol_number() == static_cast<uint8_t>(sniffer::IPProtocol::TCP)) {
         print_subsection("TCP FLAGS");
         std::cout << "  FIN: " << nf.fin_flag_count()
                   << "  SYN: " << nf.syn_flag_count()
@@ -288,7 +289,7 @@ void print_all_features_detailed(const protobuf::NetworkSecurityEvent& event) {
               << "  [backward_inter_arrival_time_min] " << nf.backward_inter_arrival_time_min() << "\n\n";
 
     // TCP Flags
-    if (nf.protocol_number() == 6) {
+    if (nf.protocol_number() == static_cast<uint8_t>(sniffer::IPProtocol::TCP)) {
         print_subsection("TCP FLAGS");
         std::cout << "  [fin_flag_count] " << nf.fin_flag_count() << "\n"
                   << "  [syn_flag_count] " << nf.syn_flag_count() << "\n"

@@ -1,5 +1,6 @@
 // sniffer/src/userspace/ransomware_feature_processor.cpp
 #include "ransomware_feature_processor.hpp"
+#include "protocol_numbers.hpp"
 #include <iostream>
 #include <chrono>
 #include <arpa/inet.h>
@@ -125,7 +126,7 @@ void RansomwareFeatureProcessor::parse_and_feed_packet(const SimpleEvent& event)
 
 bool RansomwareFeatureProcessor::is_dns_packet(const SimpleEvent& event) {
     // DNS: UDP port 53
-    return (event.protocol == 17 && (event.src_port == 53 || event.dst_port == 53));
+    return (event.protocol == static_cast<uint8_t>(IPProtocol::UDP) && (event.src_port == 53 || event.dst_port == 53));
 }
 
 void RansomwareFeatureProcessor::extraction_loop() {

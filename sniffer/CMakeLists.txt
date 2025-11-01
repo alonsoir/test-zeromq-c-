@@ -161,6 +161,8 @@ set(SNIFFER_SOURCES
         src/userspace/time_window_aggregator.cpp            # Time-windowed aggregation
         src/userspace/ransomware_feature_extractor.cpp      # Feature extraction
         src/userspace/ransomware_feature_processor.cpp      # Integration processor
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
         # ====================================================================
 
         src/userspace/bpf_map_manager.cpp
@@ -449,22 +451,26 @@ message(STATUS "   ✅ test_ransomware_feature_extractor configured")
 message(STATUS "")
 
 # ============================================================================
-# INTEGRATION TEST - Phase 1B (SimpleEvent pipeline validation)
+# ============================================================================
+# INTEGRATION TEST - Phase 1C (Two-layer detection)
 # ============================================================================
 
 add_executable(test_integration_simple_event
-        tests/test_integration_simple_event.cpp
-
-        # Ransomware detection components (NO processor - no protobuf needed)
-        src/userspace/flow_tracker.cpp
-        src/userspace/dns_analyzer.cpp
-        src/userspace/ip_whitelist.cpp
-        src/userspace/time_window_aggregator.cpp
-        src/userspace/ransomware_feature_extractor.cpp
-        src/userspace/ransomware_feature_processor.cpp
-
-        # Protobuf (needed by processor)
-        proto/network_security.pb.cc
+    tests/test_integration_simple_event.cpp
+    
+    # Ransomware detection components
+    src/userspace/flow_tracker.cpp
+    src/userspace/dns_analyzer.cpp
+    src/userspace/ip_whitelist.cpp
+    src/userspace/time_window_aggregator.cpp
+    src/userspace/ransomware_feature_extractor.cpp
+    src/userspace/ransomware_feature_processor.cpp
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+    src/userspace/fast_detector.cpp  # Layer 1 detection
+    
+    # Protobuf
+    proto/network_security.pb.cc
 )
 
 # Dependencies
@@ -484,3 +490,22 @@ target_link_libraries(test_integration_simple_event
 )
 
 message(STATUS "🧪 Integration Test: test_integration_simple_event configured")
+# ============================================================================
+# FAST DETECTOR UNIT TEST
+# ============================================================================
+
+add_executable(test_fast_detector
+    tests/test_fast_detector.cpp
+    src/userspace/fast_detector.cpp
+    src/userspace/time_window_aggregator.cpp
+)
+
+target_include_directories(test_fast_detector PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_fast_detector
+    Threads::Threads
+)
+
+message(STATUS "🧪 Unit Test: test_fast_detector configured")

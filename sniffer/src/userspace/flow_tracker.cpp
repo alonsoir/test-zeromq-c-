@@ -2,6 +2,7 @@
 // Flow tracking implementation for ransomware detection
 
 #include "flow_tracker.hpp"
+#include "protocol_numbers.hpp"
 #include <algorithm>
 #include <iostream>
 

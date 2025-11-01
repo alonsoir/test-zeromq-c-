@@ -226,6 +226,19 @@ test_integration_simple_event/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/build
 .PHONY : test_integration_simple_event/fast
 
+#=============================================================================
+# Target rules for targets named test_fast_detector
+
+# Build rule for target.
+test_fast_detector: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_fast_detector
+.PHONY : test_fast_detector
+
+# fast build rule for target.
+test_fast_detector/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/build
+.PHONY : test_fast_detector/fast
+
 proto/network_security.pb.o: proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.o
 
@@ -426,6 +439,36 @@ src/userspace/etcd_client.s: src/userspace/etcd_client.cpp.s
 src/userspace/etcd_client.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.s
 .PHONY : src/userspace/etcd_client.cpp.s
+
+src/userspace/fast_detector.o: src/userspace/fast_detector.cpp.o
+.PHONY : src/userspace/fast_detector.o
+
+# target to build an object file
+src/userspace/fast_detector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/fast_detector.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/fast_detector.cpp.o
+.PHONY : src/userspace/fast_detector.cpp.o
+
+src/userspace/fast_detector.i: src/userspace/fast_detector.cpp.i
+.PHONY : src/userspace/fast_detector.i
+
+# target to preprocess a source file
+src/userspace/fast_detector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/fast_detector.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/fast_detector.cpp.i
+.PHONY : src/userspace/fast_detector.cpp.i
+
+src/userspace/fast_detector.s: src/userspace/fast_detector.cpp.s
+.PHONY : src/userspace/fast_detector.s
+
+# target to generate assembly for a file
+src/userspace/fast_detector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/fast_detector.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/fast_detector.cpp.s
+.PHONY : src/userspace/fast_detector.cpp.s
 
 src/userspace/feature_extractor.o: src/userspace/feature_extractor.cpp.o
 .PHONY : src/userspace/feature_extractor.o
@@ -696,6 +739,7 @@ src/userspace/time_window_aggregator.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.o
 .PHONY : src/userspace/time_window_aggregator.cpp.o
 
 src/userspace/time_window_aggregator.i: src/userspace/time_window_aggregator.cpp.i
@@ -706,6 +750,7 @@ src/userspace/time_window_aggregator.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.i
 .PHONY : src/userspace/time_window_aggregator.cpp.i
 
 src/userspace/time_window_aggregator.s: src/userspace/time_window_aggregator.cpp.s
@@ -716,6 +761,7 @@ src/userspace/time_window_aggregator.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.s
 .PHONY : src/userspace/time_window_aggregator.cpp.s
 
 src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
@@ -765,6 +811,30 @@ src/userspace/zmq_pool_manager.s: src/userspace/zmq_pool_manager.cpp.s
 src/userspace/zmq_pool_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.s
 .PHONY : src/userspace/zmq_pool_manager.cpp.s
+
+tests/test_fast_detector.o: tests/test_fast_detector.cpp.o
+.PHONY : tests/test_fast_detector.o
+
+# target to build an object file
+tests/test_fast_detector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/tests/test_fast_detector.cpp.o
+.PHONY : tests/test_fast_detector.cpp.o
+
+tests/test_fast_detector.i: tests/test_fast_detector.cpp.i
+.PHONY : tests/test_fast_detector.i
+
+# target to preprocess a source file
+tests/test_fast_detector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/tests/test_fast_detector.cpp.i
+.PHONY : tests/test_fast_detector.cpp.i
+
+tests/test_fast_detector.s: tests/test_fast_detector.cpp.s
+.PHONY : tests/test_fast_detector.s
+
+# target to generate assembly for a file
+tests/test_fast_detector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/tests/test_fast_detector.cpp.s
+.PHONY : tests/test_fast_detector.cpp.s
 
 tests/test_integration_simple_event.o: tests/test_integration_simple_event.cpp.o
 .PHONY : tests/test_integration_simple_event.o
@@ -829,6 +899,7 @@ help:
 	@echo "... bpf_program"
 	@echo "... proto_compilation"
 	@echo "... sniffer"
+	@echo "... test_fast_detector"
 	@echo "... test_integration_simple_event"
 	@echo "... test_ransomware_feature_extractor"
 	@echo "... proto/network_security.pb.o"
@@ -855,6 +926,9 @@ help:
 	@echo "... src/userspace/etcd_client.o"
 	@echo "... src/userspace/etcd_client.i"
 	@echo "... src/userspace/etcd_client.s"
+	@echo "... src/userspace/fast_detector.o"
+	@echo "... src/userspace/fast_detector.i"
+	@echo "... src/userspace/fast_detector.s"
 	@echo "... src/userspace/feature_extractor.o"
 	@echo "... src/userspace/feature_extractor.i"
 	@echo "... src/userspace/feature_extractor.s"
@@ -894,6 +968,9 @@ help:
 	@echo "... src/userspace/zmq_pool_manager.o"
 	@echo "... src/userspace/zmq_pool_manager.i"
 	@echo "... src/userspace/zmq_pool_manager.s"
+	@echo "... tests/test_fast_detector.o"
+	@echo "... tests/test_fast_detector.i"
+	@echo "... tests/test_fast_detector.s"
 	@echo "... tests/test_integration_simple_event.o"
 	@echo "... tests/test_integration_simple_event.i"
 	@echo "... tests/test_integration_simple_event.s"

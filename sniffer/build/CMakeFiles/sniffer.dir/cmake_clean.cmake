@@ -15,6 +15,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o"
