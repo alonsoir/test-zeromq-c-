@@ -239,6 +239,19 @@ test_fast_detector/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/build
 .PHONY : test_fast_detector/fast
 
+#=============================================================================
+# Target rules for targets named test_payload_analyzer
+
+# Build rule for target.
+test_payload_analyzer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_payload_analyzer
+.PHONY : test_payload_analyzer
+
+# fast build rule for target.
+test_payload_analyzer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/build
+.PHONY : test_payload_analyzer/fast
+
 proto/network_security.pb.o: proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.o
 
@@ -626,6 +639,33 @@ src/userspace/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/main.cpp.s
 .PHONY : src/userspace/main.cpp.s
 
+src/userspace/payload_analyzer.o: src/userspace/payload_analyzer.cpp.o
+.PHONY : src/userspace/payload_analyzer.o
+
+# target to build an object file
+src/userspace/payload_analyzer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/src/userspace/payload_analyzer.cpp.o
+.PHONY : src/userspace/payload_analyzer.cpp.o
+
+src/userspace/payload_analyzer.i: src/userspace/payload_analyzer.cpp.i
+.PHONY : src/userspace/payload_analyzer.i
+
+# target to preprocess a source file
+src/userspace/payload_analyzer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/src/userspace/payload_analyzer.cpp.i
+.PHONY : src/userspace/payload_analyzer.cpp.i
+
+src/userspace/payload_analyzer.s: src/userspace/payload_analyzer.cpp.s
+.PHONY : src/userspace/payload_analyzer.s
+
+# target to generate assembly for a file
+src/userspace/payload_analyzer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/src/userspace/payload_analyzer.cpp.s
+.PHONY : src/userspace/payload_analyzer.cpp.s
+
 src/userspace/ransomware_feature_extractor.o: src/userspace/ransomware_feature_extractor.cpp.o
 .PHONY : src/userspace/ransomware_feature_extractor.o
 
@@ -860,6 +900,30 @@ tests/test_integration_simple_event.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/tests/test_integration_simple_event.cpp.s
 .PHONY : tests/test_integration_simple_event.cpp.s
 
+tests/test_payload_analyzer.o: tests/test_payload_analyzer.cpp.o
+.PHONY : tests/test_payload_analyzer.o
+
+# target to build an object file
+tests/test_payload_analyzer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/tests/test_payload_analyzer.cpp.o
+.PHONY : tests/test_payload_analyzer.cpp.o
+
+tests/test_payload_analyzer.i: tests/test_payload_analyzer.cpp.i
+.PHONY : tests/test_payload_analyzer.i
+
+# target to preprocess a source file
+tests/test_payload_analyzer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/tests/test_payload_analyzer.cpp.i
+.PHONY : tests/test_payload_analyzer.cpp.i
+
+tests/test_payload_analyzer.s: tests/test_payload_analyzer.cpp.s
+.PHONY : tests/test_payload_analyzer.s
+
+# target to generate assembly for a file
+tests/test_payload_analyzer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/tests/test_payload_analyzer.cpp.s
+.PHONY : tests/test_payload_analyzer.cpp.s
+
 tests/test_ransomware_feature_extractor.o: tests/test_ransomware_feature_extractor.cpp.o
 .PHONY : tests/test_ransomware_feature_extractor.o
 
@@ -901,6 +965,7 @@ help:
 	@echo "... sniffer"
 	@echo "... test_fast_detector"
 	@echo "... test_integration_simple_event"
+	@echo "... test_payload_analyzer"
 	@echo "... test_ransomware_feature_extractor"
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
@@ -947,6 +1012,9 @@ help:
 	@echo "... src/userspace/main.o"
 	@echo "... src/userspace/main.i"
 	@echo "... src/userspace/main.s"
+	@echo "... src/userspace/payload_analyzer.o"
+	@echo "... src/userspace/payload_analyzer.i"
+	@echo "... src/userspace/payload_analyzer.s"
 	@echo "... src/userspace/ransomware_feature_extractor.o"
 	@echo "... src/userspace/ransomware_feature_extractor.i"
 	@echo "... src/userspace/ransomware_feature_extractor.s"
@@ -974,6 +1042,9 @@ help:
 	@echo "... tests/test_integration_simple_event.o"
 	@echo "... tests/test_integration_simple_event.i"
 	@echo "... tests/test_integration_simple_event.s"
+	@echo "... tests/test_payload_analyzer.o"
+	@echo "... tests/test_payload_analyzer.i"
+	@echo "... tests/test_payload_analyzer.s"
 	@echo "... tests/test_ransomware_feature_extractor.o"
 	@echo "... tests/test_ransomware_feature_extractor.i"
 	@echo "... tests/test_ransomware_feature_extractor.s"

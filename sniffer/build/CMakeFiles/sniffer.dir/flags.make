@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DCOMPRESSION_SUPPORT -DETCD_SUPPORT -DHAVE_LZ4 -DHAVE_ZSTD -DNDEBUG
 
-CXX_INCLUDES = -I/vagrant/sniffer/include -I/vagrant/sniffer/src -I/vagrant/sniffer/build/proto -I/usr/include/pgm-5.3 -I/usr/include/libxml2 -I/usr/include/jsoncpp
+CXX_INCLUDES = -I/vagrant/sniffer/include -I/vagrant/sniffer/src -I/vagrant/sniffer/build/proto -I/usr/include/pgm-5.3 -I/usr/include/libxml2 -I/usr/include/mit-krb5 -I/usr/include/jsoncpp
 
-CXX_FLAGS = -O3 -DNDEBUG -flto=auto -fno-fat-lto-objects -Wall -Wextra -Wpedantic -O3 -march=native -mtune=native -isystem /usr/include/mit-krb5 -mavx2 -ffast-math -std=c++20
+CXX_FLAGS = -O3 -DNDEBUG -flto=auto -fno-fat-lto-objects -Wall -Wextra -Wpedantic -O3 -march=native -mtune=native -mavx2 -ffast-math -std=c++20
 

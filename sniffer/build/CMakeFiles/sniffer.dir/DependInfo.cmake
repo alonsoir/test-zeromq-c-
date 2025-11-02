@@ -23,6 +23,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/vagrant/sniffer/src/userspace/flow_tracker.cpp" "CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ip_whitelist.cpp" "CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o.d"
   "/vagrant/sniffer/src/userspace/main.cpp" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o.d"
+  "/vagrant/sniffer/src/userspace/payload_analyzer.cpp" "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ransomware_feature_extractor.cpp" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ransomware_feature_processor.cpp" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ring_consumer.cpp" "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o.d"

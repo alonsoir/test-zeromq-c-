@@ -163,6 +163,7 @@ set(SNIFFER_SOURCES
         src/userspace/ransomware_feature_processor.cpp      # Integration processor
         src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
         src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+        src/userspace/payload_analyzer.cpp
         # ====================================================================
 
         src/userspace/bpf_map_manager.cpp
@@ -509,3 +510,22 @@ target_link_libraries(test_fast_detector
 )
 
 message(STATUS "🧪 Unit Test: test_fast_detector configured")
+
+# ============================================================================
+# PAYLOAD ANALYZER UNIT TEST
+# ============================================================================
+
+add_executable(test_payload_analyzer
+        tests/test_payload_analyzer.cpp
+        src/userspace/payload_analyzer.cpp
+)
+
+target_include_directories(test_payload_analyzer PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_payload_analyzer
+        Threads::Threads
+)
+
+message(STATUS "🧪 Unit Test: test_payload_analyzer configured")

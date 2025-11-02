@@ -27,20 +27,10 @@ PayloadAnalyzer::Features PayloadAnalyzer::analyze(const uint8_t* payload, uint1
     features.entropy = calculate_entropy_fast(payload, len);
     features.high_entropy = (features.entropy > 7.0f);
     
-    // 3. Lazy Pattern Matching: Only if suspicious
-    // Optimization: Skip expensive pattern matching for normal traffic
-    // Trigger: High entropy (>7.0) OR PE executable detected
-    if (features.high_entropy || features.is_pe_executable) {
-        // Pattern matching only for suspicious payloads (~100μs)
-        features.ransom_note_pattern = match_ransom_patterns(payload, len);
-        features.crypto_api_pattern = match_crypto_api_patterns(payload, len);
-        features.suspicious_strings = count_suspicious_strings(payload, len);
-    } else {
-        // Fast path: skip pattern matching for normal traffic
-        features.ransom_note_pattern = false;
-        features.crypto_api_pattern = false;
-        features.suspicious_strings = 0;
-    }
+    // 3. Pattern Matching (~2-3μs)
+    features.ransom_note_pattern = match_ransom_patterns(payload, len);
+    features.crypto_api_pattern = match_crypto_api_patterns(payload, len);
+    features.suspicious_strings = count_suspicious_strings(payload, len);
     
     return features;
 }
@@ -67,8 +57,7 @@ bool PayloadAnalyzer::check_pe_header(const uint8_t* data, uint16_t len) {
                          (data[0x3E] << 16) | (data[0x3F] << 24);
     
     // PE offset sanity check (should be < 1024 typically)
-    // Cast len to uint32_t to avoid signed/unsigned comparison warning
-    if (pe_offset + 4 > static_cast<uint32_t>(len) || pe_offset > 1024) {
+    if (pe_offset > len - 4 || pe_offset > 1024) {
         return false;
     }
     
@@ -131,23 +120,16 @@ float PayloadAnalyzer::calculate_entropy_fast(const uint8_t* data, uint16_t len)
         byte_freq_[data[i]]++;
     }
     
-    // Calculate Shannon entropy: H = -Σ(p * log2(p))
-    // Optimized: H = -Σ((freq/len) * (log2(freq) - log2(len)))
-    //              = -Σ((freq/len) * log2(freq)) + log2(len)
-    
+    // Calculate Shannon entropy using pre-computed log2 table
     float entropy = 0.0f;
     const float len_f = static_cast<float>(len);
     
-    // Calculate log2(len) dynamically (not in lookup table for len > 256)
-    const float log2_len = (len <= 256) ? log2_table_[len] : std::log2f(len_f);
-    
     for (uint32_t freq : byte_freq_) {
         if (freq > 0) {
-            // Use lookup table for frequencies (always <= len <= 512)
-            const float log2_freq = (freq <= 256) ? log2_table_[freq] : std::log2f(static_cast<float>(freq));
-            
-            // H -= (freq/len) * (log2(freq) - log2(len))
-            entropy -= (static_cast<float>(freq) / len_f) * (log2_freq - log2_len);
+            float probability = static_cast<float>(freq) / len_f;
+            // H = -Σ(p * log2(p))
+            // Using lookup table: log2(freq) - log2(len)
+            entropy -= probability * (log2_table_[freq] - log2_table_[len]);
         }
     }
     
