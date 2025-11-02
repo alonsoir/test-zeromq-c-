@@ -8,7 +8,6 @@
 #include "thread_manager.hpp"
 #include "fast_detector.hpp"
 #include "ransomware_feature_processor.hpp"
-#include "payload_analyzer.hpp"
 #include <bpf/libbpf.h>
 #include <zmq.hpp>
 #include <memory>
@@ -190,7 +189,6 @@ private:
 
     // Layer 1 - Fast Detection (thread-local)
     static thread_local FastDetector fast_detector_;
-    static thread_local PayloadAnalyzer payload_analyzer_;
 
     // Layer 2 - Deep Analysis (singleton)
     std::unique_ptr<RansomwareFeatureProcessor> ransomware_processor_;

@@ -19,7 +19,6 @@ namespace sniffer {
 // Thread-Local FastDetector (Layer 1 Detection)
 // ============================================================================
 thread_local FastDetector RingBufferConsumer::fast_detector_;
-thread_local PayloadAnalyzer RingBufferConsumer::payload_analyzer_;
 
 
 RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
@@ -402,28 +401,6 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
     fast_detector_.ingest(event);
     if (fast_detector_.is_suspicious()) {
         send_fast_alert(event);  // Immediate ZMQ alert
-    }
-
-    // ===== Layer 1.5: Payload Analysis (thread-local, ~1-150 μs) =====
-    // Only analyze if payload is present
-    if (event.payload_len > 0) {
-        auto payload_features = payload_analyzer_.analyze(event.payload, event.payload_len);
-        
-        // Check for high-risk indicators
-        if (payload_features.high_entropy || 
-            payload_features.is_pe_executable ||
-            payload_features.suspicious_strings > 0) {
-            
-            // TODO: Store payload features for protobuf
-            // Could add to thread_local cache or pass to populate_protobuf_event
-            
-            // Optional: Log suspicious payloads
-            if (g_verbosity >= FeatureLogger::VerbosityLevel::BASIC) {
-                std::cout << "[Payload] Suspicious: entropy=" << payload_features.entropy
-                          << " PE=" << payload_features.is_pe_executable
-                          << " patterns=" << payload_features.suspicious_strings << std::endl;
-            }
-        }
     }
 
     // Deep Analysis (thread-safe)

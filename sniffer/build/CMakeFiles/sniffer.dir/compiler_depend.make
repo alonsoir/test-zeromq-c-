@@ -4500,6 +4500,31 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/c++/12/list \
   /usr/include/c++/12/bits/stl_list.h \
   /usr/include/c++/12/bits/list.tcc \
+  /vagrant/sniffer/include/payload_analyzer.hpp \
+  /usr/include/c++/12/cmath \
+  /usr/include/math.h \
+  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+  /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+  /usr/include/c++/12/bits/specfun.h \
+  /usr/include/c++/12/tr1/gamma.tcc \
+  /usr/include/c++/12/tr1/special_function_util.h \
+  /usr/include/c++/12/tr1/bessel_function.tcc \
+  /usr/include/c++/12/tr1/beta_function.tcc \
+  /usr/include/c++/12/tr1/ell_integral.tcc \
+  /usr/include/c++/12/tr1/exp_integral.tcc \
+  /usr/include/c++/12/tr1/hypergeometric.tcc \
+  /usr/include/c++/12/tr1/legendre_function.tcc \
+  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
+  /usr/include/c++/12/tr1/poly_hermite.tcc \
+  /usr/include/c++/12/tr1/poly_laguerre.tcc \
+  /usr/include/c++/12/tr1/riemann_zeta.tcc \
   /usr/include/zmq.hpp \
   /usr/include/zmq.h \
   /usr/include/c++/12/optional \
@@ -4566,30 +4591,6 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/getopt.h \
   /usr/include/x86_64-linux-gnu/bits/getopt_ext.h \
   /usr/include/c++/12/random \
-  /usr/include/c++/12/cmath \
-  /usr/include/math.h \
-  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
-  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
-  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
-  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
-  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
-  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
-  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
-  /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
-  /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
-  /usr/include/c++/12/bits/specfun.h \
-  /usr/include/c++/12/tr1/gamma.tcc \
-  /usr/include/c++/12/tr1/special_function_util.h \
-  /usr/include/c++/12/tr1/bessel_function.tcc \
-  /usr/include/c++/12/tr1/beta_function.tcc \
-  /usr/include/c++/12/tr1/ell_integral.tcc \
-  /usr/include/c++/12/tr1/exp_integral.tcc \
-  /usr/include/c++/12/tr1/hypergeometric.tcc \
-  /usr/include/c++/12/tr1/legendre_function.tcc \
-  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
-  /usr/include/c++/12/tr1/poly_hermite.tcc \
-  /usr/include/c++/12/tr1/poly_laguerre.tcc \
-  /usr/include/c++/12/tr1/riemann_zeta.tcc \
   /usr/include/c++/12/bits/random.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/opt_random.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/include/pmmintrin.h \
@@ -5809,6 +5810,31 @@ CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o: /vagrant/sniffer/src/u
   /usr/include/c++/12/list \
   /usr/include/c++/12/bits/stl_list.h \
   /usr/include/c++/12/bits/list.tcc \
+  /vagrant/sniffer/include/payload_analyzer.hpp \
+  /usr/include/c++/12/cmath \
+  /usr/include/math.h \
+  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+  /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+  /usr/include/c++/12/bits/specfun.h \
+  /usr/include/c++/12/tr1/gamma.tcc \
+  /usr/include/c++/12/tr1/special_function_util.h \
+  /usr/include/c++/12/tr1/bessel_function.tcc \
+  /usr/include/c++/12/tr1/beta_function.tcc \
+  /usr/include/c++/12/tr1/ell_integral.tcc \
+  /usr/include/c++/12/tr1/exp_integral.tcc \
+  /usr/include/c++/12/tr1/hypergeometric.tcc \
+  /usr/include/c++/12/tr1/legendre_function.tcc \
+  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
+  /usr/include/c++/12/tr1/poly_hermite.tcc \
+  /usr/include/c++/12/tr1/poly_laguerre.tcc \
+  /usr/include/c++/12/tr1/riemann_zeta.tcc \
   /usr/include/bpf/libbpf.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/include/stdbool.h \
   /usr/include/linux/bpf.h \
@@ -6248,6 +6274,31 @@ CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o: /vagrant/sniffer/src/
   /usr/include/c++/12/list \
   /usr/include/c++/12/bits/stl_list.h \
   /usr/include/c++/12/bits/list.tcc \
+  /vagrant/sniffer/include/payload_analyzer.hpp \
+  /usr/include/c++/12/cmath \
+  /usr/include/math.h \
+  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+  /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+  /usr/include/c++/12/bits/specfun.h \
+  /usr/include/c++/12/tr1/gamma.tcc \
+  /usr/include/c++/12/tr1/special_function_util.h \
+  /usr/include/c++/12/tr1/bessel_function.tcc \
+  /usr/include/c++/12/tr1/beta_function.tcc \
+  /usr/include/c++/12/tr1/ell_integral.tcc \
+  /usr/include/c++/12/tr1/exp_integral.tcc \
+  /usr/include/c++/12/tr1/hypergeometric.tcc \
+  /usr/include/c++/12/tr1/legendre_function.tcc \
+  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
+  /usr/include/c++/12/tr1/poly_hermite.tcc \
+  /usr/include/c++/12/tr1/poly_laguerre.tcc \
+  /usr/include/c++/12/tr1/riemann_zeta.tcc \
   /usr/include/bpf/libbpf.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/include/stdbool.h \
   /usr/include/linux/bpf.h \
@@ -7090,8 +7141,6 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 
 /vagrant/sniffer/src/userspace/ransomware_feature_extractor.cpp:
 
-/vagrant/sniffer/include/payload_analyzer.hpp:
-
 /vagrant/sniffer/src/userspace/payload_analyzer.cpp:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/mm_malloc.h:
@@ -7151,6 +7200,8 @@ CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o: /vagrant/sniffer/sr
 /usr/include/netinet/ip.h:
 
 /usr/include/c++/12/optional:
+
+/vagrant/sniffer/include/payload_analyzer.hpp:
 
 /vagrant/sniffer/include/ransomware_feature_extractor.hpp:
 
