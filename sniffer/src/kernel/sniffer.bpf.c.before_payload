@@ -68,8 +68,6 @@ struct simple_event {
     __u16 ip_header_len;
     __u16 l4_header_len;
     __u64 timestamp;
-    __u16 payload_len;
-    __u8 payload[512];
 } __attribute__((packed));
 
 // Filter configuration
@@ -274,29 +272,6 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
         event->tcp_flags = 0;
         event->l4_header_len = 0;
     }
-    // ===== Payload Capture with eBPF Verifier Compliance =====
-    // Calculate payload start (after IP + L4 headers)
-    void *payload_start = ip_start + ihl + event->l4_header_len;
-    
-    // Initialize payload_len to 0
-    event->payload_len = 0;
-    
-    // Bounds check: ensure payload_start is within packet
-    if (payload_start < data_end && payload_start >= data) {
-        // Copy up to 512 bytes with explicit bounds checking
-        #pragma unroll
-        for (int i = 0; i < 512; i++) {
-            // eBPF verifier requires explicit check on every iteration
-            if (payload_start + i >= data_end) {
-                break;
-            }
-            
-            // Safe copy with bounds verification
-            event->payload[i] = *(__u8*)(payload_start + i);
-            event->payload_len++;
-        }
-    }
-
 
     // Submit event to ring buffer
     bpf_ringbuf_submit(event, 0);

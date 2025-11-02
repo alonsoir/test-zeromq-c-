@@ -30,8 +30,6 @@ struct SimpleEvent {
     uint16_t ip_header_len;
     uint16_t l4_header_len;
     uint64_t timestamp;
-    uint16_t payload_len;
-    uint8_t payload[512];
 } __attribute__((packed));
 
 // Helper functions for TCP flags
