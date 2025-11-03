@@ -123,11 +123,11 @@ Status: ✅ PRODUCTION-READY
 - ✅ Shannon entropy (0-8 bits scale)
 - ✅ PE executable detection (MZ/PE headers)
 - ✅ 30+ pattern signatures:
-    - `.onion` domains (Tor C&C)
-    - `CryptEncrypt`, `CryptDecrypt` API calls
-    - Bitcoin addresses
-    - Ransom note patterns
-    - File extension lists (`.encrypted`, `.locked`, `.cerber`)
+  - `.onion` domains (Tor C&C)
+  - `CryptEncrypt`, `CryptDecrypt` API calls
+  - Bitcoin addresses
+  - Ransom note patterns
+  - File extension lists (`.encrypted`, `.locked`, `.cerber`)
 
 **Behavioral Detection:**
 - ✅ External IP tracking (C&C communication)
@@ -310,108 +310,39 @@ sniffer/
 
 ## 🎯 Roadmap
 
-### ✅ Phase 1: Sniffer Core Detection (COMPLETE)
-**Component:** cpp_sniffer (this repo)
+### ✅ Phase 1: Core Detection (COMPLETE)
 - [x] Protocol numbers standardization (IANA)
 - [x] FastDetector (Layer 1 - 10s heuristics)
 - [x] RansomwareFeatureProcessor (Layer 2 - 30s features)
 - [x] **eBPF payload capture (512 bytes)** - Task 1A
 - [x] **PayloadAnalyzer component** - Task 1B
 - [x] **RingConsumer integration** - Task 1C
-- [x] Three-layer detection pipeline
-- [x] Live traffic validation (17h test, 2.08M packets)
+- [x] Two-layer → Three-layer pipeline
+- [x] Live traffic validation (17h test)
 - [x] Comprehensive testing (25+ tests passing)
-- [x] Production stability validation
+- [x] **Production stability validation** (2.08M packets)
 
-**Status:** ✅ Production-Ready
-
-### 🔄 Phase 2: ML Detector (IN PROGRESS)
-**Component:** ml-detector
-- [x] Random Forest model #1 (8 features, 98.61% accuracy)
-- [ ] Model #2: XGBoost (advanced features)
-- [ ] Model #3: Deep Learning (sequence analysis)
+### 🔄 Phase 2: ML Integration (NEXT)
+- [ ] Random Forest model (8 features, 98.61% accuracy)
 - [ ] Real-time inference pipeline
 - [ ] Model versioning and updates
 - [ ] A/B testing framework
 - [ ] Feature importance analysis
 
-**Status:** 🔄 Model #1 deployed, 2 more models pending
+### 🔄 Phase 3: Advanced Detection (PLANNED)
+- [ ] Bloom filter optimization (pattern matching)
+- [ ] SIMD acceleration (AVX2 entropy)
+- [ ] TLS fingerprinting (JA3/JA4)
+- [ ] DNS tunneling detection
+- [ ] Encrypted traffic analysis
 
-### 🔄 Phase 3: Firewall ACL Agent (NEXT)
-**Component:** firewall-acl-agent
-- [ ] iptables/nftables integration
-- [ ] Dynamic rule management
-- [ ] Response actions (block, rate-limit, quarantine)
-- [ ] Whitelist/blacklist management
-- [ ] Alert escalation
-- [ ] Rollback mechanisms
-- [ ] Testing with sniffer + ml-detector
-
-**Status:** 🎯 Ready to start after ml-detector Phase 2
-
-**Milestone:** 🏠 Home Device Ready (sniffer + ml-detector + firewall-acl-agent)
-
-### 🔄 Phase 4: Enterprise Features (PLANNED)
-**Focus:** Production-grade enterprise deployment
-- [ ] **Async Training Pipeline**
-    - Synthetic data generation
-    - Continuous model retraining
-    - Model evaluation and rollout
-- [ ] **Runtime Configuration (etcd)**
-    - Dynamic config updates
-    - Component coordination
-    - Version management
-- [ ] **Watcher System**
-    - Per-component config watchers
-    - Hot-reload capabilities
-    - State synchronization
-- [ ] **Human-in-the-Loop**
-    - RAG/MCP server integration
-    - Natural language interaction
-    - Runtime JSON modification
-    - Dynamic statistics queries
-- [ ] **Wiki Documentation**
-    - Component behavior documentation
-    - JSON schema definitions
-    - Configuration examples
-    - Troubleshooting guides
-
-**Status:** 📋 Planned for post-home-device
-
-### 🔄 Phase 5: Home Device Deployment (FINAL GOAL)
-**Target:** Raspberry Pi 5 - Secure Home Network Protection
-- [ ] **Custom Debian 11 ARM**
-    - Minimal attack surface
-    - Stripped unnecessary packages
-    - Optimized for security
-- [ ] **ARM Compilation**
-    - Native ARM binaries
-    - Performance optimization
-    - Size optimization
-- [ ] **Security Hardening**
-    - Minimal services
-    - Firewall rules
-    - Secure boot
-    - Auto-updates
-- [ ] **Physical Device**
-    - Case design (with avatars!)
-    - Shell customization
-    - LED indicators
-    - First prototype deployment
-
-**Status:** 🎯 The Dream - When all components are ready
-
----
-
-## 🧪 Testing Methodology (Continuous)
-
-Between each major feature:
-- ✅ **Stress Testing** - High load validation
-- ✅ **Long-Running Stability** - 17h+ uptime tests
-- ✅ **Performance Metrics** - Throughput, latency, memory
-- ✅ **Regression Testing** - All previous tests must pass
-
-**Current Status:** 17h test completed (Phase 1) ✅
+### 🔄 Phase 4: Production Deployment (PLANNED)
+- [ ] Docker containerization
+- [ ] Kubernetes deployment
+- [ ] Prometheus metrics
+- [ ] Grafana dashboards
+- [ ] Alert management system
+- [ ] Multi-node coordination
 
 ## 📈 Metrics & Monitoring
 
@@ -525,18 +456,3 @@ MIT License - See LICENSE file for details
 **Last Updated:** November 3, 2025
 
 **Built with ❤️ for cybersecurity professionals**
-EOFREADME
-
-echo "✅ README.md updated with all current metrics!"
-echo ""
-echo "Changes made:"
-echo "  ✅ Added Layer 1.5 (PayloadAnalyzer)"
-echo "  ✅ Updated architecture to 3-layer"
-echo "  ✅ Added 17h test results"
-echo "  ✅ Updated performance benchmarks"
-echo "  ✅ Added payload analysis details"
-echo "  ✅ Updated roadmap (Phase 1 complete)"
-echo "  ✅ Added troubleshooting section"
-echo "  ✅ Removed duplicates"
-echo ""
-echo "Next: ARCHITECTURE.md (technical deep-dive)"

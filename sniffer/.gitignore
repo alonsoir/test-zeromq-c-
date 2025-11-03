@@ -15,3 +15,27 @@ Makefile
 *.a
 sniffer
 *.bpf.o
+
+# Build artifacts
+build/
+*.o
+*.so
+*.a
+
+# Test outputs
+/tmp/
+*.log
+*.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Backups
+*.backup
+*.backup_*
+*~
+
+# macOS
+.DS_Store
