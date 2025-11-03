@@ -1,7 +1,8 @@
-//sniffer/src/bpf/sniffer.bpf.c
-// Enhanced eBPF sniffer with TCP flags extraction for ML features
+//sniffer/src/kernel/sniffer.bpf.c
+// Enhanced eBPF sniffer v3.2 - Hybrid filtering system
+// Supports both blacklist (excluded_ports) and whitelist (included_ports)
 
-// Definiciones completas de tipos
+// Type definitions
 typedef unsigned char __u8;
 typedef unsigned short __u16;
 typedef unsigned int __u32;
@@ -11,31 +12,27 @@ typedef signed short __s16;
 typedef signed int __s32;
 typedef signed long long __s64;
 
-// Big endian types
 typedef __u16 __be16;
 typedef __u32 __be32;
 typedef __u64 __be64;
-
-// Checksum type
 typedef __u32 __wsum;
 
-// Forward declarations
 struct iphdr;
 struct ipv6hdr;
 struct tcphdr;
 struct __sk_buff;
 
-// Incluir headers de eBPF
 #include <bpf/bpf_helpers.h>
 
-// Definiciones básicas
+// Basic definitions
 #define ETH_HLEN 14
 #define XDP_PASS 2
 #define BPF_MAP_TYPE_RINGBUF 27
 #define BPF_MAP_TYPE_ARRAY 2
+#define BPF_MAP_TYPE_HASH 1
 #define BPF_ANY 0
 
-// TCP flag definitions
+// TCP flags
 #define TCP_FLAG_FIN 0x01
 #define TCP_FLAG_SYN 0x02
 #define TCP_FLAG_RST 0x04
@@ -45,7 +42,11 @@ struct __sk_buff;
 #define TCP_FLAG_ECE 0x40
 #define TCP_FLAG_CWR 0x80
 
-// Estructura del contexto XDP
+// Filter actions
+#define ACTION_DROP 0
+#define ACTION_CAPTURE 1
+
+// XDP context
 struct xdp_md {
     __u32 data;
     __u32 data_end;
@@ -55,27 +56,59 @@ struct xdp_md {
     __u32 egress_ifindex;
 };
 
-// ⭐ NUEVA ESTRUCTURA - Enhanced event con TCP flags
+// Event structure
 struct simple_event {
     __u32 src_ip;
     __u32 dst_ip;
     __u16 src_port;
     __u16 dst_port;
     __u8 protocol;
-    __u8 tcp_flags;          // ⭐ NUEVO: TCP flags para ML features
+    __u8 tcp_flags;
     __u32 packet_len;
-    __u16 ip_header_len;     // ⭐ NUEVO: IP header length
-    __u16 l4_header_len;     // ⭐ NUEVO: L4 header length (TCP/UDP)
+    __u16 ip_header_len;
+    __u16 l4_header_len;
     __u64 timestamp;
+    __u16 payload_len;
+    __u8 payload[512];
 } __attribute__((packed));
 
-// Ring buffer (aumentado para mejor throughput)
+// Filter configuration
+struct filter_config {
+    __u8 default_action;  // 0 = drop, 1 = capture
+    __u8 reserved[7];
+};
+
+// 🔥 MAP 1: Excluded ports (blacklist)
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, __u16);    // Port number
+    __type(value, __u8);   // 1 = excluded
+} excluded_ports SEC(".maps");
+
+// 🔥 MAP 2: Included ports (whitelist - HIGH PRIORITY)
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, __u16);    // Port number
+    __type(value, __u8);   // 1 = included
+} included_ports SEC(".maps");
+
+// 🔥 MAP 3: Global filter settings
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, struct filter_config);
+} filter_settings SEC(".maps");
+
+// Ring buffer for events
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 1 << 20);  // 1MB
 } events SEC(".maps");
 
-// Estadísticas
+// Statistics
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
@@ -83,36 +116,44 @@ struct {
     __type(value, __u64);
 } stats SEC(".maps");
 
-// Helper: Extract TCP flags from TCP header
+// 🔥 FILTER LOGIC: Decide if port should be captured
+// Returns: 1 = capture, 0 = drop
+static __always_inline int should_capture_port(__u16 port) {
+    // STEP 1: Check whitelist (HIGHEST PRIORITY)
+    __u8 *included = bpf_map_lookup_elem(&included_ports, &port);
+    if (included && *included == 1) {
+        return ACTION_CAPTURE;  // ✅ Whitelist always wins
+    }
+
+    // STEP 2: Check blacklist
+    __u8 *excluded = bpf_map_lookup_elem(&excluded_ports, &port);
+    if (excluded && *excluded == 1) {
+        return ACTION_DROP;  // ❌ In blacklist, drop
+    }
+
+    // STEP 3: Apply default action
+    __u32 key = 0;
+    struct filter_config *config = bpf_map_lookup_elem(&filter_settings, &key);
+    if (config) {
+        return config->default_action;
+    }
+
+    return ACTION_CAPTURE;  // Fallback: capture
+}
+
+// Helper: Extract TCP flags
 static __always_inline __u8 extract_tcp_flags(void *tcp_start, void *data_end) {
-    // TCP header mínimo: 20 bytes
     if (tcp_start + 20 > data_end)
         return 0;
-
     __u8 *tcp = (__u8*)tcp_start;
-
-    // TCP flags están en el byte 13 del TCP header
-    // Estructura TCP header:
-    // 0-1: src_port
-    // 2-3: dst_port
-    // 4-7: seq_num
-    // 8-11: ack_num
-    // 12: data_offset (4 bits) + reserved (3 bits) + NS flag (1 bit)
-    // 13: flags (CWR, ECE, URG, ACK, PSH, RST, SYN, FIN)
-
-    __u8 flags = tcp[13];
-    return flags;
+    return tcp[13];  // Flags byte
 }
 
 // Helper: Get TCP header length
 static __always_inline __u16 get_tcp_header_len(void *tcp_start, void *data_end) {
     if (tcp_start + 13 > data_end)
         return 0;
-
     __u8 *tcp = (__u8*)tcp_start;
-
-    // Data offset está en los primeros 4 bits del byte 12
-    // Se multiplica por 4 para obtener el tamaño en bytes
     __u8 data_offset = (tcp[12] >> 4) & 0x0F;
     return data_offset * 4;
 }
@@ -122,56 +163,52 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
     void *data = (void *)(long)ctx->data;
     void *data_end = (void *)(long)ctx->data_end;
 
-    // Verificar que tenemos al menos ethernet header
+    // Verify ethernet header
     if (data + ETH_HLEN > data_end)
         return XDP_PASS;
 
-    // Saltamos ethernet header
     void *ip_start = data + ETH_HLEN;
 
-    // Verificar que tenemos al menos 20 bytes de IP header
+    // Verify IP header
     if (ip_start + 20 > data_end)
         return XDP_PASS;
 
-    // Leer campos básicos del IP header
     __u8 *ip = (__u8*)ip_start;
 
-    // Verificar IPv4
+    // Verify IPv4
     if ((ip[0] >> 4) != 4)
         return XDP_PASS;
 
-    // Reservar espacio en ring buffer
+    // Reserve ring buffer space
     struct simple_event *event = bpf_ringbuf_reserve(&events, sizeof(*event), 0);
     if (!event) {
         return XDP_PASS;
     }
 
-    // Inicializar estructura
     __builtin_memset(event, 0, sizeof(*event));
 
-    // Extraer IPs (bytes 12-15 src, 16-19 dst)
+    // Extract IPs
     event->src_ip = (ip[12] << 24) | (ip[13] << 16) | (ip[14] << 8) | ip[15];
     event->dst_ip = (ip[16] << 24) | (ip[17] << 16) | (ip[18] << 8) | ip[19];
 
-    // Protocolo
+    // Protocol
     event->protocol = ip[9];
 
-    // Packet length total
+    // Packet length
     event->packet_len = data_end - data;
 
-    // IP header length (IHL field * 4)
+    // IP header length
     __u8 ihl = (ip[0] & 0x0F) * 4;
     event->ip_header_len = ihl;
 
     // Timestamp
     event->timestamp = bpf_ktime_get_ns();
 
-    // ⭐ PROCESAMIENTO POR PROTOCOLO
+    // Layer 4 processing
     void *l4_start = ip_start + ihl;
 
     if (event->protocol == 6) {
         // ============ TCP ============
-        // Verificar que tenemos suficiente espacio para puertos
         if (l4_start + 4 > data_end) {
             bpf_ringbuf_discard(event, 0);
             return XDP_PASS;
@@ -179,19 +216,30 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
 
         __u8 *tcp = (__u8*)l4_start;
 
-        // Extraer puertos
+        // Extract ports
         event->src_port = (tcp[0] << 8) | tcp[1];
         event->dst_port = (tcp[2] << 8) | tcp[3];
 
-        // ⭐ EXTRAER TCP FLAGS (crítico para ML)
+        // 🔥 APPLY FILTER - Check destination port
+        if (!should_capture_port(event->dst_port)) {
+            bpf_ringbuf_discard(event, 0);
+            return XDP_PASS;
+        }
+
+        // 🔥 APPLY FILTER - Check source port
+        if (!should_capture_port(event->src_port)) {
+            bpf_ringbuf_discard(event, 0);
+            return XDP_PASS;
+        }
+
+        // Extract TCP flags
         event->tcp_flags = extract_tcp_flags(l4_start, data_end);
 
-        // ⭐ TCP header length
+        // TCP header length
         event->l4_header_len = get_tcp_header_len(l4_start, data_end);
 
     } else if (event->protocol == 17) {
         // ============ UDP ============
-        // Verificar espacio para puertos
         if (l4_start + 4 > data_end) {
             bpf_ringbuf_discard(event, 0);
             return XDP_PASS;
@@ -199,29 +247,61 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
 
         __u8 *udp = (__u8*)l4_start;
 
-        // Extraer puertos
+        // Extract ports
         event->src_port = (udp[0] << 8) | udp[1];
         event->dst_port = (udp[2] << 8) | udp[3];
 
-        // UDP header es siempre 8 bytes
-        event->l4_header_len = 8;
+        // 🔥 APPLY FILTER - Check destination port
+        if (!should_capture_port(event->dst_port)) {
+            bpf_ringbuf_discard(event, 0);
+            return XDP_PASS;
+        }
 
-        // UDP no tiene flags
+        // 🔥 APPLY FILTER - Check source port
+        if (!should_capture_port(event->src_port)) {
+            bpf_ringbuf_discard(event, 0);
+            return XDP_PASS;
+        }
+
+        // UDP header is always 8 bytes
+        event->l4_header_len = 8;
         event->tcp_flags = 0;
 
     } else {
-        // ============ OTROS PROTOCOLOS ============
-        // ICMP, GRE, etc - no tienen puertos ni flags
+        // ============ OTHER PROTOCOLS ============
         event->src_port = 0;
         event->dst_port = 0;
         event->tcp_flags = 0;
         event->l4_header_len = 0;
     }
+    // ===== Payload Capture with eBPF Verifier Compliance =====
+    // Calculate payload start (after IP + L4 headers)
+    void *payload_start = ip_start + ihl + event->l4_header_len;
+    
+    // Initialize payload_len to 0
+    event->payload_len = 0;
+    
+    // Bounds check: ensure payload_start is within packet
+    if (payload_start < data_end && payload_start >= data) {
+        // Copy up to 512 bytes with explicit bounds checking
+        #pragma unroll
+        for (int i = 0; i < 512; i++) {
+            // eBPF verifier requires explicit check on every iteration
+            if (payload_start + i >= data_end) {
+                break;
+            }
+            
+            // Safe copy with bounds verification
+            event->payload[i] = *(__u8*)(payload_start + i);
+            event->payload_len++;
+        }
+    }
 
-    // Submit event al ring buffer
+
+    // Submit event to ring buffer
     bpf_ringbuf_submit(event, 0);
 
-    // Actualizar estadísticas
+    // Update statistics
     __u32 key = 0;
     __u64 *count = bpf_map_lookup_elem(&stats, &key);
     if (count)

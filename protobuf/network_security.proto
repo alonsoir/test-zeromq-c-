@@ -115,12 +115,16 @@ message NetworkFeatures {
   double packet_length_mean = 97;
   double packet_length_std = 98;
   double packet_length_variance = 99;
+    // 🎯 FEATURES ADICIONALES PARA LEVEL 2 DDOS (TEMPORALES)
+    double active_mean = 104;    // Mean active time (microseconds)
+    double idle_mean = 105;      // Mean idle time (microseconds)
 
   // 🎯 FEATURES ESPECÍFICAS POR TIPO DE MODELO ML
   repeated double ddos_features = 100;           // 83 features para DDOS
-  repeated double ransomware_features = 101;     // 83 features para Ransomware
+  repeated double ransomware_features = 101;     // 83 features para Ransomware. Este sería para el modelo enterprise. Futuro
   repeated double general_attack_features = 102; // 23 features para RF general
   repeated double internal_traffic_features = 103; // 4-5 features tráfico interno
+    RansomwareFeatures ransomware = 106;            // 20 features para Ransomware. Este sería para la caja doméstica.
 
   // 🔧 FEATURES PERSONALIZADAS Y METADATOS
   map<string, double> custom_features = 110;
@@ -258,30 +262,35 @@ message ModelPrediction {
   google.protobuf.Timestamp prediction_timestamp = 7;
   google.protobuf.Duration processing_duration = 8;
 
-  enum ModelType {
-    RANDOM_FOREST_GENERAL = 0;         // RF 23 features - detección general
-    LIGHTGBM_DDOS = 1;                 // LightGBM especializado DDOS
-    NEURAL_NETWORK_RANSOMWARE = 2;     // NN especializado Ransomware
-    ENSEMBLE_TRICAPA = 3;              // Ensemble de múltiples modelos
-    INTERNAL_TRAFFIC_CLASSIFIER = 4;   // Clasificador tráfico interno
-    TRANSFORMER_ADVANCED = 5;          // Modelo transformer avanzado
-  }
+    enum ModelType {
+        RANDOM_FOREST_GENERAL = 0;         // RF 23 features - detección general
+        LIGHTGBM_DDOS = 1;                 // LightGBM especializado DDOS
+        NEURAL_NETWORK_RANSOMWARE = 2;     // NN especializado Ransomware
+        ENSEMBLE_TRICAPA = 3;              // Ensemble de múltiples modelos
+        INTERNAL_TRAFFIC_CLASSIFIER = 4;   // Clasificador tráfico interno
+        TRANSFORMER_ADVANCED = 5;          // Modelo transformer avanzado
+        RANDOM_FOREST_DDOS = 6;            // RF Binary DDoS detector (8 features, 98.61% acc)
+        RANDOM_FOREST_RANSOMWARE = 7;      // RF Ransomware detector (future)
+    }
 }
 
 message TricapaMLAnalysis {
-  // 🥇 NIVEL 1 - Filtro General (RF con 23 features)
-  ModelPrediction level1_general_detection = 1;
-  bool attack_detected_level1 = 2;
-  double level1_confidence = 3;
+    // 🥇 NIVEL 1 - Filtro General (RF con 23 features)
+    ModelPrediction level1_general_detection = 1;
+    bool attack_detected_level1 = 2;
+    double level1_confidence = 3;
 
-  // 🥈 NIVEL 2 - Clasificación de Contexto
-  ModelPrediction level2_context_classification = 4;
-  string traffic_context = 5;           // "INTERNAL", "EXTERNAL_WEB", "EXTERNAL_OTHER"
+    // 🥈 NIVEL 2 - Clasificación de Contexto
+    ModelPrediction level2_context_classification = 4;
+    string traffic_context = 5;           // "INTERNAL", "EXTERNAL_WEB", "EXTERNAL_OTHER"
 
-  // 🥉 NIVEL 3 - Especialización por Amenaza (83 features)
-  repeated ModelPrediction level3_specialized_predictions = 6;
-  string final_threat_classification = 7;
-  double ensemble_confidence = 8;
+    // 🥈 NIVEL 2 - Clasificadores Especializados (DDoS, Ransomware)
+    repeated ModelPrediction level2_specialized_predictions = 9;
+
+    // 🥉 NIVEL 3 - Especialización por Amenaza (83 features)
+    repeated ModelPrediction level3_specialized_predictions = 6;
+    string final_threat_classification = 7;
+    double ensemble_confidence = 8;
 
   // 📊 ANÁLISIS AGREGADO
   google.protobuf.Duration total_analysis_duration = 10;
@@ -524,4 +533,34 @@ message SystemConfiguration {
   bool rag_analysis_enabled = 10;
   string rag_model_endpoint = 11;
   repeated string knowledge_base_sources = 12;
+}
+
+message RansomwareFeatures {
+    // C&C Communication
+    float dns_query_entropy = 1;
+    int32 new_external_ips_30s = 2;
+    float dns_query_rate_per_min = 3;
+    float failed_dns_queries_ratio = 4;
+    int32 tls_self_signed_cert_count = 5;
+    int32 non_standard_port_http_count = 6;
+
+    // Lateral Movement
+    int32 smb_connection_diversity = 7;
+    int32 rdp_failed_auth_count = 8;
+    int32 new_internal_connections_30s = 9;
+    float port_scan_pattern_score = 10;
+
+    // Exfiltration
+    float upload_download_ratio_30s = 11;
+    int32 burst_connections_count = 12;
+    int32 unique_destinations_30s = 13;
+    int32 large_upload_sessions_count = 14;
+
+    // Behavioral
+    bool nocturnal_activity_flag = 15;
+    float connection_rate_stddev = 16;
+    float protocol_diversity_score = 17;
+    float avg_flow_duration_seconds = 18;
+    float tcp_rst_ratio = 19;
+    float syn_without_ack_ratio = 20;
 }

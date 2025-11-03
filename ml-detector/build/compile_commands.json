@@ -1,0 +1,57 @@
+[
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/main.cpp.o -c /vagrant/ml-detector/src/main.cpp",
+  "file": "/vagrant/ml-detector/src/main.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/ml_detector.cpp.o -c /vagrant/ml-detector/src/ml_detector.cpp",
+  "file": "/vagrant/ml-detector/src/ml_detector.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/classifier_tricapa.cpp.o -c /vagrant/ml-detector/src/classifier_tricapa.cpp",
+  "file": "/vagrant/ml-detector/src/classifier_tricapa.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/feature_extractor.cpp.o -c /vagrant/ml-detector/src/feature_extractor.cpp",
+  "file": "/vagrant/ml-detector/src/feature_extractor.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/zmq_handler.cpp.o -c /vagrant/ml-detector/src/zmq_handler.cpp",
+  "file": "/vagrant/ml-detector/src/zmq_handler.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/model_loader.cpp.o -c /vagrant/ml-detector/src/model_loader.cpp",
+  "file": "/vagrant/ml-detector/src/model_loader.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/onnx_model.cpp.o -c /vagrant/ml-detector/src/onnx_model.cpp",
+  "file": "/vagrant/ml-detector/src/onnx_model.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/config_loader.cpp.o -c /vagrant/ml-detector/src/config_loader.cpp",
+  "file": "/vagrant/ml-detector/src/config_loader.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/logger.cpp.o -c /vagrant/ml-detector/src/logger.cpp",
+  "file": "/vagrant/ml-detector/src/logger.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/src/stats_collector.cpp.o -c /vagrant/ml-detector/src/stats_collector.cpp",
+  "file": "/vagrant/ml-detector/src/stats_collector.cpp"
+},
+{
+  "directory": "/vagrant/ml-detector/build",
+  "command": "/usr/bin/c++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/vagrant/ml-detector/src/protobuf -I/vagrant/ml-detector/include -I/vagrant/ml-detector/../protobuf -isystem /usr/include/pgm-5.3 -isystem /usr/include/libxml2 -isystem /usr/include/mit-krb5 -O3 -DNDEBUG -fPIE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wno-unused-parameter -O3 -DNDEBUG -ffast-math -funroll-loops -march=native -mavx2 -std=c++20 -o CMakeFiles/ml-detector.dir/vagrant/protobuf/network_security.pb.cc.o -c /vagrant/protobuf/network_security.pb.cc",
+  "file": "/vagrant/protobuf/network_security.pb.cc"
+}
+]

@@ -1,0 +1,123 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================================================================
+# DATASETS (NO VERSIONAR - Muy pesados)
+# ============================================================================
+# Directorios completos
+datasets/
+datasets_parquet/
+raw_data/
+data/
+
+# Archivos de datos
+*.csv
+*.pcap
+*.pcap.gz
+*.parquet
+*.arrow
+*.feather
+*.h5
+*.hdf5
+
+# Archivos comprimidos de datasets
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.7z
+
+# EXCEPCIONES: Permitir archivos pequeños de ejemplo o metadata
+!**/example*.csv
+!**/sample*.csv
+!**/test_small*.csv
+
+# Permitir README con URLs de descarga
+!datasets/README.md
+!datasets/DOWNLOAD_URLS.md
+# ============================================================================
+
+# Outputs (generados, no versionar)
+outputs/models/*.joblib
+outputs/models/*.pkl
+outputs/models/*.h5
+outputs/onnx/*.onnx
+outputs/plots/*.png
+outputs/plots/*.jpg
+outputs/plots/*.svg
+
+# Pero sí versionar metadata y configs
+!outputs/metadata/*.json
+!outputs/configs/*.yaml
+!outputs/configs/*.json
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary
+tmp/
+temp/
+*.tmp
+.cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Model checkpoints (muy grandes)
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+
+# Profiling
+*.prof
+*.lprof
+
+# Parquet files (definitivamente excluidos)
+*.parquet
+datasets_parquet/

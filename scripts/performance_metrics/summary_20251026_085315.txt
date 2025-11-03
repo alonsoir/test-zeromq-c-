@@ -1,0 +1,28 @@
+╔════════════════════════════════════════════════════════════╗
+║  Performance Monitoring Summary                            ║
+╚════════════════════════════════════════════════════════════╝
+
+Duration: 113 minutes (1362 samples)
+Sample interval: 5s
+Timestamp: 2025-10-26 10:53:13
+
+CPU USAGE:
+  Sniffer:
+    Average: 0%
+    Peak: 0.0%
+  ml-detector:
+    Average: 5625%
+    Peak: 5625%
+
+MEMORY USAGE (RSS):
+  Sniffer:
+    Average: 4 MB
+    Peak: 4 MB
+  ml-detector:
+    Average: 9 MB
+    Peak: 9 MB
+
+NETWORK TRANSFER:
+  RX: 0 MB
+  TX: 1 MB
+

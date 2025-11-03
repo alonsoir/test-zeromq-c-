@@ -1,0 +1,68 @@
+{
+  "model_name": "level1_attack_detector_onnx",
+  "onnx_version": "1.12",
+  "opset_version": 12,
+  "original_model": "level1_attack_detector",
+  "conversion_date": "2025-10-15T10:06:10.627708",
+  "n_features": 23,
+  "feature_names": [
+    " Packet Length Std",
+    " Subflow Fwd Bytes",
+    " Fwd Packet Length Max",
+    " Avg Fwd Segment Size",
+    " ACK Flag Count",
+    " Packet Length Variance",
+    " PSH Flag Count",
+    "Bwd Packet Length Max",
+    " act_data_pkt_fwd",
+    "Total Length of Fwd Packets",
+    " Fwd Packet Length Std",
+    "Fwd Packets/s",
+    " Subflow Bwd Bytes",
+    " Destination Port",
+    "Init_Win_bytes_forward",
+    "Subflow Fwd Packets",
+    " Fwd IAT Min",
+    " Packet Length Mean",
+    " Total Length of Bwd Packets",
+    " Bwd Packet Length Mean",
+    " Bwd Packet Length Min",
+    " Flow Duration",
+    " Flow Packets/s"
+  ],
+  "classes": [
+    "BENIGN",
+    "ATTACK"
+  ],
+  "input_name": "float_input",
+  "input_shape": [
+    null,
+    23
+  ],
+  "input_dtype": "float32",
+  "output_label_name": "label",
+  "output_proba_name": "probabilities",
+  "validation_passed": true,
+  "sklearn_metrics": {
+    "accuracy": 0.9987529784562015,
+    "precision": 0.9944321010787804,
+    "recall": 0.999264765218015,
+    "f1_score": 0.9968425760286226,
+    "roc_auc": 0.9999393864175975,
+    "confusion_matrix": [
+      [
+        453996,
+        624
+      ],
+      [
+        82,
+        111447
+      ]
+    ]
+  },
+  "usage": {
+    "cpp_example": "ONNXModel model(\"level1_attack_detector.onnx\"); auto result = model.predict(features);",
+    "expected_input": "float array of size 23",
+    "expected_output": "label (0=BENIGN, 1=ATTACK) + probabilities [prob_benign, prob_attack]"
+  }
+}

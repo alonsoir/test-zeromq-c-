@@ -111,6 +111,9 @@ extern PipelineTracking_ComponentMetadataEntry_DoNotUseDefaultTypeInternal _Pipe
 class RAGAnalysis;
 struct RAGAnalysisDefaultTypeInternal;
 extern RAGAnalysisDefaultTypeInternal _RAGAnalysis_default_instance_;
+class RansomwareFeatures;
+struct RansomwareFeaturesDefaultTypeInternal;
+extern RansomwareFeaturesDefaultTypeInternal _RansomwareFeatures_default_instance_;
 class SystemConfiguration;
 struct SystemConfigurationDefaultTypeInternal;
 extern SystemConfigurationDefaultTypeInternal _SystemConfiguration_default_instance_;
@@ -151,6 +154,7 @@ template<> ::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse* Arena:
 template<> ::protobuf::PipelineTracking* Arena::CreateMaybeMessage<::protobuf::PipelineTracking>(Arena*);
 template<> ::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse>(Arena*);
 template<> ::protobuf::RAGAnalysis* Arena::CreateMaybeMessage<::protobuf::RAGAnalysis>(Arena*);
+template<> ::protobuf::RansomwareFeatures* Arena::CreateMaybeMessage<::protobuf::RansomwareFeatures>(Arena*);
 template<> ::protobuf::SystemConfiguration* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration>(Arena*);
 template<> ::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse>(Arena*);
 template<> ::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse>(Arena*);
@@ -222,12 +226,14 @@ enum ModelPrediction_ModelType : int {
   ModelPrediction_ModelType_ENSEMBLE_TRICAPA = 3,
   ModelPrediction_ModelType_INTERNAL_TRAFFIC_CLASSIFIER = 4,
   ModelPrediction_ModelType_TRANSFORMER_ADVANCED = 5,
+  ModelPrediction_ModelType_RANDOM_FOREST_DDOS = 6,
+  ModelPrediction_ModelType_RANDOM_FOREST_RANSOMWARE = 7,
   ModelPrediction_ModelType_ModelPrediction_ModelType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ModelPrediction_ModelType_ModelPrediction_ModelType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool ModelPrediction_ModelType_IsValid(int value);
 constexpr ModelPrediction_ModelType ModelPrediction_ModelType_ModelType_MIN = ModelPrediction_ModelType_RANDOM_FOREST_GENERAL;
-constexpr ModelPrediction_ModelType ModelPrediction_ModelType_ModelType_MAX = ModelPrediction_ModelType_TRANSFORMER_ADVANCED;
+constexpr ModelPrediction_ModelType ModelPrediction_ModelType_ModelType_MAX = ModelPrediction_ModelType_RANDOM_FOREST_RANSOMWARE;
 constexpr int ModelPrediction_ModelType_ModelType_ARRAYSIZE = ModelPrediction_ModelType_ModelType_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ModelPrediction_ModelType_descriptor();
@@ -579,6 +585,7 @@ class NetworkFeatures final :
     kProtocolNameFieldNumber = 6,
     kFlowStartTimeFieldNumber = 7,
     kFlowDurationFieldNumber = 8,
+    kRansomwareFieldNumber = 106,
     kSourcePortFieldNumber = 3,
     kDestinationPortFieldNumber = 4,
     kFlowDurationMicrosecondsFieldNumber = 9,
@@ -641,6 +648,8 @@ class NetworkFeatures final :
     kPacketLengthMeanFieldNumber = 97,
     kPacketLengthStdFieldNumber = 98,
     kPacketLengthVarianceFieldNumber = 99,
+    kActiveMeanFieldNumber = 104,
+    kIdleMeanFieldNumber = 105,
     kBackwardUrgFlagsFieldNumber = 81,
   };
   // repeated double ddos_features = 100;
@@ -842,6 +851,24 @@ class NetworkFeatures final :
   void unsafe_arena_set_allocated_flow_duration(
       ::PROTOBUF_NAMESPACE_ID::Duration* flow_duration);
   ::PROTOBUF_NAMESPACE_ID::Duration* unsafe_arena_release_flow_duration();
+
+  // .protobuf.RansomwareFeatures ransomware = 106;
+  bool has_ransomware() const;
+  private:
+  bool _internal_has_ransomware() const;
+  public:
+  void clear_ransomware();
+  const ::protobuf::RansomwareFeatures& ransomware() const;
+  PROTOBUF_NODISCARD ::protobuf::RansomwareFeatures* release_ransomware();
+  ::protobuf::RansomwareFeatures* mutable_ransomware();
+  void set_allocated_ransomware(::protobuf::RansomwareFeatures* ransomware);
+  private:
+  const ::protobuf::RansomwareFeatures& _internal_ransomware() const;
+  ::protobuf::RansomwareFeatures* _internal_mutable_ransomware();
+  public:
+  void unsafe_arena_set_allocated_ransomware(
+      ::protobuf::RansomwareFeatures* ransomware);
+  ::protobuf::RansomwareFeatures* unsafe_arena_release_ransomware();
 
   // uint32 source_port = 3;
   void clear_source_port();
@@ -1401,6 +1428,24 @@ class NetworkFeatures final :
   void _internal_set_packet_length_variance(double value);
   public:
 
+  // double active_mean = 104;
+  void clear_active_mean();
+  double active_mean() const;
+  void set_active_mean(double value);
+  private:
+  double _internal_active_mean() const;
+  void _internal_set_active_mean(double value);
+  public:
+
+  // double idle_mean = 105;
+  void clear_idle_mean();
+  double idle_mean() const;
+  void set_idle_mean(double value);
+  private:
+  double _internal_idle_mean() const;
+  void _internal_set_idle_mean(double value);
+  public:
+
   // uint32 backward_urg_flags = 81;
   void clear_backward_urg_flags();
   uint32_t backward_urg_flags() const;
@@ -1437,6 +1482,7 @@ class NetworkFeatures final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr protocol_name_;
     ::PROTOBUF_NAMESPACE_ID::Timestamp* flow_start_time_;
     ::PROTOBUF_NAMESPACE_ID::Duration* flow_duration_;
+    ::protobuf::RansomwareFeatures* ransomware_;
     uint32_t source_port_;
     uint32_t destination_port_;
     uint64_t flow_duration_microseconds_;
@@ -1499,6 +1545,8 @@ class NetworkFeatures final :
     double packet_length_mean_;
     double packet_length_std_;
     double packet_length_variance_;
+    double active_mean_;
+    double idle_mean_;
     uint32_t backward_urg_flags_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -3252,6 +3300,10 @@ class ModelPrediction final :
     ModelPrediction_ModelType_INTERNAL_TRAFFIC_CLASSIFIER;
   static constexpr ModelType TRANSFORMER_ADVANCED =
     ModelPrediction_ModelType_TRANSFORMER_ADVANCED;
+  static constexpr ModelType RANDOM_FOREST_DDOS =
+    ModelPrediction_ModelType_RANDOM_FOREST_DDOS;
+  static constexpr ModelType RANDOM_FOREST_RANSOMWARE =
+    ModelPrediction_ModelType_RANDOM_FOREST_RANSOMWARE;
   static inline bool ModelType_IsValid(int value) {
     return ModelPrediction_ModelType_IsValid(value);
   }
@@ -3581,6 +3633,7 @@ class TricapaMLAnalysis final :
 
   enum : int {
     kLevel3SpecializedPredictionsFieldNumber = 6,
+    kLevel2SpecializedPredictionsFieldNumber = 9,
     kModelsActivatedFieldNumber = 11,
     kFeatureImportanceScoresFieldNumber = 12,
     kTrafficContextFieldNumber = 5,
@@ -3610,6 +3663,24 @@ class TricapaMLAnalysis final :
   ::protobuf::ModelPrediction* add_level3_specialized_predictions();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >&
       level3_specialized_predictions() const;
+
+  // repeated .protobuf.ModelPrediction level2_specialized_predictions = 9;
+  int level2_specialized_predictions_size() const;
+  private:
+  int _internal_level2_specialized_predictions_size() const;
+  public:
+  void clear_level2_specialized_predictions();
+  ::protobuf::ModelPrediction* mutable_level2_specialized_predictions(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >*
+      mutable_level2_specialized_predictions();
+  private:
+  const ::protobuf::ModelPrediction& _internal_level2_specialized_predictions(int index) const;
+  ::protobuf::ModelPrediction* _internal_add_level2_specialized_predictions();
+  public:
+  const ::protobuf::ModelPrediction& level2_specialized_predictions(int index) const;
+  ::protobuf::ModelPrediction* add_level2_specialized_predictions();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >&
+      level2_specialized_predictions() const;
 
   // repeated string models_activated = 11;
   int models_activated_size() const;
@@ -3779,6 +3850,7 @@ class TricapaMLAnalysis final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction > level3_specialized_predictions_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction > level2_specialized_predictions_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> models_activated_;
     ::PROTOBUF_NAMESPACE_ID::internal::MapField<
         TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse,
@@ -7049,6 +7121,363 @@ class SystemConfiguration final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_network_5fsecurity_2eproto;
 };
+// -------------------------------------------------------------------
+
+class RansomwareFeatures final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.RansomwareFeatures) */ {
+ public:
+  inline RansomwareFeatures() : RansomwareFeatures(nullptr) {}
+  ~RansomwareFeatures() override;
+  explicit PROTOBUF_CONSTEXPR RansomwareFeatures(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  RansomwareFeatures(const RansomwareFeatures& from);
+  RansomwareFeatures(RansomwareFeatures&& from) noexcept
+    : RansomwareFeatures() {
+    *this = ::std::move(from);
+  }
+
+  inline RansomwareFeatures& operator=(const RansomwareFeatures& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RansomwareFeatures& operator=(RansomwareFeatures&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const RansomwareFeatures& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const RansomwareFeatures* internal_default_instance() {
+    return reinterpret_cast<const RansomwareFeatures*>(
+               &_RansomwareFeatures_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    26;
+
+  friend void swap(RansomwareFeatures& a, RansomwareFeatures& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(RansomwareFeatures* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RansomwareFeatures* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  RansomwareFeatures* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<RansomwareFeatures>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const RansomwareFeatures& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const RansomwareFeatures& from) {
+    RansomwareFeatures::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(RansomwareFeatures* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.RansomwareFeatures";
+  }
+  protected:
+  explicit RansomwareFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kDnsQueryEntropyFieldNumber = 1,
+    kNewExternalIps30SFieldNumber = 2,
+    kDnsQueryRatePerMinFieldNumber = 3,
+    kFailedDnsQueriesRatioFieldNumber = 4,
+    kTlsSelfSignedCertCountFieldNumber = 5,
+    kNonStandardPortHttpCountFieldNumber = 6,
+    kSmbConnectionDiversityFieldNumber = 7,
+    kRdpFailedAuthCountFieldNumber = 8,
+    kNewInternalConnections30SFieldNumber = 9,
+    kPortScanPatternScoreFieldNumber = 10,
+    kUploadDownloadRatio30SFieldNumber = 11,
+    kBurstConnectionsCountFieldNumber = 12,
+    kUniqueDestinations30SFieldNumber = 13,
+    kLargeUploadSessionsCountFieldNumber = 14,
+    kNocturnalActivityFlagFieldNumber = 15,
+    kConnectionRateStddevFieldNumber = 16,
+    kProtocolDiversityScoreFieldNumber = 17,
+    kAvgFlowDurationSecondsFieldNumber = 18,
+    kTcpRstRatioFieldNumber = 19,
+    kSynWithoutAckRatioFieldNumber = 20,
+  };
+  // float dns_query_entropy = 1;
+  void clear_dns_query_entropy();
+  float dns_query_entropy() const;
+  void set_dns_query_entropy(float value);
+  private:
+  float _internal_dns_query_entropy() const;
+  void _internal_set_dns_query_entropy(float value);
+  public:
+
+  // int32 new_external_ips_30s = 2;
+  void clear_new_external_ips_30s();
+  int32_t new_external_ips_30s() const;
+  void set_new_external_ips_30s(int32_t value);
+  private:
+  int32_t _internal_new_external_ips_30s() const;
+  void _internal_set_new_external_ips_30s(int32_t value);
+  public:
+
+  // float dns_query_rate_per_min = 3;
+  void clear_dns_query_rate_per_min();
+  float dns_query_rate_per_min() const;
+  void set_dns_query_rate_per_min(float value);
+  private:
+  float _internal_dns_query_rate_per_min() const;
+  void _internal_set_dns_query_rate_per_min(float value);
+  public:
+
+  // float failed_dns_queries_ratio = 4;
+  void clear_failed_dns_queries_ratio();
+  float failed_dns_queries_ratio() const;
+  void set_failed_dns_queries_ratio(float value);
+  private:
+  float _internal_failed_dns_queries_ratio() const;
+  void _internal_set_failed_dns_queries_ratio(float value);
+  public:
+
+  // int32 tls_self_signed_cert_count = 5;
+  void clear_tls_self_signed_cert_count();
+  int32_t tls_self_signed_cert_count() const;
+  void set_tls_self_signed_cert_count(int32_t value);
+  private:
+  int32_t _internal_tls_self_signed_cert_count() const;
+  void _internal_set_tls_self_signed_cert_count(int32_t value);
+  public:
+
+  // int32 non_standard_port_http_count = 6;
+  void clear_non_standard_port_http_count();
+  int32_t non_standard_port_http_count() const;
+  void set_non_standard_port_http_count(int32_t value);
+  private:
+  int32_t _internal_non_standard_port_http_count() const;
+  void _internal_set_non_standard_port_http_count(int32_t value);
+  public:
+
+  // int32 smb_connection_diversity = 7;
+  void clear_smb_connection_diversity();
+  int32_t smb_connection_diversity() const;
+  void set_smb_connection_diversity(int32_t value);
+  private:
+  int32_t _internal_smb_connection_diversity() const;
+  void _internal_set_smb_connection_diversity(int32_t value);
+  public:
+
+  // int32 rdp_failed_auth_count = 8;
+  void clear_rdp_failed_auth_count();
+  int32_t rdp_failed_auth_count() const;
+  void set_rdp_failed_auth_count(int32_t value);
+  private:
+  int32_t _internal_rdp_failed_auth_count() const;
+  void _internal_set_rdp_failed_auth_count(int32_t value);
+  public:
+
+  // int32 new_internal_connections_30s = 9;
+  void clear_new_internal_connections_30s();
+  int32_t new_internal_connections_30s() const;
+  void set_new_internal_connections_30s(int32_t value);
+  private:
+  int32_t _internal_new_internal_connections_30s() const;
+  void _internal_set_new_internal_connections_30s(int32_t value);
+  public:
+
+  // float port_scan_pattern_score = 10;
+  void clear_port_scan_pattern_score();
+  float port_scan_pattern_score() const;
+  void set_port_scan_pattern_score(float value);
+  private:
+  float _internal_port_scan_pattern_score() const;
+  void _internal_set_port_scan_pattern_score(float value);
+  public:
+
+  // float upload_download_ratio_30s = 11;
+  void clear_upload_download_ratio_30s();
+  float upload_download_ratio_30s() const;
+  void set_upload_download_ratio_30s(float value);
+  private:
+  float _internal_upload_download_ratio_30s() const;
+  void _internal_set_upload_download_ratio_30s(float value);
+  public:
+
+  // int32 burst_connections_count = 12;
+  void clear_burst_connections_count();
+  int32_t burst_connections_count() const;
+  void set_burst_connections_count(int32_t value);
+  private:
+  int32_t _internal_burst_connections_count() const;
+  void _internal_set_burst_connections_count(int32_t value);
+  public:
+
+  // int32 unique_destinations_30s = 13;
+  void clear_unique_destinations_30s();
+  int32_t unique_destinations_30s() const;
+  void set_unique_destinations_30s(int32_t value);
+  private:
+  int32_t _internal_unique_destinations_30s() const;
+  void _internal_set_unique_destinations_30s(int32_t value);
+  public:
+
+  // int32 large_upload_sessions_count = 14;
+  void clear_large_upload_sessions_count();
+  int32_t large_upload_sessions_count() const;
+  void set_large_upload_sessions_count(int32_t value);
+  private:
+  int32_t _internal_large_upload_sessions_count() const;
+  void _internal_set_large_upload_sessions_count(int32_t value);
+  public:
+
+  // bool nocturnal_activity_flag = 15;
+  void clear_nocturnal_activity_flag();
+  bool nocturnal_activity_flag() const;
+  void set_nocturnal_activity_flag(bool value);
+  private:
+  bool _internal_nocturnal_activity_flag() const;
+  void _internal_set_nocturnal_activity_flag(bool value);
+  public:
+
+  // float connection_rate_stddev = 16;
+  void clear_connection_rate_stddev();
+  float connection_rate_stddev() const;
+  void set_connection_rate_stddev(float value);
+  private:
+  float _internal_connection_rate_stddev() const;
+  void _internal_set_connection_rate_stddev(float value);
+  public:
+
+  // float protocol_diversity_score = 17;
+  void clear_protocol_diversity_score();
+  float protocol_diversity_score() const;
+  void set_protocol_diversity_score(float value);
+  private:
+  float _internal_protocol_diversity_score() const;
+  void _internal_set_protocol_diversity_score(float value);
+  public:
+
+  // float avg_flow_duration_seconds = 18;
+  void clear_avg_flow_duration_seconds();
+  float avg_flow_duration_seconds() const;
+  void set_avg_flow_duration_seconds(float value);
+  private:
+  float _internal_avg_flow_duration_seconds() const;
+  void _internal_set_avg_flow_duration_seconds(float value);
+  public:
+
+  // float tcp_rst_ratio = 19;
+  void clear_tcp_rst_ratio();
+  float tcp_rst_ratio() const;
+  void set_tcp_rst_ratio(float value);
+  private:
+  float _internal_tcp_rst_ratio() const;
+  void _internal_set_tcp_rst_ratio(float value);
+  public:
+
+  // float syn_without_ack_ratio = 20;
+  void clear_syn_without_ack_ratio();
+  float syn_without_ack_ratio() const;
+  void set_syn_without_ack_ratio(float value);
+  private:
+  float _internal_syn_without_ack_ratio() const;
+  void _internal_set_syn_without_ack_ratio(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.RansomwareFeatures)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    float dns_query_entropy_;
+    int32_t new_external_ips_30s_;
+    float dns_query_rate_per_min_;
+    float failed_dns_queries_ratio_;
+    int32_t tls_self_signed_cert_count_;
+    int32_t non_standard_port_http_count_;
+    int32_t smb_connection_diversity_;
+    int32_t rdp_failed_auth_count_;
+    int32_t new_internal_connections_30s_;
+    float port_scan_pattern_score_;
+    float upload_download_ratio_30s_;
+    int32_t burst_connections_count_;
+    int32_t unique_destinations_30s_;
+    int32_t large_upload_sessions_count_;
+    bool nocturnal_activity_flag_;
+    float connection_rate_stddev_;
+    float protocol_diversity_score_;
+    float avg_flow_duration_seconds_;
+    float tcp_rst_ratio_;
+    float syn_without_ack_ratio_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
 // ===================================================================
 
 
@@ -8644,6 +9073,46 @@ inline void NetworkFeatures::set_packet_length_variance(double value) {
   // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.packet_length_variance)
 }
 
+// double active_mean = 104;
+inline void NetworkFeatures::clear_active_mean() {
+  _impl_.active_mean_ = 0;
+}
+inline double NetworkFeatures::_internal_active_mean() const {
+  return _impl_.active_mean_;
+}
+inline double NetworkFeatures::active_mean() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.active_mean)
+  return _internal_active_mean();
+}
+inline void NetworkFeatures::_internal_set_active_mean(double value) {
+  
+  _impl_.active_mean_ = value;
+}
+inline void NetworkFeatures::set_active_mean(double value) {
+  _internal_set_active_mean(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.active_mean)
+}
+
+// double idle_mean = 105;
+inline void NetworkFeatures::clear_idle_mean() {
+  _impl_.idle_mean_ = 0;
+}
+inline double NetworkFeatures::_internal_idle_mean() const {
+  return _impl_.idle_mean_;
+}
+inline double NetworkFeatures::idle_mean() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.idle_mean)
+  return _internal_idle_mean();
+}
+inline void NetworkFeatures::_internal_set_idle_mean(double value) {
+  
+  _impl_.idle_mean_ = value;
+}
+inline void NetworkFeatures::set_idle_mean(double value) {
+  _internal_set_idle_mean(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.idle_mean)
+}
+
 // repeated double ddos_features = 100;
 inline int NetworkFeatures::_internal_ddos_features_size() const {
   return _impl_.ddos_features_.size();
@@ -8830,6 +9299,96 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< double >*
 NetworkFeatures::mutable_internal_traffic_features() {
   // @@protoc_insertion_point(field_mutable_list:protobuf.NetworkFeatures.internal_traffic_features)
   return _internal_mutable_internal_traffic_features();
+}
+
+// .protobuf.RansomwareFeatures ransomware = 106;
+inline bool NetworkFeatures::_internal_has_ransomware() const {
+  return this != internal_default_instance() && _impl_.ransomware_ != nullptr;
+}
+inline bool NetworkFeatures::has_ransomware() const {
+  return _internal_has_ransomware();
+}
+inline void NetworkFeatures::clear_ransomware() {
+  if (GetArenaForAllocation() == nullptr && _impl_.ransomware_ != nullptr) {
+    delete _impl_.ransomware_;
+  }
+  _impl_.ransomware_ = nullptr;
+}
+inline const ::protobuf::RansomwareFeatures& NetworkFeatures::_internal_ransomware() const {
+  const ::protobuf::RansomwareFeatures* p = _impl_.ransomware_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::RansomwareFeatures&>(
+      ::protobuf::_RansomwareFeatures_default_instance_);
+}
+inline const ::protobuf::RansomwareFeatures& NetworkFeatures::ransomware() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.ransomware)
+  return _internal_ransomware();
+}
+inline void NetworkFeatures::unsafe_arena_set_allocated_ransomware(
+    ::protobuf::RansomwareFeatures* ransomware) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ransomware_);
+  }
+  _impl_.ransomware_ = ransomware;
+  if (ransomware) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkFeatures.ransomware)
+}
+inline ::protobuf::RansomwareFeatures* NetworkFeatures::release_ransomware() {
+  
+  ::protobuf::RansomwareFeatures* temp = _impl_.ransomware_;
+  _impl_.ransomware_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::RansomwareFeatures* NetworkFeatures::unsafe_arena_release_ransomware() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.ransomware)
+  
+  ::protobuf::RansomwareFeatures* temp = _impl_.ransomware_;
+  _impl_.ransomware_ = nullptr;
+  return temp;
+}
+inline ::protobuf::RansomwareFeatures* NetworkFeatures::_internal_mutable_ransomware() {
+  
+  if (_impl_.ransomware_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::RansomwareFeatures>(GetArenaForAllocation());
+    _impl_.ransomware_ = p;
+  }
+  return _impl_.ransomware_;
+}
+inline ::protobuf::RansomwareFeatures* NetworkFeatures::mutable_ransomware() {
+  ::protobuf::RansomwareFeatures* _msg = _internal_mutable_ransomware();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.ransomware)
+  return _msg;
+}
+inline void NetworkFeatures::set_allocated_ransomware(::protobuf::RansomwareFeatures* ransomware) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.ransomware_;
+  }
+  if (ransomware) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(ransomware);
+    if (message_arena != submessage_arena) {
+      ransomware = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, ransomware, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.ransomware_ = ransomware;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.ransomware)
 }
 
 // map<string, double> custom_features = 110;
@@ -12084,6 +12643,46 @@ inline void TricapaMLAnalysis::set_allocated_traffic_context(std::string* traffi
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:protobuf.TricapaMLAnalysis.traffic_context)
+}
+
+// repeated .protobuf.ModelPrediction level2_specialized_predictions = 9;
+inline int TricapaMLAnalysis::_internal_level2_specialized_predictions_size() const {
+  return _impl_.level2_specialized_predictions_.size();
+}
+inline int TricapaMLAnalysis::level2_specialized_predictions_size() const {
+  return _internal_level2_specialized_predictions_size();
+}
+inline void TricapaMLAnalysis::clear_level2_specialized_predictions() {
+  _impl_.level2_specialized_predictions_.Clear();
+}
+inline ::protobuf::ModelPrediction* TricapaMLAnalysis::mutable_level2_specialized_predictions(int index) {
+  // @@protoc_insertion_point(field_mutable:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _impl_.level2_specialized_predictions_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >*
+TricapaMLAnalysis::mutable_level2_specialized_predictions() {
+  // @@protoc_insertion_point(field_mutable_list:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return &_impl_.level2_specialized_predictions_;
+}
+inline const ::protobuf::ModelPrediction& TricapaMLAnalysis::_internal_level2_specialized_predictions(int index) const {
+  return _impl_.level2_specialized_predictions_.Get(index);
+}
+inline const ::protobuf::ModelPrediction& TricapaMLAnalysis::level2_specialized_predictions(int index) const {
+  // @@protoc_insertion_point(field_get:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _internal_level2_specialized_predictions(index);
+}
+inline ::protobuf::ModelPrediction* TricapaMLAnalysis::_internal_add_level2_specialized_predictions() {
+  return _impl_.level2_specialized_predictions_.Add();
+}
+inline ::protobuf::ModelPrediction* TricapaMLAnalysis::add_level2_specialized_predictions() {
+  ::protobuf::ModelPrediction* _add = _internal_add_level2_specialized_predictions();
+  // @@protoc_insertion_point(field_add:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::ModelPrediction >&
+TricapaMLAnalysis::level2_specialized_predictions() const {
+  // @@protoc_insertion_point(field_list:protobuf.TricapaMLAnalysis.level2_specialized_predictions)
+  return _impl_.level2_specialized_predictions_;
 }
 
 // repeated .protobuf.ModelPrediction level3_specialized_predictions = 6;
@@ -17899,9 +18498,415 @@ SystemConfiguration::mutable_knowledge_base_sources() {
   return &_impl_.knowledge_base_sources_;
 }
 
+// -------------------------------------------------------------------
+
+// RansomwareFeatures
+
+// float dns_query_entropy = 1;
+inline void RansomwareFeatures::clear_dns_query_entropy() {
+  _impl_.dns_query_entropy_ = 0;
+}
+inline float RansomwareFeatures::_internal_dns_query_entropy() const {
+  return _impl_.dns_query_entropy_;
+}
+inline float RansomwareFeatures::dns_query_entropy() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.dns_query_entropy)
+  return _internal_dns_query_entropy();
+}
+inline void RansomwareFeatures::_internal_set_dns_query_entropy(float value) {
+  
+  _impl_.dns_query_entropy_ = value;
+}
+inline void RansomwareFeatures::set_dns_query_entropy(float value) {
+  _internal_set_dns_query_entropy(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.dns_query_entropy)
+}
+
+// int32 new_external_ips_30s = 2;
+inline void RansomwareFeatures::clear_new_external_ips_30s() {
+  _impl_.new_external_ips_30s_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_new_external_ips_30s() const {
+  return _impl_.new_external_ips_30s_;
+}
+inline int32_t RansomwareFeatures::new_external_ips_30s() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.new_external_ips_30s)
+  return _internal_new_external_ips_30s();
+}
+inline void RansomwareFeatures::_internal_set_new_external_ips_30s(int32_t value) {
+  
+  _impl_.new_external_ips_30s_ = value;
+}
+inline void RansomwareFeatures::set_new_external_ips_30s(int32_t value) {
+  _internal_set_new_external_ips_30s(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.new_external_ips_30s)
+}
+
+// float dns_query_rate_per_min = 3;
+inline void RansomwareFeatures::clear_dns_query_rate_per_min() {
+  _impl_.dns_query_rate_per_min_ = 0;
+}
+inline float RansomwareFeatures::_internal_dns_query_rate_per_min() const {
+  return _impl_.dns_query_rate_per_min_;
+}
+inline float RansomwareFeatures::dns_query_rate_per_min() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.dns_query_rate_per_min)
+  return _internal_dns_query_rate_per_min();
+}
+inline void RansomwareFeatures::_internal_set_dns_query_rate_per_min(float value) {
+  
+  _impl_.dns_query_rate_per_min_ = value;
+}
+inline void RansomwareFeatures::set_dns_query_rate_per_min(float value) {
+  _internal_set_dns_query_rate_per_min(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.dns_query_rate_per_min)
+}
+
+// float failed_dns_queries_ratio = 4;
+inline void RansomwareFeatures::clear_failed_dns_queries_ratio() {
+  _impl_.failed_dns_queries_ratio_ = 0;
+}
+inline float RansomwareFeatures::_internal_failed_dns_queries_ratio() const {
+  return _impl_.failed_dns_queries_ratio_;
+}
+inline float RansomwareFeatures::failed_dns_queries_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.failed_dns_queries_ratio)
+  return _internal_failed_dns_queries_ratio();
+}
+inline void RansomwareFeatures::_internal_set_failed_dns_queries_ratio(float value) {
+  
+  _impl_.failed_dns_queries_ratio_ = value;
+}
+inline void RansomwareFeatures::set_failed_dns_queries_ratio(float value) {
+  _internal_set_failed_dns_queries_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.failed_dns_queries_ratio)
+}
+
+// int32 tls_self_signed_cert_count = 5;
+inline void RansomwareFeatures::clear_tls_self_signed_cert_count() {
+  _impl_.tls_self_signed_cert_count_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_tls_self_signed_cert_count() const {
+  return _impl_.tls_self_signed_cert_count_;
+}
+inline int32_t RansomwareFeatures::tls_self_signed_cert_count() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.tls_self_signed_cert_count)
+  return _internal_tls_self_signed_cert_count();
+}
+inline void RansomwareFeatures::_internal_set_tls_self_signed_cert_count(int32_t value) {
+  
+  _impl_.tls_self_signed_cert_count_ = value;
+}
+inline void RansomwareFeatures::set_tls_self_signed_cert_count(int32_t value) {
+  _internal_set_tls_self_signed_cert_count(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.tls_self_signed_cert_count)
+}
+
+// int32 non_standard_port_http_count = 6;
+inline void RansomwareFeatures::clear_non_standard_port_http_count() {
+  _impl_.non_standard_port_http_count_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_non_standard_port_http_count() const {
+  return _impl_.non_standard_port_http_count_;
+}
+inline int32_t RansomwareFeatures::non_standard_port_http_count() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.non_standard_port_http_count)
+  return _internal_non_standard_port_http_count();
+}
+inline void RansomwareFeatures::_internal_set_non_standard_port_http_count(int32_t value) {
+  
+  _impl_.non_standard_port_http_count_ = value;
+}
+inline void RansomwareFeatures::set_non_standard_port_http_count(int32_t value) {
+  _internal_set_non_standard_port_http_count(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.non_standard_port_http_count)
+}
+
+// int32 smb_connection_diversity = 7;
+inline void RansomwareFeatures::clear_smb_connection_diversity() {
+  _impl_.smb_connection_diversity_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_smb_connection_diversity() const {
+  return _impl_.smb_connection_diversity_;
+}
+inline int32_t RansomwareFeatures::smb_connection_diversity() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.smb_connection_diversity)
+  return _internal_smb_connection_diversity();
+}
+inline void RansomwareFeatures::_internal_set_smb_connection_diversity(int32_t value) {
+  
+  _impl_.smb_connection_diversity_ = value;
+}
+inline void RansomwareFeatures::set_smb_connection_diversity(int32_t value) {
+  _internal_set_smb_connection_diversity(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.smb_connection_diversity)
+}
+
+// int32 rdp_failed_auth_count = 8;
+inline void RansomwareFeatures::clear_rdp_failed_auth_count() {
+  _impl_.rdp_failed_auth_count_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_rdp_failed_auth_count() const {
+  return _impl_.rdp_failed_auth_count_;
+}
+inline int32_t RansomwareFeatures::rdp_failed_auth_count() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.rdp_failed_auth_count)
+  return _internal_rdp_failed_auth_count();
+}
+inline void RansomwareFeatures::_internal_set_rdp_failed_auth_count(int32_t value) {
+  
+  _impl_.rdp_failed_auth_count_ = value;
+}
+inline void RansomwareFeatures::set_rdp_failed_auth_count(int32_t value) {
+  _internal_set_rdp_failed_auth_count(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.rdp_failed_auth_count)
+}
+
+// int32 new_internal_connections_30s = 9;
+inline void RansomwareFeatures::clear_new_internal_connections_30s() {
+  _impl_.new_internal_connections_30s_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_new_internal_connections_30s() const {
+  return _impl_.new_internal_connections_30s_;
+}
+inline int32_t RansomwareFeatures::new_internal_connections_30s() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.new_internal_connections_30s)
+  return _internal_new_internal_connections_30s();
+}
+inline void RansomwareFeatures::_internal_set_new_internal_connections_30s(int32_t value) {
+  
+  _impl_.new_internal_connections_30s_ = value;
+}
+inline void RansomwareFeatures::set_new_internal_connections_30s(int32_t value) {
+  _internal_set_new_internal_connections_30s(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.new_internal_connections_30s)
+}
+
+// float port_scan_pattern_score = 10;
+inline void RansomwareFeatures::clear_port_scan_pattern_score() {
+  _impl_.port_scan_pattern_score_ = 0;
+}
+inline float RansomwareFeatures::_internal_port_scan_pattern_score() const {
+  return _impl_.port_scan_pattern_score_;
+}
+inline float RansomwareFeatures::port_scan_pattern_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.port_scan_pattern_score)
+  return _internal_port_scan_pattern_score();
+}
+inline void RansomwareFeatures::_internal_set_port_scan_pattern_score(float value) {
+  
+  _impl_.port_scan_pattern_score_ = value;
+}
+inline void RansomwareFeatures::set_port_scan_pattern_score(float value) {
+  _internal_set_port_scan_pattern_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.port_scan_pattern_score)
+}
+
+// float upload_download_ratio_30s = 11;
+inline void RansomwareFeatures::clear_upload_download_ratio_30s() {
+  _impl_.upload_download_ratio_30s_ = 0;
+}
+inline float RansomwareFeatures::_internal_upload_download_ratio_30s() const {
+  return _impl_.upload_download_ratio_30s_;
+}
+inline float RansomwareFeatures::upload_download_ratio_30s() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.upload_download_ratio_30s)
+  return _internal_upload_download_ratio_30s();
+}
+inline void RansomwareFeatures::_internal_set_upload_download_ratio_30s(float value) {
+  
+  _impl_.upload_download_ratio_30s_ = value;
+}
+inline void RansomwareFeatures::set_upload_download_ratio_30s(float value) {
+  _internal_set_upload_download_ratio_30s(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.upload_download_ratio_30s)
+}
+
+// int32 burst_connections_count = 12;
+inline void RansomwareFeatures::clear_burst_connections_count() {
+  _impl_.burst_connections_count_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_burst_connections_count() const {
+  return _impl_.burst_connections_count_;
+}
+inline int32_t RansomwareFeatures::burst_connections_count() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.burst_connections_count)
+  return _internal_burst_connections_count();
+}
+inline void RansomwareFeatures::_internal_set_burst_connections_count(int32_t value) {
+  
+  _impl_.burst_connections_count_ = value;
+}
+inline void RansomwareFeatures::set_burst_connections_count(int32_t value) {
+  _internal_set_burst_connections_count(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.burst_connections_count)
+}
+
+// int32 unique_destinations_30s = 13;
+inline void RansomwareFeatures::clear_unique_destinations_30s() {
+  _impl_.unique_destinations_30s_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_unique_destinations_30s() const {
+  return _impl_.unique_destinations_30s_;
+}
+inline int32_t RansomwareFeatures::unique_destinations_30s() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.unique_destinations_30s)
+  return _internal_unique_destinations_30s();
+}
+inline void RansomwareFeatures::_internal_set_unique_destinations_30s(int32_t value) {
+  
+  _impl_.unique_destinations_30s_ = value;
+}
+inline void RansomwareFeatures::set_unique_destinations_30s(int32_t value) {
+  _internal_set_unique_destinations_30s(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.unique_destinations_30s)
+}
+
+// int32 large_upload_sessions_count = 14;
+inline void RansomwareFeatures::clear_large_upload_sessions_count() {
+  _impl_.large_upload_sessions_count_ = 0;
+}
+inline int32_t RansomwareFeatures::_internal_large_upload_sessions_count() const {
+  return _impl_.large_upload_sessions_count_;
+}
+inline int32_t RansomwareFeatures::large_upload_sessions_count() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.large_upload_sessions_count)
+  return _internal_large_upload_sessions_count();
+}
+inline void RansomwareFeatures::_internal_set_large_upload_sessions_count(int32_t value) {
+  
+  _impl_.large_upload_sessions_count_ = value;
+}
+inline void RansomwareFeatures::set_large_upload_sessions_count(int32_t value) {
+  _internal_set_large_upload_sessions_count(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.large_upload_sessions_count)
+}
+
+// bool nocturnal_activity_flag = 15;
+inline void RansomwareFeatures::clear_nocturnal_activity_flag() {
+  _impl_.nocturnal_activity_flag_ = false;
+}
+inline bool RansomwareFeatures::_internal_nocturnal_activity_flag() const {
+  return _impl_.nocturnal_activity_flag_;
+}
+inline bool RansomwareFeatures::nocturnal_activity_flag() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.nocturnal_activity_flag)
+  return _internal_nocturnal_activity_flag();
+}
+inline void RansomwareFeatures::_internal_set_nocturnal_activity_flag(bool value) {
+  
+  _impl_.nocturnal_activity_flag_ = value;
+}
+inline void RansomwareFeatures::set_nocturnal_activity_flag(bool value) {
+  _internal_set_nocturnal_activity_flag(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.nocturnal_activity_flag)
+}
+
+// float connection_rate_stddev = 16;
+inline void RansomwareFeatures::clear_connection_rate_stddev() {
+  _impl_.connection_rate_stddev_ = 0;
+}
+inline float RansomwareFeatures::_internal_connection_rate_stddev() const {
+  return _impl_.connection_rate_stddev_;
+}
+inline float RansomwareFeatures::connection_rate_stddev() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.connection_rate_stddev)
+  return _internal_connection_rate_stddev();
+}
+inline void RansomwareFeatures::_internal_set_connection_rate_stddev(float value) {
+  
+  _impl_.connection_rate_stddev_ = value;
+}
+inline void RansomwareFeatures::set_connection_rate_stddev(float value) {
+  _internal_set_connection_rate_stddev(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.connection_rate_stddev)
+}
+
+// float protocol_diversity_score = 17;
+inline void RansomwareFeatures::clear_protocol_diversity_score() {
+  _impl_.protocol_diversity_score_ = 0;
+}
+inline float RansomwareFeatures::_internal_protocol_diversity_score() const {
+  return _impl_.protocol_diversity_score_;
+}
+inline float RansomwareFeatures::protocol_diversity_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.protocol_diversity_score)
+  return _internal_protocol_diversity_score();
+}
+inline void RansomwareFeatures::_internal_set_protocol_diversity_score(float value) {
+  
+  _impl_.protocol_diversity_score_ = value;
+}
+inline void RansomwareFeatures::set_protocol_diversity_score(float value) {
+  _internal_set_protocol_diversity_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.protocol_diversity_score)
+}
+
+// float avg_flow_duration_seconds = 18;
+inline void RansomwareFeatures::clear_avg_flow_duration_seconds() {
+  _impl_.avg_flow_duration_seconds_ = 0;
+}
+inline float RansomwareFeatures::_internal_avg_flow_duration_seconds() const {
+  return _impl_.avg_flow_duration_seconds_;
+}
+inline float RansomwareFeatures::avg_flow_duration_seconds() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.avg_flow_duration_seconds)
+  return _internal_avg_flow_duration_seconds();
+}
+inline void RansomwareFeatures::_internal_set_avg_flow_duration_seconds(float value) {
+  
+  _impl_.avg_flow_duration_seconds_ = value;
+}
+inline void RansomwareFeatures::set_avg_flow_duration_seconds(float value) {
+  _internal_set_avg_flow_duration_seconds(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.avg_flow_duration_seconds)
+}
+
+// float tcp_rst_ratio = 19;
+inline void RansomwareFeatures::clear_tcp_rst_ratio() {
+  _impl_.tcp_rst_ratio_ = 0;
+}
+inline float RansomwareFeatures::_internal_tcp_rst_ratio() const {
+  return _impl_.tcp_rst_ratio_;
+}
+inline float RansomwareFeatures::tcp_rst_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.tcp_rst_ratio)
+  return _internal_tcp_rst_ratio();
+}
+inline void RansomwareFeatures::_internal_set_tcp_rst_ratio(float value) {
+  
+  _impl_.tcp_rst_ratio_ = value;
+}
+inline void RansomwareFeatures::set_tcp_rst_ratio(float value) {
+  _internal_set_tcp_rst_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.tcp_rst_ratio)
+}
+
+// float syn_without_ack_ratio = 20;
+inline void RansomwareFeatures::clear_syn_without_ack_ratio() {
+  _impl_.syn_without_ack_ratio_ = 0;
+}
+inline float RansomwareFeatures::_internal_syn_without_ack_ratio() const {
+  return _impl_.syn_without_ack_ratio_;
+}
+inline float RansomwareFeatures::syn_without_ack_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareFeatures.syn_without_ack_ratio)
+  return _internal_syn_without_ack_ratio();
+}
+inline void RansomwareFeatures::_internal_set_syn_without_ack_ratio(float value) {
+  
+  _impl_.syn_without_ack_ratio_ = value;
+}
+inline void RansomwareFeatures::set_syn_without_ack_ratio(float value) {
+  _internal_set_syn_without_ack_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.syn_without_ack_ratio)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

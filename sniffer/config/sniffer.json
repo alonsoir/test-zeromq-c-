@@ -1,16 +1,26 @@
 {
-  "_header": "C++20 SNIFFER v3.1 - Production Config (Multi-threaded + Compression)",
+  "_header": "C++20 SNIFFER v3.2 - Production Config with Hybrid Filters (REFACTORED)",
+  "_refactor_notes": {
+    "date": "2025-10-28",
+    "changes": [
+      "Removed duplicate 'capture.interface' (redundant with profile.capture_interface)",
+      "Removed unused 'capture.kernel_interface' (not implemented)",
+      "Removed unused 'capture.user_interface' (not implemented)",
+      "Removed legacy root-level 'interface' field",
+      "Interface now defined ONLY in profiles.{profile}.capture_interface"
+    ]
+  },
   "component": {
     "name": "cpp_evolutionary_sniffer",
-    "version": "3.1.0",
+    "version": "3.2.0",
     "mode": "kernel_user_hybrid",
     "kernel_version_required": "6.12.0"
   },
-  "node_id": "cpp_sniffer_v31_001",
+  "node_id": "cpp_sniffer_v32_001",
   "cluster_name": "upgraded-happiness-cluster",
   "profiles": {
     "lab": {
-      "capture_interface": "eth2",
+      "capture_interface": "eth0",
       "promiscuous_mode": true,
       "af_xdp_enabled": true,
       "worker_threads": 2,
@@ -34,28 +44,31 @@
   },
   "profile": "lab",
   "capture": {
-    "interface": "eth2",
-    "kernel_interface": null,
-    "user_interface": null,
-    "mode": "ebpf_xdp",
+    "mode": "ebpf_skb",
     "xdp_flags": [
       "XDP_FLAGS_UPDATE_IF_NOEXIST"
     ],
     "promiscuous_mode": true,
-    "filter_expression": "",
+
+    "_comment_filter": "Hybrid filtering system v3.2 - Dynamic BPF Maps",
+    "filter": {
+      "version": "1.0",
+      "mode": "hybrid",
+      "excluded_ports": [22, 4444, 8080],
+      "included_ports": [8000],
+      "default_action": "capture"
+    },
+
     "buffer_size": 65536,
     "min_packet_size": 20,
     "max_packet_size": 65536,
-    "excluded_ports": [
-      22
-    ],
     "included_protocols": [
       "tcp",
       "udp",
       "icmp"
     ],
     "af_xdp": {
-      "enabled": true,
+      "enabled": false,
       "queue_id": 0,
       "frame_size": 2048,
       "fill_ring_size": 2048,
@@ -66,39 +79,26 @@
     }
   },
   "buffers": {
-    "ring_buffer_entries": 1048576,
-    "user_processing_queue_depth": 10000,
+    "ring_buffer_entries": 65536,
+    "user_processing_queue_depth": 300,
     "protobuf_serialize_buffer_size": 65536,
-    "zmq_send_buffer_size": 1048576,
-    "flow_state_buffer_entries": 1000000,
-    "statistics_buffer_entries": 100000,
+    "zmq_send_buffer_size": 262144,
+    "flow_state_buffer_entries": 100000,
+    "statistics_buffer_entries": 10000,
     "batch_processing_size": 4
   },
   "threading": {
-    "ring_consumer_threads": 2,
-    "feature_processor_threads": 4,
-    "zmq_sender_threads": 2,
+    "ring_consumer_threads": 1,
+    "feature_processor_threads": 1,
+    "zmq_sender_threads": 1,
     "statistics_collector_threads": 1,
-    "total_worker_threads": 9,
+    "total_worker_threads": 4,
     "cpu_affinity": {
       "enabled": false,
-      "ring_consumers": [
-        0,
-        1
-      ],
-      "processors": [
-        2,
-        3,
-        4,
-        5
-      ],
-      "zmq_senders": [
-        6,
-        7
-      ],
-      "statistics": [
-        8
-      ]
+      "ring_consumers": [0, 1],
+      "processors": [2, 3, 4, 5],
+      "zmq_senders": [6, 7],
+      "statistics": [8]
     },
     "thread_priorities": {
       "ring_consumers": "high",
@@ -108,7 +108,7 @@
   },
   "kernel_space": {
     "ebpf_program": "sniffer.bpf.o",
-    "xdp_mode": "native",
+    "xdp_mode": "skb",
     "ring_buffer_size": 1048576,
     "max_flows_in_kernel": 100000,
     "flow_timeout_seconds": 300,
@@ -157,14 +157,14 @@
       "description": "DDOS detection features including packet rates, flag patterns, timing analysis"
     },
     "ransomware_feature_group": {
-      "count": 83,
-      "reference": "config/features/ransomware_83_features.json",
-      "description": "Ransomware detection features including connection patterns, data transfer analysis"
+      "count": 20,
+      "reference": "config/features/ransomware_20_features.json",
+      "description": "Ransomware detection features (20 critical features optimized for RPi)"
     },
     "rf_feature_group": {
       "count": 23,
       "reference": "config/features/rf_23_features.json",
-      "description": "Random Forest general attack detection features"
+      "description": "Random Forest general attack detection (Level 1)"
     },
     "internal_traffic_feature_group": {
       "count": 4,
@@ -182,41 +182,41 @@
   },
   "network": {
     "output_socket": {
-      "address": "172.18.0.3",
+      "address": "127.0.0.1",
       "port": 5571,
-      "mode": "connect",
+      "mode": "bind",
       "socket_type": "PUSH",
-      "high_water_mark": 2000
+      "high_water_mark": 1000
     }
   },
   "zmq": {
-    "worker_threads": 4,
-    "io_thread_pools": 2,
+    "worker_threads": 1,
+    "io_thread_pools": 1,
     "socket_pools": {
-      "push_sockets": 4,
+      "push_sockets": 1,
       "load_balancing": "round_robin",
       "failover_enabled": true
     },
     "queue_management": {
-      "internal_queues": 4,
-      "queue_size": 10000,
+      "internal_queues": 2,
+      "queue_size": 300,
       "queue_timeout_ms": 100,
       "overflow_policy": "drop_oldest"
     },
     "connection_settings": {
-      "sndhwm": 10000,
-      "linger_ms": 0,
-      "send_timeout_ms": 100,
-      "rcvhwm": 10000,
-      "recv_timeout_ms": 100,
+      "sndhwm": 1000,
+      "linger_ms": 100,
+      "send_timeout_ms": 250,
+      "rcvhwm": 1000,
+      "recv_timeout_ms": 500,
       "tcp_keepalive": 1,
-      "sndbuf": 1048576,
-      "rcvbuf": 1048576,
+      "sndbuf": 262144,
+      "rcvbuf": 262144,
       "reconnect_interval_ms": 1000,
       "max_reconnect_attempts": 10
     },
     "batch_processing": {
-      "enabled": true,
+      "enabled": false,
       "batch_size": 50,
       "batch_timeout_ms": 10,
       "max_batches_queued": 100
@@ -224,7 +224,7 @@
   },
   "transport": {
     "compression": {
-      "enabled": true,
+      "enabled": false,
       "algorithm": "lz4",
       "level": 1,
       "min_compress_size": 0,
@@ -244,10 +244,8 @@
     }
   },
   "etcd": {
-    "enabled": true,
-    "endpoints": [
-      "localhost:2379"
-    ],
+    "enabled": false,
+    "endpoints": ["localhost:2379"],
     "connection_timeout_ms": 5000,
     "retry_attempts": 3,
     "retry_interval_ms": 1000,
@@ -274,7 +272,7 @@
       "memory_prefaulting": true
     },
     "feature_extraction": {
-      "enabled": true,
+      "enabled": false,
       "extract_all_features": true,
       "cache_flow_states": true,
       "flow_timeout_seconds": 300,
@@ -319,7 +317,7 @@
   },
   "logging": {
     "level": "INFO",
-    "file": "logs/cpp_evolutionary_sniffer_v31.log",
+    "file": "logs/cpp_evolutionary_sniffer_v32.log",
     "max_file_size_mb": 200,
     "backup_count": 10,
     "include_performance_logs": true,
@@ -336,7 +334,7 @@
   },
   "security": {
     "input_validation": {
-      "enabled": true,
+      "enabled": false,
       "max_packet_size_bytes": 65536,
       "validate_ip_addresses": true,
       "validate_ports": true,
@@ -344,7 +342,7 @@
     }
   },
   "backpressure": {
-    "enabled": true,
+    "enabled": false,
     "kernel_backpressure": {
       "ring_buffer_full_action": "drop_oldest"
     },
@@ -353,10 +351,9 @@
       "adaptive_rate_limiting": true
     },
     "circuit_breaker": {
-      "enabled": true,
+      "enabled": false,
       "failure_threshold": 50,
       "recovery_timeout": 30
     }
-  },
-  "interface": "eth2"
+  }
 }

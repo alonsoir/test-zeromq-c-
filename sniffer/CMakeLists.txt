@@ -140,6 +140,7 @@ add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
 set(SNIFFER_SOURCES
         src/userspace/main.cpp
         src/userspace/config_manager.cpp
+        src/userspace/config_types.cpp
         src/userspace/ebpf_loader.cpp
         src/userspace/ring_consumer.cpp
         src/userspace/zmq_pool_manager.cpp
@@ -150,6 +151,22 @@ set(SNIFFER_SOURCES
         src/userspace/feature_extractor.cpp
         src/userspace/time_window_manager.cpp
         src/userspace/feature_logger.cpp
+
+        # ====================================================================
+        # RANSOMWARE DETECTION SYSTEM - Phase 1A (3 Critical Features)
+        # ====================================================================
+        src/userspace/flow_tracker.cpp                      # Flow state tracking
+        src/userspace/dns_analyzer.cpp                      # DNS entropy analysis
+        src/userspace/ip_whitelist.cpp                      # External IP tracking
+        src/userspace/time_window_aggregator.cpp            # Time-windowed aggregation
+        src/userspace/ransomware_feature_extractor.cpp      # Feature extraction
+        src/userspace/ransomware_feature_processor.cpp      # Integration processor
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+        src/userspace/payload_analyzer.cpp
+        # ====================================================================
+
+        src/userspace/bpf_map_manager.cpp
         proto/network_security.pb.cc
 )
 
@@ -307,7 +324,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
 
 # Copy configuration files
 configure_file(
-        ${CMAKE_SOURCE_DIR}/config/sniffer-proposal.json
+        ${CMAKE_SOURCE_DIR}/config/sniffer.json
         ${CMAKE_BINARY_DIR}/config/sniffer.json
         COPYONLY
 )
@@ -399,3 +416,116 @@ message(STATUS "   ✅ ZeroMQ communication")
 message(STATUS "   🔐 Encryption ready (via etcd tokens)")
 message(STATUS "========================================")
 message(STATUS "")
+
+# ============================================================================
+# UNIT TESTS - Phase 1A Validation
+# ============================================================================
+
+# Test executable for ransomware feature extractor
+add_executable(test_ransomware_feature_extractor
+        tests/test_ransomware_feature_extractor.cpp
+
+        # Ransomware detection components (SIN processor)
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ransomware_feature_extractor.cpp
+        # ⚠️ NOTA: NO incluimos ransomware_feature_processor.cpp porque necesita protobuf
+        #          y este test solo valida el extractor
+)
+
+# Include directories
+target_include_directories(test_ransomware_feature_extractor PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+# Link libraries (solo threads, sin protobuf)
+target_link_libraries(test_ransomware_feature_extractor
+        Threads::Threads
+)
+
+message(STATUS "")
+message(STATUS "🧪 Unit Tests:")
+message(STATUS "   ✅ test_ransomware_feature_extractor configured")
+message(STATUS "")
+
+# ============================================================================
+# ============================================================================
+# INTEGRATION TEST - Phase 1C (Two-layer detection)
+# ============================================================================
+
+add_executable(test_integration_simple_event
+    tests/test_integration_simple_event.cpp
+    
+    # Ransomware detection components
+    src/userspace/flow_tracker.cpp
+    src/userspace/dns_analyzer.cpp
+    src/userspace/ip_whitelist.cpp
+    src/userspace/time_window_aggregator.cpp
+    src/userspace/ransomware_feature_extractor.cpp
+    src/userspace/ransomware_feature_processor.cpp
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
+    src/userspace/fast_detector.cpp  # Layer 1 detection
+    
+    # Protobuf
+    proto/network_security.pb.cc
+)
+
+# Dependencies
+add_dependencies(test_integration_simple_event proto_compilation)
+
+# Include directories
+target_include_directories(test_integration_simple_event PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+)
+
+# Link libraries
+target_link_libraries(test_integration_simple_event
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+)
+
+message(STATUS "🧪 Integration Test: test_integration_simple_event configured")
+# ============================================================================
+# FAST DETECTOR UNIT TEST
+# ============================================================================
+
+add_executable(test_fast_detector
+    tests/test_fast_detector.cpp
+    src/userspace/fast_detector.cpp
+    src/userspace/time_window_aggregator.cpp
+)
+
+target_include_directories(test_fast_detector PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_fast_detector
+    Threads::Threads
+)
+
+message(STATUS "🧪 Unit Test: test_fast_detector configured")
+
+# ============================================================================
+# PAYLOAD ANALYZER UNIT TEST
+# ============================================================================
+
+add_executable(test_payload_analyzer
+        tests/test_payload_analyzer.cpp
+        src/userspace/payload_analyzer.cpp
+)
+
+target_include_directories(test_payload_analyzer PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_payload_analyzer
+        Threads::Threads
+)
+
+message(STATUS "🧪 Unit Test: test_payload_analyzer configured")

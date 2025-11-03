@@ -1,0 +1,7 @@
+# Opcionales - Instalar solo si necesario
+plotly>=5.15.0
+great-expectations>=0.17.0
+mlflow>=2.5.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.4.0
