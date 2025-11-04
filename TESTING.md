@@ -48,7 +48,7 @@ Network:        Bridged adapter (Gigabit Ethernet)
 ### Software
 ```
 OS:             Debian GNU/Linux 12 (Bookworm)
-Kernel:         6.1.0 (eBPF CO-RE support)
+Kernel:         6.1.0 (required minimum) (eBPF CO-RE support)
 Compiler:       Clang 14.0.6
 libbpf:         1.2.0
 CMake:          3.25.1
