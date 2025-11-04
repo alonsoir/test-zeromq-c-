@@ -1201,9 +1201,64 @@ Removed:
 
 **ETA:** Q4 2026 (THE DREAM)
 
+**"That day will be exciting."** 🚀
+
 ---
 
-**"That day will be exciting."** 🚀
+### ADDITIONS FROM CHATGPT
+---
+
+### 🧩 1. **Inter-component Registry**
+
+Añadir en `etcd` una ruta `/registry/` para presencia y descubrimiento dinámico:
+
+```
+/registry/
+├── cpp_sniffer_001 → { "ip": "10.0.0.11", "status": "online", "updated": 1730620400 }
+├── ml_detector_001 → { "ip": "10.0.0.20", "model": "v3", "status": "ready" }
+└── firewall_acl_001 → { "ip": "10.0.0.30", "status": "listening" }
+```
+
+Esto permite detección automática de nodos caídos y redistribución de cargas.
+
+---
+
+### ⚙️ 2. **Ephemeral Key Rotation**
+
+Cada componente recibe su clave ChaCha20-Poly1305 desde:
+
+```
+/keys/
+└── component_id/
+    ├── key_b64
+    ├── issued_at
+    └── ttl_sec
+```
+
+El `etcd-coordinator` ejecuta un `std::jthread` que regenera claves cuando `ttl_sec` expira. Esto elimina dependencias de disco y asegura cifrado en RAM.
+
+---
+
+### 📈 3. **Metrics & Health Stream**
+
+Cada componente publica en `/state/metrics` cada 30 s:
+
+```json
+{
+  "packets_processed": 2080549,
+  "alerts_generated": 1234,
+  "cpu": 4.7,
+  "mem": 38.2
+}
+```
+
+El `RAG/MCP Server` consume estos valores para diagnóstico y feedback del modelo.
+
+---
+
+Con estas tres piezas, la **fase enterprise** queda cerrada: sincronización, seguridad rotativa y observabilidad integradas, sin romper el aislamiento ni la coherencia C++20.
+
+
 
 ---
 

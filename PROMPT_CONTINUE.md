@@ -312,7 +312,7 @@ Next session:
 
 ## ✅ Ready to Start
 
-**Environment:** Python 3.11 + XGBoost ready  
+**Environment:** Python 3.13.8 + XGBoost ready  
 **Data:** CICIDS2017 available  
 **Goal:** Train Model #2 (XGBoost, >99% accuracy)  
 **Timeline:** Today (1 session, ~6-8 hours)
