@@ -29,11 +29,11 @@ cd /path/to/test-zeromq-docker/ml-training
 
 # Los archivos están en outputs/ (generados por Claude)
 # Copiarlos a scripts/
-cp ../outputs/train_ransomware_xgboost.py scripts/
+cp ../outputs/train_ransomware_xgboost_Claude.py scripts/
 cp ../outputs/ransomware_feature_mapping.json scripts/
 
 # Verificar
-ls -lh scripts/train_ransomware_xgboost.py
+ls -lh scripts/train_ransomware_xgboost_Claude.py
 ls -lh scripts/ransomware_feature_mapping.json
 ```
 
@@ -43,10 +43,10 @@ ls -lh scripts/ransomware_feature_mapping.json
 cd ml-training/scripts
 
 # Ejecutar training (puede tardar 10-30 minutos)
-python train_ransomware_xgboost.py
+python train_ransomware_xgboost_Claude.py
 
 # O con logging:
-python train_ransomware_xgboost.py 2>&1 | tee ransomware_training.log
+python train_ransomware_xgboost_Claude.py 2>&1 | tee ransomware_training.log
 ```
 
 ---
@@ -117,7 +117,7 @@ Behavioral (6):
 El script tiene configuración optimizada para **macOS training** y **Pi5 deployment**:
 
 ```python
-# En train_ransomware_xgboost.py (líneas 40-50)
+# En train_ransomware_xgboost_Claude.py (líneas 40-50)
 
 SAMPLE_SIZE = 100000      # 100k samples para training rápido
 USE_SMOTE = True          # Balancear con SMOTE
@@ -282,5 +282,5 @@ Con la configuración por defecto, deberías ver:
 
 ```bash
 cd ml-training/scripts
-python train_ransomware_xgboost.py
+python train_ransomware_xgboost_Claude.py
 ```
