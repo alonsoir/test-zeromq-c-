@@ -1,0 +1,52 @@
+{
+  "model_name": "ransmap_ransomware_xgboost",
+  "model_type": "XGBoost Binary Classifier",
+  "version": "2.0.0",
+  "created_date": "2025-11-05T07:59:19.899625",
+  "target_hardware": "Raspberry Pi 5",
+  "n_features": 4,
+  "feature_names": [
+    "GPA",
+    "size",
+    "entropy",
+    "type"
+  ],
+  "hyperparameters": {
+    "objective": "binary:logistic",
+    "eval_metric": "aucpr",
+    "scale_pos_weight": 1.0,
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "n_estimators": 300,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 3,
+    "gamma": 0.1,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "metrics": {
+    "accuracy": 0.6271904761904762,
+    "precision": 0.4719904648390942,
+    "recall": 0.3696,
+    "f1_score": 0.4145666641740821,
+    "roc_auc": 0.6053755654320988,
+    "pr_auc": 0.4659865159557973,
+    "false_positive_rate": 0.22970370370370372,
+    "false_negative_rate": 0.6304,
+    "confusion_matrix": {
+      "tn": 10399,
+      "fp": 3101,
+      "fn": 4728,
+      "tp": 2772
+    }
+  },
+  "dataset_info": {
+    "ransmap_attack": 50000,
+    "ransmap_benign": 100000,
+    "smote_ratio": 1.0
+  }
+}

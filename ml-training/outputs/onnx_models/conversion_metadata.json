@@ -1,0 +1,14 @@
+{
+  "conversion_date": "2025-11-05T13:03:05.364077",
+  "total_models": 1,
+  "successful_conversions": 0,
+  "results": {
+    "internal_traffic_detector_onnx_ready": {
+      "success": false,
+      "onnx_path": "/Users/aironman/CLionProjects/test-zeromq-docker/ml-training/outputs/onnx_models/internal_traffic_detector_onnx_ready.onnx",
+      "description": "Detector de tr\u00e1fico interno",
+      "timestamp": "2025-11-05T13:03:05.363972"
+    }
+  },
+  "conversion_tool": "Hummingbird"
+}

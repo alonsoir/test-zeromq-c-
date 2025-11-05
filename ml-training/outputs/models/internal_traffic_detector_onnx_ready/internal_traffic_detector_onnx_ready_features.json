@@ -1,0 +1,16 @@
+[
+  "sbytes",
+  "dbytes",
+  "total_bytes",
+  "byte_ratio",
+  "is_common_internal_port",
+  "proto_tcp",
+  "proto_udp",
+  "proto_icmp",
+  "hour_of_day",
+  "is_business_hours",
+  "spkts",
+  "dpkts",
+  "total_packets",
+  "packet_imbalance"
+]

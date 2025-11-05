@@ -1,0 +1,51 @@
+{
+  "model_name": "internal_traffic_detector_onnx_ready",
+  "model_type": "INTERNAL_TRAFFIC_DETECTOR",
+  "version": "1.0",
+  "created": "2025-11-05T12:51:38.878517",
+  "features_used": [
+    "sbytes",
+    "dbytes",
+    "total_bytes",
+    "byte_ratio",
+    "proto_tcp",
+    "proto_udp",
+    "proto_icmp",
+    "spkts",
+    "dpkts",
+    "total_packets",
+    "packet_imbalance",
+    "is_common_internal_port",
+    "hour_of_day",
+    "is_business_hours"
+  ],
+  "feature_count": 14,
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "cv_f1_mean": 1.0,
+    "cv_f1_std": 0.0
+  },
+  "training_params": {
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "n_estimators": 100,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "dataset_info": {
+    "internal_samples": 30699,
+    "external_samples": 30699,
+    "total_samples": 61398,
+    "train_samples": 42978,
+    "test_samples": 18420
+  },
+  "onnx_ready": true,
+  "compatibility_note": "Modelo preparado para conversi\u00f3n a ONNX"
+}

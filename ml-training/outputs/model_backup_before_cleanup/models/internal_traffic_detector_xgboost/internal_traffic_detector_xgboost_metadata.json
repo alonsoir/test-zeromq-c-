@@ -1,0 +1,41 @@
+{
+  "model_name": "internal_traffic_detector_xgboost",
+  "model_type": "INTERNAL_TRAFFIC_DETECTOR",
+  "version": "1.0",
+  "created": "2025-11-05T09:24:08.364158",
+  "features": [
+    "internal_connection_count",
+    "private_ip_ratio",
+    "protocol_entropy",
+    "port_regularity",
+    "packet_size_consistency",
+    "connection_duration_avg",
+    "traffic_symmetry",
+    "time_between_connections"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0
+  },
+  "training_params": {
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "max_depth": 4,
+    "learning_rate": 0.2,
+    "n_estimators": 50,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 1,
+    "gamma": 0,
+    "reg_alpha": 0,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "optimization": "MAXIMUM_SPEED",
+  "inference_target": "< 1ms en Raspberry Pi 5",
+  "model_size_estimate": "~100KB"
+}

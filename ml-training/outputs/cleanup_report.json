@@ -1,0 +1,88 @@
+{
+  "cleanup_date": "2025-11-05T13:26:24.211050",
+  "summary": {
+    "models_deleted": 4,
+    "files_deleted": 12,
+    "models_kept": 7,
+    "backup_location": "/Users/aironman/CLionProjects/test-zeromq-docker/ml-training/outputs/model_backup_before_cleanup"
+  },
+  "models_kept": [
+    {
+      "model_name": "ransomware_detector_xgboost",
+      "directory": "ransomware_detector_xgboost",
+      "quality_score": 100.0
+    },
+    {
+      "model_name": "ransomware_detector_rpi",
+      "directory": "ransomware_detector_rpi",
+      "quality_score": 90.0
+    },
+    {
+      "model_name": "ransomware_network_detector_proto_aligned",
+      "directory": "ransomware_network_detector_proto_aligned",
+      "quality_score": 100.0
+    },
+    {
+      "model_name": "internal_traffic_detector_xgboost",
+      "directory": "internal_traffic_detector_xgboost",
+      "quality_score": 90.0
+    },
+    {
+      "model_name": "internal_traffic_detector_onnx_ready",
+      "directory": "internal_traffic_detector_onnx_ready",
+      "quality_score": 90.0
+    },
+    {
+      "model_name": "ransomware_xgboost_production",
+      "directory": "ransomware_xgboost_production",
+      "quality_score": 100.0
+    },
+    {
+      "model_name": "ransomware_xgboost_production_v2",
+      "directory": "ransomware_xgboost_production_v2",
+      "quality_score": 100.0
+    }
+  ],
+  "models_deleted": [
+    {
+      "model": "ransmap_ransomware_xgboost/ransmap_ransomware_xgboost",
+      "quality_score": 47.92866008258951,
+      "files_deleted": 3,
+      "file_names": [
+        "ransmap_ransomware_xgboost_metadata.json",
+        "ransmap_ransomware_xgboost_scaler.pkl",
+        "ransmap_ransomware_xgboost.pkl"
+      ]
+    },
+    {
+      "model": "level2_ransomware_xgboost/level2_ransomware_xgboost",
+      "quality_score": 43.29368192835305,
+      "files_deleted": 3,
+      "file_names": [
+        "level2_ransomware_xgboost_scaler.pkl",
+        "level2_ransomware_xgboost_metadata.json",
+        "level2_ransomware_xgboost.pkl"
+      ]
+    },
+    {
+      "model": "ransomware_detector_adapted/ransomware_detector_adapted",
+      "quality_score": 56.87712287712288,
+      "files_deleted": 3,
+      "file_names": [
+        "ransomware_detector_adapted_scaler.pkl",
+        "ransomware_detector_adapted_metadata.json",
+        "ransomware_detector_adapted.pkl"
+      ]
+    },
+    {
+      "model": "proto_ransomware_xgboost/proto_ransomware_xgboost",
+      "quality_score": 0.0,
+      "files_deleted": 3,
+      "file_names": [
+        "proto_ransomware_xgboost_proto_meta.json",
+        "proto_ransomware_xgboost_scaler.pkl",
+        "proto_ransomware_xgboost.pkl"
+      ]
+    }
+  ]
+}
