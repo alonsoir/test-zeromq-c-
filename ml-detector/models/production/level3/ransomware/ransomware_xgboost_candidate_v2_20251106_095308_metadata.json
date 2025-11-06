@@ -1,0 +1,37 @@
+{
+  "model_name": "ransomware_xgboost_candidate_v2_20251106_095308",
+  "model_type": "XGBoost Binary Classifier",
+  "n_features": 45,
+  "input_name": "float_input",
+  "parent_model": "ransomware_xgboost_production_v2",
+  "xgboost_version": "3.1.1",
+  "formats_available": [
+    {
+      "format": "XGBoost JSON",
+      "file": "ransomware_xgboost_candidate_v2_20251106_095308.json",
+      "status": "success",
+      "note": "Use with XGBoost C API - native format"
+    },
+    {
+      "format": "ONNX",
+      "status": "failed",
+      "note": "XGBoost 3.x compatibility issue - use JSON format instead"
+    }
+  ],
+  "metrics": {
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "improvement": 0.020000000000000018,
+    "threshold_met": true
+  },
+  "retraining_info": {
+    "synthetic_data": true,
+    "improvement_threshold": 0.001,
+    "dataset_info": {
+      "real_samples": 2000,
+      "synthetic_samples": 400,
+      "ransomware_ratio": 0.14583333333333334
+    }
+  }
+}

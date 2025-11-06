@@ -1,0 +1,18 @@
+# ============================================================================
+# Retraining Pipeline - Lightweight Dependencies
+# No PyTorch dependency to avoid conflicts
+# ============================================================================
+
+# OPTIMIZATION & TRACKING
+optuna>=3.4.0
+mlflow>=2.9.0
+
+# LIGHTWEIGHT SYNTHETIC DATA (no torch dependency)
+sdv>=1.28.0  # This has built-in generators that don't require torch
+
+# UTILITIES
+colorlog>=6.7.0
+cloudpickle>=2.2.0
+
+# VISUALIZATION (optional)
+plotly>=5.15.0
