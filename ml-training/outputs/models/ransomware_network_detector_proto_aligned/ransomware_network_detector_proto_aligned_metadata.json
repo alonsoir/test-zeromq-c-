@@ -1,0 +1,57 @@
+{
+  "model_name": "ransomware_network_detector_proto_aligned",
+  "model_type": "RANSOMWARE_NETWORK_DETECTOR",
+  "version": "1.0",
+  "created": "2025-11-05T12:10:21.930338",
+  "features": [
+    "dns_query_entropy",
+    "new_external_ips_30s",
+    "dns_query_rate_per_min",
+    "failed_dns_queries_ratio",
+    "tls_self_signed_cert_count",
+    "non_standard_port_http_count",
+    "smb_connection_diversity",
+    "rdp_failed_auth_count",
+    "new_internal_connections_30s",
+    "port_scan_pattern_score",
+    "upload_download_ratio_30s",
+    "burst_connections_count",
+    "unique_destinations_30s",
+    "large_upload_sessions_count",
+    "nocturnal_activity_flag",
+    "connection_rate_stddev",
+    "protocol_diversity_score",
+    "avg_flow_duration_seconds",
+    "tcp_rst_ratio",
+    "syn_without_ack_ratio"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0
+  },
+  "training_params": {
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "max_depth": 6,
+    "learning_rate": 0.15,
+    "n_estimators": 100,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "dataset_info": {
+    "total_samples": 10000,
+    "ransomware_samples": 5000,
+    "normal_samples": 5000,
+    "data_source": "synthetic_based_on_ransomware_patterns"
+  },
+  "proto_alignment": {
+    "message_name": "RansomwareFeatures",
+    "feature_count": 20,
+    "fully_aligned": true
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "model_name": "ransomware_detector_rpi",
+  "model_type": "RANSOMWARE_DETECTOR_RASPBERRY_PI",
+  "version": "1.0",
+  "created": "2025-11-05T11:04:30.296304",
+  "features": [
+    "dns_entropy",
+    "external_conn_rate",
+    "port_scan_score",
+    "encryption_ratio",
+    "data_exfiltration",
+    "connection_bursts",
+    "failed_connections",
+    "suspicious_ports",
+    "protocol_diversity",
+    "upload_ratio"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0
+  },
+  "optimization": {
+    "target_device": "Raspberry Pi 5",
+    "inference_target": "< 5ms",
+    "model_size_kb": 60.5,
+    "memory_target": "< 100MB RAM",
+    "features_count": 10,
+    "samples_count": 5500
+  },
+  "training_params": {
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "max_depth": 4,
+    "learning_rate": 0.2,
+    "n_estimators": 50,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 1,
+    "gamma": 0,
+    "reg_alpha": 0,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": 1
+  },
+  "deployment_notes": [
+    "Modelo ultra-optimizado para Raspberry Pi",
+    "Usa solo 10 caracter\u00edsticas esenciales",
+    "Inferencia objetivo: < 5ms",
+    "Memoria objetivo: < 100MB",
+    "Ideal para detecci\u00f3n en tiempo real en edge"
+  ]
+}

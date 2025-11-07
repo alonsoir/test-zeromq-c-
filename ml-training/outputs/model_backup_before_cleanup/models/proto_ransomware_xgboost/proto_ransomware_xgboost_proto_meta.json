@@ -1,0 +1,68 @@
+{
+  "model_name": "proto_ransomware_xgboost",
+  "proto_aligned": true,
+  "ransomware_features_count": 20,
+  "feature_names": [
+    "dns_query_entropy",
+    "new_external_ips_30s",
+    "dns_query_rate_per_min",
+    "failed_dns_queries_ratio",
+    "tls_self_signed_cert_count",
+    "non_standard_port_http_count",
+    "smb_connection_diversity",
+    "rdp_failed_auth_count",
+    "new_internal_connections_30s",
+    "port_scan_pattern_score",
+    "upload_download_ratio_30s",
+    "burst_connections_count",
+    "unique_destinations_30s",
+    "large_upload_sessions_count",
+    "nocturnal_activity_flag",
+    "connection_rate_stddev",
+    "protocol_diversity_score",
+    "avg_flow_duration_seconds",
+    "tcp_rst_ratio",
+    "syn_without_ack_ratio"
+  ],
+  "model_type": "XGBOOST_RANSOMWARE",
+  "version": "1.0",
+  "created": "2025-11-05T08:41:18.513283",
+  "target_hardware": "Raspberry Pi 5",
+  "hyperparams": {
+    "objective": "binary:logistic",
+    "eval_metric": "aucpr",
+    "scale_pos_weight": 1.0,
+    "max_depth": 8,
+    "learning_rate": 0.1,
+    "n_estimators": 300,
+    "subsample": 0.9,
+    "colsample_bytree": 0.9,
+    "min_child_weight": 1,
+    "gamma": 0.0,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "metrics": {
+    "accuracy": 0.7340425531914894,
+    "precision": 0.7340425531914894,
+    "recall": 1.0,
+    "f1_score": 0.8466257668711656,
+    "roc_auc": 0.5,
+    "pr_auc": 0.7340425531914894,
+    "fpr": 1.0,
+    "fnr": 0.0,
+    "cm": {
+      "tn": 0,
+      "fp": 150,
+      "fn": 0,
+      "tp": 414
+    }
+  },
+  "dataset_info": {
+    "unsw_exploits": 20000,
+    "internal_benign": 50000
+  }
+}

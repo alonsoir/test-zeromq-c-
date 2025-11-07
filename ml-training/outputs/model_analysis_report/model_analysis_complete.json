@@ -1,0 +1,1058 @@
+{
+  "report_generated": "2025-11-05T13:15:21.550000",
+  "summary": {
+    "total_models_analyzed": 32,
+    "excellent_models": 8,
+    "good_models": 8,
+    "complete_models": 5,
+    "models_by_algorithm": {
+      "Unknown": 29,
+      "XGBoost": 3
+    }
+  },
+  "best_models": [
+    {
+      "model_name": "ransomware_detector_xgboost",
+      "quality_score": 100.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n"
+    },
+    {
+      "model_name": "ransomware_network_detector_proto_aligned",
+      "quality_score": 100.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n"
+    },
+    {
+      "model_name": "ransomware_xgboost_production",
+      "quality_score": 100.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n"
+    },
+    {
+      "model_name": "ransomware_xgboost_production_v2",
+      "quality_score": 100.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n"
+    },
+    {
+      "model_name": "ransomware_detector_optimized",
+      "quality_score": 94.35827156352832,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n"
+    }
+  ],
+  "detailed_analysis": [
+    {
+      "model_id": "model_001",
+      "directory": "ransomware_detector_xgboost",
+      "file_name": "ransomware_detector_xgboost",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_xgboost",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_DETECTOR",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "quality_score": 100,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.536616"
+    },
+    {
+      "model_id": "model_002",
+      "directory": "ransomware_detector_xgboost",
+      "file_name": "ransomware_detector_xgboost_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_xgboost_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.536705"
+    },
+    {
+      "model_id": "model_003",
+      "directory": "ransmap_ransomware_xgboost",
+      "file_name": "ransmap_ransomware_xgboost_scaler",
+      "file_type": "pkl",
+      "model_name": "ransmap_ransomware_xgboost_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.536739"
+    },
+    {
+      "model_id": "model_004",
+      "directory": "ransmap_ransomware_xgboost",
+      "file_name": "ransmap_ransomware_xgboost",
+      "file_type": "pkl",
+      "model_name": "ransmap_ransomware_xgboost",
+      "algorithm": "XGBoost",
+      "model_type": "XGBoost Binary Classifier",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 0.6271904761904762,
+      "precision": 0.4719904648390942,
+      "recall": 0.3696,
+      "f1_score": 0.4145666641740821,
+      "roc_auc": 0.6053755654320988,
+      "quality_score": 47.92866008258951,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.537465"
+    },
+    {
+      "model_id": "model_005",
+      "directory": "ransomware_detector_rpi",
+      "file_name": "ransomware_detector_rpi_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_rpi_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.537502"
+    },
+    {
+      "model_id": "model_006",
+      "directory": "ransomware_detector_rpi",
+      "file_name": "ransomware_detector_rpi",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_rpi",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_DETECTOR_RASPBERRY_PI",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 0,
+      "quality_score": 90.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.537880"
+    },
+    {
+      "model_id": "model_007",
+      "directory": "ransomware_network_detector_proto_aligned",
+      "file_name": "ransomware_network_detector_proto_aligned",
+      "file_type": "pkl",
+      "model_name": "ransomware_network_detector_proto_aligned",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_NETWORK_DETECTOR",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "quality_score": 100,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.538323"
+    },
+    {
+      "model_id": "model_008",
+      "directory": "ransomware_network_detector_proto_aligned",
+      "file_name": "ransomware_network_detector_proto_aligned_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_network_detector_proto_aligned_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.538359"
+    },
+    {
+      "model_id": "model_009",
+      "directory": "level2_ransomware_xgboost",
+      "file_name": "level2_ransomware_xgboost_scaler",
+      "file_type": "pkl",
+      "model_name": "level2_ransomware_xgboost_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.538382"
+    },
+    {
+      "model_id": "model_010",
+      "directory": "level2_ransomware_xgboost",
+      "file_name": "level2_ransomware_xgboost",
+      "file_type": "pkl",
+      "model_name": "level2_ransomware_xgboost",
+      "algorithm": "XGBoost",
+      "model_type": "XGBoost Binary Classifier",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 0.41315151515151516,
+      "precision": 0.11900549399385417,
+      "recall": 0.852,
+      "f1_score": 0.20884059155159734,
+      "roc_auc": 0.6578702444444444,
+      "quality_score": 43.29368192835305,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.539209"
+    },
+    {
+      "model_id": "model_011",
+      "directory": "ransomware_anomaly_detector",
+      "file_name": "ransomware_anomaly_detector_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_anomaly_detector_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.539246"
+    },
+    {
+      "model_id": "model_012",
+      "directory": "ransomware_anomaly_detector",
+      "file_name": "ransomware_anomaly_detector",
+      "file_type": "pkl",
+      "model_name": "ransomware_anomaly_detector",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_ANOMALY_DETECTOR",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": true,
+      "completeness_score": 100.0,
+      "completeness_status": "\ud83d\udce6 COMPLETO",
+      "has_metrics": true,
+      "accuracy": 0.896140350877193,
+      "precision": 1.0,
+      "recall": 0.5066666666666667,
+      "f1_score": 0.672566371681416,
+      "roc_auc": 0.999923621399177,
+      "quality_score": 79.04003733183062,
+      "recommendation": "\u26a0\ufe0f  REGULAR - Necesita validaci\u00f3n adicional",
+      "analysis_timestamp": "2025-11-05T13:15:21.539612"
+    },
+    {
+      "model_id": "model_013",
+      "directory": "internal_traffic_detector_xgboost",
+      "file_name": "internal_traffic_detector_xgboost",
+      "file_type": "pkl",
+      "model_name": "internal_traffic_detector_xgboost",
+      "algorithm": "Unknown",
+      "model_type": "INTERNAL_TRAFFIC_DETECTOR",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 0,
+      "quality_score": 90.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.539943"
+    },
+    {
+      "model_id": "model_014",
+      "directory": "internal_traffic_detector_xgboost",
+      "file_name": "internal_traffic_detector_xgboost_scaler",
+      "file_type": "pkl",
+      "model_name": "internal_traffic_detector_xgboost_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.539979"
+    },
+    {
+      "model_id": "model_015",
+      "directory": "ransomware_detector_optimized",
+      "file_name": "ransomware_detector_optimized_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_optimized_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.540001"
+    },
+    {
+      "model_id": "model_016",
+      "directory": "ransomware_detector_optimized",
+      "file_name": "ransomware_detector_optimized",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_optimized",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_DETECTOR_OPTIMIZED",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": true,
+      "completeness_score": 100.0,
+      "completeness_status": "\ud83d\udce6 COMPLETO",
+      "has_metrics": true,
+      "accuracy": 0.9782882882882883,
+      "precision": 0.8705120659211301,
+      "recall": 0.986,
+      "f1_score": 0.9246639574867146,
+      "roc_auc": 0.9886425,
+      "quality_score": 94.35827156352832,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.540381"
+    },
+    {
+      "model_id": "model_017",
+      "directory": "internal_traffic_detector_onnx_ready",
+      "file_name": "internal_traffic_detector_onnx_ready_scaler",
+      "file_type": "pkl",
+      "model_name": "internal_traffic_detector_onnx_ready_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.540417"
+    },
+    {
+      "model_id": "model_018",
+      "directory": "internal_traffic_detector_onnx_ready",
+      "file_name": "internal_traffic_detector_onnx_ready",
+      "file_type": "pkl",
+      "model_name": "internal_traffic_detector_onnx_ready",
+      "algorithm": "Unknown",
+      "model_type": "INTERNAL_TRAFFIC_DETECTOR",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": true,
+      "completeness_score": 100.0,
+      "completeness_status": "\ud83d\udce6 COMPLETO",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 0,
+      "quality_score": 90.0,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.540553"
+    },
+    {
+      "model_id": "model_019",
+      "directory": "internal_traffic_cpp_compatible",
+      "file_name": "internal_traffic_cpp_compatible",
+      "file_type": "pkl",
+      "model_name": "internal_traffic_cpp_compatible",
+      "algorithm": "Unknown",
+      "model_type": "INTERNAL_TRAFFIC_RANDOM_FOREST",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": true,
+      "completeness_score": 100.0,
+      "completeness_status": "\ud83d\udce6 COMPLETO",
+      "has_metrics": true,
+      "accuracy": 0.9999457111834962,
+      "precision": 0,
+      "recall": 0.9998906147451324,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 44.99617959229823,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.540668"
+    },
+    {
+      "model_id": "model_020",
+      "directory": "internal_traffic_cpp_compatible",
+      "file_name": "internal_traffic_cpp_compatible_scaler",
+      "file_type": "pkl",
+      "model_name": "internal_traffic_cpp_compatible_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.540702"
+    },
+    {
+      "model_id": "model_021",
+      "directory": "ransomware_detector_adapted",
+      "file_name": "ransomware_detector_adapted_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_adapted_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.540723"
+    },
+    {
+      "model_id": "model_022",
+      "directory": "ransomware_detector_adapted",
+      "file_name": "ransomware_detector_adapted",
+      "file_type": "pkl",
+      "model_name": "ransomware_detector_adapted",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_DETECTOR_ADAPTED",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 0.5238095238095238,
+      "precision": 0.5384615384615384,
+      "recall": 0.6363636363636364,
+      "f1_score": 0.5833333333333334,
+      "roc_auc": 0.5363636363636364,
+      "quality_score": 56.87712287712288,
+      "recommendation": "\ud83d\udd27 MEJORABLE - Considerar reentrenamiento",
+      "analysis_timestamp": "2025-11-05T13:15:21.541318"
+    },
+    {
+      "model_id": "model_023",
+      "directory": "proto_ransomware_xgboost",
+      "file_name": "proto_ransomware_xgboost",
+      "file_type": "pkl",
+      "model_name": "proto_ransomware_xgboost",
+      "algorithm": "XGBoost",
+      "model_type": "XGBOOST_RANSOMWARE",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 0.7340425531914894,
+      "precision": 0.7340425531914894,
+      "recall": 1.0,
+      "f1_score": 0.8466257668711656,
+      "roc_auc": 0.5,
+      "quality_score": 79.96443023104034,
+      "recommendation": "\u26a0\ufe0f  REGULAR - Necesita validaci\u00f3n adicional",
+      "analysis_timestamp": "2025-11-05T13:15:21.541639"
+    },
+    {
+      "model_id": "model_024",
+      "directory": "proto_ransomware_xgboost",
+      "file_name": "proto_ransomware_xgboost_scaler",
+      "file_type": "pkl",
+      "model_name": "proto_ransomware_xgboost_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.541676"
+    },
+    {
+      "model_id": "model_025",
+      "directory": "ransomware_xgboost_production",
+      "file_name": "ransomware_xgboost_production_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_xgboost_production_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.541702"
+    },
+    {
+      "model_id": "model_026",
+      "directory": "ransomware_xgboost_production",
+      "file_name": "ransomware_xgboost_production",
+      "file_type": "pkl",
+      "model_name": "ransomware_xgboost_production",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "quality_score": 100,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.542097"
+    },
+    {
+      "model_id": "model_027",
+      "directory": "ransomware_xgboost_production_v2",
+      "file_name": "ransomware_xgboost_production_v2_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_xgboost_production_v2_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.542134"
+    },
+    {
+      "model_id": "model_028",
+      "directory": "ransomware_xgboost_production_v2",
+      "file_name": "ransomware_xgboost_production_v2",
+      "file_type": "pkl",
+      "model_name": "ransomware_xgboost_production_v2",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": false,
+      "completeness_score": 66.66666666666666,
+      "completeness_status": "\ud83d\udccb PARCIAL",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "quality_score": 100,
+      "recommendation": "\ud83c\udfaf EXCELENTE - Listo para producci\u00f3n",
+      "analysis_timestamp": "2025-11-05T13:15:21.542484"
+    },
+    {
+      "model_id": "model_029",
+      "directory": "ransomware_cpp_compatible",
+      "file_name": "ransomware_cpp_compatible",
+      "file_type": "pkl",
+      "model_name": "ransomware_cpp_compatible",
+      "algorithm": "Unknown",
+      "model_type": "RANSOMWARE_RANDOM_FOREST",
+      "has_model": true,
+      "has_metadata": true,
+      "has_scaler": true,
+      "has_features": true,
+      "completeness_score": 100.0,
+      "completeness_status": "\ud83d\udce6 COMPLETO",
+      "has_metrics": true,
+      "accuracy": 1.0,
+      "precision": 0,
+      "recall": 1.0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 45.0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.542613"
+    },
+    {
+      "model_id": "model_030",
+      "directory": "ransomware_cpp_compatible",
+      "file_name": "ransomware_cpp_compatible_scaler",
+      "file_type": "pkl",
+      "model_name": "ransomware_cpp_compatible_scaler",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.542650"
+    },
+    {
+      "model_id": "model_031",
+      "directory": "models",
+      "file_name": "level2_ddos_binary_detector",
+      "file_type": "joblib",
+      "model_name": "level2_ddos_binary_detector",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.542671"
+    },
+    {
+      "model_id": "model_032",
+      "directory": "models",
+      "file_name": "level1_attack_detector",
+      "file_type": "joblib",
+      "model_name": "level1_attack_detector",
+      "algorithm": "Unknown",
+      "model_type": "Unknown",
+      "has_model": true,
+      "has_metadata": false,
+      "has_scaler": false,
+      "has_features": false,
+      "completeness_score": 0.0,
+      "completeness_status": "\u274c INCOMPLETO",
+      "has_metrics": false,
+      "accuracy": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1_score": 0,
+      "roc_auc": 0,
+      "quality_score": 0,
+      "recommendation": "\u274c NO APROVECHABLE - Descarta o reentrena",
+      "analysis_timestamp": "2025-11-05T13:15:21.542689"
+    }
+  ],
+  "recommendations": [
+    {
+      "type": "\ud83d\ude80 PRODUCTION READY",
+      "models": [
+        {
+          "model_name": "ransomware_detector_xgboost",
+          "quality_score": 100.0
+        },
+        {
+          "model_name": "ransomware_detector_rpi",
+          "quality_score": 90.0
+        },
+        {
+          "model_name": "ransomware_network_detector_proto_aligned",
+          "quality_score": 100.0
+        },
+        {
+          "model_name": "internal_traffic_detector_xgboost",
+          "quality_score": 90.0
+        },
+        {
+          "model_name": "ransomware_detector_optimized",
+          "quality_score": 94.35827156352832
+        },
+        {
+          "model_name": "internal_traffic_detector_onnx_ready",
+          "quality_score": 90.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production",
+          "quality_score": 100.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production_v2",
+          "quality_score": 100.0
+        }
+      ],
+      "action": "Implementar inmediatamente en producci\u00f3n"
+    },
+    {
+      "type": "\ud83d\udd27 NEEDS ATTENTION",
+      "models": [
+        {
+          "model_name": "ransomware_detector_xgboost",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_detector_xgboost_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransmap_ransomware_xgboost_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransmap_ransomware_xgboost",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_detector_rpi_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_rpi",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_network_detector_proto_aligned",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_network_detector_proto_aligned_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "level2_ransomware_xgboost_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "level2_ransomware_xgboost",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_anomaly_detector_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "internal_traffic_detector_xgboost",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "internal_traffic_detector_xgboost_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_optimized_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "internal_traffic_detector_onnx_ready_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "internal_traffic_cpp_compatible_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_adapted_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_adapted",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "proto_ransomware_xgboost",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "proto_ransomware_xgboost_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_xgboost_production_v2_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production_v2",
+          "completeness_score": 66.66666666666666
+        },
+        {
+          "model_name": "ransomware_cpp_compatible_scaler",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "level2_ddos_binary_detector",
+          "completeness_score": 0.0
+        },
+        {
+          "model_name": "level1_attack_detector",
+          "completeness_score": 0.0
+        }
+      ],
+      "action": "Completar archivos faltantes (metadata, scaler, features)"
+    },
+    {
+      "type": "\u274c LOW QUALITY",
+      "models": [
+        {
+          "model_name": "ransomware_detector_xgboost_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransmap_ransomware_xgboost_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransmap_ransomware_xgboost",
+          "quality_score": 47.92866008258951
+        },
+        {
+          "model_name": "ransomware_detector_rpi_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_network_detector_proto_aligned_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "level2_ransomware_xgboost_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "level2_ransomware_xgboost",
+          "quality_score": 43.29368192835305
+        },
+        {
+          "model_name": "ransomware_anomaly_detector_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "internal_traffic_detector_xgboost_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_optimized_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "internal_traffic_detector_onnx_ready_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "internal_traffic_cpp_compatible",
+          "quality_score": 44.99617959229823
+        },
+        {
+          "model_name": "internal_traffic_cpp_compatible_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_adapted_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_detector_adapted",
+          "quality_score": 56.87712287712288
+        },
+        {
+          "model_name": "proto_ransomware_xgboost_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_xgboost_production_v2_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "ransomware_cpp_compatible",
+          "quality_score": 45.0
+        },
+        {
+          "model_name": "ransomware_cpp_compatible_scaler",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "level2_ddos_binary_detector",
+          "quality_score": 0.0
+        },
+        {
+          "model_name": "level1_attack_detector",
+          "quality_score": 0.0
+        }
+      ],
+      "action": "Considerar descarte o reentrenamiento"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "model_type": "direct_conversion",
+  "input_shape": [
+    1,
+    25
+  ],
+  "feature_names": [
+    "feature_0",
+    "feature_1",
+    "feature_2",
+    "feature_3",
+    "feature_4",
+    "feature_5",
+    "feature_6",
+    "feature_7",
+    "feature_8",
+    "feature_9",
+    "feature_10",
+    "feature_11",
+    "feature_12",
+    "feature_13",
+    "feature_14",
+    "feature_15",
+    "feature_16",
+    "feature_17",
+    "feature_18",
+    "feature_19",
+    "feature_20",
+    "feature_21",
+    "feature_22",
+    "feature_23",
+    "feature_24"
+  ],
+  "output_classes": [
+    "normal",
+    "malicious"
+  ],
+  "model_name": "internal_traffic_detector_xgboost",
+  "framework": "onnx",
+  "conversion_method": "direct_conversion",
+  "timestamp": "",
+  "version": "1.0",
+  "scaler": {
+    "scaler_type": "StandardScaler",
+    "mean": [
+      32.70677083333333,
+      1.0,
+      0.020000000000000004,
+      0.3606249999999999,
+      0.0001696463558785561,
+      8.52741088170351,
+      51.69508794029834,
+      6763.915943498308
+    ],
+    "scale": [
+      241.49515384196806,
+      1.0,
+      0.01916666666666667,
+      0.360625,
+      0.00016527117371119103,
+      6.222597998578507,
+      589.3178843556393,
+      45055.162389709876
+    ],
+    "var": [
+      58319.90932915582,
+      0.0,
+      0.0003673611111111112,
+      0.13005039062499998,
+      2.731456085987468e-08,
+      38.72072585191325,
+      347295.56882140663,
+      2029967657.9631271
+    ]
+  }
+}

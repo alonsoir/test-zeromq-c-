@@ -1,0 +1,33 @@
+{
+  "successful": [],
+  "failed": [
+    {
+      "model": "ransomware_detector_xgboost",
+      "reason": "Error cargando modelo"
+    },
+    {
+      "model": "ransomware_network_detector_proto_aligned",
+      "reason": "Error cargando modelo"
+    },
+    {
+      "model": "ransomware_xgboost_production_v2",
+      "reason": "Error cargando modelo"
+    },
+    {
+      "model": "ransomware_xgboost_production",
+      "reason": "Error cargando modelo"
+    },
+    {
+      "model": "ransomware_detector_rpi",
+      "reason": "Error cargando modelo"
+    },
+    {
+      "model": "internal_traffic_detector_onnx_ready",
+      "reason": "Error cargando modelo"
+    },
+    {
+      "model": "internal_traffic_detector_xgboost",
+      "reason": "Error cargando modelo"
+    }
+  ]
+}

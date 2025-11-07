@@ -1,0 +1,17 @@
+{
+  "model_name": "ransomware_cpp_compatible",
+  "model_type": "RANSOMWARE_RANDOM_FOREST",
+  "features": [
+    " Flow Duration",
+    " Total Fwd Packets",
+    " Total Backward Packets",
+    " Flow Packets/s"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "recall": 1.0
+  },
+  "cpp_compatible": true,
+  "onnx_verified": true,
+  "created": "2025-11-05T13:06:33.546355"
+}

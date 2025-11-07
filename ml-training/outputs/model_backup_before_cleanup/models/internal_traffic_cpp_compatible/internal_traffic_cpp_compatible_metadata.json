@@ -1,0 +1,17 @@
+{
+  "model_name": "internal_traffic_cpp_compatible",
+  "model_type": "INTERNAL_TRAFFIC_RANDOM_FOREST",
+  "features": [
+    "sbytes",
+    "dbytes",
+    "spkts",
+    "dpkts"
+  ],
+  "metrics": {
+    "accuracy": 0.9999457111834962,
+    "recall": 0.9998906147451324
+  },
+  "cpp_compatible": true,
+  "onnx_verified": true,
+  "created": "2025-11-05T13:06:28.270731"
+}

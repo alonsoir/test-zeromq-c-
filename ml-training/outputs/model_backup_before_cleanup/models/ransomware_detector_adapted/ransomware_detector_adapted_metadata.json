@@ -1,0 +1,56 @@
+{
+  "model_name": "ransomware_detector_adapted",
+  "model_type": "RANSOMWARE_DETECTOR_ADAPTED",
+  "version": "1.0",
+  "created": "2025-11-05T09:53:55.326393",
+  "features": [
+    "numeric_entropy",
+    "numeric_cols_count",
+    "data_density",
+    "row_count"
+  ],
+  "metrics": {
+    "accuracy": 0.5238095238095238,
+    "precision": 0.5384615384615384,
+    "recall": 0.6363636363636364,
+    "f1_score": 0.5833333333333334,
+    "roc_auc": 0.5363636363636364
+  },
+  "cross_validation": {
+    "avg_accuracy": 0.5362318840579711,
+    "avg_recall": 0.561965811965812,
+    "n_folds": 3
+  },
+  "training_params": {
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "n_estimators": 200,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 1,
+    "gamma": 0.1,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "dataset_adaptation": {
+    "approach": "schema_adaptive_features",
+    "datasets_used": [
+      "RANsMAP",
+      "Ransomware Dataset 2024",
+      "UGRansome",
+      "internal-normal"
+    ],
+    "feature_engineering": "statistical_aggregation"
+  },
+  "notes": [
+    "Modelo adaptado a esquemas reales de datasets",
+    "Features extra\u00eddas estad\u00edsticamente de cada dataset",
+    "Incluye datos sint\u00e9ticos cuando es necesario",
+    "Dise\u00f1ado para m\u00faltiples tipos de datos (memoria, archivos, red)"
+  ]
+}

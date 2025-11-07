@@ -1,0 +1,141 @@
+{
+  "model_name": "ransomware_xgboost_production_v2",
+  "version": "1.0",
+  "created": "2025-11-05T09:11:51.674690",
+  "features": [
+    "dns_query_entropy",
+    "new_external_ips_30s",
+    "dns_query_rate_per_min",
+    "failed_dns_queries_ratio",
+    "tls_self_signed_cert_count",
+    "non_standard_port_http_count",
+    "smb_connection_diversity",
+    "rdp_failed_auth_count",
+    "new_internal_connections_30s",
+    "port_scan_pattern_score",
+    "upload_download_ratio_30s",
+    "burst_connections_count",
+    "unique_destinations_30s",
+    "large_upload_sessions_count",
+    "nocturnal_activity_flag",
+    "connection_rate_stddev",
+    "protocol_diversity_score",
+    "avg_flow_duration_seconds",
+    "tcp_rst_ratio",
+    "syn_without_ack_ratio"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "fpr": 0.0,
+    "fnr": 0.0
+  },
+  "feature_importance": [
+    {
+      "feature": "new_internal_connections_30s",
+      "importance": 0.705811083316803
+    },
+    {
+      "feature": "dns_query_entropy",
+      "importance": 0.17548878490924835
+    },
+    {
+      "feature": "connection_rate_stddev",
+      "importance": 0.10755094885826111
+    },
+    {
+      "feature": "port_scan_pattern_score",
+      "importance": 0.011149093508720398
+    },
+    {
+      "feature": "failed_dns_queries_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "dns_query_rate_per_min",
+      "importance": 0.0
+    },
+    {
+      "feature": "new_external_ips_30s",
+      "importance": 0.0
+    },
+    {
+      "feature": "tls_self_signed_cert_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "rdp_failed_auth_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "smb_connection_diversity",
+      "importance": 0.0
+    },
+    {
+      "feature": "upload_download_ratio_30s",
+      "importance": 0.0
+    },
+    {
+      "feature": "non_standard_port_http_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "burst_connections_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "unique_destinations_30s",
+      "importance": 0.0
+    },
+    {
+      "feature": "large_upload_sessions_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "nocturnal_activity_flag",
+      "importance": 0.0
+    },
+    {
+      "feature": "protocol_diversity_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "avg_flow_duration_seconds",
+      "importance": 0.0
+    },
+    {
+      "feature": "tcp_rst_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "syn_without_ack_ratio",
+      "importance": 0.0
+    }
+  ],
+  "training_params": {
+    "objective": "binary:logistic",
+    "eval_metric": "aucpr",
+    "scale_pos_weight": 1.0,
+    "max_depth": 8,
+    "learning_rate": 0.1,
+    "n_estimators": 200,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 1,
+    "gamma": 0.1,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "datasets_used": [
+    "RANsMAP",
+    "Ransomware2024",
+    "UGRansome"
+  ]
+}
