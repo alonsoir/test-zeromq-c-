@@ -1,3 +1,7 @@
+I'm continuing work on the test-zeromq-docker project (IDS/IPS with ML autonomous evolution).
+
+Please read this comprehensive context document:
+
 # 🚀 CONTINUATION PROMPT - ML Autonomous Evolution System
 
 **Project:** test-zeromq-docker (IDS/IPS → WAF Evolution)  
@@ -5,6 +9,53 @@
 **Session Date:** November 6, 2025  
 **Status:** Ready to implement Phase 0 (Foundations)
 
+Version corta:
+
+# Quick Resume: ML Autonomous Evolution System
+
+**Project:** test-zeromq-docker (IDS/IPS → WAF with self-evolving ML)
+**Date:** November 6, 2025
+**Status:** Phase 0 starting
+
+## What We Just Achieved:
+- ✅ Synthetic data retraining: F1 0.98 → 1.00
+- ✅ First retrained model: ransomware_xgboost_candidate_v2_20251106_095308.json
+- ✅ Architectural vision: Self-evolving immune system
+- ✅ Design approved: 5-phase autonomy roadmap
+
+## Current Mission (Phase 0 - 1-2 weeks):
+See first retrained model automatically enter pipeline and classify traffic.
+
+### This Week Tasks:
+1. Stability curve script (10%-100% synthetic data)
+2. Drop folder structure (/Users/aironman/new_retrained_models/)
+3. Config JSON with promotion switch (automatic/verified/shadow)
+4. Basic ModelWatcher component (C++ file watching)
+5. Dynamic model loading in ml-detector
+
+## Key Decisions:
+- Folder watching (not hardcoded paths)
+- Model specialization (ensemble, not replacement)
+- Phased autonomy (see it work → make it safe)
+- etcd orchestration (voting, queue, rollback)
+- XGBoost JSON + ONNX (both formats supported)
+- 10 slow iterations > 1 fast risky
+- Paper Q1 2026, production as stretch goal
+- Ethical foundation (life-critical infrastructure)
+
+## Tech Stack:
+- ML: XGBoost 3.1.1, scikit-learn
+- Infra: eBPF, ZMQ, etcd, C++20
+- Datasets: CIC-IDS-2018, CIC-IDS-2017
+- Models: 12 trained (10 ONNX + 2 JSON)
+
+## Files to Check:
+- ROADMAP.md (updated with ML evolution phases)
+- ml-training/scripts/ransomware/retrain_with_synthetic.py
+- ml-detector/models/production/level3/ransomware/
+- CONTINUATION_PROMPT.md (full context)
+
+Ready to implement Phase 0. Where should we start?
 ---
 
 ## 📋 **CRITICAL CONTEXT - READ THIS FIRST:**
@@ -504,3 +555,11 @@ When you're tired, remember:
 - Next session: Post-weekend (Sunday/Monday)
 
 **Continue from here with full context. All decisions documented above.**
+
+After reading, confirm you understand:
+1. Current status (Phase 0 starting)
+2. Recent breakthrough (synthetic retraining working)
+3. Next tasks (stability curve, ModelWatcher, config)
+4. Architectural decisions made
+
+Then we can continue implementation.
