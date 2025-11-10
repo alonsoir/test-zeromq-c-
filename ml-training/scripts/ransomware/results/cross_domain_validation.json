@@ -1,0 +1,33 @@
+{
+  "network": {
+    "f1_score": 0.2047244094488189,
+    "train_samples": 2000,
+    "test_samples": 1000,
+    "train_domains": [
+      "files",
+      "processes"
+    ],
+    "feature_count": 6
+  },
+  "files": {
+    "f1_score": 0.15719063545150502,
+    "train_samples": 2200,
+    "test_samples": 800,
+    "train_domains": [
+      "network",
+      "processes"
+    ],
+    "feature_count": 6
+  },
+  "processes": {
+    "f1_score": 0.0,
+    "train_samples": 1800,
+    "test_samples": 1200,
+    "train_domains": [
+      "network",
+      "files"
+    ],
+    "feature_count": 6
+  },
+  "average_f1": 0.12063834830010796
+}
