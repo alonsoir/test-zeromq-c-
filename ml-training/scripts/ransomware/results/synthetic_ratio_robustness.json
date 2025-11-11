@@ -1,0 +1,357 @@
+{
+  "synthetic_ratio_experiment": {
+    "0.0": {
+      "train_samples": 3000,
+      "synthetic_ratio": 0.0,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    },
+    "0.1": {
+      "train_samples": 3299,
+      "synthetic_ratio": 0.1,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    },
+    "0.25": {
+      "train_samples": 3749,
+      "synthetic_ratio": 0.25,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    },
+    "0.4": {
+      "train_samples": 4199,
+      "synthetic_ratio": 0.4,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    },
+    "0.5": {
+      "train_samples": 4499,
+      "synthetic_ratio": 0.5,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    },
+    "0.75": {
+      "train_samples": 5249,
+      "synthetic_ratio": 0.75,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    },
+    "1.0": {
+      "train_samples": 6000,
+      "synthetic_ratio": 1.0,
+      "test_results": {
+        "network": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "files": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "processes": {
+          "f1": 1.0,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "avg_f1": 1.0,
+      "avg_recall": 1.0
+    }
+  },
+  "optimal_ratio": 0.0,
+  "optimal_f1": 1.0,
+  "extreme_robustness_tests": {
+    "baseline": 1.0,
+    "50pct_noise": 0.8735632183908046,
+    "30pct_missing": 0.9078341013824884,
+    "concept_drift": 0.8909774436090225
+  },
+  "feature_importance_analysis": {
+    "0.0": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "4": "file_operations",
+        "9": "behavior_consistency",
+        "5": "process_anomaly",
+        "8": "data_volume",
+        "7": "access_frequency",
+        "6": "temporal_pattern"
+      },
+      "importance": {
+        "1": 0.3540085835934053,
+        "2": 0.2782680361157237,
+        "0": 0.21921582328222344,
+        "3": 0.07780092877645119,
+        "4": 0.02229282148367303,
+        "9": 0.012111503631826412,
+        "5": 0.010690735993320368,
+        "8": 0.009931315778961003,
+        "7": 0.00836743803652318,
+        "6": 0.007312813307892268
+      }
+    },
+    "0.1": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "4": "file_operations",
+        "9": "behavior_consistency",
+        "8": "data_volume",
+        "6": "temporal_pattern",
+        "7": "access_frequency",
+        "5": "process_anomaly"
+      },
+      "importance": {
+        "1": 0.35130551272842475,
+        "2": 0.2713916957521007,
+        "0": 0.22450841669157506,
+        "3": 0.08048986482490735,
+        "4": 0.023795706820379278,
+        "9": 0.01308681450809558,
+        "8": 0.0103306726241813,
+        "6": 0.009178771139960625,
+        "7": 0.009005359102139683,
+        "5": 0.006907185808235562
+      }
+    },
+    "0.25": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "4": "file_operations",
+        "5": "process_anomaly",
+        "8": "data_volume",
+        "7": "access_frequency",
+        "9": "behavior_consistency",
+        "6": "temporal_pattern"
+      },
+      "importance": {
+        "1": 0.36567263563461305,
+        "2": 0.26226561667753345,
+        "0": 0.22041585909767672,
+        "3": 0.0782987922897494,
+        "4": 0.023092948457545618,
+        "5": 0.013268838582766444,
+        "8": 0.011107969756930078,
+        "7": 0.01048020876894573,
+        "9": 0.009445567751207197,
+        "6": 0.005951562983032428
+      }
+    },
+    "0.4": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "4": "file_operations",
+        "9": "behavior_consistency",
+        "8": "data_volume",
+        "7": "access_frequency",
+        "6": "temporal_pattern",
+        "5": "process_anomaly"
+      },
+      "importance": {
+        "1": 0.3785762729748546,
+        "2": 0.25984047616725003,
+        "0": 0.20945849029266458,
+        "3": 0.08492236877597804,
+        "4": 0.023288816725582095,
+        "9": 0.017585576961545744,
+        "8": 0.010483459356693278,
+        "7": 0.007910942601566216,
+        "6": 0.004227035616684765,
+        "5": 0.003706560527180668
+      }
+    },
+    "0.5": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "8": "data_volume",
+        "9": "behavior_consistency",
+        "4": "file_operations",
+        "6": "temporal_pattern",
+        "7": "access_frequency",
+        "5": "process_anomaly"
+      },
+      "importance": {
+        "1": 0.3577166997082961,
+        "2": 0.26436662661271054,
+        "0": 0.2214436821570793,
+        "3": 0.08461712587202871,
+        "8": 0.017473180449889592,
+        "9": 0.016361625449231035,
+        "4": 0.015979001173132886,
+        "6": 0.009779455899855544,
+        "7": 0.007807731489111903,
+        "5": 0.0044548711886645675
+      }
+    },
+    "0.75": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "4": "file_operations",
+        "5": "process_anomaly",
+        "9": "behavior_consistency",
+        "8": "data_volume",
+        "6": "temporal_pattern",
+        "7": "access_frequency"
+      },
+      "importance": {
+        "1": 0.35963696912246707,
+        "2": 0.2666881536172767,
+        "0": 0.21850339745967345,
+        "3": 0.08326122983213018,
+        "4": 0.028502933529641745,
+        "5": 0.014823466199504866,
+        "9": 0.01023887983335558,
+        "8": 0.008924279420810453,
+        "6": 0.006122004676591214,
+        "7": 0.003298686308548842
+      }
+    },
+    "1.0": {
+      "feature": {
+        "1": "entropy",
+        "2": "resource_usage",
+        "0": "io_intensity",
+        "3": "network_activity",
+        "4": "file_operations",
+        "5": "process_anomaly",
+        "9": "behavior_consistency",
+        "8": "data_volume",
+        "7": "access_frequency",
+        "6": "temporal_pattern"
+      },
+      "importance": {
+        "1": 0.3646203571323009,
+        "2": 0.26538481461537067,
+        "0": 0.21392158597704405,
+        "3": 0.08520497505730346,
+        "4": 0.02343364099377242,
+        "5": 0.014024367067728171,
+        "9": 0.013095715620745442,
+        "8": 0.009876952654203006,
+        "7": 0.005740735862161796,
+        "6": 0.004696855019370238
+      }
+    }
+  }
+}

@@ -170,6 +170,46 @@ set(SOURCES
         ${PROTO_SOURCES}
 )
 
+# ML Defender - Ransomware Detector Library
+# Add this section to your existing CMakeLists.txt
+
+# Ransomware Detector Library
+add_library(ransomware_detector
+        src/ransomware_detector.cpp
+)
+
+target_include_directories(ransomware_detector
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_compile_features(ransomware_detector
+        PUBLIC cxx_std_20
+)
+
+target_compile_options(ransomware_detector PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -O3
+        -march=native
+        -flto
+        $<$<CONFIG:Release>:-DNDEBUG>
+)
+
+# Link to main ml-detector executable
+target_link_libraries(ml-detector PRIVATE
+        ransomware_detector
+)
+
+# Optional: Install headers
+install(DIRECTORY include/ml_defender
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp"
+)
+
 set(HEADERS
         include/ml_detector.hpp
         include/classifier_tricapa.hpp
@@ -446,6 +486,77 @@ install(FILES README.md
         DESTINATION share/doc/ml-detector
         COMPONENT documentation
 )
+
+# ============================================================================
+# RANSOMWARE DETECTOR TESTS
+# ============================================================================
+
+if(BUILD_TESTS)
+    # Unit Tests - Solo el detector aislado
+    add_executable(test_ransomware_detector_unit
+            tests/unit/test_ransomware_detector.cpp
+    )
+
+    target_link_libraries(test_ransomware_detector_unit PRIVATE
+            ransomware_detector
+    )
+
+    add_test(NAME RansomwareDetectorUnit
+            COMMAND test_ransomware_detector_unit
+    )
+
+    # Integration Tests - Detector + pipeline completo
+    # Solo si ya tienes implementada la integración con ClassifierTricapa
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_ransomware_detector_integration.cpp)
+        add_executable(test_ransomware_detector_integration
+                tests/integration/test_ransomware_detector_integration.cpp
+                src/classifier_tricapa.cpp
+                src/feature_extractor.cpp
+                src/config_loader.cpp
+                src/model_loader.cpp
+                src/onnx_model.cpp
+                src/logger.cpp
+                src/stats_collector.cpp
+                ${PROTO_SOURCES}
+        )
+
+        target_include_directories(test_ransomware_detector_integration PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/include
+                ${PROTO_DIR}
+        )
+
+        target_link_libraries(test_ransomware_detector_integration PRIVATE
+                ransomware_detector
+                PkgConfig::ZMQ
+                ${Protobuf_LIBRARIES}
+                onnxruntime
+                PkgConfig::LZ4
+                Threads::Threads
+        )
+
+        # nlohmann/json
+        if(TARGET nlohmann_json::nlohmann_json)
+            target_link_libraries(test_ransomware_detector_integration PRIVATE nlohmann_json::nlohmann_json)
+        elseif(TARGET nlohmann_json)
+            target_link_libraries(test_ransomware_detector_integration PRIVATE nlohmann_json)
+        endif()
+
+        # spdlog
+        if(TARGET spdlog::spdlog)
+            target_link_libraries(test_ransomware_detector_integration PRIVATE spdlog::spdlog)
+        elseif(TARGET PkgConfig::SPDLOG)
+            target_link_libraries(test_ransomware_detector_integration PRIVATE PkgConfig::SPDLOG)
+        endif()
+
+        add_test(NAME RansomwareDetectorIntegration
+                COMMAND test_ransomware_detector_integration
+        )
+
+        message(STATUS "Ransomware detector integration tests enabled")
+    endif()
+
+    message(STATUS "Ransomware detector unit tests enabled")
+endif()
 
 # ============================================================================
 # SUMMARY
