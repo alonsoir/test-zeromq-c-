@@ -6,18 +6,20 @@
 namespace ml_detector {
 
     ZMQHandler::ZMQHandler(const DetectorConfig& config,
-                           std::shared_ptr<ONNXModel> level1_model,
-                           std::shared_ptr<FeatureExtractor> extractor,
-                           std::shared_ptr<ONNXModel> level2_ddos_model)
-      : config_(config)
-      , context_(1)  // 1 IO thread
-      , level1_model_(level1_model)
-      , level2_ddos_model_(level2_ddos_model)
-      , extractor_(extractor)
+                       std::shared_ptr<ONNXModel> level1_model,
+                       std::shared_ptr<FeatureExtractor> extractor,
+                       std::shared_ptr<ONNXModel> level2_ddos_model,
+                       std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector)  // ⬅️ AÑADIR parámetro
+    : config_(config)
+    , context_(1)  // 1 IO thread
+    , level1_model_(level1_model)
+    , level2_ddos_model_(level2_ddos_model)
+    , ransomware_detector_(ransomware_detector)  // ⬅️ AÑADIR inicialización
+    , extractor_(extractor)
     , running_(false)
     , logger_(spdlog::get("ml-detector"))
     , last_stats_report_(std::chrono::steady_clock::now())
-{
+    {
     if (!logger_) {
         logger_ = spdlog::stdout_color_mt("zmq-handler");
     }
@@ -384,7 +386,153 @@ void ZMQHandler::process_event(const std::string& message) {
                 logger_->debug("⚠️  Level 2 DDoS model not loaded, skipping specialized detection");
             }
             // ========== FIN LEVEL 2 ==========
+            // Después del bloque de Level 2 DDoS, añadir:
 
+        // ========== LEVEL 2: Ransomware Detection ==========
+if (ransomware_detector_ && config_.ml.level2.ransomware.enabled) {
+    try {
+        logger_->debug("🔍 Running Level 2 Ransomware classification...");
+
+        // SAFETY CHECK 1: Verificar que network_features existe
+        if (!event.has_network_features()) {
+            logger_->error("❌ Event {} missing network_features, skipping Level 2 Ransomware",
+                          event.event_id());
+            return;
+        }
+
+        const auto& nf = event.network_features();
+        logger_->debug("   Network features available for Level 2 Ransomware extraction");
+
+        // SAFETY CHECK 2: Extraer features con manejo de errores
+        std::vector<float> ransomware_features_vec;
+        try {
+            ransomware_features_vec = extractor_->extract_level2_ransomware_features(nf);
+
+            // SAFETY CHECK 3: Validar tamaño de features
+            if (ransomware_features_vec.size() != 10) {
+                logger_->error("❌ Level 2 Ransomware feature extraction returned {} features, expected 10",
+                              ransomware_features_vec.size());
+                return;
+            }
+
+            // Log features para debug
+            logger_->debug("   Level 2 Ransomware Features (10):");
+            logger_->debug("     [0] IO Intensity:           {:.3f}", ransomware_features_vec[0]);
+            logger_->debug("     [1] Entropy (36% import):   {:.3f}", ransomware_features_vec[1]);
+            logger_->debug("     [2] Resource Usage (25%):   {:.3f}", ransomware_features_vec[2]);
+            logger_->debug("     [3] Network Activity:       {:.3f}", ransomware_features_vec[3]);
+            logger_->debug("     [4] File Operations:        {:.3f}", ransomware_features_vec[4]);
+            logger_->debug("     [5] Process Anomaly:        {:.3f}", ransomware_features_vec[5]);
+            logger_->debug("     [6] Temporal Pattern:       {:.3f}", ransomware_features_vec[6]);
+            logger_->debug("     [7] Access Frequency:       {:.3f}", ransomware_features_vec[7]);
+            logger_->debug("     [8] Data Volume:            {:.3f}", ransomware_features_vec[8]);
+            logger_->debug("     [9] Behavior Consistency:   {:.3f}", ransomware_features_vec[9]);
+
+        } catch (const std::exception& e) {
+            logger_->error("❌ Level 2 Ransomware feature extraction failed: {}", e.what());
+            std::lock_guard<std::mutex> lock(stats_mutex_);
+            stats_.feature_extraction_errors++;
+            return;
+        }
+
+        // Convertir a estructura del detector
+        ml_defender::RansomwareDetector::Features rf_features{
+            .io_intensity = ransomware_features_vec[0],
+            .entropy = ransomware_features_vec[1],
+            .resource_usage = ransomware_features_vec[2],
+            .network_activity = ransomware_features_vec[3],
+            .file_operations = ransomware_features_vec[4],
+            .process_anomaly = ransomware_features_vec[5],
+            .temporal_pattern = ransomware_features_vec[6],
+            .access_frequency = ransomware_features_vec[7],
+            .data_volume = ransomware_features_vec[8],
+            .behavior_consistency = ransomware_features_vec[9]
+        };
+
+        // SAFETY CHECK 4: Predicción <100μs
+        ml_defender::RansomwareDetector::Prediction result;
+        try {
+            result = ransomware_detector_->predict(rf_features);
+
+            logger_->debug("🤖 Level 2 Ransomware prediction: class={} ({}), confidence={:.4f}",
+                          result.class_id,
+                          (result.class_id == 0 ? "BENIGN" : "RANSOMWARE"),
+                          result.ransomware_prob);
+
+        } catch (const std::exception& e) {
+            logger_->error("❌ Level 2 Ransomware inference failed: {}", e.what());
+            std::lock_guard<std::mutex> lock(stats_mutex_);
+            stats_.inference_errors++;
+            return;
+        }
+
+        // SAFETY CHECK 5: Validar predicción
+        if (result.class_id < 0 || result.class_id > 1) {
+            logger_->error("❌ Invalid Level 2 Ransomware prediction class: {}", result.class_id);
+            return;
+        }
+
+        if (result.ransomware_prob < 0.0f || result.ransomware_prob > 1.0f) {
+            logger_->warn("⚠️  Invalid Level 2 Ransomware confidence: {:.4f}, clamping",
+                         result.ransomware_prob);
+            result.ransomware_prob = std::max(0.0f, std::min(1.0f, result.ransomware_prob));
+        }
+
+        // ========== ENRIQUECER EVENTO CON PREDICCIÓN RANSOMWARE ==========
+        auto* level2_ransomware_pred = ml_analysis->add_level2_specialized_predictions();
+        level2_ransomware_pred->set_model_name("ransomware_detector_embedded_cpp20");
+        level2_ransomware_pred->set_model_version("1.0.0");
+        level2_ransomware_pred->set_model_type(protobuf::ModelPrediction::RANDOM_FOREST_RANSOMWARE);
+        level2_ransomware_pred->set_prediction_class(
+            result.class_id == 0 ? "BENIGN" : "RANSOMWARE"
+        );
+        level2_ransomware_pred->set_confidence_score(result.ransomware_prob);
+
+        // Actualizar threat category si es Ransomware
+        if (result.class_id == 1 &&
+            result.ransomware_prob >= config_.ml.thresholds.level2_ransomware) {
+
+            event.set_threat_category("RANSOMWARE");
+            ml_analysis->set_final_threat_classification("RANSOMWARE");
+
+            logger_->warn("🔴 RANSOMWARE ATTACK CONFIRMED: event={}, "
+                         "L1_conf={:.2f}%, L2_conf={:.2f}%, entropy={:.3f}",
+                         event.event_id(),
+                         confidence * 100,
+                         result.ransomware_prob * 100,
+                         ransomware_features_vec[1]);  // entropy (most important)
+
+            {
+                std::lock_guard<std::mutex> lock(stats_mutex_);
+                stats_.attacks_detected++;
+            }
+
+        } else if (result.class_id == 1) {
+            // Ransomware detectado pero bajo confianza
+            logger_->info("🟡 Possible Ransomware (low confidence): event={}, "
+                         "confidence={:.2f}% (threshold={:.2f}%)",
+                         event.event_id(),
+                         result.ransomware_prob * 100,
+                         config_.ml.thresholds.level2_ransomware * 100);
+        } else {
+            // BENIGN
+            logger_->info("🟢 Attack detected but NOT Ransomware: event={}, "
+                         "confidence={:.2f}%",
+                         event.event_id(),
+                         result.benign_prob * 100);
+        }
+
+        logger_->debug("✅ Level 2 Ransomware classification completed successfully");
+
+    } catch (const std::exception& e) {
+        // Catch-all para cualquier error no manejado
+        logger_->error("❌ Unexpected error in Level 2 Ransomware processing: {}", e.what());
+        std::lock_guard<std::mutex> lock(stats_mutex_);
+        stats_.inference_errors++;
+        // Continuar sin crashear
+    }
+}
+// ========== FIN LEVEL 2 RANSOMWARE ==========
         } else {
             // Label = 0 (BENIGN)
             event.set_threat_category("NORMAL");

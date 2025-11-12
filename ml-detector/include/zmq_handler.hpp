@@ -1,5 +1,4 @@
 #pragma once
-
 #include <memory>
 #include <atomic>
 #include <thread>
@@ -8,6 +7,7 @@
 #include "config_loader.hpp"
 #include "onnx_model.hpp"
 #include "feature_extractor.hpp"
+#include "ml_defender/ransomware_detector.hpp"
 #include "network_security.pb.h"
 
 namespace ml_detector {
@@ -29,10 +29,11 @@ namespace ml_detector {
  */
 class ZMQHandler {
 public:
-    ZMQHandler(const DetectorConfig& config, 
-           std::shared_ptr<ONNXModel> level1_model,
-           std::shared_ptr<FeatureExtractor> extractor,
-           std::shared_ptr<ONNXModel> level2_ddos_model = nullptr);
+    ZMQHandler(const DetectorConfig& config,
+           std::shared_ptr<ONNXModel> model,
+           std::shared_ptr<FeatureExtractor> feature_extractor,
+           std::shared_ptr<ONNXModel> level2_ddos_model = nullptr,
+           std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector = nullptr);
     
     ~ZMQHandler();
     
@@ -102,6 +103,8 @@ private:
     mutable std::mutex stats_mutex_;
     Stats stats_;
     std::chrono::steady_clock::time_point last_stats_report_;
+
+    std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector_;
 };
 
 } // namespace ml_detector

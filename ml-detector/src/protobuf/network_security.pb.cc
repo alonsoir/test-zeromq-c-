@@ -56,6 +56,7 @@ PROTOBUF_CONSTEXPR NetworkFeatures::NetworkFeatures(
   , /*decltype(_impl_.protocol_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.flow_start_time_)*/nullptr
   , /*decltype(_impl_.flow_duration_)*/nullptr
+  , /*decltype(_impl_.ransomware_)*/nullptr
   , /*decltype(_impl_.source_port_)*/0u
   , /*decltype(_impl_.destination_port_)*/0u
   , /*decltype(_impl_.flow_duration_microseconds_)*/uint64_t{0u}
@@ -589,8 +590,40 @@ struct SystemConfigurationDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SystemConfigurationDefaultTypeInternal _SystemConfiguration_default_instance_;
+PROTOBUF_CONSTEXPR RansomwareFeatures::RansomwareFeatures(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.dns_query_entropy_)*/0
+  , /*decltype(_impl_.new_external_ips_30s_)*/0
+  , /*decltype(_impl_.dns_query_rate_per_min_)*/0
+  , /*decltype(_impl_.failed_dns_queries_ratio_)*/0
+  , /*decltype(_impl_.tls_self_signed_cert_count_)*/0
+  , /*decltype(_impl_.non_standard_port_http_count_)*/0
+  , /*decltype(_impl_.smb_connection_diversity_)*/0
+  , /*decltype(_impl_.rdp_failed_auth_count_)*/0
+  , /*decltype(_impl_.new_internal_connections_30s_)*/0
+  , /*decltype(_impl_.port_scan_pattern_score_)*/0
+  , /*decltype(_impl_.upload_download_ratio_30s_)*/0
+  , /*decltype(_impl_.burst_connections_count_)*/0
+  , /*decltype(_impl_.unique_destinations_30s_)*/0
+  , /*decltype(_impl_.large_upload_sessions_count_)*/0
+  , /*decltype(_impl_.nocturnal_activity_flag_)*/false
+  , /*decltype(_impl_.connection_rate_stddev_)*/0
+  , /*decltype(_impl_.protocol_diversity_score_)*/0
+  , /*decltype(_impl_.avg_flow_duration_seconds_)*/0
+  , /*decltype(_impl_.tcp_rst_ratio_)*/0
+  , /*decltype(_impl_.syn_without_ack_ratio_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct RansomwareFeaturesDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RansomwareFeaturesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RansomwareFeaturesDefaultTypeInternal() {}
+  union {
+    RansomwareFeatures _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RansomwareFeaturesDefaultTypeInternal _RansomwareFeatures_default_instance_;
 }  // namespace protobuf
-static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[26];
+static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[27];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_network_5fsecurity_2eproto[8];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_network_5fsecurity_2eproto = nullptr;
 
@@ -695,6 +728,7 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.ransomware_features_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.general_attack_features_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.internal_traffic_features_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.ransomware_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.custom_features_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.feature_metadata_),
   ~0u,  // no _has_bits_
@@ -1062,34 +1096,61 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::SystemConfiguration, _impl_.rag_analysis_enabled_),
   PROTOBUF_FIELD_OFFSET(::protobuf::SystemConfiguration, _impl_.rag_model_endpoint_),
   PROTOBUF_FIELD_OFFSET(::protobuf::SystemConfiguration, _impl_.knowledge_base_sources_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.dns_query_entropy_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.new_external_ips_30s_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.dns_query_rate_per_min_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.failed_dns_queries_ratio_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.tls_self_signed_cert_count_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.non_standard_port_http_count_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.smb_connection_diversity_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.rdp_failed_auth_count_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.new_internal_connections_30s_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.port_scan_pattern_score_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.upload_download_ratio_30s_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.burst_connections_count_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.unique_destinations_30s_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.large_upload_sessions_count_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.nocturnal_activity_flag_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.connection_rate_stddev_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.protocol_diversity_score_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.avg_flow_duration_seconds_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.tcp_rst_ratio_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.syn_without_ack_ratio_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, 8, -1, sizeof(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse)},
   { 10, 18, -1, sizeof(::protobuf::NetworkFeatures_FeatureMetadataEntry_DoNotUse)},
   { 20, -1, -1, sizeof(::protobuf::NetworkFeatures)},
-  { 102, -1, -1, sizeof(::protobuf::GeoLocationInfo)},
-  { 123, -1, -1, sizeof(::protobuf::GeoEnrichment)},
-  { 164, -1, -1, sizeof(::protobuf::TimeWindow)},
-  { 175, 183, -1, sizeof(::protobuf::FlowAggregation_ProtocolDistributionEntry_DoNotUse)},
-  { 185, 193, -1, sizeof(::protobuf::FlowAggregation_PortDistributionEntry_DoNotUse)},
-  { 195, 203, -1, sizeof(::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse)},
-  { 205, -1, -1, sizeof(::protobuf::FlowAggregation)},
-  { 219, -1, -1, sizeof(::protobuf::ModelPrediction)},
-  { 233, 241, -1, sizeof(::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse)},
-  { 243, -1, -1, sizeof(::protobuf::TricapaMLAnalysis)},
-  { 262, 270, -1, sizeof(::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse)},
-  { 272, -1, -1, sizeof(::protobuf::DistributedNode)},
-  { 299, 307, -1, sizeof(::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse)},
-  { 309, -1, -1, sizeof(::protobuf::PipelineTracking)},
-  { 337, -1, -1, sizeof(::protobuf::RAGAnalysis)},
-  { 350, -1, -1, sizeof(::protobuf::HumanFeedback)},
-  { 366, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
-  { 379, 387, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
-  { 389, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
-  { 417, -1, -1, sizeof(::protobuf::EventBatch)},
-  { 429, 437, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
-  { 439, 447, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
-  { 449, -1, -1, sizeof(::protobuf::SystemConfiguration)},
+  { 103, -1, -1, sizeof(::protobuf::GeoLocationInfo)},
+  { 124, -1, -1, sizeof(::protobuf::GeoEnrichment)},
+  { 165, -1, -1, sizeof(::protobuf::TimeWindow)},
+  { 176, 184, -1, sizeof(::protobuf::FlowAggregation_ProtocolDistributionEntry_DoNotUse)},
+  { 186, 194, -1, sizeof(::protobuf::FlowAggregation_PortDistributionEntry_DoNotUse)},
+  { 196, 204, -1, sizeof(::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse)},
+  { 206, -1, -1, sizeof(::protobuf::FlowAggregation)},
+  { 220, -1, -1, sizeof(::protobuf::ModelPrediction)},
+  { 234, 242, -1, sizeof(::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse)},
+  { 244, -1, -1, sizeof(::protobuf::TricapaMLAnalysis)},
+  { 263, 271, -1, sizeof(::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse)},
+  { 273, -1, -1, sizeof(::protobuf::DistributedNode)},
+  { 300, 308, -1, sizeof(::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse)},
+  { 310, -1, -1, sizeof(::protobuf::PipelineTracking)},
+  { 338, -1, -1, sizeof(::protobuf::RAGAnalysis)},
+  { 351, -1, -1, sizeof(::protobuf::HumanFeedback)},
+  { 367, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
+  { 380, 388, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
+  { 390, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
+  { 418, -1, -1, sizeof(::protobuf::EventBatch)},
+  { 430, 438, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
+  { 440, 448, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
+  { 450, -1, -1, sizeof(::protobuf::SystemConfiguration)},
+  { 468, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -1119,12 +1180,13 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::protobuf::_SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_SystemConfiguration_default_instance_._instance,
+  &::protobuf::_RansomwareFeatures_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\026network_security.proto\022\010protobuf\032\037goog"
   "le/protobuf/timestamp.proto\032\036google/prot"
-  "obuf/duration.proto\"\200\025\n\017NetworkFeatures\022"
+  "obuf/duration.proto\"\262\025\n\017NetworkFeatures\022"
   "\021\n\tsource_ip\030\001 \001(\t\022\026\n\016destination_ip\030\002 \001"
   "(\t\022\023\n\013source_port\030\003 \001(\r\022\030\n\020destination_p"
   "ort\030\004 \001(\r\022\027\n\017protocol_number\030\005 \001(\r\022\025\n\rpr"
@@ -1185,240 +1247,258 @@ const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTI
   "le_mean\030i \001(\001\022\025\n\rddos_features\030d \003(\001\022\033\n\023"
   "ransomware_features\030e \003(\001\022\037\n\027general_att"
   "ack_features\030f \003(\001\022!\n\031internal_traffic_f"
-  "eatures\030g \003(\001\022F\n\017custom_features\030n \003(\0132-"
-  ".protobuf.NetworkFeatures.CustomFeatures"
-  "Entry\022H\n\020feature_metadata\030o \003(\0132..protob"
-  "uf.NetworkFeatures.FeatureMetadataEntry\032"
-  "5\n\023CustomFeaturesEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005v"
-  "alue\030\002 \001(\001:\0028\001\0326\n\024FeatureMetadataEntry\022\013"
-  "\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\342\003\n\017GeoLo"
-  "cationInfo\022\024\n\014country_name\030\001 \001(\t\022\024\n\014coun"
-  "try_code\030\002 \001(\t\022\023\n\013region_name\030\003 \001(\t\022\021\n\tc"
-  "ity_name\030\004 \001(\t\022\020\n\010latitude\030\005 \001(\001\022\021\n\tlong"
-  "itude\030\006 \001(\001\022\020\n\010timezone\030\007 \001(\t\022\020\n\010isp_nam"
-  "e\030\010 \001(\t\022\031\n\021organization_name\030\t \001(\t\022 \n\030au"
-  "tonomous_system_number\030\n \001(\t\022\032\n\022is_anony"
-  "mous_proxy\030\013 \001(\010\022\035\n\025is_satellite_provide"
-  "r\030\014 \001(\010\022\030\n\020is_tor_exit_node\030\r \001(\010\022\032\n\022is_"
-  "known_malicious\030\016 \001(\010\022;\n\014threat_level\030\017 "
-  "\001(\0162%.protobuf.GeoLocationInfo.ThreatLev"
-  "el\"G\n\013ThreatLevel\022\013\n\007UNKNOWN\020\000\022\007\n\003LOW\020\001\022"
-  "\n\n\006MEDIUM\020\002\022\010\n\004HIGH\020\003\022\014\n\010CRITICAL\020\004\"\212\n\n\r"
-  "GeoEnrichment\0223\n\020sniffer_node_geo\030\001 \001(\0132"
-  "\031.protobuf.GeoLocationInfo\0220\n\rsource_ip_"
-  "geo\030\002 \001(\0132\031.protobuf.GeoLocationInfo\0225\n\022"
-  "destination_ip_geo\030\003 \001(\0132\031.protobuf.GeoL"
-  "ocationInfo\022&\n\036source_destination_distan"
-  "ce_km\030\n \001(\001\022\'\n\037source_destination_same_c"
-  "ountry\030\013 \001(\010\022)\n!source_destination_same_"
-  "continent\030\014 \001(\010\022\031\n\021distance_category\030\r \001"
-  "(\t\022\"\n\032sniffer_source_distance_km\030\024 \001(\001\022#"
-  "\n\033sniffer_source_same_country\030\025 \001(\010\022#\n\033s"
-  "niffer_source_relationship\030\026 \001(\t\022\'\n\037snif"
-  "fer_destination_distance_km\030\031 \001(\001\022(\n sni"
-  "ffer_destination_same_country\030\032 \001(\010\022(\n s"
-  "niffer_destination_relationship\030\033 \001(\t\022#\n"
-  "\033threat_intelligence_matches\030\036 \003(\t\022\"\n\032th"
-  "reat_intelligence_source\030\037 \001(\t\022 \n\030geogra"
-  "phic_anomaly_score\030  \001(\002\022%\n\035suspicious_g"
-  "eographic_pattern\030! \001(\010\022\035\n\025sniffer_node_"
-  "enriched\030( \001(\010\022\032\n\022source_ip_enriched\030) \001"
-  "(\010\022\037\n\027destination_ip_enriched\030* \001(\010\022\033\n\023e"
-  "nrichment_complete\030+ \001(\010\022%\n\035public_ip_di"
-  "scovery_attempted\030- \001(\010\022\033\n\023original_priv"
-  "ate_ip\030. \001(\t\022\034\n\024discovered_public_ip\030/ \001"
-  "(\t\022\034\n\024ip_discovery_service\0300 \001(\t\0225\n\021ip_d"
-  "iscovery_time\0301 \001(\0132\032.google.protobuf.Ti"
-  "mestamp\022\030\n\020enricher_version\0302 \001(\t\022\024\n\014geo"
-  "ip_method\0303 \001(\t\022\036\n\026geoip_database_versio"
-  "n\0304 \001(\t\022!\n\031fallback_coordinates_used\0305 \001"
-  "(\010\022\037\n\027total_lookup_latency_ms\0306 \001(\002\022\022\n\nc"
-  "ache_hits\0307 \001(\005\022\024\n\014cache_misses\0308 \001(\005\022\037\n"
-  "\027enrichment_success_rate\0309 \001(\002\0228\n\024enrich"
-  "ment_timestamp\030: \001(\0132\032.google.protobuf.T"
-  "imestamp\"\273\002\n\nTimeWindow\0220\n\014window_start\030"
-  "\001 \001(\0132\032.google.protobuf.Timestamp\022.\n\nwin"
-  "dow_end\030\002 \001(\0132\032.google.protobuf.Timestam"
-  "p\0222\n\017window_duration\030\003 \001(\0132\031.google.prot"
-  "obuf.Duration\022\027\n\017sequence_number\030\004 \001(\004\0224"
-  "\n\013window_type\030\005 \001(\0162\037.protobuf.TimeWindo"
-  "w.WindowType\"H\n\nWindowType\022\013\n\007SLIDING\020\000\022"
-  "\014\n\010TUMBLING\020\001\022\021\n\rSESSION_BASED\020\002\022\014\n\010ADAP"
-  "TIVE\020\003\"\335\004\n\017FlowAggregation\022)\n\013time_windo"
-  "w\030\001 \001(\0132\024.protobuf.TimeWindow\022\035\n\025total_f"
-  "lows_in_window\030\002 \001(\004\022\037\n\027total_packets_in"
-  "_window\030\003 \001(\004\022\035\n\025total_bytes_in_window\030\004"
-  " \001(\004\022R\n\025protocol_distribution\030\005 \003(\01323.pr"
-  "otobuf.FlowAggregation.ProtocolDistribut"
-  "ionEntry\022J\n\021port_distribution\030\006 \003(\0132/.pr"
-  "otobuf.FlowAggregation.PortDistributionE"
-  "ntry\022P\n\024country_distribution\030\007 \003(\01322.pro"
-  "tobuf.FlowAggregation.CountryDistributio"
-  "nEntry\022\034\n\024window_anomaly_score\030\010 \001(\001\032;\n\031"
-  "ProtocolDistributionEntry\022\013\n\003key\030\001 \001(\t\022\r"
-  "\n\005value\030\002 \001(\004:\0028\001\0327\n\025PortDistributionEnt"
-  "ry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\032:\n\030Co"
-  "untryDistributionEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005v"
-  "alue\030\002 \001(\004:\0028\001\"\232\004\n\017ModelPrediction\022\022\n\nmo"
-  "del_name\030\001 \001(\t\022\025\n\rmodel_version\030\002 \001(\t\0227\n"
-  "\nmodel_type\030\003 \001(\0162#.protobuf.ModelPredic"
-  "tion.ModelType\022\030\n\020prediction_class\030\004 \001(\t"
-  "\022\030\n\020confidence_score\030\005 \001(\001\022\033\n\023class_prob"
-  "abilities\030\006 \003(\001\0228\n\024prediction_timestamp\030"
-  "\007 \001(\0132\032.google.protobuf.Timestamp\0226\n\023pro"
-  "cessing_duration\030\010 \001(\0132\031.google.protobuf"
-  ".Duration\"\337\001\n\tModelType\022\031\n\025RANDOM_FOREST"
-  "_GENERAL\020\000\022\021\n\rLIGHTGBM_DDOS\020\001\022\035\n\031NEURAL_"
-  "NETWORK_RANSOMWARE\020\002\022\024\n\020ENSEMBLE_TRICAPA"
-  "\020\003\022\037\n\033INTERNAL_TRAFFIC_CLASSIFIER\020\004\022\030\n\024T"
-  "RANSFORMER_ADVANCED\020\005\022\026\n\022RANDOM_FOREST_D"
-  "DOS\020\006\022\034\n\030RANDOM_FOREST_RANSOMWARE\020\007\"\300\005\n\021"
-  "TricapaMLAnalysis\022;\n\030level1_general_dete"
-  "ction\030\001 \001(\0132\031.protobuf.ModelPrediction\022\036"
-  "\n\026attack_detected_level1\030\002 \001(\010\022\031\n\021level1"
-  "_confidence\030\003 \001(\001\022@\n\035level2_context_clas"
-  "sification\030\004 \001(\0132\031.protobuf.ModelPredict"
-  "ion\022\027\n\017traffic_context\030\005 \001(\t\022A\n\036level2_s"
-  "pecialized_predictions\030\t \003(\0132\031.protobuf."
-  "ModelPrediction\022A\n\036level3_specialized_pr"
-  "edictions\030\006 \003(\0132\031.protobuf.ModelPredicti"
-  "on\022#\n\033final_threat_classification\030\007 \001(\t\022"
-  "\033\n\023ensemble_confidence\030\010 \001(\001\022:\n\027total_an"
-  "alysis_duration\030\n \001(\0132\031.google.protobuf."
-  "Duration\022\030\n\020models_activated\030\013 \003(\t\022[\n\031fe"
-  "ature_importance_scores\030\014 \003(\01328.protobuf"
-  ".TricapaMLAnalysis.FeatureImportanceScor"
-  "esEntry\022\035\n\025requires_human_review\030\r \001(\010\032>"
-  "\n\034FeatureImportanceScoresEntry\022\013\n\003key\030\001 "
-  "\001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\"\236\010\n\017DistributedNo"
-  "de\022\017\n\007node_id\030\001 \001(\t\022\025\n\rnode_hostname\030\002 \001"
-  "(\t\022\027\n\017node_ip_address\030\003 \001(\t\022\031\n\021physical_"
-  "location\030\004 \001(\t\0225\n\tnode_role\030\005 \001(\0162\".prot"
-  "obuf.DistributedNode.NodeRole\0229\n\013node_st"
-  "atus\030\006 \001(\0162$.protobuf.DistributedNode.No"
-  "deStatus\0222\n\016last_heartbeat\030\007 \001(\0132\032.googl"
-  "e.protobuf.Timestamp\022\030\n\020operating_system"
-  "\030\010 \001(\t\022\022\n\nos_version\030\t \001(\t\022\025\n\ragent_vers"
-  "ion\030\n \001(\t\022\022\n\nprocess_id\030\013 \001(\005\022\024\n\014contain"
-  "er_id\030\014 \001(\t\022\024\n\014cluster_name\030\r \001(\t\022\031\n\021cpu"
-  "_usage_percent\030\017 \001(\002\022\027\n\017memory_usage_mb\030"
-  "\020 \001(\002\022\032\n\022active_connections\030\021 \001(\005\022\023\n\013que"
-  "ue_depth\030\022 \001(\005\022)\n\006uptime\030\023 \001(\0132\031.google."
-  "protobuf.Duration\022J\n\021node_capabilities\030\024"
-  " \003(\0132/.protobuf.DistributedNode.NodeCapa"
-  "bilitiesEntry\022\033\n\023supported_protocols\030\025 \003"
-  "(\t\022\035\n\025configuration_version\030\026 \001(\t\0327\n\025Nod"
-  "eCapabilitiesEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value"
-  "\030\002 \001(\t:\0028\001\"\320\001\n\010NodeRole\022\022\n\016PACKET_SNIFFE"
-  "R\020\000\022\025\n\021FEATURE_PROCESSOR\020\001\022\022\n\016GEOIP_ENRI"
-  "CHER\020\002\022\017\n\013ML_ANALYZER\020\003\022\023\n\017THREAT_DETECT"
-  "OR\020\004\022\027\n\023FIREWALL_CONTROLLER\020\005\022\023\n\017DATA_AG"
-  "GREGATOR\020\006\022\030\n\024DASHBOARD_VISUALIZER\020\007\022\027\n\023"
-  "CLUSTER_COORDINATOR\020\010\"`\n\nNodeStatus\022\n\n\006A"
-  "CTIVE\020\000\022\014\n\010STARTING\020\001\022\014\n\010STOPPING\020\002\022\t\n\005E"
-  "RROR\020\003\022\017\n\013MAINTENANCE\020\004\022\016\n\nOVERLOADED\020\005\""
-  "\275\007\n\020PipelineTracking\022\023\n\013pipeline_id\030\001 \001("
-  "\t\0222\n\016pipeline_start\030\002 \001(\0132\032.google.proto"
-  "buf.Timestamp\022\032\n\022sniffer_process_id\030\003 \001("
-  "\005\022\034\n\024processor_process_id\030\004 \001(\005\022\033\n\023enric"
-  "her_process_id\030\005 \001(\005\022\033\n\023analyzer_process"
-  "_id\030\006 \001(\005\022\033\n\023detector_process_id\030\007 \001(\005\022\035"
-  "\n\025controller_process_id\030\010 \001(\005\0226\n\022packet_"
-  "captured_at\030\n \001(\0132\032.google.protobuf.Time"
-  "stamp\0229\n\025features_extracted_at\030\013 \001(\0132\032.g"
-  "oogle.protobuf.Timestamp\0225\n\021geoip_enrich"
-  "ed_at\030\014 \001(\0132\032.google.protobuf.Timestamp\022"
-  "2\n\016ml_analyzed_at\030\r \001(\0132\032.google.protobu"
-  "f.Timestamp\0226\n\022threat_detected_at\030\016 \001(\0132"
-  "\032.google.protobuf.Timestamp\0223\n\017action_ta"
-  "ken_at\030\017 \001(\0132\032.google.protobuf.Timestamp"
-  "\022;\n\030total_processing_latency\030\024 \001(\0132\031.goo"
-  "gle.protobuf.Duration\022\033\n\023pipeline_hops_c"
-  "ount\030\025 \001(\005\022\027\n\017processing_path\030\026 \001(\t\022\026\n\016r"
-  "etry_attempts\030\031 \001(\005\022\031\n\021processing_errors"
-  "\030\032 \003(\t\022\035\n\025requires_reprocessing\030\033 \001(\010\022M\n"
-  "\022component_metadata\030\036 \003(\01321.protobuf.Pip"
-  "elineTracking.ComponentMetadataEntry\022\027\n\017"
-  "processing_tags\030\037 \003(\t\0328\n\026ComponentMetada"
-  "taEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\""
-  "\347\001\n\013RAGAnalysis\022\022\n\nquery_text\030\001 \001(\t\022\033\n\023r"
-  "etrieved_knowledge\030\002 \003(\t\022\030\n\020relevance_sc"
-  "ores\030\003 \003(\001\022\035\n\025ai_generated_analysis\030\004 \001("
-  "\t\022\033\n\023analysis_confidence\030\005 \001(\001\022\031\n\021knowle"
-  "dge_sources\030\006 \003(\t\0226\n\022analysis_timestamp\030"
-  "\007 \001(\0132\032.google.protobuf.Timestamp\"\333\003\n\rHu"
-  "manFeedback\022\023\n\013feedback_id\030\001 \001(\t\022\027\n\017anal"
-  "yst_user_id\030\002 \001(\t\022\032\n\022event_reference_id\030"
-  "\003 \001(\t\022;\n\rfeedback_type\030\004 \001(\0162$.protobuf."
-  "HumanFeedback.FeedbackType\022\037\n\027confirmed_"
-  "true_positive\030\005 \001(\010\022 \n\030confirmed_false_p"
-  "ositive\030\006 \001(\010\022\033\n\023analyst_explanation\030\007 \001"
-  "(\t\022\024\n\014analyst_tags\030\010 \003(\t\022!\n\031analyst_conf"
-  "idence_rating\030\t \001(\005\0226\n\022feedback_timestam"
-  "p\030\n \001(\0132\032.google.protobuf.Timestamp\"r\n\014F"
-  "eedbackType\022\016\n\nVALIDATION\020\000\022\016\n\nCORRECTIO"
-  "N\020\001\022\017\n\013ENHANCEMENT\020\002\022\031\n\025FALSE_POSITIVE_R"
-  "EPORT\020\003\022\026\n\022ADDITIONAL_CONTEXT\020\004\"\243\003\n\024Huma"
-  "nInTheLoopReview\022\037\n\027requires_human_analy"
-  "sis\030\001 \001(\010\022F\n\017review_priority\030\002 \001(\0162-.pro"
-  "tobuf.HumanInTheLoopReview.ReviewPriorit"
-  "y\022\026\n\016review_reasons\030\003 \003(\t\0221\n\020analyst_fee"
-  "dback\030\004 \001(\0132\027.protobuf.HumanFeedback\0227\n\023"
-  "escalated_timestamp\030\005 \001(\0132\032.google.proto"
-  "buf.Timestamp\0226\n\022reviewed_timestamp\030\006 \001("
-  "\0132\032.google.protobuf.Timestamp\022\030\n\020review_"
-  "completed\030\007 \001(\010\"L\n\016ReviewPriority\022\007\n\003LOW"
-  "\020\000\022\n\n\006MEDIUM\020\001\022\010\n\004HIGH\020\002\022\014\n\010CRITICAL\020\003\022\r"
-  "\n\tEMERGENCY\020\004\"\265\007\n\024NetworkSecurityEvent\022\020"
-  "\n\010event_id\030\001 \001(\t\0223\n\017event_timestamp\030\002 \001("
-  "\0132\032.google.protobuf.Timestamp\022\033\n\023origina"
-  "ting_node_id\030\003 \001(\t\0223\n\020network_features\030\004"
-  " \001(\0132\031.protobuf.NetworkFeatures\022/\n\016geo_e"
-  "nrichment\030\005 \001(\0132\027.protobuf.GeoEnrichment"
-  "\022)\n\013time_window\030\006 \001(\0132\024.protobuf.TimeWin"
-  "dow\0220\n\013ml_analysis\030\007 \001(\0132\033.protobuf.Tric"
-  "apaMLAnalysis\022\?\n\034additional_model_predic"
-  "tions\030\010 \003(\0132\031.protobuf.ModelPrediction\0221"
-  "\n\016capturing_node\030\t \001(\0132\031.protobuf.Distri"
-  "butedNode\0225\n\021pipeline_tracking\030\n \001(\0132\032.p"
-  "rotobuf.PipelineTracking\022+\n\014rag_analysis"
-  "\030\013 \001(\0132\025.protobuf.RAGAnalysis\0224\n\014human_r"
-  "eview\030\014 \001(\0132\036.protobuf.HumanInTheLoopRev"
-  "iew\022\034\n\024overall_threat_score\030\017 \001(\001\022\034\n\024fin"
-  "al_classification\030\020 \001(\t\022\027\n\017threat_catego"
-  "ry\030\021 \001(\t\022\026\n\016correlation_id\030\024 \001(\t\022\031\n\021rela"
-  "ted_event_ids\030\025 \003(\t\022\026\n\016event_chain_id\030\026 "
-  "\001(\t\022\026\n\016schema_version\030\031 \001(\r\022K\n\017custom_me"
-  "tadata\030\032 \003(\01322.protobuf.NetworkSecurityE"
-  "vent.CustomMetadataEntry\022\022\n\nevent_tags\030\033"
-  " \003(\t\022\030\n\020protobuf_version\030\034 \001(\t\0325\n\023Custom"
-  "MetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001("
-  "\t:\0028\001\"\325\002\n\nEventBatch\022.\n\006events\030\001 \003(\0132\036.p"
-  "rotobuf.NetworkSecurityEvent\022\020\n\010batch_id"
-  "\030\002 \001(\004\0224\n\020batch_created_at\030\003 \001(\0132\032.googl"
-  "e.protobuf.Timestamp\022\022\n\nbatch_size\030\004 \001(\r"
-  "\022<\n\017processing_mode\030\005 \001(\0162#.protobuf.Eve"
-  "ntBatch.ProcessingMode\022\031\n\021batch_source_n"
-  "ode\030\006 \001(\t\"b\n\016ProcessingMode\022\r\n\tREAL_TIME"
-  "\020\000\022\022\n\016NEAR_REAL_TIME\020\001\022\024\n\020BATCH_PROCESSI"
-  "NG\020\002\022\027\n\023HISTORICAL_ANALYSIS\020\003\"\223\005\n\023System"
-  "Configuration\022\031\n\021enabled_ml_models\030\001 \003(\t"
-  "\022Y\n\027threat_score_thresholds\030\002 \003(\01328.prot"
-  "obuf.SystemConfiguration.ThreatScoreThre"
-  "sholdsEntry\0223\n\020time_window_size\030\003 \001(\0132\031."
-  "google.protobuf.Duration\022\035\n\025max_events_p"
-  "er_window\030\004 \001(\r\0220\n\rcluster_nodes\030\005 \003(\0132\031"
-  ".protobuf.DistributedNode\022U\n\025node_role_a"
-  "ssignments\030\006 \003(\01326.protobuf.SystemConfig"
-  "uration.NodeRoleAssignmentsEntry\022\032\n\022encr"
-  "yption_enabled\030\007 \001(\010\022\033\n\023compression_enab"
-  "led\030\010 \001(\010\022\034\n\024encryption_algorithm\030\t \001(\t\022"
-  "\034\n\024rag_analysis_enabled\030\n \001(\010\022\032\n\022rag_mod"
-  "el_endpoint\030\013 \001(\t\022\036\n\026knowledge_base_sour"
-  "ces\030\014 \003(\t\032<\n\032ThreatScoreThresholdsEntry\022"
-  "\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\032:\n\030NodeR"
-  "oleAssignmentsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005valu"
-  "e\030\002 \001(\t:\0028\001b\006proto3"
+  "eatures\030g \003(\001\0220\n\nransomware\030j \001(\0132\034.prot"
+  "obuf.RansomwareFeatures\022F\n\017custom_featur"
+  "es\030n \003(\0132-.protobuf.NetworkFeatures.Cust"
+  "omFeaturesEntry\022H\n\020feature_metadata\030o \003("
+  "\0132..protobuf.NetworkFeatures.FeatureMeta"
+  "dataEntry\0325\n\023CustomFeaturesEntry\022\013\n\003key\030"
+  "\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\0326\n\024FeatureMetad"
+  "ataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001"
+  "\"\342\003\n\017GeoLocationInfo\022\024\n\014country_name\030\001 \001"
+  "(\t\022\024\n\014country_code\030\002 \001(\t\022\023\n\013region_name\030"
+  "\003 \001(\t\022\021\n\tcity_name\030\004 \001(\t\022\020\n\010latitude\030\005 \001"
+  "(\001\022\021\n\tlongitude\030\006 \001(\001\022\020\n\010timezone\030\007 \001(\t\022"
+  "\020\n\010isp_name\030\010 \001(\t\022\031\n\021organization_name\030\t"
+  " \001(\t\022 \n\030autonomous_system_number\030\n \001(\t\022\032"
+  "\n\022is_anonymous_proxy\030\013 \001(\010\022\035\n\025is_satelli"
+  "te_provider\030\014 \001(\010\022\030\n\020is_tor_exit_node\030\r "
+  "\001(\010\022\032\n\022is_known_malicious\030\016 \001(\010\022;\n\014threa"
+  "t_level\030\017 \001(\0162%.protobuf.GeoLocationInfo"
+  ".ThreatLevel\"G\n\013ThreatLevel\022\013\n\007UNKNOWN\020\000"
+  "\022\007\n\003LOW\020\001\022\n\n\006MEDIUM\020\002\022\010\n\004HIGH\020\003\022\014\n\010CRITI"
+  "CAL\020\004\"\212\n\n\rGeoEnrichment\0223\n\020sniffer_node_"
+  "geo\030\001 \001(\0132\031.protobuf.GeoLocationInfo\0220\n\r"
+  "source_ip_geo\030\002 \001(\0132\031.protobuf.GeoLocati"
+  "onInfo\0225\n\022destination_ip_geo\030\003 \001(\0132\031.pro"
+  "tobuf.GeoLocationInfo\022&\n\036source_destinat"
+  "ion_distance_km\030\n \001(\001\022\'\n\037source_destinat"
+  "ion_same_country\030\013 \001(\010\022)\n!source_destina"
+  "tion_same_continent\030\014 \001(\010\022\031\n\021distance_ca"
+  "tegory\030\r \001(\t\022\"\n\032sniffer_source_distance_"
+  "km\030\024 \001(\001\022#\n\033sniffer_source_same_country\030"
+  "\025 \001(\010\022#\n\033sniffer_source_relationship\030\026 \001"
+  "(\t\022\'\n\037sniffer_destination_distance_km\030\031 "
+  "\001(\001\022(\n sniffer_destination_same_country\030"
+  "\032 \001(\010\022(\n sniffer_destination_relationshi"
+  "p\030\033 \001(\t\022#\n\033threat_intelligence_matches\030\036"
+  " \003(\t\022\"\n\032threat_intelligence_source\030\037 \001(\t"
+  "\022 \n\030geographic_anomaly_score\030  \001(\002\022%\n\035su"
+  "spicious_geographic_pattern\030! \001(\010\022\035\n\025sni"
+  "ffer_node_enriched\030( \001(\010\022\032\n\022source_ip_en"
+  "riched\030) \001(\010\022\037\n\027destination_ip_enriched\030"
+  "* \001(\010\022\033\n\023enrichment_complete\030+ \001(\010\022%\n\035pu"
+  "blic_ip_discovery_attempted\030- \001(\010\022\033\n\023ori"
+  "ginal_private_ip\030. \001(\t\022\034\n\024discovered_pub"
+  "lic_ip\030/ \001(\t\022\034\n\024ip_discovery_service\0300 \001"
+  "(\t\0225\n\021ip_discovery_time\0301 \001(\0132\032.google.p"
+  "rotobuf.Timestamp\022\030\n\020enricher_version\0302 "
+  "\001(\t\022\024\n\014geoip_method\0303 \001(\t\022\036\n\026geoip_datab"
+  "ase_version\0304 \001(\t\022!\n\031fallback_coordinate"
+  "s_used\0305 \001(\010\022\037\n\027total_lookup_latency_ms\030"
+  "6 \001(\002\022\022\n\ncache_hits\0307 \001(\005\022\024\n\014cache_misse"
+  "s\0308 \001(\005\022\037\n\027enrichment_success_rate\0309 \001(\002"
+  "\0228\n\024enrichment_timestamp\030: \001(\0132\032.google."
+  "protobuf.Timestamp\"\273\002\n\nTimeWindow\0220\n\014win"
+  "dow_start\030\001 \001(\0132\032.google.protobuf.Timest"
+  "amp\022.\n\nwindow_end\030\002 \001(\0132\032.google.protobu"
+  "f.Timestamp\0222\n\017window_duration\030\003 \001(\0132\031.g"
+  "oogle.protobuf.Duration\022\027\n\017sequence_numb"
+  "er\030\004 \001(\004\0224\n\013window_type\030\005 \001(\0162\037.protobuf"
+  ".TimeWindow.WindowType\"H\n\nWindowType\022\013\n\007"
+  "SLIDING\020\000\022\014\n\010TUMBLING\020\001\022\021\n\rSESSION_BASED"
+  "\020\002\022\014\n\010ADAPTIVE\020\003\"\335\004\n\017FlowAggregation\022)\n\013"
+  "time_window\030\001 \001(\0132\024.protobuf.TimeWindow\022"
+  "\035\n\025total_flows_in_window\030\002 \001(\004\022\037\n\027total_"
+  "packets_in_window\030\003 \001(\004\022\035\n\025total_bytes_i"
+  "n_window\030\004 \001(\004\022R\n\025protocol_distribution\030"
+  "\005 \003(\01323.protobuf.FlowAggregation.Protoco"
+  "lDistributionEntry\022J\n\021port_distribution\030"
+  "\006 \003(\0132/.protobuf.FlowAggregation.PortDis"
+  "tributionEntry\022P\n\024country_distribution\030\007"
+  " \003(\01322.protobuf.FlowAggregation.CountryD"
+  "istributionEntry\022\034\n\024window_anomaly_score"
+  "\030\010 \001(\001\032;\n\031ProtocolDistributionEntry\022\013\n\003k"
+  "ey\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\0327\n\025PortDistr"
+  "ibutionEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004"
+  ":\0028\001\032:\n\030CountryDistributionEntry\022\013\n\003key\030"
+  "\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\"\232\004\n\017ModelPredic"
+  "tion\022\022\n\nmodel_name\030\001 \001(\t\022\025\n\rmodel_versio"
+  "n\030\002 \001(\t\0227\n\nmodel_type\030\003 \001(\0162#.protobuf.M"
+  "odelPrediction.ModelType\022\030\n\020prediction_c"
+  "lass\030\004 \001(\t\022\030\n\020confidence_score\030\005 \001(\001\022\033\n\023"
+  "class_probabilities\030\006 \003(\001\0228\n\024prediction_"
+  "timestamp\030\007 \001(\0132\032.google.protobuf.Timest"
+  "amp\0226\n\023processing_duration\030\010 \001(\0132\031.googl"
+  "e.protobuf.Duration\"\337\001\n\tModelType\022\031\n\025RAN"
+  "DOM_FOREST_GENERAL\020\000\022\021\n\rLIGHTGBM_DDOS\020\001\022"
+  "\035\n\031NEURAL_NETWORK_RANSOMWARE\020\002\022\024\n\020ENSEMB"
+  "LE_TRICAPA\020\003\022\037\n\033INTERNAL_TRAFFIC_CLASSIF"
+  "IER\020\004\022\030\n\024TRANSFORMER_ADVANCED\020\005\022\026\n\022RANDO"
+  "M_FOREST_DDOS\020\006\022\034\n\030RANDOM_FOREST_RANSOMW"
+  "ARE\020\007\"\300\005\n\021TricapaMLAnalysis\022;\n\030level1_ge"
+  "neral_detection\030\001 \001(\0132\031.protobuf.ModelPr"
+  "ediction\022\036\n\026attack_detected_level1\030\002 \001(\010"
+  "\022\031\n\021level1_confidence\030\003 \001(\001\022@\n\035level2_co"
+  "ntext_classification\030\004 \001(\0132\031.protobuf.Mo"
+  "delPrediction\022\027\n\017traffic_context\030\005 \001(\t\022A"
+  "\n\036level2_specialized_predictions\030\t \003(\0132\031"
+  ".protobuf.ModelPrediction\022A\n\036level3_spec"
+  "ialized_predictions\030\006 \003(\0132\031.protobuf.Mod"
+  "elPrediction\022#\n\033final_threat_classificat"
+  "ion\030\007 \001(\t\022\033\n\023ensemble_confidence\030\010 \001(\001\022:"
+  "\n\027total_analysis_duration\030\n \001(\0132\031.google"
+  ".protobuf.Duration\022\030\n\020models_activated\030\013"
+  " \003(\t\022[\n\031feature_importance_scores\030\014 \003(\0132"
+  "8.protobuf.TricapaMLAnalysis.FeatureImpo"
+  "rtanceScoresEntry\022\035\n\025requires_human_revi"
+  "ew\030\r \001(\010\032>\n\034FeatureImportanceScoresEntry"
+  "\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\"\236\010\n\017Dis"
+  "tributedNode\022\017\n\007node_id\030\001 \001(\t\022\025\n\rnode_ho"
+  "stname\030\002 \001(\t\022\027\n\017node_ip_address\030\003 \001(\t\022\031\n"
+  "\021physical_location\030\004 \001(\t\0225\n\tnode_role\030\005 "
+  "\001(\0162\".protobuf.DistributedNode.NodeRole\022"
+  "9\n\013node_status\030\006 \001(\0162$.protobuf.Distribu"
+  "tedNode.NodeStatus\0222\n\016last_heartbeat\030\007 \001"
+  "(\0132\032.google.protobuf.Timestamp\022\030\n\020operat"
+  "ing_system\030\010 \001(\t\022\022\n\nos_version\030\t \001(\t\022\025\n\r"
+  "agent_version\030\n \001(\t\022\022\n\nprocess_id\030\013 \001(\005\022"
+  "\024\n\014container_id\030\014 \001(\t\022\024\n\014cluster_name\030\r "
+  "\001(\t\022\031\n\021cpu_usage_percent\030\017 \001(\002\022\027\n\017memory"
+  "_usage_mb\030\020 \001(\002\022\032\n\022active_connections\030\021 "
+  "\001(\005\022\023\n\013queue_depth\030\022 \001(\005\022)\n\006uptime\030\023 \001(\013"
+  "2\031.google.protobuf.Duration\022J\n\021node_capa"
+  "bilities\030\024 \003(\0132/.protobuf.DistributedNod"
+  "e.NodeCapabilitiesEntry\022\033\n\023supported_pro"
+  "tocols\030\025 \003(\t\022\035\n\025configuration_version\030\026 "
+  "\001(\t\0327\n\025NodeCapabilitiesEntry\022\013\n\003key\030\001 \001("
+  "\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\320\001\n\010NodeRole\022\022\n\016PAC"
+  "KET_SNIFFER\020\000\022\025\n\021FEATURE_PROCESSOR\020\001\022\022\n\016"
+  "GEOIP_ENRICHER\020\002\022\017\n\013ML_ANALYZER\020\003\022\023\n\017THR"
+  "EAT_DETECTOR\020\004\022\027\n\023FIREWALL_CONTROLLER\020\005\022"
+  "\023\n\017DATA_AGGREGATOR\020\006\022\030\n\024DASHBOARD_VISUAL"
+  "IZER\020\007\022\027\n\023CLUSTER_COORDINATOR\020\010\"`\n\nNodeS"
+  "tatus\022\n\n\006ACTIVE\020\000\022\014\n\010STARTING\020\001\022\014\n\010STOPP"
+  "ING\020\002\022\t\n\005ERROR\020\003\022\017\n\013MAINTENANCE\020\004\022\016\n\nOVE"
+  "RLOADED\020\005\"\275\007\n\020PipelineTracking\022\023\n\013pipeli"
+  "ne_id\030\001 \001(\t\0222\n\016pipeline_start\030\002 \001(\0132\032.go"
+  "ogle.protobuf.Timestamp\022\032\n\022sniffer_proce"
+  "ss_id\030\003 \001(\005\022\034\n\024processor_process_id\030\004 \001("
+  "\005\022\033\n\023enricher_process_id\030\005 \001(\005\022\033\n\023analyz"
+  "er_process_id\030\006 \001(\005\022\033\n\023detector_process_"
+  "id\030\007 \001(\005\022\035\n\025controller_process_id\030\010 \001(\005\022"
+  "6\n\022packet_captured_at\030\n \001(\0132\032.google.pro"
+  "tobuf.Timestamp\0229\n\025features_extracted_at"
+  "\030\013 \001(\0132\032.google.protobuf.Timestamp\0225\n\021ge"
+  "oip_enriched_at\030\014 \001(\0132\032.google.protobuf."
+  "Timestamp\0222\n\016ml_analyzed_at\030\r \001(\0132\032.goog"
+  "le.protobuf.Timestamp\0226\n\022threat_detected"
+  "_at\030\016 \001(\0132\032.google.protobuf.Timestamp\0223\n"
+  "\017action_taken_at\030\017 \001(\0132\032.google.protobuf"
+  ".Timestamp\022;\n\030total_processing_latency\030\024"
+  " \001(\0132\031.google.protobuf.Duration\022\033\n\023pipel"
+  "ine_hops_count\030\025 \001(\005\022\027\n\017processing_path\030"
+  "\026 \001(\t\022\026\n\016retry_attempts\030\031 \001(\005\022\031\n\021process"
+  "ing_errors\030\032 \003(\t\022\035\n\025requires_reprocessin"
+  "g\030\033 \001(\010\022M\n\022component_metadata\030\036 \003(\01321.pr"
+  "otobuf.PipelineTracking.ComponentMetadat"
+  "aEntry\022\027\n\017processing_tags\030\037 \003(\t\0328\n\026Compo"
+  "nentMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030"
+  "\002 \001(\t:\0028\001\"\347\001\n\013RAGAnalysis\022\022\n\nquery_text\030"
+  "\001 \001(\t\022\033\n\023retrieved_knowledge\030\002 \003(\t\022\030\n\020re"
+  "levance_scores\030\003 \003(\001\022\035\n\025ai_generated_ana"
+  "lysis\030\004 \001(\t\022\033\n\023analysis_confidence\030\005 \001(\001"
+  "\022\031\n\021knowledge_sources\030\006 \003(\t\0226\n\022analysis_"
+  "timestamp\030\007 \001(\0132\032.google.protobuf.Timest"
+  "amp\"\333\003\n\rHumanFeedback\022\023\n\013feedback_id\030\001 \001"
+  "(\t\022\027\n\017analyst_user_id\030\002 \001(\t\022\032\n\022event_ref"
+  "erence_id\030\003 \001(\t\022;\n\rfeedback_type\030\004 \001(\0162$"
+  ".protobuf.HumanFeedback.FeedbackType\022\037\n\027"
+  "confirmed_true_positive\030\005 \001(\010\022 \n\030confirm"
+  "ed_false_positive\030\006 \001(\010\022\033\n\023analyst_expla"
+  "nation\030\007 \001(\t\022\024\n\014analyst_tags\030\010 \003(\t\022!\n\031an"
+  "alyst_confidence_rating\030\t \001(\005\0226\n\022feedbac"
+  "k_timestamp\030\n \001(\0132\032.google.protobuf.Time"
+  "stamp\"r\n\014FeedbackType\022\016\n\nVALIDATION\020\000\022\016\n"
+  "\nCORRECTION\020\001\022\017\n\013ENHANCEMENT\020\002\022\031\n\025FALSE_"
+  "POSITIVE_REPORT\020\003\022\026\n\022ADDITIONAL_CONTEXT\020"
+  "\004\"\243\003\n\024HumanInTheLoopReview\022\037\n\027requires_h"
+  "uman_analysis\030\001 \001(\010\022F\n\017review_priority\030\002"
+  " \001(\0162-.protobuf.HumanInTheLoopReview.Rev"
+  "iewPriority\022\026\n\016review_reasons\030\003 \003(\t\0221\n\020a"
+  "nalyst_feedback\030\004 \001(\0132\027.protobuf.HumanFe"
+  "edback\0227\n\023escalated_timestamp\030\005 \001(\0132\032.go"
+  "ogle.protobuf.Timestamp\0226\n\022reviewed_time"
+  "stamp\030\006 \001(\0132\032.google.protobuf.Timestamp\022"
+  "\030\n\020review_completed\030\007 \001(\010\"L\n\016ReviewPrior"
+  "ity\022\007\n\003LOW\020\000\022\n\n\006MEDIUM\020\001\022\010\n\004HIGH\020\002\022\014\n\010CR"
+  "ITICAL\020\003\022\r\n\tEMERGENCY\020\004\"\265\007\n\024NetworkSecur"
+  "ityEvent\022\020\n\010event_id\030\001 \001(\t\0223\n\017event_time"
+  "stamp\030\002 \001(\0132\032.google.protobuf.Timestamp\022"
+  "\033\n\023originating_node_id\030\003 \001(\t\0223\n\020network_"
+  "features\030\004 \001(\0132\031.protobuf.NetworkFeature"
+  "s\022/\n\016geo_enrichment\030\005 \001(\0132\027.protobuf.Geo"
+  "Enrichment\022)\n\013time_window\030\006 \001(\0132\024.protob"
+  "uf.TimeWindow\0220\n\013ml_analysis\030\007 \001(\0132\033.pro"
+  "tobuf.TricapaMLAnalysis\022\?\n\034additional_mo"
+  "del_predictions\030\010 \003(\0132\031.protobuf.ModelPr"
+  "ediction\0221\n\016capturing_node\030\t \001(\0132\031.proto"
+  "buf.DistributedNode\0225\n\021pipeline_tracking"
+  "\030\n \001(\0132\032.protobuf.PipelineTracking\022+\n\014ra"
+  "g_analysis\030\013 \001(\0132\025.protobuf.RAGAnalysis\022"
+  "4\n\014human_review\030\014 \001(\0132\036.protobuf.HumanIn"
+  "TheLoopReview\022\034\n\024overall_threat_score\030\017 "
+  "\001(\001\022\034\n\024final_classification\030\020 \001(\t\022\027\n\017thr"
+  "eat_category\030\021 \001(\t\022\026\n\016correlation_id\030\024 \001"
+  "(\t\022\031\n\021related_event_ids\030\025 \003(\t\022\026\n\016event_c"
+  "hain_id\030\026 \001(\t\022\026\n\016schema_version\030\031 \001(\r\022K\n"
+  "\017custom_metadata\030\032 \003(\01322.protobuf.Networ"
+  "kSecurityEvent.CustomMetadataEntry\022\022\n\nev"
+  "ent_tags\030\033 \003(\t\022\030\n\020protobuf_version\030\034 \001(\t"
+  "\0325\n\023CustomMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005"
+  "value\030\002 \001(\t:\0028\001\"\325\002\n\nEventBatch\022.\n\006events"
+  "\030\001 \003(\0132\036.protobuf.NetworkSecurityEvent\022\020"
+  "\n\010batch_id\030\002 \001(\004\0224\n\020batch_created_at\030\003 \001"
+  "(\0132\032.google.protobuf.Timestamp\022\022\n\nbatch_"
+  "size\030\004 \001(\r\022<\n\017processing_mode\030\005 \001(\0162#.pr"
+  "otobuf.EventBatch.ProcessingMode\022\031\n\021batc"
+  "h_source_node\030\006 \001(\t\"b\n\016ProcessingMode\022\r\n"
+  "\tREAL_TIME\020\000\022\022\n\016NEAR_REAL_TIME\020\001\022\024\n\020BATC"
+  "H_PROCESSING\020\002\022\027\n\023HISTORICAL_ANALYSIS\020\003\""
+  "\223\005\n\023SystemConfiguration\022\031\n\021enabled_ml_mo"
+  "dels\030\001 \003(\t\022Y\n\027threat_score_thresholds\030\002 "
+  "\003(\01328.protobuf.SystemConfiguration.Threa"
+  "tScoreThresholdsEntry\0223\n\020time_window_siz"
+  "e\030\003 \001(\0132\031.google.protobuf.Duration\022\035\n\025ma"
+  "x_events_per_window\030\004 \001(\r\0220\n\rcluster_nod"
+  "es\030\005 \003(\0132\031.protobuf.DistributedNode\022U\n\025n"
+  "ode_role_assignments\030\006 \003(\01326.protobuf.Sy"
+  "stemConfiguration.NodeRoleAssignmentsEnt"
+  "ry\022\032\n\022encryption_enabled\030\007 \001(\010\022\033\n\023compre"
+  "ssion_enabled\030\010 \001(\010\022\034\n\024encryption_algori"
+  "thm\030\t \001(\t\022\034\n\024rag_analysis_enabled\030\n \001(\010\022"
+  "\032\n\022rag_model_endpoint\030\013 \001(\t\022\036\n\026knowledge"
+  "_base_sources\030\014 \003(\t\032<\n\032ThreatScoreThresh"
+  "oldsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028"
+  "\001\032:\n\030NodeRoleAssignmentsEntry\022\013\n\003key\030\001 \001"
+  "(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\247\005\n\022RansomwareFeat"
+  "ures\022\031\n\021dns_query_entropy\030\001 \001(\002\022\034\n\024new_e"
+  "xternal_ips_30s\030\002 \001(\005\022\036\n\026dns_query_rate_"
+  "per_min\030\003 \001(\002\022 \n\030failed_dns_queries_rati"
+  "o\030\004 \001(\002\022\"\n\032tls_self_signed_cert_count\030\005 "
+  "\001(\005\022$\n\034non_standard_port_http_count\030\006 \001("
+  "\005\022 \n\030smb_connection_diversity\030\007 \001(\005\022\035\n\025r"
+  "dp_failed_auth_count\030\010 \001(\005\022$\n\034new_intern"
+  "al_connections_30s\030\t \001(\005\022\037\n\027port_scan_pa"
+  "ttern_score\030\n \001(\002\022!\n\031upload_download_rat"
+  "io_30s\030\013 \001(\002\022\037\n\027burst_connections_count\030"
+  "\014 \001(\005\022\037\n\027unique_destinations_30s\030\r \001(\005\022#"
+  "\n\033large_upload_sessions_count\030\016 \001(\005\022\037\n\027n"
+  "octurnal_activity_flag\030\017 \001(\010\022\036\n\026connecti"
+  "on_rate_stddev\030\020 \001(\002\022 \n\030protocol_diversi"
+  "ty_score\030\021 \001(\002\022!\n\031avg_flow_duration_seco"
+  "nds\030\022 \001(\002\022\025\n\rtcp_rst_ratio\030\023 \001(\002\022\035\n\025syn_"
+  "without_ack_ratio\030\024 \001(\002b\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fduration_2eproto,
@@ -1426,9 +1506,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_
 };
 static ::_pbi::once_flag descriptor_table_network_5fsecurity_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_network_5fsecurity_2eproto = {
-    false, false, 11859, descriptor_table_protodef_network_5fsecurity_2eproto,
+    false, false, 12591, descriptor_table_protodef_network_5fsecurity_2eproto,
     "network_security.proto",
-    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 26,
+    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 27,
     schemas, file_default_instances, TableStruct_network_5fsecurity_2eproto::offsets,
     file_level_metadata_network_5fsecurity_2eproto, file_level_enum_descriptors_network_5fsecurity_2eproto,
     file_level_service_descriptors_network_5fsecurity_2eproto,
@@ -1703,6 +1783,7 @@ class NetworkFeatures::_Internal {
  public:
   static const ::PROTOBUF_NAMESPACE_ID::Timestamp& flow_start_time(const NetworkFeatures* msg);
   static const ::PROTOBUF_NAMESPACE_ID::Duration& flow_duration(const NetworkFeatures* msg);
+  static const ::protobuf::RansomwareFeatures& ransomware(const NetworkFeatures* msg);
 };
 
 const ::PROTOBUF_NAMESPACE_ID::Timestamp&
@@ -1712,6 +1793,10 @@ NetworkFeatures::_Internal::flow_start_time(const NetworkFeatures* msg) {
 const ::PROTOBUF_NAMESPACE_ID::Duration&
 NetworkFeatures::_Internal::flow_duration(const NetworkFeatures* msg) {
   return *msg->_impl_.flow_duration_;
+}
+const ::protobuf::RansomwareFeatures&
+NetworkFeatures::_Internal::ransomware(const NetworkFeatures* msg) {
+  return *msg->_impl_.ransomware_;
 }
 void NetworkFeatures::clear_flow_start_time() {
   if (GetArenaForAllocation() == nullptr && _impl_.flow_start_time_ != nullptr) {
@@ -1749,6 +1834,7 @@ NetworkFeatures::NetworkFeatures(const NetworkFeatures& from)
     , decltype(_impl_.protocol_name_){}
     , decltype(_impl_.flow_start_time_){nullptr}
     , decltype(_impl_.flow_duration_){nullptr}
+    , decltype(_impl_.ransomware_){nullptr}
     , decltype(_impl_.source_port_){}
     , decltype(_impl_.destination_port_){}
     , decltype(_impl_.flow_duration_microseconds_){}
@@ -1849,6 +1935,9 @@ NetworkFeatures::NetworkFeatures(const NetworkFeatures& from)
   if (from._internal_has_flow_duration()) {
     _this->_impl_.flow_duration_ = new ::PROTOBUF_NAMESPACE_ID::Duration(*from._impl_.flow_duration_);
   }
+  if (from._internal_has_ransomware()) {
+    _this->_impl_.ransomware_ = new ::protobuf::RansomwareFeatures(*from._impl_.ransomware_);
+  }
   ::memcpy(&_impl_.source_port_, &from._impl_.source_port_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.backward_urg_flags_) -
     reinterpret_cast<char*>(&_impl_.source_port_)) + sizeof(_impl_.backward_urg_flags_));
@@ -1871,6 +1960,7 @@ inline void NetworkFeatures::SharedCtor(
     , decltype(_impl_.protocol_name_){}
     , decltype(_impl_.flow_start_time_){nullptr}
     , decltype(_impl_.flow_duration_){nullptr}
+    , decltype(_impl_.ransomware_){nullptr}
     , decltype(_impl_.source_port_){0u}
     , decltype(_impl_.destination_port_){0u}
     , decltype(_impl_.flow_duration_microseconds_){uint64_t{0u}}
@@ -1977,6 +2067,7 @@ inline void NetworkFeatures::SharedDtor() {
   _impl_.protocol_name_.Destroy();
   if (this != internal_default_instance()) delete _impl_.flow_start_time_;
   if (this != internal_default_instance()) delete _impl_.flow_duration_;
+  if (this != internal_default_instance()) delete _impl_.ransomware_;
 }
 
 void NetworkFeatures::ArenaDtor(void* object) {
@@ -2011,6 +2102,10 @@ void NetworkFeatures::Clear() {
     delete _impl_.flow_duration_;
   }
   _impl_.flow_duration_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.ransomware_ != nullptr) {
+    delete _impl_.ransomware_;
+  }
+  _impl_.ransomware_ = nullptr;
   ::memset(&_impl_.source_port_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.backward_urg_flags_) -
       reinterpret_cast<char*>(&_impl_.source_port_)) + sizeof(_impl_.backward_urg_flags_));
@@ -2630,6 +2725,14 @@ const char* NetworkFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContex
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 73)) {
           _impl_.idle_mean_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<double>(ptr);
           ptr += sizeof(double);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.RansomwareFeatures ransomware = 106;
+      case 106:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 82)) {
+          ptr = ctx->ParseMessage(_internal_mutable_ransomware(), ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -3274,6 +3377,13 @@ uint8_t* NetworkFeatures::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteDoubleToArray(105, this->_internal_idle_mean(), target);
   }
 
+  // .protobuf.RansomwareFeatures ransomware = 106;
+  if (this->_internal_has_ransomware()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(106, _Internal::ransomware(this),
+        _Internal::ransomware(this).GetCachedSize(), target, stream);
+  }
+
   // map<string, double> custom_features = 110;
   if (!this->_internal_custom_features().empty()) {
     using MapType = ::_pb::Map<std::string, double>;
@@ -3441,6 +3551,13 @@ size_t NetworkFeatures::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.flow_duration_);
+  }
+
+  // .protobuf.RansomwareFeatures ransomware = 106;
+  if (this->_internal_has_ransomware()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.ransomware_);
   }
 
   // uint32 source_port = 3;
@@ -3988,6 +4105,10 @@ void NetworkFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
   if (from._internal_has_flow_duration()) {
     _this->_internal_mutable_flow_duration()->::PROTOBUF_NAMESPACE_ID::Duration::MergeFrom(
         from._internal_flow_duration());
+  }
+  if (from._internal_has_ransomware()) {
+    _this->_internal_mutable_ransomware()->::protobuf::RansomwareFeatures::MergeFrom(
+        from._internal_ransomware());
   }
   if (from._internal_source_port() != 0) {
     _this->_internal_set_source_port(from._internal_source_port());
@@ -14381,6 +14502,769 @@ void SystemConfiguration::InternalSwap(SystemConfiguration* other) {
       file_level_metadata_network_5fsecurity_2eproto[25]);
 }
 
+// ===================================================================
+
+class RansomwareFeatures::_Internal {
+ public:
+};
+
+RansomwareFeatures::RansomwareFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.RansomwareFeatures)
+}
+RansomwareFeatures::RansomwareFeatures(const RansomwareFeatures& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  RansomwareFeatures* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.dns_query_entropy_){}
+    , decltype(_impl_.new_external_ips_30s_){}
+    , decltype(_impl_.dns_query_rate_per_min_){}
+    , decltype(_impl_.failed_dns_queries_ratio_){}
+    , decltype(_impl_.tls_self_signed_cert_count_){}
+    , decltype(_impl_.non_standard_port_http_count_){}
+    , decltype(_impl_.smb_connection_diversity_){}
+    , decltype(_impl_.rdp_failed_auth_count_){}
+    , decltype(_impl_.new_internal_connections_30s_){}
+    , decltype(_impl_.port_scan_pattern_score_){}
+    , decltype(_impl_.upload_download_ratio_30s_){}
+    , decltype(_impl_.burst_connections_count_){}
+    , decltype(_impl_.unique_destinations_30s_){}
+    , decltype(_impl_.large_upload_sessions_count_){}
+    , decltype(_impl_.nocturnal_activity_flag_){}
+    , decltype(_impl_.connection_rate_stddev_){}
+    , decltype(_impl_.protocol_diversity_score_){}
+    , decltype(_impl_.avg_flow_duration_seconds_){}
+    , decltype(_impl_.tcp_rst_ratio_){}
+    , decltype(_impl_.syn_without_ack_ratio_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.dns_query_entropy_, &from._impl_.dns_query_entropy_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.syn_without_ack_ratio_) -
+    reinterpret_cast<char*>(&_impl_.dns_query_entropy_)) + sizeof(_impl_.syn_without_ack_ratio_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.RansomwareFeatures)
+}
+
+inline void RansomwareFeatures::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.dns_query_entropy_){0}
+    , decltype(_impl_.new_external_ips_30s_){0}
+    , decltype(_impl_.dns_query_rate_per_min_){0}
+    , decltype(_impl_.failed_dns_queries_ratio_){0}
+    , decltype(_impl_.tls_self_signed_cert_count_){0}
+    , decltype(_impl_.non_standard_port_http_count_){0}
+    , decltype(_impl_.smb_connection_diversity_){0}
+    , decltype(_impl_.rdp_failed_auth_count_){0}
+    , decltype(_impl_.new_internal_connections_30s_){0}
+    , decltype(_impl_.port_scan_pattern_score_){0}
+    , decltype(_impl_.upload_download_ratio_30s_){0}
+    , decltype(_impl_.burst_connections_count_){0}
+    , decltype(_impl_.unique_destinations_30s_){0}
+    , decltype(_impl_.large_upload_sessions_count_){0}
+    , decltype(_impl_.nocturnal_activity_flag_){false}
+    , decltype(_impl_.connection_rate_stddev_){0}
+    , decltype(_impl_.protocol_diversity_score_){0}
+    , decltype(_impl_.avg_flow_duration_seconds_){0}
+    , decltype(_impl_.tcp_rst_ratio_){0}
+    , decltype(_impl_.syn_without_ack_ratio_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+RansomwareFeatures::~RansomwareFeatures() {
+  // @@protoc_insertion_point(destructor:protobuf.RansomwareFeatures)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void RansomwareFeatures::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void RansomwareFeatures::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void RansomwareFeatures::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.RansomwareFeatures)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.dns_query_entropy_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.syn_without_ack_ratio_) -
+      reinterpret_cast<char*>(&_impl_.dns_query_entropy_)) + sizeof(_impl_.syn_without_ack_ratio_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* RansomwareFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // float dns_query_entropy = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _impl_.dns_query_entropy_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 new_external_ips_30s = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.new_external_ips_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // float dns_query_rate_per_min = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.dns_query_rate_per_min_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float failed_dns_queries_ratio = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 37)) {
+          _impl_.failed_dns_queries_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 tls_self_signed_cert_count = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.tls_self_signed_cert_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 non_standard_port_http_count = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.non_standard_port_http_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 smb_connection_diversity = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
+          _impl_.smb_connection_diversity_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 rdp_failed_auth_count = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
+          _impl_.rdp_failed_auth_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 new_internal_connections_30s = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 72)) {
+          _impl_.new_internal_connections_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // float port_scan_pattern_score = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 85)) {
+          _impl_.port_scan_pattern_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float upload_download_ratio_30s = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 93)) {
+          _impl_.upload_download_ratio_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 burst_connections_count = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 96)) {
+          _impl_.burst_connections_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 unique_destinations_30s = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 104)) {
+          _impl_.unique_destinations_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 large_upload_sessions_count = 14;
+      case 14:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 112)) {
+          _impl_.large_upload_sessions_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bool nocturnal_activity_flag = 15;
+      case 15:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 120)) {
+          _impl_.nocturnal_activity_flag_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // float connection_rate_stddev = 16;
+      case 16:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 133)) {
+          _impl_.connection_rate_stddev_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float protocol_diversity_score = 17;
+      case 17:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 141)) {
+          _impl_.protocol_diversity_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float avg_flow_duration_seconds = 18;
+      case 18:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 149)) {
+          _impl_.avg_flow_duration_seconds_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float tcp_rst_ratio = 19;
+      case 19:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 157)) {
+          _impl_.tcp_rst_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float syn_without_ack_ratio = 20;
+      case 20:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 165)) {
+          _impl_.syn_without_ack_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* RansomwareFeatures::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.RansomwareFeatures)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float dns_query_entropy = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dns_query_entropy = this->_internal_dns_query_entropy();
+  uint32_t raw_dns_query_entropy;
+  memcpy(&raw_dns_query_entropy, &tmp_dns_query_entropy, sizeof(tmp_dns_query_entropy));
+  if (raw_dns_query_entropy != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_dns_query_entropy(), target);
+  }
+
+  // int32 new_external_ips_30s = 2;
+  if (this->_internal_new_external_ips_30s() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_new_external_ips_30s(), target);
+  }
+
+  // float dns_query_rate_per_min = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dns_query_rate_per_min = this->_internal_dns_query_rate_per_min();
+  uint32_t raw_dns_query_rate_per_min;
+  memcpy(&raw_dns_query_rate_per_min, &tmp_dns_query_rate_per_min, sizeof(tmp_dns_query_rate_per_min));
+  if (raw_dns_query_rate_per_min != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_dns_query_rate_per_min(), target);
+  }
+
+  // float failed_dns_queries_ratio = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_failed_dns_queries_ratio = this->_internal_failed_dns_queries_ratio();
+  uint32_t raw_failed_dns_queries_ratio;
+  memcpy(&raw_failed_dns_queries_ratio, &tmp_failed_dns_queries_ratio, sizeof(tmp_failed_dns_queries_ratio));
+  if (raw_failed_dns_queries_ratio != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(4, this->_internal_failed_dns_queries_ratio(), target);
+  }
+
+  // int32 tls_self_signed_cert_count = 5;
+  if (this->_internal_tls_self_signed_cert_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(5, this->_internal_tls_self_signed_cert_count(), target);
+  }
+
+  // int32 non_standard_port_http_count = 6;
+  if (this->_internal_non_standard_port_http_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(6, this->_internal_non_standard_port_http_count(), target);
+  }
+
+  // int32 smb_connection_diversity = 7;
+  if (this->_internal_smb_connection_diversity() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(7, this->_internal_smb_connection_diversity(), target);
+  }
+
+  // int32 rdp_failed_auth_count = 8;
+  if (this->_internal_rdp_failed_auth_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(8, this->_internal_rdp_failed_auth_count(), target);
+  }
+
+  // int32 new_internal_connections_30s = 9;
+  if (this->_internal_new_internal_connections_30s() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(9, this->_internal_new_internal_connections_30s(), target);
+  }
+
+  // float port_scan_pattern_score = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_port_scan_pattern_score = this->_internal_port_scan_pattern_score();
+  uint32_t raw_port_scan_pattern_score;
+  memcpy(&raw_port_scan_pattern_score, &tmp_port_scan_pattern_score, sizeof(tmp_port_scan_pattern_score));
+  if (raw_port_scan_pattern_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(10, this->_internal_port_scan_pattern_score(), target);
+  }
+
+  // float upload_download_ratio_30s = 11;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_upload_download_ratio_30s = this->_internal_upload_download_ratio_30s();
+  uint32_t raw_upload_download_ratio_30s;
+  memcpy(&raw_upload_download_ratio_30s, &tmp_upload_download_ratio_30s, sizeof(tmp_upload_download_ratio_30s));
+  if (raw_upload_download_ratio_30s != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(11, this->_internal_upload_download_ratio_30s(), target);
+  }
+
+  // int32 burst_connections_count = 12;
+  if (this->_internal_burst_connections_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(12, this->_internal_burst_connections_count(), target);
+  }
+
+  // int32 unique_destinations_30s = 13;
+  if (this->_internal_unique_destinations_30s() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(13, this->_internal_unique_destinations_30s(), target);
+  }
+
+  // int32 large_upload_sessions_count = 14;
+  if (this->_internal_large_upload_sessions_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(14, this->_internal_large_upload_sessions_count(), target);
+  }
+
+  // bool nocturnal_activity_flag = 15;
+  if (this->_internal_nocturnal_activity_flag() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(15, this->_internal_nocturnal_activity_flag(), target);
+  }
+
+  // float connection_rate_stddev = 16;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_rate_stddev = this->_internal_connection_rate_stddev();
+  uint32_t raw_connection_rate_stddev;
+  memcpy(&raw_connection_rate_stddev, &tmp_connection_rate_stddev, sizeof(tmp_connection_rate_stddev));
+  if (raw_connection_rate_stddev != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(16, this->_internal_connection_rate_stddev(), target);
+  }
+
+  // float protocol_diversity_score = 17;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_diversity_score = this->_internal_protocol_diversity_score();
+  uint32_t raw_protocol_diversity_score;
+  memcpy(&raw_protocol_diversity_score, &tmp_protocol_diversity_score, sizeof(tmp_protocol_diversity_score));
+  if (raw_protocol_diversity_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(17, this->_internal_protocol_diversity_score(), target);
+  }
+
+  // float avg_flow_duration_seconds = 18;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_avg_flow_duration_seconds = this->_internal_avg_flow_duration_seconds();
+  uint32_t raw_avg_flow_duration_seconds;
+  memcpy(&raw_avg_flow_duration_seconds, &tmp_avg_flow_duration_seconds, sizeof(tmp_avg_flow_duration_seconds));
+  if (raw_avg_flow_duration_seconds != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(18, this->_internal_avg_flow_duration_seconds(), target);
+  }
+
+  // float tcp_rst_ratio = 19;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_tcp_rst_ratio = this->_internal_tcp_rst_ratio();
+  uint32_t raw_tcp_rst_ratio;
+  memcpy(&raw_tcp_rst_ratio, &tmp_tcp_rst_ratio, sizeof(tmp_tcp_rst_ratio));
+  if (raw_tcp_rst_ratio != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(19, this->_internal_tcp_rst_ratio(), target);
+  }
+
+  // float syn_without_ack_ratio = 20;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_syn_without_ack_ratio = this->_internal_syn_without_ack_ratio();
+  uint32_t raw_syn_without_ack_ratio;
+  memcpy(&raw_syn_without_ack_ratio, &tmp_syn_without_ack_ratio, sizeof(tmp_syn_without_ack_ratio));
+  if (raw_syn_without_ack_ratio != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(20, this->_internal_syn_without_ack_ratio(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.RansomwareFeatures)
+  return target;
+}
+
+size_t RansomwareFeatures::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.RansomwareFeatures)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // float dns_query_entropy = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dns_query_entropy = this->_internal_dns_query_entropy();
+  uint32_t raw_dns_query_entropy;
+  memcpy(&raw_dns_query_entropy, &tmp_dns_query_entropy, sizeof(tmp_dns_query_entropy));
+  if (raw_dns_query_entropy != 0) {
+    total_size += 1 + 4;
+  }
+
+  // int32 new_external_ips_30s = 2;
+  if (this->_internal_new_external_ips_30s() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_new_external_ips_30s());
+  }
+
+  // float dns_query_rate_per_min = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dns_query_rate_per_min = this->_internal_dns_query_rate_per_min();
+  uint32_t raw_dns_query_rate_per_min;
+  memcpy(&raw_dns_query_rate_per_min, &tmp_dns_query_rate_per_min, sizeof(tmp_dns_query_rate_per_min));
+  if (raw_dns_query_rate_per_min != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float failed_dns_queries_ratio = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_failed_dns_queries_ratio = this->_internal_failed_dns_queries_ratio();
+  uint32_t raw_failed_dns_queries_ratio;
+  memcpy(&raw_failed_dns_queries_ratio, &tmp_failed_dns_queries_ratio, sizeof(tmp_failed_dns_queries_ratio));
+  if (raw_failed_dns_queries_ratio != 0) {
+    total_size += 1 + 4;
+  }
+
+  // int32 tls_self_signed_cert_count = 5;
+  if (this->_internal_tls_self_signed_cert_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_tls_self_signed_cert_count());
+  }
+
+  // int32 non_standard_port_http_count = 6;
+  if (this->_internal_non_standard_port_http_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_non_standard_port_http_count());
+  }
+
+  // int32 smb_connection_diversity = 7;
+  if (this->_internal_smb_connection_diversity() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_smb_connection_diversity());
+  }
+
+  // int32 rdp_failed_auth_count = 8;
+  if (this->_internal_rdp_failed_auth_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_rdp_failed_auth_count());
+  }
+
+  // int32 new_internal_connections_30s = 9;
+  if (this->_internal_new_internal_connections_30s() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_new_internal_connections_30s());
+  }
+
+  // float port_scan_pattern_score = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_port_scan_pattern_score = this->_internal_port_scan_pattern_score();
+  uint32_t raw_port_scan_pattern_score;
+  memcpy(&raw_port_scan_pattern_score, &tmp_port_scan_pattern_score, sizeof(tmp_port_scan_pattern_score));
+  if (raw_port_scan_pattern_score != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float upload_download_ratio_30s = 11;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_upload_download_ratio_30s = this->_internal_upload_download_ratio_30s();
+  uint32_t raw_upload_download_ratio_30s;
+  memcpy(&raw_upload_download_ratio_30s, &tmp_upload_download_ratio_30s, sizeof(tmp_upload_download_ratio_30s));
+  if (raw_upload_download_ratio_30s != 0) {
+    total_size += 1 + 4;
+  }
+
+  // int32 burst_connections_count = 12;
+  if (this->_internal_burst_connections_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_burst_connections_count());
+  }
+
+  // int32 unique_destinations_30s = 13;
+  if (this->_internal_unique_destinations_30s() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_unique_destinations_30s());
+  }
+
+  // int32 large_upload_sessions_count = 14;
+  if (this->_internal_large_upload_sessions_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_large_upload_sessions_count());
+  }
+
+  // bool nocturnal_activity_flag = 15;
+  if (this->_internal_nocturnal_activity_flag() != 0) {
+    total_size += 1 + 1;
+  }
+
+  // float connection_rate_stddev = 16;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_rate_stddev = this->_internal_connection_rate_stddev();
+  uint32_t raw_connection_rate_stddev;
+  memcpy(&raw_connection_rate_stddev, &tmp_connection_rate_stddev, sizeof(tmp_connection_rate_stddev));
+  if (raw_connection_rate_stddev != 0) {
+    total_size += 2 + 4;
+  }
+
+  // float protocol_diversity_score = 17;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_diversity_score = this->_internal_protocol_diversity_score();
+  uint32_t raw_protocol_diversity_score;
+  memcpy(&raw_protocol_diversity_score, &tmp_protocol_diversity_score, sizeof(tmp_protocol_diversity_score));
+  if (raw_protocol_diversity_score != 0) {
+    total_size += 2 + 4;
+  }
+
+  // float avg_flow_duration_seconds = 18;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_avg_flow_duration_seconds = this->_internal_avg_flow_duration_seconds();
+  uint32_t raw_avg_flow_duration_seconds;
+  memcpy(&raw_avg_flow_duration_seconds, &tmp_avg_flow_duration_seconds, sizeof(tmp_avg_flow_duration_seconds));
+  if (raw_avg_flow_duration_seconds != 0) {
+    total_size += 2 + 4;
+  }
+
+  // float tcp_rst_ratio = 19;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_tcp_rst_ratio = this->_internal_tcp_rst_ratio();
+  uint32_t raw_tcp_rst_ratio;
+  memcpy(&raw_tcp_rst_ratio, &tmp_tcp_rst_ratio, sizeof(tmp_tcp_rst_ratio));
+  if (raw_tcp_rst_ratio != 0) {
+    total_size += 2 + 4;
+  }
+
+  // float syn_without_ack_ratio = 20;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_syn_without_ack_ratio = this->_internal_syn_without_ack_ratio();
+  uint32_t raw_syn_without_ack_ratio;
+  memcpy(&raw_syn_without_ack_ratio, &tmp_syn_without_ack_ratio, sizeof(tmp_syn_without_ack_ratio));
+  if (raw_syn_without_ack_ratio != 0) {
+    total_size += 2 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RansomwareFeatures::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    RansomwareFeatures::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RansomwareFeatures::GetClassData() const { return &_class_data_; }
+
+
+void RansomwareFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<RansomwareFeatures*>(&to_msg);
+  auto& from = static_cast<const RansomwareFeatures&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.RansomwareFeatures)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dns_query_entropy = from._internal_dns_query_entropy();
+  uint32_t raw_dns_query_entropy;
+  memcpy(&raw_dns_query_entropy, &tmp_dns_query_entropy, sizeof(tmp_dns_query_entropy));
+  if (raw_dns_query_entropy != 0) {
+    _this->_internal_set_dns_query_entropy(from._internal_dns_query_entropy());
+  }
+  if (from._internal_new_external_ips_30s() != 0) {
+    _this->_internal_set_new_external_ips_30s(from._internal_new_external_ips_30s());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dns_query_rate_per_min = from._internal_dns_query_rate_per_min();
+  uint32_t raw_dns_query_rate_per_min;
+  memcpy(&raw_dns_query_rate_per_min, &tmp_dns_query_rate_per_min, sizeof(tmp_dns_query_rate_per_min));
+  if (raw_dns_query_rate_per_min != 0) {
+    _this->_internal_set_dns_query_rate_per_min(from._internal_dns_query_rate_per_min());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_failed_dns_queries_ratio = from._internal_failed_dns_queries_ratio();
+  uint32_t raw_failed_dns_queries_ratio;
+  memcpy(&raw_failed_dns_queries_ratio, &tmp_failed_dns_queries_ratio, sizeof(tmp_failed_dns_queries_ratio));
+  if (raw_failed_dns_queries_ratio != 0) {
+    _this->_internal_set_failed_dns_queries_ratio(from._internal_failed_dns_queries_ratio());
+  }
+  if (from._internal_tls_self_signed_cert_count() != 0) {
+    _this->_internal_set_tls_self_signed_cert_count(from._internal_tls_self_signed_cert_count());
+  }
+  if (from._internal_non_standard_port_http_count() != 0) {
+    _this->_internal_set_non_standard_port_http_count(from._internal_non_standard_port_http_count());
+  }
+  if (from._internal_smb_connection_diversity() != 0) {
+    _this->_internal_set_smb_connection_diversity(from._internal_smb_connection_diversity());
+  }
+  if (from._internal_rdp_failed_auth_count() != 0) {
+    _this->_internal_set_rdp_failed_auth_count(from._internal_rdp_failed_auth_count());
+  }
+  if (from._internal_new_internal_connections_30s() != 0) {
+    _this->_internal_set_new_internal_connections_30s(from._internal_new_internal_connections_30s());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_port_scan_pattern_score = from._internal_port_scan_pattern_score();
+  uint32_t raw_port_scan_pattern_score;
+  memcpy(&raw_port_scan_pattern_score, &tmp_port_scan_pattern_score, sizeof(tmp_port_scan_pattern_score));
+  if (raw_port_scan_pattern_score != 0) {
+    _this->_internal_set_port_scan_pattern_score(from._internal_port_scan_pattern_score());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_upload_download_ratio_30s = from._internal_upload_download_ratio_30s();
+  uint32_t raw_upload_download_ratio_30s;
+  memcpy(&raw_upload_download_ratio_30s, &tmp_upload_download_ratio_30s, sizeof(tmp_upload_download_ratio_30s));
+  if (raw_upload_download_ratio_30s != 0) {
+    _this->_internal_set_upload_download_ratio_30s(from._internal_upload_download_ratio_30s());
+  }
+  if (from._internal_burst_connections_count() != 0) {
+    _this->_internal_set_burst_connections_count(from._internal_burst_connections_count());
+  }
+  if (from._internal_unique_destinations_30s() != 0) {
+    _this->_internal_set_unique_destinations_30s(from._internal_unique_destinations_30s());
+  }
+  if (from._internal_large_upload_sessions_count() != 0) {
+    _this->_internal_set_large_upload_sessions_count(from._internal_large_upload_sessions_count());
+  }
+  if (from._internal_nocturnal_activity_flag() != 0) {
+    _this->_internal_set_nocturnal_activity_flag(from._internal_nocturnal_activity_flag());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_rate_stddev = from._internal_connection_rate_stddev();
+  uint32_t raw_connection_rate_stddev;
+  memcpy(&raw_connection_rate_stddev, &tmp_connection_rate_stddev, sizeof(tmp_connection_rate_stddev));
+  if (raw_connection_rate_stddev != 0) {
+    _this->_internal_set_connection_rate_stddev(from._internal_connection_rate_stddev());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_diversity_score = from._internal_protocol_diversity_score();
+  uint32_t raw_protocol_diversity_score;
+  memcpy(&raw_protocol_diversity_score, &tmp_protocol_diversity_score, sizeof(tmp_protocol_diversity_score));
+  if (raw_protocol_diversity_score != 0) {
+    _this->_internal_set_protocol_diversity_score(from._internal_protocol_diversity_score());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_avg_flow_duration_seconds = from._internal_avg_flow_duration_seconds();
+  uint32_t raw_avg_flow_duration_seconds;
+  memcpy(&raw_avg_flow_duration_seconds, &tmp_avg_flow_duration_seconds, sizeof(tmp_avg_flow_duration_seconds));
+  if (raw_avg_flow_duration_seconds != 0) {
+    _this->_internal_set_avg_flow_duration_seconds(from._internal_avg_flow_duration_seconds());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_tcp_rst_ratio = from._internal_tcp_rst_ratio();
+  uint32_t raw_tcp_rst_ratio;
+  memcpy(&raw_tcp_rst_ratio, &tmp_tcp_rst_ratio, sizeof(tmp_tcp_rst_ratio));
+  if (raw_tcp_rst_ratio != 0) {
+    _this->_internal_set_tcp_rst_ratio(from._internal_tcp_rst_ratio());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_syn_without_ack_ratio = from._internal_syn_without_ack_ratio();
+  uint32_t raw_syn_without_ack_ratio;
+  memcpy(&raw_syn_without_ack_ratio, &tmp_syn_without_ack_ratio, sizeof(tmp_syn_without_ack_ratio));
+  if (raw_syn_without_ack_ratio != 0) {
+    _this->_internal_set_syn_without_ack_ratio(from._internal_syn_without_ack_ratio());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void RansomwareFeatures::CopyFrom(const RansomwareFeatures& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.RansomwareFeatures)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool RansomwareFeatures::IsInitialized() const {
+  return true;
+}
+
+void RansomwareFeatures::InternalSwap(RansomwareFeatures* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(RansomwareFeatures, _impl_.syn_without_ack_ratio_)
+      + sizeof(RansomwareFeatures::_impl_.syn_without_ack_ratio_)
+      - PROTOBUF_FIELD_OFFSET(RansomwareFeatures, _impl_.dns_query_entropy_)>(
+          reinterpret_cast<char*>(&_impl_.dns_query_entropy_),
+          reinterpret_cast<char*>(&other->_impl_.dns_query_entropy_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata RansomwareFeatures::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[26]);
+}
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protobuf
 PROTOBUF_NAMESPACE_OPEN
@@ -14487,6 +15371,10 @@ Arena::CreateMaybeMessage< ::protobuf::SystemConfiguration_NodeRoleAssignmentsEn
 template<> PROTOBUF_NOINLINE ::protobuf::SystemConfiguration*
 Arena::CreateMaybeMessage< ::protobuf::SystemConfiguration >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protobuf::SystemConfiguration >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::RansomwareFeatures*
+Arena::CreateMaybeMessage< ::protobuf::RansomwareFeatures >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::RansomwareFeatures >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

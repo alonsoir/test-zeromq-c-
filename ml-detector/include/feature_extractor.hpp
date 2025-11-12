@@ -47,6 +47,19 @@ public:
      * @brief Obtiene nombres de las 23 features (para logging)
      */
     static const std::vector<std::string>& get_feature_names();
+
+    /**
+     * @brief Extrae las 10 features del Level 2 Ransomware Detector (Embedded C++20)
+     * @param nf NetworkFeatures del evento
+     * @return vector<float>[10] para detector embebido
+     *
+     * Features extraídas (según feature importance):
+     * [0] io_intensity, [1] entropy (36% importance), [2] resource_usage (25%),
+     * [3] network_activity, [4] file_operations, [5] process_anomaly,
+     * [6] temporal_pattern, [7] access_frequency, [8] data_volume,
+     * [9] behavior_consistency
+     */
+    std::vector<float> extract_level2_ransomware_features(const protobuf::NetworkFeatures& nf);
     
 private:
     std::shared_ptr<spdlog::logger> logger_;

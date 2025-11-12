@@ -8,6 +8,7 @@
 #include "onnx_model.hpp"
 #include "feature_extractor.hpp"
 #include "zmq_handler.hpp"
+#include "ml_defender/ransomware_detector.hpp"
 
 //ml-detector/src/main.cpp
 using namespace ml_detector;
@@ -246,12 +247,42 @@ int main(int argc, char* argv[]) {
             log->warn("⚠️  Level 2 DDoS model is disabled in configuration");
         }
 
-        // Level 2 Ransomware and Level 3 (TODO: implement when models ready)
-        if (config.ml.level2.ransomware.enabled) {
-            log->info("📦 Level 2 Ransomware model: {} (TODO: implement)",
-                       config.ml.level2.ransomware.name);
-        }
-        if (config.ml.level3.internal.enabled) {
+        // Level 2 Ransomware - Embedded C++20 Detector
+std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector;
+
+if (config.ml.level2.ransomware.enabled) {
+    log->info("📦 Loading Level 2 Ransomware Detector (Embedded C++20)");
+    log->info("   Name: {}", config.ml.level2.ransomware.name);
+    log->info("   Type: RandomForest-Embedded (100 trees, 3764 nodes)");
+    log->info("   Features: {}", config.ml.level2.ransomware.features_count);
+    log->info("   Threshold: {}", config.ml.thresholds.level2_ransomware);
+    log->info("   Implementation: Native C++20 (no ONNX)");
+
+    ransomware_detector = std::make_shared<ml_defender::RansomwareDetector>();
+
+    // Test de inicialización
+    ml_defender::RansomwareDetector::Features test_features{
+        .io_intensity = 0.5f,
+        .entropy = 0.5f,
+        .resource_usage = 0.5f,
+        .network_activity = 0.5f,
+        .file_operations = 0.5f,
+        .process_anomaly = 0.5f,
+        .temporal_pattern = 0.5f,
+        .access_frequency = 0.5f,
+        .data_volume = 0.5f,
+        .behavior_consistency = 0.5f
+    };
+
+    auto test_result = ransomware_detector->predict(test_features);
+    log->info("✅ Ransomware detector initialized (test prediction: class={}, prob={:.4f})",
+               test_result.class_id, test_result.probability);
+
+} else {
+    log->warn("⚠️  Level 2 Ransomware detector is disabled in configuration");
+}
+
+if (config.ml.level3.internal.enabled) {
             log->info("📦 Level 3 Internal model: {} (TODO: implement)",
                        config.ml.level3.internal.name);
         }
@@ -262,7 +293,7 @@ int main(int argc, char* argv[]) {
         
         // 6. Create and start ZMQ Handler
         log->info("🔌 Initializing ZMQ Handler...");
-        ZMQHandler zmq_handler(config, model, feature_extractor, level2_ddos_model);
+        ZMQHandler zmq_handler(config, model, feature_extractor, level2_ddos_model, ransomware_detector);
         
         zmq_handler.start();
         

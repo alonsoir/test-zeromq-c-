@@ -249,4 +249,76 @@ bool FeatureExtractor::validate_features(const std::vector<float>& features) {
     return features;
 }
 
+std::vector<float> FeatureExtractor::extract_level2_ransomware_features(
+    const protobuf::NetworkFeatures& nf) {
+
+    std::vector<float> features(10, 0.0f);
+
+    // Duración del flow en segundos
+    float flow_duration_sec = static_cast<float>(nf.flow_duration_microseconds()) / 1000000.0f;
+
+    // [0] io_intensity - Basado en bytes transferidos y rate
+    float total_bytes = static_cast<float>(
+        nf.total_forward_packets() + nf.total_backward_packets()
+    );
+    features[0] = safe_divide(total_bytes, flow_duration_sec + 1.0f, 0.0f);
+    features[0] = std::min(features[0] / 100000.0f, 2.0f); // Normalizar a [0-2]
+
+    // [1] entropy - ⭐ MOST IMPORTANT (36% feature importance)
+    // Usar packet length variance como proxy de entropía
+    float pkt_variance = static_cast<float>(nf.packet_length_variance());
+    features[1] = std::min(pkt_variance / 100000.0f, 2.0f);
+
+    // [2] resource_usage - Basado en throughput (25% importance)
+    float bytes_per_sec = static_cast<float>(nf.flow_bytes_per_second());
+    features[2] = std::min(bytes_per_sec / 500000.0f, 2.0f);
+
+    // [3] network_activity - Packets per second
+    float flow_packets_s = static_cast<float>(nf.flow_packets_per_second());
+    features[3] = std::min(flow_packets_s / 1000.0f, 2.0f);
+
+    // [4] file_operations - Proxy: PSH flags (indica escrituras/lecturas)
+    float psh_ratio = safe_divide(
+        static_cast<float>(nf.psh_flag_count()),
+        static_cast<float>(nf.total_forward_packets() + 1),
+        0.0f
+    );
+    features[4] = std::min(psh_ratio * 2.0f, 2.0f);
+
+    // [5] process_anomaly - Proxy: ACK flag ratio (comportamiento anómalo)
+    float ack_ratio = safe_divide(
+        static_cast<float>(nf.ack_flag_count()),
+        static_cast<float>(nf.total_forward_packets() + 1),
+        0.0f
+    );
+    features[5] = std::min(ack_ratio * 2.0f, 2.0f);
+
+    // [6] temporal_pattern - IAT (Inter-Arrival Time) variability
+    float fwd_iat_std = static_cast<float>(nf.forward_inter_arrival_time_std());
+    features[6] = std::min(fwd_iat_std / 100000.0f, 2.0f);
+
+    // [7] access_frequency - Total packets
+    float total_packets = static_cast<float>(
+        nf.total_forward_packets() + nf.total_backward_packets()
+    );
+    features[7] = std::min(total_packets / 1000.0f, 2.0f);
+
+    // [8] data_volume - Total bytes normalized
+    float total_flow_bytes = static_cast<float>(
+        nf.total_forward_bytes() + nf.total_backward_bytes()
+    );
+    features[8] = std::min(total_flow_bytes / 1000000.0f, 2.0f);
+
+    // [9] behavior_consistency - Proxy: Forward/Backward ratio consistency
+    float fwd_bwd_ratio = safe_divide(
+        static_cast<float>(nf.total_forward_packets()),
+        static_cast<float>(nf.total_backward_packets() + 1),
+        1.0f
+    );
+    // Normalizar: ratio cercano a 1.0 = consistente (valor alto)
+    features[9] = std::min(1.0f / (std::abs(fwd_bwd_ratio - 1.0f) + 0.1f), 1.0f);
+
+    return features;
+}
+
 } // namespace ml_detector
