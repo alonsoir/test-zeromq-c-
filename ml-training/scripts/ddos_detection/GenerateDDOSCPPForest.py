@@ -4,19 +4,66 @@ import pickle
 import sys
 from pathlib import Path
 from typing import Dict, List, Any
+from sklearn.preprocessing import MinMaxScaler
+import joblib
+import numpy as np
+
+def normalize_thresholds(forest_data, scaler):
+    """Normaliza todos los thresholds usando el scaler entrenado"""
+    print("🔧 Normalizando thresholds a rango [0.0, 1.0]...")
+
+    normalized_forest = {}
+
+    for tree_name, tree_data in forest_data.items():
+        normalized_tree = tree_data.copy()
+        normalized_thresholds = []
+
+        for feature_idx, threshold in zip(tree_data['feature'], tree_data['threshold']):
+            if feature_idx >= 0:  # Solo nodos de decisión (no hojas)
+                # Crear array ficticio para la transformación
+                dummy_data = np.zeros((1, scaler.n_features_in_))
+                dummy_data[0, feature_idx] = threshold
+
+                try:
+                    # Transformar a rango normalizado
+                    normalized = scaler.transform(dummy_data)
+                    normalized_threshold = normalized[0, feature_idx]
+                    # Asegurar que esté en [0,1]
+                    normalized_threshold = max(0.0, min(1.0, normalized_threshold))
+                    normalized_thresholds.append(normalized_threshold)
+                except Exception as e:
+                    print(f"⚠️  Error normalizando threshold: {e}, usando original")
+                    normalized_thresholds.append(threshold)
+            else:
+                # Para nodos hoja, mantener el valor especial
+                normalized_thresholds.append(threshold)
+
+        normalized_tree['threshold'] = normalized_thresholds
+        normalized_forest[tree_name] = normalized_tree
+
+    return normalized_forest
 
 def load_ddos_model(model_path: str, dataset_path: str):
-    """Carga el modelo DDoS y metadata"""
+    """Carga el modelo DDoS, scaler y metadata"""
     print(f"📂 Loading DDoS model from: {model_path}")
 
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
+    # ✅ CARGAR SCALER
+    scaler_path = 'ddos_scaler.pkl'
+    try:
+        scaler = joblib.load(scaler_path)
+        print(f"✅ DDoS Scaler loaded: {scaler_path}")
+    except FileNotFoundError:
+        print(f"❌ Scaler no encontrado: {scaler_path}")
+        scaler = None
+
     with open(dataset_path, 'r') as f:
         dataset_info = json.load(f)
 
     print(f"✅ DDoS Model loaded: {model.n_estimators} trees, {dataset_info['model_info']['n_features']} features")
-    return model, dataset_info
+    return model, dataset_info, scaler
 
 def extract_tree_structure(forest_model, feature_names):
     """Extrae la estructura de todos los árboles del RandomForest DDoS"""
@@ -210,13 +257,24 @@ def main():
     output_hpp = sys.argv[2]
 
     # Cargar modelo y datos
-    model, dataset_info = load_ddos_model(input_pkl, input_json)
+    model, dataset_info, scaler = load_ddos_model(
+        "ddos_detection_model.pkl",
+        "ddos_detection_dataset.json"
+    )
 
     # Extraer estructura del bosque
-    forest_data = extract_tree_structure(model, dataset_info['model_info']['feature_names'])
+    feature_names = dataset_info['model_info']['feature_names']
+    forest_data = extract_tree_structure(model, feature_names)
+
+    # ✅ NORMALIZAR THRESHOLDS ANTES DE GENERAR HEADER
+    if scaler is not None:
+        forest_data = normalize_thresholds(forest_data, scaler)
+        print("✅ Todos los thresholds normalizados a [0.0, 1.0]")
+    else:
+        print("⚠️  No se pudo normalizar thresholds - scaler no disponible")
 
     # Generar header C++
-    generate_ddos_cpp_header(forest_data, dataset_info, output_hpp)
+    generate_ddos_cpp_header(forest_data, dataset_info, "ddos_trees_inline.hpp")
 
     print(f"\n🎉 SUCCESS! Generated: {output_hpp}")
     print(f"💡 Next: Include in your DDoS detector C++ code")

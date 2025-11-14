@@ -1,0 +1,45 @@
+{
+  "timestamp": "20251114_091726",
+  "summary": {
+    "total_models": 3,
+    "normalized_models": 3,
+    "total_thresholds": 7333,
+    "problem_thresholds": 0,
+    "all_normalized": true
+  },
+  "details": [
+    {
+      "file": "ddos_detection/ddos_trees_inline.hpp",
+      "file_size_kb": 67.1767578125,
+      "lines": 1118,
+      "total_thresholds": 1482,
+      "min_threshold": 0.0,
+      "max_threshold": 1.0,
+      "avg_threshold": 0.47313950204183536,
+      "large_thresholds": 0,
+      "status": "NORMALIZED"
+    },
+    {
+      "file": "external_traffic/traffic_trees_inline.hpp",
+      "file_size_kb": 94.2646484375,
+      "lines": 1686,
+      "total_thresholds": 3043,
+      "min_threshold": -2.0,
+      "max_threshold": 1.0,
+      "avg_threshold": 0.020105721936119682,
+      "large_thresholds": 0,
+      "status": "NORMALIZED"
+    },
+    {
+      "file": "internal_traffic/internal_trees_inline.hpp",
+      "file_size_kb": 93.8837890625,
+      "lines": 1612,
+      "total_thresholds": 2808,
+      "min_threshold": -2.0,
+      "max_threshold": 1.0,
+      "avg_threshold": 0.019297845364084867,
+      "large_thresholds": 0,
+      "status": "NORMALIZED"
+    }
+  ]
+}

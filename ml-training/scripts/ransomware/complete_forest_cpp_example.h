@@ -43,16 +43,16 @@ double RandomForestRansomwareDetector::predict_tree_0(const std::vector<double>&
     */
     
     // Implementación simplificada del primer nivel
-    if (features[1] <= 0.915009) {
+    if (features[1] <= 0.381458) {
         // Ir al nodo 1
-        if (features[1] <= 0.785281) {
+        if (features[1] <= 0.327371) {
             return 0.011319; // Probabilidad ransomware
         } else {
             return 0.495001;
         }
     } else {
         // Ir al nodo 18
-        if (features[2] <= 0.203209) {
+        if (features[2] <= 0.096105) {
             return 0.000000;
         } else {
             return 0.995136;
