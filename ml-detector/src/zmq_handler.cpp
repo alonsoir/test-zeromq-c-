@@ -255,7 +255,7 @@ void ZMQHandler::process_event(const std::string& message) {
         // ====================================================================
         // LEVEL 2 & 3: SPECIALIZED DETECTORS (si Level 1 detectó ATTACK)
         // ====================================================================
-        if (label_l1 == 1 && confidence_l1 >= config_.ml.thresholds.level1) {
+        if (label_l1 == 1 && confidence_l1 >= config_.ml.thresholds.level1_attack) {
             event.set_threat_category("ATTACK");
 
             {
@@ -433,7 +433,7 @@ void ZMQHandler::process_event(const std::string& message) {
             // ================================================================
             // LEVEL 3: TRAFFIC CLASSIFICATION (Internet vs Internal)
             // ================================================================
-            if (traffic_detector_ && config_.ml.level3.traffic.enabled) {
+            if (traffic_detector_ && config_.ml.level3.web.enabled) {
                 try {
                     logger_->debug("🔍 Running Level 3 Traffic classification...");
 
@@ -484,7 +484,7 @@ void ZMQHandler::process_event(const std::string& message) {
                                       traffic_result.probability);
 
                         // Enriquecer evento
-                        auto* level3_traffic_pred = ml_analysis->add_level3_traffic_predictions();
+                        auto* level3_traffic_pred = ml_analysis->add_level3_specialized_predictions();
                         level3_traffic_pred->set_model_name("traffic_detector_embedded_cpp20");
                         level3_traffic_pred->set_model_version("1.0.0");
                         level3_traffic_pred->set_prediction_class(
@@ -495,7 +495,7 @@ void ZMQHandler::process_event(const std::string& message) {
                         // ========================================================
                         // LEVEL 3: INTERNAL TRAFFIC ANALYSIS (si es Internal)
                         // ========================================================
-                        if (traffic_result.is_internal(config_.ml.level3.traffic.threshold) &&
+                        if (traffic_result.is_internal(config_.ml.thresholds.level3_web) &&
                             internal_detector_ && config_.ml.level3.internal.enabled) {
 
                             try {
@@ -542,7 +542,7 @@ void ZMQHandler::process_event(const std::string& message) {
                                               internal_result.probability);
 
                                 // Enriquecer evento
-                                auto* level3_internal_pred = ml_analysis->add_level3_internal_predictions();
+                                auto* level3_internal_pred = ml_analysis->add_level3_specialized_predictions();
                                 level3_internal_pred->set_model_name("internal_detector_embedded_cpp20");
                                 level3_internal_pred->set_model_version("1.0.0");
                                 level3_internal_pred->set_prediction_class(
@@ -550,7 +550,7 @@ void ZMQHandler::process_event(const std::string& message) {
                                 );
                                 level3_internal_pred->set_confidence_score(internal_result.suspicious_prob);
 
-                                if (internal_result.is_suspicious(config_.ml.level3.internal.threshold)) {
+                                if (internal_result.is_suspicious(config_.ml.thresholds.level3_internal)) {
                                     event.set_threat_category("SUSPICIOUS_INTERNAL");
                                     ml_analysis->set_final_threat_classification("SUSPICIOUS_INTERNAL");
 

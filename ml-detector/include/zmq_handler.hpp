@@ -12,11 +12,14 @@
 
 // ✅ INCLUDES CORRECTOS (ml_defender/ no ml/)
 #include "ml_defender/ransomware_detector.hpp"
+#include "config_loader.hpp"
+#include "onnx_model.hpp"
 #include "ml_defender/ddos_detector.hpp"
 #include "ml_defender/traffic_detector.hpp"
 #include "ml_defender/internal_detector.hpp"
+#include "config_loader.hpp"
 
-#include "proto/network_security_event.pb.h"
+#include "../protobuf/network_security.pb.h"
 
 namespace ml_detector {
 

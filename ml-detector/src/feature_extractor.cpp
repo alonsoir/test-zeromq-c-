@@ -357,7 +357,7 @@ std::vector<float> FeatureExtractor::extract_level3_traffic_features(
     );
 
     // [1] Connection Rate (using flow IAT as proxy)
-    features[1] = normalize(1.0f / std::max(nf.flow_inter_arrival_time_mean(), 0.001f), 0.0f, 100.0f);
+    features[1] = normalize(1.0f / std::max(static_cast<float>(nf.flow_inter_arrival_time_mean()), 0.001f), 0.0f, 100.0f);
 
     // [2] TCP/UDP Ratio (derived from protocol type)
     // Assuming protocol 6=TCP, 17=UDP
@@ -391,7 +391,7 @@ std::vector<float> FeatureExtractor::extract_level3_traffic_features(
     // [9] Temporal Consistency (using IAT mean/std ratio)
     float temporal_consistency = safe_divide(
         nf.flow_inter_arrival_time_mean(),
-        std::max(nf.flow_inter_arrival_time_std(), 0.001f)
+        std::max(static_cast<float>(nf.flow_inter_arrival_time_std()), 0.001f)
     );
     features[9] = normalize(temporal_consistency, 0.0f, 10.0f);
 
@@ -443,13 +443,13 @@ std::vector<float> FeatureExtractor::extract_level3_internal_features(
     // [7] Data Exfiltration Indicators (high outbound data)
     float outbound_ratio = safe_divide(
         nf.total_forward_bytes(),
-        std::max(nf.total_backward_bytes(), 1.0f)
+        std::max(static_cast<float>(nf.total_backward_bytes()), 1.0f)
     );
     features[7] = (outbound_ratio > 2.0f) ? normalize(outbound_ratio, 2.0f, 10.0f) : 0.0f;
 
     // [8] Temporal Anomaly Score (using flow IAT variance)
     float temporal_variance = safe_divide(nf.flow_inter_arrival_time_std(),
-                                         std::max(nf.flow_inter_arrival_time_mean(), 0.001f));
+                                         std::max(static_cast<float>(nf.flow_inter_arrival_time_mean()), 0.001f));
     features[8] = normalize(temporal_variance, 0.0f, 10.0f);
 
     // [9] Access Pattern Entropy (using packet size std)
