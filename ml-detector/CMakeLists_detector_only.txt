@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.20)
+project(ransomware-detector-test VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Ransomware Detector Library
+add_library(ransomware_detector
+    src/ransomware_detector.cpp
+)
+
+target_include_directories(ransomware_detector
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_compile_options(ransomware_detector PRIVATE
+    -Wall -Wextra -Wpedantic
+    -O3 -march=native
+)
+
+# Unit Test
+add_executable(test_ransomware_detector_unit
+    tests/unit/test_ransomware_detector.cpp
+)
+
+target_link_libraries(test_ransomware_detector_unit
+    ransomware_detector
+)
+
+enable_testing()
+add_test(NAME RansomwareDetectorUnit 
+    COMMAND test_ransomware_detector_unit
+)

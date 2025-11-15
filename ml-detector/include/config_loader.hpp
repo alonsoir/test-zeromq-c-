@@ -141,6 +141,8 @@ struct DetectorConfig {
             float level2_ddos;
             float level2_ransomware;
             float level3_anomaly;
+            float level3_web;
+            float level3_internal;
         } thresholds;
         
         struct ModelConfig {

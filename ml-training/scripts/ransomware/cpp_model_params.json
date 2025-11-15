@@ -1,0 +1,67 @@
+{
+  "feature_importance": {
+    "io_intensity": 0.24332223536978168,
+    "entropy": 0.3607331988902626,
+    "resource_usage": 0.2488492994137785,
+    "network_activity": 0.07647242870150996,
+    "file_operations": 0.02445413399689633,
+    "process_anomaly": 0.003334738526197998,
+    "temporal_pattern": 0.004904982176918815,
+    "access_frequency": 0.016204420192686805,
+    "data_volume": 0.006181073155627865,
+    "behavior_consistency": 0.015543489576339487
+  },
+  "average_thresholds": {
+    "entropy": 0.8501446694135666,
+    "process_anomaly": 0.5067435279488564,
+    "resource_usage": 0.6282867789268494,
+    "io_intensity": 0.6780733714501063,
+    "file_operations": 0.6891561672091484,
+    "access_frequency": 0.6455800235271454,
+    "data_volume": 0.3502742648124695
+  },
+  "decision_boundary": 0.5,
+  "n_trees": 100,
+  "expected_ranges": {
+    "io_intensity": [
+      0.0,
+      2.0
+    ],
+    "entropy": [
+      0.0,
+      2.0
+    ],
+    "resource_usage": [
+      0.0,
+      2.0
+    ],
+    "network_activity": [
+      0.0,
+      2.0
+    ],
+    "file_operations": [
+      0.0,
+      2.0
+    ],
+    "process_anomaly": [
+      0.0,
+      2.0
+    ],
+    "temporal_pattern": [
+      0.0,
+      2.0
+    ],
+    "access_frequency": [
+      0.0,
+      2.0
+    ],
+    "data_volume": [
+      0.0,
+      2.0
+    ],
+    "behavior_consistency": [
+      0.0,
+      1.0
+    ]
+  }
+}

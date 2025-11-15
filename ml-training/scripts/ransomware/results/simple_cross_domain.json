@@ -1,0 +1,27 @@
+{
+  "network": {
+    "f1": 0.9978858350951374,
+    "recall": 0.9957805907172996,
+    "precision": 1.0,
+    "train_samples": 2000,
+    "test_samples": 1000
+  },
+  "files": {
+    "f1": 0.9835294117647059,
+    "recall": 0.9675925925925926,
+    "precision": 1.0,
+    "train_samples": 2200,
+    "test_samples": 800
+  },
+  "processes": {
+    "f1": 0.9823321554770318,
+    "recall": 1.0,
+    "precision": 0.9652777777777778,
+    "train_samples": 1800,
+    "test_samples": 1200
+  },
+  "averages": {
+    "f1": 0.9879158007789584,
+    "recall": 0.9877910611032975
+  }
+}

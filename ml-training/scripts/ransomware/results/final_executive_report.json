@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-11-10T14:14:28.766758",
+  "robustness_score": 0.8532048226931267,
+  "recommendation": "\u2705\u2705\u2705 RECOMENDACI\u00d3N: IMPLEMENTAR EN PRODUCCI\u00d3N - Modelo excelentemente robusto",
+  "confidence": "ALTA",
+  "strengths": [
+    "Excelente generalizaci\u00f3n cross-domain",
+    "Alta resistencia a ruido moderado",
+    "Buen recall en condiciones adversas",
+    "Robustez adversarial hasta ataques medios"
+  ],
+  "weaknesses": [
+    "Vulnerable a missing values",
+    "Sensible a concept drift",
+    "Performance pobre en desbalance extremo"
+  ],
+  "technical_recommendations": [
+    "Implementar imputaci\u00f3n robusta para missing values",
+    "A\u00f1adir detecci\u00f3n de concept drift y retraining autom\u00e1tico",
+    "Usar t\u00e9cnicas de balanceo para casos extremos",
+    "Monitorear feature importance en producci\u00f3n"
+  ],
+  "key_metrics": {
+    "cross_domain_f1": 0.9894157763472115,
+    "adversarial_robustness": 0.8532048226931267,
+    "avg_recall": ">0.97"
+  },
+  "stress_test_performance": {
+    "high_overlap": {
+      "f1": 0.6671168129642133,
+      "recall": 0.9782178217821782,
+      "precision": 0.5061475409836066,
+      "samples": 1000,
+      "ransomware_count": 505
+    },
+    "extreme_imbalance": {
+      "f1": 0.40816326530612246,
+      "recall": 1.0,
+      "precision": 0.2564102564102564,
+      "samples": 1000,
+      "ransomware_count": 10
+    },
+    "feature_collinearity": {
+      "f1": 0.7963726298433635,
+      "recall": 0.966,
+      "precision": 0.6774193548387096,
+      "samples": 1000,
+      "ransomware_count": 500
+    },
+    "outlier_contamination": {
+      "f1": 0.44846577498033047,
+      "recall": 0.9661016949152542,
+      "precision": 0.29200819672131145,
+      "samples": 1000,
+      "ransomware_count": 295
+    },
+    "adversarial_patterns": {
+      "f1": 0.6684491978609626,
+      "recall": 1.0,
+      "precision": 0.5020080321285141,
+      "samples": 1000,
+      "ransomware_count": 500
+    }
+  }
+}

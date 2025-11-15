@@ -1,0 +1,39 @@
+{
+  "network": {
+    "f1_score": 0.1348314606741573,
+    "recall": 0.07860262008733625,
+    "precision": 0.47368421052631576,
+    "train_samples": 2000,
+    "test_samples": 1000,
+    "train_domains": [
+      "files",
+      "processes"
+    ]
+  },
+  "files": {
+    "f1_score": 0.012195121951219513,
+    "recall": 0.006211180124223602,
+    "precision": 0.3333333333333333,
+    "train_samples": 2200,
+    "test_samples": 800,
+    "train_domains": [
+      "network",
+      "processes"
+    ]
+  },
+  "processes": {
+    "f1_score": 0.10094637223974763,
+    "recall": 0.05653710247349823,
+    "precision": 0.47058823529411764,
+    "train_samples": 1800,
+    "test_samples": 1200,
+    "train_domains": [
+      "network",
+      "files"
+    ]
+  },
+  "averages": {
+    "f1_score": 0.08265765162170814,
+    "recall": 0.04711696756168602
+  }
+}

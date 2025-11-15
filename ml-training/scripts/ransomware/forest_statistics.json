@@ -1,0 +1,937 @@
+{
+  "total_trees": 100,
+  "feature_names": [
+    "io_intensity",
+    "entropy",
+    "resource_usage",
+    "network_activity",
+    "file_operations",
+    "process_anomaly",
+    "temporal_pattern",
+    "access_frequency",
+    "data_volume",
+    "behavior_consistency"
+  ],
+  "feature_importances": [
+    0.24332223536978168,
+    0.3607331988902626,
+    0.2488492994137785,
+    0.07647242870150996,
+    0.02445413399689633,
+    0.003334738526197998,
+    0.004904982176918815,
+    0.016204420192686805,
+    0.006181073155627865,
+    0.015543489576339487
+  ],
+  "tree_statistics": {
+    "tree_0": {
+      "n_nodes": 29,
+      "max_depth": 6,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "process_anomaly",
+        3
+      ]
+    },
+    "tree_1": {
+      "n_nodes": 45,
+      "max_depth": 7,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_2": {
+      "n_nodes": 31,
+      "max_depth": 7,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_3": {
+      "n_nodes": 21,
+      "max_depth": 5,
+      "n_leaves": 11,
+      "most_used_feature": [
+        "entropy",
+        2
+      ]
+    },
+    "tree_4": {
+      "n_nodes": 31,
+      "max_depth": 7,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "io_intensity",
+        5
+      ]
+    },
+    "tree_5": {
+      "n_nodes": 33,
+      "max_depth": 6,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "temporal_pattern",
+        3
+      ]
+    },
+    "tree_6": {
+      "n_nodes": 29,
+      "max_depth": 7,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "entropy",
+        3
+      ]
+    },
+    "tree_7": {
+      "n_nodes": 45,
+      "max_depth": 10,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_8": {
+      "n_nodes": 35,
+      "max_depth": 9,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_9": {
+      "n_nodes": 33,
+      "max_depth": 6,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_10": {
+      "n_nodes": 51,
+      "max_depth": 8,
+      "n_leaves": 26,
+      "most_used_feature": [
+        "entropy",
+        7
+      ]
+    },
+    "tree_11": {
+      "n_nodes": 41,
+      "max_depth": 7,
+      "n_leaves": 21,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_12": {
+      "n_nodes": 29,
+      "max_depth": 8,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_13": {
+      "n_nodes": 43,
+      "max_depth": 6,
+      "n_leaves": 22,
+      "most_used_feature": [
+        "resource_usage",
+        5
+      ]
+    },
+    "tree_14": {
+      "n_nodes": 31,
+      "max_depth": 6,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_15": {
+      "n_nodes": 31,
+      "max_depth": 7,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_16": {
+      "n_nodes": 37,
+      "max_depth": 9,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_17": {
+      "n_nodes": 31,
+      "max_depth": 7,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_18": {
+      "n_nodes": 29,
+      "max_depth": 6,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_19": {
+      "n_nodes": 39,
+      "max_depth": 6,
+      "n_leaves": 20,
+      "most_used_feature": [
+        "resource_usage",
+        5
+      ]
+    },
+    "tree_20": {
+      "n_nodes": 23,
+      "max_depth": 6,
+      "n_leaves": 12,
+      "most_used_feature": [
+        "entropy",
+        3
+      ]
+    },
+    "tree_21": {
+      "n_nodes": 75,
+      "max_depth": 10,
+      "n_leaves": 38,
+      "most_used_feature": [
+        "io_intensity",
+        7
+      ]
+    },
+    "tree_22": {
+      "n_nodes": 23,
+      "max_depth": 5,
+      "n_leaves": 12,
+      "most_used_feature": [
+        "entropy",
+        3
+      ]
+    },
+    "tree_23": {
+      "n_nodes": 21,
+      "max_depth": 6,
+      "n_leaves": 11,
+      "most_used_feature": [
+        "io_intensity",
+        3
+      ]
+    },
+    "tree_24": {
+      "n_nodes": 31,
+      "max_depth": 6,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "network_activity",
+        3
+      ]
+    },
+    "tree_25": {
+      "n_nodes": 45,
+      "max_depth": 6,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "resource_usage",
+        5
+      ]
+    },
+    "tree_26": {
+      "n_nodes": 37,
+      "max_depth": 6,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_27": {
+      "n_nodes": 37,
+      "max_depth": 8,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "temporal_pattern",
+        5
+      ]
+    },
+    "tree_28": {
+      "n_nodes": 25,
+      "max_depth": 7,
+      "n_leaves": 13,
+      "most_used_feature": [
+        "resource_usage",
+        4
+      ]
+    },
+    "tree_29": {
+      "n_nodes": 33,
+      "max_depth": 5,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_30": {
+      "n_nodes": 43,
+      "max_depth": 8,
+      "n_leaves": 22,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_31": {
+      "n_nodes": 35,
+      "max_depth": 8,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        3
+      ]
+    },
+    "tree_32": {
+      "n_nodes": 37,
+      "max_depth": 7,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_33": {
+      "n_nodes": 35,
+      "max_depth": 5,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_34": {
+      "n_nodes": 41,
+      "max_depth": 7,
+      "n_leaves": 21,
+      "most_used_feature": [
+        "io_intensity",
+        3
+      ]
+    },
+    "tree_35": {
+      "n_nodes": 61,
+      "max_depth": 7,
+      "n_leaves": 31,
+      "most_used_feature": [
+        "resource_usage",
+        9
+      ]
+    },
+    "tree_36": {
+      "n_nodes": 29,
+      "max_depth": 7,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "resource_usage",
+        5
+      ]
+    },
+    "tree_37": {
+      "n_nodes": 35,
+      "max_depth": 8,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "resource_usage",
+        5
+      ]
+    },
+    "tree_38": {
+      "n_nodes": 39,
+      "max_depth": 7,
+      "n_leaves": 20,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_39": {
+      "n_nodes": 51,
+      "max_depth": 7,
+      "n_leaves": 26,
+      "most_used_feature": [
+        "io_intensity",
+        5
+      ]
+    },
+    "tree_40": {
+      "n_nodes": 25,
+      "max_depth": 5,
+      "n_leaves": 13,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_41": {
+      "n_nodes": 37,
+      "max_depth": 6,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_42": {
+      "n_nodes": 49,
+      "max_depth": 8,
+      "n_leaves": 25,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_43": {
+      "n_nodes": 39,
+      "max_depth": 7,
+      "n_leaves": 20,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_44": {
+      "n_nodes": 35,
+      "max_depth": 7,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_45": {
+      "n_nodes": 29,
+      "max_depth": 7,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "file_operations",
+        5
+      ]
+    },
+    "tree_46": {
+      "n_nodes": 47,
+      "max_depth": 10,
+      "n_leaves": 24,
+      "most_used_feature": [
+        "io_intensity",
+        7
+      ]
+    },
+    "tree_47": {
+      "n_nodes": 27,
+      "max_depth": 7,
+      "n_leaves": 14,
+      "most_used_feature": [
+        "network_activity",
+        3
+      ]
+    },
+    "tree_48": {
+      "n_nodes": 31,
+      "max_depth": 8,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_49": {
+      "n_nodes": 57,
+      "max_depth": 7,
+      "n_leaves": 29,
+      "most_used_feature": [
+        "network_activity",
+        6
+      ]
+    },
+    "tree_50": {
+      "n_nodes": 35,
+      "max_depth": 6,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "resource_usage",
+        3
+      ]
+    },
+    "tree_51": {
+      "n_nodes": 27,
+      "max_depth": 6,
+      "n_leaves": 14,
+      "most_used_feature": [
+        "resource_usage",
+        4
+      ]
+    },
+    "tree_52": {
+      "n_nodes": 51,
+      "max_depth": 7,
+      "n_leaves": 26,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_53": {
+      "n_nodes": 49,
+      "max_depth": 8,
+      "n_leaves": 25,
+      "most_used_feature": [
+        "resource_usage",
+        4
+      ]
+    },
+    "tree_54": {
+      "n_nodes": 29,
+      "max_depth": 6,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_55": {
+      "n_nodes": 33,
+      "max_depth": 8,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_56": {
+      "n_nodes": 23,
+      "max_depth": 6,
+      "n_leaves": 12,
+      "most_used_feature": [
+        "network_activity",
+        3
+      ]
+    },
+    "tree_57": {
+      "n_nodes": 47,
+      "max_depth": 6,
+      "n_leaves": 24,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_58": {
+      "n_nodes": 61,
+      "max_depth": 8,
+      "n_leaves": 31,
+      "most_used_feature": [
+        "resource_usage",
+        8
+      ]
+    },
+    "tree_59": {
+      "n_nodes": 67,
+      "max_depth": 8,
+      "n_leaves": 34,
+      "most_used_feature": [
+        "entropy",
+        8
+      ]
+    },
+    "tree_60": {
+      "n_nodes": 41,
+      "max_depth": 6,
+      "n_leaves": 21,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_61": {
+      "n_nodes": 35,
+      "max_depth": 7,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_62": {
+      "n_nodes": 37,
+      "max_depth": 7,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_63": {
+      "n_nodes": 39,
+      "max_depth": 6,
+      "n_leaves": 20,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_64": {
+      "n_nodes": 29,
+      "max_depth": 7,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "entropy",
+        3
+      ]
+    },
+    "tree_65": {
+      "n_nodes": 45,
+      "max_depth": 10,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_66": {
+      "n_nodes": 31,
+      "max_depth": 6,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "process_anomaly",
+        4
+      ]
+    },
+    "tree_67": {
+      "n_nodes": 33,
+      "max_depth": 6,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_68": {
+      "n_nodes": 29,
+      "max_depth": 6,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_69": {
+      "n_nodes": 45,
+      "max_depth": 10,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "behavior_consistency",
+        4
+      ]
+    },
+    "tree_70": {
+      "n_nodes": 29,
+      "max_depth": 5,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "resource_usage",
+        3
+      ]
+    },
+    "tree_71": {
+      "n_nodes": 45,
+      "max_depth": 8,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "resource_usage",
+        4
+      ]
+    },
+    "tree_72": {
+      "n_nodes": 29,
+      "max_depth": 7,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_73": {
+      "n_nodes": 37,
+      "max_depth": 6,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_74": {
+      "n_nodes": 45,
+      "max_depth": 8,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "behavior_consistency",
+        4
+      ]
+    },
+    "tree_75": {
+      "n_nodes": 41,
+      "max_depth": 6,
+      "n_leaves": 21,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_76": {
+      "n_nodes": 51,
+      "max_depth": 6,
+      "n_leaves": 26,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_77": {
+      "n_nodes": 45,
+      "max_depth": 10,
+      "n_leaves": 23,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_78": {
+      "n_nodes": 31,
+      "max_depth": 7,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "resource_usage",
+        4
+      ]
+    },
+    "tree_79": {
+      "n_nodes": 27,
+      "max_depth": 6,
+      "n_leaves": 14,
+      "most_used_feature": [
+        "network_activity",
+        3
+      ]
+    },
+    "tree_80": {
+      "n_nodes": 41,
+      "max_depth": 7,
+      "n_leaves": 21,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_81": {
+      "n_nodes": 29,
+      "max_depth": 6,
+      "n_leaves": 15,
+      "most_used_feature": [
+        "io_intensity",
+        4
+      ]
+    },
+    "tree_82": {
+      "n_nodes": 33,
+      "max_depth": 5,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "resource_usage",
+        4
+      ]
+    },
+    "tree_83": {
+      "n_nodes": 35,
+      "max_depth": 6,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_84": {
+      "n_nodes": 47,
+      "max_depth": 8,
+      "n_leaves": 24,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_85": {
+      "n_nodes": 33,
+      "max_depth": 7,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_86": {
+      "n_nodes": 47,
+      "max_depth": 8,
+      "n_leaves": 24,
+      "most_used_feature": [
+        "resource_usage",
+        5
+      ]
+    },
+    "tree_87": {
+      "n_nodes": 43,
+      "max_depth": 7,
+      "n_leaves": 22,
+      "most_used_feature": [
+        "entropy",
+        5
+      ]
+    },
+    "tree_88": {
+      "n_nodes": 55,
+      "max_depth": 6,
+      "n_leaves": 28,
+      "most_used_feature": [
+        "resource_usage",
+        8
+      ]
+    },
+    "tree_89": {
+      "n_nodes": 35,
+      "max_depth": 6,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        6
+      ]
+    },
+    "tree_90": {
+      "n_nodes": 43,
+      "max_depth": 7,
+      "n_leaves": 22,
+      "most_used_feature": [
+        "io_intensity",
+        5
+      ]
+    },
+    "tree_91": {
+      "n_nodes": 37,
+      "max_depth": 6,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_92": {
+      "n_nodes": 37,
+      "max_depth": 6,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "resource_usage",
+        7
+      ]
+    },
+    "tree_93": {
+      "n_nodes": 47,
+      "max_depth": 7,
+      "n_leaves": 24,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_94": {
+      "n_nodes": 39,
+      "max_depth": 6,
+      "n_leaves": 20,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    },
+    "tree_95": {
+      "n_nodes": 31,
+      "max_depth": 8,
+      "n_leaves": 16,
+      "most_used_feature": [
+        "resource_usage",
+        3
+      ]
+    },
+    "tree_96": {
+      "n_nodes": 37,
+      "max_depth": 6,
+      "n_leaves": 19,
+      "most_used_feature": [
+        "entropy",
+        7
+      ]
+    },
+    "tree_97": {
+      "n_nodes": 35,
+      "max_depth": 7,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "network_activity",
+        5
+      ]
+    },
+    "tree_98": {
+      "n_nodes": 33,
+      "max_depth": 6,
+      "n_leaves": 17,
+      "most_used_feature": [
+        "network_activity",
+        4
+      ]
+    },
+    "tree_99": {
+      "n_nodes": 35,
+      "max_depth": 6,
+      "n_leaves": 18,
+      "most_used_feature": [
+        "entropy",
+        4
+      ]
+    }
+  },
+  "general_statistics": {
+    "total_nodes": 3764,
+    "avg_nodes_per_tree": 37.64,
+    "max_nodes": 75,
+    "min_nodes": 21,
+    "avg_depth": 6.88,
+    "max_depth": 10
+  }
+}
