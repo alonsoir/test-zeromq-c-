@@ -1,11 +1,12 @@
 {
   "_header": "C++20 ML DETECTOR TRICAPA v1.0 - Production Config (REFACTORED)",
   "_refactor_notes": {
-    "date": "2025-10-28",
+    "date": "2025-11-15",
     "changes": [
-      "Removed redundant 'ml_models.base_dir' section (duplicated ml.models_base_dir)",
-      "All model paths now consistently use ml.models_base_dir",
-      "Model paths verified against actual filesystem structure"
+      "✨ UPDATED: Level 2 DDoS changed from ONNX to Embedded C++20",
+      "✨ UPDATED: Level 2 Ransomware enabled (Embedded C++20)",
+      "✨ UPDATED: Level 3 Web enabled for Traffic classification (Embedded C++20)",
+      "✨ UPDATED: Level 3 Internal already configured, just enabled (Embedded C++20)"
     ]
   },
   "component": {
@@ -147,12 +148,14 @@
       "level1_attack": 0.65,
       "level2_ddos": 0.7,
       "level2_ransomware": 0.75,
-      "level3_anomaly": 0.8
+      "level3_anomaly": 0.8,
+      "level3_web": 0.6,
+      "level3_internal": 0.65
     },
     "level1": {
       "enabled": true,
       "name": "attack_detector",
-      "model_file": "level1/level1_attack_detector.onnx",
+      "model_file": "level1/<level1_attack_detector.onnx>",
       "scaler_file": "level1/scaler.json",
       "features_count": 23,
       "model_type": "RandomForest",
@@ -164,47 +167,97 @@
       "ddos": {
         "enabled": true,
         "name": "ddos_binary_detector",
-        "model_file": "level2/level2_ddos_binary_detector.onnx",
-        "features_count": 8,
-        "model_type": "RandomForest",
-        "description": "DDoS Binary detection - Random Forest (8 features, accuracy 98.61%)",
+        "model_file": "",
+        "features_count": 10,
+        "model_type": "RandomForest-Embedded",
+        "description": "✨ DDoS Detection - Embedded C++20 RandomForest (100 trees, 612 nodes, <50μs latency)",
         "requires_scaling": false,
-        "timeout_ms": 10
+        "timeout_ms": 1,
+        "implementation": "native_cpp",
+        "features": [
+          "syn_ack_ratio",
+          "packet_symmetry",
+          "source_ip_dispersion",
+          "protocol_anomaly_score",
+          "packet_size_entropy",
+          "traffic_amplification_factor",
+          "flow_completion_rate",
+          "geographical_concentration",
+          "traffic_escalation_rate",
+          "resource_saturation_score"
+        ]
       },
       "ransomware": {
-        "enabled": false,
+        "enabled": true,
         "name": "ransomware_detector_embedded",
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "Embedded C++20 RandomForest (100 trees, <100μs latency)",
+        "description": "✨ Ransomware Detection - Embedded C++20 RandomForest (100 trees, 3764 nodes, <55μs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "threshold": 0.75,
-        "implementation": "native_cpp"
+        "implementation": "native_cpp",
+        "features": [
+          "io_intensity",
+          "entropy",
+          "resource_usage",
+          "network_activity",
+          "file_operations",
+          "process_anomaly",
+          "temporal_pattern",
+          "access_frequency",
+          "data_volume",
+          "behavior_consistency"
+        ]
       }
     },
-    "level3": {
-      "internal": {
-        "enabled": true,
-        "name": "internal_anomaly_detector",
-        "model_file": "level3/internal_detector.onnx",
-        "features_count": 4,
-        "model_type": "RandomForest",
-        "description": "Internal traffic anomaly detection (4 features)",
-        "requires_scaling": false,
-        "timeout_ms": 5
-      },
-      "web": {
-        "enabled": false,
-        "name": "web_anomaly_detector",
-        "model_file": "level3/web_detector.onnx",
-        "features_count": 4,
-        "model_type": "RandomForest",
-        "description": "Web traffic anomaly detection (4 features)",
-        "requires_scaling": false,
-        "timeout_ms": 5
-      }
+    "internal": {
+      "enabled": true,
+      "name": "internal_detector_embedded",
+      "model_file": "",
+      "features_count": 10,
+      "model_type": "RandomForest-Embedded",
+      "description": "✨ Internal Traffic Analysis - Embedded C++20 RandomForest (100 trees, 940 nodes, <48μs latency) - Lateral Movement & Data Exfiltration",
+      "requires_scaling": false,
+      "timeout_ms": 1,
+      "implementation": "native_cpp",
+      "features": [
+        "internal_connection_rate",
+        "service_port_consistency",
+        "protocol_regularity",
+        "packet_size_consistency",
+        "connection_duration_std",
+        "lateral_movement_score",
+        "service_discovery_patterns",
+        "data_exfiltration_indicators",
+        "temporal_anomaly_score",
+        "access_pattern_entropy"
+      ]
+    },
+    "web": {
+      "enabled": true,
+      "name": "traffic_detector_embedded",
+      "model_file": "",
+      "features_count": 10,
+      "model_type": "RandomForest-Embedded",
+      "description": "✨ Traffic Classification (Internet vs Internal) - Embedded C++20 RandomForest (100 trees, 1014 nodes, <50μs latency)",
+      "requires_scaling": false,
+      "timeout_ms": 1,
+      "implementation": "native_cpp",
+      "features": [
+        "packet_rate",
+        "connection_rate",
+        "tcp_udp_ratio",
+        "avg_packet_size",
+        "port_entropy",
+        "flow_duration_std",
+        "src_ip_entropy",
+        "dst_ip_concentration",
+        "protocol_variety",
+        "temporal_consistency"
+      ]
+    }
     },
     "inference": {
       "batch_size": 1,
@@ -229,8 +282,7 @@
       "continue_with_partial_models": true,
       "fallback_to_heuristics": true,
       "log_degraded_operations": true
-    }
-  },
+    },
   "processing": {
     "input_queue_size": 300,
     "output_queue_size": 200,

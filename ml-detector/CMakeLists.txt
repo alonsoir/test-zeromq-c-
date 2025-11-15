@@ -167,6 +167,10 @@ set(SOURCES
         src/config_loader.cpp
         src/logger.cpp
         src/stats_collector.cpp
+        src/ransomware_detector.cpp
+        src/ddos_detector.cpp
+        src/traffic_detector.cpp
+        src/internal_detector.cpp
         ${PROTO_SOURCES}
 )
 
@@ -427,6 +431,7 @@ if(BUILD_TESTS)
                 tests/unit/test_classifier.cpp
                 tests/unit/test_feature_extractor.cpp
                 tests/unit/test_model_loader.cpp
+                tests/unit/test_detectors.cpp
         )
 
         foreach(test_src ${TEST_SOURCES})
