@@ -1,66 +1,147 @@
-# 🚀 ML DEFENDER - INTEGRACIÓN DE MODELOS SINTÉTICOS
+```markdown
+# 🚀 ML Defender - Phase 1, Day 1: Protobuf Schema Update
 
-## CONTEXTO
+## 📍 CONTEXTO ACTUAL
 
-Soy Alonso, trabajando en ML Defender (Fase 0 - evolución autónoma ransomware).
+**Proyecto:** ML Defender - Sistema de seguridad de red con ML embebido en C++20
+**Estado:** Phase 0 COMPLETADA ✅
+**Hoy:** Phase 1, Day 1 - Integración sniffer-eBPF con ml-detector
 
-Ayer (14 Nov 2025) completaste:
-- ✅ Revisión científica de 3 modelos RF inline C++20
-- ✅ Todos aprobados: normalización [0.0, 1.0] perfecta
-- ✅ Production-ready: ddos, external, internal traffic
+### Phase 0 - Logros:
+- ✅ 4 detectores C++20 embebidos integrados y testeados
+- ✅ Ransomware: 1.06μs latency, 100 trees, 3,764 nodes
+- ✅ DDoS: 0.24μs latency, 100 trees, 612 nodes
+- ✅ Traffic: 0.37μs latency, 100 trees, 1,014 nodes (Internet vs Internal)
+- ✅ Internal: 0.33μs latency, 100 trees, 940 nodes (Lateral Movement)
+- ✅ Todos los tests unitarios pasando
+- ✅ Makefile del host validado
+- ✅ Config JSON con fail-fast validation
 
-Hoy integramos en ml-detector y sniffer-ebpf.
+### Arquitectura Actual:
+```
+sniffer-eBPF → [protobuf] → ml-detector (4 detectores) → Alert
+↑
+└── NECESITA ACTUALIZACIÓN HOY
+```
 
-## ARCHIVOS DISPONIBLES
+## 🎯 OBJETIVO DEL DÍA
 
-Modelos verificados (listos para integrar):
-- `ddos_trees_inline.hpp` (612 nodos, 10 features)
-- `traffic_trees_inline.hpp` (1,014 nodos, 10 features)
-- `internal_trees_inline.hpp` (940 nodos, 10 features)
+**Actualizar protobuf schema** con las features necesarias para los 4 detectores del ml-detector.
 
-Componentes existentes:
-- `ml-detector/` - Carga modelos, decisión ML
-- `sniffer-ebpf/` - Captura, extracción features
-- Ransomware integration (hecha, no probada)
+**Criterio de éxito:** 
+- Protobuf regenerado correctamente
+- Sniffer compila sin errores
+- ml-detector compila sin errores
+- NO es necesario que funcione end-to-end (eso es para días siguientes)
 
-## MISIÓN HOY
+## 📋 FEATURES POR DETECTOR
 
-### 1. ml-detector (PRIORIDAD)
-- Integrar 3 headers en `include/models/`
-- Config JSON estilo RANSOMWARE
-- Cargar todos los modelos al inicio
-- Medir memoria baseline
+### Level 2 - DDoS (10 features):
+1. syn_ack_ratio
+2. packet_symmetry
+3. source_ip_dispersion
+4. protocol_anomaly_score
+5. packet_size_entropy
+6. traffic_amplification_factor
+7. flow_completion_rate
+8. geographical_concentration
+9. traffic_escalation_rate
+10. resource_saturation_score
 
-### 2. sniffer-ebpf
-- Feature extraction correcta
-- Normalización [0.0, 1.0]
-- Conexión con ml-detector
+### Level 2 - Ransomware (10 features):
+1. io_intensity
+2. entropy
+3. resource_usage
+4. network_activity
+5. file_operations
+6. process_anomaly
+7. temporal_pattern
+8. access_frequency
+9. data_volume
+10. behavior_consistency
 
-### 3. Métricas
-- Performance (throughput, latency)
-- Memoria runtime
-- Validación funcional
+### Level 3 - Traffic (10 features):
+1. packet_rate
+2. connection_rate
+3. tcp_udp_ratio
+4. avg_packet_size
+5. port_entropy
+6. flow_duration_std
+7. src_ip_entropy
+8. dst_ip_concentration
+9. protocol_variety
+10. temporal_consistency
 
-## PRINCIPIOS
+### Level 3 - Internal (10 features):
+1. internal_connection_rate
+2. service_port_consistency
+3. protocol_regularity
+4. packet_size_consistency
+5. connection_duration_std
+6. lateral_movement_score
+7. service_discovery_patterns
+8. data_exfiltration_indicators
+9. temporal_anomaly_score
+10. access_pattern_entropy
 
-- Clean Code + KISS
-- Smooth & Fast
-- Pragmático: funciona > perfecto
-- "No hay más opción, seguimos adelante"
+## 📂 ARCHIVOS RELEVANTES
 
-## TU CONOCIMIENTO
+```bash
+/vagrant/protobuf/network_security.proto  # Actualizar este
+/vagrant/protobuf/generate.sh             # Regenerar con este
+/vagrant/sniffer/                         # Recompilar después
+/vagrant/ml-detector/                     # Recompilar después
+```
 
-Conoces íntimamente:
-- Arquitectura completa (FlowManager, MLDetector, PacketProcessor)
-- CMakeLists.txt, estructura de directorios
-- 83+ features extraídas
-- Pipeline threading y performance crítico
+## 🔧 COMANDOS INICIALES
 
-## PRIMERA TAREA
+```bash
+# En el HOST (macOS):
+cd ~/path/to/test-zeromq-docker
 
-Por favor:
-1. Muéstrame la estructura actual de ml-detector/
-2. Propón cómo integrar los 3 headers
-3. Revisamos config JSON para modelos sintéticos
+# Verificar estado
+vagrant status
+make status
 
-Vamos smooth & fast. 🚀
+# Si VM apagada:
+vagrant up
+
+# Empezar trabajo
+vagrant ssh
+cd /vagrant/protobuf
+
+# Backup del schema actual
+cp network_security.proto network_security.proto.backup_phase0
+
+# Ver estructura actual
+grep -A 50 "message NetworkFeatures" network_security.proto
+```
+
+## 🏛️ FILOSOFÍA VIA APPIA
+
+- **Día a día:** Solo el protobuf hoy, integración mañana
+- **KISS:** Añadir campos necesarios, nada más
+- **Funciona > Perfecto:** Que compile es suficiente
+- **Smooth & Fast:** No optimizar prematuramente
+
+## ❓ PREGUNTAS PARA CLAUDE
+
+1. ¿Dónde en el protobuf actual debo añadir las nuevas features?
+2. ¿Cómo estructurar los mensajes para los 4 detectores?
+3. ¿Algún campo existente puedo reutilizar o necesito todos nuevos?
+4. Ayúdame a actualizar el .proto y regenerarlo
+5. Si hay errores de compilación, ayúdame a resolverlos
+
+## 📌 NOTAS IMPORTANTES
+
+- Estamos en rama: `feature/sniffer-ebpf-integration` (o crear si no existe)
+- El sniffer NO tiene que extraer las features aún (eso es Day 2-3)
+- Solo necesitamos que el schema exista y compile
+- El ml-detector ya tiene los extractores (feature_extractor.cpp)
+
+---
+
+**Ready to start Phase 1!** 🚀
+```
+
+---
