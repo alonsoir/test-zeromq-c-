@@ -1,9 +1,9 @@
 // Unit Test Example for ML Defender Detectors
 // Compile: g++ -std=c++20 -O3 test_detectors.cpp ddos_detector.cpp traffic_detector.cpp internal_detector.cpp -o test_detectors
 
-#include "ddos_detector.hpp"
-#include "traffic_detector.hpp"
-#include "internal_detector.hpp"
+#include "ml_defender/ddos_detector.hpp"
+#include "ml_defender/traffic_detector.hpp"
+#include "ml_defender/internal_detector.hpp"
 #include <iostream>
 #include <iomanip>
 #include <chrono>

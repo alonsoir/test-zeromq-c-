@@ -505,6 +505,29 @@ if(BUILD_TESTS)
     add_test(NAME RansomwareDetectorUnit
             COMMAND test_ransomware_detector_unit
     )
+    # Unit Tests - DDoS, Traffic, Internal Detectors
+    add_executable(test_detectors_unit
+            tests/unit/test_detectors.cpp
+    )
+
+    target_include_directories(test_detectors_unit PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+
+    # Link directamente los archivos fuente y archivos necesarios
+    target_sources(test_detectors_unit PRIVATE
+            src/ddos_detector.cpp
+            src/traffic_detector.cpp
+            src/internal_detector.cpp
+    )
+    
+    target_link_libraries(test_detectors_unit PRIVATE
+    )
+
+    add_test(NAME DetectorsUnit
+            COMMAND test_detectors_unit
+    )
+
 
     # Integration Tests - Detector + pipeline completo
     # Solo si ya tienes implementada la integración con ClassifierTricapa

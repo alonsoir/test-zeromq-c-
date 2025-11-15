@@ -210,6 +210,19 @@ test_ransomware_detector_unit/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_detector_unit.dir/build.make CMakeFiles/test_ransomware_detector_unit.dir/build
 .PHONY : test_ransomware_detector_unit/fast
 
+#=============================================================================
+# Target rules for targets named test_detectors_unit
+
+# Build rule for target.
+test_detectors_unit: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_detectors_unit
+.PHONY : test_detectors_unit
+
+# fast build rule for target.
+test_detectors_unit/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/build
+.PHONY : test_detectors_unit/fast
+
 src/classifier_tricapa.o: src/classifier_tricapa.cpp.o
 .PHONY : src/classifier_tricapa.o
 
@@ -264,6 +277,7 @@ src/ddos_detector.o: src/ddos_detector.cpp.o
 # target to build an object file
 src/ddos_detector.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/ddos_detector.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/ddos_detector.cpp.o
 .PHONY : src/ddos_detector.cpp.o
 
 src/ddos_detector.i: src/ddos_detector.cpp.i
@@ -272,6 +286,7 @@ src/ddos_detector.i: src/ddos_detector.cpp.i
 # target to preprocess a source file
 src/ddos_detector.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/ddos_detector.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/ddos_detector.cpp.i
 .PHONY : src/ddos_detector.cpp.i
 
 src/ddos_detector.s: src/ddos_detector.cpp.s
@@ -280,6 +295,7 @@ src/ddos_detector.s: src/ddos_detector.cpp.s
 # target to generate assembly for a file
 src/ddos_detector.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/ddos_detector.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/ddos_detector.cpp.s
 .PHONY : src/ddos_detector.cpp.s
 
 src/feature_extractor.o: src/feature_extractor.cpp.o
@@ -312,6 +328,7 @@ src/internal_detector.o: src/internal_detector.cpp.o
 # target to build an object file
 src/internal_detector.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/internal_detector.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/internal_detector.cpp.o
 .PHONY : src/internal_detector.cpp.o
 
 src/internal_detector.i: src/internal_detector.cpp.i
@@ -320,6 +337,7 @@ src/internal_detector.i: src/internal_detector.cpp.i
 # target to preprocess a source file
 src/internal_detector.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/internal_detector.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/internal_detector.cpp.i
 .PHONY : src/internal_detector.cpp.i
 
 src/internal_detector.s: src/internal_detector.cpp.s
@@ -328,6 +346,7 @@ src/internal_detector.s: src/internal_detector.cpp.s
 # target to generate assembly for a file
 src/internal_detector.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/internal_detector.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/internal_detector.cpp.s
 .PHONY : src/internal_detector.cpp.s
 
 src/logger.o: src/logger.cpp.o
@@ -507,6 +526,7 @@ src/traffic_detector.o: src/traffic_detector.cpp.o
 # target to build an object file
 src/traffic_detector.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/traffic_detector.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/traffic_detector.cpp.o
 .PHONY : src/traffic_detector.cpp.o
 
 src/traffic_detector.i: src/traffic_detector.cpp.i
@@ -515,6 +535,7 @@ src/traffic_detector.i: src/traffic_detector.cpp.i
 # target to preprocess a source file
 src/traffic_detector.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/traffic_detector.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/traffic_detector.cpp.i
 .PHONY : src/traffic_detector.cpp.i
 
 src/traffic_detector.s: src/traffic_detector.cpp.s
@@ -523,6 +544,7 @@ src/traffic_detector.s: src/traffic_detector.cpp.s
 # target to generate assembly for a file
 src/traffic_detector.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/traffic_detector.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/traffic_detector.cpp.s
 .PHONY : src/traffic_detector.cpp.s
 
 src/zmq_handler.o: src/zmq_handler.cpp.o
@@ -548,6 +570,30 @@ src/zmq_handler.s: src/zmq_handler.cpp.s
 src/zmq_handler.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/zmq_handler.cpp.s
 .PHONY : src/zmq_handler.cpp.s
+
+tests/unit/test_detectors.o: tests/unit/test_detectors.cpp.o
+.PHONY : tests/unit/test_detectors.o
+
+# target to build an object file
+tests/unit/test_detectors.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/tests/unit/test_detectors.cpp.o
+.PHONY : tests/unit/test_detectors.cpp.o
+
+tests/unit/test_detectors.i: tests/unit/test_detectors.cpp.i
+.PHONY : tests/unit/test_detectors.i
+
+# target to preprocess a source file
+tests/unit/test_detectors.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/tests/unit/test_detectors.cpp.i
+.PHONY : tests/unit/test_detectors.cpp.i
+
+tests/unit/test_detectors.s: tests/unit/test_detectors.cpp.s
+.PHONY : tests/unit/test_detectors.s
+
+# target to generate assembly for a file
+tests/unit/test_detectors.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/tests/unit/test_detectors.cpp.s
+.PHONY : tests/unit/test_detectors.cpp.s
 
 tests/unit/test_ransomware_detector.o: tests/unit/test_ransomware_detector.cpp.o
 .PHONY : tests/unit/test_ransomware_detector.o
@@ -612,6 +658,7 @@ help:
 	@echo "... test"
 	@echo "... ml-detector"
 	@echo "... ransomware_detector"
+	@echo "... test_detectors_unit"
 	@echo "... test_ransomware_detector_unit"
 	@echo "... src/classifier_tricapa.o"
 	@echo "... src/classifier_tricapa.i"
@@ -655,6 +702,9 @@ help:
 	@echo "... src/zmq_handler.o"
 	@echo "... src/zmq_handler.i"
 	@echo "... src/zmq_handler.s"
+	@echo "... tests/unit/test_detectors.o"
+	@echo "... tests/unit/test_detectors.i"
+	@echo "... tests/unit/test_detectors.s"
 	@echo "... tests/unit/test_ransomware_detector.o"
 	@echo "... tests/unit/test_ransomware_detector.i"
 	@echo "... tests/unit/test_ransomware_detector.s"
