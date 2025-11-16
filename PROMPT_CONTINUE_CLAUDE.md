@@ -1,147 +1,202 @@
-```markdown
-# 🚀 ML Defender - Phase 1, Day 1: Protobuf Schema Update
+# 🚀 ML Defender - Phase 1, Day 2: Feature Extraction en Sniffer
 
-## 📍 CONTEXTO ACTUAL
+## 📍 ESTADO ACTUAL (Completado ayer)
 
-**Proyecto:** ML Defender - Sistema de seguridad de red con ML embebido en C++20
-**Estado:** Phase 0 COMPLETADA ✅
-**Hoy:** Phase 1, Day 1 - Integración sniffer-eBPF con ml-detector
+**Phase 1, Day 1:** ✅ COMPLETADO
+- Protobuf actualizado con 40 features (4 submensajes × 10 features)
+- Nuevas clases disponibles: DDoSFeatures, RansomwareEmbeddedFeatures, TrafficFeatures, InternalFeatures
+- Sniffer compila (957KB)
+- ML-detector compila (100%)
+- Commit realizado ✅
 
-### Phase 0 - Logros:
-- ✅ 4 detectores C++20 embebidos integrados y testeados
-- ✅ Ransomware: 1.06μs latency, 100 trees, 3,764 nodes
-- ✅ DDoS: 0.24μs latency, 100 trees, 612 nodes
-- ✅ Traffic: 0.37μs latency, 100 trees, 1,014 nodes (Internet vs Internal)
-- ✅ Internal: 0.33μs latency, 100 trees, 940 nodes (Lateral Movement)
-- ✅ Todos los tests unitarios pasando
-- ✅ Makefile del host validado
-- ✅ Config JSON con fail-fast validation
-
-### Arquitectura Actual:
-```
-sniffer-eBPF → [protobuf] → ml-detector (4 detectores) → Alert
-↑
-└── NECESITA ACTUALIZACIÓN HOY
-```
-
-## 🎯 OBJETIVO DEL DÍA
-
-**Actualizar protobuf schema** con las features necesarias para los 4 detectores del ml-detector.
-
-**Criterio de éxito:** 
-- Protobuf regenerado correctamente
-- Sniffer compila sin errores
-- ml-detector compila sin errores
-- NO es necesario que funcione end-to-end (eso es para días siguientes)
-
-## 📋 FEATURES POR DETECTOR
-
-### Level 2 - DDoS (10 features):
-1. syn_ack_ratio
-2. packet_symmetry
-3. source_ip_dispersion
-4. protocol_anomaly_score
-5. packet_size_entropy
-6. traffic_amplification_factor
-7. flow_completion_rate
-8. geographical_concentration
-9. traffic_escalation_rate
-10. resource_saturation_score
-
-### Level 2 - Ransomware (10 features):
-1. io_intensity
-2. entropy
-3. resource_usage
-4. network_activity
-5. file_operations
-6. process_anomaly
-7. temporal_pattern
-8. access_frequency
-9. data_volume
-10. behavior_consistency
-
-### Level 3 - Traffic (10 features):
-1. packet_rate
-2. connection_rate
-3. tcp_udp_ratio
-4. avg_packet_size
-5. port_entropy
-6. flow_duration_std
-7. src_ip_entropy
-8. dst_ip_concentration
-9. protocol_variety
-10. temporal_consistency
-
-### Level 3 - Internal (10 features):
-1. internal_connection_rate
-2. service_port_consistency
-3. protocol_regularity
-4. packet_size_consistency
-5. connection_duration_std
-6. lateral_movement_score
-7. service_discovery_patterns
-8. data_exfiltration_indicators
-9. temporal_anomaly_score
-10. access_pattern_entropy
-
-## 📂 ARCHIVOS RELEVANTES
-
+**Verificado:**
 ```bash
-/vagrant/protobuf/network_security.proto  # Actualizar este
-/vagrant/protobuf/generate.sh             # Regenerar con este
-/vagrant/sniffer/                         # Recompilar después
-/vagrant/ml-detector/                     # Recompilar después
+grep "class DDoSFeatures\|class RansomwareEmbeddedFeatures\|class TrafficFeatures\|class InternalFeatures" \
+  /vagrant/protobuf/network_security.pb.h
+# Resultado: 4 clases × 2 apariciones = 8 líneas ✅
+```
+
+## 🎯 OBJETIVO DE HOY (Day 2)
+
+**Implementar extracción de features en el sniffer** para popular los 4 submensajes del protobuf.
+
+**Criterio de éxito:**
+- Funciones extractoras creadas para las 40 features
+- Código compila sin errores
+- NO es necesario que funcione end-to-end (eso es Day 3)
+- Helpers de cálculo implementados (entropy, normalize, safe_divide)
+
+## 📂 ARCHIVOS A MODIFICAR
+```
+/vagrant/sniffer/
+├── src/
+│   ├── feature_extractor.cpp  (crear o modificar)
+│   ├── feature_extractor.hpp  (crear o modificar)
+│   └── main.cpp               (usar las funciones)
+└── CMakeLists.txt             (si añadimos archivos nuevos)
 ```
 
 ## 🔧 COMANDOS INICIALES
-
 ```bash
-# En el HOST (macOS):
+# En HOST (macOS)
 cd ~/path/to/test-zeromq-docker
-
-# Verificar estado
-vagrant status
-make status
-
-# Si VM apagada:
-vagrant up
-
-# Empezar trabajo
 vagrant ssh
-cd /vagrant/protobuf
 
-# Backup del schema actual
-cp network_security.proto network_security.proto.backup_phase0
+# En VM
+cd /vagrant/sniffer
 
 # Ver estructura actual
-grep -A 50 "message NetworkFeatures" network_security.proto
+ls -lh src/
+tree src/ 2>/dev/null || find src/ -type f
+
+# Backup del main.cpp antes de modificar
+cp src/main.cpp src/main.cpp.backup_phase1day1
+
+# Crear branch (opcional)
+git checkout -b feature/sniffer-feature-extraction
 ```
 
-## 🏛️ FILOSOFÍA VIA APPIA
+## 📋 FEATURES A IMPLEMENTAR
 
-- **Día a día:** Solo el protobuf hoy, integración mañana
-- **KISS:** Añadir campos necesarios, nada más
-- **Funciona > Perfecto:** Que compile es suficiente
-- **Smooth & Fast:** No optimizar prematuramente
+### Level 2 - DDoS (10 features):
+```cpp
+void extract_ddos_features(const flow_stats& flow, protobuf::DDoSFeatures* ddos) {
+    ddos->set_syn_ack_ratio(calculate_syn_ack_ratio(flow));
+    ddos->set_packet_symmetry(calculate_packet_symmetry(flow));
+    ddos->set_source_ip_dispersion(calculate_ip_entropy(flow));
+    ddos->set_protocol_anomaly_score(calculate_protocol_anomaly(flow));
+    ddos->set_packet_size_entropy(calculate_size_entropy(flow));
+    ddos->set_traffic_amplification_factor(calculate_amplification(flow));
+    ddos->set_flow_completion_rate(calculate_completion_rate(flow));
+    ddos->set_geographical_concentration(calculate_geo_concentration(flow));
+    ddos->set_traffic_escalation_rate(calculate_escalation_rate(flow));
+    ddos->set_resource_saturation_score(calculate_saturation(flow));
+}
+```
 
-## ❓ PREGUNTAS PARA CLAUDE
+### Level 2 - Ransomware (10 features):
+```cpp
+void extract_ransomware_features(const flow_stats& flow, protobuf::RansomwareEmbeddedFeatures* ransomware);
+```
 
-1. ¿Dónde en el protobuf actual debo añadir las nuevas features?
-2. ¿Cómo estructurar los mensajes para los 4 detectores?
-3. ¿Algún campo existente puedo reutilizar o necesito todos nuevos?
-4. Ayúdame a actualizar el .proto y regenerarlo
-5. Si hay errores de compilación, ayúdame a resolverlos
+### Level 3 - Traffic (10 features):
+```cpp
+void extract_traffic_features(const flow_stats& flow, protobuf::TrafficFeatures* traffic);
+```
 
-## 📌 NOTAS IMPORTANTES
+### Level 3 - Internal (10 features):
+```cpp
+void extract_internal_features(const flow_stats& flow, protobuf::InternalFeatures* internal);
+```
 
-- Estamos en rama: `feature/sniffer-ebpf-integration` (o crear si no existe)
-- El sniffer NO tiene que extraer las features aún (eso es Day 2-3)
-- Solo necesitamos que el schema exista y compile
-- El ml-detector ya tiene los extractores (feature_extractor.cpp)
+## 🧮 HELPERS NECESARIOS
+```cpp
+// En feature_extractor.hpp
+namespace ml_defender {
+namespace helpers {
+
+float calculate_entropy(const std::vector<uint32_t>& data);
+float normalize(float value, float min, float max);
+float safe_divide(float numerator, float denominator);
+float calculate_std_dev(const std::vector<float>& values);
+
+} // namespace helpers
+} // namespace ml_defender
+```
+
+## 🏛️ FILOSOFÍA VIA APPIA HOY
+
+- **KISS:** Funciones simples, una feature a la vez
+- **Funciona > Perfecto:** Valores hardcoded/mockeados están OK por ahora
+- **Smooth & Fast:** No optimizar, solo que compile
+- **Clean Code:** Nombres descriptivos, funciones cortas
+
+**PERMITIDO HOY:**
+- ✅ Hardcodear valores temporales (0.0f, 0.5f, etc)
+- ✅ Stubs de funciones (return 0.0f;)
+- ✅ Cálculos aproximados
+- ✅ TODOs en el código
+
+**NO NECESARIO HOY:**
+- ❌ Implementación completa de todos los cálculos
+- ❌ Tests end-to-end
+- ❌ Optimización de performance
+- ❌ Validación de datos
+
+## 📝 TEMPLATE DE INICIO
+```cpp
+// feature_extractor.cpp
+#include "feature_extractor.hpp"
+#include <cmath>
+#include <algorithm>
+
+namespace ml_defender {
+namespace helpers {
+
+float safe_divide(float num, float denom) {
+    return (denom != 0.0f) ? (num / denom) : 0.0f;
+}
+
+float normalize(float value, float min, float max) {
+    if (max <= min) return 0.0f;
+    float normalized = (value - min) / (max - min);
+    return std::clamp(normalized, 0.0f, 1.0f);
+}
+
+float calculate_entropy(const std::vector<uint32_t>& data) {
+    // TODO: Implementar cálculo real
+    return 0.5f; // STUB por ahora
+}
+
+} // namespace helpers
+
+void extract_ddos_features(const flow_stats& flow, 
+                          protobuf::DDoSFeatures* ddos) {
+    // Feature 1: syn_ack_ratio
+    float syn_count = static_cast<float>(flow.syn_flags);
+    float ack_count = static_cast<float>(flow.ack_flags);
+    ddos->set_syn_ack_ratio(helpers::safe_divide(syn_count, ack_count));
+    
+    // Feature 2-10: TODO implementar
+    ddos->set_packet_symmetry(0.5f); // STUB
+    // ... resto de features ...
+}
+
+} // namespace ml_defender
+```
+
+## ✅ CRITERIO DE ÉXITO DAY 2
+```
+[ ] feature_extractor.hpp creado con declaraciones
+[ ] feature_extractor.cpp creado con implementaciones (aunque sean stubs)
+[ ] 4 funciones extract_*_features() definidas
+[ ] Helpers básicos implementados (safe_divide, normalize)
+[ ] Sniffer compila sin errores
+[ ] Al menos 5 features de cada detector implementadas (no stubs)
+```
+
+**BONUS (opcional):**
+```
+[ ] Todas las 40 features implementadas
+[ ] Tests unitarios de helpers
+[ ] Documentación de cada feature
+```
+
+## 🐛 SI ENCUENTRAS PROBLEMAS
+
+1. **No compila:** Verifica includes del protobuf
+2. **Tipos no coinciden:** Usa static_cast<float>()
+3. **Funciones no definidas:** Revisa que flow_stats tenga los campos necesarios
+4. **Linker errors:** Añade feature_extractor.cpp al CMakeLists.txt
+
+## 📞 PREGUNTAS PARA CLAUDE
+
+1. ¿Cómo estructuro el feature_extractor.cpp?
+2. ¿Qué campos del flow_stats uso para cada feature?
+3. ¿Cómo calculo entropy correctamente?
+4. ¿Cómo integro esto en el main loop del sniffer?
+5. ¿Necesito modificar el CMakeLists.txt?
 
 ---
 
-**Ready to start Phase 1!** 🚀
-```
-
----
+**Ready to code!** 🚀 Pregúntame por dónde empezar.
