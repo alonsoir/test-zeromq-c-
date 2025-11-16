@@ -51,6 +51,9 @@ struct TableStruct_network_5fsecurity_2eproto {
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_network_5fsecurity_2eproto;
 namespace protobuf {
+class DDoSFeatures;
+struct DDoSFeaturesDefaultTypeInternal;
+extern DDoSFeaturesDefaultTypeInternal _DDoSFeatures_default_instance_;
 class DistributedNode;
 struct DistributedNodeDefaultTypeInternal;
 extern DistributedNodeDefaultTypeInternal _DistributedNode_default_instance_;
@@ -84,6 +87,9 @@ extern HumanFeedbackDefaultTypeInternal _HumanFeedback_default_instance_;
 class HumanInTheLoopReview;
 struct HumanInTheLoopReviewDefaultTypeInternal;
 extern HumanInTheLoopReviewDefaultTypeInternal _HumanInTheLoopReview_default_instance_;
+class InternalFeatures;
+struct InternalFeaturesDefaultTypeInternal;
+extern InternalFeaturesDefaultTypeInternal _InternalFeatures_default_instance_;
 class ModelPrediction;
 struct ModelPredictionDefaultTypeInternal;
 extern ModelPredictionDefaultTypeInternal _ModelPrediction_default_instance_;
@@ -111,6 +117,9 @@ extern PipelineTracking_ComponentMetadataEntry_DoNotUseDefaultTypeInternal _Pipe
 class RAGAnalysis;
 struct RAGAnalysisDefaultTypeInternal;
 extern RAGAnalysisDefaultTypeInternal _RAGAnalysis_default_instance_;
+class RansomwareEmbeddedFeatures;
+struct RansomwareEmbeddedFeaturesDefaultTypeInternal;
+extern RansomwareEmbeddedFeaturesDefaultTypeInternal _RansomwareEmbeddedFeatures_default_instance_;
 class RansomwareFeatures;
 struct RansomwareFeaturesDefaultTypeInternal;
 extern RansomwareFeaturesDefaultTypeInternal _RansomwareFeatures_default_instance_;
@@ -126,6 +135,9 @@ extern SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUseDefaultTypeInterna
 class TimeWindow;
 struct TimeWindowDefaultTypeInternal;
 extern TimeWindowDefaultTypeInternal _TimeWindow_default_instance_;
+class TrafficFeatures;
+struct TrafficFeaturesDefaultTypeInternal;
+extern TrafficFeaturesDefaultTypeInternal _TrafficFeatures_default_instance_;
 class TricapaMLAnalysis;
 struct TricapaMLAnalysisDefaultTypeInternal;
 extern TricapaMLAnalysisDefaultTypeInternal _TricapaMLAnalysis_default_instance_;
@@ -134,6 +146,7 @@ struct TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUseDefaultTypeInterna
 extern TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUseDefaultTypeInternal _TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse_default_instance_;
 }  // namespace protobuf
 PROTOBUF_NAMESPACE_OPEN
+template<> ::protobuf::DDoSFeatures* Arena::CreateMaybeMessage<::protobuf::DDoSFeatures>(Arena*);
 template<> ::protobuf::DistributedNode* Arena::CreateMaybeMessage<::protobuf::DistributedNode>(Arena*);
 template<> ::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse>(Arena*);
 template<> ::protobuf::EventBatch* Arena::CreateMaybeMessage<::protobuf::EventBatch>(Arena*);
@@ -145,6 +158,7 @@ template<> ::protobuf::GeoEnrichment* Arena::CreateMaybeMessage<::protobuf::GeoE
 template<> ::protobuf::GeoLocationInfo* Arena::CreateMaybeMessage<::protobuf::GeoLocationInfo>(Arena*);
 template<> ::protobuf::HumanFeedback* Arena::CreateMaybeMessage<::protobuf::HumanFeedback>(Arena*);
 template<> ::protobuf::HumanInTheLoopReview* Arena::CreateMaybeMessage<::protobuf::HumanInTheLoopReview>(Arena*);
+template<> ::protobuf::InternalFeatures* Arena::CreateMaybeMessage<::protobuf::InternalFeatures>(Arena*);
 template<> ::protobuf::ModelPrediction* Arena::CreateMaybeMessage<::protobuf::ModelPrediction>(Arena*);
 template<> ::protobuf::NetworkFeatures* Arena::CreateMaybeMessage<::protobuf::NetworkFeatures>(Arena*);
 template<> ::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse>(Arena*);
@@ -154,11 +168,13 @@ template<> ::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse* Arena:
 template<> ::protobuf::PipelineTracking* Arena::CreateMaybeMessage<::protobuf::PipelineTracking>(Arena*);
 template<> ::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse>(Arena*);
 template<> ::protobuf::RAGAnalysis* Arena::CreateMaybeMessage<::protobuf::RAGAnalysis>(Arena*);
+template<> ::protobuf::RansomwareEmbeddedFeatures* Arena::CreateMaybeMessage<::protobuf::RansomwareEmbeddedFeatures>(Arena*);
 template<> ::protobuf::RansomwareFeatures* Arena::CreateMaybeMessage<::protobuf::RansomwareFeatures>(Arena*);
 template<> ::protobuf::SystemConfiguration* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration>(Arena*);
 template<> ::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse>(Arena*);
 template<> ::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse>(Arena*);
 template<> ::protobuf::TimeWindow* Arena::CreateMaybeMessage<::protobuf::TimeWindow>(Arena*);
+template<> ::protobuf::TrafficFeatures* Arena::CreateMaybeMessage<::protobuf::TrafficFeatures>(Arena*);
 template<> ::protobuf::TricapaMLAnalysis* Arena::CreateMaybeMessage<::protobuf::TricapaMLAnalysis>(Arena*);
 template<> ::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -396,6 +412,994 @@ inline bool EventBatch_ProcessingMode_Parse(
 }
 // ===================================================================
 
+class DDoSFeatures final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.DDoSFeatures) */ {
+ public:
+  inline DDoSFeatures() : DDoSFeatures(nullptr) {}
+  ~DDoSFeatures() override;
+  explicit PROTOBUF_CONSTEXPR DDoSFeatures(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DDoSFeatures(const DDoSFeatures& from);
+  DDoSFeatures(DDoSFeatures&& from) noexcept
+    : DDoSFeatures() {
+    *this = ::std::move(from);
+  }
+
+  inline DDoSFeatures& operator=(const DDoSFeatures& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DDoSFeatures& operator=(DDoSFeatures&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DDoSFeatures& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DDoSFeatures* internal_default_instance() {
+    return reinterpret_cast<const DDoSFeatures*>(
+               &_DDoSFeatures_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    0;
+
+  friend void swap(DDoSFeatures& a, DDoSFeatures& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DDoSFeatures* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DDoSFeatures* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DDoSFeatures* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DDoSFeatures>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DDoSFeatures& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DDoSFeatures& from) {
+    DDoSFeatures::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DDoSFeatures* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.DDoSFeatures";
+  }
+  protected:
+  explicit DDoSFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kSynAckRatioFieldNumber = 1,
+    kPacketSymmetryFieldNumber = 2,
+    kSourceIpDispersionFieldNumber = 3,
+    kProtocolAnomalyScoreFieldNumber = 4,
+    kPacketSizeEntropyFieldNumber = 5,
+    kTrafficAmplificationFactorFieldNumber = 6,
+    kFlowCompletionRateFieldNumber = 7,
+    kGeographicalConcentrationFieldNumber = 8,
+    kTrafficEscalationRateFieldNumber = 9,
+    kResourceSaturationScoreFieldNumber = 10,
+  };
+  // float syn_ack_ratio = 1;
+  void clear_syn_ack_ratio();
+  float syn_ack_ratio() const;
+  void set_syn_ack_ratio(float value);
+  private:
+  float _internal_syn_ack_ratio() const;
+  void _internal_set_syn_ack_ratio(float value);
+  public:
+
+  // float packet_symmetry = 2;
+  void clear_packet_symmetry();
+  float packet_symmetry() const;
+  void set_packet_symmetry(float value);
+  private:
+  float _internal_packet_symmetry() const;
+  void _internal_set_packet_symmetry(float value);
+  public:
+
+  // float source_ip_dispersion = 3;
+  void clear_source_ip_dispersion();
+  float source_ip_dispersion() const;
+  void set_source_ip_dispersion(float value);
+  private:
+  float _internal_source_ip_dispersion() const;
+  void _internal_set_source_ip_dispersion(float value);
+  public:
+
+  // float protocol_anomaly_score = 4;
+  void clear_protocol_anomaly_score();
+  float protocol_anomaly_score() const;
+  void set_protocol_anomaly_score(float value);
+  private:
+  float _internal_protocol_anomaly_score() const;
+  void _internal_set_protocol_anomaly_score(float value);
+  public:
+
+  // float packet_size_entropy = 5;
+  void clear_packet_size_entropy();
+  float packet_size_entropy() const;
+  void set_packet_size_entropy(float value);
+  private:
+  float _internal_packet_size_entropy() const;
+  void _internal_set_packet_size_entropy(float value);
+  public:
+
+  // float traffic_amplification_factor = 6;
+  void clear_traffic_amplification_factor();
+  float traffic_amplification_factor() const;
+  void set_traffic_amplification_factor(float value);
+  private:
+  float _internal_traffic_amplification_factor() const;
+  void _internal_set_traffic_amplification_factor(float value);
+  public:
+
+  // float flow_completion_rate = 7;
+  void clear_flow_completion_rate();
+  float flow_completion_rate() const;
+  void set_flow_completion_rate(float value);
+  private:
+  float _internal_flow_completion_rate() const;
+  void _internal_set_flow_completion_rate(float value);
+  public:
+
+  // float geographical_concentration = 8;
+  void clear_geographical_concentration();
+  float geographical_concentration() const;
+  void set_geographical_concentration(float value);
+  private:
+  float _internal_geographical_concentration() const;
+  void _internal_set_geographical_concentration(float value);
+  public:
+
+  // float traffic_escalation_rate = 9;
+  void clear_traffic_escalation_rate();
+  float traffic_escalation_rate() const;
+  void set_traffic_escalation_rate(float value);
+  private:
+  float _internal_traffic_escalation_rate() const;
+  void _internal_set_traffic_escalation_rate(float value);
+  public:
+
+  // float resource_saturation_score = 10;
+  void clear_resource_saturation_score();
+  float resource_saturation_score() const;
+  void set_resource_saturation_score(float value);
+  private:
+  float _internal_resource_saturation_score() const;
+  void _internal_set_resource_saturation_score(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.DDoSFeatures)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    float syn_ack_ratio_;
+    float packet_symmetry_;
+    float source_ip_dispersion_;
+    float protocol_anomaly_score_;
+    float packet_size_entropy_;
+    float traffic_amplification_factor_;
+    float flow_completion_rate_;
+    float geographical_concentration_;
+    float traffic_escalation_rate_;
+    float resource_saturation_score_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
+class RansomwareEmbeddedFeatures final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.RansomwareEmbeddedFeatures) */ {
+ public:
+  inline RansomwareEmbeddedFeatures() : RansomwareEmbeddedFeatures(nullptr) {}
+  ~RansomwareEmbeddedFeatures() override;
+  explicit PROTOBUF_CONSTEXPR RansomwareEmbeddedFeatures(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  RansomwareEmbeddedFeatures(const RansomwareEmbeddedFeatures& from);
+  RansomwareEmbeddedFeatures(RansomwareEmbeddedFeatures&& from) noexcept
+    : RansomwareEmbeddedFeatures() {
+    *this = ::std::move(from);
+  }
+
+  inline RansomwareEmbeddedFeatures& operator=(const RansomwareEmbeddedFeatures& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RansomwareEmbeddedFeatures& operator=(RansomwareEmbeddedFeatures&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const RansomwareEmbeddedFeatures& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const RansomwareEmbeddedFeatures* internal_default_instance() {
+    return reinterpret_cast<const RansomwareEmbeddedFeatures*>(
+               &_RansomwareEmbeddedFeatures_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    1;
+
+  friend void swap(RansomwareEmbeddedFeatures& a, RansomwareEmbeddedFeatures& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(RansomwareEmbeddedFeatures* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RansomwareEmbeddedFeatures* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  RansomwareEmbeddedFeatures* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<RansomwareEmbeddedFeatures>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const RansomwareEmbeddedFeatures& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const RansomwareEmbeddedFeatures& from) {
+    RansomwareEmbeddedFeatures::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(RansomwareEmbeddedFeatures* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.RansomwareEmbeddedFeatures";
+  }
+  protected:
+  explicit RansomwareEmbeddedFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kIoIntensityFieldNumber = 1,
+    kEntropyFieldNumber = 2,
+    kResourceUsageFieldNumber = 3,
+    kNetworkActivityFieldNumber = 4,
+    kFileOperationsFieldNumber = 5,
+    kProcessAnomalyFieldNumber = 6,
+    kTemporalPatternFieldNumber = 7,
+    kAccessFrequencyFieldNumber = 8,
+    kDataVolumeFieldNumber = 9,
+    kBehaviorConsistencyFieldNumber = 10,
+  };
+  // float io_intensity = 1;
+  void clear_io_intensity();
+  float io_intensity() const;
+  void set_io_intensity(float value);
+  private:
+  float _internal_io_intensity() const;
+  void _internal_set_io_intensity(float value);
+  public:
+
+  // float entropy = 2;
+  void clear_entropy();
+  float entropy() const;
+  void set_entropy(float value);
+  private:
+  float _internal_entropy() const;
+  void _internal_set_entropy(float value);
+  public:
+
+  // float resource_usage = 3;
+  void clear_resource_usage();
+  float resource_usage() const;
+  void set_resource_usage(float value);
+  private:
+  float _internal_resource_usage() const;
+  void _internal_set_resource_usage(float value);
+  public:
+
+  // float network_activity = 4;
+  void clear_network_activity();
+  float network_activity() const;
+  void set_network_activity(float value);
+  private:
+  float _internal_network_activity() const;
+  void _internal_set_network_activity(float value);
+  public:
+
+  // float file_operations = 5;
+  void clear_file_operations();
+  float file_operations() const;
+  void set_file_operations(float value);
+  private:
+  float _internal_file_operations() const;
+  void _internal_set_file_operations(float value);
+  public:
+
+  // float process_anomaly = 6;
+  void clear_process_anomaly();
+  float process_anomaly() const;
+  void set_process_anomaly(float value);
+  private:
+  float _internal_process_anomaly() const;
+  void _internal_set_process_anomaly(float value);
+  public:
+
+  // float temporal_pattern = 7;
+  void clear_temporal_pattern();
+  float temporal_pattern() const;
+  void set_temporal_pattern(float value);
+  private:
+  float _internal_temporal_pattern() const;
+  void _internal_set_temporal_pattern(float value);
+  public:
+
+  // float access_frequency = 8;
+  void clear_access_frequency();
+  float access_frequency() const;
+  void set_access_frequency(float value);
+  private:
+  float _internal_access_frequency() const;
+  void _internal_set_access_frequency(float value);
+  public:
+
+  // float data_volume = 9;
+  void clear_data_volume();
+  float data_volume() const;
+  void set_data_volume(float value);
+  private:
+  float _internal_data_volume() const;
+  void _internal_set_data_volume(float value);
+  public:
+
+  // float behavior_consistency = 10;
+  void clear_behavior_consistency();
+  float behavior_consistency() const;
+  void set_behavior_consistency(float value);
+  private:
+  float _internal_behavior_consistency() const;
+  void _internal_set_behavior_consistency(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.RansomwareEmbeddedFeatures)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    float io_intensity_;
+    float entropy_;
+    float resource_usage_;
+    float network_activity_;
+    float file_operations_;
+    float process_anomaly_;
+    float temporal_pattern_;
+    float access_frequency_;
+    float data_volume_;
+    float behavior_consistency_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
+class TrafficFeatures final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.TrafficFeatures) */ {
+ public:
+  inline TrafficFeatures() : TrafficFeatures(nullptr) {}
+  ~TrafficFeatures() override;
+  explicit PROTOBUF_CONSTEXPR TrafficFeatures(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  TrafficFeatures(const TrafficFeatures& from);
+  TrafficFeatures(TrafficFeatures&& from) noexcept
+    : TrafficFeatures() {
+    *this = ::std::move(from);
+  }
+
+  inline TrafficFeatures& operator=(const TrafficFeatures& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline TrafficFeatures& operator=(TrafficFeatures&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const TrafficFeatures& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const TrafficFeatures* internal_default_instance() {
+    return reinterpret_cast<const TrafficFeatures*>(
+               &_TrafficFeatures_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    2;
+
+  friend void swap(TrafficFeatures& a, TrafficFeatures& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(TrafficFeatures* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(TrafficFeatures* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  TrafficFeatures* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<TrafficFeatures>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const TrafficFeatures& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const TrafficFeatures& from) {
+    TrafficFeatures::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(TrafficFeatures* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.TrafficFeatures";
+  }
+  protected:
+  explicit TrafficFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPacketRateFieldNumber = 1,
+    kConnectionRateFieldNumber = 2,
+    kTcpUdpRatioFieldNumber = 3,
+    kAvgPacketSizeFieldNumber = 4,
+    kPortEntropyFieldNumber = 5,
+    kFlowDurationStdFieldNumber = 6,
+    kSrcIpEntropyFieldNumber = 7,
+    kDstIpConcentrationFieldNumber = 8,
+    kProtocolVarietyFieldNumber = 9,
+    kTemporalConsistencyFieldNumber = 10,
+  };
+  // float packet_rate = 1;
+  void clear_packet_rate();
+  float packet_rate() const;
+  void set_packet_rate(float value);
+  private:
+  float _internal_packet_rate() const;
+  void _internal_set_packet_rate(float value);
+  public:
+
+  // float connection_rate = 2;
+  void clear_connection_rate();
+  float connection_rate() const;
+  void set_connection_rate(float value);
+  private:
+  float _internal_connection_rate() const;
+  void _internal_set_connection_rate(float value);
+  public:
+
+  // float tcp_udp_ratio = 3;
+  void clear_tcp_udp_ratio();
+  float tcp_udp_ratio() const;
+  void set_tcp_udp_ratio(float value);
+  private:
+  float _internal_tcp_udp_ratio() const;
+  void _internal_set_tcp_udp_ratio(float value);
+  public:
+
+  // float avg_packet_size = 4;
+  void clear_avg_packet_size();
+  float avg_packet_size() const;
+  void set_avg_packet_size(float value);
+  private:
+  float _internal_avg_packet_size() const;
+  void _internal_set_avg_packet_size(float value);
+  public:
+
+  // float port_entropy = 5;
+  void clear_port_entropy();
+  float port_entropy() const;
+  void set_port_entropy(float value);
+  private:
+  float _internal_port_entropy() const;
+  void _internal_set_port_entropy(float value);
+  public:
+
+  // float flow_duration_std = 6;
+  void clear_flow_duration_std();
+  float flow_duration_std() const;
+  void set_flow_duration_std(float value);
+  private:
+  float _internal_flow_duration_std() const;
+  void _internal_set_flow_duration_std(float value);
+  public:
+
+  // float src_ip_entropy = 7;
+  void clear_src_ip_entropy();
+  float src_ip_entropy() const;
+  void set_src_ip_entropy(float value);
+  private:
+  float _internal_src_ip_entropy() const;
+  void _internal_set_src_ip_entropy(float value);
+  public:
+
+  // float dst_ip_concentration = 8;
+  void clear_dst_ip_concentration();
+  float dst_ip_concentration() const;
+  void set_dst_ip_concentration(float value);
+  private:
+  float _internal_dst_ip_concentration() const;
+  void _internal_set_dst_ip_concentration(float value);
+  public:
+
+  // float protocol_variety = 9;
+  void clear_protocol_variety();
+  float protocol_variety() const;
+  void set_protocol_variety(float value);
+  private:
+  float _internal_protocol_variety() const;
+  void _internal_set_protocol_variety(float value);
+  public:
+
+  // float temporal_consistency = 10;
+  void clear_temporal_consistency();
+  float temporal_consistency() const;
+  void set_temporal_consistency(float value);
+  private:
+  float _internal_temporal_consistency() const;
+  void _internal_set_temporal_consistency(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.TrafficFeatures)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    float packet_rate_;
+    float connection_rate_;
+    float tcp_udp_ratio_;
+    float avg_packet_size_;
+    float port_entropy_;
+    float flow_duration_std_;
+    float src_ip_entropy_;
+    float dst_ip_concentration_;
+    float protocol_variety_;
+    float temporal_consistency_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
+class InternalFeatures final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.InternalFeatures) */ {
+ public:
+  inline InternalFeatures() : InternalFeatures(nullptr) {}
+  ~InternalFeatures() override;
+  explicit PROTOBUF_CONSTEXPR InternalFeatures(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  InternalFeatures(const InternalFeatures& from);
+  InternalFeatures(InternalFeatures&& from) noexcept
+    : InternalFeatures() {
+    *this = ::std::move(from);
+  }
+
+  inline InternalFeatures& operator=(const InternalFeatures& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline InternalFeatures& operator=(InternalFeatures&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const InternalFeatures& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const InternalFeatures* internal_default_instance() {
+    return reinterpret_cast<const InternalFeatures*>(
+               &_InternalFeatures_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  friend void swap(InternalFeatures& a, InternalFeatures& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(InternalFeatures* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(InternalFeatures* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  InternalFeatures* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<InternalFeatures>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const InternalFeatures& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const InternalFeatures& from) {
+    InternalFeatures::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(InternalFeatures* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.InternalFeatures";
+  }
+  protected:
+  explicit InternalFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kInternalConnectionRateFieldNumber = 1,
+    kServicePortConsistencyFieldNumber = 2,
+    kProtocolRegularityFieldNumber = 3,
+    kPacketSizeConsistencyFieldNumber = 4,
+    kConnectionDurationStdFieldNumber = 5,
+    kLateralMovementScoreFieldNumber = 6,
+    kServiceDiscoveryPatternsFieldNumber = 7,
+    kDataExfiltrationIndicatorsFieldNumber = 8,
+    kTemporalAnomalyScoreFieldNumber = 9,
+    kAccessPatternEntropyFieldNumber = 10,
+  };
+  // float internal_connection_rate = 1;
+  void clear_internal_connection_rate();
+  float internal_connection_rate() const;
+  void set_internal_connection_rate(float value);
+  private:
+  float _internal_internal_connection_rate() const;
+  void _internal_set_internal_connection_rate(float value);
+  public:
+
+  // float service_port_consistency = 2;
+  void clear_service_port_consistency();
+  float service_port_consistency() const;
+  void set_service_port_consistency(float value);
+  private:
+  float _internal_service_port_consistency() const;
+  void _internal_set_service_port_consistency(float value);
+  public:
+
+  // float protocol_regularity = 3;
+  void clear_protocol_regularity();
+  float protocol_regularity() const;
+  void set_protocol_regularity(float value);
+  private:
+  float _internal_protocol_regularity() const;
+  void _internal_set_protocol_regularity(float value);
+  public:
+
+  // float packet_size_consistency = 4;
+  void clear_packet_size_consistency();
+  float packet_size_consistency() const;
+  void set_packet_size_consistency(float value);
+  private:
+  float _internal_packet_size_consistency() const;
+  void _internal_set_packet_size_consistency(float value);
+  public:
+
+  // float connection_duration_std = 5;
+  void clear_connection_duration_std();
+  float connection_duration_std() const;
+  void set_connection_duration_std(float value);
+  private:
+  float _internal_connection_duration_std() const;
+  void _internal_set_connection_duration_std(float value);
+  public:
+
+  // float lateral_movement_score = 6;
+  void clear_lateral_movement_score();
+  float lateral_movement_score() const;
+  void set_lateral_movement_score(float value);
+  private:
+  float _internal_lateral_movement_score() const;
+  void _internal_set_lateral_movement_score(float value);
+  public:
+
+  // float service_discovery_patterns = 7;
+  void clear_service_discovery_patterns();
+  float service_discovery_patterns() const;
+  void set_service_discovery_patterns(float value);
+  private:
+  float _internal_service_discovery_patterns() const;
+  void _internal_set_service_discovery_patterns(float value);
+  public:
+
+  // float data_exfiltration_indicators = 8;
+  void clear_data_exfiltration_indicators();
+  float data_exfiltration_indicators() const;
+  void set_data_exfiltration_indicators(float value);
+  private:
+  float _internal_data_exfiltration_indicators() const;
+  void _internal_set_data_exfiltration_indicators(float value);
+  public:
+
+  // float temporal_anomaly_score = 9;
+  void clear_temporal_anomaly_score();
+  float temporal_anomaly_score() const;
+  void set_temporal_anomaly_score(float value);
+  private:
+  float _internal_temporal_anomaly_score() const;
+  void _internal_set_temporal_anomaly_score(float value);
+  public:
+
+  // float access_pattern_entropy = 10;
+  void clear_access_pattern_entropy();
+  float access_pattern_entropy() const;
+  void set_access_pattern_entropy(float value);
+  private:
+  float _internal_access_pattern_entropy() const;
+  void _internal_set_access_pattern_entropy(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.InternalFeatures)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    float internal_connection_rate_;
+    float service_port_consistency_;
+    float protocol_regularity_;
+    float packet_size_consistency_;
+    float connection_duration_std_;
+    float lateral_movement_score_;
+    float service_discovery_patterns_;
+    float data_exfiltration_indicators_;
+    float temporal_anomaly_score_;
+    float access_pattern_entropy_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
 class NetworkFeatures_CustomFeaturesEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<NetworkFeatures_CustomFeaturesEntry_DoNotUse, 
     std::string, double,
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
@@ -498,7 +1502,7 @@ class NetworkFeatures final :
                &_NetworkFeatures_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    2;
+    6;
 
   friend void swap(NetworkFeatures& a, NetworkFeatures& b) {
     a.Swap(&b);
@@ -586,6 +1590,10 @@ class NetworkFeatures final :
     kFlowStartTimeFieldNumber = 7,
     kFlowDurationFieldNumber = 8,
     kRansomwareFieldNumber = 106,
+    kDdosEmbeddedFieldNumber = 112,
+    kRansomwareEmbeddedFieldNumber = 113,
+    kTrafficClassificationFieldNumber = 114,
+    kInternalAnomalyFieldNumber = 115,
     kSourcePortFieldNumber = 3,
     kDestinationPortFieldNumber = 4,
     kFlowDurationMicrosecondsFieldNumber = 9,
@@ -869,6 +1877,78 @@ class NetworkFeatures final :
   void unsafe_arena_set_allocated_ransomware(
       ::protobuf::RansomwareFeatures* ransomware);
   ::protobuf::RansomwareFeatures* unsafe_arena_release_ransomware();
+
+  // .protobuf.DDoSFeatures ddos_embedded = 112;
+  bool has_ddos_embedded() const;
+  private:
+  bool _internal_has_ddos_embedded() const;
+  public:
+  void clear_ddos_embedded();
+  const ::protobuf::DDoSFeatures& ddos_embedded() const;
+  PROTOBUF_NODISCARD ::protobuf::DDoSFeatures* release_ddos_embedded();
+  ::protobuf::DDoSFeatures* mutable_ddos_embedded();
+  void set_allocated_ddos_embedded(::protobuf::DDoSFeatures* ddos_embedded);
+  private:
+  const ::protobuf::DDoSFeatures& _internal_ddos_embedded() const;
+  ::protobuf::DDoSFeatures* _internal_mutable_ddos_embedded();
+  public:
+  void unsafe_arena_set_allocated_ddos_embedded(
+      ::protobuf::DDoSFeatures* ddos_embedded);
+  ::protobuf::DDoSFeatures* unsafe_arena_release_ddos_embedded();
+
+  // .protobuf.RansomwareEmbeddedFeatures ransomware_embedded = 113;
+  bool has_ransomware_embedded() const;
+  private:
+  bool _internal_has_ransomware_embedded() const;
+  public:
+  void clear_ransomware_embedded();
+  const ::protobuf::RansomwareEmbeddedFeatures& ransomware_embedded() const;
+  PROTOBUF_NODISCARD ::protobuf::RansomwareEmbeddedFeatures* release_ransomware_embedded();
+  ::protobuf::RansomwareEmbeddedFeatures* mutable_ransomware_embedded();
+  void set_allocated_ransomware_embedded(::protobuf::RansomwareEmbeddedFeatures* ransomware_embedded);
+  private:
+  const ::protobuf::RansomwareEmbeddedFeatures& _internal_ransomware_embedded() const;
+  ::protobuf::RansomwareEmbeddedFeatures* _internal_mutable_ransomware_embedded();
+  public:
+  void unsafe_arena_set_allocated_ransomware_embedded(
+      ::protobuf::RansomwareEmbeddedFeatures* ransomware_embedded);
+  ::protobuf::RansomwareEmbeddedFeatures* unsafe_arena_release_ransomware_embedded();
+
+  // .protobuf.TrafficFeatures traffic_classification = 114;
+  bool has_traffic_classification() const;
+  private:
+  bool _internal_has_traffic_classification() const;
+  public:
+  void clear_traffic_classification();
+  const ::protobuf::TrafficFeatures& traffic_classification() const;
+  PROTOBUF_NODISCARD ::protobuf::TrafficFeatures* release_traffic_classification();
+  ::protobuf::TrafficFeatures* mutable_traffic_classification();
+  void set_allocated_traffic_classification(::protobuf::TrafficFeatures* traffic_classification);
+  private:
+  const ::protobuf::TrafficFeatures& _internal_traffic_classification() const;
+  ::protobuf::TrafficFeatures* _internal_mutable_traffic_classification();
+  public:
+  void unsafe_arena_set_allocated_traffic_classification(
+      ::protobuf::TrafficFeatures* traffic_classification);
+  ::protobuf::TrafficFeatures* unsafe_arena_release_traffic_classification();
+
+  // .protobuf.InternalFeatures internal_anomaly = 115;
+  bool has_internal_anomaly() const;
+  private:
+  bool _internal_has_internal_anomaly() const;
+  public:
+  void clear_internal_anomaly();
+  const ::protobuf::InternalFeatures& internal_anomaly() const;
+  PROTOBUF_NODISCARD ::protobuf::InternalFeatures* release_internal_anomaly();
+  ::protobuf::InternalFeatures* mutable_internal_anomaly();
+  void set_allocated_internal_anomaly(::protobuf::InternalFeatures* internal_anomaly);
+  private:
+  const ::protobuf::InternalFeatures& _internal_internal_anomaly() const;
+  ::protobuf::InternalFeatures* _internal_mutable_internal_anomaly();
+  public:
+  void unsafe_arena_set_allocated_internal_anomaly(
+      ::protobuf::InternalFeatures* internal_anomaly);
+  ::protobuf::InternalFeatures* unsafe_arena_release_internal_anomaly();
 
   // uint32 source_port = 3;
   void clear_source_port();
@@ -1483,6 +2563,10 @@ class NetworkFeatures final :
     ::PROTOBUF_NAMESPACE_ID::Timestamp* flow_start_time_;
     ::PROTOBUF_NAMESPACE_ID::Duration* flow_duration_;
     ::protobuf::RansomwareFeatures* ransomware_;
+    ::protobuf::DDoSFeatures* ddos_embedded_;
+    ::protobuf::RansomwareEmbeddedFeatures* ransomware_embedded_;
+    ::protobuf::TrafficFeatures* traffic_classification_;
+    ::protobuf::InternalFeatures* internal_anomaly_;
     uint32_t source_port_;
     uint32_t destination_port_;
     uint64_t flow_duration_microseconds_;
@@ -1603,7 +2687,7 @@ class GeoLocationInfo final :
                &_GeoLocationInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    7;
 
   friend void swap(GeoLocationInfo& a, GeoLocationInfo& b) {
     a.Swap(&b);
@@ -1981,7 +3065,7 @@ class GeoEnrichment final :
                &_GeoEnrichment_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    8;
 
   friend void swap(GeoEnrichment& a, GeoEnrichment& b) {
     a.Swap(&b);
@@ -2613,7 +3697,7 @@ class TimeWindow final :
                &_TimeWindow_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    5;
+    9;
 
   friend void swap(TimeWindow& a, TimeWindow& b) {
     a.Swap(&b);
@@ -2944,7 +4028,7 @@ class FlowAggregation final :
                &_FlowAggregation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    13;
 
   friend void swap(FlowAggregation& a, FlowAggregation& b) {
     a.Swap(&b);
@@ -3217,7 +4301,7 @@ class ModelPrediction final :
                &_ModelPrediction_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    14;
 
   friend void swap(ModelPrediction& a, ModelPrediction& b) {
     a.Swap(&b);
@@ -3556,7 +4640,7 @@ class TricapaMLAnalysis final :
                &_TricapaMLAnalysis_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    12;
+    16;
 
   friend void swap(TricapaMLAnalysis& a, TricapaMLAnalysis& b) {
     a.Swap(&b);
@@ -3949,7 +5033,7 @@ class DistributedNode final :
                &_DistributedNode_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    18;
 
   friend void swap(DistributedNode& a, DistributedNode& b) {
     a.Swap(&b);
@@ -4525,7 +5609,7 @@ class PipelineTracking final :
                &_PipelineTracking_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    20;
 
   friend void swap(PipelineTracking& a, PipelineTracking& b) {
     a.Swap(&b);
@@ -5031,7 +6115,7 @@ class RAGAnalysis final :
                &_RAGAnalysis_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    21;
 
   friend void swap(RAGAnalysis& a, RAGAnalysis& b) {
     a.Swap(&b);
@@ -5307,7 +6391,7 @@ class HumanFeedback final :
                &_HumanFeedback_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    22;
 
   friend void swap(HumanFeedback& a, HumanFeedback& b) {
     a.Swap(&b);
@@ -5634,7 +6718,7 @@ class HumanInTheLoopReview final :
                &_HumanInTheLoopReview_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    19;
+    23;
 
   friend void swap(HumanInTheLoopReview& a, HumanInTheLoopReview& b) {
     a.Swap(&b);
@@ -5954,7 +7038,7 @@ class NetworkSecurityEvent final :
                &_NetworkSecurityEvent_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    25;
 
   friend void swap(NetworkSecurityEvent& a, NetworkSecurityEvent& b) {
     a.Swap(&b);
@@ -6503,7 +7587,7 @@ class EventBatch final :
                &_EventBatch_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    26;
 
   friend void swap(EventBatch& a, EventBatch& b) {
     a.Swap(&b);
@@ -6817,7 +7901,7 @@ class SystemConfiguration final :
                &_SystemConfiguration_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    29;
 
   friend void swap(SystemConfiguration& a, SystemConfiguration& b) {
     a.Swap(&b);
@@ -7171,7 +8255,7 @@ class RansomwareFeatures final :
                &_RansomwareFeatures_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    30;
 
   friend void swap(RansomwareFeatures& a, RansomwareFeatures& b) {
     a.Swap(&b);
@@ -7487,6 +8571,822 @@ class RansomwareFeatures final :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
+// DDoSFeatures
+
+// float syn_ack_ratio = 1;
+inline void DDoSFeatures::clear_syn_ack_ratio() {
+  _impl_.syn_ack_ratio_ = 0;
+}
+inline float DDoSFeatures::_internal_syn_ack_ratio() const {
+  return _impl_.syn_ack_ratio_;
+}
+inline float DDoSFeatures::syn_ack_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.syn_ack_ratio)
+  return _internal_syn_ack_ratio();
+}
+inline void DDoSFeatures::_internal_set_syn_ack_ratio(float value) {
+  
+  _impl_.syn_ack_ratio_ = value;
+}
+inline void DDoSFeatures::set_syn_ack_ratio(float value) {
+  _internal_set_syn_ack_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.syn_ack_ratio)
+}
+
+// float packet_symmetry = 2;
+inline void DDoSFeatures::clear_packet_symmetry() {
+  _impl_.packet_symmetry_ = 0;
+}
+inline float DDoSFeatures::_internal_packet_symmetry() const {
+  return _impl_.packet_symmetry_;
+}
+inline float DDoSFeatures::packet_symmetry() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.packet_symmetry)
+  return _internal_packet_symmetry();
+}
+inline void DDoSFeatures::_internal_set_packet_symmetry(float value) {
+  
+  _impl_.packet_symmetry_ = value;
+}
+inline void DDoSFeatures::set_packet_symmetry(float value) {
+  _internal_set_packet_symmetry(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.packet_symmetry)
+}
+
+// float source_ip_dispersion = 3;
+inline void DDoSFeatures::clear_source_ip_dispersion() {
+  _impl_.source_ip_dispersion_ = 0;
+}
+inline float DDoSFeatures::_internal_source_ip_dispersion() const {
+  return _impl_.source_ip_dispersion_;
+}
+inline float DDoSFeatures::source_ip_dispersion() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.source_ip_dispersion)
+  return _internal_source_ip_dispersion();
+}
+inline void DDoSFeatures::_internal_set_source_ip_dispersion(float value) {
+  
+  _impl_.source_ip_dispersion_ = value;
+}
+inline void DDoSFeatures::set_source_ip_dispersion(float value) {
+  _internal_set_source_ip_dispersion(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.source_ip_dispersion)
+}
+
+// float protocol_anomaly_score = 4;
+inline void DDoSFeatures::clear_protocol_anomaly_score() {
+  _impl_.protocol_anomaly_score_ = 0;
+}
+inline float DDoSFeatures::_internal_protocol_anomaly_score() const {
+  return _impl_.protocol_anomaly_score_;
+}
+inline float DDoSFeatures::protocol_anomaly_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.protocol_anomaly_score)
+  return _internal_protocol_anomaly_score();
+}
+inline void DDoSFeatures::_internal_set_protocol_anomaly_score(float value) {
+  
+  _impl_.protocol_anomaly_score_ = value;
+}
+inline void DDoSFeatures::set_protocol_anomaly_score(float value) {
+  _internal_set_protocol_anomaly_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.protocol_anomaly_score)
+}
+
+// float packet_size_entropy = 5;
+inline void DDoSFeatures::clear_packet_size_entropy() {
+  _impl_.packet_size_entropy_ = 0;
+}
+inline float DDoSFeatures::_internal_packet_size_entropy() const {
+  return _impl_.packet_size_entropy_;
+}
+inline float DDoSFeatures::packet_size_entropy() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.packet_size_entropy)
+  return _internal_packet_size_entropy();
+}
+inline void DDoSFeatures::_internal_set_packet_size_entropy(float value) {
+  
+  _impl_.packet_size_entropy_ = value;
+}
+inline void DDoSFeatures::set_packet_size_entropy(float value) {
+  _internal_set_packet_size_entropy(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.packet_size_entropy)
+}
+
+// float traffic_amplification_factor = 6;
+inline void DDoSFeatures::clear_traffic_amplification_factor() {
+  _impl_.traffic_amplification_factor_ = 0;
+}
+inline float DDoSFeatures::_internal_traffic_amplification_factor() const {
+  return _impl_.traffic_amplification_factor_;
+}
+inline float DDoSFeatures::traffic_amplification_factor() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.traffic_amplification_factor)
+  return _internal_traffic_amplification_factor();
+}
+inline void DDoSFeatures::_internal_set_traffic_amplification_factor(float value) {
+  
+  _impl_.traffic_amplification_factor_ = value;
+}
+inline void DDoSFeatures::set_traffic_amplification_factor(float value) {
+  _internal_set_traffic_amplification_factor(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.traffic_amplification_factor)
+}
+
+// float flow_completion_rate = 7;
+inline void DDoSFeatures::clear_flow_completion_rate() {
+  _impl_.flow_completion_rate_ = 0;
+}
+inline float DDoSFeatures::_internal_flow_completion_rate() const {
+  return _impl_.flow_completion_rate_;
+}
+inline float DDoSFeatures::flow_completion_rate() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.flow_completion_rate)
+  return _internal_flow_completion_rate();
+}
+inline void DDoSFeatures::_internal_set_flow_completion_rate(float value) {
+  
+  _impl_.flow_completion_rate_ = value;
+}
+inline void DDoSFeatures::set_flow_completion_rate(float value) {
+  _internal_set_flow_completion_rate(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.flow_completion_rate)
+}
+
+// float geographical_concentration = 8;
+inline void DDoSFeatures::clear_geographical_concentration() {
+  _impl_.geographical_concentration_ = 0;
+}
+inline float DDoSFeatures::_internal_geographical_concentration() const {
+  return _impl_.geographical_concentration_;
+}
+inline float DDoSFeatures::geographical_concentration() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.geographical_concentration)
+  return _internal_geographical_concentration();
+}
+inline void DDoSFeatures::_internal_set_geographical_concentration(float value) {
+  
+  _impl_.geographical_concentration_ = value;
+}
+inline void DDoSFeatures::set_geographical_concentration(float value) {
+  _internal_set_geographical_concentration(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.geographical_concentration)
+}
+
+// float traffic_escalation_rate = 9;
+inline void DDoSFeatures::clear_traffic_escalation_rate() {
+  _impl_.traffic_escalation_rate_ = 0;
+}
+inline float DDoSFeatures::_internal_traffic_escalation_rate() const {
+  return _impl_.traffic_escalation_rate_;
+}
+inline float DDoSFeatures::traffic_escalation_rate() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.traffic_escalation_rate)
+  return _internal_traffic_escalation_rate();
+}
+inline void DDoSFeatures::_internal_set_traffic_escalation_rate(float value) {
+  
+  _impl_.traffic_escalation_rate_ = value;
+}
+inline void DDoSFeatures::set_traffic_escalation_rate(float value) {
+  _internal_set_traffic_escalation_rate(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.traffic_escalation_rate)
+}
+
+// float resource_saturation_score = 10;
+inline void DDoSFeatures::clear_resource_saturation_score() {
+  _impl_.resource_saturation_score_ = 0;
+}
+inline float DDoSFeatures::_internal_resource_saturation_score() const {
+  return _impl_.resource_saturation_score_;
+}
+inline float DDoSFeatures::resource_saturation_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.DDoSFeatures.resource_saturation_score)
+  return _internal_resource_saturation_score();
+}
+inline void DDoSFeatures::_internal_set_resource_saturation_score(float value) {
+  
+  _impl_.resource_saturation_score_ = value;
+}
+inline void DDoSFeatures::set_resource_saturation_score(float value) {
+  _internal_set_resource_saturation_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.DDoSFeatures.resource_saturation_score)
+}
+
+// -------------------------------------------------------------------
+
+// RansomwareEmbeddedFeatures
+
+// float io_intensity = 1;
+inline void RansomwareEmbeddedFeatures::clear_io_intensity() {
+  _impl_.io_intensity_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_io_intensity() const {
+  return _impl_.io_intensity_;
+}
+inline float RansomwareEmbeddedFeatures::io_intensity() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.io_intensity)
+  return _internal_io_intensity();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_io_intensity(float value) {
+  
+  _impl_.io_intensity_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_io_intensity(float value) {
+  _internal_set_io_intensity(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.io_intensity)
+}
+
+// float entropy = 2;
+inline void RansomwareEmbeddedFeatures::clear_entropy() {
+  _impl_.entropy_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_entropy() const {
+  return _impl_.entropy_;
+}
+inline float RansomwareEmbeddedFeatures::entropy() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.entropy)
+  return _internal_entropy();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_entropy(float value) {
+  
+  _impl_.entropy_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_entropy(float value) {
+  _internal_set_entropy(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.entropy)
+}
+
+// float resource_usage = 3;
+inline void RansomwareEmbeddedFeatures::clear_resource_usage() {
+  _impl_.resource_usage_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_resource_usage() const {
+  return _impl_.resource_usage_;
+}
+inline float RansomwareEmbeddedFeatures::resource_usage() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.resource_usage)
+  return _internal_resource_usage();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_resource_usage(float value) {
+  
+  _impl_.resource_usage_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_resource_usage(float value) {
+  _internal_set_resource_usage(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.resource_usage)
+}
+
+// float network_activity = 4;
+inline void RansomwareEmbeddedFeatures::clear_network_activity() {
+  _impl_.network_activity_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_network_activity() const {
+  return _impl_.network_activity_;
+}
+inline float RansomwareEmbeddedFeatures::network_activity() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.network_activity)
+  return _internal_network_activity();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_network_activity(float value) {
+  
+  _impl_.network_activity_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_network_activity(float value) {
+  _internal_set_network_activity(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.network_activity)
+}
+
+// float file_operations = 5;
+inline void RansomwareEmbeddedFeatures::clear_file_operations() {
+  _impl_.file_operations_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_file_operations() const {
+  return _impl_.file_operations_;
+}
+inline float RansomwareEmbeddedFeatures::file_operations() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.file_operations)
+  return _internal_file_operations();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_file_operations(float value) {
+  
+  _impl_.file_operations_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_file_operations(float value) {
+  _internal_set_file_operations(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.file_operations)
+}
+
+// float process_anomaly = 6;
+inline void RansomwareEmbeddedFeatures::clear_process_anomaly() {
+  _impl_.process_anomaly_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_process_anomaly() const {
+  return _impl_.process_anomaly_;
+}
+inline float RansomwareEmbeddedFeatures::process_anomaly() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.process_anomaly)
+  return _internal_process_anomaly();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_process_anomaly(float value) {
+  
+  _impl_.process_anomaly_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_process_anomaly(float value) {
+  _internal_set_process_anomaly(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.process_anomaly)
+}
+
+// float temporal_pattern = 7;
+inline void RansomwareEmbeddedFeatures::clear_temporal_pattern() {
+  _impl_.temporal_pattern_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_temporal_pattern() const {
+  return _impl_.temporal_pattern_;
+}
+inline float RansomwareEmbeddedFeatures::temporal_pattern() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.temporal_pattern)
+  return _internal_temporal_pattern();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_temporal_pattern(float value) {
+  
+  _impl_.temporal_pattern_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_temporal_pattern(float value) {
+  _internal_set_temporal_pattern(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.temporal_pattern)
+}
+
+// float access_frequency = 8;
+inline void RansomwareEmbeddedFeatures::clear_access_frequency() {
+  _impl_.access_frequency_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_access_frequency() const {
+  return _impl_.access_frequency_;
+}
+inline float RansomwareEmbeddedFeatures::access_frequency() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.access_frequency)
+  return _internal_access_frequency();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_access_frequency(float value) {
+  
+  _impl_.access_frequency_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_access_frequency(float value) {
+  _internal_set_access_frequency(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.access_frequency)
+}
+
+// float data_volume = 9;
+inline void RansomwareEmbeddedFeatures::clear_data_volume() {
+  _impl_.data_volume_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_data_volume() const {
+  return _impl_.data_volume_;
+}
+inline float RansomwareEmbeddedFeatures::data_volume() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.data_volume)
+  return _internal_data_volume();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_data_volume(float value) {
+  
+  _impl_.data_volume_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_data_volume(float value) {
+  _internal_set_data_volume(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.data_volume)
+}
+
+// float behavior_consistency = 10;
+inline void RansomwareEmbeddedFeatures::clear_behavior_consistency() {
+  _impl_.behavior_consistency_ = 0;
+}
+inline float RansomwareEmbeddedFeatures::_internal_behavior_consistency() const {
+  return _impl_.behavior_consistency_;
+}
+inline float RansomwareEmbeddedFeatures::behavior_consistency() const {
+  // @@protoc_insertion_point(field_get:protobuf.RansomwareEmbeddedFeatures.behavior_consistency)
+  return _internal_behavior_consistency();
+}
+inline void RansomwareEmbeddedFeatures::_internal_set_behavior_consistency(float value) {
+  
+  _impl_.behavior_consistency_ = value;
+}
+inline void RansomwareEmbeddedFeatures::set_behavior_consistency(float value) {
+  _internal_set_behavior_consistency(value);
+  // @@protoc_insertion_point(field_set:protobuf.RansomwareEmbeddedFeatures.behavior_consistency)
+}
+
+// -------------------------------------------------------------------
+
+// TrafficFeatures
+
+// float packet_rate = 1;
+inline void TrafficFeatures::clear_packet_rate() {
+  _impl_.packet_rate_ = 0;
+}
+inline float TrafficFeatures::_internal_packet_rate() const {
+  return _impl_.packet_rate_;
+}
+inline float TrafficFeatures::packet_rate() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.packet_rate)
+  return _internal_packet_rate();
+}
+inline void TrafficFeatures::_internal_set_packet_rate(float value) {
+  
+  _impl_.packet_rate_ = value;
+}
+inline void TrafficFeatures::set_packet_rate(float value) {
+  _internal_set_packet_rate(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.packet_rate)
+}
+
+// float connection_rate = 2;
+inline void TrafficFeatures::clear_connection_rate() {
+  _impl_.connection_rate_ = 0;
+}
+inline float TrafficFeatures::_internal_connection_rate() const {
+  return _impl_.connection_rate_;
+}
+inline float TrafficFeatures::connection_rate() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.connection_rate)
+  return _internal_connection_rate();
+}
+inline void TrafficFeatures::_internal_set_connection_rate(float value) {
+  
+  _impl_.connection_rate_ = value;
+}
+inline void TrafficFeatures::set_connection_rate(float value) {
+  _internal_set_connection_rate(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.connection_rate)
+}
+
+// float tcp_udp_ratio = 3;
+inline void TrafficFeatures::clear_tcp_udp_ratio() {
+  _impl_.tcp_udp_ratio_ = 0;
+}
+inline float TrafficFeatures::_internal_tcp_udp_ratio() const {
+  return _impl_.tcp_udp_ratio_;
+}
+inline float TrafficFeatures::tcp_udp_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.tcp_udp_ratio)
+  return _internal_tcp_udp_ratio();
+}
+inline void TrafficFeatures::_internal_set_tcp_udp_ratio(float value) {
+  
+  _impl_.tcp_udp_ratio_ = value;
+}
+inline void TrafficFeatures::set_tcp_udp_ratio(float value) {
+  _internal_set_tcp_udp_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.tcp_udp_ratio)
+}
+
+// float avg_packet_size = 4;
+inline void TrafficFeatures::clear_avg_packet_size() {
+  _impl_.avg_packet_size_ = 0;
+}
+inline float TrafficFeatures::_internal_avg_packet_size() const {
+  return _impl_.avg_packet_size_;
+}
+inline float TrafficFeatures::avg_packet_size() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.avg_packet_size)
+  return _internal_avg_packet_size();
+}
+inline void TrafficFeatures::_internal_set_avg_packet_size(float value) {
+  
+  _impl_.avg_packet_size_ = value;
+}
+inline void TrafficFeatures::set_avg_packet_size(float value) {
+  _internal_set_avg_packet_size(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.avg_packet_size)
+}
+
+// float port_entropy = 5;
+inline void TrafficFeatures::clear_port_entropy() {
+  _impl_.port_entropy_ = 0;
+}
+inline float TrafficFeatures::_internal_port_entropy() const {
+  return _impl_.port_entropy_;
+}
+inline float TrafficFeatures::port_entropy() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.port_entropy)
+  return _internal_port_entropy();
+}
+inline void TrafficFeatures::_internal_set_port_entropy(float value) {
+  
+  _impl_.port_entropy_ = value;
+}
+inline void TrafficFeatures::set_port_entropy(float value) {
+  _internal_set_port_entropy(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.port_entropy)
+}
+
+// float flow_duration_std = 6;
+inline void TrafficFeatures::clear_flow_duration_std() {
+  _impl_.flow_duration_std_ = 0;
+}
+inline float TrafficFeatures::_internal_flow_duration_std() const {
+  return _impl_.flow_duration_std_;
+}
+inline float TrafficFeatures::flow_duration_std() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.flow_duration_std)
+  return _internal_flow_duration_std();
+}
+inline void TrafficFeatures::_internal_set_flow_duration_std(float value) {
+  
+  _impl_.flow_duration_std_ = value;
+}
+inline void TrafficFeatures::set_flow_duration_std(float value) {
+  _internal_set_flow_duration_std(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.flow_duration_std)
+}
+
+// float src_ip_entropy = 7;
+inline void TrafficFeatures::clear_src_ip_entropy() {
+  _impl_.src_ip_entropy_ = 0;
+}
+inline float TrafficFeatures::_internal_src_ip_entropy() const {
+  return _impl_.src_ip_entropy_;
+}
+inline float TrafficFeatures::src_ip_entropy() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.src_ip_entropy)
+  return _internal_src_ip_entropy();
+}
+inline void TrafficFeatures::_internal_set_src_ip_entropy(float value) {
+  
+  _impl_.src_ip_entropy_ = value;
+}
+inline void TrafficFeatures::set_src_ip_entropy(float value) {
+  _internal_set_src_ip_entropy(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.src_ip_entropy)
+}
+
+// float dst_ip_concentration = 8;
+inline void TrafficFeatures::clear_dst_ip_concentration() {
+  _impl_.dst_ip_concentration_ = 0;
+}
+inline float TrafficFeatures::_internal_dst_ip_concentration() const {
+  return _impl_.dst_ip_concentration_;
+}
+inline float TrafficFeatures::dst_ip_concentration() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.dst_ip_concentration)
+  return _internal_dst_ip_concentration();
+}
+inline void TrafficFeatures::_internal_set_dst_ip_concentration(float value) {
+  
+  _impl_.dst_ip_concentration_ = value;
+}
+inline void TrafficFeatures::set_dst_ip_concentration(float value) {
+  _internal_set_dst_ip_concentration(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.dst_ip_concentration)
+}
+
+// float protocol_variety = 9;
+inline void TrafficFeatures::clear_protocol_variety() {
+  _impl_.protocol_variety_ = 0;
+}
+inline float TrafficFeatures::_internal_protocol_variety() const {
+  return _impl_.protocol_variety_;
+}
+inline float TrafficFeatures::protocol_variety() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.protocol_variety)
+  return _internal_protocol_variety();
+}
+inline void TrafficFeatures::_internal_set_protocol_variety(float value) {
+  
+  _impl_.protocol_variety_ = value;
+}
+inline void TrafficFeatures::set_protocol_variety(float value) {
+  _internal_set_protocol_variety(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.protocol_variety)
+}
+
+// float temporal_consistency = 10;
+inline void TrafficFeatures::clear_temporal_consistency() {
+  _impl_.temporal_consistency_ = 0;
+}
+inline float TrafficFeatures::_internal_temporal_consistency() const {
+  return _impl_.temporal_consistency_;
+}
+inline float TrafficFeatures::temporal_consistency() const {
+  // @@protoc_insertion_point(field_get:protobuf.TrafficFeatures.temporal_consistency)
+  return _internal_temporal_consistency();
+}
+inline void TrafficFeatures::_internal_set_temporal_consistency(float value) {
+  
+  _impl_.temporal_consistency_ = value;
+}
+inline void TrafficFeatures::set_temporal_consistency(float value) {
+  _internal_set_temporal_consistency(value);
+  // @@protoc_insertion_point(field_set:protobuf.TrafficFeatures.temporal_consistency)
+}
+
+// -------------------------------------------------------------------
+
+// InternalFeatures
+
+// float internal_connection_rate = 1;
+inline void InternalFeatures::clear_internal_connection_rate() {
+  _impl_.internal_connection_rate_ = 0;
+}
+inline float InternalFeatures::_internal_internal_connection_rate() const {
+  return _impl_.internal_connection_rate_;
+}
+inline float InternalFeatures::internal_connection_rate() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.internal_connection_rate)
+  return _internal_internal_connection_rate();
+}
+inline void InternalFeatures::_internal_set_internal_connection_rate(float value) {
+  
+  _impl_.internal_connection_rate_ = value;
+}
+inline void InternalFeatures::set_internal_connection_rate(float value) {
+  _internal_set_internal_connection_rate(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.internal_connection_rate)
+}
+
+// float service_port_consistency = 2;
+inline void InternalFeatures::clear_service_port_consistency() {
+  _impl_.service_port_consistency_ = 0;
+}
+inline float InternalFeatures::_internal_service_port_consistency() const {
+  return _impl_.service_port_consistency_;
+}
+inline float InternalFeatures::service_port_consistency() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.service_port_consistency)
+  return _internal_service_port_consistency();
+}
+inline void InternalFeatures::_internal_set_service_port_consistency(float value) {
+  
+  _impl_.service_port_consistency_ = value;
+}
+inline void InternalFeatures::set_service_port_consistency(float value) {
+  _internal_set_service_port_consistency(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.service_port_consistency)
+}
+
+// float protocol_regularity = 3;
+inline void InternalFeatures::clear_protocol_regularity() {
+  _impl_.protocol_regularity_ = 0;
+}
+inline float InternalFeatures::_internal_protocol_regularity() const {
+  return _impl_.protocol_regularity_;
+}
+inline float InternalFeatures::protocol_regularity() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.protocol_regularity)
+  return _internal_protocol_regularity();
+}
+inline void InternalFeatures::_internal_set_protocol_regularity(float value) {
+  
+  _impl_.protocol_regularity_ = value;
+}
+inline void InternalFeatures::set_protocol_regularity(float value) {
+  _internal_set_protocol_regularity(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.protocol_regularity)
+}
+
+// float packet_size_consistency = 4;
+inline void InternalFeatures::clear_packet_size_consistency() {
+  _impl_.packet_size_consistency_ = 0;
+}
+inline float InternalFeatures::_internal_packet_size_consistency() const {
+  return _impl_.packet_size_consistency_;
+}
+inline float InternalFeatures::packet_size_consistency() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.packet_size_consistency)
+  return _internal_packet_size_consistency();
+}
+inline void InternalFeatures::_internal_set_packet_size_consistency(float value) {
+  
+  _impl_.packet_size_consistency_ = value;
+}
+inline void InternalFeatures::set_packet_size_consistency(float value) {
+  _internal_set_packet_size_consistency(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.packet_size_consistency)
+}
+
+// float connection_duration_std = 5;
+inline void InternalFeatures::clear_connection_duration_std() {
+  _impl_.connection_duration_std_ = 0;
+}
+inline float InternalFeatures::_internal_connection_duration_std() const {
+  return _impl_.connection_duration_std_;
+}
+inline float InternalFeatures::connection_duration_std() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.connection_duration_std)
+  return _internal_connection_duration_std();
+}
+inline void InternalFeatures::_internal_set_connection_duration_std(float value) {
+  
+  _impl_.connection_duration_std_ = value;
+}
+inline void InternalFeatures::set_connection_duration_std(float value) {
+  _internal_set_connection_duration_std(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.connection_duration_std)
+}
+
+// float lateral_movement_score = 6;
+inline void InternalFeatures::clear_lateral_movement_score() {
+  _impl_.lateral_movement_score_ = 0;
+}
+inline float InternalFeatures::_internal_lateral_movement_score() const {
+  return _impl_.lateral_movement_score_;
+}
+inline float InternalFeatures::lateral_movement_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.lateral_movement_score)
+  return _internal_lateral_movement_score();
+}
+inline void InternalFeatures::_internal_set_lateral_movement_score(float value) {
+  
+  _impl_.lateral_movement_score_ = value;
+}
+inline void InternalFeatures::set_lateral_movement_score(float value) {
+  _internal_set_lateral_movement_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.lateral_movement_score)
+}
+
+// float service_discovery_patterns = 7;
+inline void InternalFeatures::clear_service_discovery_patterns() {
+  _impl_.service_discovery_patterns_ = 0;
+}
+inline float InternalFeatures::_internal_service_discovery_patterns() const {
+  return _impl_.service_discovery_patterns_;
+}
+inline float InternalFeatures::service_discovery_patterns() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.service_discovery_patterns)
+  return _internal_service_discovery_patterns();
+}
+inline void InternalFeatures::_internal_set_service_discovery_patterns(float value) {
+  
+  _impl_.service_discovery_patterns_ = value;
+}
+inline void InternalFeatures::set_service_discovery_patterns(float value) {
+  _internal_set_service_discovery_patterns(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.service_discovery_patterns)
+}
+
+// float data_exfiltration_indicators = 8;
+inline void InternalFeatures::clear_data_exfiltration_indicators() {
+  _impl_.data_exfiltration_indicators_ = 0;
+}
+inline float InternalFeatures::_internal_data_exfiltration_indicators() const {
+  return _impl_.data_exfiltration_indicators_;
+}
+inline float InternalFeatures::data_exfiltration_indicators() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.data_exfiltration_indicators)
+  return _internal_data_exfiltration_indicators();
+}
+inline void InternalFeatures::_internal_set_data_exfiltration_indicators(float value) {
+  
+  _impl_.data_exfiltration_indicators_ = value;
+}
+inline void InternalFeatures::set_data_exfiltration_indicators(float value) {
+  _internal_set_data_exfiltration_indicators(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.data_exfiltration_indicators)
+}
+
+// float temporal_anomaly_score = 9;
+inline void InternalFeatures::clear_temporal_anomaly_score() {
+  _impl_.temporal_anomaly_score_ = 0;
+}
+inline float InternalFeatures::_internal_temporal_anomaly_score() const {
+  return _impl_.temporal_anomaly_score_;
+}
+inline float InternalFeatures::temporal_anomaly_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.temporal_anomaly_score)
+  return _internal_temporal_anomaly_score();
+}
+inline void InternalFeatures::_internal_set_temporal_anomaly_score(float value) {
+  
+  _impl_.temporal_anomaly_score_ = value;
+}
+inline void InternalFeatures::set_temporal_anomaly_score(float value) {
+  _internal_set_temporal_anomaly_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.temporal_anomaly_score)
+}
+
+// float access_pattern_entropy = 10;
+inline void InternalFeatures::clear_access_pattern_entropy() {
+  _impl_.access_pattern_entropy_ = 0;
+}
+inline float InternalFeatures::_internal_access_pattern_entropy() const {
+  return _impl_.access_pattern_entropy_;
+}
+inline float InternalFeatures::access_pattern_entropy() const {
+  // @@protoc_insertion_point(field_get:protobuf.InternalFeatures.access_pattern_entropy)
+  return _internal_access_pattern_entropy();
+}
+inline void InternalFeatures::_internal_set_access_pattern_entropy(float value) {
+  
+  _impl_.access_pattern_entropy_ = value;
+}
+inline void InternalFeatures::set_access_pattern_entropy(float value) {
+  _internal_set_access_pattern_entropy(value);
+  // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.access_pattern_entropy)
+}
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
@@ -9447,6 +11347,366 @@ inline ::PROTOBUF_NAMESPACE_ID::Map< std::string, std::string >*
 NetworkFeatures::mutable_feature_metadata() {
   // @@protoc_insertion_point(field_mutable_map:protobuf.NetworkFeatures.feature_metadata)
   return _internal_mutable_feature_metadata();
+}
+
+// .protobuf.DDoSFeatures ddos_embedded = 112;
+inline bool NetworkFeatures::_internal_has_ddos_embedded() const {
+  return this != internal_default_instance() && _impl_.ddos_embedded_ != nullptr;
+}
+inline bool NetworkFeatures::has_ddos_embedded() const {
+  return _internal_has_ddos_embedded();
+}
+inline void NetworkFeatures::clear_ddos_embedded() {
+  if (GetArenaForAllocation() == nullptr && _impl_.ddos_embedded_ != nullptr) {
+    delete _impl_.ddos_embedded_;
+  }
+  _impl_.ddos_embedded_ = nullptr;
+}
+inline const ::protobuf::DDoSFeatures& NetworkFeatures::_internal_ddos_embedded() const {
+  const ::protobuf::DDoSFeatures* p = _impl_.ddos_embedded_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::DDoSFeatures&>(
+      ::protobuf::_DDoSFeatures_default_instance_);
+}
+inline const ::protobuf::DDoSFeatures& NetworkFeatures::ddos_embedded() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.ddos_embedded)
+  return _internal_ddos_embedded();
+}
+inline void NetworkFeatures::unsafe_arena_set_allocated_ddos_embedded(
+    ::protobuf::DDoSFeatures* ddos_embedded) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ddos_embedded_);
+  }
+  _impl_.ddos_embedded_ = ddos_embedded;
+  if (ddos_embedded) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkFeatures.ddos_embedded)
+}
+inline ::protobuf::DDoSFeatures* NetworkFeatures::release_ddos_embedded() {
+  
+  ::protobuf::DDoSFeatures* temp = _impl_.ddos_embedded_;
+  _impl_.ddos_embedded_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::DDoSFeatures* NetworkFeatures::unsafe_arena_release_ddos_embedded() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.ddos_embedded)
+  
+  ::protobuf::DDoSFeatures* temp = _impl_.ddos_embedded_;
+  _impl_.ddos_embedded_ = nullptr;
+  return temp;
+}
+inline ::protobuf::DDoSFeatures* NetworkFeatures::_internal_mutable_ddos_embedded() {
+  
+  if (_impl_.ddos_embedded_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::DDoSFeatures>(GetArenaForAllocation());
+    _impl_.ddos_embedded_ = p;
+  }
+  return _impl_.ddos_embedded_;
+}
+inline ::protobuf::DDoSFeatures* NetworkFeatures::mutable_ddos_embedded() {
+  ::protobuf::DDoSFeatures* _msg = _internal_mutable_ddos_embedded();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.ddos_embedded)
+  return _msg;
+}
+inline void NetworkFeatures::set_allocated_ddos_embedded(::protobuf::DDoSFeatures* ddos_embedded) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.ddos_embedded_;
+  }
+  if (ddos_embedded) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(ddos_embedded);
+    if (message_arena != submessage_arena) {
+      ddos_embedded = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, ddos_embedded, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.ddos_embedded_ = ddos_embedded;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.ddos_embedded)
+}
+
+// .protobuf.RansomwareEmbeddedFeatures ransomware_embedded = 113;
+inline bool NetworkFeatures::_internal_has_ransomware_embedded() const {
+  return this != internal_default_instance() && _impl_.ransomware_embedded_ != nullptr;
+}
+inline bool NetworkFeatures::has_ransomware_embedded() const {
+  return _internal_has_ransomware_embedded();
+}
+inline void NetworkFeatures::clear_ransomware_embedded() {
+  if (GetArenaForAllocation() == nullptr && _impl_.ransomware_embedded_ != nullptr) {
+    delete _impl_.ransomware_embedded_;
+  }
+  _impl_.ransomware_embedded_ = nullptr;
+}
+inline const ::protobuf::RansomwareEmbeddedFeatures& NetworkFeatures::_internal_ransomware_embedded() const {
+  const ::protobuf::RansomwareEmbeddedFeatures* p = _impl_.ransomware_embedded_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::RansomwareEmbeddedFeatures&>(
+      ::protobuf::_RansomwareEmbeddedFeatures_default_instance_);
+}
+inline const ::protobuf::RansomwareEmbeddedFeatures& NetworkFeatures::ransomware_embedded() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.ransomware_embedded)
+  return _internal_ransomware_embedded();
+}
+inline void NetworkFeatures::unsafe_arena_set_allocated_ransomware_embedded(
+    ::protobuf::RansomwareEmbeddedFeatures* ransomware_embedded) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ransomware_embedded_);
+  }
+  _impl_.ransomware_embedded_ = ransomware_embedded;
+  if (ransomware_embedded) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkFeatures.ransomware_embedded)
+}
+inline ::protobuf::RansomwareEmbeddedFeatures* NetworkFeatures::release_ransomware_embedded() {
+  
+  ::protobuf::RansomwareEmbeddedFeatures* temp = _impl_.ransomware_embedded_;
+  _impl_.ransomware_embedded_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::RansomwareEmbeddedFeatures* NetworkFeatures::unsafe_arena_release_ransomware_embedded() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.ransomware_embedded)
+  
+  ::protobuf::RansomwareEmbeddedFeatures* temp = _impl_.ransomware_embedded_;
+  _impl_.ransomware_embedded_ = nullptr;
+  return temp;
+}
+inline ::protobuf::RansomwareEmbeddedFeatures* NetworkFeatures::_internal_mutable_ransomware_embedded() {
+  
+  if (_impl_.ransomware_embedded_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::RansomwareEmbeddedFeatures>(GetArenaForAllocation());
+    _impl_.ransomware_embedded_ = p;
+  }
+  return _impl_.ransomware_embedded_;
+}
+inline ::protobuf::RansomwareEmbeddedFeatures* NetworkFeatures::mutable_ransomware_embedded() {
+  ::protobuf::RansomwareEmbeddedFeatures* _msg = _internal_mutable_ransomware_embedded();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.ransomware_embedded)
+  return _msg;
+}
+inline void NetworkFeatures::set_allocated_ransomware_embedded(::protobuf::RansomwareEmbeddedFeatures* ransomware_embedded) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.ransomware_embedded_;
+  }
+  if (ransomware_embedded) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(ransomware_embedded);
+    if (message_arena != submessage_arena) {
+      ransomware_embedded = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, ransomware_embedded, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.ransomware_embedded_ = ransomware_embedded;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.ransomware_embedded)
+}
+
+// .protobuf.TrafficFeatures traffic_classification = 114;
+inline bool NetworkFeatures::_internal_has_traffic_classification() const {
+  return this != internal_default_instance() && _impl_.traffic_classification_ != nullptr;
+}
+inline bool NetworkFeatures::has_traffic_classification() const {
+  return _internal_has_traffic_classification();
+}
+inline void NetworkFeatures::clear_traffic_classification() {
+  if (GetArenaForAllocation() == nullptr && _impl_.traffic_classification_ != nullptr) {
+    delete _impl_.traffic_classification_;
+  }
+  _impl_.traffic_classification_ = nullptr;
+}
+inline const ::protobuf::TrafficFeatures& NetworkFeatures::_internal_traffic_classification() const {
+  const ::protobuf::TrafficFeatures* p = _impl_.traffic_classification_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::TrafficFeatures&>(
+      ::protobuf::_TrafficFeatures_default_instance_);
+}
+inline const ::protobuf::TrafficFeatures& NetworkFeatures::traffic_classification() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.traffic_classification)
+  return _internal_traffic_classification();
+}
+inline void NetworkFeatures::unsafe_arena_set_allocated_traffic_classification(
+    ::protobuf::TrafficFeatures* traffic_classification) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.traffic_classification_);
+  }
+  _impl_.traffic_classification_ = traffic_classification;
+  if (traffic_classification) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkFeatures.traffic_classification)
+}
+inline ::protobuf::TrafficFeatures* NetworkFeatures::release_traffic_classification() {
+  
+  ::protobuf::TrafficFeatures* temp = _impl_.traffic_classification_;
+  _impl_.traffic_classification_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::TrafficFeatures* NetworkFeatures::unsafe_arena_release_traffic_classification() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.traffic_classification)
+  
+  ::protobuf::TrafficFeatures* temp = _impl_.traffic_classification_;
+  _impl_.traffic_classification_ = nullptr;
+  return temp;
+}
+inline ::protobuf::TrafficFeatures* NetworkFeatures::_internal_mutable_traffic_classification() {
+  
+  if (_impl_.traffic_classification_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::TrafficFeatures>(GetArenaForAllocation());
+    _impl_.traffic_classification_ = p;
+  }
+  return _impl_.traffic_classification_;
+}
+inline ::protobuf::TrafficFeatures* NetworkFeatures::mutable_traffic_classification() {
+  ::protobuf::TrafficFeatures* _msg = _internal_mutable_traffic_classification();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.traffic_classification)
+  return _msg;
+}
+inline void NetworkFeatures::set_allocated_traffic_classification(::protobuf::TrafficFeatures* traffic_classification) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.traffic_classification_;
+  }
+  if (traffic_classification) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(traffic_classification);
+    if (message_arena != submessage_arena) {
+      traffic_classification = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, traffic_classification, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.traffic_classification_ = traffic_classification;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.traffic_classification)
+}
+
+// .protobuf.InternalFeatures internal_anomaly = 115;
+inline bool NetworkFeatures::_internal_has_internal_anomaly() const {
+  return this != internal_default_instance() && _impl_.internal_anomaly_ != nullptr;
+}
+inline bool NetworkFeatures::has_internal_anomaly() const {
+  return _internal_has_internal_anomaly();
+}
+inline void NetworkFeatures::clear_internal_anomaly() {
+  if (GetArenaForAllocation() == nullptr && _impl_.internal_anomaly_ != nullptr) {
+    delete _impl_.internal_anomaly_;
+  }
+  _impl_.internal_anomaly_ = nullptr;
+}
+inline const ::protobuf::InternalFeatures& NetworkFeatures::_internal_internal_anomaly() const {
+  const ::protobuf::InternalFeatures* p = _impl_.internal_anomaly_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::InternalFeatures&>(
+      ::protobuf::_InternalFeatures_default_instance_);
+}
+inline const ::protobuf::InternalFeatures& NetworkFeatures::internal_anomaly() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.internal_anomaly)
+  return _internal_internal_anomaly();
+}
+inline void NetworkFeatures::unsafe_arena_set_allocated_internal_anomaly(
+    ::protobuf::InternalFeatures* internal_anomaly) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.internal_anomaly_);
+  }
+  _impl_.internal_anomaly_ = internal_anomaly;
+  if (internal_anomaly) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkFeatures.internal_anomaly)
+}
+inline ::protobuf::InternalFeatures* NetworkFeatures::release_internal_anomaly() {
+  
+  ::protobuf::InternalFeatures* temp = _impl_.internal_anomaly_;
+  _impl_.internal_anomaly_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::InternalFeatures* NetworkFeatures::unsafe_arena_release_internal_anomaly() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.internal_anomaly)
+  
+  ::protobuf::InternalFeatures* temp = _impl_.internal_anomaly_;
+  _impl_.internal_anomaly_ = nullptr;
+  return temp;
+}
+inline ::protobuf::InternalFeatures* NetworkFeatures::_internal_mutable_internal_anomaly() {
+  
+  if (_impl_.internal_anomaly_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::InternalFeatures>(GetArenaForAllocation());
+    _impl_.internal_anomaly_ = p;
+  }
+  return _impl_.internal_anomaly_;
+}
+inline ::protobuf::InternalFeatures* NetworkFeatures::mutable_internal_anomaly() {
+  ::protobuf::InternalFeatures* _msg = _internal_mutable_internal_anomaly();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.internal_anomaly)
+  return _msg;
+}
+inline void NetworkFeatures::set_allocated_internal_anomaly(::protobuf::InternalFeatures* internal_anomaly) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.internal_anomaly_;
+  }
+  if (internal_anomaly) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(internal_anomaly);
+    if (message_arena != submessage_arena) {
+      internal_anomaly = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, internal_anomaly, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.internal_anomaly_ = internal_anomaly;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.internal_anomaly)
 }
 
 // -------------------------------------------------------------------
@@ -18905,6 +21165,14 @@ inline void RansomwareFeatures::set_syn_without_ack_ratio(float value) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -21,6 +21,94 @@ namespace _pb = ::PROTOBUF_NAMESPACE_ID;
 namespace _pbi = _pb::internal;
 
 namespace protobuf {
+PROTOBUF_CONSTEXPR DDoSFeatures::DDoSFeatures(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.syn_ack_ratio_)*/0
+  , /*decltype(_impl_.packet_symmetry_)*/0
+  , /*decltype(_impl_.source_ip_dispersion_)*/0
+  , /*decltype(_impl_.protocol_anomaly_score_)*/0
+  , /*decltype(_impl_.packet_size_entropy_)*/0
+  , /*decltype(_impl_.traffic_amplification_factor_)*/0
+  , /*decltype(_impl_.flow_completion_rate_)*/0
+  , /*decltype(_impl_.geographical_concentration_)*/0
+  , /*decltype(_impl_.traffic_escalation_rate_)*/0
+  , /*decltype(_impl_.resource_saturation_score_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct DDoSFeaturesDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DDoSFeaturesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DDoSFeaturesDefaultTypeInternal() {}
+  union {
+    DDoSFeatures _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DDoSFeaturesDefaultTypeInternal _DDoSFeatures_default_instance_;
+PROTOBUF_CONSTEXPR RansomwareEmbeddedFeatures::RansomwareEmbeddedFeatures(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.io_intensity_)*/0
+  , /*decltype(_impl_.entropy_)*/0
+  , /*decltype(_impl_.resource_usage_)*/0
+  , /*decltype(_impl_.network_activity_)*/0
+  , /*decltype(_impl_.file_operations_)*/0
+  , /*decltype(_impl_.process_anomaly_)*/0
+  , /*decltype(_impl_.temporal_pattern_)*/0
+  , /*decltype(_impl_.access_frequency_)*/0
+  , /*decltype(_impl_.data_volume_)*/0
+  , /*decltype(_impl_.behavior_consistency_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct RansomwareEmbeddedFeaturesDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RansomwareEmbeddedFeaturesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RansomwareEmbeddedFeaturesDefaultTypeInternal() {}
+  union {
+    RansomwareEmbeddedFeatures _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RansomwareEmbeddedFeaturesDefaultTypeInternal _RansomwareEmbeddedFeatures_default_instance_;
+PROTOBUF_CONSTEXPR TrafficFeatures::TrafficFeatures(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.packet_rate_)*/0
+  , /*decltype(_impl_.connection_rate_)*/0
+  , /*decltype(_impl_.tcp_udp_ratio_)*/0
+  , /*decltype(_impl_.avg_packet_size_)*/0
+  , /*decltype(_impl_.port_entropy_)*/0
+  , /*decltype(_impl_.flow_duration_std_)*/0
+  , /*decltype(_impl_.src_ip_entropy_)*/0
+  , /*decltype(_impl_.dst_ip_concentration_)*/0
+  , /*decltype(_impl_.protocol_variety_)*/0
+  , /*decltype(_impl_.temporal_consistency_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct TrafficFeaturesDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR TrafficFeaturesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~TrafficFeaturesDefaultTypeInternal() {}
+  union {
+    TrafficFeatures _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TrafficFeaturesDefaultTypeInternal _TrafficFeatures_default_instance_;
+PROTOBUF_CONSTEXPR InternalFeatures::InternalFeatures(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.internal_connection_rate_)*/0
+  , /*decltype(_impl_.service_port_consistency_)*/0
+  , /*decltype(_impl_.protocol_regularity_)*/0
+  , /*decltype(_impl_.packet_size_consistency_)*/0
+  , /*decltype(_impl_.connection_duration_std_)*/0
+  , /*decltype(_impl_.lateral_movement_score_)*/0
+  , /*decltype(_impl_.service_discovery_patterns_)*/0
+  , /*decltype(_impl_.data_exfiltration_indicators_)*/0
+  , /*decltype(_impl_.temporal_anomaly_score_)*/0
+  , /*decltype(_impl_.access_pattern_entropy_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct InternalFeaturesDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR InternalFeaturesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~InternalFeaturesDefaultTypeInternal() {}
+  union {
+    InternalFeatures _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 InternalFeaturesDefaultTypeInternal _InternalFeatures_default_instance_;
 PROTOBUF_CONSTEXPR NetworkFeatures_CustomFeaturesEntry_DoNotUse::NetworkFeatures_CustomFeaturesEntry_DoNotUse(
     ::_pbi::ConstantInitialized) {}
 struct NetworkFeatures_CustomFeaturesEntry_DoNotUseDefaultTypeInternal {
@@ -57,6 +145,10 @@ PROTOBUF_CONSTEXPR NetworkFeatures::NetworkFeatures(
   , /*decltype(_impl_.flow_start_time_)*/nullptr
   , /*decltype(_impl_.flow_duration_)*/nullptr
   , /*decltype(_impl_.ransomware_)*/nullptr
+  , /*decltype(_impl_.ddos_embedded_)*/nullptr
+  , /*decltype(_impl_.ransomware_embedded_)*/nullptr
+  , /*decltype(_impl_.traffic_classification_)*/nullptr
+  , /*decltype(_impl_.internal_anomaly_)*/nullptr
   , /*decltype(_impl_.source_port_)*/0u
   , /*decltype(_impl_.destination_port_)*/0u
   , /*decltype(_impl_.flow_duration_microseconds_)*/uint64_t{0u}
@@ -623,11 +715,75 @@ struct RansomwareFeaturesDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RansomwareFeaturesDefaultTypeInternal _RansomwareFeatures_default_instance_;
 }  // namespace protobuf
-static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[27];
+static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[31];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_network_5fsecurity_2eproto[8];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_network_5fsecurity_2eproto = nullptr;
 
 const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.syn_ack_ratio_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.packet_symmetry_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.source_ip_dispersion_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.protocol_anomaly_score_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.packet_size_entropy_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.traffic_amplification_factor_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.flow_completion_rate_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.geographical_concentration_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.traffic_escalation_rate_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DDoSFeatures, _impl_.resource_saturation_score_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.io_intensity_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.entropy_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.resource_usage_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.network_activity_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.file_operations_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.process_anomaly_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.temporal_pattern_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.access_frequency_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.data_volume_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareEmbeddedFeatures, _impl_.behavior_consistency_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.packet_rate_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.connection_rate_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.tcp_udp_ratio_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.avg_packet_size_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.port_entropy_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.flow_duration_std_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.src_ip_entropy_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.dst_ip_concentration_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.protocol_variety_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::TrafficFeatures, _impl_.temporal_consistency_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.internal_connection_rate_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.service_port_consistency_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.protocol_regularity_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.packet_size_consistency_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.connection_duration_std_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.lateral_movement_score_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.service_discovery_patterns_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.data_exfiltration_indicators_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.temporal_anomaly_score_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.access_pattern_entropy_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -731,6 +887,10 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.ransomware_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.custom_features_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.feature_metadata_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.ddos_embedded_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.ransomware_embedded_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.traffic_classification_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.internal_anomaly_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protobuf::GeoLocationInfo, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1124,36 +1284,44 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.syn_without_ack_ratio_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, 8, -1, sizeof(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse)},
-  { 10, 18, -1, sizeof(::protobuf::NetworkFeatures_FeatureMetadataEntry_DoNotUse)},
-  { 20, -1, -1, sizeof(::protobuf::NetworkFeatures)},
-  { 103, -1, -1, sizeof(::protobuf::GeoLocationInfo)},
-  { 124, -1, -1, sizeof(::protobuf::GeoEnrichment)},
-  { 165, -1, -1, sizeof(::protobuf::TimeWindow)},
-  { 176, 184, -1, sizeof(::protobuf::FlowAggregation_ProtocolDistributionEntry_DoNotUse)},
-  { 186, 194, -1, sizeof(::protobuf::FlowAggregation_PortDistributionEntry_DoNotUse)},
-  { 196, 204, -1, sizeof(::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse)},
-  { 206, -1, -1, sizeof(::protobuf::FlowAggregation)},
-  { 220, -1, -1, sizeof(::protobuf::ModelPrediction)},
-  { 234, 242, -1, sizeof(::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse)},
-  { 244, -1, -1, sizeof(::protobuf::TricapaMLAnalysis)},
-  { 263, 271, -1, sizeof(::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse)},
-  { 273, -1, -1, sizeof(::protobuf::DistributedNode)},
-  { 300, 308, -1, sizeof(::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse)},
-  { 310, -1, -1, sizeof(::protobuf::PipelineTracking)},
-  { 338, -1, -1, sizeof(::protobuf::RAGAnalysis)},
-  { 351, -1, -1, sizeof(::protobuf::HumanFeedback)},
-  { 367, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
-  { 380, 388, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
-  { 390, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
-  { 418, -1, -1, sizeof(::protobuf::EventBatch)},
-  { 430, 438, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
-  { 440, 448, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
-  { 450, -1, -1, sizeof(::protobuf::SystemConfiguration)},
-  { 468, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
+  { 0, -1, -1, sizeof(::protobuf::DDoSFeatures)},
+  { 16, -1, -1, sizeof(::protobuf::RansomwareEmbeddedFeatures)},
+  { 32, -1, -1, sizeof(::protobuf::TrafficFeatures)},
+  { 48, -1, -1, sizeof(::protobuf::InternalFeatures)},
+  { 64, 72, -1, sizeof(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse)},
+  { 74, 82, -1, sizeof(::protobuf::NetworkFeatures_FeatureMetadataEntry_DoNotUse)},
+  { 84, -1, -1, sizeof(::protobuf::NetworkFeatures)},
+  { 171, -1, -1, sizeof(::protobuf::GeoLocationInfo)},
+  { 192, -1, -1, sizeof(::protobuf::GeoEnrichment)},
+  { 233, -1, -1, sizeof(::protobuf::TimeWindow)},
+  { 244, 252, -1, sizeof(::protobuf::FlowAggregation_ProtocolDistributionEntry_DoNotUse)},
+  { 254, 262, -1, sizeof(::protobuf::FlowAggregation_PortDistributionEntry_DoNotUse)},
+  { 264, 272, -1, sizeof(::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse)},
+  { 274, -1, -1, sizeof(::protobuf::FlowAggregation)},
+  { 288, -1, -1, sizeof(::protobuf::ModelPrediction)},
+  { 302, 310, -1, sizeof(::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse)},
+  { 312, -1, -1, sizeof(::protobuf::TricapaMLAnalysis)},
+  { 331, 339, -1, sizeof(::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse)},
+  { 341, -1, -1, sizeof(::protobuf::DistributedNode)},
+  { 368, 376, -1, sizeof(::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse)},
+  { 378, -1, -1, sizeof(::protobuf::PipelineTracking)},
+  { 406, -1, -1, sizeof(::protobuf::RAGAnalysis)},
+  { 419, -1, -1, sizeof(::protobuf::HumanFeedback)},
+  { 435, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
+  { 448, 456, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
+  { 458, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
+  { 486, -1, -1, sizeof(::protobuf::EventBatch)},
+  { 498, 506, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
+  { 508, 516, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
+  { 518, -1, -1, sizeof(::protobuf::SystemConfiguration)},
+  { 536, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
+  &::protobuf::_DDoSFeatures_default_instance_._instance,
+  &::protobuf::_RansomwareEmbeddedFeatures_default_instance_._instance,
+  &::protobuf::_TrafficFeatures_default_instance_._instance,
+  &::protobuf::_InternalFeatures_default_instance_._instance,
   &::protobuf::_NetworkFeatures_CustomFeaturesEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_NetworkFeatures_FeatureMetadataEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_NetworkFeatures_default_instance_._instance,
@@ -1186,319 +1354,356 @@ static const ::_pb::Message* const file_default_instances[] = {
 const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\026network_security.proto\022\010protobuf\032\037goog"
   "le/protobuf/timestamp.proto\032\036google/prot"
-  "obuf/duration.proto\"\262\025\n\017NetworkFeatures\022"
-  "\021\n\tsource_ip\030\001 \001(\t\022\026\n\016destination_ip\030\002 \001"
-  "(\t\022\023\n\013source_port\030\003 \001(\r\022\030\n\020destination_p"
-  "ort\030\004 \001(\r\022\027\n\017protocol_number\030\005 \001(\r\022\025\n\rpr"
-  "otocol_name\030\006 \001(\t\0223\n\017flow_start_time\030\007 \001"
-  "(\0132\032.google.protobuf.Timestamp\0220\n\rflow_d"
-  "uration\030\010 \001(\0132\031.google.protobuf.Duration"
-  "\022\"\n\032flow_duration_microseconds\030\t \001(\004\022\035\n\025"
-  "total_forward_packets\030\n \001(\004\022\036\n\026total_bac"
-  "kward_packets\030\013 \001(\004\022\033\n\023total_forward_byt"
-  "es\030\014 \001(\004\022\034\n\024total_backward_bytes\030\r \001(\004\022!"
-  "\n\031forward_packet_length_max\030\024 \001(\004\022!\n\031for"
-  "ward_packet_length_min\030\025 \001(\004\022\"\n\032forward_"
-  "packet_length_mean\030\026 \001(\001\022!\n\031forward_pack"
-  "et_length_std\030\027 \001(\001\022\"\n\032backward_packet_l"
-  "ength_max\030\036 \001(\004\022\"\n\032backward_packet_lengt"
-  "h_min\030\037 \001(\004\022#\n\033backward_packet_length_me"
-  "an\030  \001(\001\022\"\n\032backward_packet_length_std\030!"
-  " \001(\001\022\035\n\025flow_bytes_per_second\030( \001(\001\022\037\n\027f"
-  "low_packets_per_second\030) \001(\001\022\"\n\032forward_"
-  "packets_per_second\030* \001(\001\022#\n\033backward_pac"
-  "kets_per_second\030+ \001(\001\022\035\n\025download_upload"
-  "_ratio\030, \001(\001\022\033\n\023average_packet_size\030- \001("
-  "\001\022$\n\034average_forward_segment_size\030. \001(\001\022"
-  "%\n\035average_backward_segment_size\030/ \001(\001\022$"
-  "\n\034flow_inter_arrival_time_mean\0302 \001(\001\022#\n\033"
-  "flow_inter_arrival_time_std\0303 \001(\001\022#\n\033flo"
-  "w_inter_arrival_time_max\0304 \001(\004\022#\n\033flow_i"
-  "nter_arrival_time_min\0305 \001(\004\022(\n forward_i"
-  "nter_arrival_time_total\0306 \001(\001\022\'\n\037forward"
-  "_inter_arrival_time_mean\0307 \001(\001\022&\n\036forwar"
-  "d_inter_arrival_time_std\0308 \001(\001\022&\n\036forwar"
-  "d_inter_arrival_time_max\0309 \001(\004\022&\n\036forwar"
-  "d_inter_arrival_time_min\030: \001(\004\022)\n!backwa"
-  "rd_inter_arrival_time_total\030; \001(\001\022(\n bac"
-  "kward_inter_arrival_time_mean\030< \001(\001\022\'\n\037b"
-  "ackward_inter_arrival_time_std\030= \001(\001\022\'\n\037"
-  "backward_inter_arrival_time_max\030> \001(\004\022\'\n"
-  "\037backward_inter_arrival_time_min\030\? \001(\004\022\026"
-  "\n\016fin_flag_count\030F \001(\r\022\026\n\016syn_flag_count"
-  "\030G \001(\r\022\026\n\016rst_flag_count\030H \001(\r\022\026\n\016psh_fl"
-  "ag_count\030I \001(\r\022\026\n\016ack_flag_count\030J \001(\r\022\026"
-  "\n\016urg_flag_count\030K \001(\r\022\026\n\016cwe_flag_count"
-  "\030L \001(\r\022\026\n\016ece_flag_count\030M \001(\r\022\031\n\021forwar"
-  "d_psh_flags\030N \001(\r\022\032\n\022backward_psh_flags\030"
-  "O \001(\r\022\031\n\021forward_urg_flags\030P \001(\r\022\032\n\022back"
-  "ward_urg_flags\030Q \001(\r\022\035\n\025forward_header_l"
-  "ength\030U \001(\001\022\036\n\026backward_header_length\030V "
-  "\001(\001\022\"\n\032forward_average_bytes_bulk\030W \001(\001\022"
-  "$\n\034forward_average_packets_bulk\030X \001(\001\022!\n"
-  "\031forward_average_bulk_rate\030Y \001(\001\022#\n\033back"
-  "ward_average_bytes_bulk\030Z \001(\001\022%\n\035backwar"
-  "d_average_packets_bulk\030[ \001(\001\022\"\n\032backward"
-  "_average_bulk_rate\030\\ \001(\001\022\035\n\025minimum_pack"
-  "et_length\030_ \001(\004\022\035\n\025maximum_packet_length"
-  "\030` \001(\004\022\032\n\022packet_length_mean\030a \001(\001\022\031\n\021pa"
-  "cket_length_std\030b \001(\001\022\036\n\026packet_length_v"
-  "ariance\030c \001(\001\022\023\n\013active_mean\030h \001(\001\022\021\n\tid"
-  "le_mean\030i \001(\001\022\025\n\rddos_features\030d \003(\001\022\033\n\023"
-  "ransomware_features\030e \003(\001\022\037\n\027general_att"
-  "ack_features\030f \003(\001\022!\n\031internal_traffic_f"
-  "eatures\030g \003(\001\0220\n\nransomware\030j \001(\0132\034.prot"
-  "obuf.RansomwareFeatures\022F\n\017custom_featur"
-  "es\030n \003(\0132-.protobuf.NetworkFeatures.Cust"
-  "omFeaturesEntry\022H\n\020feature_metadata\030o \003("
-  "\0132..protobuf.NetworkFeatures.FeatureMeta"
-  "dataEntry\0325\n\023CustomFeaturesEntry\022\013\n\003key\030"
-  "\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\0326\n\024FeatureMetad"
-  "ataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001"
-  "\"\342\003\n\017GeoLocationInfo\022\024\n\014country_name\030\001 \001"
-  "(\t\022\024\n\014country_code\030\002 \001(\t\022\023\n\013region_name\030"
-  "\003 \001(\t\022\021\n\tcity_name\030\004 \001(\t\022\020\n\010latitude\030\005 \001"
-  "(\001\022\021\n\tlongitude\030\006 \001(\001\022\020\n\010timezone\030\007 \001(\t\022"
-  "\020\n\010isp_name\030\010 \001(\t\022\031\n\021organization_name\030\t"
-  " \001(\t\022 \n\030autonomous_system_number\030\n \001(\t\022\032"
-  "\n\022is_anonymous_proxy\030\013 \001(\010\022\035\n\025is_satelli"
-  "te_provider\030\014 \001(\010\022\030\n\020is_tor_exit_node\030\r "
-  "\001(\010\022\032\n\022is_known_malicious\030\016 \001(\010\022;\n\014threa"
-  "t_level\030\017 \001(\0162%.protobuf.GeoLocationInfo"
-  ".ThreatLevel\"G\n\013ThreatLevel\022\013\n\007UNKNOWN\020\000"
-  "\022\007\n\003LOW\020\001\022\n\n\006MEDIUM\020\002\022\010\n\004HIGH\020\003\022\014\n\010CRITI"
-  "CAL\020\004\"\212\n\n\rGeoEnrichment\0223\n\020sniffer_node_"
-  "geo\030\001 \001(\0132\031.protobuf.GeoLocationInfo\0220\n\r"
-  "source_ip_geo\030\002 \001(\0132\031.protobuf.GeoLocati"
-  "onInfo\0225\n\022destination_ip_geo\030\003 \001(\0132\031.pro"
-  "tobuf.GeoLocationInfo\022&\n\036source_destinat"
-  "ion_distance_km\030\n \001(\001\022\'\n\037source_destinat"
-  "ion_same_country\030\013 \001(\010\022)\n!source_destina"
-  "tion_same_continent\030\014 \001(\010\022\031\n\021distance_ca"
-  "tegory\030\r \001(\t\022\"\n\032sniffer_source_distance_"
-  "km\030\024 \001(\001\022#\n\033sniffer_source_same_country\030"
-  "\025 \001(\010\022#\n\033sniffer_source_relationship\030\026 \001"
-  "(\t\022\'\n\037sniffer_destination_distance_km\030\031 "
-  "\001(\001\022(\n sniffer_destination_same_country\030"
-  "\032 \001(\010\022(\n sniffer_destination_relationshi"
-  "p\030\033 \001(\t\022#\n\033threat_intelligence_matches\030\036"
-  " \003(\t\022\"\n\032threat_intelligence_source\030\037 \001(\t"
-  "\022 \n\030geographic_anomaly_score\030  \001(\002\022%\n\035su"
-  "spicious_geographic_pattern\030! \001(\010\022\035\n\025sni"
-  "ffer_node_enriched\030( \001(\010\022\032\n\022source_ip_en"
-  "riched\030) \001(\010\022\037\n\027destination_ip_enriched\030"
-  "* \001(\010\022\033\n\023enrichment_complete\030+ \001(\010\022%\n\035pu"
-  "blic_ip_discovery_attempted\030- \001(\010\022\033\n\023ori"
-  "ginal_private_ip\030. \001(\t\022\034\n\024discovered_pub"
-  "lic_ip\030/ \001(\t\022\034\n\024ip_discovery_service\0300 \001"
-  "(\t\0225\n\021ip_discovery_time\0301 \001(\0132\032.google.p"
-  "rotobuf.Timestamp\022\030\n\020enricher_version\0302 "
-  "\001(\t\022\024\n\014geoip_method\0303 \001(\t\022\036\n\026geoip_datab"
-  "ase_version\0304 \001(\t\022!\n\031fallback_coordinate"
-  "s_used\0305 \001(\010\022\037\n\027total_lookup_latency_ms\030"
-  "6 \001(\002\022\022\n\ncache_hits\0307 \001(\005\022\024\n\014cache_misse"
-  "s\0308 \001(\005\022\037\n\027enrichment_success_rate\0309 \001(\002"
-  "\0228\n\024enrichment_timestamp\030: \001(\0132\032.google."
-  "protobuf.Timestamp\"\273\002\n\nTimeWindow\0220\n\014win"
-  "dow_start\030\001 \001(\0132\032.google.protobuf.Timest"
-  "amp\022.\n\nwindow_end\030\002 \001(\0132\032.google.protobu"
-  "f.Timestamp\0222\n\017window_duration\030\003 \001(\0132\031.g"
-  "oogle.protobuf.Duration\022\027\n\017sequence_numb"
-  "er\030\004 \001(\004\0224\n\013window_type\030\005 \001(\0162\037.protobuf"
-  ".TimeWindow.WindowType\"H\n\nWindowType\022\013\n\007"
-  "SLIDING\020\000\022\014\n\010TUMBLING\020\001\022\021\n\rSESSION_BASED"
-  "\020\002\022\014\n\010ADAPTIVE\020\003\"\335\004\n\017FlowAggregation\022)\n\013"
-  "time_window\030\001 \001(\0132\024.protobuf.TimeWindow\022"
-  "\035\n\025total_flows_in_window\030\002 \001(\004\022\037\n\027total_"
-  "packets_in_window\030\003 \001(\004\022\035\n\025total_bytes_i"
-  "n_window\030\004 \001(\004\022R\n\025protocol_distribution\030"
-  "\005 \003(\01323.protobuf.FlowAggregation.Protoco"
-  "lDistributionEntry\022J\n\021port_distribution\030"
-  "\006 \003(\0132/.protobuf.FlowAggregation.PortDis"
-  "tributionEntry\022P\n\024country_distribution\030\007"
-  " \003(\01322.protobuf.FlowAggregation.CountryD"
-  "istributionEntry\022\034\n\024window_anomaly_score"
-  "\030\010 \001(\001\032;\n\031ProtocolDistributionEntry\022\013\n\003k"
-  "ey\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\0327\n\025PortDistr"
-  "ibutionEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004"
-  ":\0028\001\032:\n\030CountryDistributionEntry\022\013\n\003key\030"
-  "\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\"\232\004\n\017ModelPredic"
-  "tion\022\022\n\nmodel_name\030\001 \001(\t\022\025\n\rmodel_versio"
-  "n\030\002 \001(\t\0227\n\nmodel_type\030\003 \001(\0162#.protobuf.M"
-  "odelPrediction.ModelType\022\030\n\020prediction_c"
-  "lass\030\004 \001(\t\022\030\n\020confidence_score\030\005 \001(\001\022\033\n\023"
-  "class_probabilities\030\006 \003(\001\0228\n\024prediction_"
-  "timestamp\030\007 \001(\0132\032.google.protobuf.Timest"
-  "amp\0226\n\023processing_duration\030\010 \001(\0132\031.googl"
-  "e.protobuf.Duration\"\337\001\n\tModelType\022\031\n\025RAN"
-  "DOM_FOREST_GENERAL\020\000\022\021\n\rLIGHTGBM_DDOS\020\001\022"
-  "\035\n\031NEURAL_NETWORK_RANSOMWARE\020\002\022\024\n\020ENSEMB"
-  "LE_TRICAPA\020\003\022\037\n\033INTERNAL_TRAFFIC_CLASSIF"
-  "IER\020\004\022\030\n\024TRANSFORMER_ADVANCED\020\005\022\026\n\022RANDO"
-  "M_FOREST_DDOS\020\006\022\034\n\030RANDOM_FOREST_RANSOMW"
-  "ARE\020\007\"\300\005\n\021TricapaMLAnalysis\022;\n\030level1_ge"
-  "neral_detection\030\001 \001(\0132\031.protobuf.ModelPr"
-  "ediction\022\036\n\026attack_detected_level1\030\002 \001(\010"
-  "\022\031\n\021level1_confidence\030\003 \001(\001\022@\n\035level2_co"
-  "ntext_classification\030\004 \001(\0132\031.protobuf.Mo"
-  "delPrediction\022\027\n\017traffic_context\030\005 \001(\t\022A"
-  "\n\036level2_specialized_predictions\030\t \003(\0132\031"
-  ".protobuf.ModelPrediction\022A\n\036level3_spec"
-  "ialized_predictions\030\006 \003(\0132\031.protobuf.Mod"
-  "elPrediction\022#\n\033final_threat_classificat"
-  "ion\030\007 \001(\t\022\033\n\023ensemble_confidence\030\010 \001(\001\022:"
-  "\n\027total_analysis_duration\030\n \001(\0132\031.google"
-  ".protobuf.Duration\022\030\n\020models_activated\030\013"
-  " \003(\t\022[\n\031feature_importance_scores\030\014 \003(\0132"
-  "8.protobuf.TricapaMLAnalysis.FeatureImpo"
-  "rtanceScoresEntry\022\035\n\025requires_human_revi"
-  "ew\030\r \001(\010\032>\n\034FeatureImportanceScoresEntry"
-  "\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\"\236\010\n\017Dis"
-  "tributedNode\022\017\n\007node_id\030\001 \001(\t\022\025\n\rnode_ho"
-  "stname\030\002 \001(\t\022\027\n\017node_ip_address\030\003 \001(\t\022\031\n"
-  "\021physical_location\030\004 \001(\t\0225\n\tnode_role\030\005 "
-  "\001(\0162\".protobuf.DistributedNode.NodeRole\022"
-  "9\n\013node_status\030\006 \001(\0162$.protobuf.Distribu"
-  "tedNode.NodeStatus\0222\n\016last_heartbeat\030\007 \001"
-  "(\0132\032.google.protobuf.Timestamp\022\030\n\020operat"
-  "ing_system\030\010 \001(\t\022\022\n\nos_version\030\t \001(\t\022\025\n\r"
-  "agent_version\030\n \001(\t\022\022\n\nprocess_id\030\013 \001(\005\022"
-  "\024\n\014container_id\030\014 \001(\t\022\024\n\014cluster_name\030\r "
-  "\001(\t\022\031\n\021cpu_usage_percent\030\017 \001(\002\022\027\n\017memory"
-  "_usage_mb\030\020 \001(\002\022\032\n\022active_connections\030\021 "
-  "\001(\005\022\023\n\013queue_depth\030\022 \001(\005\022)\n\006uptime\030\023 \001(\013"
-  "2\031.google.protobuf.Duration\022J\n\021node_capa"
-  "bilities\030\024 \003(\0132/.protobuf.DistributedNod"
-  "e.NodeCapabilitiesEntry\022\033\n\023supported_pro"
-  "tocols\030\025 \003(\t\022\035\n\025configuration_version\030\026 "
-  "\001(\t\0327\n\025NodeCapabilitiesEntry\022\013\n\003key\030\001 \001("
-  "\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\320\001\n\010NodeRole\022\022\n\016PAC"
-  "KET_SNIFFER\020\000\022\025\n\021FEATURE_PROCESSOR\020\001\022\022\n\016"
-  "GEOIP_ENRICHER\020\002\022\017\n\013ML_ANALYZER\020\003\022\023\n\017THR"
-  "EAT_DETECTOR\020\004\022\027\n\023FIREWALL_CONTROLLER\020\005\022"
-  "\023\n\017DATA_AGGREGATOR\020\006\022\030\n\024DASHBOARD_VISUAL"
-  "IZER\020\007\022\027\n\023CLUSTER_COORDINATOR\020\010\"`\n\nNodeS"
-  "tatus\022\n\n\006ACTIVE\020\000\022\014\n\010STARTING\020\001\022\014\n\010STOPP"
-  "ING\020\002\022\t\n\005ERROR\020\003\022\017\n\013MAINTENANCE\020\004\022\016\n\nOVE"
-  "RLOADED\020\005\"\275\007\n\020PipelineTracking\022\023\n\013pipeli"
-  "ne_id\030\001 \001(\t\0222\n\016pipeline_start\030\002 \001(\0132\032.go"
-  "ogle.protobuf.Timestamp\022\032\n\022sniffer_proce"
-  "ss_id\030\003 \001(\005\022\034\n\024processor_process_id\030\004 \001("
-  "\005\022\033\n\023enricher_process_id\030\005 \001(\005\022\033\n\023analyz"
-  "er_process_id\030\006 \001(\005\022\033\n\023detector_process_"
-  "id\030\007 \001(\005\022\035\n\025controller_process_id\030\010 \001(\005\022"
-  "6\n\022packet_captured_at\030\n \001(\0132\032.google.pro"
-  "tobuf.Timestamp\0229\n\025features_extracted_at"
-  "\030\013 \001(\0132\032.google.protobuf.Timestamp\0225\n\021ge"
-  "oip_enriched_at\030\014 \001(\0132\032.google.protobuf."
-  "Timestamp\0222\n\016ml_analyzed_at\030\r \001(\0132\032.goog"
-  "le.protobuf.Timestamp\0226\n\022threat_detected"
-  "_at\030\016 \001(\0132\032.google.protobuf.Timestamp\0223\n"
-  "\017action_taken_at\030\017 \001(\0132\032.google.protobuf"
-  ".Timestamp\022;\n\030total_processing_latency\030\024"
-  " \001(\0132\031.google.protobuf.Duration\022\033\n\023pipel"
-  "ine_hops_count\030\025 \001(\005\022\027\n\017processing_path\030"
-  "\026 \001(\t\022\026\n\016retry_attempts\030\031 \001(\005\022\031\n\021process"
-  "ing_errors\030\032 \003(\t\022\035\n\025requires_reprocessin"
-  "g\030\033 \001(\010\022M\n\022component_metadata\030\036 \003(\01321.pr"
-  "otobuf.PipelineTracking.ComponentMetadat"
-  "aEntry\022\027\n\017processing_tags\030\037 \003(\t\0328\n\026Compo"
-  "nentMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030"
-  "\002 \001(\t:\0028\001\"\347\001\n\013RAGAnalysis\022\022\n\nquery_text\030"
-  "\001 \001(\t\022\033\n\023retrieved_knowledge\030\002 \003(\t\022\030\n\020re"
-  "levance_scores\030\003 \003(\001\022\035\n\025ai_generated_ana"
-  "lysis\030\004 \001(\t\022\033\n\023analysis_confidence\030\005 \001(\001"
-  "\022\031\n\021knowledge_sources\030\006 \003(\t\0226\n\022analysis_"
-  "timestamp\030\007 \001(\0132\032.google.protobuf.Timest"
-  "amp\"\333\003\n\rHumanFeedback\022\023\n\013feedback_id\030\001 \001"
-  "(\t\022\027\n\017analyst_user_id\030\002 \001(\t\022\032\n\022event_ref"
-  "erence_id\030\003 \001(\t\022;\n\rfeedback_type\030\004 \001(\0162$"
-  ".protobuf.HumanFeedback.FeedbackType\022\037\n\027"
-  "confirmed_true_positive\030\005 \001(\010\022 \n\030confirm"
-  "ed_false_positive\030\006 \001(\010\022\033\n\023analyst_expla"
-  "nation\030\007 \001(\t\022\024\n\014analyst_tags\030\010 \003(\t\022!\n\031an"
-  "alyst_confidence_rating\030\t \001(\005\0226\n\022feedbac"
-  "k_timestamp\030\n \001(\0132\032.google.protobuf.Time"
-  "stamp\"r\n\014FeedbackType\022\016\n\nVALIDATION\020\000\022\016\n"
-  "\nCORRECTION\020\001\022\017\n\013ENHANCEMENT\020\002\022\031\n\025FALSE_"
-  "POSITIVE_REPORT\020\003\022\026\n\022ADDITIONAL_CONTEXT\020"
-  "\004\"\243\003\n\024HumanInTheLoopReview\022\037\n\027requires_h"
-  "uman_analysis\030\001 \001(\010\022F\n\017review_priority\030\002"
-  " \001(\0162-.protobuf.HumanInTheLoopReview.Rev"
-  "iewPriority\022\026\n\016review_reasons\030\003 \003(\t\0221\n\020a"
-  "nalyst_feedback\030\004 \001(\0132\027.protobuf.HumanFe"
-  "edback\0227\n\023escalated_timestamp\030\005 \001(\0132\032.go"
-  "ogle.protobuf.Timestamp\0226\n\022reviewed_time"
-  "stamp\030\006 \001(\0132\032.google.protobuf.Timestamp\022"
-  "\030\n\020review_completed\030\007 \001(\010\"L\n\016ReviewPrior"
-  "ity\022\007\n\003LOW\020\000\022\n\n\006MEDIUM\020\001\022\010\n\004HIGH\020\002\022\014\n\010CR"
-  "ITICAL\020\003\022\r\n\tEMERGENCY\020\004\"\265\007\n\024NetworkSecur"
-  "ityEvent\022\020\n\010event_id\030\001 \001(\t\0223\n\017event_time"
-  "stamp\030\002 \001(\0132\032.google.protobuf.Timestamp\022"
-  "\033\n\023originating_node_id\030\003 \001(\t\0223\n\020network_"
-  "features\030\004 \001(\0132\031.protobuf.NetworkFeature"
-  "s\022/\n\016geo_enrichment\030\005 \001(\0132\027.protobuf.Geo"
-  "Enrichment\022)\n\013time_window\030\006 \001(\0132\024.protob"
-  "uf.TimeWindow\0220\n\013ml_analysis\030\007 \001(\0132\033.pro"
-  "tobuf.TricapaMLAnalysis\022\?\n\034additional_mo"
-  "del_predictions\030\010 \003(\0132\031.protobuf.ModelPr"
-  "ediction\0221\n\016capturing_node\030\t \001(\0132\031.proto"
-  "buf.DistributedNode\0225\n\021pipeline_tracking"
-  "\030\n \001(\0132\032.protobuf.PipelineTracking\022+\n\014ra"
-  "g_analysis\030\013 \001(\0132\025.protobuf.RAGAnalysis\022"
-  "4\n\014human_review\030\014 \001(\0132\036.protobuf.HumanIn"
-  "TheLoopReview\022\034\n\024overall_threat_score\030\017 "
-  "\001(\001\022\034\n\024final_classification\030\020 \001(\t\022\027\n\017thr"
-  "eat_category\030\021 \001(\t\022\026\n\016correlation_id\030\024 \001"
-  "(\t\022\031\n\021related_event_ids\030\025 \003(\t\022\026\n\016event_c"
-  "hain_id\030\026 \001(\t\022\026\n\016schema_version\030\031 \001(\r\022K\n"
-  "\017custom_metadata\030\032 \003(\01322.protobuf.Networ"
-  "kSecurityEvent.CustomMetadataEntry\022\022\n\nev"
-  "ent_tags\030\033 \003(\t\022\030\n\020protobuf_version\030\034 \001(\t"
-  "\0325\n\023CustomMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005"
-  "value\030\002 \001(\t:\0028\001\"\325\002\n\nEventBatch\022.\n\006events"
-  "\030\001 \003(\0132\036.protobuf.NetworkSecurityEvent\022\020"
-  "\n\010batch_id\030\002 \001(\004\0224\n\020batch_created_at\030\003 \001"
-  "(\0132\032.google.protobuf.Timestamp\022\022\n\nbatch_"
-  "size\030\004 \001(\r\022<\n\017processing_mode\030\005 \001(\0162#.pr"
-  "otobuf.EventBatch.ProcessingMode\022\031\n\021batc"
-  "h_source_node\030\006 \001(\t\"b\n\016ProcessingMode\022\r\n"
-  "\tREAL_TIME\020\000\022\022\n\016NEAR_REAL_TIME\020\001\022\024\n\020BATC"
-  "H_PROCESSING\020\002\022\027\n\023HISTORICAL_ANALYSIS\020\003\""
-  "\223\005\n\023SystemConfiguration\022\031\n\021enabled_ml_mo"
-  "dels\030\001 \003(\t\022Y\n\027threat_score_thresholds\030\002 "
-  "\003(\01328.protobuf.SystemConfiguration.Threa"
-  "tScoreThresholdsEntry\0223\n\020time_window_siz"
-  "e\030\003 \001(\0132\031.google.protobuf.Duration\022\035\n\025ma"
-  "x_events_per_window\030\004 \001(\r\0220\n\rcluster_nod"
-  "es\030\005 \003(\0132\031.protobuf.DistributedNode\022U\n\025n"
-  "ode_role_assignments\030\006 \003(\01326.protobuf.Sy"
-  "stemConfiguration.NodeRoleAssignmentsEnt"
-  "ry\022\032\n\022encryption_enabled\030\007 \001(\010\022\033\n\023compre"
-  "ssion_enabled\030\010 \001(\010\022\034\n\024encryption_algori"
-  "thm\030\t \001(\t\022\034\n\024rag_analysis_enabled\030\n \001(\010\022"
-  "\032\n\022rag_model_endpoint\030\013 \001(\t\022\036\n\026knowledge"
-  "_base_sources\030\014 \003(\t\032<\n\032ThreatScoreThresh"
-  "oldsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028"
-  "\001\032:\n\030NodeRoleAssignmentsEntry\022\013\n\003key\030\001 \001"
-  "(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\247\005\n\022RansomwareFeat"
-  "ures\022\031\n\021dns_query_entropy\030\001 \001(\002\022\034\n\024new_e"
-  "xternal_ips_30s\030\002 \001(\005\022\036\n\026dns_query_rate_"
-  "per_min\030\003 \001(\002\022 \n\030failed_dns_queries_rati"
-  "o\030\004 \001(\002\022\"\n\032tls_self_signed_cert_count\030\005 "
-  "\001(\005\022$\n\034non_standard_port_http_count\030\006 \001("
-  "\005\022 \n\030smb_connection_diversity\030\007 \001(\005\022\035\n\025r"
-  "dp_failed_auth_count\030\010 \001(\005\022$\n\034new_intern"
-  "al_connections_30s\030\t \001(\005\022\037\n\027port_scan_pa"
-  "ttern_score\030\n \001(\002\022!\n\031upload_download_rat"
-  "io_30s\030\013 \001(\002\022\037\n\027burst_connections_count\030"
-  "\014 \001(\005\022\037\n\027unique_destinations_30s\030\r \001(\005\022#"
-  "\n\033large_upload_sessions_count\030\016 \001(\005\022\037\n\027n"
-  "octurnal_activity_flag\030\017 \001(\010\022\036\n\026connecti"
-  "on_rate_stddev\030\020 \001(\002\022 \n\030protocol_diversi"
-  "ty_score\030\021 \001(\002\022!\n\031avg_flow_duration_seco"
-  "nds\030\022 \001(\002\022\025\n\rtcp_rst_ratio\030\023 \001(\002\022\035\n\025syn_"
-  "without_ack_ratio\030\024 \001(\002b\006proto3"
+  "obuf/duration.proto\"\305\002\n\014DDoSFeatures\022\025\n\r"
+  "syn_ack_ratio\030\001 \001(\002\022\027\n\017packet_symmetry\030\002"
+  " \001(\002\022\034\n\024source_ip_dispersion\030\003 \001(\002\022\036\n\026pr"
+  "otocol_anomaly_score\030\004 \001(\002\022\033\n\023packet_siz"
+  "e_entropy\030\005 \001(\002\022$\n\034traffic_amplification"
+  "_factor\030\006 \001(\002\022\034\n\024flow_completion_rate\030\007 "
+  "\001(\002\022\"\n\032geographical_concentration\030\010 \001(\002\022"
+  "\037\n\027traffic_escalation_rate\030\t \001(\002\022!\n\031reso"
+  "urce_saturation_score\030\n \001(\002\"\216\002\n\032Ransomwa"
+  "reEmbeddedFeatures\022\024\n\014io_intensity\030\001 \001(\002"
+  "\022\017\n\007entropy\030\002 \001(\002\022\026\n\016resource_usage\030\003 \001("
+  "\002\022\030\n\020network_activity\030\004 \001(\002\022\027\n\017file_oper"
+  "ations\030\005 \001(\002\022\027\n\017process_anomaly\030\006 \001(\002\022\030\n"
+  "\020temporal_pattern\030\007 \001(\002\022\030\n\020access_freque"
+  "ncy\030\010 \001(\002\022\023\n\013data_volume\030\t \001(\002\022\034\n\024behavi"
+  "or_consistency\030\n \001(\002\"\216\002\n\017TrafficFeatures"
+  "\022\023\n\013packet_rate\030\001 \001(\002\022\027\n\017connection_rate"
+  "\030\002 \001(\002\022\025\n\rtcp_udp_ratio\030\003 \001(\002\022\027\n\017avg_pac"
+  "ket_size\030\004 \001(\002\022\024\n\014port_entropy\030\005 \001(\002\022\031\n\021"
+  "flow_duration_std\030\006 \001(\002\022\026\n\016src_ip_entrop"
+  "y\030\007 \001(\002\022\034\n\024dst_ip_concentration\030\010 \001(\002\022\030\n"
+  "\020protocol_variety\030\t \001(\002\022\034\n\024temporal_cons"
+  "istency\030\n \001(\002\"\337\002\n\020InternalFeatures\022 \n\030in"
+  "ternal_connection_rate\030\001 \001(\002\022 \n\030service_"
+  "port_consistency\030\002 \001(\002\022\033\n\023protocol_regul"
+  "arity\030\003 \001(\002\022\037\n\027packet_size_consistency\030\004"
+  " \001(\002\022\037\n\027connection_duration_std\030\005 \001(\002\022\036\n"
+  "\026lateral_movement_score\030\006 \001(\002\022\"\n\032service"
+  "_discovery_patterns\030\007 \001(\002\022$\n\034data_exfilt"
+  "ration_indicators\030\010 \001(\002\022\036\n\026temporal_anom"
+  "aly_score\030\t \001(\002\022\036\n\026access_pattern_entrop"
+  "y\030\n \001(\002\"\225\027\n\017NetworkFeatures\022\021\n\tsource_ip"
+  "\030\001 \001(\t\022\026\n\016destination_ip\030\002 \001(\t\022\023\n\013source"
+  "_port\030\003 \001(\r\022\030\n\020destination_port\030\004 \001(\r\022\027\n"
+  "\017protocol_number\030\005 \001(\r\022\025\n\rprotocol_name\030"
+  "\006 \001(\t\0223\n\017flow_start_time\030\007 \001(\0132\032.google."
+  "protobuf.Timestamp\0220\n\rflow_duration\030\010 \001("
+  "\0132\031.google.protobuf.Duration\022\"\n\032flow_dur"
+  "ation_microseconds\030\t \001(\004\022\035\n\025total_forwar"
+  "d_packets\030\n \001(\004\022\036\n\026total_backward_packet"
+  "s\030\013 \001(\004\022\033\n\023total_forward_bytes\030\014 \001(\004\022\034\n\024"
+  "total_backward_bytes\030\r \001(\004\022!\n\031forward_pa"
+  "cket_length_max\030\024 \001(\004\022!\n\031forward_packet_"
+  "length_min\030\025 \001(\004\022\"\n\032forward_packet_lengt"
+  "h_mean\030\026 \001(\001\022!\n\031forward_packet_length_st"
+  "d\030\027 \001(\001\022\"\n\032backward_packet_length_max\030\036 "
+  "\001(\004\022\"\n\032backward_packet_length_min\030\037 \001(\004\022"
+  "#\n\033backward_packet_length_mean\030  \001(\001\022\"\n\032"
+  "backward_packet_length_std\030! \001(\001\022\035\n\025flow"
+  "_bytes_per_second\030( \001(\001\022\037\n\027flow_packets_"
+  "per_second\030) \001(\001\022\"\n\032forward_packets_per_"
+  "second\030* \001(\001\022#\n\033backward_packets_per_sec"
+  "ond\030+ \001(\001\022\035\n\025download_upload_ratio\030, \001(\001"
+  "\022\033\n\023average_packet_size\030- \001(\001\022$\n\034average"
+  "_forward_segment_size\030. \001(\001\022%\n\035average_b"
+  "ackward_segment_size\030/ \001(\001\022$\n\034flow_inter"
+  "_arrival_time_mean\0302 \001(\001\022#\n\033flow_inter_a"
+  "rrival_time_std\0303 \001(\001\022#\n\033flow_inter_arri"
+  "val_time_max\0304 \001(\004\022#\n\033flow_inter_arrival"
+  "_time_min\0305 \001(\004\022(\n forward_inter_arrival"
+  "_time_total\0306 \001(\001\022\'\n\037forward_inter_arriv"
+  "al_time_mean\0307 \001(\001\022&\n\036forward_inter_arri"
+  "val_time_std\0308 \001(\001\022&\n\036forward_inter_arri"
+  "val_time_max\0309 \001(\004\022&\n\036forward_inter_arri"
+  "val_time_min\030: \001(\004\022)\n!backward_inter_arr"
+  "ival_time_total\030; \001(\001\022(\n backward_inter_"
+  "arrival_time_mean\030< \001(\001\022\'\n\037backward_inte"
+  "r_arrival_time_std\030= \001(\001\022\'\n\037backward_int"
+  "er_arrival_time_max\030> \001(\004\022\'\n\037backward_in"
+  "ter_arrival_time_min\030\? \001(\004\022\026\n\016fin_flag_c"
+  "ount\030F \001(\r\022\026\n\016syn_flag_count\030G \001(\r\022\026\n\016rs"
+  "t_flag_count\030H \001(\r\022\026\n\016psh_flag_count\030I \001"
+  "(\r\022\026\n\016ack_flag_count\030J \001(\r\022\026\n\016urg_flag_c"
+  "ount\030K \001(\r\022\026\n\016cwe_flag_count\030L \001(\r\022\026\n\016ec"
+  "e_flag_count\030M \001(\r\022\031\n\021forward_psh_flags\030"
+  "N \001(\r\022\032\n\022backward_psh_flags\030O \001(\r\022\031\n\021for"
+  "ward_urg_flags\030P \001(\r\022\032\n\022backward_urg_fla"
+  "gs\030Q \001(\r\022\035\n\025forward_header_length\030U \001(\001\022"
+  "\036\n\026backward_header_length\030V \001(\001\022\"\n\032forwa"
+  "rd_average_bytes_bulk\030W \001(\001\022$\n\034forward_a"
+  "verage_packets_bulk\030X \001(\001\022!\n\031forward_ave"
+  "rage_bulk_rate\030Y \001(\001\022#\n\033backward_average"
+  "_bytes_bulk\030Z \001(\001\022%\n\035backward_average_pa"
+  "ckets_bulk\030[ \001(\001\022\"\n\032backward_average_bul"
+  "k_rate\030\\ \001(\001\022\035\n\025minimum_packet_length\030_ "
+  "\001(\004\022\035\n\025maximum_packet_length\030` \001(\004\022\032\n\022pa"
+  "cket_length_mean\030a \001(\001\022\031\n\021packet_length_"
+  "std\030b \001(\001\022\036\n\026packet_length_variance\030c \001("
+  "\001\022\023\n\013active_mean\030h \001(\001\022\021\n\tidle_mean\030i \001("
+  "\001\022\025\n\rddos_features\030d \003(\001\022\033\n\023ransomware_f"
+  "eatures\030e \003(\001\022\037\n\027general_attack_features"
+  "\030f \003(\001\022!\n\031internal_traffic_features\030g \003("
+  "\001\0220\n\nransomware\030j \001(\0132\034.protobuf.Ransomw"
+  "areFeatures\022F\n\017custom_features\030n \003(\0132-.p"
+  "rotobuf.NetworkFeatures.CustomFeaturesEn"
+  "try\022H\n\020feature_metadata\030o \003(\0132..protobuf"
+  ".NetworkFeatures.FeatureMetadataEntry\022-\n"
+  "\rddos_embedded\030p \001(\0132\026.protobuf.DDoSFeat"
+  "ures\022A\n\023ransomware_embedded\030q \001(\0132$.prot"
+  "obuf.RansomwareEmbeddedFeatures\0229\n\026traff"
+  "ic_classification\030r \001(\0132\031.protobuf.Traff"
+  "icFeatures\0224\n\020internal_anomaly\030s \001(\0132\032.p"
+  "rotobuf.InternalFeatures\0325\n\023CustomFeatur"
+  "esEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\032"
+  "6\n\024FeatureMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005"
+  "value\030\002 \001(\t:\0028\001\"\342\003\n\017GeoLocationInfo\022\024\n\014c"
+  "ountry_name\030\001 \001(\t\022\024\n\014country_code\030\002 \001(\t\022"
+  "\023\n\013region_name\030\003 \001(\t\022\021\n\tcity_name\030\004 \001(\t\022"
+  "\020\n\010latitude\030\005 \001(\001\022\021\n\tlongitude\030\006 \001(\001\022\020\n\010"
+  "timezone\030\007 \001(\t\022\020\n\010isp_name\030\010 \001(\t\022\031\n\021orga"
+  "nization_name\030\t \001(\t\022 \n\030autonomous_system"
+  "_number\030\n \001(\t\022\032\n\022is_anonymous_proxy\030\013 \001("
+  "\010\022\035\n\025is_satellite_provider\030\014 \001(\010\022\030\n\020is_t"
+  "or_exit_node\030\r \001(\010\022\032\n\022is_known_malicious"
+  "\030\016 \001(\010\022;\n\014threat_level\030\017 \001(\0162%.protobuf."
+  "GeoLocationInfo.ThreatLevel\"G\n\013ThreatLev"
+  "el\022\013\n\007UNKNOWN\020\000\022\007\n\003LOW\020\001\022\n\n\006MEDIUM\020\002\022\010\n\004"
+  "HIGH\020\003\022\014\n\010CRITICAL\020\004\"\212\n\n\rGeoEnrichment\0223"
+  "\n\020sniffer_node_geo\030\001 \001(\0132\031.protobuf.GeoL"
+  "ocationInfo\0220\n\rsource_ip_geo\030\002 \001(\0132\031.pro"
+  "tobuf.GeoLocationInfo\0225\n\022destination_ip_"
+  "geo\030\003 \001(\0132\031.protobuf.GeoLocationInfo\022&\n\036"
+  "source_destination_distance_km\030\n \001(\001\022\'\n\037"
+  "source_destination_same_country\030\013 \001(\010\022)\n"
+  "!source_destination_same_continent\030\014 \001(\010"
+  "\022\031\n\021distance_category\030\r \001(\t\022\"\n\032sniffer_s"
+  "ource_distance_km\030\024 \001(\001\022#\n\033sniffer_sourc"
+  "e_same_country\030\025 \001(\010\022#\n\033sniffer_source_r"
+  "elationship\030\026 \001(\t\022\'\n\037sniffer_destination"
+  "_distance_km\030\031 \001(\001\022(\n sniffer_destinatio"
+  "n_same_country\030\032 \001(\010\022(\n sniffer_destinat"
+  "ion_relationship\030\033 \001(\t\022#\n\033threat_intelli"
+  "gence_matches\030\036 \003(\t\022\"\n\032threat_intelligen"
+  "ce_source\030\037 \001(\t\022 \n\030geographic_anomaly_sc"
+  "ore\030  \001(\002\022%\n\035suspicious_geographic_patte"
+  "rn\030! \001(\010\022\035\n\025sniffer_node_enriched\030( \001(\010\022"
+  "\032\n\022source_ip_enriched\030) \001(\010\022\037\n\027destinati"
+  "on_ip_enriched\030* \001(\010\022\033\n\023enrichment_compl"
+  "ete\030+ \001(\010\022%\n\035public_ip_discovery_attempt"
+  "ed\030- \001(\010\022\033\n\023original_private_ip\030. \001(\t\022\034\n"
+  "\024discovered_public_ip\030/ \001(\t\022\034\n\024ip_discov"
+  "ery_service\0300 \001(\t\0225\n\021ip_discovery_time\0301"
+  " \001(\0132\032.google.protobuf.Timestamp\022\030\n\020enri"
+  "cher_version\0302 \001(\t\022\024\n\014geoip_method\0303 \001(\t"
+  "\022\036\n\026geoip_database_version\0304 \001(\t\022!\n\031fall"
+  "back_coordinates_used\0305 \001(\010\022\037\n\027total_loo"
+  "kup_latency_ms\0306 \001(\002\022\022\n\ncache_hits\0307 \001(\005"
+  "\022\024\n\014cache_misses\0308 \001(\005\022\037\n\027enrichment_suc"
+  "cess_rate\0309 \001(\002\0228\n\024enrichment_timestamp\030"
+  ": \001(\0132\032.google.protobuf.Timestamp\"\273\002\n\nTi"
+  "meWindow\0220\n\014window_start\030\001 \001(\0132\032.google."
+  "protobuf.Timestamp\022.\n\nwindow_end\030\002 \001(\0132\032"
+  ".google.protobuf.Timestamp\0222\n\017window_dur"
+  "ation\030\003 \001(\0132\031.google.protobuf.Duration\022\027"
+  "\n\017sequence_number\030\004 \001(\004\0224\n\013window_type\030\005"
+  " \001(\0162\037.protobuf.TimeWindow.WindowType\"H\n"
+  "\nWindowType\022\013\n\007SLIDING\020\000\022\014\n\010TUMBLING\020\001\022\021"
+  "\n\rSESSION_BASED\020\002\022\014\n\010ADAPTIVE\020\003\"\335\004\n\017Flow"
+  "Aggregation\022)\n\013time_window\030\001 \001(\0132\024.proto"
+  "buf.TimeWindow\022\035\n\025total_flows_in_window\030"
+  "\002 \001(\004\022\037\n\027total_packets_in_window\030\003 \001(\004\022\035"
+  "\n\025total_bytes_in_window\030\004 \001(\004\022R\n\025protoco"
+  "l_distribution\030\005 \003(\01323.protobuf.FlowAggr"
+  "egation.ProtocolDistributionEntry\022J\n\021por"
+  "t_distribution\030\006 \003(\0132/.protobuf.FlowAggr"
+  "egation.PortDistributionEntry\022P\n\024country"
+  "_distribution\030\007 \003(\01322.protobuf.FlowAggre"
+  "gation.CountryDistributionEntry\022\034\n\024windo"
+  "w_anomaly_score\030\010 \001(\001\032;\n\031ProtocolDistrib"
+  "utionEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\002"
+  "8\001\0327\n\025PortDistributionEntry\022\013\n\003key\030\001 \001(\t"
+  "\022\r\n\005value\030\002 \001(\004:\0028\001\032:\n\030CountryDistributi"
+  "onEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\""
+  "\232\004\n\017ModelPrediction\022\022\n\nmodel_name\030\001 \001(\t\022"
+  "\025\n\rmodel_version\030\002 \001(\t\0227\n\nmodel_type\030\003 \001"
+  "(\0162#.protobuf.ModelPrediction.ModelType\022"
+  "\030\n\020prediction_class\030\004 \001(\t\022\030\n\020confidence_"
+  "score\030\005 \001(\001\022\033\n\023class_probabilities\030\006 \003(\001"
+  "\0228\n\024prediction_timestamp\030\007 \001(\0132\032.google."
+  "protobuf.Timestamp\0226\n\023processing_duratio"
+  "n\030\010 \001(\0132\031.google.protobuf.Duration\"\337\001\n\tM"
+  "odelType\022\031\n\025RANDOM_FOREST_GENERAL\020\000\022\021\n\rL"
+  "IGHTGBM_DDOS\020\001\022\035\n\031NEURAL_NETWORK_RANSOMW"
+  "ARE\020\002\022\024\n\020ENSEMBLE_TRICAPA\020\003\022\037\n\033INTERNAL_"
+  "TRAFFIC_CLASSIFIER\020\004\022\030\n\024TRANSFORMER_ADVA"
+  "NCED\020\005\022\026\n\022RANDOM_FOREST_DDOS\020\006\022\034\n\030RANDOM"
+  "_FOREST_RANSOMWARE\020\007\"\300\005\n\021TricapaMLAnalys"
+  "is\022;\n\030level1_general_detection\030\001 \001(\0132\031.p"
+  "rotobuf.ModelPrediction\022\036\n\026attack_detect"
+  "ed_level1\030\002 \001(\010\022\031\n\021level1_confidence\030\003 \001"
+  "(\001\022@\n\035level2_context_classification\030\004 \001("
+  "\0132\031.protobuf.ModelPrediction\022\027\n\017traffic_"
+  "context\030\005 \001(\t\022A\n\036level2_specialized_pred"
+  "ictions\030\t \003(\0132\031.protobuf.ModelPrediction"
+  "\022A\n\036level3_specialized_predictions\030\006 \003(\013"
+  "2\031.protobuf.ModelPrediction\022#\n\033final_thr"
+  "eat_classification\030\007 \001(\t\022\033\n\023ensemble_con"
+  "fidence\030\010 \001(\001\022:\n\027total_analysis_duration"
+  "\030\n \001(\0132\031.google.protobuf.Duration\022\030\n\020mod"
+  "els_activated\030\013 \003(\t\022[\n\031feature_importanc"
+  "e_scores\030\014 \003(\01328.protobuf.TricapaMLAnaly"
+  "sis.FeatureImportanceScoresEntry\022\035\n\025requ"
+  "ires_human_review\030\r \001(\010\032>\n\034FeatureImport"
+  "anceScoresEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 "
+  "\001(\001:\0028\001\"\236\010\n\017DistributedNode\022\017\n\007node_id\030\001"
+  " \001(\t\022\025\n\rnode_hostname\030\002 \001(\t\022\027\n\017node_ip_a"
+  "ddress\030\003 \001(\t\022\031\n\021physical_location\030\004 \001(\t\022"
+  "5\n\tnode_role\030\005 \001(\0162\".protobuf.Distribute"
+  "dNode.NodeRole\0229\n\013node_status\030\006 \001(\0162$.pr"
+  "otobuf.DistributedNode.NodeStatus\0222\n\016las"
+  "t_heartbeat\030\007 \001(\0132\032.google.protobuf.Time"
+  "stamp\022\030\n\020operating_system\030\010 \001(\t\022\022\n\nos_ve"
+  "rsion\030\t \001(\t\022\025\n\ragent_version\030\n \001(\t\022\022\n\npr"
+  "ocess_id\030\013 \001(\005\022\024\n\014container_id\030\014 \001(\t\022\024\n\014"
+  "cluster_name\030\r \001(\t\022\031\n\021cpu_usage_percent\030"
+  "\017 \001(\002\022\027\n\017memory_usage_mb\030\020 \001(\002\022\032\n\022active"
+  "_connections\030\021 \001(\005\022\023\n\013queue_depth\030\022 \001(\005\022"
+  ")\n\006uptime\030\023 \001(\0132\031.google.protobuf.Durati"
+  "on\022J\n\021node_capabilities\030\024 \003(\0132/.protobuf"
+  ".DistributedNode.NodeCapabilitiesEntry\022\033"
+  "\n\023supported_protocols\030\025 \003(\t\022\035\n\025configura"
+  "tion_version\030\026 \001(\t\0327\n\025NodeCapabilitiesEn"
+  "try\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\320\001\n\010"
+  "NodeRole\022\022\n\016PACKET_SNIFFER\020\000\022\025\n\021FEATURE_"
+  "PROCESSOR\020\001\022\022\n\016GEOIP_ENRICHER\020\002\022\017\n\013ML_AN"
+  "ALYZER\020\003\022\023\n\017THREAT_DETECTOR\020\004\022\027\n\023FIREWAL"
+  "L_CONTROLLER\020\005\022\023\n\017DATA_AGGREGATOR\020\006\022\030\n\024D"
+  "ASHBOARD_VISUALIZER\020\007\022\027\n\023CLUSTER_COORDIN"
+  "ATOR\020\010\"`\n\nNodeStatus\022\n\n\006ACTIVE\020\000\022\014\n\010STAR"
+  "TING\020\001\022\014\n\010STOPPING\020\002\022\t\n\005ERROR\020\003\022\017\n\013MAINT"
+  "ENANCE\020\004\022\016\n\nOVERLOADED\020\005\"\275\007\n\020PipelineTra"
+  "cking\022\023\n\013pipeline_id\030\001 \001(\t\0222\n\016pipeline_s"
+  "tart\030\002 \001(\0132\032.google.protobuf.Timestamp\022\032"
+  "\n\022sniffer_process_id\030\003 \001(\005\022\034\n\024processor_"
+  "process_id\030\004 \001(\005\022\033\n\023enricher_process_id\030"
+  "\005 \001(\005\022\033\n\023analyzer_process_id\030\006 \001(\005\022\033\n\023de"
+  "tector_process_id\030\007 \001(\005\022\035\n\025controller_pr"
+  "ocess_id\030\010 \001(\005\0226\n\022packet_captured_at\030\n \001"
+  "(\0132\032.google.protobuf.Timestamp\0229\n\025featur"
+  "es_extracted_at\030\013 \001(\0132\032.google.protobuf."
+  "Timestamp\0225\n\021geoip_enriched_at\030\014 \001(\0132\032.g"
+  "oogle.protobuf.Timestamp\0222\n\016ml_analyzed_"
+  "at\030\r \001(\0132\032.google.protobuf.Timestamp\0226\n\022"
+  "threat_detected_at\030\016 \001(\0132\032.google.protob"
+  "uf.Timestamp\0223\n\017action_taken_at\030\017 \001(\0132\032."
+  "google.protobuf.Timestamp\022;\n\030total_proce"
+  "ssing_latency\030\024 \001(\0132\031.google.protobuf.Du"
+  "ration\022\033\n\023pipeline_hops_count\030\025 \001(\005\022\027\n\017p"
+  "rocessing_path\030\026 \001(\t\022\026\n\016retry_attempts\030\031"
+  " \001(\005\022\031\n\021processing_errors\030\032 \003(\t\022\035\n\025requi"
+  "res_reprocessing\030\033 \001(\010\022M\n\022component_meta"
+  "data\030\036 \003(\01321.protobuf.PipelineTracking.C"
+  "omponentMetadataEntry\022\027\n\017processing_tags"
+  "\030\037 \003(\t\0328\n\026ComponentMetadataEntry\022\013\n\003key\030"
+  "\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\347\001\n\013RAGAnalysis"
+  "\022\022\n\nquery_text\030\001 \001(\t\022\033\n\023retrieved_knowle"
+  "dge\030\002 \003(\t\022\030\n\020relevance_scores\030\003 \003(\001\022\035\n\025a"
+  "i_generated_analysis\030\004 \001(\t\022\033\n\023analysis_c"
+  "onfidence\030\005 \001(\001\022\031\n\021knowledge_sources\030\006 \003"
+  "(\t\0226\n\022analysis_timestamp\030\007 \001(\0132\032.google."
+  "protobuf.Timestamp\"\333\003\n\rHumanFeedback\022\023\n\013"
+  "feedback_id\030\001 \001(\t\022\027\n\017analyst_user_id\030\002 \001"
+  "(\t\022\032\n\022event_reference_id\030\003 \001(\t\022;\n\rfeedba"
+  "ck_type\030\004 \001(\0162$.protobuf.HumanFeedback.F"
+  "eedbackType\022\037\n\027confirmed_true_positive\030\005"
+  " \001(\010\022 \n\030confirmed_false_positive\030\006 \001(\010\022\033"
+  "\n\023analyst_explanation\030\007 \001(\t\022\024\n\014analyst_t"
+  "ags\030\010 \003(\t\022!\n\031analyst_confidence_rating\030\t"
+  " \001(\005\0226\n\022feedback_timestamp\030\n \001(\0132\032.googl"
+  "e.protobuf.Timestamp\"r\n\014FeedbackType\022\016\n\n"
+  "VALIDATION\020\000\022\016\n\nCORRECTION\020\001\022\017\n\013ENHANCEM"
+  "ENT\020\002\022\031\n\025FALSE_POSITIVE_REPORT\020\003\022\026\n\022ADDI"
+  "TIONAL_CONTEXT\020\004\"\243\003\n\024HumanInTheLoopRevie"
+  "w\022\037\n\027requires_human_analysis\030\001 \001(\010\022F\n\017re"
+  "view_priority\030\002 \001(\0162-.protobuf.HumanInTh"
+  "eLoopReview.ReviewPriority\022\026\n\016review_rea"
+  "sons\030\003 \003(\t\0221\n\020analyst_feedback\030\004 \001(\0132\027.p"
+  "rotobuf.HumanFeedback\0227\n\023escalated_times"
+  "tamp\030\005 \001(\0132\032.google.protobuf.Timestamp\0226"
+  "\n\022reviewed_timestamp\030\006 \001(\0132\032.google.prot"
+  "obuf.Timestamp\022\030\n\020review_completed\030\007 \001(\010"
+  "\"L\n\016ReviewPriority\022\007\n\003LOW\020\000\022\n\n\006MEDIUM\020\001\022"
+  "\010\n\004HIGH\020\002\022\014\n\010CRITICAL\020\003\022\r\n\tEMERGENCY\020\004\"\265"
+  "\007\n\024NetworkSecurityEvent\022\020\n\010event_id\030\001 \001("
+  "\t\0223\n\017event_timestamp\030\002 \001(\0132\032.google.prot"
+  "obuf.Timestamp\022\033\n\023originating_node_id\030\003 "
+  "\001(\t\0223\n\020network_features\030\004 \001(\0132\031.protobuf"
+  ".NetworkFeatures\022/\n\016geo_enrichment\030\005 \001(\013"
+  "2\027.protobuf.GeoEnrichment\022)\n\013time_window"
+  "\030\006 \001(\0132\024.protobuf.TimeWindow\0220\n\013ml_analy"
+  "sis\030\007 \001(\0132\033.protobuf.TricapaMLAnalysis\022\?"
+  "\n\034additional_model_predictions\030\010 \003(\0132\031.p"
+  "rotobuf.ModelPrediction\0221\n\016capturing_nod"
+  "e\030\t \001(\0132\031.protobuf.DistributedNode\0225\n\021pi"
+  "peline_tracking\030\n \001(\0132\032.protobuf.Pipelin"
+  "eTracking\022+\n\014rag_analysis\030\013 \001(\0132\025.protob"
+  "uf.RAGAnalysis\0224\n\014human_review\030\014 \001(\0132\036.p"
+  "rotobuf.HumanInTheLoopReview\022\034\n\024overall_"
+  "threat_score\030\017 \001(\001\022\034\n\024final_classificati"
+  "on\030\020 \001(\t\022\027\n\017threat_category\030\021 \001(\t\022\026\n\016cor"
+  "relation_id\030\024 \001(\t\022\031\n\021related_event_ids\030\025"
+  " \003(\t\022\026\n\016event_chain_id\030\026 \001(\t\022\026\n\016schema_v"
+  "ersion\030\031 \001(\r\022K\n\017custom_metadata\030\032 \003(\01322."
+  "protobuf.NetworkSecurityEvent.CustomMeta"
+  "dataEntry\022\022\n\nevent_tags\030\033 \003(\t\022\030\n\020protobu"
+  "f_version\030\034 \001(\t\0325\n\023CustomMetadataEntry\022\013"
+  "\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\325\002\n\nEvent"
+  "Batch\022.\n\006events\030\001 \003(\0132\036.protobuf.Network"
+  "SecurityEvent\022\020\n\010batch_id\030\002 \001(\004\0224\n\020batch"
+  "_created_at\030\003 \001(\0132\032.google.protobuf.Time"
+  "stamp\022\022\n\nbatch_size\030\004 \001(\r\022<\n\017processing_"
+  "mode\030\005 \001(\0162#.protobuf.EventBatch.Process"
+  "ingMode\022\031\n\021batch_source_node\030\006 \001(\t\"b\n\016Pr"
+  "ocessingMode\022\r\n\tREAL_TIME\020\000\022\022\n\016NEAR_REAL"
+  "_TIME\020\001\022\024\n\020BATCH_PROCESSING\020\002\022\027\n\023HISTORI"
+  "CAL_ANALYSIS\020\003\"\223\005\n\023SystemConfiguration\022\031"
+  "\n\021enabled_ml_models\030\001 \003(\t\022Y\n\027threat_scor"
+  "e_thresholds\030\002 \003(\01328.protobuf.SystemConf"
+  "iguration.ThreatScoreThresholdsEntry\0223\n\020"
+  "time_window_size\030\003 \001(\0132\031.google.protobuf"
+  ".Duration\022\035\n\025max_events_per_window\030\004 \001(\r"
+  "\0220\n\rcluster_nodes\030\005 \003(\0132\031.protobuf.Distr"
+  "ibutedNode\022U\n\025node_role_assignments\030\006 \003("
+  "\01326.protobuf.SystemConfiguration.NodeRol"
+  "eAssignmentsEntry\022\032\n\022encryption_enabled\030"
+  "\007 \001(\010\022\033\n\023compression_enabled\030\010 \001(\010\022\034\n\024en"
+  "cryption_algorithm\030\t \001(\t\022\034\n\024rag_analysis"
+  "_enabled\030\n \001(\010\022\032\n\022rag_model_endpoint\030\013 \001"
+  "(\t\022\036\n\026knowledge_base_sources\030\014 \003(\t\032<\n\032Th"
+  "reatScoreThresholdsEntry\022\013\n\003key\030\001 \001(\t\022\r\n"
+  "\005value\030\002 \001(\001:\0028\001\032:\n\030NodeRoleAssignmentsE"
+  "ntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\247\005\n"
+  "\022RansomwareFeatures\022\031\n\021dns_query_entropy"
+  "\030\001 \001(\002\022\034\n\024new_external_ips_30s\030\002 \001(\005\022\036\n\026"
+  "dns_query_rate_per_min\030\003 \001(\002\022 \n\030failed_d"
+  "ns_queries_ratio\030\004 \001(\002\022\"\n\032tls_self_signe"
+  "d_cert_count\030\005 \001(\005\022$\n\034non_standard_port_"
+  "http_count\030\006 \001(\005\022 \n\030smb_connection_diver"
+  "sity\030\007 \001(\005\022\035\n\025rdp_failed_auth_count\030\010 \001("
+  "\005\022$\n\034new_internal_connections_30s\030\t \001(\005\022"
+  "\037\n\027port_scan_pattern_score\030\n \001(\002\022!\n\031uplo"
+  "ad_download_ratio_30s\030\013 \001(\002\022\037\n\027burst_con"
+  "nections_count\030\014 \001(\005\022\037\n\027unique_destinati"
+  "ons_30s\030\r \001(\005\022#\n\033large_upload_sessions_c"
+  "ount\030\016 \001(\005\022\037\n\027nocturnal_activity_flag\030\017 "
+  "\001(\010\022\036\n\026connection_rate_stddev\030\020 \001(\002\022 \n\030p"
+  "rotocol_diversity_score\030\021 \001(\002\022!\n\031avg_flo"
+  "w_duration_seconds\030\022 \001(\002\022\025\n\rtcp_rst_rati"
+  "o\030\023 \001(\002\022\035\n\025syn_without_ack_ratio\030\024 \001(\002b\006"
+  "proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fduration_2eproto,
@@ -1506,9 +1711,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_
 };
 static ::_pbi::once_flag descriptor_table_network_5fsecurity_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_network_5fsecurity_2eproto = {
-    false, false, 12591, descriptor_table_protodef_network_5fsecurity_2eproto,
+    false, false, 14046, descriptor_table_protodef_network_5fsecurity_2eproto,
     "network_security.proto",
-    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 27,
+    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 31,
     schemas, file_default_instances, TableStruct_network_5fsecurity_2eproto::offsets,
     file_level_metadata_network_5fsecurity_2eproto, file_level_enum_descriptors_network_5fsecurity_2eproto,
     file_level_service_descriptors_network_5fsecurity_2eproto,
@@ -1751,6 +1956,2098 @@ constexpr int EventBatch::ProcessingMode_ARRAYSIZE;
 
 // ===================================================================
 
+class DDoSFeatures::_Internal {
+ public:
+};
+
+DDoSFeatures::DDoSFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.DDoSFeatures)
+}
+DDoSFeatures::DDoSFeatures(const DDoSFeatures& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  DDoSFeatures* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.syn_ack_ratio_){}
+    , decltype(_impl_.packet_symmetry_){}
+    , decltype(_impl_.source_ip_dispersion_){}
+    , decltype(_impl_.protocol_anomaly_score_){}
+    , decltype(_impl_.packet_size_entropy_){}
+    , decltype(_impl_.traffic_amplification_factor_){}
+    , decltype(_impl_.flow_completion_rate_){}
+    , decltype(_impl_.geographical_concentration_){}
+    , decltype(_impl_.traffic_escalation_rate_){}
+    , decltype(_impl_.resource_saturation_score_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.syn_ack_ratio_, &from._impl_.syn_ack_ratio_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.resource_saturation_score_) -
+    reinterpret_cast<char*>(&_impl_.syn_ack_ratio_)) + sizeof(_impl_.resource_saturation_score_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.DDoSFeatures)
+}
+
+inline void DDoSFeatures::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.syn_ack_ratio_){0}
+    , decltype(_impl_.packet_symmetry_){0}
+    , decltype(_impl_.source_ip_dispersion_){0}
+    , decltype(_impl_.protocol_anomaly_score_){0}
+    , decltype(_impl_.packet_size_entropy_){0}
+    , decltype(_impl_.traffic_amplification_factor_){0}
+    , decltype(_impl_.flow_completion_rate_){0}
+    , decltype(_impl_.geographical_concentration_){0}
+    , decltype(_impl_.traffic_escalation_rate_){0}
+    , decltype(_impl_.resource_saturation_score_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+DDoSFeatures::~DDoSFeatures() {
+  // @@protoc_insertion_point(destructor:protobuf.DDoSFeatures)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void DDoSFeatures::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void DDoSFeatures::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void DDoSFeatures::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.DDoSFeatures)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.syn_ack_ratio_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.resource_saturation_score_) -
+      reinterpret_cast<char*>(&_impl_.syn_ack_ratio_)) + sizeof(_impl_.resource_saturation_score_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* DDoSFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // float syn_ack_ratio = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _impl_.syn_ack_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float packet_symmetry = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
+          _impl_.packet_symmetry_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float source_ip_dispersion = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.source_ip_dispersion_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float protocol_anomaly_score = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 37)) {
+          _impl_.protocol_anomaly_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float packet_size_entropy = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 45)) {
+          _impl_.packet_size_entropy_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float traffic_amplification_factor = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 53)) {
+          _impl_.traffic_amplification_factor_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float flow_completion_rate = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 61)) {
+          _impl_.flow_completion_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float geographical_concentration = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 69)) {
+          _impl_.geographical_concentration_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float traffic_escalation_rate = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 77)) {
+          _impl_.traffic_escalation_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float resource_saturation_score = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 85)) {
+          _impl_.resource_saturation_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* DDoSFeatures::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.DDoSFeatures)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float syn_ack_ratio = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_syn_ack_ratio = this->_internal_syn_ack_ratio();
+  uint32_t raw_syn_ack_ratio;
+  memcpy(&raw_syn_ack_ratio, &tmp_syn_ack_ratio, sizeof(tmp_syn_ack_ratio));
+  if (raw_syn_ack_ratio != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_syn_ack_ratio(), target);
+  }
+
+  // float packet_symmetry = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_symmetry = this->_internal_packet_symmetry();
+  uint32_t raw_packet_symmetry;
+  memcpy(&raw_packet_symmetry, &tmp_packet_symmetry, sizeof(tmp_packet_symmetry));
+  if (raw_packet_symmetry != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_packet_symmetry(), target);
+  }
+
+  // float source_ip_dispersion = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_source_ip_dispersion = this->_internal_source_ip_dispersion();
+  uint32_t raw_source_ip_dispersion;
+  memcpy(&raw_source_ip_dispersion, &tmp_source_ip_dispersion, sizeof(tmp_source_ip_dispersion));
+  if (raw_source_ip_dispersion != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_source_ip_dispersion(), target);
+  }
+
+  // float protocol_anomaly_score = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_anomaly_score = this->_internal_protocol_anomaly_score();
+  uint32_t raw_protocol_anomaly_score;
+  memcpy(&raw_protocol_anomaly_score, &tmp_protocol_anomaly_score, sizeof(tmp_protocol_anomaly_score));
+  if (raw_protocol_anomaly_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(4, this->_internal_protocol_anomaly_score(), target);
+  }
+
+  // float packet_size_entropy = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_size_entropy = this->_internal_packet_size_entropy();
+  uint32_t raw_packet_size_entropy;
+  memcpy(&raw_packet_size_entropy, &tmp_packet_size_entropy, sizeof(tmp_packet_size_entropy));
+  if (raw_packet_size_entropy != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(5, this->_internal_packet_size_entropy(), target);
+  }
+
+  // float traffic_amplification_factor = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_traffic_amplification_factor = this->_internal_traffic_amplification_factor();
+  uint32_t raw_traffic_amplification_factor;
+  memcpy(&raw_traffic_amplification_factor, &tmp_traffic_amplification_factor, sizeof(tmp_traffic_amplification_factor));
+  if (raw_traffic_amplification_factor != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(6, this->_internal_traffic_amplification_factor(), target);
+  }
+
+  // float flow_completion_rate = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_flow_completion_rate = this->_internal_flow_completion_rate();
+  uint32_t raw_flow_completion_rate;
+  memcpy(&raw_flow_completion_rate, &tmp_flow_completion_rate, sizeof(tmp_flow_completion_rate));
+  if (raw_flow_completion_rate != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(7, this->_internal_flow_completion_rate(), target);
+  }
+
+  // float geographical_concentration = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_geographical_concentration = this->_internal_geographical_concentration();
+  uint32_t raw_geographical_concentration;
+  memcpy(&raw_geographical_concentration, &tmp_geographical_concentration, sizeof(tmp_geographical_concentration));
+  if (raw_geographical_concentration != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(8, this->_internal_geographical_concentration(), target);
+  }
+
+  // float traffic_escalation_rate = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_traffic_escalation_rate = this->_internal_traffic_escalation_rate();
+  uint32_t raw_traffic_escalation_rate;
+  memcpy(&raw_traffic_escalation_rate, &tmp_traffic_escalation_rate, sizeof(tmp_traffic_escalation_rate));
+  if (raw_traffic_escalation_rate != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(9, this->_internal_traffic_escalation_rate(), target);
+  }
+
+  // float resource_saturation_score = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_resource_saturation_score = this->_internal_resource_saturation_score();
+  uint32_t raw_resource_saturation_score;
+  memcpy(&raw_resource_saturation_score, &tmp_resource_saturation_score, sizeof(tmp_resource_saturation_score));
+  if (raw_resource_saturation_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(10, this->_internal_resource_saturation_score(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.DDoSFeatures)
+  return target;
+}
+
+size_t DDoSFeatures::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.DDoSFeatures)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // float syn_ack_ratio = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_syn_ack_ratio = this->_internal_syn_ack_ratio();
+  uint32_t raw_syn_ack_ratio;
+  memcpy(&raw_syn_ack_ratio, &tmp_syn_ack_ratio, sizeof(tmp_syn_ack_ratio));
+  if (raw_syn_ack_ratio != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float packet_symmetry = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_symmetry = this->_internal_packet_symmetry();
+  uint32_t raw_packet_symmetry;
+  memcpy(&raw_packet_symmetry, &tmp_packet_symmetry, sizeof(tmp_packet_symmetry));
+  if (raw_packet_symmetry != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float source_ip_dispersion = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_source_ip_dispersion = this->_internal_source_ip_dispersion();
+  uint32_t raw_source_ip_dispersion;
+  memcpy(&raw_source_ip_dispersion, &tmp_source_ip_dispersion, sizeof(tmp_source_ip_dispersion));
+  if (raw_source_ip_dispersion != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float protocol_anomaly_score = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_anomaly_score = this->_internal_protocol_anomaly_score();
+  uint32_t raw_protocol_anomaly_score;
+  memcpy(&raw_protocol_anomaly_score, &tmp_protocol_anomaly_score, sizeof(tmp_protocol_anomaly_score));
+  if (raw_protocol_anomaly_score != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float packet_size_entropy = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_size_entropy = this->_internal_packet_size_entropy();
+  uint32_t raw_packet_size_entropy;
+  memcpy(&raw_packet_size_entropy, &tmp_packet_size_entropy, sizeof(tmp_packet_size_entropy));
+  if (raw_packet_size_entropy != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float traffic_amplification_factor = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_traffic_amplification_factor = this->_internal_traffic_amplification_factor();
+  uint32_t raw_traffic_amplification_factor;
+  memcpy(&raw_traffic_amplification_factor, &tmp_traffic_amplification_factor, sizeof(tmp_traffic_amplification_factor));
+  if (raw_traffic_amplification_factor != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float flow_completion_rate = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_flow_completion_rate = this->_internal_flow_completion_rate();
+  uint32_t raw_flow_completion_rate;
+  memcpy(&raw_flow_completion_rate, &tmp_flow_completion_rate, sizeof(tmp_flow_completion_rate));
+  if (raw_flow_completion_rate != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float geographical_concentration = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_geographical_concentration = this->_internal_geographical_concentration();
+  uint32_t raw_geographical_concentration;
+  memcpy(&raw_geographical_concentration, &tmp_geographical_concentration, sizeof(tmp_geographical_concentration));
+  if (raw_geographical_concentration != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float traffic_escalation_rate = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_traffic_escalation_rate = this->_internal_traffic_escalation_rate();
+  uint32_t raw_traffic_escalation_rate;
+  memcpy(&raw_traffic_escalation_rate, &tmp_traffic_escalation_rate, sizeof(tmp_traffic_escalation_rate));
+  if (raw_traffic_escalation_rate != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float resource_saturation_score = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_resource_saturation_score = this->_internal_resource_saturation_score();
+  uint32_t raw_resource_saturation_score;
+  memcpy(&raw_resource_saturation_score, &tmp_resource_saturation_score, sizeof(tmp_resource_saturation_score));
+  if (raw_resource_saturation_score != 0) {
+    total_size += 1 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData DDoSFeatures::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    DDoSFeatures::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*DDoSFeatures::GetClassData() const { return &_class_data_; }
+
+
+void DDoSFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<DDoSFeatures*>(&to_msg);
+  auto& from = static_cast<const DDoSFeatures&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.DDoSFeatures)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_syn_ack_ratio = from._internal_syn_ack_ratio();
+  uint32_t raw_syn_ack_ratio;
+  memcpy(&raw_syn_ack_ratio, &tmp_syn_ack_ratio, sizeof(tmp_syn_ack_ratio));
+  if (raw_syn_ack_ratio != 0) {
+    _this->_internal_set_syn_ack_ratio(from._internal_syn_ack_ratio());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_symmetry = from._internal_packet_symmetry();
+  uint32_t raw_packet_symmetry;
+  memcpy(&raw_packet_symmetry, &tmp_packet_symmetry, sizeof(tmp_packet_symmetry));
+  if (raw_packet_symmetry != 0) {
+    _this->_internal_set_packet_symmetry(from._internal_packet_symmetry());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_source_ip_dispersion = from._internal_source_ip_dispersion();
+  uint32_t raw_source_ip_dispersion;
+  memcpy(&raw_source_ip_dispersion, &tmp_source_ip_dispersion, sizeof(tmp_source_ip_dispersion));
+  if (raw_source_ip_dispersion != 0) {
+    _this->_internal_set_source_ip_dispersion(from._internal_source_ip_dispersion());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_anomaly_score = from._internal_protocol_anomaly_score();
+  uint32_t raw_protocol_anomaly_score;
+  memcpy(&raw_protocol_anomaly_score, &tmp_protocol_anomaly_score, sizeof(tmp_protocol_anomaly_score));
+  if (raw_protocol_anomaly_score != 0) {
+    _this->_internal_set_protocol_anomaly_score(from._internal_protocol_anomaly_score());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_size_entropy = from._internal_packet_size_entropy();
+  uint32_t raw_packet_size_entropy;
+  memcpy(&raw_packet_size_entropy, &tmp_packet_size_entropy, sizeof(tmp_packet_size_entropy));
+  if (raw_packet_size_entropy != 0) {
+    _this->_internal_set_packet_size_entropy(from._internal_packet_size_entropy());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_traffic_amplification_factor = from._internal_traffic_amplification_factor();
+  uint32_t raw_traffic_amplification_factor;
+  memcpy(&raw_traffic_amplification_factor, &tmp_traffic_amplification_factor, sizeof(tmp_traffic_amplification_factor));
+  if (raw_traffic_amplification_factor != 0) {
+    _this->_internal_set_traffic_amplification_factor(from._internal_traffic_amplification_factor());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_flow_completion_rate = from._internal_flow_completion_rate();
+  uint32_t raw_flow_completion_rate;
+  memcpy(&raw_flow_completion_rate, &tmp_flow_completion_rate, sizeof(tmp_flow_completion_rate));
+  if (raw_flow_completion_rate != 0) {
+    _this->_internal_set_flow_completion_rate(from._internal_flow_completion_rate());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_geographical_concentration = from._internal_geographical_concentration();
+  uint32_t raw_geographical_concentration;
+  memcpy(&raw_geographical_concentration, &tmp_geographical_concentration, sizeof(tmp_geographical_concentration));
+  if (raw_geographical_concentration != 0) {
+    _this->_internal_set_geographical_concentration(from._internal_geographical_concentration());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_traffic_escalation_rate = from._internal_traffic_escalation_rate();
+  uint32_t raw_traffic_escalation_rate;
+  memcpy(&raw_traffic_escalation_rate, &tmp_traffic_escalation_rate, sizeof(tmp_traffic_escalation_rate));
+  if (raw_traffic_escalation_rate != 0) {
+    _this->_internal_set_traffic_escalation_rate(from._internal_traffic_escalation_rate());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_resource_saturation_score = from._internal_resource_saturation_score();
+  uint32_t raw_resource_saturation_score;
+  memcpy(&raw_resource_saturation_score, &tmp_resource_saturation_score, sizeof(tmp_resource_saturation_score));
+  if (raw_resource_saturation_score != 0) {
+    _this->_internal_set_resource_saturation_score(from._internal_resource_saturation_score());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void DDoSFeatures::CopyFrom(const DDoSFeatures& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.DDoSFeatures)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool DDoSFeatures::IsInitialized() const {
+  return true;
+}
+
+void DDoSFeatures::InternalSwap(DDoSFeatures* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(DDoSFeatures, _impl_.resource_saturation_score_)
+      + sizeof(DDoSFeatures::_impl_.resource_saturation_score_)
+      - PROTOBUF_FIELD_OFFSET(DDoSFeatures, _impl_.syn_ack_ratio_)>(
+          reinterpret_cast<char*>(&_impl_.syn_ack_ratio_),
+          reinterpret_cast<char*>(&other->_impl_.syn_ack_ratio_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata DDoSFeatures::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[0]);
+}
+
+// ===================================================================
+
+class RansomwareEmbeddedFeatures::_Internal {
+ public:
+};
+
+RansomwareEmbeddedFeatures::RansomwareEmbeddedFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.RansomwareEmbeddedFeatures)
+}
+RansomwareEmbeddedFeatures::RansomwareEmbeddedFeatures(const RansomwareEmbeddedFeatures& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  RansomwareEmbeddedFeatures* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.io_intensity_){}
+    , decltype(_impl_.entropy_){}
+    , decltype(_impl_.resource_usage_){}
+    , decltype(_impl_.network_activity_){}
+    , decltype(_impl_.file_operations_){}
+    , decltype(_impl_.process_anomaly_){}
+    , decltype(_impl_.temporal_pattern_){}
+    , decltype(_impl_.access_frequency_){}
+    , decltype(_impl_.data_volume_){}
+    , decltype(_impl_.behavior_consistency_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.io_intensity_, &from._impl_.io_intensity_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.behavior_consistency_) -
+    reinterpret_cast<char*>(&_impl_.io_intensity_)) + sizeof(_impl_.behavior_consistency_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.RansomwareEmbeddedFeatures)
+}
+
+inline void RansomwareEmbeddedFeatures::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.io_intensity_){0}
+    , decltype(_impl_.entropy_){0}
+    , decltype(_impl_.resource_usage_){0}
+    , decltype(_impl_.network_activity_){0}
+    , decltype(_impl_.file_operations_){0}
+    , decltype(_impl_.process_anomaly_){0}
+    , decltype(_impl_.temporal_pattern_){0}
+    , decltype(_impl_.access_frequency_){0}
+    , decltype(_impl_.data_volume_){0}
+    , decltype(_impl_.behavior_consistency_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+RansomwareEmbeddedFeatures::~RansomwareEmbeddedFeatures() {
+  // @@protoc_insertion_point(destructor:protobuf.RansomwareEmbeddedFeatures)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void RansomwareEmbeddedFeatures::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void RansomwareEmbeddedFeatures::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void RansomwareEmbeddedFeatures::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.RansomwareEmbeddedFeatures)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.io_intensity_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.behavior_consistency_) -
+      reinterpret_cast<char*>(&_impl_.io_intensity_)) + sizeof(_impl_.behavior_consistency_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* RansomwareEmbeddedFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // float io_intensity = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _impl_.io_intensity_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float entropy = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
+          _impl_.entropy_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float resource_usage = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.resource_usage_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float network_activity = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 37)) {
+          _impl_.network_activity_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float file_operations = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 45)) {
+          _impl_.file_operations_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float process_anomaly = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 53)) {
+          _impl_.process_anomaly_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float temporal_pattern = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 61)) {
+          _impl_.temporal_pattern_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float access_frequency = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 69)) {
+          _impl_.access_frequency_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float data_volume = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 77)) {
+          _impl_.data_volume_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float behavior_consistency = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 85)) {
+          _impl_.behavior_consistency_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* RansomwareEmbeddedFeatures::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.RansomwareEmbeddedFeatures)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float io_intensity = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_io_intensity = this->_internal_io_intensity();
+  uint32_t raw_io_intensity;
+  memcpy(&raw_io_intensity, &tmp_io_intensity, sizeof(tmp_io_intensity));
+  if (raw_io_intensity != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_io_intensity(), target);
+  }
+
+  // float entropy = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_entropy = this->_internal_entropy();
+  uint32_t raw_entropy;
+  memcpy(&raw_entropy, &tmp_entropy, sizeof(tmp_entropy));
+  if (raw_entropy != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_entropy(), target);
+  }
+
+  // float resource_usage = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_resource_usage = this->_internal_resource_usage();
+  uint32_t raw_resource_usage;
+  memcpy(&raw_resource_usage, &tmp_resource_usage, sizeof(tmp_resource_usage));
+  if (raw_resource_usage != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_resource_usage(), target);
+  }
+
+  // float network_activity = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_network_activity = this->_internal_network_activity();
+  uint32_t raw_network_activity;
+  memcpy(&raw_network_activity, &tmp_network_activity, sizeof(tmp_network_activity));
+  if (raw_network_activity != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(4, this->_internal_network_activity(), target);
+  }
+
+  // float file_operations = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_file_operations = this->_internal_file_operations();
+  uint32_t raw_file_operations;
+  memcpy(&raw_file_operations, &tmp_file_operations, sizeof(tmp_file_operations));
+  if (raw_file_operations != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(5, this->_internal_file_operations(), target);
+  }
+
+  // float process_anomaly = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_process_anomaly = this->_internal_process_anomaly();
+  uint32_t raw_process_anomaly;
+  memcpy(&raw_process_anomaly, &tmp_process_anomaly, sizeof(tmp_process_anomaly));
+  if (raw_process_anomaly != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(6, this->_internal_process_anomaly(), target);
+  }
+
+  // float temporal_pattern = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_pattern = this->_internal_temporal_pattern();
+  uint32_t raw_temporal_pattern;
+  memcpy(&raw_temporal_pattern, &tmp_temporal_pattern, sizeof(tmp_temporal_pattern));
+  if (raw_temporal_pattern != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(7, this->_internal_temporal_pattern(), target);
+  }
+
+  // float access_frequency = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_access_frequency = this->_internal_access_frequency();
+  uint32_t raw_access_frequency;
+  memcpy(&raw_access_frequency, &tmp_access_frequency, sizeof(tmp_access_frequency));
+  if (raw_access_frequency != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(8, this->_internal_access_frequency(), target);
+  }
+
+  // float data_volume = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_data_volume = this->_internal_data_volume();
+  uint32_t raw_data_volume;
+  memcpy(&raw_data_volume, &tmp_data_volume, sizeof(tmp_data_volume));
+  if (raw_data_volume != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(9, this->_internal_data_volume(), target);
+  }
+
+  // float behavior_consistency = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_behavior_consistency = this->_internal_behavior_consistency();
+  uint32_t raw_behavior_consistency;
+  memcpy(&raw_behavior_consistency, &tmp_behavior_consistency, sizeof(tmp_behavior_consistency));
+  if (raw_behavior_consistency != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(10, this->_internal_behavior_consistency(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.RansomwareEmbeddedFeatures)
+  return target;
+}
+
+size_t RansomwareEmbeddedFeatures::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.RansomwareEmbeddedFeatures)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // float io_intensity = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_io_intensity = this->_internal_io_intensity();
+  uint32_t raw_io_intensity;
+  memcpy(&raw_io_intensity, &tmp_io_intensity, sizeof(tmp_io_intensity));
+  if (raw_io_intensity != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float entropy = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_entropy = this->_internal_entropy();
+  uint32_t raw_entropy;
+  memcpy(&raw_entropy, &tmp_entropy, sizeof(tmp_entropy));
+  if (raw_entropy != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float resource_usage = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_resource_usage = this->_internal_resource_usage();
+  uint32_t raw_resource_usage;
+  memcpy(&raw_resource_usage, &tmp_resource_usage, sizeof(tmp_resource_usage));
+  if (raw_resource_usage != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float network_activity = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_network_activity = this->_internal_network_activity();
+  uint32_t raw_network_activity;
+  memcpy(&raw_network_activity, &tmp_network_activity, sizeof(tmp_network_activity));
+  if (raw_network_activity != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float file_operations = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_file_operations = this->_internal_file_operations();
+  uint32_t raw_file_operations;
+  memcpy(&raw_file_operations, &tmp_file_operations, sizeof(tmp_file_operations));
+  if (raw_file_operations != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float process_anomaly = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_process_anomaly = this->_internal_process_anomaly();
+  uint32_t raw_process_anomaly;
+  memcpy(&raw_process_anomaly, &tmp_process_anomaly, sizeof(tmp_process_anomaly));
+  if (raw_process_anomaly != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float temporal_pattern = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_pattern = this->_internal_temporal_pattern();
+  uint32_t raw_temporal_pattern;
+  memcpy(&raw_temporal_pattern, &tmp_temporal_pattern, sizeof(tmp_temporal_pattern));
+  if (raw_temporal_pattern != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float access_frequency = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_access_frequency = this->_internal_access_frequency();
+  uint32_t raw_access_frequency;
+  memcpy(&raw_access_frequency, &tmp_access_frequency, sizeof(tmp_access_frequency));
+  if (raw_access_frequency != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float data_volume = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_data_volume = this->_internal_data_volume();
+  uint32_t raw_data_volume;
+  memcpy(&raw_data_volume, &tmp_data_volume, sizeof(tmp_data_volume));
+  if (raw_data_volume != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float behavior_consistency = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_behavior_consistency = this->_internal_behavior_consistency();
+  uint32_t raw_behavior_consistency;
+  memcpy(&raw_behavior_consistency, &tmp_behavior_consistency, sizeof(tmp_behavior_consistency));
+  if (raw_behavior_consistency != 0) {
+    total_size += 1 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RansomwareEmbeddedFeatures::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    RansomwareEmbeddedFeatures::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RansomwareEmbeddedFeatures::GetClassData() const { return &_class_data_; }
+
+
+void RansomwareEmbeddedFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<RansomwareEmbeddedFeatures*>(&to_msg);
+  auto& from = static_cast<const RansomwareEmbeddedFeatures&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.RansomwareEmbeddedFeatures)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_io_intensity = from._internal_io_intensity();
+  uint32_t raw_io_intensity;
+  memcpy(&raw_io_intensity, &tmp_io_intensity, sizeof(tmp_io_intensity));
+  if (raw_io_intensity != 0) {
+    _this->_internal_set_io_intensity(from._internal_io_intensity());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_entropy = from._internal_entropy();
+  uint32_t raw_entropy;
+  memcpy(&raw_entropy, &tmp_entropy, sizeof(tmp_entropy));
+  if (raw_entropy != 0) {
+    _this->_internal_set_entropy(from._internal_entropy());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_resource_usage = from._internal_resource_usage();
+  uint32_t raw_resource_usage;
+  memcpy(&raw_resource_usage, &tmp_resource_usage, sizeof(tmp_resource_usage));
+  if (raw_resource_usage != 0) {
+    _this->_internal_set_resource_usage(from._internal_resource_usage());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_network_activity = from._internal_network_activity();
+  uint32_t raw_network_activity;
+  memcpy(&raw_network_activity, &tmp_network_activity, sizeof(tmp_network_activity));
+  if (raw_network_activity != 0) {
+    _this->_internal_set_network_activity(from._internal_network_activity());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_file_operations = from._internal_file_operations();
+  uint32_t raw_file_operations;
+  memcpy(&raw_file_operations, &tmp_file_operations, sizeof(tmp_file_operations));
+  if (raw_file_operations != 0) {
+    _this->_internal_set_file_operations(from._internal_file_operations());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_process_anomaly = from._internal_process_anomaly();
+  uint32_t raw_process_anomaly;
+  memcpy(&raw_process_anomaly, &tmp_process_anomaly, sizeof(tmp_process_anomaly));
+  if (raw_process_anomaly != 0) {
+    _this->_internal_set_process_anomaly(from._internal_process_anomaly());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_pattern = from._internal_temporal_pattern();
+  uint32_t raw_temporal_pattern;
+  memcpy(&raw_temporal_pattern, &tmp_temporal_pattern, sizeof(tmp_temporal_pattern));
+  if (raw_temporal_pattern != 0) {
+    _this->_internal_set_temporal_pattern(from._internal_temporal_pattern());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_access_frequency = from._internal_access_frequency();
+  uint32_t raw_access_frequency;
+  memcpy(&raw_access_frequency, &tmp_access_frequency, sizeof(tmp_access_frequency));
+  if (raw_access_frequency != 0) {
+    _this->_internal_set_access_frequency(from._internal_access_frequency());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_data_volume = from._internal_data_volume();
+  uint32_t raw_data_volume;
+  memcpy(&raw_data_volume, &tmp_data_volume, sizeof(tmp_data_volume));
+  if (raw_data_volume != 0) {
+    _this->_internal_set_data_volume(from._internal_data_volume());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_behavior_consistency = from._internal_behavior_consistency();
+  uint32_t raw_behavior_consistency;
+  memcpy(&raw_behavior_consistency, &tmp_behavior_consistency, sizeof(tmp_behavior_consistency));
+  if (raw_behavior_consistency != 0) {
+    _this->_internal_set_behavior_consistency(from._internal_behavior_consistency());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void RansomwareEmbeddedFeatures::CopyFrom(const RansomwareEmbeddedFeatures& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.RansomwareEmbeddedFeatures)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool RansomwareEmbeddedFeatures::IsInitialized() const {
+  return true;
+}
+
+void RansomwareEmbeddedFeatures::InternalSwap(RansomwareEmbeddedFeatures* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(RansomwareEmbeddedFeatures, _impl_.behavior_consistency_)
+      + sizeof(RansomwareEmbeddedFeatures::_impl_.behavior_consistency_)
+      - PROTOBUF_FIELD_OFFSET(RansomwareEmbeddedFeatures, _impl_.io_intensity_)>(
+          reinterpret_cast<char*>(&_impl_.io_intensity_),
+          reinterpret_cast<char*>(&other->_impl_.io_intensity_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata RansomwareEmbeddedFeatures::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[1]);
+}
+
+// ===================================================================
+
+class TrafficFeatures::_Internal {
+ public:
+};
+
+TrafficFeatures::TrafficFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.TrafficFeatures)
+}
+TrafficFeatures::TrafficFeatures(const TrafficFeatures& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  TrafficFeatures* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.packet_rate_){}
+    , decltype(_impl_.connection_rate_){}
+    , decltype(_impl_.tcp_udp_ratio_){}
+    , decltype(_impl_.avg_packet_size_){}
+    , decltype(_impl_.port_entropy_){}
+    , decltype(_impl_.flow_duration_std_){}
+    , decltype(_impl_.src_ip_entropy_){}
+    , decltype(_impl_.dst_ip_concentration_){}
+    , decltype(_impl_.protocol_variety_){}
+    , decltype(_impl_.temporal_consistency_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.packet_rate_, &from._impl_.packet_rate_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.temporal_consistency_) -
+    reinterpret_cast<char*>(&_impl_.packet_rate_)) + sizeof(_impl_.temporal_consistency_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.TrafficFeatures)
+}
+
+inline void TrafficFeatures::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.packet_rate_){0}
+    , decltype(_impl_.connection_rate_){0}
+    , decltype(_impl_.tcp_udp_ratio_){0}
+    , decltype(_impl_.avg_packet_size_){0}
+    , decltype(_impl_.port_entropy_){0}
+    , decltype(_impl_.flow_duration_std_){0}
+    , decltype(_impl_.src_ip_entropy_){0}
+    , decltype(_impl_.dst_ip_concentration_){0}
+    , decltype(_impl_.protocol_variety_){0}
+    , decltype(_impl_.temporal_consistency_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+TrafficFeatures::~TrafficFeatures() {
+  // @@protoc_insertion_point(destructor:protobuf.TrafficFeatures)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void TrafficFeatures::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void TrafficFeatures::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void TrafficFeatures::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.TrafficFeatures)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.packet_rate_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.temporal_consistency_) -
+      reinterpret_cast<char*>(&_impl_.packet_rate_)) + sizeof(_impl_.temporal_consistency_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* TrafficFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // float packet_rate = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _impl_.packet_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float connection_rate = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
+          _impl_.connection_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float tcp_udp_ratio = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.tcp_udp_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float avg_packet_size = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 37)) {
+          _impl_.avg_packet_size_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float port_entropy = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 45)) {
+          _impl_.port_entropy_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float flow_duration_std = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 53)) {
+          _impl_.flow_duration_std_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float src_ip_entropy = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 61)) {
+          _impl_.src_ip_entropy_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float dst_ip_concentration = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 69)) {
+          _impl_.dst_ip_concentration_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float protocol_variety = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 77)) {
+          _impl_.protocol_variety_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float temporal_consistency = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 85)) {
+          _impl_.temporal_consistency_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* TrafficFeatures::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.TrafficFeatures)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float packet_rate = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_rate = this->_internal_packet_rate();
+  uint32_t raw_packet_rate;
+  memcpy(&raw_packet_rate, &tmp_packet_rate, sizeof(tmp_packet_rate));
+  if (raw_packet_rate != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_packet_rate(), target);
+  }
+
+  // float connection_rate = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_rate = this->_internal_connection_rate();
+  uint32_t raw_connection_rate;
+  memcpy(&raw_connection_rate, &tmp_connection_rate, sizeof(tmp_connection_rate));
+  if (raw_connection_rate != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_connection_rate(), target);
+  }
+
+  // float tcp_udp_ratio = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_tcp_udp_ratio = this->_internal_tcp_udp_ratio();
+  uint32_t raw_tcp_udp_ratio;
+  memcpy(&raw_tcp_udp_ratio, &tmp_tcp_udp_ratio, sizeof(tmp_tcp_udp_ratio));
+  if (raw_tcp_udp_ratio != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_tcp_udp_ratio(), target);
+  }
+
+  // float avg_packet_size = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_avg_packet_size = this->_internal_avg_packet_size();
+  uint32_t raw_avg_packet_size;
+  memcpy(&raw_avg_packet_size, &tmp_avg_packet_size, sizeof(tmp_avg_packet_size));
+  if (raw_avg_packet_size != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(4, this->_internal_avg_packet_size(), target);
+  }
+
+  // float port_entropy = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_port_entropy = this->_internal_port_entropy();
+  uint32_t raw_port_entropy;
+  memcpy(&raw_port_entropy, &tmp_port_entropy, sizeof(tmp_port_entropy));
+  if (raw_port_entropy != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(5, this->_internal_port_entropy(), target);
+  }
+
+  // float flow_duration_std = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_flow_duration_std = this->_internal_flow_duration_std();
+  uint32_t raw_flow_duration_std;
+  memcpy(&raw_flow_duration_std, &tmp_flow_duration_std, sizeof(tmp_flow_duration_std));
+  if (raw_flow_duration_std != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(6, this->_internal_flow_duration_std(), target);
+  }
+
+  // float src_ip_entropy = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_src_ip_entropy = this->_internal_src_ip_entropy();
+  uint32_t raw_src_ip_entropy;
+  memcpy(&raw_src_ip_entropy, &tmp_src_ip_entropy, sizeof(tmp_src_ip_entropy));
+  if (raw_src_ip_entropy != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(7, this->_internal_src_ip_entropy(), target);
+  }
+
+  // float dst_ip_concentration = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dst_ip_concentration = this->_internal_dst_ip_concentration();
+  uint32_t raw_dst_ip_concentration;
+  memcpy(&raw_dst_ip_concentration, &tmp_dst_ip_concentration, sizeof(tmp_dst_ip_concentration));
+  if (raw_dst_ip_concentration != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(8, this->_internal_dst_ip_concentration(), target);
+  }
+
+  // float protocol_variety = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_variety = this->_internal_protocol_variety();
+  uint32_t raw_protocol_variety;
+  memcpy(&raw_protocol_variety, &tmp_protocol_variety, sizeof(tmp_protocol_variety));
+  if (raw_protocol_variety != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(9, this->_internal_protocol_variety(), target);
+  }
+
+  // float temporal_consistency = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_consistency = this->_internal_temporal_consistency();
+  uint32_t raw_temporal_consistency;
+  memcpy(&raw_temporal_consistency, &tmp_temporal_consistency, sizeof(tmp_temporal_consistency));
+  if (raw_temporal_consistency != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(10, this->_internal_temporal_consistency(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.TrafficFeatures)
+  return target;
+}
+
+size_t TrafficFeatures::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.TrafficFeatures)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // float packet_rate = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_rate = this->_internal_packet_rate();
+  uint32_t raw_packet_rate;
+  memcpy(&raw_packet_rate, &tmp_packet_rate, sizeof(tmp_packet_rate));
+  if (raw_packet_rate != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float connection_rate = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_rate = this->_internal_connection_rate();
+  uint32_t raw_connection_rate;
+  memcpy(&raw_connection_rate, &tmp_connection_rate, sizeof(tmp_connection_rate));
+  if (raw_connection_rate != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float tcp_udp_ratio = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_tcp_udp_ratio = this->_internal_tcp_udp_ratio();
+  uint32_t raw_tcp_udp_ratio;
+  memcpy(&raw_tcp_udp_ratio, &tmp_tcp_udp_ratio, sizeof(tmp_tcp_udp_ratio));
+  if (raw_tcp_udp_ratio != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float avg_packet_size = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_avg_packet_size = this->_internal_avg_packet_size();
+  uint32_t raw_avg_packet_size;
+  memcpy(&raw_avg_packet_size, &tmp_avg_packet_size, sizeof(tmp_avg_packet_size));
+  if (raw_avg_packet_size != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float port_entropy = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_port_entropy = this->_internal_port_entropy();
+  uint32_t raw_port_entropy;
+  memcpy(&raw_port_entropy, &tmp_port_entropy, sizeof(tmp_port_entropy));
+  if (raw_port_entropy != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float flow_duration_std = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_flow_duration_std = this->_internal_flow_duration_std();
+  uint32_t raw_flow_duration_std;
+  memcpy(&raw_flow_duration_std, &tmp_flow_duration_std, sizeof(tmp_flow_duration_std));
+  if (raw_flow_duration_std != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float src_ip_entropy = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_src_ip_entropy = this->_internal_src_ip_entropy();
+  uint32_t raw_src_ip_entropy;
+  memcpy(&raw_src_ip_entropy, &tmp_src_ip_entropy, sizeof(tmp_src_ip_entropy));
+  if (raw_src_ip_entropy != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float dst_ip_concentration = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dst_ip_concentration = this->_internal_dst_ip_concentration();
+  uint32_t raw_dst_ip_concentration;
+  memcpy(&raw_dst_ip_concentration, &tmp_dst_ip_concentration, sizeof(tmp_dst_ip_concentration));
+  if (raw_dst_ip_concentration != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float protocol_variety = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_variety = this->_internal_protocol_variety();
+  uint32_t raw_protocol_variety;
+  memcpy(&raw_protocol_variety, &tmp_protocol_variety, sizeof(tmp_protocol_variety));
+  if (raw_protocol_variety != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float temporal_consistency = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_consistency = this->_internal_temporal_consistency();
+  uint32_t raw_temporal_consistency;
+  memcpy(&raw_temporal_consistency, &tmp_temporal_consistency, sizeof(tmp_temporal_consistency));
+  if (raw_temporal_consistency != 0) {
+    total_size += 1 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TrafficFeatures::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    TrafficFeatures::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TrafficFeatures::GetClassData() const { return &_class_data_; }
+
+
+void TrafficFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<TrafficFeatures*>(&to_msg);
+  auto& from = static_cast<const TrafficFeatures&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.TrafficFeatures)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_rate = from._internal_packet_rate();
+  uint32_t raw_packet_rate;
+  memcpy(&raw_packet_rate, &tmp_packet_rate, sizeof(tmp_packet_rate));
+  if (raw_packet_rate != 0) {
+    _this->_internal_set_packet_rate(from._internal_packet_rate());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_rate = from._internal_connection_rate();
+  uint32_t raw_connection_rate;
+  memcpy(&raw_connection_rate, &tmp_connection_rate, sizeof(tmp_connection_rate));
+  if (raw_connection_rate != 0) {
+    _this->_internal_set_connection_rate(from._internal_connection_rate());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_tcp_udp_ratio = from._internal_tcp_udp_ratio();
+  uint32_t raw_tcp_udp_ratio;
+  memcpy(&raw_tcp_udp_ratio, &tmp_tcp_udp_ratio, sizeof(tmp_tcp_udp_ratio));
+  if (raw_tcp_udp_ratio != 0) {
+    _this->_internal_set_tcp_udp_ratio(from._internal_tcp_udp_ratio());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_avg_packet_size = from._internal_avg_packet_size();
+  uint32_t raw_avg_packet_size;
+  memcpy(&raw_avg_packet_size, &tmp_avg_packet_size, sizeof(tmp_avg_packet_size));
+  if (raw_avg_packet_size != 0) {
+    _this->_internal_set_avg_packet_size(from._internal_avg_packet_size());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_port_entropy = from._internal_port_entropy();
+  uint32_t raw_port_entropy;
+  memcpy(&raw_port_entropy, &tmp_port_entropy, sizeof(tmp_port_entropy));
+  if (raw_port_entropy != 0) {
+    _this->_internal_set_port_entropy(from._internal_port_entropy());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_flow_duration_std = from._internal_flow_duration_std();
+  uint32_t raw_flow_duration_std;
+  memcpy(&raw_flow_duration_std, &tmp_flow_duration_std, sizeof(tmp_flow_duration_std));
+  if (raw_flow_duration_std != 0) {
+    _this->_internal_set_flow_duration_std(from._internal_flow_duration_std());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_src_ip_entropy = from._internal_src_ip_entropy();
+  uint32_t raw_src_ip_entropy;
+  memcpy(&raw_src_ip_entropy, &tmp_src_ip_entropy, sizeof(tmp_src_ip_entropy));
+  if (raw_src_ip_entropy != 0) {
+    _this->_internal_set_src_ip_entropy(from._internal_src_ip_entropy());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_dst_ip_concentration = from._internal_dst_ip_concentration();
+  uint32_t raw_dst_ip_concentration;
+  memcpy(&raw_dst_ip_concentration, &tmp_dst_ip_concentration, sizeof(tmp_dst_ip_concentration));
+  if (raw_dst_ip_concentration != 0) {
+    _this->_internal_set_dst_ip_concentration(from._internal_dst_ip_concentration());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_variety = from._internal_protocol_variety();
+  uint32_t raw_protocol_variety;
+  memcpy(&raw_protocol_variety, &tmp_protocol_variety, sizeof(tmp_protocol_variety));
+  if (raw_protocol_variety != 0) {
+    _this->_internal_set_protocol_variety(from._internal_protocol_variety());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_consistency = from._internal_temporal_consistency();
+  uint32_t raw_temporal_consistency;
+  memcpy(&raw_temporal_consistency, &tmp_temporal_consistency, sizeof(tmp_temporal_consistency));
+  if (raw_temporal_consistency != 0) {
+    _this->_internal_set_temporal_consistency(from._internal_temporal_consistency());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void TrafficFeatures::CopyFrom(const TrafficFeatures& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.TrafficFeatures)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool TrafficFeatures::IsInitialized() const {
+  return true;
+}
+
+void TrafficFeatures::InternalSwap(TrafficFeatures* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(TrafficFeatures, _impl_.temporal_consistency_)
+      + sizeof(TrafficFeatures::_impl_.temporal_consistency_)
+      - PROTOBUF_FIELD_OFFSET(TrafficFeatures, _impl_.packet_rate_)>(
+          reinterpret_cast<char*>(&_impl_.packet_rate_),
+          reinterpret_cast<char*>(&other->_impl_.packet_rate_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata TrafficFeatures::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[2]);
+}
+
+// ===================================================================
+
+class InternalFeatures::_Internal {
+ public:
+};
+
+InternalFeatures::InternalFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.InternalFeatures)
+}
+InternalFeatures::InternalFeatures(const InternalFeatures& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  InternalFeatures* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.internal_connection_rate_){}
+    , decltype(_impl_.service_port_consistency_){}
+    , decltype(_impl_.protocol_regularity_){}
+    , decltype(_impl_.packet_size_consistency_){}
+    , decltype(_impl_.connection_duration_std_){}
+    , decltype(_impl_.lateral_movement_score_){}
+    , decltype(_impl_.service_discovery_patterns_){}
+    , decltype(_impl_.data_exfiltration_indicators_){}
+    , decltype(_impl_.temporal_anomaly_score_){}
+    , decltype(_impl_.access_pattern_entropy_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.internal_connection_rate_, &from._impl_.internal_connection_rate_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.access_pattern_entropy_) -
+    reinterpret_cast<char*>(&_impl_.internal_connection_rate_)) + sizeof(_impl_.access_pattern_entropy_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.InternalFeatures)
+}
+
+inline void InternalFeatures::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.internal_connection_rate_){0}
+    , decltype(_impl_.service_port_consistency_){0}
+    , decltype(_impl_.protocol_regularity_){0}
+    , decltype(_impl_.packet_size_consistency_){0}
+    , decltype(_impl_.connection_duration_std_){0}
+    , decltype(_impl_.lateral_movement_score_){0}
+    , decltype(_impl_.service_discovery_patterns_){0}
+    , decltype(_impl_.data_exfiltration_indicators_){0}
+    , decltype(_impl_.temporal_anomaly_score_){0}
+    , decltype(_impl_.access_pattern_entropy_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+InternalFeatures::~InternalFeatures() {
+  // @@protoc_insertion_point(destructor:protobuf.InternalFeatures)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void InternalFeatures::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void InternalFeatures::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void InternalFeatures::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.InternalFeatures)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.internal_connection_rate_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.access_pattern_entropy_) -
+      reinterpret_cast<char*>(&_impl_.internal_connection_rate_)) + sizeof(_impl_.access_pattern_entropy_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* InternalFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // float internal_connection_rate = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _impl_.internal_connection_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float service_port_consistency = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
+          _impl_.service_port_consistency_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float protocol_regularity = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.protocol_regularity_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float packet_size_consistency = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 37)) {
+          _impl_.packet_size_consistency_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float connection_duration_std = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 45)) {
+          _impl_.connection_duration_std_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float lateral_movement_score = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 53)) {
+          _impl_.lateral_movement_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float service_discovery_patterns = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 61)) {
+          _impl_.service_discovery_patterns_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float data_exfiltration_indicators = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 69)) {
+          _impl_.data_exfiltration_indicators_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float temporal_anomaly_score = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 77)) {
+          _impl_.temporal_anomaly_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // float access_pattern_entropy = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 85)) {
+          _impl_.access_pattern_entropy_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* InternalFeatures::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.InternalFeatures)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // float internal_connection_rate = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_internal_connection_rate = this->_internal_internal_connection_rate();
+  uint32_t raw_internal_connection_rate;
+  memcpy(&raw_internal_connection_rate, &tmp_internal_connection_rate, sizeof(tmp_internal_connection_rate));
+  if (raw_internal_connection_rate != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_internal_connection_rate(), target);
+  }
+
+  // float service_port_consistency = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_service_port_consistency = this->_internal_service_port_consistency();
+  uint32_t raw_service_port_consistency;
+  memcpy(&raw_service_port_consistency, &tmp_service_port_consistency, sizeof(tmp_service_port_consistency));
+  if (raw_service_port_consistency != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_service_port_consistency(), target);
+  }
+
+  // float protocol_regularity = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_regularity = this->_internal_protocol_regularity();
+  uint32_t raw_protocol_regularity;
+  memcpy(&raw_protocol_regularity, &tmp_protocol_regularity, sizeof(tmp_protocol_regularity));
+  if (raw_protocol_regularity != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_protocol_regularity(), target);
+  }
+
+  // float packet_size_consistency = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_size_consistency = this->_internal_packet_size_consistency();
+  uint32_t raw_packet_size_consistency;
+  memcpy(&raw_packet_size_consistency, &tmp_packet_size_consistency, sizeof(tmp_packet_size_consistency));
+  if (raw_packet_size_consistency != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(4, this->_internal_packet_size_consistency(), target);
+  }
+
+  // float connection_duration_std = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_duration_std = this->_internal_connection_duration_std();
+  uint32_t raw_connection_duration_std;
+  memcpy(&raw_connection_duration_std, &tmp_connection_duration_std, sizeof(tmp_connection_duration_std));
+  if (raw_connection_duration_std != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(5, this->_internal_connection_duration_std(), target);
+  }
+
+  // float lateral_movement_score = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_lateral_movement_score = this->_internal_lateral_movement_score();
+  uint32_t raw_lateral_movement_score;
+  memcpy(&raw_lateral_movement_score, &tmp_lateral_movement_score, sizeof(tmp_lateral_movement_score));
+  if (raw_lateral_movement_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(6, this->_internal_lateral_movement_score(), target);
+  }
+
+  // float service_discovery_patterns = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_service_discovery_patterns = this->_internal_service_discovery_patterns();
+  uint32_t raw_service_discovery_patterns;
+  memcpy(&raw_service_discovery_patterns, &tmp_service_discovery_patterns, sizeof(tmp_service_discovery_patterns));
+  if (raw_service_discovery_patterns != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(7, this->_internal_service_discovery_patterns(), target);
+  }
+
+  // float data_exfiltration_indicators = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_data_exfiltration_indicators = this->_internal_data_exfiltration_indicators();
+  uint32_t raw_data_exfiltration_indicators;
+  memcpy(&raw_data_exfiltration_indicators, &tmp_data_exfiltration_indicators, sizeof(tmp_data_exfiltration_indicators));
+  if (raw_data_exfiltration_indicators != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(8, this->_internal_data_exfiltration_indicators(), target);
+  }
+
+  // float temporal_anomaly_score = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_anomaly_score = this->_internal_temporal_anomaly_score();
+  uint32_t raw_temporal_anomaly_score;
+  memcpy(&raw_temporal_anomaly_score, &tmp_temporal_anomaly_score, sizeof(tmp_temporal_anomaly_score));
+  if (raw_temporal_anomaly_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(9, this->_internal_temporal_anomaly_score(), target);
+  }
+
+  // float access_pattern_entropy = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_access_pattern_entropy = this->_internal_access_pattern_entropy();
+  uint32_t raw_access_pattern_entropy;
+  memcpy(&raw_access_pattern_entropy, &tmp_access_pattern_entropy, sizeof(tmp_access_pattern_entropy));
+  if (raw_access_pattern_entropy != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(10, this->_internal_access_pattern_entropy(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.InternalFeatures)
+  return target;
+}
+
+size_t InternalFeatures::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.InternalFeatures)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // float internal_connection_rate = 1;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_internal_connection_rate = this->_internal_internal_connection_rate();
+  uint32_t raw_internal_connection_rate;
+  memcpy(&raw_internal_connection_rate, &tmp_internal_connection_rate, sizeof(tmp_internal_connection_rate));
+  if (raw_internal_connection_rate != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float service_port_consistency = 2;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_service_port_consistency = this->_internal_service_port_consistency();
+  uint32_t raw_service_port_consistency;
+  memcpy(&raw_service_port_consistency, &tmp_service_port_consistency, sizeof(tmp_service_port_consistency));
+  if (raw_service_port_consistency != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float protocol_regularity = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_regularity = this->_internal_protocol_regularity();
+  uint32_t raw_protocol_regularity;
+  memcpy(&raw_protocol_regularity, &tmp_protocol_regularity, sizeof(tmp_protocol_regularity));
+  if (raw_protocol_regularity != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float packet_size_consistency = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_size_consistency = this->_internal_packet_size_consistency();
+  uint32_t raw_packet_size_consistency;
+  memcpy(&raw_packet_size_consistency, &tmp_packet_size_consistency, sizeof(tmp_packet_size_consistency));
+  if (raw_packet_size_consistency != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float connection_duration_std = 5;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_duration_std = this->_internal_connection_duration_std();
+  uint32_t raw_connection_duration_std;
+  memcpy(&raw_connection_duration_std, &tmp_connection_duration_std, sizeof(tmp_connection_duration_std));
+  if (raw_connection_duration_std != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float lateral_movement_score = 6;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_lateral_movement_score = this->_internal_lateral_movement_score();
+  uint32_t raw_lateral_movement_score;
+  memcpy(&raw_lateral_movement_score, &tmp_lateral_movement_score, sizeof(tmp_lateral_movement_score));
+  if (raw_lateral_movement_score != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float service_discovery_patterns = 7;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_service_discovery_patterns = this->_internal_service_discovery_patterns();
+  uint32_t raw_service_discovery_patterns;
+  memcpy(&raw_service_discovery_patterns, &tmp_service_discovery_patterns, sizeof(tmp_service_discovery_patterns));
+  if (raw_service_discovery_patterns != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float data_exfiltration_indicators = 8;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_data_exfiltration_indicators = this->_internal_data_exfiltration_indicators();
+  uint32_t raw_data_exfiltration_indicators;
+  memcpy(&raw_data_exfiltration_indicators, &tmp_data_exfiltration_indicators, sizeof(tmp_data_exfiltration_indicators));
+  if (raw_data_exfiltration_indicators != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float temporal_anomaly_score = 9;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_anomaly_score = this->_internal_temporal_anomaly_score();
+  uint32_t raw_temporal_anomaly_score;
+  memcpy(&raw_temporal_anomaly_score, &tmp_temporal_anomaly_score, sizeof(tmp_temporal_anomaly_score));
+  if (raw_temporal_anomaly_score != 0) {
+    total_size += 1 + 4;
+  }
+
+  // float access_pattern_entropy = 10;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_access_pattern_entropy = this->_internal_access_pattern_entropy();
+  uint32_t raw_access_pattern_entropy;
+  memcpy(&raw_access_pattern_entropy, &tmp_access_pattern_entropy, sizeof(tmp_access_pattern_entropy));
+  if (raw_access_pattern_entropy != 0) {
+    total_size += 1 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData InternalFeatures::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    InternalFeatures::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*InternalFeatures::GetClassData() const { return &_class_data_; }
+
+
+void InternalFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<InternalFeatures*>(&to_msg);
+  auto& from = static_cast<const InternalFeatures&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.InternalFeatures)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_internal_connection_rate = from._internal_internal_connection_rate();
+  uint32_t raw_internal_connection_rate;
+  memcpy(&raw_internal_connection_rate, &tmp_internal_connection_rate, sizeof(tmp_internal_connection_rate));
+  if (raw_internal_connection_rate != 0) {
+    _this->_internal_set_internal_connection_rate(from._internal_internal_connection_rate());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_service_port_consistency = from._internal_service_port_consistency();
+  uint32_t raw_service_port_consistency;
+  memcpy(&raw_service_port_consistency, &tmp_service_port_consistency, sizeof(tmp_service_port_consistency));
+  if (raw_service_port_consistency != 0) {
+    _this->_internal_set_service_port_consistency(from._internal_service_port_consistency());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_protocol_regularity = from._internal_protocol_regularity();
+  uint32_t raw_protocol_regularity;
+  memcpy(&raw_protocol_regularity, &tmp_protocol_regularity, sizeof(tmp_protocol_regularity));
+  if (raw_protocol_regularity != 0) {
+    _this->_internal_set_protocol_regularity(from._internal_protocol_regularity());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_packet_size_consistency = from._internal_packet_size_consistency();
+  uint32_t raw_packet_size_consistency;
+  memcpy(&raw_packet_size_consistency, &tmp_packet_size_consistency, sizeof(tmp_packet_size_consistency));
+  if (raw_packet_size_consistency != 0) {
+    _this->_internal_set_packet_size_consistency(from._internal_packet_size_consistency());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_connection_duration_std = from._internal_connection_duration_std();
+  uint32_t raw_connection_duration_std;
+  memcpy(&raw_connection_duration_std, &tmp_connection_duration_std, sizeof(tmp_connection_duration_std));
+  if (raw_connection_duration_std != 0) {
+    _this->_internal_set_connection_duration_std(from._internal_connection_duration_std());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_lateral_movement_score = from._internal_lateral_movement_score();
+  uint32_t raw_lateral_movement_score;
+  memcpy(&raw_lateral_movement_score, &tmp_lateral_movement_score, sizeof(tmp_lateral_movement_score));
+  if (raw_lateral_movement_score != 0) {
+    _this->_internal_set_lateral_movement_score(from._internal_lateral_movement_score());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_service_discovery_patterns = from._internal_service_discovery_patterns();
+  uint32_t raw_service_discovery_patterns;
+  memcpy(&raw_service_discovery_patterns, &tmp_service_discovery_patterns, sizeof(tmp_service_discovery_patterns));
+  if (raw_service_discovery_patterns != 0) {
+    _this->_internal_set_service_discovery_patterns(from._internal_service_discovery_patterns());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_data_exfiltration_indicators = from._internal_data_exfiltration_indicators();
+  uint32_t raw_data_exfiltration_indicators;
+  memcpy(&raw_data_exfiltration_indicators, &tmp_data_exfiltration_indicators, sizeof(tmp_data_exfiltration_indicators));
+  if (raw_data_exfiltration_indicators != 0) {
+    _this->_internal_set_data_exfiltration_indicators(from._internal_data_exfiltration_indicators());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_temporal_anomaly_score = from._internal_temporal_anomaly_score();
+  uint32_t raw_temporal_anomaly_score;
+  memcpy(&raw_temporal_anomaly_score, &tmp_temporal_anomaly_score, sizeof(tmp_temporal_anomaly_score));
+  if (raw_temporal_anomaly_score != 0) {
+    _this->_internal_set_temporal_anomaly_score(from._internal_temporal_anomaly_score());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_access_pattern_entropy = from._internal_access_pattern_entropy();
+  uint32_t raw_access_pattern_entropy;
+  memcpy(&raw_access_pattern_entropy, &tmp_access_pattern_entropy, sizeof(tmp_access_pattern_entropy));
+  if (raw_access_pattern_entropy != 0) {
+    _this->_internal_set_access_pattern_entropy(from._internal_access_pattern_entropy());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void InternalFeatures::CopyFrom(const InternalFeatures& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.InternalFeatures)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool InternalFeatures::IsInitialized() const {
+  return true;
+}
+
+void InternalFeatures::InternalSwap(InternalFeatures* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(InternalFeatures, _impl_.access_pattern_entropy_)
+      + sizeof(InternalFeatures::_impl_.access_pattern_entropy_)
+      - PROTOBUF_FIELD_OFFSET(InternalFeatures, _impl_.internal_connection_rate_)>(
+          reinterpret_cast<char*>(&_impl_.internal_connection_rate_),
+          reinterpret_cast<char*>(&other->_impl_.internal_connection_rate_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata InternalFeatures::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[3]);
+}
+
+// ===================================================================
+
 NetworkFeatures_CustomFeaturesEntry_DoNotUse::NetworkFeatures_CustomFeaturesEntry_DoNotUse() {}
 NetworkFeatures_CustomFeaturesEntry_DoNotUse::NetworkFeatures_CustomFeaturesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
     : SuperType(arena) {}
@@ -1760,7 +4057,7 @@ void NetworkFeatures_CustomFeaturesEntry_DoNotUse::MergeFrom(const NetworkFeatur
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkFeatures_CustomFeaturesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[0]);
+      file_level_metadata_network_5fsecurity_2eproto[4]);
 }
 
 // ===================================================================
@@ -1774,7 +4071,7 @@ void NetworkFeatures_FeatureMetadataEntry_DoNotUse::MergeFrom(const NetworkFeatu
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkFeatures_FeatureMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[1]);
+      file_level_metadata_network_5fsecurity_2eproto[5]);
 }
 
 // ===================================================================
@@ -1784,6 +4081,10 @@ class NetworkFeatures::_Internal {
   static const ::PROTOBUF_NAMESPACE_ID::Timestamp& flow_start_time(const NetworkFeatures* msg);
   static const ::PROTOBUF_NAMESPACE_ID::Duration& flow_duration(const NetworkFeatures* msg);
   static const ::protobuf::RansomwareFeatures& ransomware(const NetworkFeatures* msg);
+  static const ::protobuf::DDoSFeatures& ddos_embedded(const NetworkFeatures* msg);
+  static const ::protobuf::RansomwareEmbeddedFeatures& ransomware_embedded(const NetworkFeatures* msg);
+  static const ::protobuf::TrafficFeatures& traffic_classification(const NetworkFeatures* msg);
+  static const ::protobuf::InternalFeatures& internal_anomaly(const NetworkFeatures* msg);
 };
 
 const ::PROTOBUF_NAMESPACE_ID::Timestamp&
@@ -1797,6 +4098,22 @@ NetworkFeatures::_Internal::flow_duration(const NetworkFeatures* msg) {
 const ::protobuf::RansomwareFeatures&
 NetworkFeatures::_Internal::ransomware(const NetworkFeatures* msg) {
   return *msg->_impl_.ransomware_;
+}
+const ::protobuf::DDoSFeatures&
+NetworkFeatures::_Internal::ddos_embedded(const NetworkFeatures* msg) {
+  return *msg->_impl_.ddos_embedded_;
+}
+const ::protobuf::RansomwareEmbeddedFeatures&
+NetworkFeatures::_Internal::ransomware_embedded(const NetworkFeatures* msg) {
+  return *msg->_impl_.ransomware_embedded_;
+}
+const ::protobuf::TrafficFeatures&
+NetworkFeatures::_Internal::traffic_classification(const NetworkFeatures* msg) {
+  return *msg->_impl_.traffic_classification_;
+}
+const ::protobuf::InternalFeatures&
+NetworkFeatures::_Internal::internal_anomaly(const NetworkFeatures* msg) {
+  return *msg->_impl_.internal_anomaly_;
 }
 void NetworkFeatures::clear_flow_start_time() {
   if (GetArenaForAllocation() == nullptr && _impl_.flow_start_time_ != nullptr) {
@@ -1835,6 +4152,10 @@ NetworkFeatures::NetworkFeatures(const NetworkFeatures& from)
     , decltype(_impl_.flow_start_time_){nullptr}
     , decltype(_impl_.flow_duration_){nullptr}
     , decltype(_impl_.ransomware_){nullptr}
+    , decltype(_impl_.ddos_embedded_){nullptr}
+    , decltype(_impl_.ransomware_embedded_){nullptr}
+    , decltype(_impl_.traffic_classification_){nullptr}
+    , decltype(_impl_.internal_anomaly_){nullptr}
     , decltype(_impl_.source_port_){}
     , decltype(_impl_.destination_port_){}
     , decltype(_impl_.flow_duration_microseconds_){}
@@ -1938,6 +4259,18 @@ NetworkFeatures::NetworkFeatures(const NetworkFeatures& from)
   if (from._internal_has_ransomware()) {
     _this->_impl_.ransomware_ = new ::protobuf::RansomwareFeatures(*from._impl_.ransomware_);
   }
+  if (from._internal_has_ddos_embedded()) {
+    _this->_impl_.ddos_embedded_ = new ::protobuf::DDoSFeatures(*from._impl_.ddos_embedded_);
+  }
+  if (from._internal_has_ransomware_embedded()) {
+    _this->_impl_.ransomware_embedded_ = new ::protobuf::RansomwareEmbeddedFeatures(*from._impl_.ransomware_embedded_);
+  }
+  if (from._internal_has_traffic_classification()) {
+    _this->_impl_.traffic_classification_ = new ::protobuf::TrafficFeatures(*from._impl_.traffic_classification_);
+  }
+  if (from._internal_has_internal_anomaly()) {
+    _this->_impl_.internal_anomaly_ = new ::protobuf::InternalFeatures(*from._impl_.internal_anomaly_);
+  }
   ::memcpy(&_impl_.source_port_, &from._impl_.source_port_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.backward_urg_flags_) -
     reinterpret_cast<char*>(&_impl_.source_port_)) + sizeof(_impl_.backward_urg_flags_));
@@ -1961,6 +4294,10 @@ inline void NetworkFeatures::SharedCtor(
     , decltype(_impl_.flow_start_time_){nullptr}
     , decltype(_impl_.flow_duration_){nullptr}
     , decltype(_impl_.ransomware_){nullptr}
+    , decltype(_impl_.ddos_embedded_){nullptr}
+    , decltype(_impl_.ransomware_embedded_){nullptr}
+    , decltype(_impl_.traffic_classification_){nullptr}
+    , decltype(_impl_.internal_anomaly_){nullptr}
     , decltype(_impl_.source_port_){0u}
     , decltype(_impl_.destination_port_){0u}
     , decltype(_impl_.flow_duration_microseconds_){uint64_t{0u}}
@@ -2068,6 +4405,10 @@ inline void NetworkFeatures::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.flow_start_time_;
   if (this != internal_default_instance()) delete _impl_.flow_duration_;
   if (this != internal_default_instance()) delete _impl_.ransomware_;
+  if (this != internal_default_instance()) delete _impl_.ddos_embedded_;
+  if (this != internal_default_instance()) delete _impl_.ransomware_embedded_;
+  if (this != internal_default_instance()) delete _impl_.traffic_classification_;
+  if (this != internal_default_instance()) delete _impl_.internal_anomaly_;
 }
 
 void NetworkFeatures::ArenaDtor(void* object) {
@@ -2106,6 +4447,22 @@ void NetworkFeatures::Clear() {
     delete _impl_.ransomware_;
   }
   _impl_.ransomware_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.ddos_embedded_ != nullptr) {
+    delete _impl_.ddos_embedded_;
+  }
+  _impl_.ddos_embedded_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.ransomware_embedded_ != nullptr) {
+    delete _impl_.ransomware_embedded_;
+  }
+  _impl_.ransomware_embedded_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.traffic_classification_ != nullptr) {
+    delete _impl_.traffic_classification_;
+  }
+  _impl_.traffic_classification_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.internal_anomaly_ != nullptr) {
+    delete _impl_.internal_anomaly_;
+  }
+  _impl_.internal_anomaly_ = nullptr;
   ::memset(&_impl_.source_port_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.backward_urg_flags_) -
       reinterpret_cast<char*>(&_impl_.source_port_)) + sizeof(_impl_.backward_urg_flags_));
@@ -2759,6 +5116,38 @@ const char* NetworkFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContex
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<890>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.DDoSFeatures ddos_embedded = 112;
+      case 112:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 130)) {
+          ptr = ctx->ParseMessage(_internal_mutable_ddos_embedded(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.RansomwareEmbeddedFeatures ransomware_embedded = 113;
+      case 113:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 138)) {
+          ptr = ctx->ParseMessage(_internal_mutable_ransomware_embedded(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.TrafficFeatures traffic_classification = 114;
+      case 114:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 146)) {
+          ptr = ctx->ParseMessage(_internal_mutable_traffic_classification(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.InternalFeatures internal_anomaly = 115;
+      case 115:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 154)) {
+          ptr = ctx->ParseMessage(_internal_mutable_internal_anomaly(), ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -3440,6 +5829,34 @@ uint8_t* NetworkFeatures::_InternalSerialize(
     }
   }
 
+  // .protobuf.DDoSFeatures ddos_embedded = 112;
+  if (this->_internal_has_ddos_embedded()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(112, _Internal::ddos_embedded(this),
+        _Internal::ddos_embedded(this).GetCachedSize(), target, stream);
+  }
+
+  // .protobuf.RansomwareEmbeddedFeatures ransomware_embedded = 113;
+  if (this->_internal_has_ransomware_embedded()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(113, _Internal::ransomware_embedded(this),
+        _Internal::ransomware_embedded(this).GetCachedSize(), target, stream);
+  }
+
+  // .protobuf.TrafficFeatures traffic_classification = 114;
+  if (this->_internal_has_traffic_classification()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(114, _Internal::traffic_classification(this),
+        _Internal::traffic_classification(this).GetCachedSize(), target, stream);
+  }
+
+  // .protobuf.InternalFeatures internal_anomaly = 115;
+  if (this->_internal_has_internal_anomaly()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(115, _Internal::internal_anomaly(this),
+        _Internal::internal_anomaly(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3558,6 +5975,34 @@ size_t NetworkFeatures::ByteSizeLong() const {
     total_size += 2 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.ransomware_);
+  }
+
+  // .protobuf.DDoSFeatures ddos_embedded = 112;
+  if (this->_internal_has_ddos_embedded()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.ddos_embedded_);
+  }
+
+  // .protobuf.RansomwareEmbeddedFeatures ransomware_embedded = 113;
+  if (this->_internal_has_ransomware_embedded()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.ransomware_embedded_);
+  }
+
+  // .protobuf.TrafficFeatures traffic_classification = 114;
+  if (this->_internal_has_traffic_classification()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.traffic_classification_);
+  }
+
+  // .protobuf.InternalFeatures internal_anomaly = 115;
+  if (this->_internal_has_internal_anomaly()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.internal_anomaly_);
   }
 
   // uint32 source_port = 3;
@@ -4110,6 +6555,22 @@ void NetworkFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
     _this->_internal_mutable_ransomware()->::protobuf::RansomwareFeatures::MergeFrom(
         from._internal_ransomware());
   }
+  if (from._internal_has_ddos_embedded()) {
+    _this->_internal_mutable_ddos_embedded()->::protobuf::DDoSFeatures::MergeFrom(
+        from._internal_ddos_embedded());
+  }
+  if (from._internal_has_ransomware_embedded()) {
+    _this->_internal_mutable_ransomware_embedded()->::protobuf::RansomwareEmbeddedFeatures::MergeFrom(
+        from._internal_ransomware_embedded());
+  }
+  if (from._internal_has_traffic_classification()) {
+    _this->_internal_mutable_traffic_classification()->::protobuf::TrafficFeatures::MergeFrom(
+        from._internal_traffic_classification());
+  }
+  if (from._internal_has_internal_anomaly()) {
+    _this->_internal_mutable_internal_anomaly()->::protobuf::InternalFeatures::MergeFrom(
+        from._internal_internal_anomaly());
+  }
   if (from._internal_source_port() != 0) {
     _this->_internal_set_source_port(from._internal_source_port());
   }
@@ -4485,7 +6946,7 @@ void NetworkFeatures::InternalSwap(NetworkFeatures* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkFeatures::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[2]);
+      file_level_metadata_network_5fsecurity_2eproto[6]);
 }
 
 // ===================================================================
@@ -5245,7 +7706,7 @@ void GeoLocationInfo::InternalSwap(GeoLocationInfo* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GeoLocationInfo::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[3]);
+      file_level_metadata_network_5fsecurity_2eproto[7]);
 }
 
 // ===================================================================
@@ -6698,7 +9159,7 @@ void GeoEnrichment::InternalSwap(GeoEnrichment* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GeoEnrichment::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[4]);
+      file_level_metadata_network_5fsecurity_2eproto[8]);
 }
 
 // ===================================================================
@@ -7053,7 +9514,7 @@ void TimeWindow::InternalSwap(TimeWindow* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata TimeWindow::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[5]);
+      file_level_metadata_network_5fsecurity_2eproto[9]);
 }
 
 // ===================================================================
@@ -7067,7 +9528,7 @@ void FlowAggregation_ProtocolDistributionEntry_DoNotUse::MergeFrom(const FlowAgg
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation_ProtocolDistributionEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[6]);
+      file_level_metadata_network_5fsecurity_2eproto[10]);
 }
 
 // ===================================================================
@@ -7081,7 +9542,7 @@ void FlowAggregation_PortDistributionEntry_DoNotUse::MergeFrom(const FlowAggrega
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation_PortDistributionEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[7]);
+      file_level_metadata_network_5fsecurity_2eproto[11]);
 }
 
 // ===================================================================
@@ -7095,7 +9556,7 @@ void FlowAggregation_CountryDistributionEntry_DoNotUse::MergeFrom(const FlowAggr
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation_CountryDistributionEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[8]);
+      file_level_metadata_network_5fsecurity_2eproto[12]);
 }
 
 // ===================================================================
@@ -7585,7 +10046,7 @@ void FlowAggregation::InternalSwap(FlowAggregation* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[9]);
+      file_level_metadata_network_5fsecurity_2eproto[13]);
 }
 
 // ===================================================================
@@ -8090,7 +10551,7 @@ void ModelPrediction::InternalSwap(ModelPrediction* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ModelPrediction::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[10]);
+      file_level_metadata_network_5fsecurity_2eproto[14]);
 }
 
 // ===================================================================
@@ -8104,7 +10565,7 @@ void TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse::MergeFrom(const Tr
 ::PROTOBUF_NAMESPACE_ID::Metadata TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[11]);
+      file_level_metadata_network_5fsecurity_2eproto[15]);
 }
 
 // ===================================================================
@@ -8789,7 +11250,7 @@ void TricapaMLAnalysis::InternalSwap(TricapaMLAnalysis* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata TricapaMLAnalysis::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[12]);
+      file_level_metadata_network_5fsecurity_2eproto[16]);
 }
 
 // ===================================================================
@@ -8803,7 +11264,7 @@ void DistributedNode_NodeCapabilitiesEntry_DoNotUse::MergeFrom(const Distributed
 ::PROTOBUF_NAMESPACE_ID::Metadata DistributedNode_NodeCapabilitiesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[13]);
+      file_level_metadata_network_5fsecurity_2eproto[17]);
 }
 
 // ===================================================================
@@ -9871,7 +12332,7 @@ void DistributedNode::InternalSwap(DistributedNode* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DistributedNode::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[14]);
+      file_level_metadata_network_5fsecurity_2eproto[18]);
 }
 
 // ===================================================================
@@ -9885,7 +12346,7 @@ void PipelineTracking_ComponentMetadataEntry_DoNotUse::MergeFrom(const PipelineT
 ::PROTOBUF_NAMESPACE_ID::Metadata PipelineTracking_ComponentMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[15]);
+      file_level_metadata_network_5fsecurity_2eproto[19]);
 }
 
 // ===================================================================
@@ -10892,7 +13353,7 @@ void PipelineTracking::InternalSwap(PipelineTracking* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PipelineTracking::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[16]);
+      file_level_metadata_network_5fsecurity_2eproto[20]);
 }
 
 // ===================================================================
@@ -11347,7 +13808,7 @@ void RAGAnalysis::InternalSwap(RAGAnalysis* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RAGAnalysis::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[17]);
+      file_level_metadata_network_5fsecurity_2eproto[21]);
 }
 
 // ===================================================================
@@ -11897,7 +14358,7 @@ void HumanFeedback::InternalSwap(HumanFeedback* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HumanFeedback::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[18]);
+      file_level_metadata_network_5fsecurity_2eproto[22]);
 }
 
 // ===================================================================
@@ -12309,7 +14770,7 @@ void HumanInTheLoopReview::InternalSwap(HumanInTheLoopReview* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HumanInTheLoopReview::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[19]);
+      file_level_metadata_network_5fsecurity_2eproto[23]);
 }
 
 // ===================================================================
@@ -12323,7 +14784,7 @@ void NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::MergeFrom(const NetworkS
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[20]);
+      file_level_metadata_network_5fsecurity_2eproto[24]);
 }
 
 // ===================================================================
@@ -13455,7 +15916,7 @@ void NetworkSecurityEvent::InternalSwap(NetworkSecurityEvent* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkSecurityEvent::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[21]);
+      file_level_metadata_network_5fsecurity_2eproto[25]);
 }
 
 // ===================================================================
@@ -13826,7 +16287,7 @@ void EventBatch::InternalSwap(EventBatch* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EventBatch::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[22]);
+      file_level_metadata_network_5fsecurity_2eproto[26]);
 }
 
 // ===================================================================
@@ -13840,7 +16301,7 @@ void SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse::MergeFrom(const Sy
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[23]);
+      file_level_metadata_network_5fsecurity_2eproto[27]);
 }
 
 // ===================================================================
@@ -13854,7 +16315,7 @@ void SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse::MergeFrom(const Syst
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[24]);
+      file_level_metadata_network_5fsecurity_2eproto[28]);
 }
 
 // ===================================================================
@@ -14499,7 +16960,7 @@ void SystemConfiguration::InternalSwap(SystemConfiguration* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[25]);
+      file_level_metadata_network_5fsecurity_2eproto[29]);
 }
 
 // ===================================================================
@@ -15262,12 +17723,28 @@ void RansomwareFeatures::InternalSwap(RansomwareFeatures* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RansomwareFeatures::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[26]);
+      file_level_metadata_network_5fsecurity_2eproto[30]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protobuf
 PROTOBUF_NAMESPACE_OPEN
+template<> PROTOBUF_NOINLINE ::protobuf::DDoSFeatures*
+Arena::CreateMaybeMessage< ::protobuf::DDoSFeatures >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::DDoSFeatures >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::RansomwareEmbeddedFeatures*
+Arena::CreateMaybeMessage< ::protobuf::RansomwareEmbeddedFeatures >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::RansomwareEmbeddedFeatures >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::TrafficFeatures*
+Arena::CreateMaybeMessage< ::protobuf::TrafficFeatures >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::TrafficFeatures >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::InternalFeatures*
+Arena::CreateMaybeMessage< ::protobuf::InternalFeatures >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::InternalFeatures >(arena);
+}
 template<> PROTOBUF_NOINLINE ::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse*
 Arena::CreateMaybeMessage< ::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse >(arena);
