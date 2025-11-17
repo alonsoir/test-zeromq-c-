@@ -8,6 +8,8 @@
 #include "thread_manager.hpp"
 #include "fast_detector.hpp"
 #include "ransomware_feature_processor.hpp"
+#include "flow_manager.hpp"
+#include "ml_defender_features.hpp"
 #include "payload_analyzer.hpp"
 #include <bpf/libbpf.h>
 #include <zmq.hpp>
@@ -189,8 +191,10 @@ private:
     EventCallback external_callback_;
 
     // Layer 1 - Fast Detection (thread-local)
-    static thread_local FastDetector fast_detector_;
-    static thread_local PayloadAnalyzer payload_analyzer_;
+    thread_local static FastDetector fast_detector_;
+    thread_local static PayloadAnalyzer payload_analyzer_;
+    thread_local static FlowManager flow_manager_;      // Flow state tracking
+    thread_local static MLDefenderExtractor ml_extractor_;  // Feature extraction
 
     // Layer 2 - Deep Analysis (singleton)
     std::unique_ptr<RansomwareFeatureProcessor> ransomware_processor_;

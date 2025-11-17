@@ -1,7 +1,7 @@
 // network_security.proto
 // FECHA: 16 de Noviembre de 2025 - PHASE 1 UPDATE
 // ✅ PHASE 1: 4 detectores embebidos (DDoS, Ransomware, Traffic, Internal)
-// DESCRIPCIÓN: Protobuf heredao de upgraded-happiness, pensado para su version c++
+// DESCRIPCIÓN: Protobuf heredado de upgraded-happiness, pensado para su version c++
 //
 // FILOSOFÍA: TODO O NADA - Sin campos legacy confusos
 // ✅ Solo campos absolutamente necesarios y claros

@@ -3,6 +3,8 @@
 #include "ring_consumer.hpp"
 #include "fast_detector.hpp"
 #include "feature_logger.hpp"
+#include "flow_manager.hpp"
+#include "ml_defender_features.hpp"
 #include <iostream>
 #include <cstring>
 #include <arpa/inet.h>
@@ -15,24 +17,42 @@ extern FeatureLogger::VerbosityLevel g_verbosity;
 // Thread-local FastDetector instance (Layer 1 detection)
 
 namespace sniffer {
-// ============================================================================
-// Thread-Local FastDetector (Layer 1 Detection)
-// ============================================================================
-thread_local FastDetector RingBufferConsumer::fast_detector_;
-thread_local PayloadAnalyzer RingBufferConsumer::payload_analyzer_;
+    // ============================================================================
+    // Thread-Local Detectors and Extractors (Phase 1, Day 3)
+    // ============================================================================
+    thread_local FastDetector RingBufferConsumer::fast_detector_;
+    thread_local PayloadAnalyzer RingBufferConsumer::payload_analyzer_;
 
+    // ML Defender: Flow tracking (thread-local, per-consumer)
+    thread_local FlowManager RingBufferConsumer::flow_manager_(
+        FlowManager::Config{
+            .flow_timeout_ns = 120'000'000'000ULL,  // 120s timeout
+            .max_flows = 10'000,                     // Per-thread limit
+            .auto_export_on_tcp_close = false,       // Phase 2 feature
+            .enable_statistics = false               // Low overhead mode
+        }
+    );
 
-RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
-    : config_(config), ring_buf_(nullptr), ring_fd_(-1) {
+// ML Defender: Feature extractor (thread-local, stateless)
+thread_local MLDefenderExtractor RingBufferConsumer::ml_extractor_;
 
-    stats_.start_time = std::chrono::steady_clock::now();
+    // ============================================================================
+    // CONSTRUCTOR
+    // ============================================================================
 
-    std::cout << "[INFO] Enhanced RingBufferConsumer created with config:" << std::endl;
-    std::cout << "  - Ring consumer threads: " << config_.threading.ring_consumer_threads << std::endl;
-    std::cout << "  - Feature processor threads: " << config_.threading.feature_processor_threads << std::endl;
-    std::cout << "  - ZMQ sender threads: " << config_.threading.zmq_sender_threads << std::endl;
-    std::cout << "  - Batch size: " << config_.buffers.batch_processing_size << std::endl;
-}
+    RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
+        : config_(config)
+        , ring_buf_(nullptr)
+        , ring_fd_(-1)
+        , initialized_(false)
+        , running_(false)
+        , should_stop_(false)
+        , active_consumers_(0)
+        , socket_round_robin_(0)
+        , ransomware_enabled_(false) {
+
+        std::cout << "[INFO] RingBufferConsumer constructor called" << std::endl;
+    }
 
 RingBufferConsumer::~RingBufferConsumer() {
     if (running_) {
@@ -401,8 +421,13 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
     // Fast Detection (thread-local, O(1))
     fast_detector_.ingest(event);
     if (fast_detector_.is_suspicious()) {
-        send_fast_alert(event);  // Immediate ZMQ alert
+        send_fast_alert(event);
     }
+
+    // ===== ML DEFENDER: Flow Tracking (Phase 1, Day 3) =====
+    // Track flow state for feature extraction
+    // NOTE: Each thread maintains its own flow table (thread_local)
+    flow_manager_.add_packet(event);
 
     // ===== Layer 1.5: Payload Analysis (thread-local, ~1-150 μs) =====
     // Only analyze if payload is present
@@ -579,6 +604,49 @@ void RingBufferConsumer::flush_current_batch() {
 void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
                                                  protobuf::NetworkSecurityEvent& proto_event,
                                                  int buffer_index) const {
+    // ============================================================================
+    // ML DEFENDER: Feature Extraction (Phase 1, Day 3)
+    // ============================================================================
+
+    // Create flow key from event
+    FlowKey flow_key{
+        .src_ip = event.src_ip,
+        .dst_ip = event.dst_ip,
+        .src_port = event.src_port,
+        .dst_port = event.dst_port,
+        .protocol = event.protocol
+    };
+
+    // Get flow statistics from thread-local FlowManager
+    // NOTE: const_cast is safe here because flow_manager_ is thread_local
+    // (each thread has its own instance, guaranteed thread-safety)
+    auto& mutable_flow_mgr = const_cast<FlowManager&>(flow_manager_);
+    FlowStatistics* flow_stats = mutable_flow_mgr.get_flow_stats_unsafe(flow_key);
+
+    if (flow_stats) {
+        // Extract and populate ML Defender features (40 features)
+        // This populates 4 submessages: DDoS, Ransomware, Traffic, Internal
+        ml_extractor_.populate_ml_defender_features(*flow_stats, proto_event);
+
+        // Optional: Log feature extraction if verbosity enabled
+        if (g_verbosity >= FeatureLogger::VerbosityLevel::GROUPED) {
+            std::cout << "[ML Defender] Extracted features for flow: "
+                      << "spkts=" << flow_stats->spkts
+                      << ", dpkts=" << flow_stats->dpkts
+                      << ", duration=" << (flow_stats->get_duration_us() / 1000.0) << "ms"
+                      << std::endl;
+        }
+    } else {
+        // Flow not found (shouldn't happen, but handle gracefully)
+        if (g_verbosity >= FeatureLogger::VerbosityLevel::DETAILED) {
+            std::cout << "[ML Defender] WARNING: Flow not found for feature extraction" << std::endl;
+        }
+    }
+
+    // ============================================================================
+    // END ML DEFENDER Integration
+    // ============================================================================
+
     // Use pre-allocated buffers for IP conversion
     struct in_addr src_addr = {.s_addr = event.src_ip};
     struct in_addr dst_addr = {.s_addr = event.dst_ip};

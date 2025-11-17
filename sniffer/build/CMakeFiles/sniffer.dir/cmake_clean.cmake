@@ -29,6 +29,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o"
