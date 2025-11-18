@@ -972,6 +972,102 @@ tests/test_ransomware_feature_extractor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/tests/test_ransomware_feature_extractor.cpp.s
 .PHONY : tests/test_ransomware_feature_extractor.cpp.s
 
+vagrant/ml-detector/src/ddos_detector.o: vagrant/ml-detector/src/ddos_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/ddos_detector.o
+
+# target to build an object file
+vagrant/ml-detector/src/ddos_detector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/ddos_detector.cpp.o
+
+vagrant/ml-detector/src/ddos_detector.i: vagrant/ml-detector/src/ddos_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/ddos_detector.i
+
+# target to preprocess a source file
+vagrant/ml-detector/src/ddos_detector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/ddos_detector.cpp.i
+
+vagrant/ml-detector/src/ddos_detector.s: vagrant/ml-detector/src/ddos_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/ddos_detector.s
+
+# target to generate assembly for a file
+vagrant/ml-detector/src/ddos_detector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/ddos_detector.cpp.s
+
+vagrant/ml-detector/src/internal_detector.o: vagrant/ml-detector/src/internal_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/internal_detector.o
+
+# target to build an object file
+vagrant/ml-detector/src/internal_detector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/internal_detector.cpp.o
+
+vagrant/ml-detector/src/internal_detector.i: vagrant/ml-detector/src/internal_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/internal_detector.i
+
+# target to preprocess a source file
+vagrant/ml-detector/src/internal_detector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/internal_detector.cpp.i
+
+vagrant/ml-detector/src/internal_detector.s: vagrant/ml-detector/src/internal_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/internal_detector.s
+
+# target to generate assembly for a file
+vagrant/ml-detector/src/internal_detector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/internal_detector.cpp.s
+
+vagrant/ml-detector/src/ransomware_detector.o: vagrant/ml-detector/src/ransomware_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/ransomware_detector.o
+
+# target to build an object file
+vagrant/ml-detector/src/ransomware_detector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/ransomware_detector.cpp.o
+
+vagrant/ml-detector/src/ransomware_detector.i: vagrant/ml-detector/src/ransomware_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/ransomware_detector.i
+
+# target to preprocess a source file
+vagrant/ml-detector/src/ransomware_detector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/ransomware_detector.cpp.i
+
+vagrant/ml-detector/src/ransomware_detector.s: vagrant/ml-detector/src/ransomware_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/ransomware_detector.s
+
+# target to generate assembly for a file
+vagrant/ml-detector/src/ransomware_detector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/ransomware_detector.cpp.s
+
+vagrant/ml-detector/src/traffic_detector.o: vagrant/ml-detector/src/traffic_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/traffic_detector.o
+
+# target to build an object file
+vagrant/ml-detector/src/traffic_detector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o
+.PHONY : vagrant/ml-detector/src/traffic_detector.cpp.o
+
+vagrant/ml-detector/src/traffic_detector.i: vagrant/ml-detector/src/traffic_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/traffic_detector.i
+
+# target to preprocess a source file
+vagrant/ml-detector/src/traffic_detector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.i
+.PHONY : vagrant/ml-detector/src/traffic_detector.cpp.i
+
+vagrant/ml-detector/src/traffic_detector.s: vagrant/ml-detector/src/traffic_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/traffic_detector.s
+
+# target to generate assembly for a file
+vagrant/ml-detector/src/traffic_detector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.s
+.PHONY : vagrant/ml-detector/src/traffic_detector.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -1075,6 +1171,18 @@ help:
 	@echo "... tests/test_ransomware_feature_extractor.o"
 	@echo "... tests/test_ransomware_feature_extractor.i"
 	@echo "... tests/test_ransomware_feature_extractor.s"
+	@echo "... vagrant/ml-detector/src/ddos_detector.o"
+	@echo "... vagrant/ml-detector/src/ddos_detector.i"
+	@echo "... vagrant/ml-detector/src/ddos_detector.s"
+	@echo "... vagrant/ml-detector/src/internal_detector.o"
+	@echo "... vagrant/ml-detector/src/internal_detector.i"
+	@echo "... vagrant/ml-detector/src/internal_detector.s"
+	@echo "... vagrant/ml-detector/src/ransomware_detector.o"
+	@echo "... vagrant/ml-detector/src/ransomware_detector.i"
+	@echo "... vagrant/ml-detector/src/ransomware_detector.s"
+	@echo "... vagrant/ml-detector/src/traffic_detector.o"
+	@echo "... vagrant/ml-detector/src/traffic_detector.i"
+	@echo "... vagrant/ml-detector/src/traffic_detector.s"
 .PHONY : help
 
 

@@ -76,6 +76,10 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_BINARY_DIR}/proto)
 include_directories(${CMAKE_BINARY_DIR})
 
+# ML Defender Phase 1 - Embedded C++20 Detectors
+set(ML_DEFENDER_DIR "${CMAKE_SOURCE_DIR}/../ml-detector")
+include_directories(${ML_DEFENDER_DIR}/include)
+
 # Core dependencies includes
 include_directories(${LIBBPF_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
@@ -137,6 +141,11 @@ add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
 # ML Defender Phase 1 sources
 set(ML_DEFENDER_SOURCES
         src/userspace/ml_defender_features.cpp
+        # Phase 1 Day 4: Embedded C++20 detectors
+        ../ml-detector/src/ddos_detector.cpp
+        ../ml-detector/src/ransomware_detector.cpp
+        ../ml-detector/src/traffic_detector.cpp
+        ../ml-detector/src/internal_detector.cpp
 )
 
 # ============================================================================

@@ -2,7 +2,6 @@
 #pragma once
 
 #include "protocol_numbers.hpp"  // IANA protocol numbers
-
 #include "main.h"
 #include "network_security.pb.h"
 #include "thread_manager.hpp"
@@ -11,6 +10,11 @@
 #include "flow_manager.hpp"
 #include "ml_defender_features.hpp"
 #include "payload_analyzer.hpp"
+// ML Defender embedded detectors
+#include "ml_defender/ddos_detector.hpp"
+#include "ml_defender/ransomware_detector.hpp"
+#include "ml_defender/traffic_detector.hpp"
+#include "ml_defender/internal_detector.hpp"
 #include <bpf/libbpf.h>
 #include <zmq.hpp>
 #include <memory>
@@ -41,6 +45,12 @@ struct RingConsumerStats {
     std::atomic<uint64_t> ransomware_feature_extractions{0}; // Layer 2 extractions
     std::atomic<uint64_t> ransomware_confirmed_threats{0};  // High-confidence detections
     std::atomic<uint64_t> ransomware_processing_time_us{0}; // Time spent on ransomware
+
+	std::atomic<uint64_t> ddos_attacks_detected{0};
+	std::atomic<uint64_t> ransomware_attacks_detected{0};
+	std::atomic<uint64_t> suspicious_traffic_detected{0};
+	std::atomic<uint64_t> internal_anomalies_detected{0};
+	std::atomic<uint64_t> ml_detection_time_us{0};
 };
 
 // Snapshot for reading stats (non-atomic copy)
@@ -60,6 +70,12 @@ struct RingConsumerStatsSnapshot {
     uint64_t ransomware_feature_extractions;
     uint64_t ransomware_confirmed_threats;
     uint64_t ransomware_processing_time_us;
+	// embebbed models
+	uint64_t ddos_attacks_detected;
+	uint64_t ransomware_attacks_detected;
+	uint64_t suspicious_traffic_detected;
+	uint64_t internal_anomalies_detected;
+	uint64_t ml_detection_time_us;
 };
 
 struct EventBatch {
@@ -163,6 +179,12 @@ private:
     std::atomic<bool> should_stop_{false};
     std::atomic<bool> initialized_{false};
 
+	// Layer 3 - ML Defender Embedded Detectors (thread-local, zero-lock)
+	thread_local static ml_defender::DDoSDetector ddos_detector_;
+	thread_local static ml_defender::RansomwareDetector ransomware_detector_;
+	thread_local static ml_defender::TrafficDetector traffic_detector_;
+	thread_local static ml_defender::InternalDetector internal_detector_;
+
     // Queues
     std::queue<SimpleEvent> processing_queue_;
     std::mutex processing_queue_mutex_;
@@ -207,6 +229,15 @@ private:
     void send_ransomware_features(const protobuf::RansomwareFeatures& features);
     bool initialize_ransomware_detection();
     void shutdown_ransomware_detection();
+
+	// ML Defender feature extraction
+	ml_defender::DDoSDetector::Features extract_ddos_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+	ml_defender::RansomwareDetector::Features extract_ransomware_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+	ml_defender::TrafficDetector::Features extract_traffic_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+	ml_defender::InternalDetector::Features extract_internal_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+
+	// ML Defender inference
+	void run_ml_detection(protobuf::NetworkSecurityEvent& proto_event);
 };
 
 } // namespace sniffer
