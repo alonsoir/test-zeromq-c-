@@ -83,7 +83,7 @@
     "user_processing_queue_depth": 300,
     "protobuf_serialize_buffer_size": 65536,
     "zmq_send_buffer_size": 262144,
-    "flow_state_buffer_entries": 100000,
+    "flow_state_buffer_entries": 500000,
     "statistics_buffer_entries": 10000,
     "batch_processing_size": 4
   },
@@ -110,7 +110,7 @@
     "ebpf_program": "sniffer.bpf.o",
     "xdp_mode": "skb",
     "ring_buffer_size": 1048576,
-    "max_flows_in_kernel": 100000,
+    "max_flows_in_kernel": 500000,
     "flow_timeout_seconds": 300,
     "kernel_features": [
       "source_ip",
@@ -354,6 +354,22 @@
       "enabled": false,
       "failure_threshold": 50,
       "recovery_timeout": 30
+    }
+  },
+  "ml_defender": {
+    "_comment": "ML Defender Embedded C++20 Detectors - Thresholds (Phase 1, Day 5)",
+    "_source": "Single source of truth for detection thresholds",
+    "_calibration": "Conservative values - adjust after 8h stress test",
+    "thresholds": {
+      "ddos": 0.85,
+      "ransomware": 0.90,
+      "traffic": 0.80,
+      "internal": 0.85
+    },
+    "validation": {
+      "min_threshold": 0.5,
+      "max_threshold": 0.99,
+      "fallback_threshold": 0.75
     }
   }
 }

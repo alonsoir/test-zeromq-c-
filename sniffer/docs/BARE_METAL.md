@@ -458,7 +458,7 @@ cat /proc/net/dev | grep eth0 | awk '{print "RX: " $2 " TX: " $10}'
 sudo systemctl stop evolutionary-sniffer
 
 # Backup configuración
-sudo cp /etc/sniffer/sniffer.json /etc/sniffer/sniffer.json.backup_20251028
+sudo cp /etc/sniffer/sniffer.json /etc/sniffer/sniffer.json.backup_20251119
 
 # Compilar nueva versión
 git pull
