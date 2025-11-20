@@ -1,6 +1,7 @@
 // network_security.proto
-// FECHA: 18 de Septiembre de 2025
-// DESCRIPCIÓN: Protobuf heredao de upgraded-happiness, pensado para su version c++
+// FECHA: 16 de Noviembre de 2025 - PHASE 1 UPDATE
+// ✅ PHASE 1: 4 detectores embebidos (DDoS, Ransomware, Traffic, Internal)
+// DESCRIPCIÓN: Protobuf heredado de upgraded-happiness, pensado para su version c++
 //
 // FILOSOFÍA: TODO O NADA - Sin campos legacy confusos
 // ✅ Solo campos absolutamente necesarios y claros
@@ -16,6 +17,66 @@ package protobuf;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+
+// =====================================================================
+// 🎯 PHASE 1 - DETECTORES EMBEBIDOS C++20
+// =====================================================================
+
+// 🛡️ LEVEL 2 - DDoS Detection Features (10 features)
+message DDoSFeatures {
+    float syn_ack_ratio = 1;
+    float packet_symmetry = 2;
+    float source_ip_dispersion = 3;
+    float protocol_anomaly_score = 4;
+    float packet_size_entropy = 5;
+    float traffic_amplification_factor = 6;
+    float flow_completion_rate = 7;
+    float geographical_concentration = 8;
+    float traffic_escalation_rate = 9;
+    float resource_saturation_score = 10;
+}
+
+// 🔐 LEVEL 2 - Ransomware Detection Features (10 features)
+message RansomwareEmbeddedFeatures {
+    float io_intensity = 1;
+    float entropy = 2;
+    float resource_usage = 3;
+    float network_activity = 4;
+    float file_operations = 5;
+    float process_anomaly = 6;
+    float temporal_pattern = 7;
+    float access_frequency = 8;
+    float data_volume = 9;
+    float behavior_consistency = 10;
+}
+
+// 🌐 LEVEL 3 - Traffic Classification Features (10 features)
+message TrafficFeatures {
+    float packet_rate = 1;
+    float connection_rate = 2;
+    float tcp_udp_ratio = 3;
+    float avg_packet_size = 4;
+    float port_entropy = 5;
+    float flow_duration_std = 6;
+    float src_ip_entropy = 7;
+    float dst_ip_concentration = 8;
+    float protocol_variety = 9;
+    float temporal_consistency = 10;
+}
+
+// 🏢 LEVEL 3 - Internal Anomaly Detection Features (10 features)
+message InternalFeatures {
+    float internal_connection_rate = 1;
+    float service_port_consistency = 2;
+    float protocol_regularity = 3;
+    float packet_size_consistency = 4;
+    float connection_duration_std = 5;
+    float lateral_movement_score = 6;
+    float service_discovery_patterns = 7;
+    float data_exfiltration_indicators = 8;
+    float temporal_anomaly_score = 9;
+    float access_pattern_entropy = 10;
+}
 
 // =====================================================================
 // 🚀 NETWORK FEATURES - 83+ Features ML ORGANIZADAS POR MODELO
@@ -126,9 +187,15 @@ message NetworkFeatures {
   repeated double internal_traffic_features = 103; // 4-5 features tráfico interno
     RansomwareFeatures ransomware = 106;            // 20 features para Ransomware. Este sería para la caja doméstica.
 
-  // 🔧 FEATURES PERSONALIZADAS Y METADATOS
-  map<string, double> custom_features = 110;
-  map<string, string> feature_metadata = 111;
+    // 🔧 FEATURES PERSONALIZADAS Y METADATOS
+    map<string, double> custom_features = 110;
+    map<string, string> feature_metadata = 111;
+
+    // 🎯 PHASE 1 - DETECTORES EMBEBIDOS C++20 (Noviembre 2025)
+    DDoSFeatures ddos_embedded = 112;
+    RansomwareEmbeddedFeatures ransomware_embedded = 113;
+    TrafficFeatures traffic_classification = 114;
+    InternalFeatures internal_anomaly = 115;
 }
 
 // =====================================================================

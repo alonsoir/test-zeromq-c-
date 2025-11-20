@@ -1,0 +1,11 @@
+ML Defender 8-Hour Stress Test
+===============================
+Start time: jue 20 nov 2025 10:10:56 UTC
+Duration: 10 minutes
+Traffic rate: 75 pps
+Components: Sniffer + ML-Detector
+Thresholds: DDoS=0.85, Ransomware=0.90, Traffic=0.80, Internal=0.85
+Hardware: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz CPU @ 0.0GHz
+Memory: 7,8Gi
+OS: Debian GNU/Linux 12 (bookworm)
+Kernel: 6.1.0-41-amd64

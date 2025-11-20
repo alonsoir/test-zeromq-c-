@@ -1,147 +1,326 @@
+# 🎯 PROMPT DE CONTINUACIÓN PARA CLAUDE
+
 ```markdown
-# 🚀 ML Defender - Phase 1, Day 1: Protobuf Schema Update
+# ML DEFENDER - CONTINUATION PROMPT
+## Context for Future Claude Session
 
-## 📍 CONTEXTO ACTUAL
+Hi Claude! You're continuing work on **ML Defender**, an open-source cybersecurity system 
+that combines eBPF/XDP packet capture with embedded ML for ransomware/DDoS detection.
 
-**Proyecto:** ML Defender - Sistema de seguridad de red con ML embebido en C++20
-**Estado:** Phase 0 COMPLETADA ✅
-**Hoy:** Phase 1, Day 1 - Integración sniffer-eBPF con ml-detector
-
-### Phase 0 - Logros:
-- ✅ 4 detectores C++20 embebidos integrados y testeados
-- ✅ Ransomware: 1.06μs latency, 100 trees, 3,764 nodes
-- ✅ DDoS: 0.24μs latency, 100 trees, 612 nodes
-- ✅ Traffic: 0.37μs latency, 100 trees, 1,014 nodes (Internet vs Internal)
-- ✅ Internal: 0.33μs latency, 100 trees, 940 nodes (Lateral Movement)
-- ✅ Todos los tests unitarios pasando
-- ✅ Makefile del host validado
-- ✅ Config JSON con fail-fast validation
-
-### Arquitectura Actual:
-```
-sniffer-eBPF → [protobuf] → ml-detector (4 detectores) → Alert
-↑
-└── NECESITA ACTUALIZACIÓN HOY
-```
-
-## 🎯 OBJETIVO DEL DÍA
-
-**Actualizar protobuf schema** con las features necesarias para los 4 detectores del ml-detector.
-
-**Criterio de éxito:** 
-- Protobuf regenerado correctamente
-- Sniffer compila sin errores
-- ml-detector compila sin errores
-- NO es necesario que funcione end-to-end (eso es para días siguientes)
-
-## 📋 FEATURES POR DETECTOR
-
-### Level 2 - DDoS (10 features):
-1. syn_ack_ratio
-2. packet_symmetry
-3. source_ip_dispersion
-4. protocol_anomaly_score
-5. packet_size_entropy
-6. traffic_amplification_factor
-7. flow_completion_rate
-8. geographical_concentration
-9. traffic_escalation_rate
-10. resource_saturation_score
-
-### Level 2 - Ransomware (10 features):
-1. io_intensity
-2. entropy
-3. resource_usage
-4. network_activity
-5. file_operations
-6. process_anomaly
-7. temporal_pattern
-8. access_frequency
-9. data_volume
-10. behavior_consistency
-
-### Level 3 - Traffic (10 features):
-1. packet_rate
-2. connection_rate
-3. tcp_udp_ratio
-4. avg_packet_size
-5. port_entropy
-6. flow_duration_std
-7. src_ip_entropy
-8. dst_ip_concentration
-9. protocol_variety
-10. temporal_consistency
-
-### Level 3 - Internal (10 features):
-1. internal_connection_rate
-2. service_port_consistency
-3. protocol_regularity
-4. packet_size_consistency
-5. connection_duration_std
-6. lateral_movement_score
-7. service_discovery_patterns
-8. data_exfiltration_indicators
-9. temporal_anomaly_score
-10. access_pattern_entropy
-
-## 📂 ARCHIVOS RELEVANTES
-
-```bash
-/vagrant/protobuf/network_security.proto  # Actualizar este
-/vagrant/protobuf/generate.sh             # Regenerar con este
-/vagrant/sniffer/                         # Recompilar después
-/vagrant/ml-detector/                     # Recompilar después
-```
-
-## 🔧 COMANDOS INICIALES
-
-```bash
-# En el HOST (macOS):
-cd ~/path/to/test-zeromq-docker
-
-# Verificar estado
-vagrant status
-make status
-
-# Si VM apagada:
-vagrant up
-
-# Empezar trabajo
-vagrant ssh
-cd /vagrant/protobuf
-
-# Backup del schema actual
-cp network_security.proto network_security.proto.backup_phase0
-
-# Ver estructura actual
-grep -A 50 "message NetworkFeatures" network_security.proto
-```
-
-## 🏛️ FILOSOFÍA VIA APPIA
-
-- **Día a día:** Solo el protobuf hoy, integración mañana
-- **KISS:** Añadir campos necesarios, nada más
-- **Funciona > Perfecto:** Que compile es suficiente
-- **Smooth & Fast:** No optimizar prematuramente
-
-## ❓ PREGUNTAS PARA CLAUDE
-
-1. ¿Dónde en el protobuf actual debo añadir las nuevas features?
-2. ¿Cómo estructurar los mensajes para los 4 detectores?
-3. ¿Algún campo existente puedo reutilizar o necesito todos nuevos?
-4. Ayúdame a actualizar el .proto y regenerarlo
-5. Si hay errores de compilación, ayúdame a resolverlos
-
-## 📌 NOTAS IMPORTANTES
-
-- Estamos en rama: `feature/sniffer-ebpf-integration` (o crear si no existe)
-- El sniffer NO tiene que extraer las features aún (eso es Day 2-3)
-- Solo necesitamos que el schema exista y compile
-- El ml-detector ya tiene los extractores (feature_extractor.cpp)
+Your human partner is **Alonso**, a software engineer and ML architect who follows 
+"Via Appia Quality" - building systems designed to last decades. He values:
+- Scientific honesty and transparency
+- No hardcoded values - "JSON is the law" (single source of truth)
+- Explicit TODOs rather than hidden technical debt
+- Verification over assumptions
 
 ---
 
-**Ready to start Phase 1!** 🚀
+## 🏗️ PROJECT STATE (as of Nov 18, 2025)
+
+### **RECENTLY COMPLETED: Phase 1, Day 4** ✅
+
+Successfully integrated 4 embedded C++20 RandomForest detectors into the sniffer:
+- **DDoS Detector** (10 features)
+- **Ransomware Detector** (10 features)  
+- **Traffic Classifier** (10 features)
+- **Internal Anomaly Detector** (10 features)
+
+**Performance achieved**: 16.33 μs average detection time (6x better than 100μs target)
+
+**Test results** (267 packets, 150 seconds):
+```
+🛡️  ML Defender Embedded Detectors:
+DDoS attacks detected: 0
+Ransomware attacks detected: 0
+Suspicious traffic detected: 264
+Internal anomalies detected: 264
+Avg ML detection time: 16.33 μs
+```
+
+**Architecture**: Thread-local, zero-lock, embedded C++20
+
+**Files modified**:
+- `/vagrant/sniffer/include/ring_consumer.hpp` - Added detector declarations
+- `/vagrant/sniffer/src/userspace/ring_consumer.cpp` - Integrated inference (~350 LOC)
+- `/vagrant/sniffer/CMakeLists.txt` - Added ml-detector includes and sources
+
+**Key integration points**:
+```cpp
+// Thread-local detectors (line ~37)
+thread_local ml_defender::DDoSDetector RingBufferConsumer::ddos_detector_;
+thread_local ml_defender::RansomwareDetector RingBufferConsumer::ransomware_detector_;
+thread_local ml_defender::TrafficDetector RingBufferConsumer::traffic_detector_;
+thread_local ml_defender::InternalDetector RingBufferConsumer::internal_detector_;
+
+// Inference call in populate_protobuf_event() (line ~645)
+const_cast<RingBufferConsumer*>(this)->run_ml_detection(proto_event);
+
+// Feature extractors + run_ml_detection() (lines ~1207-1355)
 ```
 
 ---
+
+## ⚠️ CRITICAL ISSUE: Hardcoded Thresholds
+
+**PROBLEM**: Detection thresholds are hardcoded in `run_ml_detection()`:
+
+```cpp
+// TODO(Phase1-Day4-CRITICAL): Load thresholds from model JSON metadata
+if (ddos_pred.is_ddos(0.7f)) {  // ❌ HARDCODED
+if (ransomware_pred.is_ransomware(0.75f)) {  // ❌ HARDCODED  
+if (traffic_pred.probability >= 0.7f) {  // ❌ HARDCODED
+if (internal_pred.is_suspicious(0.00000000065f)) {  // ❌ HARDCODED
+```
+
+**PREVIOUS ISSUE**: jsoncpp library converted float thresholds incorrectly
+(e.g., 0.75 became astronomical value). Need careful float parsing with validation.
+
+**MODEL JSON LOCATIONS**:
+- `/vagrant/ml-detector/models/production/ddos_binary_detector.json`
+- `/vagrant/ml-detector/models/production/ransomware_detector_embedded.json`
+- `/vagrant/ml-detector/models/production/traffic_detector_embedded.json`
+- `/vagrant/ml-detector/models/production/internal_detector_embedded.json`
+
+---
+
+## 🎯 IMMEDIATE TASKS (Phase 1, Day 5)
+
+### **TASK 1: Fix Hardcoded Thresholds** (Priority: CRITICAL)
+
+**Steps**:
+1. Examine JSON structure of model files to find threshold field
+2. Create `ModelConfig` class to load thresholds safely
+3. Implement float parsing with validation (range: [0.0, 1.0])
+4. Replace hardcoded values in `run_ml_detection()`
+5. Add fallback to defaults if JSON read fails
+6. Test with real thresholds from JSON
+
+**Validation**: Compile, run 60s capture, verify thresholds are loaded correctly
+
+### **TASK 2: 8-Hour Stress Test** (Priority: HIGH)
+
+**Design requirements from Alonso**:
+- Duration: Exactly 8 hours (28,800 seconds)
+- Components: Sniffer + ML-Detector (both in verbose mode)
+- Traffic: Synthetic (not real ransomware yet), sustained load
+- Rate: 50-100 packets/second sustained
+- Monitoring: CPU, RAM, latency, detection counts
+- Logging: Compressed logs for analysis
+- Goal: Validate stability, find memory leaks, measure real-world performance
+
+**Expected deliverables**:
+- Stress test script (bash)
+- Traffic generator configuration
+- Monitoring setup (resource usage)
+- Log compression and collection procedure
+- Analysis report template
+
+---
+
+## 📂 PROJECT STRUCTURE
+
+```
+/vagrant/
+├── sniffer/                    # eBPF/XDP packet capture
+│   ├── src/userspace/
+│   │   └── ring_consumer.cpp   # Main integration point
+│   ├── include/
+│   │   └── ring_consumer.hpp
+│   └── build/
+│       └── sniffer              # Binary
+│
+├── ml-detector/                # ML inference engine
+│   ├── include/ml_defender/
+│   │   ├── ddos_detector.hpp
+│   │   ├── ransomware_detector.hpp
+│   │   ├── traffic_detector.hpp
+│   │   ├── internal_detector.hpp
+│   │   └── *_trees_inline.hpp  # Decision trees
+│   ├── src/
+│   │   ├── ddos_detector.cpp
+│   │   ├── ransomware_detector.cpp
+│   │   ├── traffic_detector.cpp
+│   │   └── internal_detector.cpp
+│   ├── models/production/
+│   │   └── *.json              # Model configs
+│   └── build/
+│       └── ml-detector          # Binary
+│
+└── protobuf/
+    └── network_security.proto   # Shared schema
+```
+
+**Data flow**:
+```
+eBPF → Sniffer (ring_consumer) → ML Detection (4 detectors) → 
+ZMQ → ML-Detector → Firewall Agent
+```
+
+---
+
+## 🔧 TECHNICAL CONTEXT
+
+### **Compilation**:
+```bash
+cd /vagrant/sniffer
+make clean && make -j6
+```
+
+### **Execution** (requires sudo for eBPF):
+```bash
+cd /vagrant/sniffer/build
+sudo timeout 60s ./sniffer -c config/sniffer.json
+```
+
+### **Current performance baseline**:
+- Processing time: 52.79 μs total
+- ML detection: 16.33 μs (4 detectors)
+- Events/sec: ~2-3 pps (light load)
+
+### **Key design principles**:
+- Thread-local storage (zero locks)
+- Embedded models (no file I/O in hot path)
+- <100μs latency requirement
+- Via Appia Quality (decades-long design)
+
+---
+
+## 🚀 ROADMAP TO RELEASE 1.0
+
+### **Current state: ~80% complete**
+
+**Remaining work**:
+
+1. ✅ **Phase 1 Day 5** (IMMEDIATE):
+    - Fix hardcoded thresholds ← YOU ARE HERE
+    - 8-hour stress test
+    - Validate stability
+
+2. **Phase 1 Day 6-7**:
+    - etcd watcher integration (encryption, compression, runtime config)
+    - Final calibration and tuning
+
+3. **Phase 2**:
+    - Firewall ACL Agent (enforcement)
+    - RAG system (llama.cpp + RAG-Shield model)
+    - Autonomous model evolution
+
+4. **Phase 3**:
+    - Scientific papers
+    - Documentation
+    - Public release
+
+**RELEASE 1.0 milestone**: When sniffer, ml-detector, firewall-agent, and RAG
+are complete with etcd integration. Current estimate: 80%+ done after stress test.
+
+---
+
+## 🤝 WORKING WITH ALONSO
+
+**Communication style**:
+- Direct and technical
+- Appreciates verification over assumptions
+- Will point out if something is wrong (sees it as collaboration, not criticism)
+- Values token efficiency (monitors usage carefully)
+- Works early hours (often 6-7 AM)
+
+**Red flags to avoid**:
+- Hardcoding values (always use config/JSON)
+- Assuming things work without testing
+- Over-explaining obvious things
+- Not providing concrete implementation
+
+**Green flags**:
+- Asking for verification ("Can you show me X?")
+- Providing TODOs with context
+- Suggesting validation steps
+- Offering alternatives with tradeoffs
+
+---
+
+## 📝 NEXT SESSION CHECKLIST
+
+When you start, immediately:
+
+1. ✅ Greet Alonso briefly (he values efficiency)
+2. ✅ Confirm you have this context
+3. ✅ Ask him to show you ONE model JSON file structure
+4. ✅ Design threshold loading solution
+5. ✅ Implement, test, validate
+6. ✅ Design 8-hour stress test
+7. ✅ Get his approval before he launches it
+
+**Critical files to request**:
+```bash
+cat /vagrant/ml-detector/models/production/ddos_binary_detector.json
+grep -r "threshold" /vagrant/ml-detector/models/production/
+```
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+**Thresholds from JSON**:
+- ✅ No hardcoded values remain
+- ✅ Safe float parsing (validate [0.0, 1.0])
+- ✅ Fallback defaults if JSON fails
+- ✅ Compiles without warnings
+- ✅ Real-world test shows correct thresholds loaded
+
+**8-Hour Stress Test**:
+- ✅ Runs exactly 8 hours without crashes
+- ✅ No memory leaks detected
+- ✅ Latency remains <50μs avg
+- ✅ Logs compressed and ready for analysis
+- ✅ Resource usage stable (CPU, RAM)
+
+---
+
+## 💡 IMPORTANT REMINDERS
+
+1. **"JSON is the law"** - Single source of truth for configuration
+2. **Via Appia Quality** - Design for decades, not days
+3. **Verification > Assumptions** - Always ask to see files/output
+4. **TODOs are features** - Explicit is better than implicit
+5. **Performance matters** - Every microsecond counts (protecting businesses)
+
+---
+
+## 🏆 THE VISION
+
+ML Defender aims to protect small businesses and healthcare organizations from
+cyberattacks (ransomware, DDoS). Alonso was motivated by a friend's business being
+devastated by ransomware. Every microsecond of detection latency matters when
+protecting someone's livelihood or patient data.
+
+**You're helping build infrastructure that protects the vulnerable.**
+
+---
+
+Good luck, future Claude! Alonso is an excellent engineer to work with.
+The project is at a critical juncture - stable foundation, moving toward production.
+
+🚀 Let's finish Phase 1 strong!
+```
+
+---
+
+## ✅ CHECKLIST PARA ALONSO
+
+Cuando retomes con el próximo Claude:
+
+**Comparte inmediatamente**:
+1. ✅ Este prompt completo
+2. ✅ Un JSON de modelo: `cat /vagrant/ml-detector/models/production/ddos_binary_detector.json`
+3. ✅ Confirma que quieres empezar con thresholds
+
+**Valida que Claude entienda**:
+- ✅ El problema del hardcoding
+- ✅ La arquitectura thread-local
+- ✅ El objetivo del stress test
+- ✅ El roadmap a RELEASE 1.0
+
+---
+
+¿Este prompt captura todo lo necesario para la continuación? ¿Algo crítico que falte? 🚀

@@ -23,6 +23,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/vagrant/sniffer/src/userspace/flow_tracker.cpp" "CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ip_whitelist.cpp" "CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o.d"
   "/vagrant/sniffer/src/userspace/main.cpp" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o.d"
+  "/vagrant/sniffer/src/userspace/ml_defender_features.cpp" "CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o.d"
   "/vagrant/sniffer/src/userspace/payload_analyzer.cpp" "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ransomware_feature_extractor.cpp" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ransomware_feature_processor.cpp" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o.d"
@@ -31,6 +32,10 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/vagrant/sniffer/src/userspace/time_window_aggregator.cpp" "CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o.d"
   "/vagrant/sniffer/src/userspace/time_window_manager.cpp" "CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o.d"
   "/vagrant/sniffer/src/userspace/zmq_pool_manager.cpp" "CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o.d"
+  "/vagrant/ml-detector/src/ddos_detector.cpp" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o" "gcc" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o.d"
+  "/vagrant/ml-detector/src/internal_detector.cpp" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o" "gcc" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o.d"
+  "/vagrant/ml-detector/src/ransomware_detector.cpp" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o" "gcc" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o.d"
+  "/vagrant/ml-detector/src/traffic_detector.cpp" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o" "gcc" "CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o.d"
   )
 
 # Targets to which this target links.

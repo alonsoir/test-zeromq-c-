@@ -43,19 +43,39 @@ struct TimeWindowEvent {
 /**
  * Window statistics for a time period
  */
-struct WindowStats {
-    uint64_t window_start_ns;
-    uint64_t window_end_ns;
-    size_t event_count;
-    size_t unique_ips_count;
-    size_t unique_ports_count;
-    uint64_t total_bytes;
+    struct WindowStats {
+        uint64_t window_start_ns;
+        uint64_t window_end_ns;
+        size_t event_count;
+        size_t unique_ips_count;
+        size_t unique_ports_count;
+        uint64_t total_bytes;
+        uint64_t subflow_fwd_packets;
+        uint64_t subflow_fwd_bytes;
+        uint64_t subflow_bwd_packets;
+        uint64_t subflow_bwd_bytes;
 
-    WindowStats()
-        : window_start_ns(0), window_end_ns(0)
-        , event_count(0), unique_ips_count(0)
-        , unique_ports_count(0), total_bytes(0) {}
-};
+        // Constructor por defecto
+        WindowStats()
+            : window_start_ns(0), window_end_ns(0)
+            , event_count(0), unique_ips_count(0)
+            , unique_ports_count(0), total_bytes(0)
+            , subflow_fwd_packets(0), subflow_fwd_bytes(0)
+            , subflow_bwd_packets(0), subflow_bwd_bytes(0) {}
+
+        // Constructor con window_start y window_end (para time_window_manager)
+        WindowStats(uint64_t start_ns, uint64_t end_ns)
+            : window_start_ns(start_ns), window_end_ns(end_ns)
+            , event_count(0), unique_ips_count(0)
+            , unique_ports_count(0), total_bytes(0)
+            , subflow_fwd_packets(0), subflow_fwd_bytes(0)
+            , subflow_bwd_packets(0), subflow_bwd_bytes(0) {}
+
+        // Check if timestamp is within window
+        bool contains(uint64_t timestamp_ns) const {
+            return timestamp_ns >= window_start_ns && timestamp_ns < window_end_ns;
+        }
+    };
 
 /**
  * Aggregated ransomware features (Phase 1A: 3 features)

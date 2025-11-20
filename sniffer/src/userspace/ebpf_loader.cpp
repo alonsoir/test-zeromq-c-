@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <net/if.h>
 #include <linux/if_link.h>
+#include <fcntl.h>
 // sniffer/src/userspace/ebpf_loader.hpp
 
 namespace sniffer {
@@ -28,7 +29,18 @@ EbpfLoader::EbpfLoader()
       attached_ifindex_(-1) {
 }
 
-EbpfLoader::~EbpfLoader() {
+    EbpfLoader::~EbpfLoader() {
+    // Guardar stderr original
+    int stderr_backup = dup(STDERR_FILENO);
+
+    // Redirigir stderr a /dev/null para suprimir warnings de libbpf
+    // (es normal que el qdisc ya no exista al limpiar)
+    int devnull = open("/dev/null", O_WRONLY);
+    if (devnull >= 0) {
+        dup2(devnull, STDERR_FILENO);
+        close(devnull);
+    }
+
     if (xdp_attached_ && attached_ifindex_ >= 0) {
         // Desadjuntar XDP
         bpf_xdp_detach(attached_ifindex_, 0, nullptr);
@@ -43,7 +55,13 @@ EbpfLoader::~EbpfLoader() {
         bpf_tc_detach(&hook, &opts);
         bpf_tc_hook_destroy(&hook);
     }
-    
+
+    // Restaurar stderr
+    if (stderr_backup >= 0) {
+        dup2(stderr_backup, STDERR_FILENO);
+        close(stderr_backup);
+    }
+
     if (bpf_obj_) {
         bpf_object__close(bpf_obj_);
         std::cout << "[INFO] eBPF object closed" << std::endl;

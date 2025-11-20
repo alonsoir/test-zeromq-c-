@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include "time_window_manager.hpp"
+#include "flow_tracker.hpp"
 #include <unordered_map>
 #include <vector>
 #include <mutex>
@@ -11,37 +12,6 @@
 #include <functional>
 
 namespace sniffer {
-
-// Flow key - Identifies a unique flow (5-tuple)
-struct FlowKey {
-    uint32_t src_ip;
-    uint32_t dst_ip;
-    uint16_t src_port;
-    uint16_t dst_port;
-    uint8_t protocol;
-
-    bool operator==(const FlowKey& other) const {
-        return src_ip == other.src_ip &&
-               dst_ip == other.dst_ip &&
-               src_port == other.src_port &&
-               dst_port == other.dst_port &&
-               protocol == other.protocol;
-    }
-
-    // Hash function for unordered_map
-    struct Hash {
-        size_t operator()(const FlowKey& k) const {
-            size_t h1 = std::hash<uint32_t>()(k.src_ip);
-            size_t h2 = std::hash<uint32_t>()(k.dst_ip);
-            size_t h3 = std::hash<uint16_t>()(k.src_port);
-            size_t h4 = std::hash<uint16_t>()(k.dst_port);
-            size_t h5 = std::hash<uint8_t>()(k.protocol);
-
-            // Combine hashes
-            return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);
-        }
-    };
-};
 
 // Flow statistics - Accumulates data for ML feature extraction
 struct FlowStatistics {
@@ -247,6 +217,19 @@ public:
     Stats get_stats() const;
     void print_stats() const;
     void reset_stats();
+
+    // ============================================================================
+    // ML DEFENDER INTEGRATION (Phase 1, Day 3 - Nov 17, 2025)
+    // ============================================================================
+
+    // Get flow statistics for feature extraction (thread-local safe)
+    // SAFETY NOTE: This method is NOT thread-safe for shared FlowManager instances.
+    // Only use with thread_local FlowManager where each thread has its own instance.
+    // Returns nullptr if flow doesn't exist.
+    FlowStatistics* get_flow_stats_unsafe(const FlowKey& key) {
+        auto it = active_flows_.find(key);
+        return (it != active_flows_.end()) ? &it->second : nullptr;
+    }
 
 private:
     Config config_;

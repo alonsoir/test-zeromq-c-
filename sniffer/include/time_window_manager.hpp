@@ -1,6 +1,7 @@
 // sniffer/include/time_window_manager.hpp
 #pragma once
 
+#include "time_window_aggregator.hpp"
 #include "main.h"
 #include <vector>
 #include <deque>
@@ -8,41 +9,6 @@
 #include <algorithm>
 
 namespace sniffer {
-
-// Window statistics for temporal analysis
-struct WindowStats {
-    uint64_t window_start_ns;
-    uint64_t window_end_ns;
-
-    // Subflow metrics (packets/bytes in this window)
-    uint64_t subflow_fwd_packets = 0;
-    uint64_t subflow_bwd_packets = 0;
-    uint64_t subflow_fwd_bytes = 0;
-    uint64_t subflow_bwd_bytes = 0;
-
-    // Bulk transfer detection
-    uint64_t bulk_start_ns = 0;
-    uint64_t bulk_end_ns = 0;
-    uint64_t bulk_bytes = 0;
-    uint32_t bulk_packets = 0;
-    bool in_bulk_transfer = false;
-
-    WindowStats() = default;
-
-    WindowStats(uint64_t start, uint64_t end)
-        : window_start_ns(start), window_end_ns(end) {}
-
-    // Get window duration in microseconds
-    uint64_t get_duration_us() const {
-        if (window_end_ns <= window_start_ns) return 0;
-        return (window_end_ns - window_start_ns) / 1000ULL;
-    }
-
-    // Check if timestamp is within this window
-    bool contains(uint64_t timestamp_ns) const {
-        return timestamp_ns >= window_start_ns && timestamp_ns < window_end_ns;
-    }
-};
 
 // Manages temporal windows for a flow
 class TimeWindowManager {

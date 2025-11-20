@@ -391,6 +391,76 @@ CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/build/proto/network_security.pb.cc -o CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s
 
+CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o: /vagrant/sniffer/src/userspace/ml_defender_features.cpp
+CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o -MF CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o.d -o CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o -c /vagrant/sniffer/src/userspace/ml_defender_features.cpp
+
+CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/sniffer/src/userspace/ml_defender_features.cpp > CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.i
+
+CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/sniffer/src/userspace/ml_defender_features.cpp -o CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.s
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o: /vagrant/ml-detector/src/ddos_detector.cpp
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o -MF CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o.d -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o -c /vagrant/ml-detector/src/ddos_detector.cpp
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/ml-detector/src/ddos_detector.cpp > CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.i
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/ml-detector/src/ddos_detector.cpp -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.s
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o: /vagrant/ml-detector/src/ransomware_detector.cpp
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o -MF CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o.d -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o -c /vagrant/ml-detector/src/ransomware_detector.cpp
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/ml-detector/src/ransomware_detector.cpp > CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.i
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/ml-detector/src/ransomware_detector.cpp -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.s
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/ml-detector/src/traffic_detector.cpp
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o -MF CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o.d -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o -c /vagrant/ml-detector/src/traffic_detector.cpp
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/ml-detector/src/traffic_detector.cpp > CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.i
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/ml-detector/src/traffic_detector.cpp -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.s
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o: CMakeFiles/sniffer.dir/flags.make
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o: /vagrant/ml-detector/src/internal_detector.cpp
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o: CMakeFiles/sniffer.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o -MF CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o.d -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o -c /vagrant/ml-detector/src/internal_detector.cpp
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /vagrant/ml-detector/src/internal_detector.cpp > CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.i
+
+CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /vagrant/ml-detector/src/internal_detector.cpp -o CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.s
+
 # Object files for target sniffer
 sniffer_OBJECTS = \
 "CMakeFiles/sniffer.dir/src/userspace/main.cpp.o" \
@@ -415,7 +485,12 @@ sniffer_OBJECTS = \
 "CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o" \
 "CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o" \
-"CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
+"CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o" \
+"CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o" \
+"CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o" \
+"CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o" \
+"CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o" \
+"CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o"
 
 # External object files for target sniffer
 sniffer_EXTERNAL_OBJECTS =
@@ -443,11 +518,16 @@ sniffer: CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o
 sniffer: CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o
 sniffer: CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
+sniffer: CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o
+sniffer: CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o
+sniffer: CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o
+sniffer: CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o
+sniffer: CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o
 sniffer: CMakeFiles/sniffer.dir/build.make
 sniffer: /usr/lib/x86_64-linux-gnu/libprotobuf.so
 sniffer: /usr/lib/x86_64-linux-gnu/libcurl.so
 sniffer: CMakeFiles/sniffer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Linking CXX executable sniffer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Linking CXX executable sniffer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sniffer.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
