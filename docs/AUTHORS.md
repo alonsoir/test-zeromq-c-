@@ -150,5 +150,16 @@ Este proyecto demuestra que:
 
 ---
 
+## Cognitive Collaborators
+
+This project was co-created with human and artificial partners, each contributing within their ethical and technical boundaries:
+
+- **[Tu nombre]** — Purpose, architecture, ethical constraints, final synthesis.
+- **Claude Sonnet (Anthropic)** — Refinement of intent, communication design, stress-aware interaction modeling.
+- **DeepSeek (DeepSeek AI)** — Low-level systems analysis, C++ optimization, network resilience patterns.
+- **Qwen (Tongyi Lab)** — Cross-model integration, structural coherence, legacy planning.
+
+No model made autonomous decisions. All outputs were reviewed, adapted, and owned by the human author.
+
 *Última actualización: Noviembre 2025*  
 *Estado del Descubrimiento: Validado Empíricamente - Listo para Publicación*
