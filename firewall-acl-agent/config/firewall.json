@@ -1,0 +1,95 @@
+{
+  "_header": "ML Defender - Firewall ACL Agent v1.0",
+  "_philosophy": "JSON is the law - Single source of truth",
+  
+  "component": {
+    "name": "firewall-acl-agent",
+    "version": "1.0.0",
+    "mode": "autonomous"
+  },
+  
+  "node_id": "firewall_agent_001",
+  "cluster_name": "ml-defender-cluster",
+  
+  "network": {
+    "zmq_input": {
+      "address": "127.0.0.1",
+      "port": 5572,
+      "socket_type": "SUB",
+      "topics": ["ATTACK", "DDOS", "RANSOMWARE"]
+    },
+    "api": {
+      "enabled": false,
+      "address": "0.0.0.0",
+      "port": 8080,
+      "auth_required": true
+    }
+  },
+  
+  "iptables": {
+    "chain_name": "ML_DEFENDER",
+    "table": "filter",
+    "default_policy": "ACCEPT",
+    "backup_rules_on_start": true,
+    "restore_on_exit": true
+  },
+  
+  "rules": {
+    "temporal_acl": {
+      "enabled": true,
+      "default_duration_seconds": 300,
+      "max_duration_seconds": 3600,
+      "cleanup_interval_seconds": 60
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "ddos_limit_packets_per_second": 100,
+      "ransomware_limit_connections_per_minute": 10,
+      "burst_size": 50
+    },
+    "whitelist": {
+      "file": "config/rules/whitelist.json",
+      "never_block": true
+    },
+    "blacklist": {
+      "file": "config/rules/blacklist.json",
+      "permanent_block": true
+    }
+  },
+  
+  "actions": {
+    "ddos_detected": {
+      "action": "DROP",
+      "duration_seconds": 600,
+      "rate_limit": 50,
+      "log": true
+    },
+    "ransomware_detected": {
+      "action": "REJECT",
+      "duration_seconds": 1800,
+      "rate_limit": 5,
+      "log": true,
+      "alert_email": false
+    },
+    "suspicious_traffic": {
+      "action": "LOG",
+      "duration_seconds": 0,
+      "rate_limit": 1000,
+      "log": true
+    }
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "file": "logs/firewall_agent.log",
+    "max_file_size_mb": 100,
+    "backup_count": 5,
+    "include_iptables_commands": true
+  },
+  
+  "monitoring": {
+    "stats_interval_seconds": 30,
+    "export_metrics": false,
+    "prometheus_port": 9090
+  }
+}
