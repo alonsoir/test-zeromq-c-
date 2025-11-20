@@ -1,7 +1,7 @@
 ML Defender 8-Hour Stress Test
 ===============================
-Start time: mié 19 nov 2025 09:24:30 UTC
-Duration: 1 hours
+Start time: jue 20 nov 2025 10:10:56 UTC
+Duration: 10 minutes
 Traffic rate: 75 pps
 Components: Sniffer + ML-Detector
 Thresholds: DDoS=0.85, Ransomware=0.90, Traffic=0.80, Internal=0.85

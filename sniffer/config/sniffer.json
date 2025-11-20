@@ -204,14 +204,14 @@
       "overflow_policy": "drop_oldest"
     },
     "connection_settings": {
-      "sndhwm": 1000,
+      "sndhwm": 10000,
       "linger_ms": 100,
       "send_timeout_ms": 250,
-      "rcvhwm": 1000,
+      "rcvhwm": 10000,
       "recv_timeout_ms": 500,
       "tcp_keepalive": 1,
-      "sndbuf": 262144,
-      "rcvbuf": 262144,
+      "sndbuf": 2621440,
+      "rcvbuf": 2621440,
       "reconnect_interval_ms": 1000,
       "max_reconnect_attempts": 10
     },

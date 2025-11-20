@@ -8,8 +8,8 @@ set -euo pipefail
 # CONFIGURATION
 # ============================================================================
 
-TEST_DURATION_HOURS=1
-TEST_DURATION_SECONDS=$((TEST_DURATION_HOURS * 3600))
+TEST_DURATION_MINUTES=10
+TEST_DURATION_SECONDS=$((TEST_DURATION_MINUTES * 60))
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 TEST_DIR="/vagrant/stress_test_${TIMESTAMP}"
 LOGS_DIR="${TEST_DIR}/logs"
@@ -35,7 +35,7 @@ echo "║  ML DEFENDER - 8 HOUR STRESS TEST                              ║"
 echo "║  Testing stability, performance, and memory leak detection     ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
-echo "⏱️  Duration: ${TEST_DURATION_HOURS} hours (${TEST_DURATION_SECONDS} seconds)"
+echo "⏱️  Duration: ${TEST_DURATION_MINUTES} minutes (${TEST_DURATION_SECONDS} seconds)"
 echo "📊 Traffic rate: ~${TRAFFIC_RATE_PPS} pps"
 echo "📁 Test directory: ${TEST_DIR}"
 echo ""
@@ -49,7 +49,7 @@ cat > "${TEST_DIR}/test_info.txt" <<EOF
 ML Defender 8-Hour Stress Test
 ===============================
 Start time: $(date)
-Duration: ${TEST_DURATION_HOURS} hours
+Duration: ${TEST_DURATION_MINUTES} minutes
 Traffic rate: ${TRAFFIC_RATE_PPS} pps
 Components: Sniffer + ML-Detector
 Thresholds: DDoS=0.85, Ransomware=0.90, Traffic=0.80, Internal=0.85
@@ -122,7 +122,7 @@ echo "   PID: ${TRAFFIC_PID}"
 echo ""
 echo "✅ All components started successfully"
 echo ""
-echo "⏳ Test running for ${TEST_DURATION_HOURS} hours..."
+echo "⏳ Test running for ${TEST_DURATION_MINUTES} minutes..."
 echo "   Progress will be shown every 30 minutes"
 echo "   Press Ctrl+C to stop early (graceful shutdown)"
 echo ""
@@ -152,7 +152,7 @@ generate_report() {
 ## Test Information
 - **Start Time**: $(cat "${TEST_DIR}/test_info.txt" | grep "Start time" | cut -d: -f2-)
 - **End Time**: $(date)
-- **Planned Duration**: ${TEST_DURATION_HOURS} hours
+- **Planned Duration**: ${TEST_DURATION_MINUTES} minutes
 - **Actual Runtime**: ${HOURS}h ${MINUTES}m ${SECONDS}s (${ACTUAL_RUNTIME} seconds)
 - **Traffic Rate**: ${TRAFFIC_RATE_PPS} pps
 
@@ -346,5 +346,5 @@ done
 
 # Test completed successfully
 echo ""
-echo "🎉 Test completed successfully after ${TEST_DURATION_HOURS} hours!"
+echo "🎉 Test completed successfully after ${TEST_DURATION_MINUTES} minutes!"
 exit 0
