@@ -1,797 +1,704 @@
-# 🚀 PROMPT DE CONTINUIDAD - ULTRA HIGH PERFORMANCE
+troubleshooting main.cpp firewall-acl-agent.txt
+Estamos trabajando en el main.cpp del firewall-acl-agent
 
-```markdown
-# ML DEFENDER - Session Continuation Prompt (EXTREME PERFORMANCE EDITION)
+Esta es la salida del compilador:
 
-## 🎯 CURRENT STATUS (Nov 20, 2025 - End of Day 5)
+[ 85%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
+/vagrant/firewall-acl-agent/src/main.cpp:49:5: error: ‘BatchConfig’ does not name a type
+49 |     BatchConfig batch;
+|     ^~~~~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:52:5: error: ‘ZMQConfig’ does not name a type; did you mean ‘Config’?
+52 |     ZMQConfig zmq;
+|     ^~~~~~~~~
+|     Config
+/vagrant/firewall-acl-agent/src/main.cpp: In function ‘bool load_config(const std::string&, Config&)’:
+/vagrant/firewall-acl-agent/src/main.cpp:91:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+91 |             config.ipset.set_name = ipset.get("set_name", "ml_defender_blacklist").asString();
+|                          ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:92:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_type’
+92 |             config.ipset.set_type = ipset.get("set_type", "hash:ip").asString();
+|                          ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:93:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘hash_size’; did you mean ‘hashsize’?
+93 |             config.ipset.hash_size = ipset.get("hash_size", 4096).asUInt();
+|                          ^~~~~~~~~
+|                          hashsize
+/vagrant/firewall-acl-agent/src/main.cpp:94:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘max_elements’
+94 |             config.ipset.max_elements = ipset.get("max_elements", 1000000).asUInt();
+|                          ^~~~~~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:95:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘default_timeout’
+95 |             config.ipset.default_timeout = ipset.get("timeout", 3600).asUInt();
+|                          ^~~~~~~~~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:101:20: error: ‘struct Config’ has no member named ‘batch’
+101 |             config.batch.batch_size_threshold = batch.get("batch_size_threshold", 1000).asUInt();
+|                    ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:102:20: error: ‘struct Config’ has no member named ‘batch’
+102 |             config.batch.batch_time_threshold_ms = batch.get("batch_time_threshold_ms", 100).asUInt();
+|                    ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:103:20: error: ‘struct Config’ has no member named ‘batch’
+103 |             config.batch.max_pending_ips = batch.get("max_pending_ips", 10000).asUInt();
+|                    ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:104:20: error: ‘struct Config’ has no member named ‘batch’
+104 |             config.batch.min_confidence = batch.get("min_confidence", 0.5).asFloat();
+|                    ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:105:20: error: ‘struct Config’ has no member named ‘batch’
+105 |             config.batch.enable_dedup = batch.get("enable_dedup", true).asBool();
+|                    ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:111:20: error: ‘struct Config’ has no member named ‘zmq’
+111 |             config.zmq.endpoint = zmq.get("endpoint", "tcp://localhost:5555").asString();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:112:20: error: ‘struct Config’ has no member named ‘zmq’
+112 |             config.zmq.topic = zmq.get("topic", "").asString();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:113:20: error: ‘struct Config’ has no member named ‘zmq’
+113 |             config.zmq.recv_timeout_ms = zmq.get("recv_timeout_ms", 1000).asInt();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:114:20: error: ‘struct Config’ has no member named ‘zmq’
+114 |             config.zmq.linger_ms = zmq.get("linger_ms", 1000).asInt();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:115:20: error: ‘struct Config’ has no member named ‘zmq’
+115 |             config.zmq.reconnect_interval_ms = zmq.get("reconnect_interval_ms", 1000).asInt();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:116:20: error: ‘struct Config’ has no member named ‘zmq’
+116 |             config.zmq.max_reconnect_interval_ms = zmq.get("max_reconnect_interval_ms", 30000).asInt();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:117:20: error: ‘struct Config’ has no member named ‘zmq’
+117 |             config.zmq.reconnect_backoff_multiplier = zmq.get("reconnect_backoff_multiplier", 2.0).asDouble();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:118:20: error: ‘struct Config’ has no member named ‘zmq’
+118 |             config.zmq.rcvhwm = zmq.get("rcvhwm", 1000).asInt();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:119:20: error: ‘struct Config’ has no member named ‘zmq’
+119 |             config.zmq.enable_stats = zmq.get("enable_stats", true).asBool();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:120:20: error: ‘struct Config’ has no member named ‘zmq’
+120 |             config.zmq.stats_interval_sec = zmq.get("stats_interval_sec", 60).asInt();
+|                    ^~~
+/vagrant/firewall-acl-agent/src/main.cpp: In function ‘Config create_default_config()’:
+/vagrant/firewall-acl-agent/src/main.cpp:162:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+162 |     config.ipset.set_name = "ml_defender_blacklist";
+|                  ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:163:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_type’
+163 |     config.ipset.set_type = "hash:ip";
+|                  ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:164:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘hash_size’; did you mean ‘hashsize’?
+164 |     config.ipset.hash_size = 4096;
+|                  ^~~~~~~~~
+|                  hashsize
+/vagrant/firewall-acl-agent/src/main.cpp:165:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘max_elements’
+165 |     config.ipset.max_elements = 1000000;
+|                  ^~~~~~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:166:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘default_timeout’
+166 |     config.ipset.default_timeout = 3600;
+|                  ^~~~~~~~~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:169:12: error: ‘struct Config’ has no member named ‘batch’
+169 |     config.batch.batch_size_threshold = 1000;
+|            ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:170:12: error: ‘struct Config’ has no member named ‘batch’
+170 |     config.batch.batch_time_threshold_ms = 100;
+|            ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:171:12: error: ‘struct Config’ has no member named ‘batch’
+171 |     config.batch.max_pending_ips = 10000;
+|            ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:172:12: error: ‘struct Config’ has no member named ‘batch’
+172 |     config.batch.min_confidence = 0.5f;
+|            ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:173:12: error: ‘struct Config’ has no member named ‘batch’
+173 |     config.batch.enable_dedup = true;
+|            ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:176:12: error: ‘struct Config’ has no member named ‘zmq’
+176 |     config.zmq.endpoint = "tcp://localhost:5555";
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:177:12: error: ‘struct Config’ has no member named ‘zmq’
+177 |     config.zmq.topic = "";
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:178:12: error: ‘struct Config’ has no member named ‘zmq’
+178 |     config.zmq.recv_timeout_ms = 1000;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:179:12: error: ‘struct Config’ has no member named ‘zmq’
+179 |     config.zmq.linger_ms = 1000;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:180:12: error: ‘struct Config’ has no member named ‘zmq’
+180 |     config.zmq.reconnect_interval_ms = 1000;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:181:12: error: ‘struct Config’ has no member named ‘zmq’
+181 |     config.zmq.max_reconnect_interval_ms = 30000;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:182:12: error: ‘struct Config’ has no member named ‘zmq’
+182 |     config.zmq.reconnect_backoff_multiplier = 2.0;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:183:12: error: ‘struct Config’ has no member named ‘zmq’
+183 |     config.zmq.rcvhwm = 1000;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:184:12: error: ‘struct Config’ has no member named ‘zmq’
+184 |     config.zmq.enable_stats = true;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp:185:12: error: ‘struct Config’ has no member named ‘zmq’
+185 |     config.zmq.stats_interval_sec = 60;
+|            ^~~
+/vagrant/firewall-acl-agent/src/main.cpp: In function ‘void export_metrics(const Config&, const mldefender::firewall::ZMQSubscriber&, const mldefender::firewall::BatchProcessor&)’:
+/vagrant/firewall-acl-agent/src/main.cpp:261:40: error: ‘const class mldefender::firewall::BatchProcessor’ has no member named ‘get_stats’
+261 |     const auto& proc_stats = processor.get_stats();
+|                                        ^~~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp: In function ‘bool perform_health_checks(const Config&, mldefender::firewall::IPSetWrapper&, mldefender::firewall::IPTablesWrapper&, const mldefender::firewall::ZMQSubscriber&)’:
+/vagrant/firewall-acl-agent/src/main.cpp:343:16: error: ‘class mldefender::firewall::IPSetWrapper’ has no member named ‘exists’; did you mean ‘set_exists’?
+343 |     if (!ipset.exists(config.ipset.set_name)) {
+|                ^~~~~~
+|                set_exists
+/vagrant/firewall-acl-agent/src/main.cpp:343:36: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+343 |     if (!ipset.exists(config.ipset.set_name)) {
+|                                    ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:344:59: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+344 |         std::cerr << "[HEALTH] ✗ IPSet '" << config.ipset.set_name << "' does not exist!" << std::endl;
+|                                                           ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:352:36: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+352 |         if (rule.find(config.ipset.set_name) != std::string::npos) {
+|                                    ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:359:71: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+359 |         std::cerr << "[HEALTH] ✗ IPTables rule for '" << config.ipset.set_name << "' not found!" << std::endl;
+|                                                                       ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp: In function ‘int main(int, char**)’:
+/vagrant/firewall-acl-agent/src/main.cpp:437:40: error: no matching function for call to ‘mldefender::firewall::IPSetWrapper::IPSetWrapper(mldefender::firewall::IPSetConfig&)’
+437 |         IPSetWrapper ipset(config.ipset);
+|                                        ^
+In file included from /vagrant/firewall-acl-agent/src/main.cpp:15:
+/vagrant/firewall-acl-agent/include/firewall/ipset_wrapper.hpp:184:5: note: candidate: ‘mldefender::firewall::IPSetWrapper::IPSetWrapper()’
+184 |     IPSetWrapper();
+|     ^~~~~~~~~~~~
+/vagrant/firewall-acl-agent/include/firewall/ipset_wrapper.hpp:184:5: note:   candidate expects 0 arguments, 1 provided
+/vagrant/firewall-acl-agent/src/main.cpp:440:20: error: ‘class mldefender::firewall::IPSetWrapper’ has no member named ‘exists’; did you mean ‘set_exists’?
+440 |         if (!ipset.exists(config.ipset.set_name)) {
+|                    ^~~~~~
+|                    set_exists
+/vagrant/firewall-acl-agent/src/main.cpp:440:40: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+440 |         if (!ipset.exists(config.ipset.set_name)) {
+|                                        ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:441:68: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+441 |             std::cerr << "[INIT] Creating ipset '" << config.ipset.set_name << "'..." << std::endl;
+|                                                                    ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:442:48: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+442 |             if (!ipset.create_set(config.ipset.set_name)) {
+|                                                ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:457:53: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
+457 |         if (!iptables.setup_base_rules(config.ipset.set_name)) {
+|                                                     ^~~~~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:465:48: error: ‘struct Config’ has no member named ‘batch’
+465 |         BatchProcessor processor(ipset, config.batch);
+|                                                ^~~~~
+/vagrant/firewall-acl-agent/src/main.cpp:471:52: error: ‘struct Config’ has no member named ‘zmq’
+471 |         ZMQSubscriber subscriber(processor, config.zmq);
+|                                                    ^~~
+[ 90%] Linking CXX static library ../../../lib/libgmock_main.a
+make[2]: *** [CMakeFiles/firewall-acl-agent.dir/build.make:76: CMakeFiles/firewall-acl-agent.dir/src/main.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:195: CMakeFiles/firewall-acl-agent.dir/all] Error 2
+make[1]: *** Se espera a que terminen otras tareas....
+[ 90%] Built target gmock_main
+[ 95%] Linking CXX executable firewall_tests
+lto-wrapper: warning: using serial compilation of 8 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+[ 95%] Built target firewall_tests
+make: *** [Makefile:146: all] Error 2
 
-### Project State
-- **Branch**: `feature/phase1-parallel-dev`
-- **Phase**: Phase 1 - Days 6-7 (Firewall ACL Agent - EXTREME PERFORMANCE)
-- **Tag**: v0.1.5-phase1-thresholds
-- **Progress**: 5/12 days complete (42%)
+Este es el CMakelists.txt
 
-### Completed Components
-✅ **sniffer** (v3.2.0)
-   - eBPF/XDP packet capture operational
-   - 40 ML features extracted
-   - Thresholds configurable via JSON
-   - **Stress tested**: 35,387 events @ 14.92μs latency
+#===----------------------------------------------------------------------===//
+# ML Defender - Firewall ACL Agent
+# CMakeLists.txt - Build Configuration
+#
+# Target: Ultra-high performance packet DROP agent
+# Performance: 1M+ packets/sec on commodity hardware
+#
+# Dependencies:
+#   - libipset (kernel interface)
+#   - iptables (static rules setup)
+#   - ZMQ (detection stream from ml-detector)
+#   - Protobuf (message parsing)
+#   - Boost (lock-free queues)
+#   - jsoncpp (configuration)
+#
+# Via Appia Quality: Methodical build system
+#===----------------------------------------------------------------------===//
 
-✅ **ml-detector** (v1.0.0)
-   - 4 embedded C++20 RandomForest detectors
-   - Latencies: 0.24-1.06μs (sub-microsecond)
-   - **Publishing to ZMQ:5572**
-   - **Can generate 100K-1M+ events/sec in high-load scenarios**
+cmake_minimum_required(VERSION 3.20)
 
-🆕 **firewall-acl-agent** (skeleton created)
-   - Directory structure ready
-   - Configuration template created
-   - **Design goal: Handle MILLIONS of packets/sec on commodity hardware**
+project(firewall-acl-agent
+VERSION 1.0.0
+DESCRIPTION "ML Defender - High-Performance Firewall ACL Agent"
+LANGUAGES CXX
+)
 
----
+#===----------------------------------------------------------------------===//
+# C++ Standard and Compiler Settings
+#===----------------------------------------------------------------------===//
 
-## 🚨 EXTREME PERFORMANCE MISSION
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-### **Objective: Reach Physical Hardware Limits**
+# Optimization flags for extreme performance
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native -flto")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address,undefined")
 
-> "If we can DROP millions of packets/sec on a home router with limited hardware,
-> imagine what we can achieve on enterprise-grade equipment."
+# Warning flags
+add_compile_options(
+-Wall
+-Wextra
+-Wpedantic
+-Werror
+-Wno-unused-parameter
+)
 
-**Philosophy:**
-- Squeeze EVERY cycle from the CPU
-- Zero-copy wherever possible
-- Lock-free on hot paths
-- Batch EVERYTHING
-- Push work to kernel/hardware (eBPF XDP)
+#===----------------------------------------------------------------------===//
+# Find Required Dependencies
+#===----------------------------------------------------------------------===//
 
-**Target Performance (Commodity Hardware):**
-```
-CPU: 4-core @ 2.4GHz (like our Vagrant VM)
-RAM: 8GB
-NIC: 1Gbps
+find_package(PkgConfig REQUIRED)
 
-GOALS:
-- 1M packets/sec DROP rate       ← Minimum viable
-- 10M packets/sec DROP rate       ← Stretch goal (eBPF XDP)
-- <100μs detection→block latency  ← p99
-- <1GB RAM for 10M blocked IPs   ← Memory efficient
-- <20% CPU @ 1M pps               ← CPU efficient
-```
+# ZeroMQ - High-performance messaging
+pkg_check_modules(ZMQ REQUIRED libzmq)
+if(NOT ZMQ_FOUND)
+message(FATAL_ERROR "ZeroMQ not found. Install: sudo apt-get install libzmq3-dev")
+endif()
 
----
+# NOTE: We do NOT need libipset-dev - we use system ipset commands
+# This is simpler, more maintainable, and benefits from ipset optimizations
 
-## 🏗️ ARCHITECTURE (STATE-OF-THE-ART)
+# Protobuf - Message serialization
+find_package(Protobuf REQUIRED)
+if(NOT Protobuf_FOUND)
+message(FATAL_ERROR "Protobuf not found. Install: sudo apt-get install libprotobuf-dev protobuf-compiler")
+endif()
 
-```
-                    ┌─────────────────────┐
-                    │   ml-detector       │
-                    │   (ZMQ:5572)        │
-                    │   100K-1M+ evt/sec  │
-                    └──────────┬──────────┘
-                               │ ZMQ PUB
-                               ▼
-┌──────────────────────────────────────────────────────────────┐
-│  FIREWALL ACL AGENT - EXTREME PERFORMANCE DESIGN             │
-│                                                               │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Layer 1: ZMQ Subscriber (Producer Thread)          │     │
-│  │   - Zero-copy message receive                      │     │
-│  │   - Minimal parsing (only extract IP)              │     │
-│  │   - Push to lock-free queue                        │     │
-│  │   - NEVER blocks, NEVER allocates                  │     │
-│  └──────────────────┬─────────────────────────────────┘     │
-│                     │ Lock-free SPSC queue                   │
-│                     │ (boost::lockfree or folly)             │
-│                     ▼                                         │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Layer 2: Batch Aggregator (Consumer Thread)        │     │
-│  │   - Accumulates detections                         │     │
-│  │   - Deduplicates IPs (std::unordered_set)          │     │
-│  │   - Flushes on:                                    │     │
-│  │     * Buffer full (1000 IPs)                       │     │
-│  │     * Timeout (100ms)                              │     │
-│  │     * Subnet detected (100 IPs from same /24)      │     │
-│  └──────────────────┬─────────────────────────────────┘     │
-│                     │ Batch of unique IPs                    │
-│                     ▼                                         │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Layer 3: ACL Intelligence Engine                   │     │
-│  │   - Whitelist check (O(1) hash lookup)             │     │
-│  │   - Subnet aggregation                             │     │
-│  │     * Detect: 100+ IPs from same /24               │     │
-│  │     * Action: Block entire subnet                  │     │
-│  │     * Remove individual IPs                        │     │
-│  │   - Temporal expiration tracking                   │     │
-│  │   - Rate limiting metadata                         │     │
-│  └──────────────────┬─────────────────────────────────┘     │
-│                     │ Optimized ruleset                      │
-│                     ▼                                         │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Layer 4: ipset Kernel Interface                    │     │
-│  │   - Batch operations (single syscall)              │     │
-│  │   - ipset hash:ip (O(1) lookup in kernel)          │     │
-│  │   - 3 sets:                                        │     │
-│  │     * blacklist_temp (5min timeout)                │     │
-│  │     * blacklist_perm (no timeout)                  │     │
-│  │     * whitelist (never block)                      │     │
-│  └──────────────────┬─────────────────────────────────┘     │
-│                     │                                         │
-│                     ▼                                         │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Layer 5: iptables Rules (ONE rule per set)         │     │
-│  │   -A INPUT -m set --match-set whitelist src        │     │
-│  │           -j ACCEPT                                │     │
-│  │   -A INPUT -m set --match-set blacklist_temp src   │     │
-│  │           -j DROP                                  │     │
-│  │   -A INPUT -m set --match-set blacklist_perm src   │     │
-│  │           -j DROP                                  │     │
-│  └────────────────────────────────────────────────────┘     │
-│                                                               │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │ Layer 6: eBPF XDP (OPTIONAL - Phase 2)             │     │
-│  │   - BPF_MAP_TYPE_HASH for blacklist                │     │
-│  │   - XDP_DROP in NIC driver                         │     │
-│  │   - 10M+ pps on single core                        │     │
-│  │   - Userspace updater syncs with ipset             │     │
-│  └────────────────────────────────────────────────────┘     │
-└───────────────────────────────────────────────────────────────┘
+# Boost - Lock-free data structures
+find_package(Boost 1.71 REQUIRED COMPONENTS
+system
+thread
+filesystem
+)
+if(NOT Boost_FOUND)
+message(FATAL_ERROR "Boost not found. Install: sudo apt-get install libboost-all-dev")
+endif()
 
-PERFORMANCE OPTIMIZATIONS:
-✅ Lock-free SPSC queue (zero contention)
-✅ Batch syscalls (1000x reduction)
-✅ Deduplication (hash set)
-✅ Subnet aggregation (reduce entries 250x)
-✅ Zero-copy parsing
-✅ Memory pooling (pre-allocated buffers)
-✅ CPU pinning (avoid cache misses)
-✅ Huge pages (reduce TLB misses)
-```
+# jsoncpp - Configuration parsing
+pkg_check_modules(JSONCPP REQUIRED jsoncpp)
+if(NOT JSONCPP_FOUND)
+message(FATAL_ERROR "jsoncpp not found. Install: sudo apt-get install libjsoncpp-dev")
+endif()
 
----
+# Threads
+find_package(Threads REQUIRED)
 
-## 📂 FILES TO CREATE (Day 6) - PRIORITY ORDER
+#===----------------------------------------------------------------------===//
+# Protobuf Generation - Shared Schema
+#===----------------------------------------------------------------------===//
 
-### **Phase 1: Core High-Performance Components**
+# Path to shared protobuf schema
+# TODO: Update this path to point to the real shared protobuf once project structure is set
+# Real path should be: ../../protobuf/network_security.proto (shared between all components)
+# For now, using local protobuf directory for development
+set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf)
+set(PROTO_FILE ${PROTO_DIR}/network_security.proto)
 
-```
-1. include/firewall/ipset_wrapper.hpp
-    - Batch operations: add_batch(), delete_batch()
-    - Set management: create(), destroy(), list()
-    - Type: hash:ip, hash:net
+# Verify proto file exists
+if(NOT EXISTS ${PROTO_FILE})
+message(FATAL_ERROR
+"Protobuf schema not found: ${PROTO_FILE}\n"
+"Expected structure: ml-defender/protobuf/network_security.proto"
+)
+endif()
 
-2. src/core/ipset_wrapper.cpp
-    - Use libipset C API
-    - Batch add: single restore command with pipe
-    - Error handling with rollback
+# Generate C++ files from .proto (into build directory)
+protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILE})
 
-3. include/firewall/lock_free_queue.hpp
-    - Template wrapper around boost::lockfree::spsc_queue
-    - Or use folly::ProducerConsumerQueue
-    - Bounded, wait-free operations
+message(STATUS "Protobuf schema: ${PROTO_FILE}")
+message(STATUS "Generated sources: ${PROTO_SOURCES}")
+message(STATUS "Generated headers: ${PROTO_HEADERS}")
 
-4. include/firewall/batch_processor.hpp
-    - Consumer thread with batch aggregation
-    - Deduplication with std::unordered_set
-    - Configurable flush triggers
+# Create protobuf library
+add_library(firewall_proto STATIC
+${PROTO_SOURCES}
+${PROTO_HEADERS}
+)
 
-5. src/core/batch_processor.cpp
-    - Main processing loop
-    - Flush on: size, timeout, shutdown
-    - Metrics tracking (throughput, latency)
+target_link_libraries(firewall_proto
+PUBLIC
+${Protobuf_LIBRARIES}
+)
 
-6. include/firewall/acl_intelligence.hpp
-    - Subnet detection and aggregation
-    - Whitelist/blacklist management
-    - Temporal expiration tracking
+target_include_directories(firewall_proto
+PUBLIC
+${CMAKE_CURRENT_BINARY_DIR}  # Generated protobuf headers
+${PROTO_DIR}                 # Original .proto location
+)
 
-7. src/core/acl_intelligence.cpp
-    - Subnet aggregation algorithm
-    - Cleanup scheduler (background thread)
-    - Statistics collection
+#===----------------------------------------------------------------------===//
+# Include Directories
+#===----------------------------------------------------------------------===//
 
-8. include/firewall/zmq_subscriber.hpp
-    - Producer: parse and enqueue
-    - Zero-copy where possible
-    - Minimal allocation on hot path
+include_directories(
+${CMAKE_CURRENT_SOURCE_DIR}/include
+${CMAKE_CURRENT_BINARY_DIR}      # Generated protobuf headers
 
-9. src/api/zmq_subscriber.cpp
-    - ZMQ SUB socket setup
-    - Message parsing (protobuf)
-    - Enqueue to lock-free queue
+        ${ZMQ_INCLUDE_DIRS}
+        ${Protobuf_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
+        ${JSONCPP_INCLUDE_DIRS}
+)
 
-10. src/main.cpp
-    - Component initialization
-    - Signal handling (SIGINT, SIGTERM)
-    - Graceful shutdown with cleanup
-    - Config loading and validation
-```
+#===----------------------------------------------------------------------===//
+# Source Files (Only files that exist)
+#===----------------------------------------------------------------------===//
 
----
+# Core components (created so far)
+set(FIREWALL_CORE_SOURCES
+src/core/ipset_wrapper.cpp
+src/core/iptables_wrapper.cpp
+src/core/batch_processor.cpp
+# src/core/acl_intelligence.cpp     # TODO: Next to implement
+)
 
-## 🔧 CONFIGURATION (firewall.json) - EXTREME PERFORMANCE
+# API layer (to be created)
+set(FIREWALL_API_SOURCES
+src/api/zmq_subscriber.cpp
+)
 
-```json
+# Utilities (to be created)
+set(FIREWALL_UTIL_SOURCES
+# src/utils/config_loader.cpp       # TODO: Next to implement
+# src/utils/logger.cpp              # TODO: Next to implement
+# src/utils/metrics.cpp             # TODO: Next to implement
+)
+
+# Main executable (to be created)
+set(FIREWALL_MAIN_SOURCE
+src/main.cpp
+)
+
+#===----------------------------------------------------------------------===//
+# Core Library (for testing) - Only with existing sources
+#===----------------------------------------------------------------------===//
+
+add_library(firewall_core STATIC
+${FIREWALL_CORE_SOURCES}
+${FIREWALL_API_SOURCES}   # Uncomment when implemented
+# ${FIREWALL_UTIL_SOURCES}  # Uncomment when implemented
+)
+
+target_link_libraries(firewall_core
+PUBLIC
+firewall_proto
+
+        ${ZMQ_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${JSONCPP_LIBRARIES}
+        Threads::Threads
+)
+
+target_include_directories(firewall_core
+PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/include
+${CMAKE_CURRENT_BINARY_DIR}  # For generated protobuf headers
+
+        ${ZMQ_INCLUDE_DIRS}
+        ${JSONCPP_INCLUDE_DIRS}
+)
+
+#===----------------------------------------------------------------------===//
+# Main Executable (TODO: Uncomment when main.cpp is ready)
+#===----------------------------------------------------------------------===//
+
+add_executable(firewall-acl-agent
+${FIREWALL_MAIN_SOURCE}
+)
+#
+target_link_libraries(firewall-acl-agent
+PRIVATE
+firewall_core
+)
+
+# NOTE: Executable will be created once we have src/main.cpp
+message(STATUS "⚠️  Main executable disabled - waiting for src/main.cpp")
+message(STATUS "   Current focus: Core library and unit tests")
+
+#===----------------------------------------------------------------------===//
+# Installation (Disabled until executable is ready)
+#===----------------------------------------------------------------------===//
+
+# TODO: Uncomment when firewall-acl-agent executable exists
+install(TARGETS firewall-acl-agent
+RUNTIME DESTINATION bin
+)
+#
+install(DIRECTORY config/
+DESTINATION etc/ml-defender/firewall
+FILES_MATCHING PATTERN "*.json"
+)
+#
+install(FILES systemd/firewall-acl-agent.service
+DESTINATION /etc/systemd/system/
+OPTIONAL
+)
+
+message(STATUS "📦 Installation targets disabled - waiting for main executable")
+
+#===----------------------------------------------------------------------===//
+# Testing
+#===----------------------------------------------------------------------===//
+
+option(BUILD_TESTS "Build unit tests" ON)
+
+if(BUILD_TESTS)
+enable_testing()
+
+    # Google Test
+    find_package(GTest)
+    if(NOT GTest_FOUND)
+        message(STATUS "GTest not found, fetching from GitHub...")
+        include(FetchContent)
+        FetchContent_Declare(
+                googletest
+                GIT_REPOSITORY https://github.com/google/googletest.git
+                GIT_TAG release-1.12.1
+        )
+        FetchContent_MakeAvailable(googletest)
+    endif()
+
+    # Test sources (only existing tests)
+    set(TEST_SOURCES
+            tests/unit/test_ipset_wrapper.cpp
+            # tests/test_batch_processor.cpp     # TODO: Create when batch_processor is ready
+            # tests/test_acl_intelligence.cpp    # TODO: Create when acl_intelligence is ready
+    )
+
+    add_executable(firewall_tests
+            ${TEST_SOURCES}
+    )
+
+    target_link_libraries(firewall_tests
+            PRIVATE
+            firewall_core
+            GTest::gtest
+            GTest::gtest_main
+    )
+
+    # Discover tests
+    include(GoogleTest)
+    gtest_discover_tests(firewall_tests)
+
+    message(STATUS "✅ Unit tests enabled")
+    message(STATUS "   Run: sudo ./firewall_tests  (requires root for ipset operations)")
+endif()
+
+#===----------------------------------------------------------------------===//
+# Benchmarks
+#===----------------------------------------------------------------------===//
+
+option(BUILD_BENCHMARKS "Build performance benchmarks" OFF)
+
+if(BUILD_BENCHMARKS)
+# Google Benchmark
+find_package(benchmark)
+if(NOT benchmark_FOUND)
+message(STATUS "Google Benchmark not found, fetching...")
+include(FetchContent)
+FetchContent_Declare(
+benchmark
+GIT_REPOSITORY https://github.com/google/benchmark.git
+GIT_TAG v1.8.3
+)
+FetchContent_MakeAvailable(benchmark)
+endif()
+
+    add_executable(firewall_bench
+            benchmarks/bench_batch_operations.cpp
+            benchmarks/bench_queue_throughput.cpp
+    )
+
+    target_link_libraries(firewall_bench
+            PRIVATE
+            firewall_core
+            benchmark::benchmark
+            benchmark::benchmark_main
+    )
+
+    message(STATUS "✅ Benchmarks enabled")
+    message(STATUS "   Run: sudo ./firewall_bench  (requires root)")
+endif()
+
+#===----------------------------------------------------------------------===//
+# Documentation
+#===----------------------------------------------------------------------===//
+
+option(BUILD_DOCS "Build documentation with Doxygen" OFF)
+
+if(BUILD_DOCS)
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
+set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+        add_custom_target(docs
+                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating API documentation with Doxygen"
+                VERBATIM
+        )
+
+        message(STATUS "✅ Documentation enabled: make docs")
+    else()
+        message(WARNING "Doxygen not found, documentation disabled")
+    endif()
+endif()
+
+#===----------------------------------------------------------------------===//
+# Performance Profiling Support
+#===----------------------------------------------------------------------===//
+
+option(ENABLE_PROFILING "Enable profiling with gprof/perf" OFF)
+
+if(ENABLE_PROFILING)
+add_compile_options(-pg -fno-omit-frame-pointer)
+add_link_options(-pg)
+message(STATUS "✅ Profiling enabled (-pg)")
+endif()
+
+#===----------------------------------------------------------------------===//
+# Sanitizers (Development)
+#===----------------------------------------------------------------------===//
+
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
+option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+
+if(ENABLE_ASAN)
+add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+add_link_options(-fsanitize=address)
+message(STATUS "✅ AddressSanitizer enabled")
+endif()
+
+if(ENABLE_TSAN)
+add_compile_options(-fsanitize=thread)
+add_link_options(-fsanitize=thread)
+message(STATUS "✅ ThreadSanitizer enabled")
+endif()
+
+if(ENABLE_UBSAN)
+add_compile_options(-fsanitize=undefined)
+add_link_options(-fsanitize=undefined)
+message(STATUS "✅ UndefinedBehaviorSanitizer enabled")
+endif()
+
+#===----------------------------------------------------------------------===//
+# Build Summary
+#===----------------------------------------------------------------------===//
+
+message(STATUS "")
+message(STATUS "╔════════════════════════════════════════════════════════╗")
+message(STATUS "║  ML Defender - Firewall ACL Agent Configuration       ║")
+message(STATUS "╚════════════════════════════════════════════════════════╝")
+message(STATUS "")
+message(STATUS "Version:           ${PROJECT_VERSION}")
+message(STATUS "C++ Standard:      C++${CMAKE_CXX_STANDARD}")
+message(STATUS "Build Type:        ${CMAKE_BUILD_TYPE}")
+message(STATUS "Compiler:          ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "")
+message(STATUS "Dependencies:")
+message(STATUS "  ZeroMQ:          ${ZMQ_VERSION}")
+message(STATUS "  Protobuf:        ${Protobuf_VERSION}")
+message(STATUS "  Boost:           ${Boost_VERSION}")
+message(STATUS "  jsoncpp:         ${JSONCPP_VERSION}")
+message(STATUS "  NOTE: Using system ipset commands (no libipset dependency)")
+message(STATUS "")
+message(STATUS "Optional Features:")
+message(STATUS "  Tests:           ${BUILD_TESTS}")
+message(STATUS "  Benchmarks:      ${BUILD_BENCHMARKS}")
+message(STATUS "  Documentation:   ${BUILD_DOCS}")
+message(STATUS "  Profiling:       ${ENABLE_PROFILING}")
+message(STATUS "")
+message(STATUS "⚡ Performance Target: 1M+ packets/sec DROP rate")
+message(STATUS "🎯 Design Philosophy: Via Appia Quality")
+message(STATUS "")
+message(STATUS "Build Commands:")
+message(STATUS "  mkdir build && cd build")
+message(STATUS "  cmake -DCMAKE_BUILD_TYPE=Release ..")
+message(STATUS "  make -j$(nproc)")
+message(STATUS "  sudo ./firewall-acl-agent -c ../config/firewall.json")
+message(STATUS "")
+message(STATUS "╚════════════════════════════════════════════════════════╝")
+message(STATUS "")
+
+Este es el firewall.json actual:
+
 {
-  "_header": "ML Defender - Firewall ACL Agent v1.0 (Extreme Performance)",
-  "_philosophy": "Reach the physical limits of commodity hardware",
-  
-  "performance": {
-    "zmq_subscriber": {
-      "io_threads": 1,
-      "rcvhwm": 100000,              // High water mark
-      "rcvbuf": 10485760,            // 10MB receive buffer
-      "zero_copy": true
-    },
-    
-    "queue": {
-      "capacity": 100000,            // Lock-free queue size
-      "type": "spsc"                 // Single producer, single consumer
-    },
-    
-    "batch_processor": {
-      "batch_size": 1000,            // IPs per batch
-      "flush_interval_ms": 100,      // Max wait time
-      "deduplicate": true,           // Remove duplicates
-      "worker_threads": 1            // Single consumer (SPSC)
-    },
-    
-    "subnet_aggregation": {
-      "enabled": true,
-      "threshold": 100,              // 100 IPs from /24 → block subnet
-      "check_interval_ms": 1000      // Check every 1 second
-    },
-    
-    "memory": {
-      "pre_allocate_buffers": true,
-      "use_huge_pages": false,       // Requires root + setup
-      "memory_pool_size": 10000      // Pre-allocated Detection objects
-    },
-    
-    "cpu": {
-      "pin_producer_to_core": -1,    // -1 = auto, or specify core
-      "pin_consumer_to_core": -1,
-      "numa_node": -1                // -1 = auto
-    }
-  },
-  
-  "ipsets": {
-    "blacklist_temp": {
-      "name": "ml_defender_blacklist",
-      "type": "hash:ip",
-      "family": "inet",
-      "hashsize": 16384,             // Initial hash table size
-      "maxelem": 10000000,           // Max 10M IPs
-      "timeout": 300,                // 5 min default
-      "counters": true,              // Track packet/byte counts
-      "comment": true                // Store reason
-    },
-    
-    "blacklist_perm": {
-      "name": "ml_defender_blacklist_perm",
-      "type": "hash:ip",
-      "family": "inet",
-      "hashsize": 4096,
-      "maxelem": 1000000,
-      "timeout": 0,                  // Permanent
-      "counters": true
-    },
-    
-    "whitelist": {
-      "name": "ml_defender_whitelist",
-      "type": "hash:ip",
-      "family": "inet",
-      "hashsize": 1024,
-      "maxelem": 100000,
-      "timeout": 0
-    },
-    
-    "subnets": {
-      "name": "ml_defender_subnets",
-      "type": "hash:net",            // For CIDR blocks
-      "family": "inet",
-      "hashsize": 1024,
-      "maxelem": 100000,
-      "timeout": 600                 // 10 min for subnets
-    }
-  },
-  
-  "iptables": {
-    "chain_name": "ML_DEFENDER",
-    "table": "filter",
-    "position": "INPUT",
-    "jump_target": 1,                // Insert at position 1 (high priority)
-    "backup_on_start": true,
-    "restore_on_exit": true
-  },
-  
-  "monitoring": {
-    "stats_interval_seconds": 10,
-    "metrics": {
-      "detections_received": true,
-      "detections_processed": true,
-      "detections_dropped": true,    // Queue overflow
-      "ips_blocked": true,
-      "subnets_blocked": true,
-      "whitelist_hits": true,
-      "batch_flushes": true,
-      "avg_batch_size": true,
-      "avg_flush_latency_us": true,
-      "queue_depth": true,
-      "cpu_usage": true,
-      "memory_usage": true
-    },
-    "export_prometheus": false,
-    "prometheus_port": 9091
-  },
-  
-  "actions": {
-    "ddos_detected": {
-      "action": "DROP",
-      "duration_seconds": 600,
-      "add_to_set": "blacklist_temp",
-      "log": true
-    },
-    "ransomware_detected": {
-      "action": "DROP",
-      "duration_seconds": 1800,
-      "add_to_set": "blacklist_perm",
-      "log": true
-    },
-    "suspicious_traffic": {
-      "action": "LOG",
-      "duration_seconds": 300,
-      "add_to_set": "blacklist_temp",
-      "log": false
-    }
-  },
-  
-  "logging": {
-    "level": "INFO",
-    "file": "logs/firewall_agent.log",
-    "max_file_size_mb": 100,
-    "backup_count": 5,
-    "async": true,                   // Non-blocking logging
-    "buffer_size": 10000
-  }
+"_comment": "ML Defender - Firewall ACL Agent Configuration",
+"_version": "1.0.0",
+
+"ipset": {
+"set_name": "ml_defender_blacklist",
+"set_type": "hash:ip",
+"hash_size": 4096,
+"max_elements": 1000000,
+"timeout": 3600,
+"comment": "ML Defender blocked IPs"
+},
+
+"iptables": {
+"chain_name": "ML_DEFENDER_INPUT",
+"default_policy": "ACCEPT",
+"log_blocked": false,
+"log_prefix": "ML_DEFENDER_DROP: "
+},
+
+"batch_processor": {
+"batch_size_threshold": 1000,
+"batch_time_threshold_ms": 100,
+"max_pending_ips": 10000,
+"min_confidence": 0.5,
+"enable_dedup": true,
+"flush_on_shutdown": true
+},
+
+"zmq": {
+"endpoint": "tcp://localhost:5555",
+"topic": "",
+"recv_timeout_ms": 1000,
+"linger_ms": 1000,
+"reconnect_interval_ms": 1000,
+"max_reconnect_interval_ms": 30000,
+"reconnect_backoff_multiplier": 2.0,
+"rcvhwm": 1000,
+"enable_stats": true,
+"stats_interval_sec": 60
+},
+
+"daemon": {
+"daemonize": false,
+"pid_file": "/var/run/firewall-acl-agent.pid",
+"user": "root",
+"group": "root"
+},
+
+"logging": {
+"level": "info",
+"console": true,
+"syslog": false,
+"file": "",
+"max_file_size_mb": 100
+},
+
+"metrics": {
+"enable_export": true,
+"export_interval_sec": 60,
+"export_format": "json",
+"export_file": "/var/log/ml-defender/firewall-metrics.json"
+},
+
+"health_check": {
+"enable": true,
+"check_interval_sec": 30,
+"ipset_health_check": true,
+"iptables_health_check": true,
+"zmq_connection_check": true
 }
-```
-
----
-
-## 📊 PERFORMANCE BENCHMARKS TO ACHIEVE
-
-### **Tier 1: Baseline (Day 6)**
-```
-Detections/sec:     100,000
-Batch size:         1,000 IPs
-Flush latency:      <10ms (p99)
-Queue drops:        0
-CPU usage:          <20%
-Memory:             <500MB
-```
-
-### **Tier 2: Production (Day 7)**
-```
-Detections/sec:     1,000,000
-Batch size:         1,000 IPs
-Flush latency:      <5ms (p99)
-Queue drops:        <0.01%
-CPU usage:          <30%
-Memory:             <1GB
-Subnet aggregation: Active (250x reduction)
-```
-
-### **Tier 3: Extreme (Phase 2)**
-```
-Detections/sec:     10,000,000+ (with eBPF XDP)
-Drop rate:          10M pps
-Latency:            <1ms (p99)
-CPU usage:          <50% (all cores)
-Memory:             <2GB
-Hardware:           Consumer-grade router/firewall
-```
-
----
-
-## 🚀 IMPLEMENTATION STRATEGY (Day 6)
-
-### **Morning Session (4 hours):**
-
-1. **ipset_wrapper.cpp** (90 min)
-   ```cpp
-   class IPSetWrapper {
-       // Create ipset with optimal settings
-       bool create_set(const IPSetConfig& config);
-       
-       // CRITICAL: Batch add (single syscall)
-       bool add_batch(const std::string& set_name,
-                     const std::vector<IPAddress>& ips,
-                     std::optional<uint32_t> timeout = std::nullopt);
-       
-       // Batch delete
-       bool delete_batch(const std::string& set_name,
-                        const std::vector<IPAddress>& ips);
-       
-       // Test if IP exists (for whitelist check)
-       bool test(const std::string& set_name, const IPAddress& ip);
-       
-       // List all entries
-       std::vector<IPAddress> list(const std::string& set_name);
-       
-       // Flush set
-       bool flush(const std::string& set_name);
-       
-       // Destroy set
-       bool destroy(const std::string& set_name);
-   };
-   ```
-
-   **Implementation notes:**
-    - Use `ipset restore` with pipe for batch operations
-    - Format: `echo "add setname 1.2.3.4\nadd setname 5.6.7.8" | ipset restore`
-    - Error handling: Parse stderr for failures
-    - Atomic: All succeed or all fail
-
-2. **batch_processor.cpp** (90 min)
-   ```cpp
-   class BatchProcessor {
-       boost::lockfree::spsc_queue<Detection, 
-                                   boost::lockfree::capacity<100000>> queue_;
-       std::unordered_set<IPAddress> buffer_;
-       std::atomic<bool> running_{true};
-       std::jthread worker_thread_;
-       
-       // Producer interface (non-blocking)
-       bool enqueue(Detection&& detection);
-       
-       // Consumer loop (runs in worker_thread_)
-       void process_loop();
-       
-       // Flush buffer to ipset
-       void flush_batch();
-       
-       // Check flush conditions
-       bool should_flush() const;
-   };
-   ```
-
-   **Key optimizations:**
-    - Lock-free queue: zero contention
-    - Deduplication: unordered_set prevents duplicate adds
-    - Flush triggers: size (1000), timeout (100ms), shutdown
-    - Move semantics: avoid copies
-
-3. **Test & Benchmark** (30 min)
-   ```bash
-   # Synthetic load test
-   ./test_batch_processor 100000
-   # Expected: Process 100K detections in <1 second
-   
-   # Verify ipset
-   sudo ipset list ml_defender_blacklist | wc -l
-   # Should show ~100K entries (after dedup)
-   ```
-
-### **Afternoon Session (4 hours):**
-
-4. **acl_intelligence.cpp** (90 min)
-    - Subnet aggregation algorithm
-    - Whitelist checking
-    - Temporal expiration tracking
-
-5. **zmq_subscriber.cpp** (60 min)
-    - ZMQ socket setup
-    - Message parsing
-    - Enqueue to batch processor
-
-6. **main.cpp** (60 min)
-    - Init all components
-    - Signal handling
-    - Graceful shutdown
-
-7. **Integration test** (30 min)
-   ```bash
-   # Start full pipeline
-   sudo ./firewall-agent -c config/firewall.json
-   
-   # Generate synthetic detections (from ml-detector)
-   # Verify iptables rules created
-   sudo iptables -L ML_DEFENDER -n -v
-   
-   # Monitor performance
-   watch -n 1 'sudo ipset list ml_defender_blacklist | wc -l'
-   ```
-
----
-
-## 🎯 SUCCESS CRITERIA (End of Day 6)
-
-**Must Have:**
-- ✅ ipset_wrapper can batch add 1000 IPs in <10ms
-- ✅ batch_processor has zero queue drops at 100K/sec
-- ✅ Full pipeline runs without crashes
-- ✅ Memory usage <500MB for 100K IPs
-- ✅ CPU usage <20% at 100K detections/sec
-
-**Nice to Have:**
-- ✅ Subnet aggregation working
-- ✅ Whitelist protection active
-- ✅ Metrics dashboard (stats output)
-- ✅ Unit tests passing
-
----
-
-## ⚡ EXTREME OPTIMIZATIONS (Phase 2 - Optional)
-
-### **1. eBPF XDP Integration**
-```c
-// XDP program - runs in NIC driver
-SEC("xdp")
-int xdp_firewall(struct xdp_md *ctx) {
-    void *data_end = (void *)(long)ctx->data_end;
-    void *data = (void *)(long)ctx->data;
-    
-    struct ethhdr *eth = data;
-    if ((void *)(eth + 1) > data_end)
-        return XDP_PASS;
-    
-    if (eth->h_proto != htons(ETH_P_IP))
-        return XDP_PASS;
-    
-    struct iphdr *ip = (void *)(eth + 1);
-    if ((void *)(ip + 1) > data_end)
-        return XDP_PASS;
-    
-    __u32 src_ip = ip->saddr;
-    __u8 *blocked = bpf_map_lookup_elem(&blacklist_map, &src_ip);
-    
-    if (blocked && *blocked == 1)
-        return XDP_DROP;  // 10M+ pps drop rate
-    
-    return XDP_PASS;
 }
-```
-
-### **2. DPDK (Data Plane Development Kit)**
-- User-space packet processing
-- Bypass kernel entirely
-- 80M+ pps on commodity hardware
-- Overkill for now, but possible future
-
-### **3. Hardware Offloading**
-- SmartNIC with P4 programmable dataplane
-- ASIC-level filtering
-- 400Gbps+ throughput
-- Enterprise scenario
-
----
-
-## 🛠️ DEPENDENCIES & SETUP
-
-```bash
-# Install required packages
-sudo apt-get update
-sudo apt-get install -y \
-    libipset-dev \
-    ipset \
-    iptables \
-    libzmq3-dev \
-    libboost-all-dev \
-    libjsoncpp-dev \
-    cmake \
-    build-essential
-
-# Verify ipset version
-ipset version
-# Should be >= 7.0
-
-# Enable huge pages (optional, requires reboot)
-echo 1024 | sudo tee /proc/sys/vm/nr_hugepages
-
-# Increase max ipset size (if needed)
-sudo sysctl -w net.netfilter.nf_conntrack_max=2000000
-```
-
----
-
-## 📊 MONITORING COMMANDS
-
-```bash
-# Real-time ipset stats
-watch -n 1 'sudo ipset list ml_defender_blacklist | head -20'
-
-# Count blocked IPs
-sudo ipset list ml_defender_blacklist | grep -c "^[0-9]"
-
-# iptables packet counts
-sudo iptables -L ML_DEFENDER -n -v
-
-# Process stats
-top -p $(pgrep firewall-agent)
-
-# Network stats
-sudo ss -s
-
-# System load
-uptime
-```
-
----
-
-## 🎯 FINAL GOAL
-
-**A firewall agent that can:**
-- ✅ Handle 1M+ detections/sec on commodity hardware
-- ✅ Block millions of unique IPs with O(1) lookup
-- ✅ Use <1GB RAM for 10M blocked IPs
-- ✅ Maintain <100μs detection→block latency
-- ✅ Scale to enterprise hardware (10M+ pps)
-- ✅ Run on a $35 Raspberry Pi or home router
-
-**Philosophy:**
-> "Squeeze every CPU cycle. Zero waste. State-of-the-art performance
-> on commodity hardware. If it works here, it'll fly on enterprise gear."
-
----
-
-## 🚀 LET'S BUILD THE FASTEST OPEN-SOURCE FIREWALL 🚀
-
-Start with `include/firewall/ipset_wrapper.hpp` - let's make it FAST! ⚡
-```
-## 🌐 EXTENDED VISION: Distributed Intelligence Mesh
-
-### **Beyond Simple Firewall: Intelligence Gathering System**
-
-ML Defender is not just a firewall - it's a **distributed security mesh** that:
-
-1. **Ultra-fast DROP** (1M+ pps on commodity hardware)
-   - Makes bot IPs useless
-   - Frustrates attackers (wastes their resources)
-   - Protects home routers and enterprise infrastructure
-
-2. **Intelligence Gathering**
-```cpp
-   struct BotIntelligence {
-       IPAddress ip;
-       MACAddress mac;              // Captured from eBPF
-       Timestamp first_seen;
-       Timestamp last_seen;
-       uint64_t attack_count;
-       std::vector<AttackType> types;
-       std::vector<IPAddress> ip_rotation;    // Same MAC, different IPs
-       std::vector<MACAddress> mac_rotation;  // Same IP, different MACs
-       bool spoofing_detected;
-       BotnetSignature signature;
-   };
-```
-
-3. **Data Export to RAG** (DeepSeek work stream)
-    - All attack metadata → RAG database
-    - IA analysis for patterns
-    - Human/AI admin can query intelligence
-    - Informed strategy generation
-
-4. **Distributed Coordination** (via etcd - DeepSeek)
-    - Enterprise: Security mesh across nodes
-    - Share intelligence globally
-    - Coordinated response
-    - Proactive blocking
-
-### **Architecture Modes**
-
-**Enterprise Mode:**
-```
-Multiple firewall nodes → Coordinated via etcd
-Each node: Local ultra-fast DROP + Intelligence gathering
-Central RAG: Pattern analysis + Strategy
-Result: Mesh of security around infrastructure
-```
-
-**Home Mode:**
-```
-Single firewall node → Protects home router
-Ultra-fast DROP → Makes bot attacks useless
-Local intelligence → Optional sync to central RAG
-Result: Enterprise-grade security on $35 hardware
-```
-
-### **Implementation Phases**
-
-**Phase 1 (Days 6-7): Core Firewall**
-- Ultra-fast DROP (ipset + batch processing)
-- Basic IP blocking
-- Performance: 1M+ pps
-
-**Phase 2 (Days 8-9): Intelligence Layer**
-- MAC address capture (eBPF enhancement)
-- IP-MAC correlation database
-- BotIntelligence struct and tracking
-- Export to RAG (DeepSeek integration)
-
-**Phase 3 (Days 10-12): Distributed Coordination**
-- etcd integration (DeepSeek)
-- Multi-node synchronization
-- Shared intelligence
-- Coordinated blocking strategy
-
-### **Key Design Principles**
-
-1. **Speed = Security**
-    - Sub-microsecond DROP renders bots useless
-    - Attackers waste resources
-    - We WIN by making attacks ineffective
-
-2. **Intelligence = Power**
-    - Every blocked IP is data
-    - MAC correlation reveals patterns
-    - RAG analysis generates strategy
-
-3. **Distribution = Resilience**
-    - Multiple nodes = no single point of failure
-    - Shared intelligence = collective defense
-    - Mesh topology = enterprise-grade
-
-4. **Cloudflare Philosophy**
-    - State-of-the-art software > expensive hardware
-    - If they can do it, we can do it
-    - Open source > proprietary blackbox
----
-
-// mac_intelligence.hpp
-class MACIntelligence {
-// Track IP-MAC correlations
-void record_observation(IPAddress ip, MACAddress mac);
-
-    // Detect spoofing
-    bool is_spoofing_detected(IPAddress ip);
-    
-    // Find related IPs (same MAC)
-    std::vector<IPAddress> get_ips_for_mac(MACAddress mac);
-    
-    // Find related MACs (same IP - red flag!)
-    std::vector<MACAddress> get_macs_for_ip(IPAddress ip);
-    
-    // Export intelligence
-    BotIntelligence get_intelligence(IPAddress ip);
-};
-
-// rag_exporter.hpp
-class RAGExporter {
-// Export attack metadata to RAG
-void export_attack(const BotIntelligence& intel);
-
-    // Batch export
-    void export_batch(const std::vector<BotIntelligence>& batch);
-    
-    // Query RAG for patterns
-    std::string query_rag(const std::string& question);
-};
-```
-
----
-
-## 🎯 VISIÓN FINAL
-```
-╔══════════════════════════════════════════════════════════╗
-║  ML DEFENDER - DISTRIBUTED SECURITY INTELLIGENCE MESH    ║
-╚══════════════════════════════════════════════════════════╝
-
-OBJETIVO: Hacer que los ataques sean INÚTILES y COSTOSOS
-
-CÓMO:
-1. DROP ultra-rápido (1M+ pps) → Bots desperdician recursos
-2. Intelligence gathering (IP+MAC) → Detectamos patrones
-3. RAG analysis → IA genera estrategia
-4. Distributed mesh → Defensa coordinada
-
-RESULTADO:
-- Atacantes PIERDEN (tiempo + dinero + efectividad)
-- Defensores GANAN (inmunidad + intelligence + estrategia)
-- Hardware limitado + Software SOTA = Enterprise-grade security
-
-"If Cloudflare can do it, we can do it."
-"State-of-the-art software > Expensive hardware."
-"Open source > Proprietary blackbox."
-
-**Este prompt está listo para exprimir el hardware al máximo. Mañana construimos el sistema de firewall más rápido posible en hardware limitado.** 🔥🚀

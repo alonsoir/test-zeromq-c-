@@ -1,27 +1,16 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
-// iptables_wrapper.hpp - Static Iptables Rules Management
+// iptables_wrapper.hpp - iptables Management
 //
-// Design Philosophy:
-//   - MINIMAL wrapper - only 4 static rules needed
-//   - Dynamic IP blocking is handled by ipset (O(1) kernel hash)
-//   - iptables rules NEVER change after initialization
-//   - Bootstrap once, teardown once
+// Design Decision: Use system iptables commands instead of libiptc API
+// Rationale:
+//   - Simple, maintainable, auditable (same as ipset_wrapper)
+//   - iptables CLI is stable and well-tested
+//   - Automatic benefits from iptables version upgrades
+//   - No libiptc dependency
 //
-// Why NOT dynamic iptables rules?
-//   ❌ iptables -A INPUT -s 1.2.3.4 -j DROP  (repeated 1M times)
-//      = O(n) packet matching = TERRIBLE performance
-//
-//   ✅ iptables -A INPUT -m set --match-set blacklist src -j DROP
-//      + ipset manages IPs with O(1) kernel hash = EXCELLENT performance
-//
-// Static Rules Created (4 total):
-//   1. ACCEPT packets from whitelist
-//   2. DROP packets from temporary blacklist (5min timeout)
-//   3. DROP packets from permanent blacklist
-//   4. DROP packets from subnet blacklist
-//
-// Via Appia Quality: Simple, correct, permanent
+// Performance: iptables-restore for batch operations
+// Philosophy: "Don't reinvent the wheel" - Via Appia Quality
 //===----------------------------------------------------------------------===//
 
 #pragma once
@@ -29,12 +18,20 @@
 #include <string>
 #include <vector>
 #include <optional>
-#include <expected>
+#include <mutex>
+#include <memory>
 
 namespace mldefender::firewall {
 
 //===----------------------------------------------------------------------===//
-// Types and Configuration
+// Forward Declarations
+//===----------------------------------------------------------------------===//
+
+struct IPTablesError;
+template<typename T> struct IPTablesResult;
+
+//===----------------------------------------------------------------------===//
+// Types and Enumerations
 //===----------------------------------------------------------------------===//
 
 /// iptables table type
@@ -45,328 +42,260 @@ enum class IPTablesTable {
     RAW,      ///< Connection tracking bypass
 };
 
-/// iptables chain position
+/// iptables built-in chains
 enum class IPTablesChain {
-    INPUT,      ///< Incoming packets
-    FORWARD,    ///< Routed packets
-    OUTPUT,     ///< Outgoing packets
-    PREROUTING, ///< Before routing decision
-    POSTROUTING,///< After routing decision
+    INPUT,        ///< Incoming packets
+    FORWARD,      ///< Forwarded packets
+    OUTPUT,       ///< Outgoing packets
+    PREROUTING,   ///< Before routing decision
+    POSTROUTING,  ///< After routing decision
+    CUSTOM,       ///< Custom chain (use custom_chain_name)
 };
 
-/// iptables action
-enum class IPTablesAction {
-    ACCEPT,   ///< Allow packet
-    DROP,     ///< Silently discard packet
-    REJECT,   ///< Discard with ICMP error
-    LOG,      ///< Log and continue
+/// iptables target actions
+enum class IPTablesTarget {
+    ACCEPT,  ///< Accept packet
+    DROP,    ///< Drop packet silently
+    REJECT,  ///< Reject packet with ICMP
+    RETURN,  ///< Return to calling chain
+    JUMP,    ///< Jump to custom chain
 };
 
-/// Configuration for iptables setup
-struct IPTablesConfig {
-    std::string chain_name{"ML_DEFENDER"};           ///< Custom chain name
-    IPTablesTable table{IPTablesTable::FILTER};      ///< Table to use
-    IPTablesChain position{IPTablesChain::INPUT};    ///< Chain to hook into
-    uint32_t priority{1};                            ///< Rule insertion position (1 = highest)
-
-    // Backup/restore options
-    bool backup_on_start{true};                      ///< Backup existing rules
-    bool restore_on_exit{true};                      ///< Restore rules on clean exit
-    std::string backup_file{"/tmp/iptables_backup_ml_defender.rules"};
+/// Network protocol
+enum class IPTablesProtocol {
+    TCP,   ///< TCP protocol
+    UDP,   ///< UDP protocol
+    ICMP,  ///< ICMP protocol
+    ALL,   ///< All protocols
 };
 
-/// ipset names to integrate with iptables
-struct IPSetNames {
-    std::string whitelist{"ml_defender_whitelist"};
-    std::string blacklist_temp{"ml_defender_blacklist"};
-    std::string blacklist_perm{"ml_defender_blacklist_perm"};
-    std::string subnets{"ml_defender_subnets"};
-};
-
-/// Operation result
+/// Error codes
 enum class IPTablesErrorCode {
     SUCCESS = 0,
-    IPTABLES_NOT_FOUND,
-    PERMISSION_DENIED,
-    RULE_EXISTS,
-    RULE_NOT_FOUND,
-    BACKUP_FAILED,
-    RESTORE_FAILED,
-    COMMAND_FAILED,
+    CHAIN_ALREADY_EXISTS,
+    CHAIN_NOT_FOUND,
+    KERNEL_ERROR,
+    INVALID_RULE,
 };
 
+/// Error information
 struct IPTablesError {
     IPTablesErrorCode code;
     std::string message;
-    std::string command;  ///< Failed command for debugging
 };
 
+/// Result type (C++20 compatible - no std::expected)
 template<typename T>
-using IPTablesResult = std::expected<T, IPTablesError>;
+struct IPTablesResult {
+    std::optional<T> value;
+    std::optional<IPTablesError> error;
+
+    // Success constructor
+    IPTablesResult() : value(T{}), error(std::nullopt) {}
+    explicit IPTablesResult(T val) : value(std::move(val)), error(std::nullopt) {}
+
+    // Error constructor
+    explicit IPTablesResult(IPTablesError err) : value(std::nullopt), error(std::move(err)) {}
+
+    // Check if successful
+    explicit operator bool() const { return value.has_value(); }
+    bool has_value() const { return value.has_value(); }
+    bool has_error() const { return error.has_value(); }
+
+    // Access value (undefined if error)
+    T& operator*() { return *value; }
+    const T& operator*() const { return *value; }
+    T* operator->() { return &(*value); }
+    const T* operator->() const { return &(*value); }
+
+    // Access error
+    const IPTablesError& get_error() const { return *error; }
+};
+
+// Specialization for void
+template<>
+struct IPTablesResult<void> {
+    std::optional<IPTablesError> error;
+
+    // Success constructor
+    IPTablesResult() : error(std::nullopt) {}
+
+    // Error constructor
+    explicit IPTablesResult(IPTablesError err) : error(std::move(err)) {}
+
+    // Check if successful
+    explicit operator bool() const { return !error.has_value(); }
+    bool has_value() const { return !error.has_value(); }
+    bool has_error() const { return error.has_value(); }
+
+    // Access error
+    const IPTablesError& get_error() const { return *error; }
+};
 
 //===----------------------------------------------------------------------===//
-// IPTablesWrapper - Minimalist Static Rules Manager
+// Configuration Structures
 //===----------------------------------------------------------------------===//
 
+/// iptables rule specification
+struct IPTablesRule {
+    // Table and chain
+    IPTablesTable table{IPTablesTable::FILTER};
+    IPTablesChain chain{IPTablesChain::INPUT};
+    std::string custom_chain_name{};  // For custom chains
+
+    // Rule position (0 = append, >0 = insert at position)
+    uint32_t position{0};
+
+    // Match criteria
+    IPTablesProtocol protocol{IPTablesProtocol::ALL};
+    std::string source{};          // Source IP/CIDR
+    std::string destination{};     // Destination IP/CIDR
+    std::string in_interface{};    // Input interface (eth0, etc)
+    std::string out_interface{};   // Output interface
+    uint16_t source_port{0};       // Source port
+    uint16_t dest_port{0};         // Destination port
+
+    // Match extensions
+    std::string match_set{};           // ipset name for -m set
+    std::string match_extensions{};    // Additional match criteria
+
+    // Target
+    IPTablesTarget target{IPTablesTarget::DROP};
+    std::string jump_target{};         // For JUMP target
+    std::string target_options{};      // Additional target options
+
+    // Metadata
+    std::string comment{};
+};
+
+/// Firewall configuration
+struct FirewallConfig {
+    std::string blacklist_chain{"ML_DEFENDER_BLACKLIST"};
+    std::string whitelist_chain{"ML_DEFENDER_WHITELIST"};
+    std::string ratelimit_chain{"ML_DEFENDER_RATELIMIT"};
+
+    std::string blacklist_ipset{"ml_defender_blacklist"};
+    std::string whitelist_ipset{"ml_defender_whitelist"};
+
+    bool enable_rate_limiting{true};
+    uint32_t rate_limit_connections{100};  // Connections per 60 seconds
+};
+
+//===----------------------------------------------------------------------===//
+// IPTables Wrapper Class
+//===----------------------------------------------------------------------===//
+
+/// Thread-safe wrapper for iptables operations
 class IPTablesWrapper {
 public:
-    /// Constructor with configuration
-    explicit IPTablesWrapper(const IPTablesConfig& config = {});
-
-    /// Destructor - performs cleanup if configured
+    IPTablesWrapper();
     ~IPTablesWrapper();
 
-    // Non-copyable (manages kernel state)
+    // Non-copyable
     IPTablesWrapper(const IPTablesWrapper&) = delete;
     IPTablesWrapper& operator=(const IPTablesWrapper&) = delete;
 
-    // Movable
-    IPTablesWrapper(IPTablesWrapper&&) noexcept;
-    IPTablesWrapper& operator=(IPTablesWrapper&&) noexcept;
-
     //===------------------------------------------------------------------===//
-    // Lifecycle Management
+    // Chain Management
     //===------------------------------------------------------------------===//
 
-    /// Setup all static rules (call once at startup)
-    /// Creates custom chain + 4 static ipset rules
-    /// @param ipset_names Names of ipsets to reference
-    /// @return Success or error details
-    /// @note Idempotent - safe to call multiple times
-    /// @note Thread-safe
-    IPTablesResult<void> setup_rules(const IPSetNames& ipset_names);
+    /// Create a new custom chain
+    IPTablesResult<void> create_chain(
+        const std::string& chain_name,
+        IPTablesTable table = IPTablesTable::FILTER
+    );
 
-    /// Teardown all rules (call once at shutdown)
-    /// Removes custom chain and unhooks from main chain
-    /// @return Success or error details
-    /// @note Thread-safe
-    IPTablesResult<void> teardown_rules();
+    /// Delete a custom chain (must be empty)
+    IPTablesResult<void> delete_chain(
+        const std::string& chain_name,
+        IPTablesTable table = IPTablesTable::FILTER
+    );
 
-    /// Check if rules are currently active
-    /// @return true if custom chain exists and is hooked
-    bool rules_active() const;
-
-    //===------------------------------------------------------------------===//
-    // Backup & Restore
-    //===------------------------------------------------------------------===//
-
-    /// Backup current iptables rules to file
-    /// @param filepath Path to backup file (default: from config)
-    /// @return Success or error
-    IPTablesResult<void> backup_rules(
-        const std::string& filepath = ""
+    /// Check if chain exists
+    bool chain_exists(
+        const std::string& chain_name,
+        IPTablesTable table = IPTablesTable::FILTER
     ) const;
+
+    /// Flush all rules from a chain
+    IPTablesResult<void> flush_chain(
+        const std::string& chain_name,
+        IPTablesTable table = IPTablesTable::FILTER
+    );
+
+    /// List all chains in a table
+    std::vector<std::string> list_chains(
+        IPTablesTable table = IPTablesTable::FILTER
+    ) const;
+
+    //===------------------------------------------------------------------===//
+    // Rule Management
+    //===------------------------------------------------------------------===//
+
+    /// Add a rule to a chain
+    IPTablesResult<void> add_rule(const IPTablesRule& rule);
+
+    /// Delete a rule by position
+    IPTablesResult<void> delete_rule(
+        const std::string& chain_name,
+        int position,
+        IPTablesTable table = IPTablesTable::FILTER
+    );
+
+    /// List all rules in a chain
+    std::vector<std::string> list_rules(
+        const std::string& chain_name,
+        IPTablesTable table = IPTablesTable::FILTER
+    ) const;
+
+    //===------------------------------------------------------------------===//
+    // High-Level Setup
+    //===------------------------------------------------------------------===//
+
+    /// Setup base firewall rules for ML Defender
+    /// Creates chains and links them to INPUT with ipset matches
+    IPTablesResult<void> setup_base_rules(const FirewallConfig& config);
+
+    /// Cleanup all ML Defender rules
+    IPTablesResult<void> cleanup_rules(const FirewallConfig& config);
+
+    //===------------------------------------------------------------------===//
+    // Save/Restore
+    //===------------------------------------------------------------------===//
+
+    /// Save current iptables rules to file
+    IPTablesResult<void> save(const std::string& filepath) const;
 
     /// Restore iptables rules from file
-    /// @param filepath Path to backup file (default: from config)
-    /// @return Success or error
-    IPTablesResult<void> restore_rules(
-        const std::string& filepath = ""
-    );
+    IPTablesResult<void> restore(const std::string& filepath);
 
     //===------------------------------------------------------------------===//
-    // Verification & Diagnostics
+    // Helper Methods
     //===------------------------------------------------------------------===//
 
-    /// Verify that all expected rules exist
-    /// @return true if all rules present and correct
-    bool verify_rules(const IPSetNames& ipset_names) const;
-
-    /// Get current rule statistics
-    /// @return Human-readable statistics string
-    std::string get_statistics() const;
-
-    /// List all rules in custom chain
-    /// @return Vector of rule strings
-    std::vector<std::string> list_rules() const;
-
-    /// Check if iptables command is available
-    /// @return true if iptables found in PATH
-    static bool is_iptables_available();
-
-    /// Check if running with root privileges
-    /// @return true if effective UID is 0
-    static bool has_root_privileges();
-
-private:
-    //===------------------------------------------------------------------===//
-    // Internal Implementation
-    //===------------------------------------------------------------------===//
-
-    /// Execute iptables command
-    /// @param args Command arguments
-    /// @return Success or error with stderr output
-    IPTablesResult<std::string> execute_iptables(
-        const std::vector<std::string>& args
-    ) const;
-
-    /// Check if custom chain exists
-    bool chain_exists() const;
-
-    /// Create custom chain
-    IPTablesResult<void> create_chain();
-
-    /// Delete custom chain
-    IPTablesResult<void> delete_chain();
-
-    /// Hook custom chain into main chain
-    IPTablesResult<void> hook_chain();
-
-    /// Unhook custom chain from main chain
-    IPTablesResult<void> unhook_chain();
-
-    /// Add single ipset rule to custom chain
-    IPTablesResult<void> add_ipset_rule(
-        const std::string& ipset_name,
-        IPTablesAction action,
-        const std::string& comment = ""
-    );
-
-    /// Convert table enum to string
     static const char* table_to_string(IPTablesTable table);
-
-    /// Convert chain enum to string
     static const char* chain_to_string(IPTablesChain chain);
-
-    /// Convert action enum to string
-    static const char* action_to_string(IPTablesAction action);
-
-    //===------------------------------------------------------------------===//
-    // Member Variables
-    //===------------------------------------------------------------------===//
-
-    IPTablesConfig config_;
-    bool rules_setup_{false};
-    std::string backup_filepath_;
-};
-
-//===----------------------------------------------------------------------===//
-// RAII Helper - Automatic Setup/Teardown
-//===----------------------------------------------------------------------===//
-
-/// RAII wrapper for automatic rule lifecycle management
-/// Usage:
-///   {
-///     IPTablesGuard guard(config, ipset_names);
-///     // Rules active here
-///   } // Automatic teardown
-class IPTablesGuard {
-public:
-    IPTablesGuard(const IPTablesConfig& config, const IPSetNames& names)
-        : wrapper_(config)
-        , ipset_names_(names)
-    {
-        auto result = wrapper_.setup_rules(ipset_names_);
-        if (!result) {
-            throw std::runtime_error("Failed to setup iptables: " +
-                                   result.error().message);
-        }
-    }
-
-    ~IPTablesGuard() {
-        wrapper_.teardown_rules();
-    }
-
-    // Non-copyable, non-movable
-    IPTablesGuard(const IPTablesGuard&) = delete;
-    IPTablesGuard& operator=(const IPTablesGuard&) = delete;
-    IPTablesGuard(IPTablesGuard&&) = delete;
-    IPTablesGuard& operator=(IPTablesGuard&&) = delete;
-
-    IPTablesWrapper& get() { return wrapper_; }
-    const IPTablesWrapper& get() const { return wrapper_; }
+    static const char* target_to_string(IPTablesTarget target);
+    static const char* protocol_to_string(IPTablesProtocol proto);
 
 private:
-    IPTablesWrapper wrapper_;
-    IPSetNames ipset_names_;
+    //===------------------------------------------------------------------===//
+    // Internal State
+    //===------------------------------------------------------------------===//
+
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+    mutable std::mutex mutex_;  ///< Thread-safety
+
+    //===------------------------------------------------------------------===//
+    // Internal Helpers
+    //===------------------------------------------------------------------===//
+
+    /// Internal version of chain_exists without mutex lock
+    bool chain_exists_unlocked(
+        const std::string& chain_name,
+        IPTablesTable table
+    ) const;
 };
-
-//===----------------------------------------------------------------------===//
-// Convenience Functions
-//===----------------------------------------------------------------------===//
-
-/// Create standard ML Defender iptables configuration
-inline IPTablesConfig make_standard_config() {
-    IPTablesConfig config;
-    config.chain_name = "ML_DEFENDER";
-    config.table = IPTablesTable::FILTER;
-    config.position = IPTablesChain::INPUT;
-    config.priority = 1;  // High priority (insert at top)
-    config.backup_on_start = true;
-    config.restore_on_exit = true;
-    return config;
-}
-
-/// Create standard ipset names configuration
-inline IPSetNames make_standard_ipset_names() {
-    IPSetNames names;
-    names.whitelist = "ml_defender_whitelist";
-    names.blacklist_temp = "ml_defender_blacklist";
-    names.blacklist_perm = "ml_defender_blacklist_perm";
-    names.subnets = "ml_defender_subnets";
-    return names;
-}
 
 } // namespace mldefender::firewall
-
-//===----------------------------------------------------------------------===//
-// Usage Example
-//===----------------------------------------------------------------------===//
-
-/*
-
-#include "firewall/iptables_wrapper.hpp"
-#include "firewall/ipset_wrapper.hpp"
-
-int main() {
-    using namespace mldefender::firewall;
-
-    // Check prerequisites
-    if (!IPTablesWrapper::has_root_privileges()) {
-        std::cerr << "Error: Root privileges required\n";
-        return 1;
-    }
-
-    if (!IPTablesWrapper::is_iptables_available()) {
-        std::cerr << "Error: iptables not found\n";
-        return 1;
-    }
-
-    // Setup configuration
-    auto iptables_config = make_standard_config();
-    auto ipset_names = make_standard_ipset_names();
-
-    // Create ipsets first
-    IPSetWrapper ipset;
-    ipset.create_set(make_whitelist_config(ipset_names.whitelist));
-    ipset.create_set(make_blacklist_config(ipset_names.blacklist_temp, 300));
-    ipset.create_set(make_blacklist_config(ipset_names.blacklist_perm, 0));
-    ipset.create_set(make_subnet_config(ipset_names.subnets, 600));
-
-    // Setup iptables rules (RAII - automatic cleanup)
-    IPTablesGuard guard(iptables_config, ipset_names);
-
-    // Rules are now active!
-    // Any IP added to ipsets will be automatically blocked by kernel
-
-    // Add some IPs
-    ipset.add_batch(ipset_names.blacklist_temp, {
-        IPSetEntry{"1.2.3.4", 300, "DDoS detected"},
-        IPSetEntry{"5.6.7.8", 300, "Ransomware detected"}
-    });
-
-    // Verify rules
-    if (guard.get().verify_rules(ipset_names)) {
-        std::cout << "✅ All rules active and correct\n";
-    }
-
-    // Print statistics
-    std::cout << guard.get().get_statistics() << "\n";
-
-    // ... run application ...
-
-    return 0;
-    // Automatic teardown here
-}
-
-*/

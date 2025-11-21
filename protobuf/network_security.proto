@@ -631,3 +631,30 @@ message RansomwareFeatures {
     float tcp_rst_ratio = 19;
     float syn_without_ack_ratio = 20;
 }
+// =====================================================================
+// 🛡️ FIREWALL ACL AGENT - Simple Detection Messages
+// =====================================================================
+
+enum DetectionType {
+    DETECTION_UNKNOWN = 0;
+    DETECTION_DDOS = 1;
+    DETECTION_RANSOMWARE = 2;
+    DETECTION_SUSPICIOUS_TRAFFIC = 3;
+    DETECTION_INTERNAL_THREAT = 4;
+}
+
+message Detection {
+    string src_ip = 1;
+    DetectionType type = 2;
+    float confidence = 3;
+    uint64 timestamp = 4;
+    string description = 5;
+    string action = 6;              // "BLOCK", "ALERT", "LOG"
+    uint32 duration_seconds = 7;    // Duration to block (0 = permanent)
+}
+
+message DetectionBatch {
+    repeated Detection detections = 1;
+    uint64 batch_id = 2;
+    google.protobuf.Timestamp batch_timestamp = 3;
+}

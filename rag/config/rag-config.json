@@ -1,0 +1,18 @@
+// config/rag_config.json
+{
+  "etcd": {
+    "endpoints": ["http://localhost:2379"],
+    "timeout": 5000,
+    "retry_attempts": 3
+  },
+  "llama": {
+    "model_path": "/path/to/llama/model",
+    "context_size": 4096,
+    "temperature": 0.7
+  },
+  "security": {
+    "whitelist_file": "config/command_whitelist.json",
+    "max_query_length": 1000,
+    "enable_audit_log": true
+  }
+}

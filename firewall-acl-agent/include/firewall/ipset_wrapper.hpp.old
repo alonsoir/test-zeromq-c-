@@ -24,6 +24,7 @@
 #include <optional>
 #include <memory>
 #include <mutex>
+#include <expected>
 #include <cstdint>
 
 // Forward declare libipset structures (no header pollution)
@@ -103,54 +104,11 @@ enum class IPSetErrorCode {
 struct IPSetError {
     IPSetErrorCode code;
     std::string message;
-    std::vector<std::string> failed_ips{}; ///< For batch operations (default empty)
+    std::vector<std::string> failed_ips; ///< For batch operations
 };
 
-// C++20 compatible result type (std::expected is C++23)
 template<typename T>
-struct IPSetResult {
-    std::optional<T> value;
-    std::optional<IPSetError> error;
-
-    // Constructors
-    IPSetResult(T&& val) : value(std::forward<T>(val)) {}
-    IPSetResult(const T& val) : value(val) {}
-    IPSetResult(IPSetError&& err) : error(std::move(err)) {}
-    IPSetResult(const IPSetError& err) : error(err) {}
-
-    // Check if has value
-    explicit operator bool() const { return value.has_value(); }
-    bool has_value() const { return value.has_value(); }
-
-    // Access value (throws if error)
-    T& operator*() { return *value; }
-    const T& operator*() const { return *value; }
-    T* operator->() { return &(*value); }
-    const T* operator->() const { return &(*value); }
-
-    // Access error
-    IPSetError& get_error() { return *error; }
-    const IPSetError& get_error() const { return *error; }
-};
-
-// Specialization for void
-template<>
-struct IPSetResult<void> {
-    std::optional<IPSetError> error;
-
-    // Constructors
-    IPSetResult() = default;  // Success
-    IPSetResult(IPSetError&& err) : error(std::move(err)) {}
-    IPSetResult(const IPSetError& err) : error(err) {}
-
-    // Check if has value (no error)
-    explicit operator bool() const { return !error.has_value(); }
-    bool has_value() const { return !error.has_value(); }
-
-    // Access error
-    IPSetError& get_error() { return *error; }
-    const IPSetError& get_error() const { return *error; }
-};
+using IPSetResult = std::expected<T, IPSetError>;
 
 //===----------------------------------------------------------------------===//
 // IPSet Statistics
@@ -158,7 +116,7 @@ struct IPSetResult<void> {
 
 struct IPSetStats {
     std::string name;
-    uint64_t entry_count{0};  // Renamed from 'entries' to avoid conflict
+    uint64_t entries{0};
     uint64_t references{0};
     uint64_t size_in_memory{0}; ///< Bytes
 
@@ -171,7 +129,7 @@ struct IPSetStats {
         std::optional<std::string> comment;
     };
 
-    std::vector<EntryStats> entries;  // List of entry details
+    std::vector<EntryStats> entries;
 };
 
 //===----------------------------------------------------------------------===//
@@ -190,9 +148,9 @@ public:
     IPSetWrapper(const IPSetWrapper&) = delete;
     IPSetWrapper& operator=(const IPSetWrapper&) = delete;
 
-    // Non-movable (mutex is not movable)
-    IPSetWrapper(IPSetWrapper&&) = delete;
-    IPSetWrapper& operator=(IPSetWrapper&&) = delete;
+    // Movable
+    IPSetWrapper(IPSetWrapper&&) noexcept;
+    IPSetWrapper& operator=(IPSetWrapper&&) noexcept;
 
     //===------------------------------------------------------------------===//
     // Set Management
@@ -273,42 +231,10 @@ public:
     );
 
     /// Test if IP exists in set
-    ///
-    /// ⚠️  PERFORMANCE WARNING: This method is SLOW (~3ms per call) ⚠️
-    ///
-    /// This method spawns a shell process to execute "ipset test", which has
-    /// significant overhead. This is acceptable for the following reasons:
-    ///
-    /// 1. NOT USED IN PRODUCTION HOT PATH:
-    ///    - Packet filtering uses kernel-space iptables/nftables
-    ///    - Kernel performs ipset lookups in <1μs using hash tables
-    ///    - This method exists only for testing/debugging
-    ///
-    /// 2. NO DEDUPLICATION NEEDED BEFORE ADD:
-    ///    - ipset add operations are idempotent (adding duplicates is free)
-    ///    - test() before add() is 200x slower than just adding duplicates
-    ///    - We use in-memory std::unordered_set for batch deduplication
-    ///
-    /// 3. DESIGN PHILOSOPHY:
-    ///    - System commands are simple, maintainable, self-documenting
-    ///    - This slow test() is the trade-off for simplicity elsewhere
-    ///    - Production code path never calls this method
-    ///
-    /// Performance comparison:
-    ///   test() then add():     3000μs + 10μs = 3010μs
-    ///   add() without test():  10μs (ipset ignores duplicates)
-    ///   Speedup:              300x faster to skip test()
-    ///
-    /// If you need fast lookups (review architecture first!), options:
-    /// - In-memory cache: 30 min implementation (see DESIGN_DECISIONS.md)
-    /// - libipset C API: 2 days, breaks simplicity (not recommended)
-    ///
-    /// See: docs/DESIGN_DECISIONS.md - "Decision 2 & 3"
-    ///
     /// @param set_name Set to check
     /// @param ip IP address
     /// @return true if exists
-    /// @note Spawns shell process - SLOW but only used in tests
+    /// @note O(1) kernel hash lookup
     /// @note Thread-safe, read-only operation
     bool test(
         const std::string& set_name,
@@ -386,12 +312,13 @@ private:
     /// Cleanup libipset session
     void cleanup_session();
 
+    /// Execute ipset command via session
+    IPSetResult<void> execute_command(
+        const std::vector<std::string>& args
+    );
+
     /// Parse ipset list output
     std::vector<std::string> parse_list_output(const std::string& output) const;
-
-    /// Internal version of set_exists without mutex lock
-    /// MUST be called while holding mutex_
-    bool set_exists_unlocked(const std::string& set_name) const;
 
     /// Validate IP address format
     bool is_valid_ip(const std::string& ip) const;

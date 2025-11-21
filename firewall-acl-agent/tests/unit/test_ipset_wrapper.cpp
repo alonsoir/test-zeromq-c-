@@ -102,14 +102,14 @@ TEST_F(IPSetWrapperTest, CreateAndDestroySet) {
 
     // Create set
     auto result = wrapper_->create_set(config);
-    ASSERT_TRUE(result) << "Failed to create set: " << result.error().message;
+    ASSERT_TRUE(result) << "Failed to create set: " << result.get_error().message;
 
     // Verify exists
     EXPECT_TRUE(wrapper_->set_exists(TEST_SET_NAME));
 
     // Destroy set
     result = wrapper_->destroy_set(TEST_SET_NAME);
-    ASSERT_TRUE(result) << "Failed to destroy set: " << result.error().message;
+    ASSERT_TRUE(result) << "Failed to destroy set: " << result.get_error().message;
 
     // Verify doesn't exist
     EXPECT_FALSE(wrapper_->set_exists(TEST_SET_NAME));
@@ -125,7 +125,7 @@ TEST_F(IPSetWrapperTest, CreateSetTwiceFails) {
     // Second create should fail
     result = wrapper_->create_set(config);
     EXPECT_FALSE(result);
-    EXPECT_EQ(result.error().code, IPSetErrorCode::SET_ALREADY_EXISTS);
+    EXPECT_EQ(result.get_error().code, IPSetErrorCode::SET_ALREADY_EXISTS);
 }
 
 TEST_F(IPSetWrapperTest, ListSets) {
@@ -164,7 +164,7 @@ TEST_F(IPSetWrapperTest, BatchAddIPs) {
     };
 
     auto result = wrapper_->add_batch(TEST_SET_NAME, entries);
-    ASSERT_TRUE(result) << "Batch add failed: " << result.error().message;
+    ASSERT_TRUE(result) << "Batch add failed: " << result.get_error().message;
 
     // Verify all IPs exist
     for (const auto& entry : entries) {
@@ -185,7 +185,7 @@ TEST_F(IPSetWrapperTest, BatchAddPerformance) {
     auto result = wrapper_->add_batch(TEST_SET_NAME, entries);
     auto end = high_resolution_clock::now();
 
-    ASSERT_TRUE(result) << "Batch add failed: " << result.error().message;
+    ASSERT_TRUE(result) << "Batch add failed: " << result.get_error().message;
 
     auto duration_ms = duration_cast<milliseconds>(end - start).count();
 
@@ -317,7 +317,7 @@ TEST_F(IPSetWrapperTest, AddToNonexistentSet) {
     auto result = wrapper_->add("nonexistent_set", IPSetEntry{"192.168.1.1"});
 
     EXPECT_FALSE(result);
-    EXPECT_EQ(result.error().code, IPSetErrorCode::SET_NOT_FOUND);
+    EXPECT_EQ(result.get_error().code, IPSetErrorCode::SET_NOT_FOUND);
 }
 
 TEST_F(IPSetWrapperTest, InvalidIPFormat) {
@@ -333,8 +333,8 @@ TEST_F(IPSetWrapperTest, InvalidIPFormat) {
     auto result = wrapper_->add_batch(TEST_SET_NAME, entries);
 
     EXPECT_FALSE(result);
-    EXPECT_EQ(result.error().code, IPSetErrorCode::INVALID_IP_FORMAT);
-    EXPECT_EQ(result.error().failed_ips.size(), 2);
+    EXPECT_EQ(result.get_error().code, IPSetErrorCode::INVALID_IP_FORMAT);
+    EXPECT_EQ(result.get_error().failed_ips.size(), 2);
 }
 
 //===----------------------------------------------------------------------===//
@@ -351,9 +351,9 @@ TEST_F(IPSetWrapperTest, GetStatistics) {
     auto result = wrapper_->get_stats(TEST_SET_NAME, false);
     ASSERT_TRUE(result);
 
-    const auto& stats = result.value();
+    const auto& stats = (*result);
     EXPECT_EQ(stats.name, TEST_SET_NAME);
-    EXPECT_EQ(stats.entries, 100);
+    EXPECT_EQ(stats.entry_count, 100);
     EXPECT_GT(stats.size_in_memory, 0);
 }
 

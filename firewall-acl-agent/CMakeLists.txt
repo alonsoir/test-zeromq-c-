@@ -93,14 +93,14 @@ find_package(Threads REQUIRED)
 # TODO: Update this path to point to the real shared protobuf once project structure is set
 # Real path should be: ../../protobuf/network_security.proto (shared between all components)
 # For now, using local protobuf directory for development
-set(PROTO_DIR ../../protobuf)
+set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf)
 set(PROTO_FILE ${PROTO_DIR}/network_security.proto)
 
 # Verify proto file exists
 if(NOT EXISTS ${PROTO_FILE})
     message(FATAL_ERROR
             "Protobuf schema not found: ${PROTO_FILE}\n"
-            "Expected structure: ../../protobuf/network_security.proto"
+            "Expected structure: ml-defender/protobuf/network_security.proto"
     )
 endif()
 
@@ -149,14 +149,14 @@ include_directories(
 # Core components (created so far)
 set(FIREWALL_CORE_SOURCES
         src/core/ipset_wrapper.cpp
-        # src/core/iptables_wrapper.cpp     # TODO: Next to implement
-        # src/core/batch_processor.cpp      # TODO: Next to implement
+        src/core/iptables_wrapper.cpp
+        src/core/batch_processor.cpp
         # src/core/acl_intelligence.cpp     # TODO: Next to implement
 )
 
 # API layer (to be created)
 set(FIREWALL_API_SOURCES
-        # src/api/zmq_subscriber.cpp        # TODO: Next to implement
+        src/api/zmq_subscriber.cpp
 )
 
 # Utilities (to be created)
@@ -168,7 +168,7 @@ set(FIREWALL_UTIL_SOURCES
 
 # Main executable (to be created)
 set(FIREWALL_MAIN_SOURCE
-        # src/main.cpp                      # TODO: Next to implement
+        src/main.cpp
 )
 
 #===----------------------------------------------------------------------===//
@@ -177,7 +177,7 @@ set(FIREWALL_MAIN_SOURCE
 
 add_library(firewall_core STATIC
         ${FIREWALL_CORE_SOURCES}
-        # ${FIREWALL_API_SOURCES}   # Uncomment when implemented
+        ${FIREWALL_API_SOURCES}   # Uncomment when implemented
         # ${FIREWALL_UTIL_SOURCES}  # Uncomment when implemented
 )
 
@@ -204,14 +204,14 @@ target_include_directories(firewall_core
 # Main Executable (TODO: Uncomment when main.cpp is ready)
 #===----------------------------------------------------------------------===//
 
-# add_executable(firewall-acl-agent
-#     ${FIREWALL_MAIN_SOURCE}
-# )
+add_executable(firewall-acl-agent
+     ${FIREWALL_MAIN_SOURCE}
+ )
 #
-# target_link_libraries(firewall-acl-agent
-#     PRIVATE
-#         firewall_core
-# )
+target_link_libraries(firewall-acl-agent
+     PRIVATE
+         firewall_core
+ )
 
 # NOTE: Executable will be created once we have src/main.cpp
 message(STATUS "⚠️  Main executable disabled - waiting for src/main.cpp")
@@ -222,19 +222,19 @@ message(STATUS "   Current focus: Core library and unit tests")
 #===----------------------------------------------------------------------===//
 
 # TODO: Uncomment when firewall-acl-agent executable exists
-# install(TARGETS firewall-acl-agent
-#     RUNTIME DESTINATION bin
-# )
+install(TARGETS firewall-acl-agent
+     RUNTIME DESTINATION bin
+)
 #
-# install(DIRECTORY config/
-#     DESTINATION etc/ml-defender/firewall
-#     FILES_MATCHING PATTERN "*.json"
-# )
+install(DIRECTORY config/
+     DESTINATION etc/ml-defender/firewall
+     FILES_MATCHING PATTERN "*.json"
+)
 #
-# install(FILES systemd/firewall-acl-agent.service
-#     DESTINATION /etc/systemd/system/
-#     OPTIONAL
-# )
+install(FILES systemd/firewall-acl-agent.service
+     DESTINATION /etc/systemd/system/
+     OPTIONAL
+)
 
 message(STATUS "📦 Installation targets disabled - waiting for main executable")
 

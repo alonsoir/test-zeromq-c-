@@ -115,8 +115,8 @@ static std::pair<int, std::string> execute_command(const std::string& cmd) {
 IPSetResult<void> IPSetWrapper::create_set(const IPSetConfig& config) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    // Check if set already exists (use unlocked version - we already have the lock)
-    if (set_exists_unlocked(config.name)) {
+    // Check if set already exists
+    if (set_exists(config.name)) {
         return IPSetResult<void>(IPSetError{
             IPSetErrorCode::SET_ALREADY_EXISTS,
             "Set '" + config.name + "' already exists"
@@ -163,7 +163,7 @@ IPSetResult<void> IPSetWrapper::create_set(const IPSetConfig& config) {
 IPSetResult<void> IPSetWrapper::destroy_set(const std::string& set_name) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!set_exists_unlocked(set_name)) {
+    if (!set_exists(set_name)) {
         return IPSetResult<void>(IPSetError{
             IPSetErrorCode::SET_NOT_FOUND,
             "Set '" + set_name + "' does not exist"
@@ -183,17 +183,13 @@ IPSetResult<void> IPSetWrapper::destroy_set(const std::string& set_name) {
     return IPSetResult<void>();
 }
 
-bool IPSetWrapper::set_exists_unlocked(const std::string& set_name) const {
-    // Internal version - assumes caller already holds mutex_
-    // NO lock here
-    std::string cmd = "ipset list " + set_name + " -n > /dev/null 2>&1";
-    int ret = system(cmd.c_str());
-    return (ret == 0);
-}
-
 bool IPSetWrapper::set_exists(const std::string& set_name) const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return set_exists_unlocked(set_name);
+
+    std::string cmd = "ipset list " + set_name + " -n > /dev/null 2>&1";
+    int ret = system(cmd.c_str());
+
+    return (ret == 0);
 }
 
 std::vector<std::string> IPSetWrapper::list_sets() const {
@@ -226,7 +222,7 @@ std::vector<std::string> IPSetWrapper::list_sets() const {
 IPSetResult<void> IPSetWrapper::flush_set(const std::string& set_name) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!set_exists_unlocked(set_name)) {
+    if (!set_exists(set_name)) {
         return IPSetResult<void>(IPSetError{
             IPSetErrorCode::SET_NOT_FOUND,
             "Set '" + set_name + "' does not exist"
@@ -260,7 +256,7 @@ IPSetResult<void> IPSetWrapper::add_batch(
         return IPSetResult<void>();
     }
 
-    if (!set_exists_unlocked(set_name)) {
+    if (!set_exists(set_name)) {
         return IPSetResult<void>(IPSetError{
             IPSetErrorCode::SET_NOT_FOUND,
             "Set '" + set_name + "' does not exist"
@@ -343,7 +339,7 @@ IPSetResult<void> IPSetWrapper::delete_batch(
         return IPSetResult<void>();
     }
 
-    if (!set_exists_unlocked(set_name)) {
+    if (!set_exists(set_name)) {
         return IPSetResult<void>(IPSetError{
             IPSetErrorCode::SET_NOT_FOUND,
             "Set '" + set_name + "' does not exist"
@@ -449,7 +445,7 @@ IPSetResult<IPSetStats> IPSetWrapper::get_stats(
 ) const {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!set_exists_unlocked(set_name)) {
+    if (!set_exists(set_name)) {
         return IPSetResult<IPSetStats>(IPSetError{
             IPSetErrorCode::SET_NOT_FOUND,
             "Set '" + set_name + "' does not exist"
