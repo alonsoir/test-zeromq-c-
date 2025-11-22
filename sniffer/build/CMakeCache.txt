@@ -240,7 +240,7 @@ CURL_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libcurl.so
 LLVM_STRIP:FILEPATH=/usr/bin/llvm-strip
 
 //Path to a library.
-NUMA_LIBRARY:FILEPATH=NUMA_LIBRARY-NOTFOUND
+NUMA_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libnuma.so
 
 //Arguments to supply to pkg-config
 PKG_CONFIG_ARGN:STRING=

@@ -54,6 +54,12 @@ namespace protobuf {
 class DDoSFeatures;
 struct DDoSFeaturesDefaultTypeInternal;
 extern DDoSFeaturesDefaultTypeInternal _DDoSFeatures_default_instance_;
+class Detection;
+struct DetectionDefaultTypeInternal;
+extern DetectionDefaultTypeInternal _Detection_default_instance_;
+class DetectionBatch;
+struct DetectionBatchDefaultTypeInternal;
+extern DetectionBatchDefaultTypeInternal _DetectionBatch_default_instance_;
 class DistributedNode;
 struct DistributedNodeDefaultTypeInternal;
 extern DistributedNodeDefaultTypeInternal _DistributedNode_default_instance_;
@@ -147,6 +153,8 @@ extern TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUseDefaultTypeInterna
 }  // namespace protobuf
 PROTOBUF_NAMESPACE_OPEN
 template<> ::protobuf::DDoSFeatures* Arena::CreateMaybeMessage<::protobuf::DDoSFeatures>(Arena*);
+template<> ::protobuf::Detection* Arena::CreateMaybeMessage<::protobuf::Detection>(Arena*);
+template<> ::protobuf::DetectionBatch* Arena::CreateMaybeMessage<::protobuf::DetectionBatch>(Arena*);
 template<> ::protobuf::DistributedNode* Arena::CreateMaybeMessage<::protobuf::DistributedNode>(Arena*);
 template<> ::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse>(Arena*);
 template<> ::protobuf::EventBatch* Arena::CreateMaybeMessage<::protobuf::EventBatch>(Arena*);
@@ -409,6 +417,34 @@ inline bool EventBatch_ProcessingMode_Parse(
     ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, EventBatch_ProcessingMode* value) {
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<EventBatch_ProcessingMode>(
     EventBatch_ProcessingMode_descriptor(), name, value);
+}
+enum DetectionType : int {
+  DETECTION_UNKNOWN = 0,
+  DETECTION_DDOS = 1,
+  DETECTION_RANSOMWARE = 2,
+  DETECTION_SUSPICIOUS_TRAFFIC = 3,
+  DETECTION_INTERNAL_THREAT = 4,
+  DetectionType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  DetectionType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool DetectionType_IsValid(int value);
+constexpr DetectionType DetectionType_MIN = DETECTION_UNKNOWN;
+constexpr DetectionType DetectionType_MAX = DETECTION_INTERNAL_THREAT;
+constexpr int DetectionType_ARRAYSIZE = DetectionType_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* DetectionType_descriptor();
+template<typename T>
+inline const std::string& DetectionType_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, DetectionType>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function DetectionType_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    DetectionType_descriptor(), enum_t_value);
+}
+inline bool DetectionType_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, DetectionType* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<DetectionType>(
+    DetectionType_descriptor(), name, value);
 }
 // ===================================================================
 
@@ -8557,6 +8593,423 @@ class RansomwareFeatures final :
     float avg_flow_duration_seconds_;
     float tcp_rst_ratio_;
     float syn_without_ack_ratio_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Detection final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.Detection) */ {
+ public:
+  inline Detection() : Detection(nullptr) {}
+  ~Detection() override;
+  explicit PROTOBUF_CONSTEXPR Detection(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Detection(const Detection& from);
+  Detection(Detection&& from) noexcept
+    : Detection() {
+    *this = ::std::move(from);
+  }
+
+  inline Detection& operator=(const Detection& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Detection& operator=(Detection&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const Detection& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Detection* internal_default_instance() {
+    return reinterpret_cast<const Detection*>(
+               &_Detection_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    31;
+
+  friend void swap(Detection& a, Detection& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Detection* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Detection* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Detection* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Detection>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const Detection& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const Detection& from) {
+    Detection::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Detection* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.Detection";
+  }
+  protected:
+  explicit Detection(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kSrcIpFieldNumber = 1,
+    kDescriptionFieldNumber = 5,
+    kActionFieldNumber = 6,
+    kTypeFieldNumber = 2,
+    kConfidenceFieldNumber = 3,
+    kTimestampFieldNumber = 4,
+    kDurationSecondsFieldNumber = 7,
+  };
+  // string src_ip = 1;
+  void clear_src_ip();
+  const std::string& src_ip() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_src_ip(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_src_ip();
+  PROTOBUF_NODISCARD std::string* release_src_ip();
+  void set_allocated_src_ip(std::string* src_ip);
+  private:
+  const std::string& _internal_src_ip() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_src_ip(const std::string& value);
+  std::string* _internal_mutable_src_ip();
+  public:
+
+  // string description = 5;
+  void clear_description();
+  const std::string& description() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_description(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_description();
+  PROTOBUF_NODISCARD std::string* release_description();
+  void set_allocated_description(std::string* description);
+  private:
+  const std::string& _internal_description() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_description(const std::string& value);
+  std::string* _internal_mutable_description();
+  public:
+
+  // string action = 6;
+  void clear_action();
+  const std::string& action() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_action(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_action();
+  PROTOBUF_NODISCARD std::string* release_action();
+  void set_allocated_action(std::string* action);
+  private:
+  const std::string& _internal_action() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_action(const std::string& value);
+  std::string* _internal_mutable_action();
+  public:
+
+  // .protobuf.DetectionType type = 2;
+  void clear_type();
+  ::protobuf::DetectionType type() const;
+  void set_type(::protobuf::DetectionType value);
+  private:
+  ::protobuf::DetectionType _internal_type() const;
+  void _internal_set_type(::protobuf::DetectionType value);
+  public:
+
+  // float confidence = 3;
+  void clear_confidence();
+  float confidence() const;
+  void set_confidence(float value);
+  private:
+  float _internal_confidence() const;
+  void _internal_set_confidence(float value);
+  public:
+
+  // uint64 timestamp = 4;
+  void clear_timestamp();
+  uint64_t timestamp() const;
+  void set_timestamp(uint64_t value);
+  private:
+  uint64_t _internal_timestamp() const;
+  void _internal_set_timestamp(uint64_t value);
+  public:
+
+  // uint32 duration_seconds = 7;
+  void clear_duration_seconds();
+  uint32_t duration_seconds() const;
+  void set_duration_seconds(uint32_t value);
+  private:
+  uint32_t _internal_duration_seconds() const;
+  void _internal_set_duration_seconds(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.Detection)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr src_ip_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr description_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr action_;
+    int type_;
+    float confidence_;
+    uint64_t timestamp_;
+    uint32_t duration_seconds_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DetectionBatch final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.DetectionBatch) */ {
+ public:
+  inline DetectionBatch() : DetectionBatch(nullptr) {}
+  ~DetectionBatch() override;
+  explicit PROTOBUF_CONSTEXPR DetectionBatch(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DetectionBatch(const DetectionBatch& from);
+  DetectionBatch(DetectionBatch&& from) noexcept
+    : DetectionBatch() {
+    *this = ::std::move(from);
+  }
+
+  inline DetectionBatch& operator=(const DetectionBatch& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DetectionBatch& operator=(DetectionBatch&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DetectionBatch& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DetectionBatch* internal_default_instance() {
+    return reinterpret_cast<const DetectionBatch*>(
+               &_DetectionBatch_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    32;
+
+  friend void swap(DetectionBatch& a, DetectionBatch& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DetectionBatch* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DetectionBatch* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DetectionBatch* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DetectionBatch>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DetectionBatch& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DetectionBatch& from) {
+    DetectionBatch::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DetectionBatch* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.DetectionBatch";
+  }
+  protected:
+  explicit DetectionBatch(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kDetectionsFieldNumber = 1,
+    kBatchTimestampFieldNumber = 3,
+    kBatchIdFieldNumber = 2,
+  };
+  // repeated .protobuf.Detection detections = 1;
+  int detections_size() const;
+  private:
+  int _internal_detections_size() const;
+  public:
+  void clear_detections();
+  ::protobuf::Detection* mutable_detections(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::Detection >*
+      mutable_detections();
+  private:
+  const ::protobuf::Detection& _internal_detections(int index) const;
+  ::protobuf::Detection* _internal_add_detections();
+  public:
+  const ::protobuf::Detection& detections(int index) const;
+  ::protobuf::Detection* add_detections();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::Detection >&
+      detections() const;
+
+  // .google.protobuf.Timestamp batch_timestamp = 3;
+  bool has_batch_timestamp() const;
+  private:
+  bool _internal_has_batch_timestamp() const;
+  public:
+  void clear_batch_timestamp();
+  const ::PROTOBUF_NAMESPACE_ID::Timestamp& batch_timestamp() const;
+  PROTOBUF_NODISCARD ::PROTOBUF_NAMESPACE_ID::Timestamp* release_batch_timestamp();
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* mutable_batch_timestamp();
+  void set_allocated_batch_timestamp(::PROTOBUF_NAMESPACE_ID::Timestamp* batch_timestamp);
+  private:
+  const ::PROTOBUF_NAMESPACE_ID::Timestamp& _internal_batch_timestamp() const;
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* _internal_mutable_batch_timestamp();
+  public:
+  void unsafe_arena_set_allocated_batch_timestamp(
+      ::PROTOBUF_NAMESPACE_ID::Timestamp* batch_timestamp);
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* unsafe_arena_release_batch_timestamp();
+
+  // uint64 batch_id = 2;
+  void clear_batch_id();
+  uint64_t batch_id() const;
+  void set_batch_id(uint64_t value);
+  private:
+  uint64_t _internal_batch_id() const;
+  void _internal_set_batch_id(uint64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.DetectionBatch)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::Detection > detections_;
+    ::PROTOBUF_NAMESPACE_ID::Timestamp* batch_timestamp_;
+    uint64_t batch_id_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -21162,9 +21615,396 @@ inline void RansomwareFeatures::set_syn_without_ack_ratio(float value) {
   // @@protoc_insertion_point(field_set:protobuf.RansomwareFeatures.syn_without_ack_ratio)
 }
 
+// -------------------------------------------------------------------
+
+// Detection
+
+// string src_ip = 1;
+inline void Detection::clear_src_ip() {
+  _impl_.src_ip_.ClearToEmpty();
+}
+inline const std::string& Detection::src_ip() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.src_ip)
+  return _internal_src_ip();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Detection::set_src_ip(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.src_ip_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.Detection.src_ip)
+}
+inline std::string* Detection::mutable_src_ip() {
+  std::string* _s = _internal_mutable_src_ip();
+  // @@protoc_insertion_point(field_mutable:protobuf.Detection.src_ip)
+  return _s;
+}
+inline const std::string& Detection::_internal_src_ip() const {
+  return _impl_.src_ip_.Get();
+}
+inline void Detection::_internal_set_src_ip(const std::string& value) {
+  
+  _impl_.src_ip_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Detection::_internal_mutable_src_ip() {
+  
+  return _impl_.src_ip_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Detection::release_src_ip() {
+  // @@protoc_insertion_point(field_release:protobuf.Detection.src_ip)
+  return _impl_.src_ip_.Release();
+}
+inline void Detection::set_allocated_src_ip(std::string* src_ip) {
+  if (src_ip != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.src_ip_.SetAllocated(src_ip, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.src_ip_.IsDefault()) {
+    _impl_.src_ip_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.Detection.src_ip)
+}
+
+// .protobuf.DetectionType type = 2;
+inline void Detection::clear_type() {
+  _impl_.type_ = 0;
+}
+inline ::protobuf::DetectionType Detection::_internal_type() const {
+  return static_cast< ::protobuf::DetectionType >(_impl_.type_);
+}
+inline ::protobuf::DetectionType Detection::type() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.type)
+  return _internal_type();
+}
+inline void Detection::_internal_set_type(::protobuf::DetectionType value) {
+  
+  _impl_.type_ = value;
+}
+inline void Detection::set_type(::protobuf::DetectionType value) {
+  _internal_set_type(value);
+  // @@protoc_insertion_point(field_set:protobuf.Detection.type)
+}
+
+// float confidence = 3;
+inline void Detection::clear_confidence() {
+  _impl_.confidence_ = 0;
+}
+inline float Detection::_internal_confidence() const {
+  return _impl_.confidence_;
+}
+inline float Detection::confidence() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.confidence)
+  return _internal_confidence();
+}
+inline void Detection::_internal_set_confidence(float value) {
+  
+  _impl_.confidence_ = value;
+}
+inline void Detection::set_confidence(float value) {
+  _internal_set_confidence(value);
+  // @@protoc_insertion_point(field_set:protobuf.Detection.confidence)
+}
+
+// uint64 timestamp = 4;
+inline void Detection::clear_timestamp() {
+  _impl_.timestamp_ = uint64_t{0u};
+}
+inline uint64_t Detection::_internal_timestamp() const {
+  return _impl_.timestamp_;
+}
+inline uint64_t Detection::timestamp() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.timestamp)
+  return _internal_timestamp();
+}
+inline void Detection::_internal_set_timestamp(uint64_t value) {
+  
+  _impl_.timestamp_ = value;
+}
+inline void Detection::set_timestamp(uint64_t value) {
+  _internal_set_timestamp(value);
+  // @@protoc_insertion_point(field_set:protobuf.Detection.timestamp)
+}
+
+// string description = 5;
+inline void Detection::clear_description() {
+  _impl_.description_.ClearToEmpty();
+}
+inline const std::string& Detection::description() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.description)
+  return _internal_description();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Detection::set_description(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.description_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.Detection.description)
+}
+inline std::string* Detection::mutable_description() {
+  std::string* _s = _internal_mutable_description();
+  // @@protoc_insertion_point(field_mutable:protobuf.Detection.description)
+  return _s;
+}
+inline const std::string& Detection::_internal_description() const {
+  return _impl_.description_.Get();
+}
+inline void Detection::_internal_set_description(const std::string& value) {
+  
+  _impl_.description_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Detection::_internal_mutable_description() {
+  
+  return _impl_.description_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Detection::release_description() {
+  // @@protoc_insertion_point(field_release:protobuf.Detection.description)
+  return _impl_.description_.Release();
+}
+inline void Detection::set_allocated_description(std::string* description) {
+  if (description != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.description_.SetAllocated(description, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.description_.IsDefault()) {
+    _impl_.description_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.Detection.description)
+}
+
+// string action = 6;
+inline void Detection::clear_action() {
+  _impl_.action_.ClearToEmpty();
+}
+inline const std::string& Detection::action() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.action)
+  return _internal_action();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Detection::set_action(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.action_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.Detection.action)
+}
+inline std::string* Detection::mutable_action() {
+  std::string* _s = _internal_mutable_action();
+  // @@protoc_insertion_point(field_mutable:protobuf.Detection.action)
+  return _s;
+}
+inline const std::string& Detection::_internal_action() const {
+  return _impl_.action_.Get();
+}
+inline void Detection::_internal_set_action(const std::string& value) {
+  
+  _impl_.action_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Detection::_internal_mutable_action() {
+  
+  return _impl_.action_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Detection::release_action() {
+  // @@protoc_insertion_point(field_release:protobuf.Detection.action)
+  return _impl_.action_.Release();
+}
+inline void Detection::set_allocated_action(std::string* action) {
+  if (action != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.action_.SetAllocated(action, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.action_.IsDefault()) {
+    _impl_.action_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.Detection.action)
+}
+
+// uint32 duration_seconds = 7;
+inline void Detection::clear_duration_seconds() {
+  _impl_.duration_seconds_ = 0u;
+}
+inline uint32_t Detection::_internal_duration_seconds() const {
+  return _impl_.duration_seconds_;
+}
+inline uint32_t Detection::duration_seconds() const {
+  // @@protoc_insertion_point(field_get:protobuf.Detection.duration_seconds)
+  return _internal_duration_seconds();
+}
+inline void Detection::_internal_set_duration_seconds(uint32_t value) {
+  
+  _impl_.duration_seconds_ = value;
+}
+inline void Detection::set_duration_seconds(uint32_t value) {
+  _internal_set_duration_seconds(value);
+  // @@protoc_insertion_point(field_set:protobuf.Detection.duration_seconds)
+}
+
+// -------------------------------------------------------------------
+
+// DetectionBatch
+
+// repeated .protobuf.Detection detections = 1;
+inline int DetectionBatch::_internal_detections_size() const {
+  return _impl_.detections_.size();
+}
+inline int DetectionBatch::detections_size() const {
+  return _internal_detections_size();
+}
+inline void DetectionBatch::clear_detections() {
+  _impl_.detections_.Clear();
+}
+inline ::protobuf::Detection* DetectionBatch::mutable_detections(int index) {
+  // @@protoc_insertion_point(field_mutable:protobuf.DetectionBatch.detections)
+  return _impl_.detections_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::Detection >*
+DetectionBatch::mutable_detections() {
+  // @@protoc_insertion_point(field_mutable_list:protobuf.DetectionBatch.detections)
+  return &_impl_.detections_;
+}
+inline const ::protobuf::Detection& DetectionBatch::_internal_detections(int index) const {
+  return _impl_.detections_.Get(index);
+}
+inline const ::protobuf::Detection& DetectionBatch::detections(int index) const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionBatch.detections)
+  return _internal_detections(index);
+}
+inline ::protobuf::Detection* DetectionBatch::_internal_add_detections() {
+  return _impl_.detections_.Add();
+}
+inline ::protobuf::Detection* DetectionBatch::add_detections() {
+  ::protobuf::Detection* _add = _internal_add_detections();
+  // @@protoc_insertion_point(field_add:protobuf.DetectionBatch.detections)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::Detection >&
+DetectionBatch::detections() const {
+  // @@protoc_insertion_point(field_list:protobuf.DetectionBatch.detections)
+  return _impl_.detections_;
+}
+
+// uint64 batch_id = 2;
+inline void DetectionBatch::clear_batch_id() {
+  _impl_.batch_id_ = uint64_t{0u};
+}
+inline uint64_t DetectionBatch::_internal_batch_id() const {
+  return _impl_.batch_id_;
+}
+inline uint64_t DetectionBatch::batch_id() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionBatch.batch_id)
+  return _internal_batch_id();
+}
+inline void DetectionBatch::_internal_set_batch_id(uint64_t value) {
+  
+  _impl_.batch_id_ = value;
+}
+inline void DetectionBatch::set_batch_id(uint64_t value) {
+  _internal_set_batch_id(value);
+  // @@protoc_insertion_point(field_set:protobuf.DetectionBatch.batch_id)
+}
+
+// .google.protobuf.Timestamp batch_timestamp = 3;
+inline bool DetectionBatch::_internal_has_batch_timestamp() const {
+  return this != internal_default_instance() && _impl_.batch_timestamp_ != nullptr;
+}
+inline bool DetectionBatch::has_batch_timestamp() const {
+  return _internal_has_batch_timestamp();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Timestamp& DetectionBatch::_internal_batch_timestamp() const {
+  const ::PROTOBUF_NAMESPACE_ID::Timestamp* p = _impl_.batch_timestamp_;
+  return p != nullptr ? *p : reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Timestamp&>(
+      ::PROTOBUF_NAMESPACE_ID::_Timestamp_default_instance_);
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Timestamp& DetectionBatch::batch_timestamp() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionBatch.batch_timestamp)
+  return _internal_batch_timestamp();
+}
+inline void DetectionBatch::unsafe_arena_set_allocated_batch_timestamp(
+    ::PROTOBUF_NAMESPACE_ID::Timestamp* batch_timestamp) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.batch_timestamp_);
+  }
+  _impl_.batch_timestamp_ = batch_timestamp;
+  if (batch_timestamp) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.DetectionBatch.batch_timestamp)
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DetectionBatch::release_batch_timestamp() {
+  
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* temp = _impl_.batch_timestamp_;
+  _impl_.batch_timestamp_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DetectionBatch::unsafe_arena_release_batch_timestamp() {
+  // @@protoc_insertion_point(field_release:protobuf.DetectionBatch.batch_timestamp)
+  
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* temp = _impl_.batch_timestamp_;
+  _impl_.batch_timestamp_ = nullptr;
+  return temp;
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DetectionBatch::_internal_mutable_batch_timestamp() {
+  
+  if (_impl_.batch_timestamp_ == nullptr) {
+    auto* p = CreateMaybeMessage<::PROTOBUF_NAMESPACE_ID::Timestamp>(GetArenaForAllocation());
+    _impl_.batch_timestamp_ = p;
+  }
+  return _impl_.batch_timestamp_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DetectionBatch::mutable_batch_timestamp() {
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* _msg = _internal_mutable_batch_timestamp();
+  // @@protoc_insertion_point(field_mutable:protobuf.DetectionBatch.batch_timestamp)
+  return _msg;
+}
+inline void DetectionBatch::set_allocated_batch_timestamp(::PROTOBUF_NAMESPACE_ID::Timestamp* batch_timestamp) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.batch_timestamp_);
+  }
+  if (batch_timestamp) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(batch_timestamp));
+    if (message_arena != submessage_arena) {
+      batch_timestamp = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, batch_timestamp, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.batch_timestamp_ = batch_timestamp;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DetectionBatch.batch_timestamp)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
@@ -21271,6 +22111,11 @@ template <> struct is_proto_enum< ::protobuf::EventBatch_ProcessingMode> : ::std
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::protobuf::EventBatch_ProcessingMode>() {
   return ::protobuf::EventBatch_ProcessingMode_descriptor();
+}
+template <> struct is_proto_enum< ::protobuf::DetectionType> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::protobuf::DetectionType>() {
+  return ::protobuf::DetectionType_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

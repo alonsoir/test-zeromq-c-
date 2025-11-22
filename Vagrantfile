@@ -4,8 +4,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.name = "ml-detector-lab"
-    vb.memory = "8192"    # ← Cambiar de 4096 a 8192 (8GB)
-    vb.cpus = 6           # ← Cambiar de 4 a 6 CPUs
+    vb.memory = "8192"
+    vb.cpus = 6
 
     # Optimizaciones para red
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
@@ -19,53 +19,54 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--usb", "off"]
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
   end
+
   # ════════════════════════════════════════════════════════════════════════
-    # Provisioning: Configuración de Red para Sniffer XDP + Modo Promiscuo
-    # ════════════════════════════════════════════════════════════════════════
-    config.vm.provision "shell", run: "always", inline: <<-SHELL
-      echo "🔧 Configurando eth2 para captura de tráfico..."
+  # Provisioning: Configuración de Red para Sniffer XDP + Modo Promiscuo
+  # ════════════════════════════════════════════════════════════════════════
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+    echo "🔧 Configurando eth2 para captura de tráfico..."
 
-      # 1. Instalar ethtool (idempotente)
-      if ! command -v ethtool &> /dev/null; then
-        echo "📦 Instalando ethtool..."
-        apt-get update -qq
-        apt-get install -y ethtool
-      else
-        echo "✅ ethtool ya instalado"
-      fi
+    # 1. Instalar ethtool (idempotente)
+    if ! command -v ethtool &> /dev/null; then
+      echo "📦 Instalando ethtool..."
+      apt-get update -qq
+      apt-get install -y ethtool
+    else
+      echo "✅ ethtool ya instalado"
+    fi
 
-      # 2. Activar modo promiscuo en eth2
-      echo "🔍 Activando modo promiscuo en eth2..."
-      ip link set eth2 promisc on
+    # 2. Activar modo promiscuo en eth2
+    echo "🔍 Activando modo promiscuo en eth2..."
+    ip link set eth2 promisc on
 
-      # 3. Desactivar offloading features incompatibles con XDP
-      echo "⚙️  Desactivando offloading features..."
-      ethtool -K eth2 gro off 2>/dev/null || true
-      ethtool -K eth2 tx-checksum-ip-generic off 2>/dev/null || true
-      ethtool -K eth2 tso off 2>/dev/null || true
-      ethtool -K eth2 gso off 2>/dev/null || true
+    # 3. Desactivar offloading features incompatibles con XDP
+    echo "⚙️  Desactivando offloading features..."
+    ethtool -K eth2 gro off 2>/dev/null || true
+    ethtool -K eth2 tx-checksum-ip-generic off 2>/dev/null || true
+    ethtool -K eth2 tso off 2>/dev/null || true
+    ethtool -K eth2 gso off 2>/dev/null || true
 
-      # 4. Verificar configuración
-      echo ""
-      echo "═══════════════════════════════════════════════════════════"
-      echo "✅ CONFIGURACIÓN DE eth2 APLICADA"
-      echo "═══════════════════════════════════════════════════════════"
+    # 4. Verificar configuración
+    echo ""
+    echo "═══════════════════════════════════════════════════════════"
+    echo "✅ CONFIGURACIÓN DE eth2 APLICADA"
+    echo "═══════════════════════════════════════════════════════════"
 
-      # Modo promiscuo
-      if ip link show eth2 | grep -q PROMISC; then
-        echo "✅ Modo promiscuo: ACTIVO"
-      else
-        echo "❌ Modo promiscuo: INACTIVO"
-      fi
+    # Modo promiscuo
+    if ip link show eth2 | grep -q PROMISC; then
+      echo "✅ Modo promiscuo: ACTIVO"
+    else
+      echo "❌ Modo promiscuo: INACTIVO"
+    fi
 
-      # Offloading features
-      echo ""
-      echo "Offloading features:"
-      ethtool -k eth2 | grep -E 'generic-receive-offload|tx-checksumming|tcp-segmentation-offload|generic-segmentation-offload' | head -4
+    # Offloading features
+    echo ""
+    echo "Offloading features:"
+    ethtool -k eth2 | grep -E 'generic-receive-offload|tx-checksumming|tcp-segmentation-offload|generic-segmentation-offload' | head -4
 
-      echo "═══════════════════════════════════════════════════════════"
-      echo ""
-    SHELL
+    echo "═══════════════════════════════════════════════════════════"
+    echo ""
+  SHELL
 
   config.vm.network "private_network", ip: "192.168.56.20"
   config.vm.network "public_network", bridge: "en0: Wi-Fi"
@@ -152,6 +153,15 @@ Vagrant.configure("2") do |config|
       nlohmann-json3-dev
 
     # ========================================
+    # FIREWALL ACL AGENT SPECIFIC
+    # ========================================
+    echo "📦 Installing Firewall dependencies..."
+    apt-get install -y \
+      iptables \
+      ipset \
+      libxtables-dev
+
+    # ========================================
     # PYTHON ENVIRONMENT (Minimal - only for scripts, not ML)
     # ========================================
     echo "📦 Installing Python (minimal)..."
@@ -216,6 +226,25 @@ Vagrant.configure("2") do |config|
     fi
 
     # ========================================
+    # SUDOERS CONFIGURATION (NO PASSWORD FOR SNIFFER + FIREWALL)
+    # ========================================
+    echo "🔐 Configuring sudoers for sniffer and firewall..."
+    if ! grep -q "vagrant ALL=(ALL) NOPASSWD: /vagrant/sniffer/build/sniffer" /etc/sudoers.d/ml-defender 2>/dev/null; then
+      cat > /etc/sudoers.d/ml-defender << 'EOF'
+# ML Defender - Allow sniffer and firewall to run without password
+vagrant ALL=(ALL) NOPASSWD: /vagrant/sniffer/build/sniffer
+vagrant ALL=(ALL) NOPASSWD: /vagrant/firewall-acl-agent/build/firewall-acl-agent
+vagrant ALL=(ALL) NOPASSWD: /usr/sbin/iptables
+vagrant ALL=(ALL) NOPASSWD: /usr/sbin/ipset
+vagrant ALL=(ALL) NOPASSWD: /usr/bin/pkill
+EOF
+      chmod 0440 /etc/sudoers.d/ml-defender
+      echo "✅ Sudoers configured"
+    else
+      echo "✅ Sudoers already configured"
+    fi
+
+    # ========================================
     # CONFIGURATION
     # ========================================
     echo "⚙️  Configuring system..."
@@ -233,6 +262,19 @@ Vagrant.configure("2") do |config|
     fi
 
     # ========================================
+    # DIRECTORY STRUCTURE
+    # ========================================
+    echo "📁 Creating directory structure..."
+    mkdir -p /vagrant/ml-detector/models/production/level1
+    mkdir -p /vagrant/ml-detector/models/production/level2
+    mkdir -p /vagrant/ml-detector/models/production/level3
+    mkdir -p /vagrant/ml-training/outputs/onnx
+    mkdir -p /vagrant/firewall-acl-agent/build/logs
+    mkdir -p /var/log/ml-defender
+    chown -R vagrant:vagrant /var/log/ml-defender
+    chmod 755 /var/log/ml-defender
+
+    # ========================================
     # PROTOBUF GENERATION
     # ========================================
     if [ -f /vagrant/protobuf/generate.sh ] && [ ! -f /vagrant/protobuf/network_security.pb.cc ]; then
@@ -240,42 +282,59 @@ Vagrant.configure("2") do |config|
       cd /vagrant/protobuf && ./generate.sh
     fi
 
-    # ========================================
-    # DIRECTORY STRUCTURE FOR MODELS
-    # ========================================
-    echo "📁 Creating model directories..."
-    mkdir -p /vagrant/ml-detector/models/production/level1
-    mkdir -p /vagrant/ml-detector/models/production/level2
-    mkdir -p /vagrant/ml-detector/models/production/level3
-    mkdir -p /vagrant/ml-training/outputs/onnx
+    # Copy protobuf to firewall
+    if [ -f /vagrant/protobuf/network_security.pb.cc ]; then
+      echo "📋 Copying protobuf to firewall..."
+      mkdir -p /vagrant/firewall-acl-agent/proto
+      cp /vagrant/protobuf/network_security.pb.cc /vagrant/firewall-acl-agent/proto/
+      cp /vagrant/protobuf/network_security.pb.h /vagrant/firewall-acl-agent/proto/
+    fi
 
     # ========================================
-    # BASH ALIASES (UPDATED WITH ML WORKFLOW)
+    # BUILD FIREWALL ON FIRST PROVISION
     # ========================================
-    if ! grep -q "build-sniffer" /home/vagrant/.bashrc; then
+    if [ ! -f /vagrant/firewall-acl-agent/build/firewall-acl-agent ]; then
+      echo "🔨 Building Firewall ACL Agent..."
+      mkdir -p /vagrant/firewall-acl-agent/build
+      cd /vagrant/firewall-acl-agent/build
+      cmake .. && make -j4 || echo "⚠️  Firewall build failed (will retry with 'make firewall')"
+    fi
+
+    # ========================================
+    # BASH ALIASES (UPDATED WITH FIREWALL)
+    # ========================================
+    if ! grep -q "build-firewall" /home/vagrant/.bashrc; then
       cat >> /home/vagrant/.bashrc << 'EOF'
 
 # ========================================
-# ML Detector Development Aliases
+# ML Defender Development Aliases
 # ========================================
 
 # Building
 alias build-sniffer='cd /vagrant/sniffer && make'
 alias build-detector='cd /vagrant/ml-detector/build && rm -rf * && cmake .. && make -j4'
-alias proto-regen='cd /vagrant/protobuf && ./generate.sh'
+alias build-firewall='cd /vagrant/firewall-acl-agent/build && rm -rf * && cmake .. && make -j4'
+alias proto-regen='cd /vagrant/protobuf && ./generate.sh && cp network_security.pb.* /vagrant/firewall-acl-agent/proto/'
 
-# Running
-alias run-sniffer='cd /vagrant/sniffer/build && sudo ./sniffer --verbose'
-alias run-detector='cd /vagrant/ml-detector/build && ./ml-detector --verbose'
+# Running (individual components)
+alias run-firewall='cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent -c ../config/firewall.json'
+alias run-detector='cd /vagrant/ml-detector/build && ./ml-detector -c config/ml_detector_config.json'
+alias run-sniffer='cd /vagrant/sniffer/build && sudo ./sniffer -c config/sniffer.json'
+
+# Running (full lab)
+alias run-lab='cd /vagrant && bash scripts/run_lab_dev.sh'
+alias kill-lab='sudo pkill -9 firewall-acl-agent; pkill -9 ml-detector; sudo pkill -9 sniffer'
+alias status-lab='pgrep -a firewall-acl-agent; pgrep -a ml-detector; pgrep -a sniffer'
 
 # ML Model Deployment (from host macOS training)
 alias sync-models='rsync -av /vagrant/ml-training/outputs/onnx/*.onnx /vagrant/ml-detector/models/production/ 2>/dev/null && echo "✅ Models synced from host" || echo "⚠️  No models found in ml-training/outputs/onnx/"'
 alias list-models='echo "Available ONNX models:" && find /vagrant/ml-detector/models/production -name "*.onnx" -exec ls -lh {} \;'
-alias verify-onnx='python3 -c "import onnxruntime as rt; print(f\"ONNX Runtime: {rt.__version__}\")" 2>/dev/null || echo "⚠️  Python ONNX Runtime not needed (using C++)"'
 
 # Logs
-alias logs-sniffer='tail -f /vagrant/sniffer/build/logs/*.log 2>/dev/null || echo "No logs yet"'
+alias logs-firewall='tail -f /vagrant/firewall-acl-agent/build/logs/*.log /var/log/ml-defender/firewall-acl-agent.log 2>/dev/null || echo "No logs yet"'
 alias logs-detector='tail -f /vagrant/ml-detector/build/logs/*.log 2>/dev/null || echo "No logs yet"'
+alias logs-sniffer='tail -f /vagrant/sniffer/build/logs/*.log 2>/dev/null || echo "No logs yet"'
+alias logs-lab='cd /vagrant && bash scripts/monitor_lab.sh'
 
 # Shortcuts
 export PROJECT_ROOT="/vagrant"
@@ -285,29 +344,41 @@ export MODELS_DIR="/vagrant/ml-detector/models/production"
 cat << 'WELCOME'
 
 ╔════════════════════════════════════════════════════════════╗
-║  ML Network Security Detector - Development Environment    ║
+║  ML Defender - Network Security Pipeline                   ║
+║  Development Environment                                   ║
 ╚════════════════════════════════════════════════════════════╝
 
-🎯 Workflow:
-  1. Train models on HOST macOS:
-     cd ~/Code/test-zeromq-docker/ml-training
-     python scripts/train_level2_ddos_binary_optimized.py
-     python scripts/convert_level2_ddos_to_onnx.py
+🎯 Pipeline Architecture:
+   Sniffer (eBPF/XDP) → ML Detector → Firewall ACL Agent
+      PUSH 5571           PUB 5572       SUB 5572
 
-  2. Models auto-sync via shared folder → /vagrant/ml-training/outputs/onnx/
+🚀 Quick Start:
+   run-lab              # Start full pipeline (background + monitor)
+   kill-lab             # Stop all components
+   status-lab           # Check component status
+   logs-lab             # View combined logs
 
-  3. Deploy to detector:
-     sync-models  # Copy ONNX to detector models/
+📦 Individual Components:
+   run-firewall         # Start firewall (Terminal 1)
+   run-detector         # Start detector (Terminal 2)
+   run-sniffer          # Start sniffer (Terminal 3)
 
-  4. Build & run:
-     build-detector
-     run-detector
+🔨 Building:
+   build-sniffer        # Compile sniffer
+   build-detector       # Compile ml-detector
+   build-firewall       # Compile firewall-acl-agent
+   proto-regen          # Regenerate protobuf + sync
 
-📚 Useful Commands:
-  build-sniffer, build-detector   - Compile components
-  run-sniffer, run-detector       - Execute components
-  sync-models, list-models        - Manage ML models
-  logs-sniffer, logs-detector     - View logs
+📚 ML Model Workflow:
+   1. Train on HOST macOS: cd ml-training && python scripts/train_*.py
+   2. Models auto-sync: ml-training/outputs/onnx/ → detector/models/
+   3. Deploy: sync-models && build-detector
+
+📊 Monitoring:
+   logs-firewall        # Firewall logs
+   logs-detector        # Detector logs
+   logs-sniffer         # Sniffer logs
+   logs-lab             # Combined monitoring
 
 WELCOME
 EOF
@@ -346,6 +417,11 @@ EOF
     echo "  spdlog:   $(pkg-config --modversion spdlog 2>/dev/null || echo 'header-only')"
     echo ""
 
+    echo "🔥 Firewall:"
+    echo "  iptables: $(iptables --version 2>/dev/null | head -1 || echo '❌ MISSING')"
+    echo "  ipset:    $(ipset --version 2>/dev/null | head -1 || echo '❌ MISSING')"
+    echo ""
+
     echo "📦 Protobuf:"
     echo "  Runtime:  $(dpkg -l | grep libprotobuf32 | awk '{print $3}' || echo '❌ MISSING')"
     echo "  Dev:      $(dpkg -l | grep libprotobuf-dev | awk '{print $3}' || echo '❌ MISSING')"
@@ -360,21 +436,20 @@ EOF
     echo "  Version:  $(python3 --version 2>/dev/null || echo '❌ MISSING')"
     echo ""
 
-    echo "📁 Model Directories:"
-    ls -ld /vagrant/ml-detector/models/production/level{1,2,3} 2>/dev/null || echo "  Creating..."
+    echo "📁 Build Status:"
+    [ -f /vagrant/sniffer/build/sniffer ] && echo "  Sniffer:  ✅" || echo "  Sniffer:  ❌"
+    [ -f /vagrant/ml-detector/build/ml-detector ] && echo "  Detector: ✅" || echo "  Detector: ❌"
+    [ -f /vagrant/firewall-acl-agent/build/firewall-acl-agent ] && echo "  Firewall: ✅" || echo "  Firewall: ❌"
     echo ""
 
     echo "╔════════════════════════════════════════════════════════════╗"
-    echo "║  ✅ VM Ready - Train models on HOST macOS                  ║"
+    echo "║  ✅ VM Ready - Pipeline Components                         ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
-    echo "Next steps:"
-    echo "  1. On macOS: cd ~/Code/test-zeromq-docker/ml-training"
-    echo "  2. On macOS: python3 -m venv .venv-macos && source .venv-macos/bin/activate"
-    echo "  3. On macOS: pip install pandas numpy scikit-learn onnx onnxruntime skl2onnx ..."
-    echo "  4. On macOS: python scripts/train_level2_ddos_binary_optimized.py"
-    echo "  5. In VM:    vagrant ssh"
-    echo "  6. In VM:    sync-models && build-detector && run-detector"
+    echo "Quick Start:"
+    echo "  vagrant ssh"
+    echo "  run-lab              # Start full pipeline"
+    echo "  logs-lab             # Monitor components"
     echo ""
   SHELL
 end
