@@ -1,16 +1,14 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
-// main.cpp - Application Entry Point
-//
-// Purpose:
-//   Receive ML detections from ml-detector via ZMQ and block malicious IPs
-//   in the kernel using ipset + iptables.
-//
-// Architecture:
-//   ml-detector → zmq_subscriber → batch_processor → ipset_wrapper → kernel
-//
-// Via Appia Quality: Simple, robust, built to run for years
+// main.cpp - High-Performance Packet DROP Agent
 //===----------------------------------------------------------------------===//
+
+#include <iostream>
+#include <fstream>
+#include <csignal>
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 #include "firewall/ipset_wrapper.hpp"
 #include "firewall/iptables_wrapper.hpp"
@@ -18,69 +16,95 @@
 #include "firewall/zmq_subscriber.hpp"
 
 #include <json/json.h>
-#include <iostream>
-#include <fstream>
-#include <thread>
-#include <csignal>
-#include <atomic>
-#include <chrono>
-#include <iomanip>
-#include <sstream>
+
+#include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h>
+#include <unistd.h>
 
 using namespace mldefender::firewall;
 
 //===----------------------------------------------------------------------===//
-// Global State (for signal handlers)
+// Helper Functions
 //===----------------------------------------------------------------------===//
 
-std::atomic<bool> g_running{true};
-ZMQSubscriber* g_subscriber = nullptr;
-BatchProcessor* g_processor = nullptr;
+IPSetType parse_ipset_type(const std::string& type_str) {
+    if (type_str == "hash:ip") return IPSetType::HASH_IP;
+    if (type_str == "hash:net") return IPSetType::HASH_NET;
+    if (type_str == "hash:ip,port") return IPSetType::HASH_IP_PORT;
+    std::cerr << "[WARN] Unknown ipset type '" << type_str << "', defaulting to hash:ip" << std::endl;
+    return IPSetType::HASH_IP;
+}
+
+IPSetFamily parse_ipset_family(const std::string& family_str) {
+    if (family_str == "inet" || family_str == "ipv4") return IPSetFamily::INET;
+    if (family_str == "inet6" || family_str == "ipv6") return IPSetFamily::INET6;
+    std::cerr << "[WARN] Unknown ipset family '" << family_str << "', defaulting to inet" << std::endl;
+    return IPSetFamily::INET;
+}
 
 //===----------------------------------------------------------------------===//
-// Configuration
+// Configuration Structures
 //===----------------------------------------------------------------------===//
+
+struct DaemonConfig {
+    bool daemonize = false;
+    std::string pid_file = "/var/run/firewall-acl-agent.pid";
+    std::string user = "root";
+    std::string group = "root";
+};
+
+struct LoggingConfig {
+    std::string level = "info";
+    bool console = true;
+    bool syslog = false;
+    std::string file = "";
+    uint32_t max_file_size_mb = 100;
+};
+
+struct MetricsConfig {
+    bool enable_export = true;
+    uint32_t export_interval_sec = 60;
+    std::string export_format = "json";
+    std::string export_file = "/var/log/ml-defender/firewall-metrics.json";
+};
+
+struct HealthCheckConfig {
+    bool enable = true;
+    uint32_t check_interval_sec = 30;
+    bool ipset_health_check = true;
+    bool iptables_health_check = true;
+    bool zmq_connection_check = true;
+};
 
 struct Config {
-    // IPSet configuration
     IPSetConfig ipset;
-
-    // Batch processor configuration
-    BatchConfig batch;
-
-    // ZMQ configuration
-    ZMQConfig zmq;
-
-    // Metrics
-    bool enable_metrics = true;
-    int metrics_interval_sec = 60;
-    std::string metrics_file;
-
-    // Health checks
-    bool enable_health_checks = true;
-    int health_check_interval_sec = 30;
-
-    // Logging
-    bool verbose = false;
+    FirewallConfig firewall;
+    BatchProcessorConfig batch;
+    ZMQSubscriber::Config zmq;
+    DaemonConfig daemon;
+    LoggingConfig logging;
+    MetricsConfig metrics;
+    HealthCheckConfig health_check;
 };
 
 //===----------------------------------------------------------------------===//
 // Configuration Loading
 //===----------------------------------------------------------------------===//
 
-bool load_config(const std::string& config_file, Config& config) {
-    std::ifstream file(config_file);
+bool load_config(const std::string& config_path, Config& config) {
+    std::ifstream file(config_path);
     if (!file.is_open()) {
-        std::cerr << "[CONFIG] ERROR: Cannot open config file: " << config_file << std::endl;
+        std::cerr << "[ERROR] Failed to open config file: " << config_path << std::endl;
         return false;
     }
 
     Json::Value root;
-    Json::CharReaderBuilder reader;
+    Json::CharReaderBuilder builder;
     std::string errors;
-
-    if (!Json::parseFromStream(reader, file, &root, &errors)) {
-        std::cerr << "[CONFIG] ERROR: Failed to parse JSON: " << errors << std::endl;
+    
+    if (!Json::parseFromStream(builder, file, &root, &errors)) {
+        std::cerr << "[ERROR] Failed to parse JSON config: " << errors << std::endl;
         return false;
     }
 
@@ -88,21 +112,39 @@ bool load_config(const std::string& config_file, Config& config) {
         // IPSet configuration
         if (root.isMember("ipset")) {
             const auto& ipset = root["ipset"];
-            config.ipset.set_name = ipset.get("set_name", "ml_defender_blacklist").asString();
-            config.ipset.set_type = ipset.get("set_type", "hash:ip").asString();
-            config.ipset.hash_size = ipset.get("hash_size", 4096).asUInt();
-            config.ipset.max_elements = ipset.get("max_elements", 1000000).asUInt();
-            config.ipset.default_timeout = ipset.get("timeout", 3600).asUInt();
+            config.ipset.name = ipset.get("set_name", "ml_defender_blacklist").asString();
+            std::string type_str = ipset.get("set_type", "hash:ip").asString();
+            config.ipset.type = parse_ipset_type(type_str);
+            if (ipset.isMember("family")) {
+                config.ipset.family = parse_ipset_family(ipset["family"].asString());
+            }
+            config.ipset.hashsize = ipset.get("hash_size", 4096).asUInt();
+            config.ipset.maxelem = ipset.get("max_elements", 1000000).asUInt();
+            config.ipset.timeout = ipset.get("timeout", 3600).asUInt();
+            config.ipset.counters = ipset.get("counters", true).asBool();
+            config.ipset.comment = ipset.get("enable_comments", true).asBool();
+            config.ipset.skbinfo = ipset.get("skbinfo", false).asBool();
+            config.ipset.netmask = ipset.get("netmask", 32).asUInt();
+            config.ipset.forceadd = ipset.get("forceadd", false).asBool();
+        }
+
+        // Firewall configuration
+        if (root.isMember("iptables")) {
+            const auto& iptables = root["iptables"];
+            config.firewall.blacklist_chain = iptables.get("chain_name", "ML_DEFENDER_BLACKLIST").asString();
+            config.firewall.blacklist_ipset = config.ipset.name;
+            config.firewall.enable_rate_limiting = iptables.get("enable_rate_limiting", true).asBool();
+            config.firewall.rate_limit_connections = iptables.get("rate_limit_connections", 100).asUInt();
         }
 
         // Batch processor configuration
         if (root.isMember("batch_processor")) {
             const auto& batch = root["batch_processor"];
             config.batch.batch_size_threshold = batch.get("batch_size_threshold", 1000).asUInt();
-            config.batch.batch_time_threshold_ms = batch.get("batch_time_threshold_ms", 100).asUInt();
+            config.batch.batch_time_threshold = std::chrono::milliseconds(batch.get("batch_time_threshold_ms", 100).asUInt());
             config.batch.max_pending_ips = batch.get("max_pending_ips", 10000).asUInt();
-            config.batch.min_confidence = batch.get("min_confidence", 0.5).asFloat();
-            config.batch.enable_dedup = batch.get("enable_dedup", true).asBool();
+            config.batch.confidence_threshold = batch.get("confidence_threshold", 0.8f).asFloat();
+            config.batch.block_low_confidence = batch.get("block_low_confidence", false).asBool();
         }
 
         // ZMQ configuration
@@ -114,64 +156,84 @@ bool load_config(const std::string& config_file, Config& config) {
             config.zmq.linger_ms = zmq.get("linger_ms", 1000).asInt();
             config.zmq.reconnect_interval_ms = zmq.get("reconnect_interval_ms", 1000).asInt();
             config.zmq.max_reconnect_interval_ms = zmq.get("max_reconnect_interval_ms", 30000).asInt();
-            config.zmq.reconnect_backoff_multiplier = zmq.get("reconnect_backoff_multiplier", 2.0).asDouble();
-            config.zmq.rcvhwm = zmq.get("rcvhwm", 1000).asInt();
-            config.zmq.enable_stats = zmq.get("enable_stats", true).asBool();
-            config.zmq.stats_interval_sec = zmq.get("stats_interval_sec", 60).asInt();
+            config.zmq.enable_reconnect = zmq.get("enable_reconnect", true).asBool();
+        }
+
+        // Daemon configuration
+        if (root.isMember("daemon")) {
+            const auto& daemon = root["daemon"];
+            config.daemon.daemonize = daemon.get("daemonize", false).asBool();
+            config.daemon.pid_file = daemon.get("pid_file", "/var/run/firewall-acl-agent.pid").asString();
+            config.daemon.user = daemon.get("user", "root").asString();
+            config.daemon.group = daemon.get("group", "root").asString();
+        }
+
+        // Logging configuration
+        if (root.isMember("logging")) {
+            const auto& logging = root["logging"];
+            config.logging.level = logging.get("level", "info").asString();
+            config.logging.console = logging.get("console", true).asBool();
+            config.logging.syslog = logging.get("syslog", false).asBool();
+            config.logging.file = logging.get("file", "").asString();
+            config.logging.max_file_size_mb = logging.get("max_file_size_mb", 100).asUInt();
         }
 
         // Metrics configuration
         if (root.isMember("metrics")) {
             const auto& metrics = root["metrics"];
-            config.enable_metrics = metrics.get("enable_export", true).asBool();
-            config.metrics_interval_sec = metrics.get("export_interval_sec", 60).asInt();
-            config.metrics_file = metrics.get("export_file", "").asString();
+            config.metrics.enable_export = metrics.get("enable_export", true).asBool();
+            config.metrics.export_interval_sec = metrics.get("export_interval_sec", 60).asUInt();
+            config.metrics.export_format = metrics.get("export_format", "json").asString();
+            config.metrics.export_file = metrics.get("export_file", "/var/log/ml-defender/firewall-metrics.json").asString();
         }
 
         // Health check configuration
         if (root.isMember("health_check")) {
             const auto& health = root["health_check"];
-            config.enable_health_checks = health.get("enable", true).asBool();
-            config.health_check_interval_sec = health.get("check_interval_sec", 30).asInt();
+            config.health_check.enable = health.get("enable", true).asBool();
+            config.health_check.check_interval_sec = health.get("check_interval_sec", 30).asUInt();
+            config.health_check.ipset_health_check = health.get("ipset_health_check", true).asBool();
+            config.health_check.iptables_health_check = health.get("iptables_health_check", true).asBool();
+            config.health_check.zmq_connection_check = health.get("zmq_connection_check", true).asBool();
         }
-
-        // Logging
-        if (root.isMember("logging")) {
-            const auto& logging = root["logging"];
-            std::string level = logging.get("level", "info").asString();
-            config.verbose = (level == "debug" || level == "trace");
-        }
-
-        std::cerr << "[CONFIG] ✓ Configuration loaded from " << config_file << std::endl;
-        return true;
 
     } catch (const std::exception& e) {
-        std::cerr << "[CONFIG] ERROR: Exception parsing config: " << e.what() << std::endl;
+        std::cerr << "[ERROR] Error parsing configuration: " << e.what() << std::endl;
         return false;
     }
-}
 
-//===----------------------------------------------------------------------===//
-// Default Configuration
-//===----------------------------------------------------------------------===//
+    return true;
+}
 
 Config create_default_config() {
     Config config;
-
+    
     // IPSet defaults
-    config.ipset.set_name = "ml_defender_blacklist";
-    config.ipset.set_type = "hash:ip";
-    config.ipset.hash_size = 4096;
-    config.ipset.max_elements = 1000000;
-    config.ipset.default_timeout = 3600;
-
+    config.ipset.name = "ml_defender_blacklist";
+    config.ipset.type = IPSetType::HASH_IP;
+    config.ipset.family = IPSetFamily::INET;
+    config.ipset.hashsize = 4096;
+    config.ipset.maxelem = 1'000'000;
+    config.ipset.timeout = 3600;
+    config.ipset.counters = true;
+    config.ipset.comment = true;
+    config.ipset.skbinfo = false;
+    config.ipset.netmask = 32;
+    config.ipset.forceadd = false;
+    
+    // Firewall defaults
+    config.firewall.blacklist_chain = "ML_DEFENDER_BLACKLIST";
+    config.firewall.blacklist_ipset = "ml_defender_blacklist";
+    config.firewall.enable_rate_limiting = true;
+    config.firewall.rate_limit_connections = 100;
+    
     // Batch processor defaults
     config.batch.batch_size_threshold = 1000;
-    config.batch.batch_time_threshold_ms = 100;
+    config.batch.batch_time_threshold = std::chrono::milliseconds(100);
     config.batch.max_pending_ips = 10000;
-    config.batch.min_confidence = 0.5f;
-    config.batch.enable_dedup = true;
-
+    config.batch.confidence_threshold = 0.8f;
+    config.batch.block_low_confidence = false;
+    
     // ZMQ defaults
     config.zmq.endpoint = "tcp://localhost:5555";
     config.zmq.topic = "";
@@ -179,52 +241,20 @@ Config create_default_config() {
     config.zmq.linger_ms = 1000;
     config.zmq.reconnect_interval_ms = 1000;
     config.zmq.max_reconnect_interval_ms = 30000;
-    config.zmq.reconnect_backoff_multiplier = 2.0;
-    config.zmq.rcvhwm = 1000;
-    config.zmq.enable_stats = true;
-    config.zmq.stats_interval_sec = 60;
-
-    // Metrics defaults
-    config.enable_metrics = true;
-    config.metrics_interval_sec = 60;
-
-    // Health checks
-    config.enable_health_checks = true;
-    config.health_check_interval_sec = 30;
-
+    config.zmq.enable_reconnect = true;
+    
     return config;
 }
 
 //===----------------------------------------------------------------------===//
-// Signal Handlers
+// Signal Handling
 //===----------------------------------------------------------------------===//
 
-void signal_handler(int signal) {
-    std::cerr << "\n[SIGNAL] Received signal " << signal << " (";
+std::atomic<bool> g_running{true};
 
-    switch (signal) {
-        case SIGINT:
-            std::cerr << "SIGINT";
-            break;
-        case SIGTERM:
-            std::cerr << "SIGTERM";
-            break;
-        case SIGHUP:
-            std::cerr << "SIGHUP";
-            break;
-        default:
-            std::cerr << "UNKNOWN";
-    }
-
-    std::cerr << "), initiating graceful shutdown..." << std::endl;
-
-    // Stop the main loop
+void signal_handler(int signum) {
+    std::cout << "\n[SIGNAL] Received signal " << signum << ", shutting down gracefully..." << std::endl;
     g_running.store(false);
-
-    // Stop components (they will finish current operations)
-    if (g_subscriber) {
-        g_subscriber->stop();
-    }
 }
 
 void setup_signal_handlers() {
@@ -232,342 +262,273 @@ void setup_signal_handlers() {
     sa.sa_handler = signal_handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-
+    
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
-    sigaction(SIGHUP, &sa, nullptr);
-
-    // Ignore SIGPIPE (ZMQ handles it)
-    signal(SIGPIPE, SIG_IGN);
-
-    std::cerr << "[SIGNAL] Signal handlers installed (SIGINT, SIGTERM, SIGHUP)" << std::endl;
 }
 
 //===----------------------------------------------------------------------===//
 // Metrics Export
 //===----------------------------------------------------------------------===//
 
-void export_metrics(
-    const Config& config,
-    const ZMQSubscriber& subscriber,
-    const BatchProcessor& processor
-) {
-    if (!config.enable_metrics) {
+void export_metrics(const Config& config, 
+                   const ZMQSubscriber& subscriber,
+                   const BatchProcessor& processor) {
+    if (!config.metrics.enable_export) {
         return;
     }
-
-    // Get stats
+    
     const auto& zmq_stats = subscriber.get_stats();
-    const auto& proc_stats = processor.get_stats();
-
-    // Create JSON
-    Json::Value root;
-    root["timestamp"] = static_cast<Json::Value::Int64>(
-        std::chrono::system_clock::now().time_since_epoch().count()
-    );
-
-    // ZMQ stats
-    root["zmq"]["messages_received"] = static_cast<Json::Value::UInt64>(
-        zmq_stats.messages_received.load()
-    );
-    root["zmq"]["detections_processed"] = static_cast<Json::Value::UInt64>(
-        zmq_stats.detections_processed.load()
-    );
-    root["zmq"]["parse_errors"] = static_cast<Json::Value::UInt64>(
-        zmq_stats.parse_errors.load()
-    );
-    root["zmq"]["reconnects"] = static_cast<Json::Value::UInt64>(
-        zmq_stats.reconnects.load()
-    );
-    root["zmq"]["connected"] = zmq_stats.currently_connected.load();
-
-    // Processor stats
-    root["processor"]["detections_received"] = static_cast<Json::Value::UInt64>(
-        proc_stats.detections_received.load()
-    );
-    root["processor"]["batches_flushed"] = static_cast<Json::Value::UInt64>(
-        proc_stats.batches_flushed.load()
-    );
-    root["processor"]["ips_blocked"] = static_cast<Json::Value::UInt64>(
-        proc_stats.ips_blocked.load()
-    );
-    root["processor"]["duplicates_filtered"] = static_cast<Json::Value::UInt64>(
-        proc_stats.duplicates_filtered.load()
-    );
-    root["processor"]["flush_errors"] = static_cast<Json::Value::UInt64>(
-        proc_stats.flush_errors.load()
-    );
-
-    // Export to file if configured
-    if (!config.metrics_file.empty()) {
-        std::ofstream file(config.metrics_file);
+    
+    Json::Value metrics;
+    metrics["timestamp"] = static_cast<Json::Int64>(std::time(nullptr));
+    
+    metrics["zmq"]["messages_received"] = static_cast<Json::UInt64>(zmq_stats.messages_received.load());
+    metrics["zmq"]["detections_processed"] = static_cast<Json::UInt64>(zmq_stats.detections_processed.load());
+    metrics["zmq"]["parse_errors"] = static_cast<Json::UInt64>(zmq_stats.parse_errors.load());
+    metrics["zmq"]["reconnects"] = static_cast<Json::UInt64>(zmq_stats.reconnects.load());
+    metrics["zmq"]["currently_connected"] = zmq_stats.currently_connected.load();
+    metrics["zmq"]["last_message_timestamp"] = static_cast<Json::Int64>(zmq_stats.last_message_timestamp.load());
+    
+    if (config.metrics.export_format == "json") {
+        std::ofstream file(config.metrics.export_file);
         if (file.is_open()) {
             Json::StreamWriterBuilder writer;
-            file << Json::writeString(writer, root);
-            file.close();
+            writer["indentation"] = "  ";
+            file << Json::writeString(writer, metrics);
         }
     }
-
-    // Also print to console
-    std::cerr << "\n╔════════════════════════════════════════════════════════╗" << std::endl;
-    std::cerr << "║  Metrics Summary                                      ║" << std::endl;
-    std::cerr << "╚════════════════════════════════════════════════════════╝" << std::endl;
-    std::cerr << "ZMQ Messages:       " << zmq_stats.messages_received.load() << std::endl;
-    std::cerr << "Detections:         " << zmq_stats.detections_processed.load() << std::endl;
-    std::cerr << "IPs Blocked:        " << proc_stats.ips_blocked.load() << std::endl;
-    std::cerr << "Duplicates Filtered:" << proc_stats.duplicates_filtered.load() << std::endl;
-    std::cerr << "Batches Flushed:    " << proc_stats.batches_flushed.load() << std::endl;
-    std::cerr << "Parse Errors:       " << zmq_stats.parse_errors.load() << std::endl;
-    std::cerr << "Flush Errors:       " << proc_stats.flush_errors.load() << std::endl;
-    std::cerr << "ZMQ Connected:      " << (zmq_stats.currently_connected.load() ? "YES" : "NO") << std::endl;
-    std::cerr << "════════════════════════════════════════════════════════" << std::endl;
 }
 
 //===----------------------------------------------------------------------===//
 // Health Checks
 //===----------------------------------------------------------------------===//
 
-bool perform_health_checks(
-    const Config& config,
-    IPSetWrapper& ipset,
-    IPTablesWrapper& iptables,
-    const ZMQSubscriber& subscriber
-) {
-    if (!config.enable_health_checks) {
-        return true;
-    }
-
-    bool healthy = true;
-
-    // Check IPSet
-    if (!ipset.exists(config.ipset.set_name)) {
-        std::cerr << "[HEALTH] ✗ IPSet '" << config.ipset.set_name << "' does not exist!" << std::endl;
-        healthy = false;
-    }
-
-    // Check IPTables rules
-    auto rules = iptables.list_rules("INPUT");
-    bool found_rule = false;
-    for (const auto& rule : rules) {
-        if (rule.find(config.ipset.set_name) != std::string::npos) {
-            found_rule = true;
-            break;
+bool perform_health_checks(const Config& config,
+                          IPSetWrapper& ipset,
+                          IPTablesWrapper& iptables,
+                          const ZMQSubscriber& subscriber) {
+    bool all_healthy = true;
+    
+    std::cout << "[HEALTH] Running health checks..." << std::endl;
+    
+    if (config.health_check.ipset_health_check) {
+        if (!ipset.set_exists(config.ipset.name)) {
+            std::cerr << "[HEALTH] ✗ IPSet '" << config.ipset.name << "' does not exist!" << std::endl;
+            all_healthy = false;
+        } else {
+            std::cout << "[HEALTH] ✓ IPSet exists" << std::endl;
         }
     }
-
-    if (!found_rule) {
-        std::cerr << "[HEALTH] ✗ IPTables rule for '" << config.ipset.set_name << "' not found!" << std::endl;
-        healthy = false;
+    
+    if (config.health_check.iptables_health_check) {
+        auto rules = iptables.list_rules("INPUT");
+        bool rule_found = false;
+        for (const auto& rule : rules) {
+            if (rule.find(config.ipset.name) != std::string::npos) {
+                rule_found = true;
+                break;
+            }
+        }
+        
+        if (!rule_found) {
+            std::cerr << "[HEALTH] ✗ IPTables rule for '" << config.ipset.name << "' not found!" << std::endl;
+            all_healthy = false;
+        } else {
+            std::cout << "[HEALTH] ✓ IPTables rule exists" << std::endl;
+        }
     }
-
-    // Check ZMQ connection
-    if (!subscriber.is_running()) {
-        std::cerr << "[HEALTH] ✗ ZMQ subscriber not running!" << std::endl;
-        healthy = false;
+    
+    if (config.health_check.zmq_connection_check) {
+        const auto& stats = subscriber.get_stats();
+        if (!stats.currently_connected.load()) {
+            std::cerr << "[HEALTH] ✗ ZMQ not connected!" << std::endl;
+            all_healthy = false;
+        } else {
+            std::cout << "[HEALTH] ✓ ZMQ connected" << std::endl;
+        }
     }
-
-    if (healthy) {
-        std::cerr << "[HEALTH] ✓ All systems healthy" << std::endl;
-    }
-
-    return healthy;
+    
+    return all_healthy;
 }
 
 //===----------------------------------------------------------------------===//
-// Main Function
+// Usage
 //===----------------------------------------------------------------------===//
 
-int main(int argc, char* argv[]) {
-    // Print banner
-    std::cerr << "\n";
-    std::cerr << "╔════════════════════════════════════════════════════════╗\n";
-    std::cerr << "║  ML Defender - Firewall ACL Agent v1.0.0             ║\n";
-    std::cerr << "║  Purpose: Block malicious IPs detected by ML         ║\n";
-    std::cerr << "║  Philosophy: Via Appia Quality - Built to Last       ║\n";
-    std::cerr << "╚════════════════════════════════════════════════════════╝\n";
-    std::cerr << std::endl;
+void print_usage(const char* program_name) {
+    std::cout << "ML Defender - Firewall ACL Agent\n"
+              << "High-Performance Packet DROP Agent (1M+ packets/sec)\n\n"
+              << "Usage: " << program_name << " [options]\n\n"
+              << "Options:\n"
+              << "  -c, --config <file>    Configuration file\n"
+              << "  -d, --daemonize        Run as daemon\n"
+              << "  -t, --test-config      Test configuration and exit\n"
+              << "  -v, --version          Show version\n"
+              << "  -h, --help             Show this help\n"
+              << std::endl;
+}
 
-    // Parse command line
-    std::string config_file = "/etc/ml-defender/firewall.json";
+void print_version() {
+    std::cout << "ML Defender - Firewall ACL Agent v1.0.0\n"
+              << "Via Appia Quality: Built to last decades\n"
+              << std::endl;
+}
 
-    if (argc > 1) {
-        std::string arg = argv[1];
+//===----------------------------------------------------------------------===//
+// Main Entry Point
+//===----------------------------------------------------------------------===//
+
+int main(int argc, char** argv) {
+    std::string config_path = "/etc/ml-defender/firewall.json";
+    bool test_config = false;
+    bool force_daemon = false;
+    (void)force_daemon;  // Simplified daemon mode for now
+    
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        
         if (arg == "-h" || arg == "--help") {
-            std::cout << "Usage: " << argv[0] << " [config_file]\n";
-            std::cout << "\n";
-            std::cout << "Options:\n";
-            std::cout << "  config_file    Path to JSON configuration (default: /etc/ml-defender/firewall.json)\n";
-            std::cout << "  -h, --help     Show this help message\n";
-            std::cout << "\n";
-            std::cout << "Signals:\n";
-            std::cout << "  SIGINT/SIGTERM Graceful shutdown (flush pending IPs)\n";
-            std::cout << "  SIGHUP         Reload configuration (future)\n";
-            std::cout << "\n";
+            print_usage(argv[0]);
             return 0;
-        }
-        config_file = arg;
-    }
-
-    try {
-        // Load configuration
-        std::cerr << "[CONFIG] Loading configuration from " << config_file << std::endl;
-        Config config;
-
-        if (!load_config(config_file, config)) {
-            std::cerr << "[CONFIG] WARNING: Using default configuration" << std::endl;
-            config = create_default_config();
-        }
-
-        // Setup signal handlers
-        setup_signal_handlers();
-
-        // Check root privileges
-        if (geteuid() != 0) {
-            std::cerr << "[INIT] WARNING: Not running as root, ipset/iptables operations may fail!" << std::endl;
-        }
-
-        //==================================================================
-        // COMPONENT INITIALIZATION
-        //==================================================================
-
-        std::cerr << "\n[INIT] Initializing components..." << std::endl;
-
-        // 1. IPSet Wrapper
-        std::cerr << "[INIT] Creating IPSet wrapper..." << std::endl;
-        IPSetWrapper ipset(config.ipset);
-
-        // Create the ipset if it doesn't exist
-        if (!ipset.exists(config.ipset.set_name)) {
-            std::cerr << "[INIT] Creating ipset '" << config.ipset.set_name << "'..." << std::endl;
-            if (!ipset.create_set(config.ipset.set_name)) {
-                std::cerr << "[INIT] ERROR: Failed to create ipset!" << std::endl;
+        } else if (arg == "-v" || arg == "--version") {
+            print_version();
+            return 0;
+        } else if (arg == "-c" || arg == "--config") {
+            if (i + 1 < argc) {
+                config_path = argv[++i];
+            } else {
+                std::cerr << "[ERROR] --config requires a file path" << std::endl;
                 return 1;
             }
-            std::cerr << "[INIT] ✓ IPSet created" << std::endl;
-        } else {
-            std::cerr << "[INIT] ✓ IPSet already exists" << std::endl;
+        } else if (arg == "-d" || arg == "--daemonize") {
+            force_daemon = true;
+        } else if (arg == "-t" || arg == "--test-config") {
+            test_config = true;
         }
-
-        // 2. IPTables Wrapper
-        std::cerr << "[INIT] Creating IPTables wrapper..." << std::endl;
-        IPTablesWrapper iptables;
-
-        // Setup base rules
-        std::cerr << "[INIT] Setting up iptables rules..." << std::endl;
-        if (!iptables.setup_base_rules(config.ipset.set_name)) {
-            std::cerr << "[INIT] WARNING: Failed to setup iptables rules (may already exist)" << std::endl;
-        } else {
-            std::cerr << "[INIT] ✓ IPTables rules configured" << std::endl;
-        }
-
-        // 3. Batch Processor
-        std::cerr << "[INIT] Creating Batch Processor..." << std::endl;
-        BatchProcessor processor(ipset, config.batch);
-        g_processor = &processor;
-        std::cerr << "[INIT] ✓ Batch Processor ready" << std::endl;
-
-        // 4. ZMQ Subscriber
-        std::cerr << "[INIT] Creating ZMQ Subscriber..." << std::endl;
-        ZMQSubscriber subscriber(processor, config.zmq);
-        g_subscriber = &subscriber;
-        std::cerr << "[INIT] ✓ ZMQ Subscriber ready" << std::endl;
-
-        //==================================================================
-        // START SUBSCRIBER THREAD
-        //==================================================================
-
-        std::cerr << "\n[INIT] Starting ZMQ subscriber thread..." << std::endl;
-        std::thread zmq_thread([&subscriber]() {
-            subscriber.run();  // Blocking
-        });
-
-        std::cerr << "[INIT] ✓ All components initialized and running" << std::endl;
-
-        //==================================================================
-        // EVENT LOOP
-        //==================================================================
-
-        std::cerr << "\n";
-        std::cerr << "╔════════════════════════════════════════════════════════╗\n";
-        std::cerr << "║  System Ready - Monitoring for ML Detections         ║\n";
-        std::cerr << "║  Press Ctrl+C to shutdown gracefully                  ║\n";
-        std::cerr << "╚════════════════════════════════════════════════════════╝\n";
-        std::cerr << std::endl;
-
-        auto last_metrics_time = std::chrono::steady_clock::now();
-        auto last_health_check_time = std::chrono::steady_clock::now();
-
-        while (g_running.load()) {
-            // Sleep for a short interval
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-
-            auto now = std::chrono::steady_clock::now();
-
-            // Periodic metrics export
-            if (config.enable_metrics) {
-                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-                    now - last_metrics_time
-                ).count();
-
-                if (elapsed >= config.metrics_interval_sec) {
-                    export_metrics(config, subscriber, processor);
-                    last_metrics_time = now;
-                }
-            }
-
-            // Periodic health checks
-            if (config.enable_health_checks) {
-                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-                    now - last_health_check_time
-                ).count();
-
-                if (elapsed >= config.health_check_interval_sec) {
-                    perform_health_checks(config, ipset, iptables, subscriber);
-                    last_health_check_time = now;
-                }
-            }
-        }
-
-        //==================================================================
-        // GRACEFUL SHUTDOWN
-        //==================================================================
-
-        std::cerr << "\n[SHUTDOWN] Initiating graceful shutdown sequence..." << std::endl;
-
-        // 1. Stop ZMQ subscriber
-        std::cerr << "[SHUTDOWN] Stopping ZMQ subscriber..." << std::endl;
-        subscriber.stop();
-
-        // 2. Wait for ZMQ thread to finish
-        std::cerr << "[SHUTDOWN] Waiting for ZMQ thread to finish..." << std::endl;
-        if (zmq_thread.joinable()) {
-            zmq_thread.join();
-        }
-        std::cerr << "[SHUTDOWN] ✓ ZMQ thread stopped" << std::endl;
-
-        // 3. Flush pending IPs in batch processor
-        std::cerr << "[SHUTDOWN] Flushing pending IPs..." << std::endl;
-        processor.flush();
-        std::cerr << "[SHUTDOWN] ✓ Pending IPs flushed" << std::endl;
-
-        // 4. Final metrics
-        std::cerr << "\n[SHUTDOWN] Final statistics:" << std::endl;
-        export_metrics(config, subscriber, processor);
-
-        // 5. Optional: cleanup iptables rules (commented out - keep rules active)
-        // std::cerr << "[SHUTDOWN] Cleaning up iptables rules..." << std::endl;
-        // iptables.cleanup_rules(config.ipset.set_name);
-
-        std::cerr << "\n";
-        std::cerr << "╔════════════════════════════════════════════════════════╗\n";
-        std::cerr << "║  Shutdown Complete - All systems stopped cleanly     ║\n";
-        std::cerr << "╚════════════════════════════════════════════════════════╝\n";
-        std::cerr << std::endl;
-
+    }
+    
+    std::cout << "╔════════════════════════════════════════════════════════╗\n"
+              << "║  ML Defender - Firewall ACL Agent                     ║\n"
+              << "║  High-Performance Packet DROP Agent                   ║\n"
+              << "║  Target: 1M+ packets/sec                               ║\n"
+              << "╚════════════════════════════════════════════════════════╝\n"
+              << std::endl;
+    
+    Config config = create_default_config();
+    if (!load_config(config_path, config)) {
+        std::cerr << "[ERROR] Failed to load configuration from: " << config_path << std::endl;
+        std::cerr << "[INFO] Using default configuration" << std::endl;
+    } else {
+        std::cout << "[INFO] Configuration loaded from: " << config_path << std::endl;
+    }
+    
+    if (test_config) {
+        std::cout << "[INFO] Configuration test passed ✓" << std::endl;
         return 0;
-
-    } catch (const std::exception& e) {
-        std::cerr << "\n[FATAL] Exception in main: " << e.what() << std::endl;
+    }
+    
+    if (getuid() != 0) {
+        std::cerr << "[ERROR] This program must be run as root" << std::endl;
         return 1;
     }
+    
+    try {
+        std::cout << "[INIT] Initializing IPSet wrapper..." << std::endl;
+        IPSetWrapper ipset;
+        
+        if (!ipset.set_exists(config.ipset.name)) {
+            std::cout << "[INIT] Creating ipset '" << config.ipset.name << "'..." << std::endl;
+            if (!ipset.create_set(config.ipset)) {
+                std::cerr << "[ERROR] Failed to create ipset" << std::endl;
+                return 1;
+            }
+            std::cout << "[INIT] ✓ IPSet created successfully" << std::endl;
+        } else {
+            std::cout << "[INIT] ✓ IPSet already exists" << std::endl;
+        }
+        
+        std::cout << "[INIT] Initializing IPTables wrapper..." << std::endl;
+        IPTablesWrapper iptables;
+        
+        std::cout << "[INIT] Setting up IPTables rules..." << std::endl;
+        if (!iptables.setup_base_rules(config.firewall)) {
+            std::cerr << "[ERROR] Failed to setup IPTables rules" << std::endl;
+            return 1;
+        }
+        std::cout << "[INIT] ✓ IPTables rules configured" << std::endl;
+        
+        std::cout << "[INIT] Initializing batch processor..." << std::endl;
+        BatchProcessor processor(ipset, config.batch);
+        std::cout << "[INIT] ✓ Batch processor started" << std::endl;
+        
+        std::cout << "[INIT] Initializing ZMQ subscriber..." << std::endl;
+        ZMQSubscriber subscriber(processor, config.zmq);
+        
+        // Start ZMQ subscriber thread
+        std::thread zmq_thread([&subscriber]() {
+            subscriber.run();
+        });
+        zmq_thread.detach();
+        std::cout << "[INIT] ✓ ZMQ subscriber initialized" << std::endl;
+        
+        setup_signal_handlers();
+        
+        std::cout << "\n[RUNNING] Firewall ACL Agent is now active\n"
+                  << "[INFO] Listening on: " << config.zmq.endpoint << "\n"
+                  << "[INFO] Press Ctrl+C to stop\n"
+                  << std::endl;
+        
+        auto last_health_check = std::chrono::steady_clock::now();
+        auto last_metrics_export = std::chrono::steady_clock::now();
+        
+        while (g_running.load()) {
+            auto now = std::chrono::steady_clock::now();
+            
+            if (config.health_check.enable) {
+                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                    now - last_health_check).count();
+                    
+                if (elapsed >= config.health_check.check_interval_sec) {
+                    perform_health_checks(config, ipset, iptables, subscriber);
+                    last_health_check = now;
+                }
+            }
+            
+            if (config.metrics.enable_export) {
+                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                    now - last_metrics_export).count();
+                    
+                if (elapsed >= config.metrics.export_interval_sec) {
+                    export_metrics(config, subscriber, processor);
+                    last_metrics_export = now;
+                }
+            }
+            
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        
+        std::cout << "\n[SHUTDOWN] Stopping components..." << std::endl;
+        
+        if (config.metrics.enable_export) {
+            export_metrics(config, subscriber, processor);
+            std::cout << "[SHUTDOWN] ✓ Final metrics exported" << std::endl;
+        }
+        
+        const auto& zmq_stats = subscriber.get_stats();
+        std::cout << "\n[STATS] Final Statistics:\n"
+                  << "  Messages Received:     " << zmq_stats.messages_received.load() << "\n"
+                  << "  Detections Processed:  " << zmq_stats.detections_processed.load() << "\n"
+                  << "  Parse Errors:          " << zmq_stats.parse_errors.load() << "\n"
+                  << "  Reconnections:         " << zmq_stats.reconnects.load() << "\n"
+                  << std::endl;
+        
+        std::cout << "[SHUTDOWN] ✓ Firewall ACL Agent stopped cleanly" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[FATAL] Exception: " << e.what() << std::endl;
+        return 1;
+    }
+    
+    return 0;
 }

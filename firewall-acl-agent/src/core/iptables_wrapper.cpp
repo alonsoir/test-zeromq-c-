@@ -338,12 +338,13 @@ IPTablesResult<void> IPTablesWrapper::add_rule(const IPTablesRule& rule) {
     }
 
     // Target
-    cmd << " -j " << target_to_string(rule.target);
-
-    // Jump target for JUMP
-    if (rule.target == IPTablesTarget::JUMP && !rule.jump_target.empty()) {
-        cmd << " " << rule.jump_target;
+    // Target - use jump_target if specified, otherwise use enum target
+    if (!rule.jump_target.empty()) {
+        cmd << " -j " << rule.jump_target;
+    } else {
+        cmd << " -j " << target_to_string(rule.target);
     }
+
 
     // Custom target options
     if (!rule.target_options.empty()) {
@@ -499,7 +500,7 @@ IPTablesResult<void> IPTablesWrapper::setup_base_rules(const FirewallConfig& con
         jump_rule.table = IPTablesTable::FILTER;
         jump_rule.chain = IPTablesChain::INPUT;
         jump_rule.target = IPTablesTarget::JUMP;
-        jump_rule.custom_chain_name = config.ratelimit_chain;
+        jump_rule.jump_target = config.ratelimit_chain;
         jump_rule.comment = "ML Defender: Rate Limiting";
         jump_rule.position = 3;  // After whitelist and blacklist
 

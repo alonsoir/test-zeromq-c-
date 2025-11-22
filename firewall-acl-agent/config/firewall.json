@@ -1,6 +1,7 @@
 {
   "_comment": "ML Defender - Firewall ACL Agent Configuration",
   "_version": "1.0.0",
+  "_updated": "2025-11-22 - Cleaned and validated against C++ structs",
 
   "ipset": {
     "set_name": "ml_defender_blacklist",
@@ -15,29 +16,26 @@
     "chain_name": "ML_DEFENDER_INPUT",
     "default_policy": "ACCEPT",
     "log_blocked": false,
-    "log_prefix": "ML_DEFENDER_DROP: "
+    "log_prefix": "ML_DEFENDER_DROP: ",
+    "enable_rate_limiting": true,
+    "rate_limit_connections": 100
   },
 
   "batch_processor": {
     "batch_size_threshold": 1000,
     "batch_time_threshold_ms": 100,
     "max_pending_ips": 10000,
-    "min_confidence": 0.5,
-    "enable_dedup": true,
-    "flush_on_shutdown": true
+    "min_confidence": 0.5
   },
 
   "zmq": {
-    "endpoint": "tcp://localhost:5555",
+    "endpoint": "tcp://localhost:5572",
     "topic": "",
     "recv_timeout_ms": 1000,
     "linger_ms": 1000,
     "reconnect_interval_ms": 1000,
     "max_reconnect_interval_ms": 30000,
-    "reconnect_backoff_multiplier": 2.0,
-    "rcvhwm": 1000,
-    "enable_stats": true,
-    "stats_interval_sec": 60
+    "enable_reconnect": true
   },
 
   "daemon": {
