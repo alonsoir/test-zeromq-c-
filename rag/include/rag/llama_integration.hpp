@@ -1,28 +1,24 @@
-// include/rag/llama_integration.hpp
-#pragma once
+#ifndef LLAMA_INTEGRATION_HPP
+#define LLAMA_INTEGRATION_HPP
+
 #include <string>
-#include <vector>
 #include <memory>
 
-namespace rag {
+class LlamaIntegration {
+private:
+    class Impl;
+    std::unique_ptr<Impl> pImpl;
 
-    class LlamaIntegration {
-    public:
-        LlamaIntegration();
-        ~LlamaIntegration();
+public:
+    LlamaIntegration();
+    ~LlamaIntegration();
+    
+    // Eliminar copia
+    LlamaIntegration(const LlamaIntegration&) = delete;
+    LlamaIntegration& operator=(const LlamaIntegration&) = delete;
+    
+    bool loadModel(const std::string& model_path);
+    std::string generateResponse(const std::string& prompt);
+};
 
-        bool initialize(const std::string& model_path, size_t context_size = 4096);
-
-        std::string processQuery(const std::string& query,
-                                const std::vector<std::string>& context = {});
-
-        bool validateCommandIntent(const std::string& command, const std::string& context);
-
-        std::string generateSafeResponse(const std::string& query);
-
-    private:
-        class Impl;
-        std::unique_ptr<Impl> pimpl_;
-    };
-
-} // namespace rag
+#endif // LLAMA_INTEGRATION_HPP

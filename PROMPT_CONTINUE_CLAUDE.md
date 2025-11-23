@@ -1,704 +1,558 @@
-troubleshooting main.cpp firewall-acl-agent.txt
-Estamos trabajando en el main.cpp del firewall-acl-agent
-
-Esta es la salida del compilador:
-
-[ 85%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
-/vagrant/firewall-acl-agent/src/main.cpp:49:5: error: ‘BatchConfig’ does not name a type
-49 |     BatchConfig batch;
-|     ^~~~~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:52:5: error: ‘ZMQConfig’ does not name a type; did you mean ‘Config’?
-52 |     ZMQConfig zmq;
-|     ^~~~~~~~~
-|     Config
-/vagrant/firewall-acl-agent/src/main.cpp: In function ‘bool load_config(const std::string&, Config&)’:
-/vagrant/firewall-acl-agent/src/main.cpp:91:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-91 |             config.ipset.set_name = ipset.get("set_name", "ml_defender_blacklist").asString();
-|                          ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:92:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_type’
-92 |             config.ipset.set_type = ipset.get("set_type", "hash:ip").asString();
-|                          ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:93:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘hash_size’; did you mean ‘hashsize’?
-93 |             config.ipset.hash_size = ipset.get("hash_size", 4096).asUInt();
-|                          ^~~~~~~~~
-|                          hashsize
-/vagrant/firewall-acl-agent/src/main.cpp:94:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘max_elements’
-94 |             config.ipset.max_elements = ipset.get("max_elements", 1000000).asUInt();
-|                          ^~~~~~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:95:26: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘default_timeout’
-95 |             config.ipset.default_timeout = ipset.get("timeout", 3600).asUInt();
-|                          ^~~~~~~~~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:101:20: error: ‘struct Config’ has no member named ‘batch’
-101 |             config.batch.batch_size_threshold = batch.get("batch_size_threshold", 1000).asUInt();
-|                    ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:102:20: error: ‘struct Config’ has no member named ‘batch’
-102 |             config.batch.batch_time_threshold_ms = batch.get("batch_time_threshold_ms", 100).asUInt();
-|                    ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:103:20: error: ‘struct Config’ has no member named ‘batch’
-103 |             config.batch.max_pending_ips = batch.get("max_pending_ips", 10000).asUInt();
-|                    ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:104:20: error: ‘struct Config’ has no member named ‘batch’
-104 |             config.batch.min_confidence = batch.get("min_confidence", 0.5).asFloat();
-|                    ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:105:20: error: ‘struct Config’ has no member named ‘batch’
-105 |             config.batch.enable_dedup = batch.get("enable_dedup", true).asBool();
-|                    ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:111:20: error: ‘struct Config’ has no member named ‘zmq’
-111 |             config.zmq.endpoint = zmq.get("endpoint", "tcp://localhost:5555").asString();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:112:20: error: ‘struct Config’ has no member named ‘zmq’
-112 |             config.zmq.topic = zmq.get("topic", "").asString();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:113:20: error: ‘struct Config’ has no member named ‘zmq’
-113 |             config.zmq.recv_timeout_ms = zmq.get("recv_timeout_ms", 1000).asInt();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:114:20: error: ‘struct Config’ has no member named ‘zmq’
-114 |             config.zmq.linger_ms = zmq.get("linger_ms", 1000).asInt();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:115:20: error: ‘struct Config’ has no member named ‘zmq’
-115 |             config.zmq.reconnect_interval_ms = zmq.get("reconnect_interval_ms", 1000).asInt();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:116:20: error: ‘struct Config’ has no member named ‘zmq’
-116 |             config.zmq.max_reconnect_interval_ms = zmq.get("max_reconnect_interval_ms", 30000).asInt();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:117:20: error: ‘struct Config’ has no member named ‘zmq’
-117 |             config.zmq.reconnect_backoff_multiplier = zmq.get("reconnect_backoff_multiplier", 2.0).asDouble();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:118:20: error: ‘struct Config’ has no member named ‘zmq’
-118 |             config.zmq.rcvhwm = zmq.get("rcvhwm", 1000).asInt();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:119:20: error: ‘struct Config’ has no member named ‘zmq’
-119 |             config.zmq.enable_stats = zmq.get("enable_stats", true).asBool();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:120:20: error: ‘struct Config’ has no member named ‘zmq’
-120 |             config.zmq.stats_interval_sec = zmq.get("stats_interval_sec", 60).asInt();
-|                    ^~~
-/vagrant/firewall-acl-agent/src/main.cpp: In function ‘Config create_default_config()’:
-/vagrant/firewall-acl-agent/src/main.cpp:162:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-162 |     config.ipset.set_name = "ml_defender_blacklist";
-|                  ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:163:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_type’
-163 |     config.ipset.set_type = "hash:ip";
-|                  ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:164:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘hash_size’; did you mean ‘hashsize’?
-164 |     config.ipset.hash_size = 4096;
-|                  ^~~~~~~~~
-|                  hashsize
-/vagrant/firewall-acl-agent/src/main.cpp:165:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘max_elements’
-165 |     config.ipset.max_elements = 1000000;
-|                  ^~~~~~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:166:18: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘default_timeout’
-166 |     config.ipset.default_timeout = 3600;
-|                  ^~~~~~~~~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:169:12: error: ‘struct Config’ has no member named ‘batch’
-169 |     config.batch.batch_size_threshold = 1000;
-|            ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:170:12: error: ‘struct Config’ has no member named ‘batch’
-170 |     config.batch.batch_time_threshold_ms = 100;
-|            ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:171:12: error: ‘struct Config’ has no member named ‘batch’
-171 |     config.batch.max_pending_ips = 10000;
-|            ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:172:12: error: ‘struct Config’ has no member named ‘batch’
-172 |     config.batch.min_confidence = 0.5f;
-|            ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:173:12: error: ‘struct Config’ has no member named ‘batch’
-173 |     config.batch.enable_dedup = true;
-|            ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:176:12: error: ‘struct Config’ has no member named ‘zmq’
-176 |     config.zmq.endpoint = "tcp://localhost:5555";
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:177:12: error: ‘struct Config’ has no member named ‘zmq’
-177 |     config.zmq.topic = "";
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:178:12: error: ‘struct Config’ has no member named ‘zmq’
-178 |     config.zmq.recv_timeout_ms = 1000;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:179:12: error: ‘struct Config’ has no member named ‘zmq’
-179 |     config.zmq.linger_ms = 1000;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:180:12: error: ‘struct Config’ has no member named ‘zmq’
-180 |     config.zmq.reconnect_interval_ms = 1000;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:181:12: error: ‘struct Config’ has no member named ‘zmq’
-181 |     config.zmq.max_reconnect_interval_ms = 30000;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:182:12: error: ‘struct Config’ has no member named ‘zmq’
-182 |     config.zmq.reconnect_backoff_multiplier = 2.0;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:183:12: error: ‘struct Config’ has no member named ‘zmq’
-183 |     config.zmq.rcvhwm = 1000;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:184:12: error: ‘struct Config’ has no member named ‘zmq’
-184 |     config.zmq.enable_stats = true;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp:185:12: error: ‘struct Config’ has no member named ‘zmq’
-185 |     config.zmq.stats_interval_sec = 60;
-|            ^~~
-/vagrant/firewall-acl-agent/src/main.cpp: In function ‘void export_metrics(const Config&, const mldefender::firewall::ZMQSubscriber&, const mldefender::firewall::BatchProcessor&)’:
-/vagrant/firewall-acl-agent/src/main.cpp:261:40: error: ‘const class mldefender::firewall::BatchProcessor’ has no member named ‘get_stats’
-261 |     const auto& proc_stats = processor.get_stats();
-|                                        ^~~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp: In function ‘bool perform_health_checks(const Config&, mldefender::firewall::IPSetWrapper&, mldefender::firewall::IPTablesWrapper&, const mldefender::firewall::ZMQSubscriber&)’:
-/vagrant/firewall-acl-agent/src/main.cpp:343:16: error: ‘class mldefender::firewall::IPSetWrapper’ has no member named ‘exists’; did you mean ‘set_exists’?
-343 |     if (!ipset.exists(config.ipset.set_name)) {
-|                ^~~~~~
-|                set_exists
-/vagrant/firewall-acl-agent/src/main.cpp:343:36: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-343 |     if (!ipset.exists(config.ipset.set_name)) {
-|                                    ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:344:59: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-344 |         std::cerr << "[HEALTH] ✗ IPSet '" << config.ipset.set_name << "' does not exist!" << std::endl;
-|                                                           ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:352:36: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-352 |         if (rule.find(config.ipset.set_name) != std::string::npos) {
-|                                    ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:359:71: error: ‘const struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-359 |         std::cerr << "[HEALTH] ✗ IPTables rule for '" << config.ipset.set_name << "' not found!" << std::endl;
-|                                                                       ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp: In function ‘int main(int, char**)’:
-/vagrant/firewall-acl-agent/src/main.cpp:437:40: error: no matching function for call to ‘mldefender::firewall::IPSetWrapper::IPSetWrapper(mldefender::firewall::IPSetConfig&)’
-437 |         IPSetWrapper ipset(config.ipset);
-|                                        ^
-In file included from /vagrant/firewall-acl-agent/src/main.cpp:15:
-/vagrant/firewall-acl-agent/include/firewall/ipset_wrapper.hpp:184:5: note: candidate: ‘mldefender::firewall::IPSetWrapper::IPSetWrapper()’
-184 |     IPSetWrapper();
-|     ^~~~~~~~~~~~
-/vagrant/firewall-acl-agent/include/firewall/ipset_wrapper.hpp:184:5: note:   candidate expects 0 arguments, 1 provided
-/vagrant/firewall-acl-agent/src/main.cpp:440:20: error: ‘class mldefender::firewall::IPSetWrapper’ has no member named ‘exists’; did you mean ‘set_exists’?
-440 |         if (!ipset.exists(config.ipset.set_name)) {
-|                    ^~~~~~
-|                    set_exists
-/vagrant/firewall-acl-agent/src/main.cpp:440:40: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-440 |         if (!ipset.exists(config.ipset.set_name)) {
-|                                        ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:441:68: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-441 |             std::cerr << "[INIT] Creating ipset '" << config.ipset.set_name << "'..." << std::endl;
-|                                                                    ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:442:48: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-442 |             if (!ipset.create_set(config.ipset.set_name)) {
-|                                                ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:457:53: error: ‘struct mldefender::firewall::IPSetConfig’ has no member named ‘set_name’
-457 |         if (!iptables.setup_base_rules(config.ipset.set_name)) {
-|                                                     ^~~~~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:465:48: error: ‘struct Config’ has no member named ‘batch’
-465 |         BatchProcessor processor(ipset, config.batch);
-|                                                ^~~~~
-/vagrant/firewall-acl-agent/src/main.cpp:471:52: error: ‘struct Config’ has no member named ‘zmq’
-471 |         ZMQSubscriber subscriber(processor, config.zmq);
-|                                                    ^~~
-[ 90%] Linking CXX static library ../../../lib/libgmock_main.a
-make[2]: *** [CMakeFiles/firewall-acl-agent.dir/build.make:76: CMakeFiles/firewall-acl-agent.dir/src/main.cpp.o] Error 1
-make[1]: *** [CMakeFiles/Makefile2:195: CMakeFiles/firewall-acl-agent.dir/all] Error 2
-make[1]: *** Se espera a que terminen otras tareas....
-[ 90%] Built target gmock_main
-[ 95%] Linking CXX executable firewall_tests
-lto-wrapper: warning: using serial compilation of 8 LTRANS jobs
-lto-wrapper: note: see the ‘-flto’ option documentation for more information
-[ 95%] Built target firewall_tests
-make: *** [Makefile:146: all] Error 2
-
-Este es el CMakelists.txt
-
-#===----------------------------------------------------------------------===//
-# ML Defender - Firewall ACL Agent
-# CMakeLists.txt - Build Configuration
-#
-# Target: Ultra-high performance packet DROP agent
-# Performance: 1M+ packets/sec on commodity hardware
-#
-# Dependencies:
-#   - libipset (kernel interface)
-#   - iptables (static rules setup)
-#   - ZMQ (detection stream from ml-detector)
-#   - Protobuf (message parsing)
-#   - Boost (lock-free queues)
-#   - jsoncpp (configuration)
-#
-# Via Appia Quality: Methodical build system
-#===----------------------------------------------------------------------===//
-
-cmake_minimum_required(VERSION 3.20)
-
-project(firewall-acl-agent
-VERSION 1.0.0
-DESCRIPTION "ML Defender - High-Performance Firewall ACL Agent"
-LANGUAGES CXX
-)
-
-#===----------------------------------------------------------------------===//
-# C++ Standard and Compiler Settings
-#===----------------------------------------------------------------------===//
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Optimization flags for extreme performance
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native -flto")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address,undefined")
-
-# Warning flags
-add_compile_options(
--Wall
--Wextra
--Wpedantic
--Werror
--Wno-unused-parameter
-)
-
-#===----------------------------------------------------------------------===//
-# Find Required Dependencies
-#===----------------------------------------------------------------------===//
-
-find_package(PkgConfig REQUIRED)
-
-# ZeroMQ - High-performance messaging
-pkg_check_modules(ZMQ REQUIRED libzmq)
-if(NOT ZMQ_FOUND)
-message(FATAL_ERROR "ZeroMQ not found. Install: sudo apt-get install libzmq3-dev")
-endif()
-
-# NOTE: We do NOT need libipset-dev - we use system ipset commands
-# This is simpler, more maintainable, and benefits from ipset optimizations
-
-# Protobuf - Message serialization
-find_package(Protobuf REQUIRED)
-if(NOT Protobuf_FOUND)
-message(FATAL_ERROR "Protobuf not found. Install: sudo apt-get install libprotobuf-dev protobuf-compiler")
-endif()
-
-# Boost - Lock-free data structures
-find_package(Boost 1.71 REQUIRED COMPONENTS
-system
-thread
-filesystem
-)
-if(NOT Boost_FOUND)
-message(FATAL_ERROR "Boost not found. Install: sudo apt-get install libboost-all-dev")
-endif()
-
-# jsoncpp - Configuration parsing
-pkg_check_modules(JSONCPP REQUIRED jsoncpp)
-if(NOT JSONCPP_FOUND)
-message(FATAL_ERROR "jsoncpp not found. Install: sudo apt-get install libjsoncpp-dev")
-endif()
-
-# Threads
-find_package(Threads REQUIRED)
-
-#===----------------------------------------------------------------------===//
-# Protobuf Generation - Shared Schema
-#===----------------------------------------------------------------------===//
-
-# Path to shared protobuf schema
-# TODO: Update this path to point to the real shared protobuf once project structure is set
-# Real path should be: ../../protobuf/network_security.proto (shared between all components)
-# For now, using local protobuf directory for development
-set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf)
-set(PROTO_FILE ${PROTO_DIR}/network_security.proto)
-
-# Verify proto file exists
-if(NOT EXISTS ${PROTO_FILE})
-message(FATAL_ERROR
-"Protobuf schema not found: ${PROTO_FILE}\n"
-"Expected structure: ml-defender/protobuf/network_security.proto"
-)
-endif()
-
-# Generate C++ files from .proto (into build directory)
-protobuf_generate_cpp(PROTO_SOURCES PROTO_HEADERS ${PROTO_FILE})
-
-message(STATUS "Protobuf schema: ${PROTO_FILE}")
-message(STATUS "Generated sources: ${PROTO_SOURCES}")
-message(STATUS "Generated headers: ${PROTO_HEADERS}")
-
-# Create protobuf library
-add_library(firewall_proto STATIC
-${PROTO_SOURCES}
-${PROTO_HEADERS}
-)
-
-target_link_libraries(firewall_proto
-PUBLIC
-${Protobuf_LIBRARIES}
-)
-
-target_include_directories(firewall_proto
-PUBLIC
-${CMAKE_CURRENT_BINARY_DIR}  # Generated protobuf headers
-${PROTO_DIR}                 # Original .proto location
-)
-
-#===----------------------------------------------------------------------===//
-# Include Directories
-#===----------------------------------------------------------------------===//
-
-include_directories(
-${CMAKE_CURRENT_SOURCE_DIR}/include
-${CMAKE_CURRENT_BINARY_DIR}      # Generated protobuf headers
-
-        ${ZMQ_INCLUDE_DIRS}
-        ${Protobuf_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS}
-        ${JSONCPP_INCLUDE_DIRS}
-)
-
-#===----------------------------------------------------------------------===//
-# Source Files (Only files that exist)
-#===----------------------------------------------------------------------===//
-
-# Core components (created so far)
-set(FIREWALL_CORE_SOURCES
-src/core/ipset_wrapper.cpp
-src/core/iptables_wrapper.cpp
-src/core/batch_processor.cpp
-# src/core/acl_intelligence.cpp     # TODO: Next to implement
-)
-
-# API layer (to be created)
-set(FIREWALL_API_SOURCES
-src/api/zmq_subscriber.cpp
-)
-
-# Utilities (to be created)
-set(FIREWALL_UTIL_SOURCES
-# src/utils/config_loader.cpp       # TODO: Next to implement
-# src/utils/logger.cpp              # TODO: Next to implement
-# src/utils/metrics.cpp             # TODO: Next to implement
-)
-
-# Main executable (to be created)
-set(FIREWALL_MAIN_SOURCE
-src/main.cpp
-)
-
-#===----------------------------------------------------------------------===//
-# Core Library (for testing) - Only with existing sources
-#===----------------------------------------------------------------------===//
-
-add_library(firewall_core STATIC
-${FIREWALL_CORE_SOURCES}
-${FIREWALL_API_SOURCES}   # Uncomment when implemented
-# ${FIREWALL_UTIL_SOURCES}  # Uncomment when implemented
-)
-
-target_link_libraries(firewall_core
-PUBLIC
-firewall_proto
-
-        ${ZMQ_LIBRARIES}
-        ${Boost_LIBRARIES}
-        ${JSONCPP_LIBRARIES}
-        Threads::Threads
-)
-
-target_include_directories(firewall_core
-PUBLIC
-${CMAKE_CURRENT_SOURCE_DIR}/include
-${CMAKE_CURRENT_BINARY_DIR}  # For generated protobuf headers
-
-        ${ZMQ_INCLUDE_DIRS}
-        ${JSONCPP_INCLUDE_DIRS}
-)
-
-#===----------------------------------------------------------------------===//
-# Main Executable (TODO: Uncomment when main.cpp is ready)
-#===----------------------------------------------------------------------===//
-
-add_executable(firewall-acl-agent
-${FIREWALL_MAIN_SOURCE}
-)
-#
-target_link_libraries(firewall-acl-agent
-PRIVATE
-firewall_core
-)
-
-# NOTE: Executable will be created once we have src/main.cpp
-message(STATUS "⚠️  Main executable disabled - waiting for src/main.cpp")
-message(STATUS "   Current focus: Core library and unit tests")
-
-#===----------------------------------------------------------------------===//
-# Installation (Disabled until executable is ready)
-#===----------------------------------------------------------------------===//
-
-# TODO: Uncomment when firewall-acl-agent executable exists
-install(TARGETS firewall-acl-agent
-RUNTIME DESTINATION bin
-)
-#
-install(DIRECTORY config/
-DESTINATION etc/ml-defender/firewall
-FILES_MATCHING PATTERN "*.json"
-)
-#
-install(FILES systemd/firewall-acl-agent.service
-DESTINATION /etc/systemd/system/
-OPTIONAL
-)
-
-message(STATUS "📦 Installation targets disabled - waiting for main executable")
-
-#===----------------------------------------------------------------------===//
-# Testing
-#===----------------------------------------------------------------------===//
-
-option(BUILD_TESTS "Build unit tests" ON)
-
-if(BUILD_TESTS)
-enable_testing()
-
-    # Google Test
-    find_package(GTest)
-    if(NOT GTest_FOUND)
-        message(STATUS "GTest not found, fetching from GitHub...")
-        include(FetchContent)
-        FetchContent_Declare(
-                googletest
-                GIT_REPOSITORY https://github.com/google/googletest.git
-                GIT_TAG release-1.12.1
-        )
-        FetchContent_MakeAvailable(googletest)
-    endif()
-
-    # Test sources (only existing tests)
-    set(TEST_SOURCES
-            tests/unit/test_ipset_wrapper.cpp
-            # tests/test_batch_processor.cpp     # TODO: Create when batch_processor is ready
-            # tests/test_acl_intelligence.cpp    # TODO: Create when acl_intelligence is ready
-    )
-
-    add_executable(firewall_tests
-            ${TEST_SOURCES}
-    )
-
-    target_link_libraries(firewall_tests
-            PRIVATE
-            firewall_core
-            GTest::gtest
-            GTest::gtest_main
-    )
-
-    # Discover tests
-    include(GoogleTest)
-    gtest_discover_tests(firewall_tests)
-
-    message(STATUS "✅ Unit tests enabled")
-    message(STATUS "   Run: sudo ./firewall_tests  (requires root for ipset operations)")
-endif()
-
-#===----------------------------------------------------------------------===//
-# Benchmarks
-#===----------------------------------------------------------------------===//
-
-option(BUILD_BENCHMARKS "Build performance benchmarks" OFF)
-
-if(BUILD_BENCHMARKS)
-# Google Benchmark
-find_package(benchmark)
-if(NOT benchmark_FOUND)
-message(STATUS "Google Benchmark not found, fetching...")
-include(FetchContent)
-FetchContent_Declare(
-benchmark
-GIT_REPOSITORY https://github.com/google/benchmark.git
-GIT_TAG v1.8.3
-)
-FetchContent_MakeAvailable(benchmark)
-endif()
-
-    add_executable(firewall_bench
-            benchmarks/bench_batch_operations.cpp
-            benchmarks/bench_queue_throughput.cpp
-    )
-
-    target_link_libraries(firewall_bench
-            PRIVATE
-            firewall_core
-            benchmark::benchmark
-            benchmark::benchmark_main
-    )
-
-    message(STATUS "✅ Benchmarks enabled")
-    message(STATUS "   Run: sudo ./firewall_bench  (requires root)")
-endif()
-
-#===----------------------------------------------------------------------===//
-# Documentation
-#===----------------------------------------------------------------------===//
-
-option(BUILD_DOCS "Build documentation with Doxygen" OFF)
-
-if(BUILD_DOCS)
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
-set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-
-        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-
-        add_custom_target(docs
-                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                COMMENT "Generating API documentation with Doxygen"
-                VERBATIM
-        )
-
-        message(STATUS "✅ Documentation enabled: make docs")
-    else()
-        message(WARNING "Doxygen not found, documentation disabled")
-    endif()
-endif()
-
-#===----------------------------------------------------------------------===//
-# Performance Profiling Support
-#===----------------------------------------------------------------------===//
-
-option(ENABLE_PROFILING "Enable profiling with gprof/perf" OFF)
-
-if(ENABLE_PROFILING)
-add_compile_options(-pg -fno-omit-frame-pointer)
-add_link_options(-pg)
-message(STATUS "✅ Profiling enabled (-pg)")
-endif()
-
-#===----------------------------------------------------------------------===//
-# Sanitizers (Development)
-#===----------------------------------------------------------------------===//
-
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
-option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
-option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
-
-if(ENABLE_ASAN)
-add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-add_link_options(-fsanitize=address)
-message(STATUS "✅ AddressSanitizer enabled")
-endif()
-
-if(ENABLE_TSAN)
-add_compile_options(-fsanitize=thread)
-add_link_options(-fsanitize=thread)
-message(STATUS "✅ ThreadSanitizer enabled")
-endif()
-
-if(ENABLE_UBSAN)
-add_compile_options(-fsanitize=undefined)
-add_link_options(-fsanitize=undefined)
-message(STATUS "✅ UndefinedBehaviorSanitizer enabled")
-endif()
-
-#===----------------------------------------------------------------------===//
-# Build Summary
-#===----------------------------------------------------------------------===//
-
-message(STATUS "")
-message(STATUS "╔════════════════════════════════════════════════════════╗")
-message(STATUS "║  ML Defender - Firewall ACL Agent Configuration       ║")
-message(STATUS "╚════════════════════════════════════════════════════════╝")
-message(STATUS "")
-message(STATUS "Version:           ${PROJECT_VERSION}")
-message(STATUS "C++ Standard:      C++${CMAKE_CXX_STANDARD}")
-message(STATUS "Build Type:        ${CMAKE_BUILD_TYPE}")
-message(STATUS "Compiler:          ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-message(STATUS "")
-message(STATUS "Dependencies:")
-message(STATUS "  ZeroMQ:          ${ZMQ_VERSION}")
-message(STATUS "  Protobuf:        ${Protobuf_VERSION}")
-message(STATUS "  Boost:           ${Boost_VERSION}")
-message(STATUS "  jsoncpp:         ${JSONCPP_VERSION}")
-message(STATUS "  NOTE: Using system ipset commands (no libipset dependency)")
-message(STATUS "")
-message(STATUS "Optional Features:")
-message(STATUS "  Tests:           ${BUILD_TESTS}")
-message(STATUS "  Benchmarks:      ${BUILD_BENCHMARKS}")
-message(STATUS "  Documentation:   ${BUILD_DOCS}")
-message(STATUS "  Profiling:       ${ENABLE_PROFILING}")
-message(STATUS "")
-message(STATUS "⚡ Performance Target: 1M+ packets/sec DROP rate")
-message(STATUS "🎯 Design Philosophy: Via Appia Quality")
-message(STATUS "")
-message(STATUS "Build Commands:")
-message(STATUS "  mkdir build && cd build")
-message(STATUS "  cmake -DCMAKE_BUILD_TYPE=Release ..")
-message(STATUS "  make -j$(nproc)")
-message(STATUS "  sudo ./firewall-acl-agent -c ../config/firewall.json")
-message(STATUS "")
-message(STATUS "╚════════════════════════════════════════════════════════╝")
-message(STATUS "")
-
-Este es el firewall.json actual:
-
-{
-"_comment": "ML Defender - Firewall ACL Agent Configuration",
-"_version": "1.0.0",
-
-"ipset": {
-"set_name": "ml_defender_blacklist",
-"set_type": "hash:ip",
-"hash_size": 4096,
-"max_elements": 1000000,
-"timeout": 3600,
-"comment": "ML Defender blocked IPs"
-},
-
-"iptables": {
-"chain_name": "ML_DEFENDER_INPUT",
-"default_policy": "ACCEPT",
-"log_blocked": false,
-"log_prefix": "ML_DEFENDER_DROP: "
-},
-
-"batch_processor": {
-"batch_size_threshold": 1000,
-"batch_time_threshold_ms": 100,
-"max_pending_ips": 10000,
-"min_confidence": 0.5,
-"enable_dedup": true,
-"flush_on_shutdown": true
-},
-
-"zmq": {
-"endpoint": "tcp://localhost:5555",
-"topic": "",
-"recv_timeout_ms": 1000,
-"linger_ms": 1000,
-"reconnect_interval_ms": 1000,
-"max_reconnect_interval_ms": 30000,
-"reconnect_backoff_multiplier": 2.0,
-"rcvhwm": 1000,
-"enable_stats": true,
-"stats_interval_sec": 60
-},
-
-"daemon": {
-"daemonize": false,
-"pid_file": "/var/run/firewall-acl-agent.pid",
-"user": "root",
-"group": "root"
-},
-
-"logging": {
-"level": "info",
-"console": true,
-"syslog": false,
-"file": "",
-"max_file_size_mb": 100
-},
-
-"metrics": {
-"enable_export": true,
-"export_interval_sec": 60,
-"export_format": "json",
-"export_file": "/var/log/ml-defender/firewall-metrics.json"
-},
-
-"health_check": {
-"enable": true,
-"check_interval_sec": 30,
-"ipset_health_check": true,
-"iptables_health_check": true,
-"zmq_connection_check": true
-}
-}
+
+Mis notas (Alonso)
+Despues de levantar el laboratorio usando el comando make, parece que la comunicacion entre los tres componentes está funcionando, aparentemente,
+pero es como si el fichero proto difiriera entre detector y firewall?
+o entre sniffer y detector? hay que asegurarse para que el proceso de construccion incluya el borrado del directorio build de cada componente,
+la compilacion única y una sola vez del fichero y la copia del mismo en los tres componentes.
+
+El log del sniffer en el monitor no aparece nada. Eso no es normal. Parece que la comunicacion entre los tres componentes está establecida.
+Corrijo, aparece al rato.
+
+En modo desarrollo hay que arrancar en modo ultraverboso, queremos ver más datos en los logs. Este monitor es demasiado minimalista.
+Estamos asumiendo que hay comunicacion porque en el ml-detector aparecen los stats de recibidos y procesados, y en el firewall aparece el mensaje de
+ZMQSubscriber] Failed to parse DetectionBatch protobuf (202 bytes), indicando que un protobuf de 202 bytes está llegando, pero no sabe parsearlo indicando
+que el esquema es distinto.
+
+/vagrant/scripts/monitor_lab.sh debe mostrar más informacion, por ejemplo, que fichero json se está usando en cada componente, el uptime actual.
+Quiero ver los comandos tail -f de cada fichero log producido.
+En el firewall, es necesario una fase en la que quitemos todos los hardcoding y los pongamos en el firewall.json
+
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test
+🧪 Testing build artifacts...
+Sniffer:  $([ -f /vagrant/sniffer/build/sniffer ] && echo ✅ || echo ❌)
+Detector: $([ -f /vagrant/ml-detector/build/ml-detector ] && echo ✅ || echo ❌)
+Firewall: $([ -f /vagrant/firewall-acl-agent/build/firewall-acl-agent ] && echo ✅ || echo ❌)
+Protobuf: $([ -f /vagrant/protobuf/network_security.pb.cc ] && echo ✅ || echo ❌)
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make schema-update
+📦 Regenerating protobuf schema...
+╔════════════════════════════════════════════════════════════╗
+║  Protobuf Schema Generator                                 ║
+╚════════════════════════════════════════════════════════════╝
+
+📋 Schema: network_security.proto
+📂 Output: /vagrant/protobuf
+
+✅ libprotoc 3.21.12
+
+🔨 Generating C++ protobuf files...
+✅ Generated successfully:
+-rwxrwxr-x 1 vagrant vagrant 828K nov 22 10:53 /vagrant/protobuf/network_security.pb.cc
+-rwxrwxr-x 1 vagrant vagrant 903K nov 22 10:53 /vagrant/protobuf/network_security.pb.h
+
+📊 Statistics:
+network_security.pb.cc: 18645 lines
+network_security.pb.h:  22126 lines
+
+🐍 Generating Python protobuf files...
+✅ network_security_pb2.py: 131 lines
+
+╔════════════════════════════════════════════════════════════╗
+║  ✅ Protobuf generation complete                           ║
+╚════════════════════════════════════════════════════════════╝
+
+🎯 Next steps:
+1. Review generated files
+2. Rebuild sniffer: cd /vagrant/sniffer && make
+3. Rebuild ml-detector: cd /vagrant/ml-detector/build && cmake .. && make
+
+📋 Copying protobuf to components...
+✅ Protobuf synchronized across all components
+🧹 Cleaning Sniffer...
+🧹 Cleaning build directory...
+🧹 Cleaning ML Detector...
+🧹 Cleaning Firewall ACL Agent...
+✅ Clean complete
+🔨 Building Sniffer...
+📦 Checking protobuf files...
+✅ Protobuf files up to date
+⚙️  Configuring sniffer...
+📋 Copying protobuf files to build...
+-- The C compiler identification is GNU 12.2.0
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- Found Protobuf: /usr/lib/x86_64-linux-gnu/libprotobuf.so (found version "3.21.12")
+-- Found Threads: TRUE  
+-- Checking for module 'libbpf>=0.8'
+--   Found libbpf, version 1.1.2
+-- Checking for module 'libzmq>=4.3'
+--   Found libzmq, version 4.3.4
+-- Checking for module 'jsoncpp>=1.9'
+--   Found jsoncpp, version 1.9.5
+-- Checking for module 'liblz4>=1.8'
+--   Found liblz4, version 1.9.4
+-- Checking for module 'libzstd>=1.4'
+--   Found libzstd, version 1.5.4
+-- Checking for module 'libsnappy'
+--   Package 'libsnappy', required by 'virtual:world', not found
+-- Performing Test COMPILER_SUPPORTS_AVX2
+-- Performing Test COMPILER_SUPPORTS_AVX2 - Success
+-- Performing Test COMPILER_SUPPORTS_FAST_MATH
+-- Performing Test COMPILER_SUPPORTS_FAST_MATH - Success
+--
+-- === ⚡ Enhanced Sniffer Configuration ===
+-- 📋 Build Info:
+--    Type: Release
+--    C++ standard: 20
+--    Compiler: GNU 12.2.0
+--    LTO enabled: TRUE
+--
+-- 🔧 Core Dependencies:
+--    libbpf: 1.1.2
+--    ZeroMQ: 4.3.4
+--    jsoncpp: 1.9.5
+--    Protobuf: 3.21.12
+--
+-- 🗜️ Compression Support (MANDATORY):
+--    ✅ LZ4: 1.9.4 (required)
+--    ✅ Zstandard: 1.5.4 (required)
+--    ⚪ Snappy: not available (optional)
+--
+-- 🚀 Optional Features:
+--    ✅ etcd client: enabled
+--    ✅ NUMA optimization: enabled
+--    ✅ AVX2 optimizations: enabled
+--    ✅ Fast math: enabled
+--
+-- 📦 Build Artifacts:
+--    Binary: /vagrant/sniffer/build/sniffer
+--    eBPF program: /vagrant/sniffer/build/sniffer.bpf.o
+--    Configuration: /vagrant/sniffer/build/config/sniffer.json
+--
+-- 🎯 Sniffer Capabilities:
+--    ✅ Multi-threading support
+--    ✅ eBPF/XDP high-performance packet capture
+--    ✅ Mandatory LZ4/Zstd compression
+--    ✅ Protobuf serialization
+--    ✅ ZeroMQ communication
+--    🔐 Encryption ready (via etcd tokens)
+-- ========================================
+--
+--
+-- 🧪 Unit Tests:
+--    ✅ test_ransomware_feature_extractor configured
+--
+-- 🧪 Integration Test: test_integration_simple_event configured
+-- 🧪 Unit Test: test_fast_detector configured
+-- 🧪 Unit Test: test_payload_analyzer configured
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/sniffer/build
+🔨 Building sniffer...
+make[1]: se entra en el directorio '/vagrant/sniffer/build'
+make[2]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[  1%] Compiling eBPF program with BTF support
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+[  5%] Built target proto_compilation
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+[  9%] Building CXX object CMakeFiles/test_payload_analyzer.dir/tests/test_payload_analyzer.cpp.o
+[  9%] Building CXX object CMakeFiles/test_fast_detector.dir/tests/test_fast_detector.cpp.o
+[  9%] Building CXX object CMakeFiles/test_payload_analyzer.dir/src/userspace/payload_analyzer.cpp.o
+[ 10%] Building CXX object CMakeFiles/test_ransomware_feature_extractor.dir/tests/test_ransomware_feature_extractor.cpp.o
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+[ 12%] Building CXX object CMakeFiles/test_integration_simple_event.dir/tests/test_integration_simple_event.cpp.o
+[ 14%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/flow_tracker.cpp.o
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[ 14%] Built target bpf_program
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+make[3]: se entra en el directorio '/vagrant/sniffer/build'
+[ 16%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/main.cpp.o
+[ 18%] Building CXX object CMakeFiles/test_fast_detector.dir/src/userspace/fast_detector.cpp.o
+/vagrant/sniffer/tests/test_payload_analyzer.cpp: In function ‘bool test_thread_local_isolation()’:
+/vagrant/sniffer/tests/test_payload_analyzer.cpp:406:10: warning: variable ‘f2’ set but not used [-Wunused-but-set-variable]
+406 |     auto f2 = analyzer.analyze(payload2.data(), payload2.size());
+|          ^~
+[ 20%] Linking CXX executable test_payload_analyzer
+[ 21%] Building CXX object CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/flow_tracker.cpp.o
+[ 23%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/dns_analyzer.cpp.o
+[ 25%] Building CXX object CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.o
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[ 25%] Built target test_payload_analyzer
+[ 27%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/ip_whitelist.cpp.o
+[ 29%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.o
+[ 30%] Building CXX object CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/dns_analyzer.cpp.o
+[ 32%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_extractor.cpp.o
+[ 34%] Linking CXX executable test_fast_detector
+[ 36%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/ransomware_feature_processor.cpp.o
+[ 38%] Building CXX object CMakeFiles/test_integration_simple_event.dir/src/userspace/fast_detector.cpp.o
+[ 40%] Building CXX object CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ip_whitelist.cpp.o
+[ 41%] Building CXX object CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.o
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[ 41%] Built target test_fast_detector
+[ 43%] Building CXX object CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.o
+[ 45%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o
+[ 47%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.o
+[ 49%] Building CXX object CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/ransomware_feature_extractor.cpp.o
+[ 50%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o
+[ 52%] Linking CXX executable test_ransomware_feature_extractor
+[ 54%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o
+[ 56%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o
+[ 58%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[ 58%] Built target test_ransomware_feature_extractor
+[ 60%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.o
+[ 61%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o
+[ 63%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o
+[ 65%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o
+In file included from /vagrant/sniffer/src/userspace/ring_consumer.cpp:3:
+/vagrant/sniffer/include/ring_consumer.hpp: In constructor ‘sniffer::RingBufferConsumer::RingBufferConsumer(const sniffer::SnifferConfig&)’:
+/vagrant/sniffer/include/ring_consumer.hpp:180:23: warning: ‘sniffer::RingBufferConsumer::initialized_’ will be initialized after [-Wreorder]
+180 |     std::atomic<bool> initialized_{false};
+|                       ^~~~~~~~~~~~
+/vagrant/sniffer/include/ring_consumer.hpp:178:23: warning:   ‘std::atomic<bool> sniffer::RingBufferConsumer::running_’ [-Wreorder]
+178 |     std::atomic<bool> running_{false};
+|                       ^~~~~~~~
+/vagrant/sniffer/src/userspace/ring_consumer.cpp:48:5: warning:   when initialized here [-Wreorder]
+48 |     RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
+|     ^~~~~~~~~~~~~~~~~~
+/vagrant/sniffer/include/ring_consumer.hpp:179:23: warning: ‘sniffer::RingBufferConsumer::should_stop_’ will be initialized after [-Wreorder]
+179 |     std::atomic<bool> should_stop_{false};
+|                       ^~~~~~~~~~~~
+/vagrant/sniffer/include/ring_consumer.hpp:177:22: warning:   ‘std::atomic<int> sniffer::RingBufferConsumer::active_consumers_’ [-Wreorder]
+177 |     std::atomic<int> active_consumers_{0};
+|                      ^~~~~~~~~~~~~~~~~
+/vagrant/sniffer/src/userspace/ring_consumer.cpp:48:5: warning:   when initialized here [-Wreorder]
+48 |     RingBufferConsumer::RingBufferConsumer(const SnifferConfig& config)
+|     ^~~~~~~~~~~~~~~~~~
+[ 67%] Linking CXX executable test_integration_simple_event
+[ 69%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o
+[ 70%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o
+[ 72%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o
+[ 74%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o
+[ 76%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o
+[ 78%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o
+[ 80%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o
+[ 81%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o
+[ 83%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o
+[ 85%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/payload_analyzer.cpp.o
+[ 87%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o
+[ 89%] Building CXX object CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
+[ 90%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[ 90%] Built target test_integration_simple_event
+[ 92%] Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ddos_detector.cpp.o
+[ 94%] Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o
+[ 96%] Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o
+[ 98%] Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/internal_detector.cpp.o
+[100%] Linking CXX executable sniffer
+/vagrant/sniffer/../ml-detector/include/ml_defender/internal_trees_inline.hpp:1456:31: warning: type of ‘tree_99’ does not match original declaration [-Wlto-type-mismatch]
+make[3]: se sale del directorio '/vagrant/sniffer/build'
+[100%] Built target sniffer
+make[2]: se sale del directorio '/vagrant/sniffer/build'
+make[1]: se sale del directorio '/vagrant/sniffer/build'
+
+✅ Sniffer compiled successfully!
+-rwxrwxr-x 1 vagrant vagrant 1,2M nov 22 10:54 build/sniffer
+-rwxrwxr-x 1 vagrant vagrant 152K nov 22 10:54 build/sniffer.bpf.o
+🔨 Building ML Detector...
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Build type: Release
+-- C++ Standard: 20
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- Checking for module 'libzmq'
+--   Found libzmq, version 4.3.4
+-- Found ZeroMQ: 4.3.4
+-- Found Protobuf: /usr/lib/x86_64-linux-gnu/libprotobuf.so (found version "3.21.12")
+-- Found Protobuf: 3.21.12
+-- Found ONNX Runtime (manual): /usr/local/lib/libonnxruntime.so
+-- Found nlohmann/json: 3.11.2
+-- Found Threads: TRUE  
+-- Found spdlog: 1.10.0
+-- Checking for module 'liblz4'
+--   Found liblz4, version 1.9.4
+-- Found LZ4: 1.9.4
+-- etcd-cpp-api not found - ETCD integration will be disabled
+-- Using pre-generated protobuf files from: /vagrant/ml-detector/../protobuf
+-- 📦 Using shared protobuf files
+--
+-- 🔗 Setting up models symlink...
+--    Source: /vagrant/ml-detector/models
+--    Target: /vagrant/ml-detector/build/models
+-- ✅ Models symlink created successfully
+--    Config will use: models/production/
+--    Points to:       ../models/production/
+--
+-- 🔗 Setting up config symlink...
+--    Source: /vagrant/ml-detector/config
+--    Target: /vagrant/ml-detector/build/config
+-- ✅ Config symlink created successfully
+--
+-- SIMD optimizations enabled (AVX2)
+-- GTest not found - tests disabled
+--
+-- ======================================
+-- ML Detector Tricapa - Configuration
+-- ======================================
+-- Build type:        Release
+-- C++ compiler:      GNU 12.2.0
+-- C++ standard:      20
+-- Install prefix:    /usr/local
+--
+-- Dependencies:
+--   ZeroMQ:          4.3.4
+--   Protobuf:        3.21.12
+--   ONNX Runtime:    Found
+--   nlohmann/json:   Found
+--   spdlog:          Found
+--   LZ4:             1.9.4
+--   etcd-cpp-api:    FALSE
+--
+-- Options:
+--   Build tests:     ON
+--   SIMD (AVX2):     ON
+--   LTO:             OFF
+--   ASAN:            OFF
+--   TSAN:            OFF
+--
+-- Protobuf:
+--   Proto dir:       /vagrant/ml-detector/../protobuf
+--   Proto file:      /vagrant/ml-detector/../protobuf/network_security.proto
+--   Generated:       /vagrant/ml-detector/../protobuf/network_security.pb.cc
+--
+-- 🎯 Single Source of Truth:
+--   Models:          /vagrant/ml-detector/models → build/models (symlink)
+--   Config:          /vagrant/ml-detector/config → build/config (symlink)
+-- ======================================
+--
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/ml-detector/build
+[  4%] Building CXX object CMakeFiles/test_detectors_unit.dir/tests/unit/test_detectors.cpp.o
+[ 12%] Building CXX object CMakeFiles/ransomware_detector.dir/src/ransomware_detector.cpp.o
+[ 12%] Building CXX object CMakeFiles/test_detectors_unit.dir/src/ddos_detector.cpp.o
+[ 16%] Building CXX object CMakeFiles/test_detectors_unit.dir/src/traffic_detector.cpp.o
+[ 20%] Building CXX object CMakeFiles/test_detectors_unit.dir/src/internal_detector.cpp.o
+[ 24%] Linking CXX static library libransomware_detector.a
+[ 24%] Built target ransomware_detector
+[ 28%] Building CXX object CMakeFiles/test_ransomware_detector_unit.dir/tests/unit/test_ransomware_detector.cpp.o
+[ 32%] Linking CXX executable test_detectors_unit
+[ 36%] Building CXX object CMakeFiles/ml-detector.dir/src/main.cpp.o
+[ 40%] Building CXX object CMakeFiles/ml-detector.dir/src/ml_detector.cpp.o
+[ 44%] Building CXX object CMakeFiles/ml-detector.dir/src/classifier_tricapa.cpp.o
+[ 48%] Building CXX object CMakeFiles/ml-detector.dir/src/feature_extractor.cpp.o
+[ 48%] Built target test_detectors_unit
+[ 52%] Building CXX object CMakeFiles/ml-detector.dir/src/zmq_handler.cpp.o
+[ 68%] Building CXX object CMakeFiles/ml-detector.dir/src/config_loader.cpp.o
+[ 72%] Building CXX object CMakeFiles/ml-detector.dir/src/logger.cpp.o
+[ 76%] Building CXX object CMakeFiles/ml-detector.dir/src/stats_collector.cpp.o
+[ 80%] Building CXX object CMakeFiles/ml-detector.dir/src/ransomware_detector.cpp.o
+[ 84%] Building CXX object CMakeFiles/ml-detector.dir/src/ddos_detector.cpp.o
+[ 88%] Building CXX object CMakeFiles/ml-detector.dir/src/traffic_detector.cpp.o
+[ 92%] Building CXX object CMakeFiles/ml-detector.dir/src/internal_detector.cpp.o
+[100%] Linking CXX executable ml-detector
+[100%] Built target ml-detector
+🔨 Building Firewall ACL Agent...
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- Checking for module 'libzmq'
+--   Found libzmq, version 4.3.4
+-- Found Protobuf: /usr/lib/x86_64-linux-gnu/libprotobuf.so (found version "3.21.12")
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found suitable version "1.74.0", minimum required is "1.71") found components: system thread filesystem
+-- Checking for module 'jsoncpp'
+--   Found jsoncpp, version 1.9.5
+-- Found Threads: TRUE  
+-- Protobuf schema: /vagrant/firewall-acl-agent/../protobuf/network_security.proto
+-- Generated sources: /vagrant/firewall-acl-agent/build/network_security.pb.cc
+-- Generated headers: /vagrant/firewall-acl-agent/build/network_security.pb.h
+-- ⚠️  Main executable disabled - waiting for src/main.cpp
+--    Current focus: Core library and unit tests
+-- 📦 Installation targets disabled - waiting for main executable
+-- Could NOT find GTest (missing: GTEST_LIBRARY GTEST_INCLUDE_DIR GTEST_MAIN_LIBRARY)
+-- GTest not found, fetching from GitHub...
+-- The C compiler identification is GNU 12.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Found Python: /usr/bin/python3.11 (found version "3.11.2") found components: Interpreter
+-- ✅ Unit tests enabled
+--    Run: sudo ./firewall_tests  (requires root for ipset operations)
+--
+-- ╔════════════════════════════════════════════════════════╗
+-- ║  ML Defender - Firewall ACL Agent Configuration       ║
+-- ╚════════════════════════════════════════════════════════╝
+--
+-- Version:           1.0.0
+-- C++ Standard:      C++20
+-- Build Type:        
+-- Compiler:          GNU 12.2.0
+--
+-- Dependencies:
+--   ZeroMQ:          4.3.4
+--   Protobuf:        3.21.12
+--   Boost:           1.74.0
+--   jsoncpp:         1.9.5
+--   NOTE: Using system ipset commands (no libipset dependency)
+--
+-- Optional Features:
+--   Tests:           ON
+--   Benchmarks:      OFF
+--   Documentation:   OFF
+--   Profiling:       OFF
+--
+-- ⚡ Performance Target: 1M+ packets/sec DROP rate
+-- 🎯 Design Philosophy: Via Appia Quality
+--
+-- Build Commands:
+--   mkdir build && cd build
+--   cmake -DCMAKE_BUILD_TYPE=Release ..
+--   make -j$(nproc)
+--   sudo ./firewall-acl-agent -c ../config/firewall.json
+--
+-- ╚════════════════════════════════════════════════════════╝
+--
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/firewall-acl-agent/build
+[  5%] Running cpp protocol buffer compiler on /vagrant/firewall-acl-agent/../protobuf/network_security.proto
+[ 10%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o
+[ 15%] Building CXX object CMakeFiles/firewall_proto.dir/network_security.pb.cc.o
+[ 20%] Linking CXX static library ../../../lib/libgtest.a
+[ 20%] Built target gtest
+[ 30%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o
+[ 30%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o
+[ 35%] Linking CXX static library libfirewall_proto.a
+[ 35%] Built target firewall_proto
+[ 40%] Building CXX object CMakeFiles/firewall_core.dir/src/core/ipset_wrapper.cpp.o
+[ 45%] Building CXX object CMakeFiles/firewall_core.dir/src/core/iptables_wrapper.cpp.o
+[ 50%] Linking CXX static library ../../../lib/libgtest_main.a
+[ 50%] Built target gtest_main
+[ 55%] Building CXX object CMakeFiles/firewall_core.dir/src/core/batch_processor.cpp.o
+[ 60%] Building CXX object CMakeFiles/firewall_core.dir/src/api/zmq_subscriber.cpp.o
+[ 65%] Linking CXX static library ../../../lib/libgmock.a
+[ 65%] Built target gmock
+[ 70%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
+[ 75%] Linking CXX static library libfirewall_core.a
+[ 75%] Built target firewall_core
+[ 80%] Building CXX object CMakeFiles/firewall-acl-agent.dir/src/main.cpp.o
+[ 85%] Building CXX object CMakeFiles/firewall_tests.dir/tests/unit/test_ipset_wrapper.cpp.o
+[ 90%] Linking CXX executable firewall-acl-agent
+[ 95%] Linking CXX static library ../../../lib/libgmock_main.a
+[ 95%] Built target gmock_main
+[ 95%] Built target firewall-acl-agent
+[100%] Linking CXX executable firewall_tests
+[100%] Built target firewall_tests
+✅ All components built (Sniffer + Detector + Firewall)
+✅ Full rebuild complete
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker %
+
+He quitado los warnings, parece que hay una compilacion limpia.
+
+El siguiente comando está deprecado, levanta un laboratorio de prueba en docker con servicios del pleistoceno. Para deprecar.
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make lab-start
+🚀 Starting Docker Lab...
+...
+
+Este comando tambien tiene que deprecar.
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make lab-stop
+⏸️  Stopping Docker Lab...
+...
+
+╔════════════════════════════════════════════════════════════╗
+║  ML Defender Lab - Live Monitoring                         ║
+║  2025-11-22 11:24:44                                ║
+╚════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Component Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 Firewall:  ✅ PID 78474 - CPU: 0.0% MEM: 0.0% (4MB)
+🤖 Detector:  ✅ PID 78507 - CPU: 6.1% MEM: 1.7% (142MB)
+📡 Sniffer:   ✅ PID 78521 - CPU: 0.0% MEM: 0.0% (4MB)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔌 ZMQ Ports
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Port 5571 (Sniffer → Detector): ✅ Listening (2 connections)
+Port 5572 (Detector → Firewall): ✅ Listening (2 connections)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 IPSet Blacklist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ml_defender_blacklist: ✅ Active - Entries: 0 - Memory: 272B
+/vagrant/scripts/monitor_lab.sh: línea 124: local: sólo se puede usar dentro de una función
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Recent Logs (last 5 lines)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 Firewall:
+[ZMQSubscriber] Failed to parse DetectionBatch protobuf (202 bytes)
+[HEALTH] Running health checks...
+[HEALTH] ✓ IPSet exists
+[HEALTH] ✓ IPTables rule exists
+[HEALTH] ✗ ZMQ not connected!
+
+🤖 Detector:
+[2025-11-22 11:21:51.906] [ml-detector] [info] 📊 Stats: received=14, processed=14, sent=14, attacks=0, errors=(deser:0, feat:0, inf:0)
+[2025-11-22 11:22:51.913] [ml-detector] [info] 📊 Stats: received=16, processed=16, sent=16, attacks=0, errors=(deser:0, feat:0, inf:0)
+[2025-11-22 11:23:51.914] [ml-detector] [info] 📊 Stats: received=22, processed=22, sent=22, attacks=0, errors=(deser:0, feat:0, inf:0)
+
+📡 Sniffer:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Press Ctrl+C to exit | Refreshing every 2 seconds...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Este comando tiene problemas con los nombres de los componentes...
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make kill-lab
+💀 Stopping ML Defender Lab...
+pkill: pattern that searches for process name longer than 15 characters will result in zero matches
+Try `pkill -f' option to match against the complete command line.
+✅ Lab stopped
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make status-lab
+📊 ML Defender Lab Status:
+
+pgrep: pattern that searches for process name longer than 15 characters will result in zero matches
+Try `pgrep -f' option to match against the complete command line.
+
+Ports: ⚠️  Not listening
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker %
+
+
+
+ATENCION!
+Incluso despues de recompilar y copiar el protobuf, parece haber un problema a la hora de decodificar el payload proto. Hay que depurar.
+
+Hipótesis? puede ser que el payload esté comprimido entre sniffer y ml-detector, llegue comprimido tambien a firewall, y al no estar implementado la compresion, no sabe parsearlo?
+Revisar los json de los componentes sniffer y ml-detector. Según parece, la compresión está desactivada. Va a haber que depurar más a fondo...
+Me he dado cuenta que en el Vagrantfile está configurado para eth2 pero el sniffer está configurado para eth0, no se ni como funciona.

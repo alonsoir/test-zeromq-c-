@@ -1,24 +1,17 @@
-// config/command_whitelist.json
 {
-  "allowed_commands": [
-    "GET",
-    "SET",
-    "DELETE",
-    "WATCH",
-    "PUT",
-    "LIST",
-    "STATUS"
-  ],
-  "allowed_patterns": [
-    "^[a-zA-Z0-9_./-]+$",
-    "^config/",
-    "^security/",
-    "^ml-detector/"
-  ],
-  "restricted_keys": [
-    "root",
-    "admin",
-    "password",
-    "secret"
-  ]
+    "allowed_commands": [
+        "ls",
+        "pwd", 
+        "whoami",
+        "date",
+        "echo",
+        "cat",
+        "ps",
+        "netstat"
+    ],
+    "allowed_patterns": [
+        "ls *",
+        "echo *", 
+        "cat *.txt"
+    ]
 }

@@ -1,18 +1,15 @@
-// config/rag_config.json
 {
-  "etcd": {
-    "endpoints": ["http://localhost:2379"],
-    "timeout": 5000,
-    "retry_attempts": 3
-  },
-  "llama": {
-    "model_path": "/path/to/llama/model",
-    "context_size": 4096,
-    "temperature": 0.7
-  },
-  "security": {
-    "whitelist_file": "config/command_whitelist.json",
-    "max_query_length": 1000,
-    "enable_audit_log": true
+  "model_path": "../models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
+  "security_level": 3,
+  "use_llm": true,
+  "etcd_endpoint": "http://localhost:2379",
+  "whitelist_path": "../config/command_whitelist.json",
+  "log_level": "info",
+  "llama_config": {
+    "context_size": 2048,
+    "batch_size": 512,
+    "gpu_layers": 0,
+    "use_mlock": false,
+    "use_mmap": true
   }
 }
