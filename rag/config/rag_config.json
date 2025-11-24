@@ -1,7 +1,0 @@
-{
-    "model_path": "../models/llama-model.bin",
-    "security_level": 3,
-    "use_llm": true,
-    "etcd_endpoint": "http://localhost:2379",
-    "log_level": "info"
-}

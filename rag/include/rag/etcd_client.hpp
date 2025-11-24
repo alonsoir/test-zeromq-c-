@@ -1,24 +1,47 @@
 #pragma once
+
 #include <string>
 #include <vector>
-#include <functional>
 #include <memory>
+#include <functional>  // Necesario para std::function
 
 namespace Rag {
 
     class EtcdClient {
     public:
-        explicit EtcdClient(const std::string& endpoint);
+        EtcdClient(const std::string& endpoint = "http://localhost:2379",
+                   const std::string& component_name = "rag");
         ~EtcdClient();
 
-        bool put(const std::string& key, const std::string& value);
-        std::pair<bool, std::string> get(const std::string& key);
-        bool watch(const std::string& key, std::function<void(const std::string&)> callback);
-        std::vector<std::string> listKeys(const std::string& prefix);
+        // Inicialización y conexión
+        bool initialize();
+        bool is_connected() const;
+
+        // Gestión de componentes
+        bool get_component_config(const std::string& component_name);
+        bool validate_configuration();
+        bool update_component_config(const std::string& component_name,
+                                    const std::string& path,
+                                    const std::string& value);
+
+        // Cifrado
+        std::string get_encryption_seed();
+        bool test_encryption(const std::string& test_data = "test_message");
+
+        // Pipeline
+        bool get_pipeline_status();
+        bool start_component(const std::string& component_name);
+        bool stop_component(const std::string& component_name);
+
+        // Comandos específicos del RAG
+        bool show_rag_config();
+        bool set_rag_setting(const std::string& setting, const std::string& value);
+        bool get_rag_capabilities();
 
     private:
         class Impl;
-        std::unique_ptr<Impl> pImpl;
+        std::unique_ptr<Impl> impl_;
+        bool connected_ = false;
     };
 
 } // namespace Rag

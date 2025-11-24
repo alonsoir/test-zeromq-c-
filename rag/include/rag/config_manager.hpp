@@ -1,36 +1,38 @@
-// include/rag/config_manager.hpp
 #pragma once
 #include <string>
-#include <vector>
 #include <nlohmann/json.hpp>
 
-namespace rag {
+namespace Rag {
 
     class ConfigManager {
     public:
         ConfigManager();
         ~ConfigManager();
 
-        bool loadConfig(const std::string& config_path);
-        bool saveConfig(const std::string& config_path = "");
+        bool loadFromFile(const std::string& config_path = "../config/rag-config.json");
+        bool saveToFile(const std::string& config_path = "");
 
-        std::string getString(const std::string& key, const std::string& default_val = "") const;
-        int getInt(const std::string& key, int default_val = 0) const;
-        bool getBool(const std::string& key, bool default_val = false) const;
-        std::vector<std::string> getStringArray(const std::string& key) const;
+        // Acceso a configuraciones
+        std::string getModelPath() const;
+        int getSecurityLevel() const;
+        bool useLLM() const;
+        std::string getEtcdEndpoint() const;
+        std::string getLogLevel() const;
 
-        void setString(const std::string& key, const std::string& value);
-        void setInt(const std::string& key, int value);
-        void setBool(const std::string& key, bool value);
+        // Modificación de configuraciones
+        bool updateSetting(const std::string& path, const std::string& value);
+        bool updateSetting(const std::string& path, int value);
+        bool updateSetting(const std::string& path, bool value);
 
-        bool validateConfig() const;
+        // Para registro en etcd
+        nlohmann::json getConfigForEtcd() const;
+        std::string getComponentId() const;
 
     private:
         nlohmann::json config_;
         std::string current_config_path_;
 
-        nlohmann::json* getNode(const std::string& key_path);
-        const nlohmann::json* getNode(const std::string& key_path) const;
+        bool validateConfig() const;
     };
 
-} // namespace rag
+} // namespace Rag

@@ -1,4 +1,4 @@
-// src/whitelist_manager.cpp
+// rag/src/whitelist_manager.cpp
 #include "rag/whitelist_manager.hpp"
 #include <fstream>
 #include <iostream>

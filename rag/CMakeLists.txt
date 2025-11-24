@@ -68,6 +68,8 @@ endif()
 set(SOURCES
         src/main.cpp
         src/llama_integration_real.cpp
+        src/etcd_client.cpp
+        src/whitelist_manager.cpp
 )
 
 message(STATUS "📁 Sources to compile: ${SOURCES}")
@@ -95,6 +97,34 @@ if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
 else()
     message(STATUS "❌ llama.cpp not available - using simulation mode")
     target_compile_definitions(rag-security PRIVATE LLAMA_SIMULATION_MODE)
+endif()
+
+# ============================================================================
+# DEPENDENCIAS ADICIONALES PARA ETCD-CLIENT
+# ============================================================================
+# Buscar nlohmann/json
+find_package(PkgConfig REQUIRED)
+find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
+        PATHS /usr/include /usr/local/include
+)
+
+if(JSON_INCLUDE_DIR)
+    target_include_directories(rag-security PRIVATE ${JSON_INCLUDE_DIR})
+    message(STATUS "✅ Found nlohmann/json: ${JSON_INCLUDE_DIR}")
+else()
+    message(WARNING "❌ nlohmann/json not found")
+endif()
+
+# httplib es header-only, buscar su ubicación
+find_path(HTTPLIB_INCLUDE_DIR httplib.h
+        PATHS /usr/include /usr/local/include
+)
+
+if(HTTPLIB_INCLUDE_DIR)
+    target_include_directories(rag-security PRIVATE ${HTTPLIB_INCLUDE_DIR})
+    message(STATUS "✅ Found httplib: ${HTTPLIB_INCLUDE_DIR}")
+else()
+    message(WARNING "❌ httplib not found")
 endif()
 
 # ============================================================================

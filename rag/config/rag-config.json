@@ -1,4 +1,5 @@
 {
+  "id": "rag",
   "model_path": "../models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
   "security_level": 3,
   "use_llm": true,
@@ -11,5 +12,11 @@
     "gpu_layers": 0,
     "use_mlock": false,
     "use_mmap": true
-  }
+  },
+  "capabilities": ["component_management", "config_validation", "pipeline_control"],
+  "compression": "lz4",
+  "encryption": "AES-256-CBC",
+  "whitelist_commands": true,
+  "requires_encryption": true,
+  "requires_compression": false
 }

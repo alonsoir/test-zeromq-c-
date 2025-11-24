@@ -324,6 +324,64 @@ Vagrant.configure("2") do |config|
       echo "✅ etcd-cpp-api already installed"
     fi
 
+        # ========================================
+        # CPP-HTTPLIB (SIMPLE HTTP SERVER) - ALTERNATIVA A DROGON
+        # ========================================
+        echo "=== PHASE 14.1: CPP-HTTPLIB ==="
+        if [ ! -f /usr/local/include/httplib.h ]; then
+          echo "📦 Installing cpp-httplib (simple HTTP server)..."
+          cd /tmp
+          rm -rf cpp-httplib
+          git clone https://github.com/yhirose/cpp-httplib.git
+          echo "DEBUG: git clone cpp-httplib exit code: $?"
+
+          # Instalar como header-only library
+          mkdir -p /usr/local/include
+          cp cpp-httplib/httplib.h /usr/local/include/
+          echo "✅ cpp-httplib installed as header-only library"
+        else
+          echo "✅ cpp-httplib already installed"
+        fi
+
+        # ========================================
+        # NLohmann JSON (si no está instalado)
+        # ========================================
+        echo "=== PHASE 14.2: NLOHMANN JSON ==="
+        if [ ! -f /usr/include/nlohmann/json.hpp ] && [ ! -f /usr/local/include/nlohmann/json.hpp ]; then
+          echo "📦 Installing nlohmann json..."
+          apt-get install -y nlohmann-json3-dev
+          echo "DEBUG: nlohmann json install exit code: $?"
+        else
+          echo "✅ nlohmann json already installed"
+        fi
+
+        # ========================================
+        # CRYPTO++ LIBRARY (CIFRADO REAL) - CON FALLBACK
+        # ========================================
+        echo "=== PHASE 14.3: CRYPTO++ ==="
+        if [ ! -f /usr/include/cryptopp/cryptlib.h ] && [ ! -f /usr/local/include/cryptopp/cryptlib.h ]; then
+          echo "📦 Installing Crypto++ library..."
+
+          # Intentar con apt
+          if apt-get install -y libcrypto++-dev libcrypto++-doc libcrypto++-utils; then
+            echo "✅ Crypto++ installed via apt"
+          else
+            echo "⚠️  Fallando a instalación desde source..."
+
+            # Compilar desde source como fallback
+            cd /tmp
+            wget https://www.cryptopp.com/cryptopp870.zip
+            unzip cryptopp870.zip -d cryptopp
+            cd cryptopp
+            make -j4
+            make install
+            echo "✅ Crypto++ compiled from source"
+          fi
+
+        else
+          echo "✅ Crypto++ already installed"
+        fi
+
     # ========================================
     # LLAMA.CPP COMPILATION & MODEL DOWNLOAD
     # ========================================
@@ -555,6 +613,14 @@ alias logs-sniffer='tail -f /vagrant/sniffer/build/logs/*.log 2>/dev/null || ech
 alias logs-rag='tail -f /vagrant/rag/build/logs/*.log 2>/dev/null || echo "No logs yet"'
 alias logs-lab='cd /vagrant && bash scripts/monitor_lab.sh'
 
+# etcd-server development
+alias build-etcd-server='cd /vagrant/etcd-server/build && rm -rf * && cmake .. && make -j4'
+alias run-etcd-server='cd /vagrant/etcd-server/build && ./etcd-server'
+alias test-etcd-server='curl -X GET http://localhost:2379/validate'
+
+# RAG with etcd integration
+alias test-rag-etcd='cd /vagrant/rag/build && ./rag-security --test-etcd'
+
 # Shortcuts
 export PROJECT_ROOT="/vagrant"
 export MODELS_DIR="/vagrant/ml-detector/models/production"
@@ -633,13 +699,13 @@ EOF
     # Core Dependencies
     echo "📚 CORE DEPENDENCIES:"
     echo "┌──────────────────────┬─────────────┬─────────────────────┐"
-    [ -f /usr/local/lib/libetcd-cpp-api.so ] && echo "│ etcd-cpp-api         │     ✅      │ Installed           │" || echo "│ etcd-cpp-api         │     ❌      │ Missing             │"
-    [ -f /usr/local/lib/libonnxruntime.so ] && echo "│ ONNX Runtime         │     ✅      │ Installed           │" || echo "│ ONNX Runtime         │     ❌      │ Missing             │"
-    [ -f /vagrant/third_party/llama.cpp/build/src/libllama.a ] && echo "│ llama.cpp            │     ✅      │ Compiled            │" || echo "│ llama.cpp            │     ❌      │ Not compiled        │"
-    which docker >/dev/null && echo "│ Docker               │     ✅      │ Installed           │" || echo "│ Docker               │     ❌      │ Missing             │"
-    which cmake >/dev/null && echo "│ CMake                │     ✅      │ Installed           │" || echo "│ CMake                │     ❌      │ Missing             │"
+        [ -f /usr/local/lib/libetcd-cpp-api.so ] && echo "│ etcd-cpp-api         │     ✅      │ Installed           │" || echo "│ etcd-cpp-api         │     ❌      │ Missing             │"
+        [ -f /usr/local/lib/libdrogon.a ] && echo "│ Drogon Framework     │     ✅      │ Installed           │" || echo "│ Drogon Framework     │     ❌      │ Missing             │"
+        [ -f /usr/local/lib/libonnxruntime.so ] && echo "│ ONNX Runtime         │     ✅      │ Installed           │" || echo "│ ONNX Runtime         │     ❌      │ Missing             │"
+        [ -f /vagrant/third_party/llama.cpp/build/src/libllama.a ] && echo "│ llama.cpp            │     ✅      │ Compiled            │" || echo "│ llama.cpp            │     ❌      │ Not compiled        │"
+        which docker >/dev/null && echo "│ Docker               │     ✅      │ Installed           │" || echo "│ Docker               │     ❌      │ Missing             │"
+        which cmake >/dev/null && echo "│ CMake                │     ✅      │ Installed           │" || echo "│ CMake                │     ❌      │ Missing             │"
     echo "└──────────────────────┴─────────────┴─────────────────────┘"
-    echo ""
 
     # Network Status
     echo "🌐 NETWORK STATUS:"
