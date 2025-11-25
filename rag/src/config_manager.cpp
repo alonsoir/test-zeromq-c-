@@ -3,12 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 namespace Rag {
-
-ConfigManager::ConfigManager() {
-    // NO configurar valores por defecto - la verdad está en el JSON
-}
 
 ConfigManager::~ConfigManager() = default;
 
@@ -25,7 +22,6 @@ bool ConfigManager::loadFromFile(const std::string& config_path) {
 
         std::cout << "✅ Loaded RAG config from: " << config_path << std::endl;
 
-        // Validación estricta - si falla, salimos
         if (!validateConfig()) {
             std::cerr << "❌ CRITICAL: RAG config validation failed" << std::endl;
             return false;
@@ -63,58 +59,94 @@ bool ConfigManager::saveToFile(const std::string& config_path) {
     }
 }
 
-// Métodos de acceso a configuraciones - FAIL FAST
+// Métodos de acceso
 std::string ConfigManager::getModelPath() const {
-    if (!config_.contains("model_path") || !config_["model_path"].is_string()) {
-        throw std::runtime_error("CRITICAL: model_path not found in config");
+    if (!config_.contains("rag") || !config_["rag"].contains("model_name") ||
+        !config_["rag"]["model_name"].is_string()) {
+        throw std::runtime_error("CRITICAL: rag.model_name not found in config");
     }
-    return config_["model_path"].get<std::string>();
+    return config_["rag"]["model_name"].get<std::string>();
 }
 
 int ConfigManager::getSecurityLevel() const {
     if (!config_.contains("security_level") || !config_["security_level"].is_number()) {
-        throw std::runtime_error("CRITICAL: security_level not found in config");
+        return 3;
     }
     return config_["security_level"].get<int>();
 }
 
 bool ConfigManager::useLLM() const {
-    if (!config_.contains("use_llm") || !config_["use_llm"].is_boolean()) {
-        throw std::runtime_error("CRITICAL: use_llm not found in config");
+    if (!config_.contains("rag") || !config_["rag"].contains("use_llm") ||
+        !config_["rag"]["use_llm"].is_boolean()) {
+        return true;
     }
-    return config_["use_llm"].get<bool>();
+    return config_["rag"]["use_llm"].get<bool>();
 }
 
 std::string ConfigManager::getEtcdEndpoint() const {
-    if (!config_.contains("etcd_endpoint") || !config_["etcd_endpoint"].is_string()) {
-        throw std::runtime_error("CRITICAL: etcd_endpoint not found in config");
-    }
-    return config_["etcd_endpoint"].get<std::string>();
+    auto etcd_config = getEtcdConfig();
+    return "http://" + etcd_config.host + ":" + std::to_string(etcd_config.port);
 }
 
 std::string ConfigManager::getLogLevel() const {
     if (!config_.contains("log_level") || !config_["log_level"].is_string()) {
-        throw std::runtime_error("CRITICAL: log_level not found in config");
+        return "INFO";
     }
     return config_["log_level"].get<std::string>();
 }
 
-// Métodos de modificación - FAIL FAST
+// Métodos para nueva estructura JSON
+RagConfig ConfigManager::getRagConfig() const {
+    RagConfig rag_config;
+
+    if (config_.contains("rag")) {
+        auto rag = config_["rag"];
+        if (rag.contains("host") && rag["host"].is_string()) {
+            rag_config.host = rag["host"].get<std::string>();
+        }
+        if (rag.contains("port") && rag["port"].is_number()) {
+            rag_config.port = rag["port"].get<int>();
+        }
+        if (rag.contains("model_name") && rag["model_name"].is_string()) {
+            rag_config.model_name = rag["model_name"].get<std::string>();
+        }
+        if (rag.contains("embedding_dimension") && rag["embedding_dimension"].is_number()) {
+            rag_config.embedding_dimension = rag["embedding_dimension"].get<int>();
+        }
+    }
+
+    return rag_config;
+}
+
+EtcdConfig ConfigManager::getEtcdConfig() const {
+    EtcdConfig etcd_config;
+
+    if (config_.contains("etcd")) {
+        auto etcd = config_["etcd"];
+        if (etcd.contains("host") && etcd["host"].is_string()) {
+            etcd_config.host = etcd["host"].get<std::string>();
+        }
+        if (etcd.contains("port") && etcd["port"].is_number()) {
+            etcd_config.port = etcd["port"].get<int>();
+        }
+    }
+
+    return etcd_config;
+}
+
+// Métodos de modificación - SIN DUPLICADOS
 bool ConfigManager::updateSetting(const std::string& path, const std::string& value) {
     try {
-        // Verificar que la configuración está cargada
         if (config_.empty()) {
             throw std::runtime_error("Config not loaded");
         }
 
-        // Manejar paths simples (sin puntos)
         if (path.find('.') == std::string::npos) {
             if (!config_.contains(path)) {
                 throw std::runtime_error("Setting '" + path + "' not found in config");
             }
             config_[path] = value;
         } else {
-            // Manejar paths con puntos (llama_config.context_size)
             std::istringstream iss(path);
             std::string token;
             nlohmann::json* current = &config_;
@@ -143,21 +175,45 @@ bool ConfigManager::updateSetting(const std::string& path, int value) {
 }
 
 bool ConfigManager::updateSetting(const std::string& path, bool value) {
-    return updateSetting(path, value ? "true" : "false");
+    try {
+        if (config_.empty()) {
+            throw std::runtime_error("Config not loaded");
+        }
+
+        if (path.find('.') == std::string::npos) {
+            if (!config_.contains(path)) {
+                throw std::runtime_error("Setting '" + path + "' not found in config");
+            }
+            config_[path] = value;
+        } else {
+            std::istringstream iss(path);
+            std::string token;
+            nlohmann::json* current = &config_;
+
+            while (std::getline(iss, token, '.')) {
+                if (current->is_object() && current->contains(token)) {
+                    current = &(*current)[token];
+                } else {
+                    throw std::runtime_error("Config path '" + path + "' not found");
+                }
+            }
+            *current = value;
+        }
+
+        std::cout << "✅ Updated config: " << path << " = " << (value ? "true" : "false") << std::endl;
+        return true;
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ CRITICAL: Error updating config '" << path << "': " << e.what() << std::endl;
+        return false;
+    }
 }
 
-// Para registro en etcd - FAIL FAST
 nlohmann::json ConfigManager::getConfigForEtcd() const {
     if (config_.empty()) {
         throw std::runtime_error("CRITICAL: Config not loaded for etcd registration");
     }
-
-    // Validar campos mínimos requeridos para etcd
-    if (!config_.contains("id") || !config_["id"].is_string()) {
-        throw std::runtime_error("CRITICAL: 'id' field required for etcd registration");
-    }
-
-    return config_; // Devolver configuración completa
+    return config_;
 }
 
 std::string ConfigManager::getComponentId() const {
@@ -168,31 +224,35 @@ std::string ConfigManager::getComponentId() const {
 }
 
 bool ConfigManager::validateConfig() const {
-    // Validaciones CRÍTICAS - si falla alguna, el sistema no puede funcionar
-
-    if (!config_.contains("id") || !config_["id"].is_string()) {
-        std::cerr << "❌ CRITICAL: 'id' field is required and must be a string" << std::endl;
+    if (!config_.contains("rag")) {
+        std::cerr << "❌ CRITICAL: 'rag' section is required" << std::endl;
         return false;
     }
 
-    if (!config_.contains("model_path") || !config_["model_path"].is_string()) {
-        std::cerr << "❌ CRITICAL: 'model_path' field is required and must be a string" << std::endl;
+    auto rag = config_["rag"];
+    if (!rag.contains("host") || !rag["host"].is_string()) {
+        std::cerr << "❌ CRITICAL: 'rag.host' field is required and must be a string" << std::endl;
         return false;
     }
 
-    if (!config_.contains("etcd_endpoint") || !config_["etcd_endpoint"].is_string()) {
-        std::cerr << "❌ CRITICAL: 'etcd_endpoint' field is required and must be a string" << std::endl;
+    if (!rag.contains("port") || !rag["port"].is_number()) {
+        std::cerr << "❌ CRITICAL: 'rag.port' field is required and must be a number" << std::endl;
         return false;
     }
 
-    if (!config_.contains("security_level") || !config_["security_level"].is_number()) {
-        std::cerr << "❌ CRITICAL: 'security_level' field is required and must be a number" << std::endl;
+    if (!rag.contains("model_name") || !rag["model_name"].is_string()) {
+        std::cerr << "❌ CRITICAL: 'rag.model_name' field is required and must be a string" << std::endl;
         return false;
     }
 
-    int security_level = config_["security_level"].get<int>();
-    if (security_level < 1 || security_level > 5) {
-        std::cerr << "❌ CRITICAL: security_level must be between 1 and 5" << std::endl;
+    if (!config_.contains("etcd")) {
+        std::cerr << "❌ CRITICAL: 'etcd' section is required" << std::endl;
+        return false;
+    }
+
+    auto etcd = config_["etcd"];
+    if (!etcd.contains("host") || !etcd["host"].is_string()) {
+        std::cerr << "❌ CRITICAL: 'etcd.host' field is required and must be a string" << std::endl;
         return false;
     }
 

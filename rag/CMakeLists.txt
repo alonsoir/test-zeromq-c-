@@ -21,7 +21,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party")
 
 # ============================================================================
-# LLAMA.CPP - CONFIGURACIÓN CON RUTAS EXACTAS
+# LLAMA.CPP - CONFIGURACIÓN
 # ============================================================================
 set(LLAMA_CPP_DIR "${THIRD_PARTY_DIR}/llama.cpp")
 set(LLAMA_BUILD_DIR "${LLAMA_CPP_DIR}/build")
@@ -29,7 +29,6 @@ set(LLAMA_BUILD_DIR "${LLAMA_CPP_DIR}/build")
 if(EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
     message(STATUS "Found llama.cpp: ${LLAMA_CPP_DIR}")
 
-    # Buscar librería compartida
     if(EXISTS "${LLAMA_BUILD_DIR}/bin/libllama.so")
         set(LLAMA_LIB_PATH "${LLAMA_BUILD_DIR}/bin/libllama.so")
         set(HAVE_LLAMA_CPP TRUE)
@@ -39,54 +38,67 @@ if(EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
         message(WARNING "❌ llama shared library not found")
     endif()
 
-    # RUTAS EXACTAS DE LOS HEADERS (basado en tu output)
     set(LLAMA_INCLUDE_DIRS
-            ${LLAMA_CPP_DIR}/include           # llama.h está aquí
-            ${LLAMA_CPP_DIR}/ggml/include      # ggml.h está aquí
-            ${LLAMA_CPP_DIR}                   # Directorio raíz
-            ${LLAMA_CPP_DIR}/src               # Headers adicionales
-            ${LLAMA_CPP_DIR}/common            # Headers comunes
+            ${LLAMA_CPP_DIR}/include
+            ${LLAMA_CPP_DIR}/ggml/include
+            ${LLAMA_CPP_DIR}
+            ${LLAMA_CPP_DIR}/src
+            ${LLAMA_CPP_DIR}/common
     )
-
-    message(STATUS "📁 Llama include directories:")
-    foreach(DIR ${LLAMA_INCLUDE_DIRS})
-        if(EXISTS "${DIR}")
-            message(STATUS "  ✅ ${DIR}")
-        else()
-            message(STATUS "  ❌ ${DIR} (not found)")
-        endif()
-    endforeach()
-
 else()
     message(WARNING "llama.cpp not found at: ${LLAMA_CPP_DIR}")
     set(HAVE_LLAMA_CPP FALSE)
 endif()
 
 # ============================================================================
+# DEPENDENCIAS EXTERNAS - BUSCAR EN SISTEMA
+# ============================================================================
+message(STATUS "🔍 Buscando dependencias del sistema...")
+
+# 1. HTTPLIB (header-only)
+find_path(HTTPLIB_INCLUDE_DIR httplib.h
+        PATHS /usr/include /usr/local/include
+        REQUIRED
+)
+
+# 2. NLOHMANN JSON (header-only)
+find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
+        PATHS /usr/include /usr/local/include
+        REQUIRED
+)
+
+# 3. Threads
+find_package(Threads REQUIRED)
+
+# ============================================================================
 # ARCHIVOS FUENTE
 # ============================================================================
 set(SOURCES
         src/main.cpp
-        src/llama_integration_real.cpp
         src/etcd_client.cpp
         src/whitelist_manager.cpp
+        src/llama_integration_real.cpp
+        src/config_manager.cpp
+        src/rag_command_manager.cpp
 )
-
-message(STATUS "📁 Sources to compile: ${SOURCES}")
 
 # ============================================================================
 # EJECUTABLE PRINCIPAL
 # ============================================================================
 add_executable(rag-security ${SOURCES})
 
+# ============================================================================
+# CONFIGURACIÓN DE INCLUSIONES
+# ============================================================================
 target_include_directories(rag-security PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${HTTPLIB_INCLUDE_DIR}
+        ${JSON_INCLUDE_DIR}
 )
 
 # ============================================================================
 # LINKING
 # ============================================================================
-find_package(Threads REQUIRED)
 target_link_libraries(rag-security PRIVATE Threads::Threads)
 
 if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
@@ -97,34 +109,6 @@ if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
 else()
     message(STATUS "❌ llama.cpp not available - using simulation mode")
     target_compile_definitions(rag-security PRIVATE LLAMA_SIMULATION_MODE)
-endif()
-
-# ============================================================================
-# DEPENDENCIAS ADICIONALES PARA ETCD-CLIENT
-# ============================================================================
-# Buscar nlohmann/json
-find_package(PkgConfig REQUIRED)
-find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
-        PATHS /usr/include /usr/local/include
-)
-
-if(JSON_INCLUDE_DIR)
-    target_include_directories(rag-security PRIVATE ${JSON_INCLUDE_DIR})
-    message(STATUS "✅ Found nlohmann/json: ${JSON_INCLUDE_DIR}")
-else()
-    message(WARNING "❌ nlohmann/json not found")
-endif()
-
-# httplib es header-only, buscar su ubicación
-find_path(HTTPLIB_INCLUDE_DIR httplib.h
-        PATHS /usr/include /usr/local/include
-)
-
-if(HTTPLIB_INCLUDE_DIR)
-    target_include_directories(rag-security PRIVATE ${HTTPLIB_INCLUDE_DIR})
-    message(STATUS "✅ Found httplib: ${HTTPLIB_INCLUDE_DIR}")
-else()
-    message(WARNING "❌ httplib not found")
 endif()
 
 # ============================================================================
@@ -141,4 +125,11 @@ else()
     target_compile_options(rag-security PRIVATE -O2)
 endif()
 
-message(STATUS "🎯 Build configured - llama.cpp: ${HAVE_LLAMA_CPP}")
+# ============================================================================
+# VERIFICACIÓN FINAL
+# ============================================================================
+message(STATUS "🎯 Build configuration:")
+message(STATUS "   - httplib: ${HTTPLIB_INCLUDE_DIR}")
+message(STATUS "   - nlohmann/json: ${JSON_INCLUDE_DIR}")
+message(STATUS "   - llama.cpp: ${HAVE_LLAMA_CPP}")
+message(STATUS "   - threads: OK")

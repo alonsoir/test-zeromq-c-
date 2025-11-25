@@ -1,7 +1,7 @@
 #include "etcd_server/etcd_server.hpp"
 #include <iostream>
 #include <csignal>
-
+//etcd-server/src/main.cpp
 std::unique_ptr<EtcdServer> g_server;
 
 void signal_handler(int signal) {
@@ -30,10 +30,14 @@ int main() {
         std::cout << "🌐 Servidor HTTP escuchando en: http://0.0.0.0:2379" << std::endl;
         std::cout << "📚 Endpoints disponibles:" << std::endl;
         std::cout << "   POST /register  - Registrar componente" << std::endl;
-        std::cout << "   GET  /config    - Obtener configuración" << std::endl;
-        std::cout << "   PUT  /config    - Actualizar configuración" << std::endl;
+        std::cout << "   POST /unregister - Desregistrar componente" << std::endl;
+        std::cout << "   GET  /components - Listar componentes" << std::endl;  // ✅ NUEVO
+        std::cout << "   GET  /config/*   - Obtener configuración" << std::endl;
+        std::cout << "   PUT  /config/*   - Actualizar configuración" << std::endl;
         std::cout << "   GET  /seed      - Obtener seed de cifrado" << std::endl;
         std::cout << "   GET  /validate  - Validar configuración global" << std::endl;
+        std::cout << "   GET  /health    - Estado del servidor" << std::endl;
+        std::cout << "   GET  /info      - Información del sistema" << std::endl;
 
         // Iniciar servidor
         g_server->start();

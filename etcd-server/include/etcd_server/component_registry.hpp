@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include "crypto_manager.hpp"
-
+//etcd-server/include/etcd_server/component_registry.hpp
 using json = nlohmann::json;
 
 class ComponentRegistry {
@@ -19,6 +19,7 @@ public:
 
     // Gestión de componentes
     bool register_component(const std::string& name, const std::string& config_json);
+    bool unregister_component(const std::string& name);
     bool update_component_config(const std::string& name, const std::string& path, const std::string& value);
     std::string get_component_config(const std::string& name) const;
 

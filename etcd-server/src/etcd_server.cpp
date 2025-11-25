@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <sstream>
-
+// etcd-server/src/etcd_server.cpp
 using json = nlohmann::json;
 
 EtcdServer::EtcdServer(int port) : port_(port) {
@@ -95,6 +95,67 @@ void EtcdServer::run_server() {
             };
             res.set_content(error.dump(), "application/json");
         }
+    });
+
+    // Endpoint para desregistrar componentes - IMPLEMENTACIÓN REAL
+    server.Post("/unregister", [this](const httplib::Request& req, httplib::Response& res) {
+        std::cout << "[ETCD-SERVER] 📝 POST /unregister recibido" << std::endl;
+
+        try {
+            auto json_body = json::parse(req.body);
+
+            if (!json_body.contains("component") || !json_body["component"].is_string()) {
+                res.status = 400;
+                res.set_content(R"({"status": "error", "message": "Campo 'component' requerido"})", "application/json");
+                return;
+            }
+
+            std::string component_name = json_body["component"];
+
+            // Usar el método real de desregistro del ComponentRegistry
+            if (component_registry_->unregister_component(component_name)) {
+                json response = {
+                    {"status", "success"},
+                    {"message", "Componente desregistrado correctamente"},
+                    {"component", component_name},
+                    {"remaining_components", component_registry_->get_component_count()}
+                };
+                res.set_content(response.dump(), "application/json");
+                std::cout << "[ETCD-SERVER] ✅ Desregistro completado para: " << component_name << std::endl;
+            } else {
+                res.status = 404;
+                json error = {
+                    {"status", "error"},
+                    {"message", "Componente no encontrado: " + component_name}
+                };
+                res.set_content(error.dump(), "application/json");
+                std::cout << "[ETCD-SERVER] ❌ Componente no encontrado: " << component_name << std::endl;
+            }
+
+        } catch (const std::exception& e) {
+            res.status = 400;
+            json error = {
+                {"status", "error"},
+                {"message", "JSON inválido"},
+                {"details", e.what()}
+            };
+            res.set_content(error.dump(), "application/json");
+            std::cerr << "[ETCD-SERVER] ❌ Error en /unregister: " << e.what() << std::endl;
+        }
+    });
+
+    // Endpoint para listar componentes registrados
+    server.Get("/components", [this](const httplib::Request& /*req*/, httplib::Response& res) {
+        std::cout << "[ETCD-SERVER] 📋 GET /components solicitado" << std::endl;
+
+        auto components = component_registry_->get_registered_components();
+        json response = {
+            {"status", "success"},
+            {"component_count", components.size()},
+            {"components", components}
+        };
+        res.set_content(response.dump(), "application/json");
+        std::cout << "[ETCD-SERVER] 📊 Listando " << components.size() << " componentes" << std::endl;
     });
 
     // Endpoint para obtener seed de cifrado

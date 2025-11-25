@@ -1,11 +1,19 @@
 {
-  "id": "rag",
-  "model_path": "../models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
+  "id": "rag-security-system",
+  "rag": {
+    "host": "localhost",
+    "port": 8080,
+    "model_name": "tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
+    "embedding_dimension": 512,
+    "use_llm": true
+  },
+  "etcd": {
+    "host": "localhost",
+    "port": 2379
+  },
   "security_level": 3,
-  "use_llm": true,
-  "etcd_endpoint": "http://localhost:2379",
-  "whitelist_path": "../config/command_whitelist.json",
   "log_level": "info",
+  "whitelist_path": "../config/command_whitelist.json",
   "llama_config": {
     "context_size": 2048,
     "batch_size": 512,

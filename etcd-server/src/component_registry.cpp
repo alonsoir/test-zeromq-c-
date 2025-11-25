@@ -1,7 +1,7 @@
 #include "etcd_server/component_registry.hpp"
 #include <iostream>
 #include <algorithm>
-
+//etcd-server/src/component_registry.cpp
 ComponentRegistry::ComponentRegistry() {
     try {
         crypto_manager_ = std::make_unique<CryptoManager>();
@@ -38,6 +38,19 @@ bool ComponentRegistry::register_component(const std::string& name, const std::s
         std::cerr << "[REGISTRY] ❌ Error registrando componente " << name << ": " << e.what() << std::endl;
         return false;
     }
+}
+
+bool ComponentRegistry::unregister_component(const std::string& name) {
+    auto it = components_.find(name);
+    if (it == components_.end()) {
+        std::cout << "[REGISTRY] ❌ Componente no encontrado para desregistro: " << name << std::endl;
+        return false;
+    }
+
+    components_.erase(it);
+    std::cout << "[REGISTRY] 🗑️  Componente desregistrado: " << name << std::endl;
+    std::cout << "[REGISTRY]   Componentes restantes: " << components_.size() << std::endl;
+    return true;
 }
 
 bool ComponentRegistry::update_component_config(const std::string& name, const std::string& path, const std::string& value) {
