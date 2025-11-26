@@ -1,125 +1,221 @@
-# 🚀 PROMPT DE CONTINUIDAD - RAG SECURITY SYSTEM CON LLAMA REAL
+# 🚀 PROMPT DE CONTINUIDAD - ML DEFENDER SYSTEM
 
 ## 📅 ESTADO ACTUAL - RESUMEN EJECUTIVO
 
-### 🎯 **LOGROS COMPLETADOS:**
-- ✅ **Arquitectura KISS completamente funcional** con WhiteListManager como router central
-- ✅ **Sistema de validación robusto** con BaseValidator y RagValidator heredables
-- ✅ **Integración LLAMA REAL** con TinyLlama-1.1B funcionando
-- ✅ **Comandos completos**: `show_config`, `update_setting`, `show_capabilities`, `ask_llm`
-- ✅ **Persistencia automática** en JSON con validación de tipos
-- ✅ **Comunicación etcd** centralizada en WhiteListManager
-- ✅ **Separación clara de responsabilidades** - Arquitectura limpia y mantenible
+### 🎯 **LOGROS COMPLETADOS (Nov 20, 2025):**
+- ✅ **Sistema RAG completo** con LLAMA real funcionando
+- ✅ **4 detectores C++20 embebidos** con latencia sub-microsegundo
+- ✅ **Arquitectura KISS consolidada** - WhiteListManager como router central
+- ✅ **Integración TinyLlama-1.1B REAL** - No simulación
+- ✅ **Sistema de validación robusto** con BaseValidator heredable
+- ✅ **Persistencia JSON automática** con validación de tipos
+- ✅ **Comandos interactivos completos**: `ask_llm`, `show_config`, `update_setting`
 
-### 🔧 **ESTADO TÉCNICO ACTUAL:**
-- ✅ **Modelo TinyLlama disponible**: `/vagrant/rag/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf`
-- ✅ **LLAMA Integration compilada**: Usando `llama_integration_real.cpp`
-- ✅ **Sistema estable**: Compilación exitosa sin errores críticos
-- ⚠️ **Warnings menores**: Parámetros no usados (baja prioridad)
-- ✅ **Comunicación etcd**: Registro/desregistro funcionando correctamente
+### ⚠️ **PROBLEMAS CONOCIDOS:**
+- 🐛 **KV Cache Inconsistency** en LLAMA integration
+- ⚠️ **Workaround implementado** pero no solución definitiva
+- 🔧 **Error**: `inconsistent sequence positions (X=213, Y=0)`
+- 🎯 **Estado**: Sistema funcional pero con limpieza manual entre consultas
 
-### 🎪 **ARQUITECTURA CONSOLIDADA:**
+### 🏗️ **ARQUITECTURA ACTUAL FUNCIONAL:**
 ```
 WhiteListManager (Router Central + Etcd)
-    │
-    └── RagCommandManager (Lógica RAG + Validación)
-         ├── RagValidator (Validación específica)
-         ├── ConfigManager (Persistencia JSON) 
-         └── [ACCESO] LlamaIntegration (TinyLlama real)
+    ├── cpp_sniffer (eBPF/XDP + 40 features)
+    ├── ml-detector (4 modelos C++20 embebidos)
+    └── RagCommandManager (RAG + LLAMA real)
+         ├── RagValidator (Reglas específicas)
+         ├── ConfigManager (JSON Persistencia)
+         └── LlamaIntegration (TinyLlama-1.1B REAL)
 ```
 
-## 🚀 **PRÓXIMOS PASOS PRIORITARIOS:**
+## 🎯 **PRÓXIMOS PASOS PRIORITARIOS:**
 
-### **FASE INMEDIATA - ESTABILIZACIÓN LLAMA** (ALTA PRIORIDAD)
-1. **Probar carga real del modelo** TinyLlama
-2. **Verificar generación de respuestas** con consultas de seguridad
-3. **Optimizar parámetros** del modelo para mejor rendimiento
-4. **Manejo robusto de errores** en fallos de generación
+### **FASE INMEDIATA - ESTABILIZACIÓN** (ALTA PRIORIDAD)
+1. **🔧 Resolver bug KV Cache** en LLAMA integration
+    - Investigar alternativas a `llama_kv_cache_clear()`
+    - Probar diferentes estrategias de batch management
+    - Considerar recreación del contexto entre consultas
 
-### **FASE 2 - PREPARACIÓN BASE VECTORIAL** (MEDIA PRIORIDAD)
-5. **Diseñar estructura** para base de datos vectorial
-6. **Seleccionar embedder** compatible con TinyLlama
-7. **Preparar componente asíncrono** para escaneo de logs
+2. **🧪 Pruebas exhaustivas** del sistema RAG
+    - Múltiples consultas secuenciales
+    - Consultas de seguridad complejas
+    - Estabilidad de memoria y rendimiento
 
-### **FASE 3 - INTEGRACIÓN PIPELINE** (BAJA PRIORIDAD)
-8. **Esperar finalización Firewall** para logs
-9. **Implementar procesamiento** de logs del pipeline
-10. **Integrar consultas contextuales** con base vectorial
+3. **📊 Monitoreo de performance** LLAMA
+    - Tiempos de respuesta consistentes
+    - Uso de memoria del modelo
+    - Calidad de respuestas generadas
 
-## 📁 **ARCHIVOS CLAVE ACTUALES:**
+### **FASE 2 - INTEGRACIÓN AVANZADA** (MEDIA PRIORIDAD)
+4. **🛡️ Preparar firewall-acl-agent**
+    - Diseñar arquitectura C++20
+    - Integración con detecciones ML
+    - Sistema de respuesta automática
 
-**CORE DEL SISTEMA:**
-- `rag/src/main.cpp` - Inicialización centralizada con LLAMA
-- `rag/src/whitelist_manager.cpp` - Router + Comunicación etcd
-- `rag/src/rag_command_manager.cpp` - Lógica RAG + comandos LLAMA
-- `rag/src/llama_integration_real.cpp` - Integración real con TinyLlama
+5. **🔗 Avanzar integración etcd**
+    - Coordinación distribuida
+    - Configuración centralizada
+    - Hot-reload de configuraciones
 
-**VALIDACIÓN Y CONFIGURACIÓN:**
-- `rag/src/base_validator.cpp` - Validación centralizada heredable
-- `rag/src/rag_validator.cpp` - Reglas específicas RAG
-- `rag/src/config_manager.cpp` - Persistencia JSON
+### **FASE 3 - EVOLUCIÓN SISTEMA** (BAJA PRIORIDAD)
+6. **🧠 Base de datos vectorial** para RAG
+7. **📈 Sistema de monitoreo** y métricas
+8. **🔐 Hardening** de seguridad
 
-## 🧪 **COMANDOS DE PRUEBA DISPONIBLES:**
+## 🐛 **BUG CRÍTICO - KV CACHE INCONSISTENCY:**
+
+### **Problema Actual:**
 ```bash
-# Iniciar sistema
-cd /vagrant/rag/build && ./rag-security
-
-# Comandos de prueba
-SECURITY_SYSTEM> rag show_config
-SECURITY_SYSTEM> rag ask_llm "¿Qué es un firewall en seguridad informática?"
-SECURITY_SYSTEM> rag ask_llm "Explica cómo detectar un ataque DDoS"
-SECURITY_SYSTEM> rag update_setting port 9090
-SECURITY_SYSTEM> rag show_capabilities
-SECURITY_SYSTEM> exit
+SECURITY_SYSTEM> rag ask_llm "explica deteccion de intrusos"
+init: the tokens of sequence 0 in the input batch have inconsistent sequence positions:
+ - the last position stored in the memory module of the context (i.e. the KV cache) for sequence 0 is X = 214
+ - the tokens for sequence 0 in the input batch have a starting position of Y = 0
+ it is required that the sequence positions remain consecutive: Y = X + 1
+decode: failed to initialize batch
+llama_decode: failed to decode, ret = -1
 ```
 
-## 🎯 **PENDIENTES CRÍTICOS:**
+### **Workaround Actual:**
+```cpp
+// Limpieza manual del cache KV
+void clear_kv_cache() {
+    llama_batch batch = llama_batch_init(1, 0, 1);
+    batch.n_tokens = 0;  // Batch vacío
+    llama_decode(ctx, batch);  // Resetea estado interno
+    llama_batch_free(batch);
+}
+```
 
-### **PARA PRÓXIMA SESIÓN:**
-- [ ] **Verificar funcionamiento real** de TinyLlama
-- [ ] **Probar múltiples consultas** de seguridad
-- [ ] **Monitorear uso de memoria** y rendimiento
-- [ ] **Documentar respuestas** del modelo para referencia
+### **Alternativas a Investigar:**
+1. **Recrear contexto** completamente entre consultas
+2. **Manejo diferente de batches** - posiciones absolutas vs relativas
+3. **Usar sesiones separadas** por consulta
+4. **Actualizar versión de llama.cpp** si el problema está corregido en versión más nueva
 
-### **PARA EVOLUCIÓN FUTURA:**
-- [ ] **Base de datos vectorial** cuando logs estén disponibles
-- [ ] **Embedder optimizado** para TinyLlama
-- [ ] **Componente asíncrono** para procesamiento de logs
-- [ ] **Integración completa** con pipeline de seguridad
+## 🧪 **PRUEBAS PENDIENTES:**
 
-## 💡 **OBSERVACIONES TÉCNICAS:**
+### **Pruebas RAG System:**
+- [ ] Múltiples consultas secuenciales (`ask_llm`)
+- [ ] Consultas de seguridad complejas
+- [ ] Actualización de configuración en caliente
+- [ ] Estabilidad de memoria prolongada
+- [ ] Integración con comandos existentes
 
-### **LOGROS ARQUITECTURALES:**
-- ✅ **Separación completa** de responsabilidades
-- ✅ **WhiteListManager único** punto de comunicación etcd
-- ✅ **Validación centralizada** y heredable
-- ✅ **LLAMA Integration real** compilada y lista
-- ✅ **Sistema preparado** para expansión multi-componente
+### **Pruebas ML Detectors:**
+- [ ] Rendimiento con tráfico real
+- [ ] Precisión de detección en diferentes escenarios
+- [ ] Consumo de recursos en Raspberry Pi
+- [ ] Integración end-to-end con sniffer
 
-### **DECISIONES CONSOLIDADAS:**
-1. **Arquitectura KISS** - Simple y mantenible
-2. **Comunicación centralizada** - WhiteListManager maneja etcd
-3. **Validación heredable** - BaseValidator para todos los componentes
-4. **LLAMA real** - No simulación, modelo real funcionando
+## 📁 **ARCHIVOS CLAVE PARA PRÓXIMA SESIÓN:**
 
-## 🏁 **ESTADO ACTUAL:**
-**¡SISTEMA RAG COMPLETO Y FUNCIONAL!** 🎉
+### **Archivos Críticos (Bug KV Cache):**
+- `rag/src/llama_integration_real.cpp` - Integración LLAMA
+- `rag/src/rag_command_manager.cpp` - Manejo de comandos RAG
+- `rag/include/rag/llama_integration.hpp` - Interfaz LLAMA
 
-El sistema tiene:
-- ✅ Gestión de configuración robusta
-- ✅ Validación de datos avanzada
-- ✅ Integración LLAMA real con TinyLlama
-- ✅ Comunicación etcd centralizada
-- ✅ Arquitectura preparada para base vectorial
-- ✅ Sistema listo para integración con pipeline
+### **Archivos de Configuración:**
+- `rag/config/system_config.json` - Configuración RAG
+- `sniffer/config/sniffer.json` - Umbrales ML
 
-## 🔮 **PRÓXIMOS OBJETIVOS:**
-1. **Estabilizar LLAMA** - Verificar respuestas consistentes
-2. **Preparar infraestructura** para base vectorial
-3. **Integrar con logs** cuando Firewall esté listo
-4. **Implementar RAG completo** con contexto de logs
+### **Documentación:**
+- `README.md` - Estado general del proyecto
+- `ARCHITECTURE.md` - Arquitectura detallada
 
-**¡Base sólida establecida para evolucionar hacia RAG completo con contexto de seguridad!** 🚀
+## 🎯 **OBJETIVOS PARA PRÓXIMA SESIÓN:**
+
+### **Objetivo Principal:**
+**Resolver bug KV Cache** y tener sistema RAG 100% estable
+
+### **Objetivos Secundarios:**
+1. ✅ Sistema responde consistentemente a múltiples consultas
+2. ✅ Respuestas de calidad para preguntas de seguridad
+3. ✅ Memoria estable sin leaks
+4. ✅ Preparar base para siguiente componente (firewall-acl-agent)
+
+### **Criterios de Éxito:**
+- [ ] 10+ consultas secuenciales sin errores
+- [ ] Respuestas coherentes y relevantes
+- [ ] Tiempos de respuesta consistentes
+- [ ] Uso de memoria estable
+
+## 💡 **ENFOQUE RECOMENDADO:**
+
+### **1. Estrategia de Debug:**
+```cpp
+// Enfoque sistemático para resolver KV cache:
+// Opción A: Reset completo del contexto
+std::unique_ptr<llama_context> create_new_context() {
+    // Recrear contexto desde cero
+}
+
+// Opción B: Batch management mejorado  
+void better_batch_management() {
+    // Estrategias más inteligentes de batch
+}
+
+// Opción C: Session-per-query
+class QuerySession {
+    // Sesión aislada por consulta
+};
+```
+
+### **2. Priorización:**
+```
+ALTA:  Estabilidad RAG → Bug KV Cache
+MEDIA: Pruebas integración → Comandos + ML
+BAJA:  Nuevas features → firewall-agent
+```
+
+## 🚨 **CONTINGENCIAS:**
+
+### **Si no se resuelve el bug KV Cache:**
+1. **Documentar workaround** como solución temporal
+2. **Implementar recreación de contexto** entre consultas (menos eficiente pero funcional)
+3. **Planificar actualización** de llama.cpp
+4. **Continuar con otros componentes** mientras se investiga solución definitiva
+
+### **Si se resuelve el bug:**
+1. **Celebrar 🎉**
+2. **Ejecutar pruebas exhaustivas**
+3. **Avanzar con firewall-acl-agent**
+4. **Preparar demostración del sistema completo**
+
+## 📝 **NOTAS PARA PRÓXIMA SESIÓN:**
+
+### **Contexto Técnico:**
+- Sistema compilando sin errores
+- Arquitectura sólida y mantenible
+- 4 detectores ML funcionando optimalmente
+- RAG system 95% funcional (solo bug KV cache)
+
+### **Decisiones Pendientes:**
+- Estrategia definitiva para manejo de estado LLAMA
+- Priorización entre estabilidad RAG vs nuevas features
+- Enfoque para integración firewall-agent
+
+### **Recursos Necesarios:**
+- Acceso a documentación de llama.cpp
+- Tiempo para debugging profundo
+- Pruebas de estrés del sistema
 
 ---
-**¿Continuamos con pruebas del LLAMA real o prefieres enfocarte en otro aspecto?**
+
+## 🏁 **ESTADO ACTUAL RESUMEN:**
+
+**¡BASE SÓLIDA ESTABLECIDA!** 🎉
+
+**Tenemos:**
+- ✅ 4 detectores ML embebidos sub-microsegundo
+- ✅ Sistema RAG con LLAMA real integrado
+- ✅ Arquitectura KISS limpia y mantenible
+- ✅ Sistema de validación robusto
+- ✅ Solo UN bug crítico por resolver
+
+**Próximo objetivo:**
+**🔧 Estabilizar completamente el sistema RAG resolviendo el bug KV Cache**
+
+**¡Listos para la siguiente sesión!** 🚀
+
+---
+**¿Continuamos con la resolución del bug KV Cache o prefieres enfocarnos en otro aspecto primero?**

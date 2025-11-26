@@ -1,6 +1,6 @@
-# Troubleshooting Guide
+# 🛡️ ML Defender - Troubleshooting Guide
 
-Guía completa de resolución de problemas para ML Detector Tricapa.
+Guía completa de resolución de problemas para ML Defender Platform con RAG + 4 detectores ML.
 
 ---
 
@@ -11,8 +11,10 @@ Guía completa de resolución de problemas para ML Detector Tricapa.
 - [eBPF/XDP Issues](#ebpfxdp-issues)
 - [ZMQ Communication Issues](#zmq-communication-issues)
 - [ML Detector Issues](#ml-detector-issues)
+- [RAG System Issues](#rag-system-issues)
 - [Vagrant/VM Issues](#vagrantvm-issues)
 - [Debug Tools](#debug-tools)
+- [Emergency Recovery](#emergency-recovery)
 
 ---
 
@@ -25,47 +27,50 @@ Guía completa de resolución de problemas para ML Detector Tricapa.
 E: Package 'libbpf-dev' has no installation candidate
 ```
 
-**Causa:** Repositorios no actualizados o Debian versión incorrecta.
-
 **Solución:**
 ```bash
 # Dentro de la VM
 sudo apt-get update
 sudo apt-get install -y libbpf-dev
 
-# Si persiste, verificar sources.list
-cat /etc/apt/sources.list
-# Debe incluir: deb http://deb.debian.org/debian bookworm main
+# Verificar instalación
+dpkg -l | grep libbpf
 ```
 
 ---
 
-### ❌ Error: `jsoncpp` headers missing
+### ❌ Error: `llama_integration_real.cpp` compilation fails
 
 **Síntoma:**
 ```
-fatal error: json/json.h: No such file or directory
+error: ‘llama_kv_cache_clear’ was not declared in this scope
+```
+
+**Causa:** Función no disponible en nuestra versión de llama.cpp.
+
+**Solución:** Usar workaround implementado:
+```cpp
+// En llama_integration_real.cpp, usar:
+void clear_kv_cache() {
+    llama_batch batch = llama_batch_init(1, 0, 1);
+    batch.n_tokens = 0;
+    llama_decode(ctx, batch);
+    llama_batch_free(batch);
+}
+```
+
+---
+
+### ❌ Error: Missing nlohmann/json
+
+**Síntoma:**
+```
+fatal error: nlohmann/json.hpp: No such file or directory
 ```
 
 **Solución:**
 ```bash
-sudo apt-get install -y libjsoncpp-dev
-# Verificar instalación
-ls /usr/include/json/
-```
-
----
-
-### ❌ Error: `linux-headers-$(uname -r)` not found
-
-**Síntoma:**
-```
-E: Unable to locate package linux-headers-6.1.0-XX-amd64
-```
-
-**Solución:** Usar el metapaquete en vez de versión específica:
-```bash
-sudo apt-get install -y linux-headers-amd64
+sudo apt-get install -y nlohmann-json3-dev
 ```
 
 ---
@@ -77,7 +82,7 @@ sudo apt-get install -y linux-headers-amd64
 protoc: command not found
 ```
 
-**Solución:** Instalar stack completo de Protobuf:
+**Solución:**
 ```bash
 sudo apt-get install -y \
     protobuf-compiler \
@@ -90,149 +95,134 @@ protoc --version  # Debe mostrar: libprotoc 3.21.12
 
 ---
 
-### ❌ Error: CMake can't find BPF headers
-
-**Síntoma:**
-```
-CMake Error: Could not find bpf/libbpf.h
-```
-
-**Solución:**
-```bash
-# Verificar que están instalados
-dpkg -L libbpf-dev | grep libbpf.h
-
-# Si no existe, reinstalar
-sudo apt-get install --reinstall libbpf-dev
-
-# Añadir al CMakeLists.txt si es necesario
-include_directories(/usr/include/bpf)
-```
-
----
-
 ## Runtime Issues
 
-### ❌ Error: "Address already in use" (ZMQ)
+### ❌ Error: "KV Cache Inconsistency" en RAG System
 
 **Síntoma:**
 ```
-Address already in use (zmq_bind)
+init: the tokens of sequence 0 in the input batch have inconsistent sequence positions:
+ - the last position stored in the memory module of the context (i.e. the KV cache) for sequence 0 is X = 213
+ - the tokens for sequence 0 in the input batch have a starting position of Y = 0
 ```
 
-**Causa:** Múltiples sockets intentando bind al mismo puerto.
+**Estado:** 🔄 WORKAROUND IMPLEMENTADO
+
+**Solución:**
+```bash
+# Reiniciar servicio RAG (workaround temporal)
+sudo systemctl restart ml-defender-rag
+
+# Verificar que el workaround está en el código
+grep "clear_kv_cache" /opt/rag-security/src/llama_integration_real.cpp
+```
+
+---
+
+### ❌ Error: ML Detector no recibe datos
+
+**Síntoma:** No hay inferencias en los logs del ml-detector.
 
 **Diagnóstico:**
 ```bash
-# Ver qué está usando el puerto
+# Verificar conectividad ZMQ
 sudo netstat -tlnp | grep 5571
-# O
-sudo lsof -i :5571
+sudo netstat -tlnp | grep 5572
 
-# Ver procesos del sniffer/detector
-ps aux | grep -E 'sniffer|detector'
+# Verificar que sniffer está enviando
+sudo tail -f /var/log/ml-defender/sniffer-stdout.log | grep "ZMQ"
+
+# Verificar que detector está escuchando
+sudo tail -f /var/log/ml-defender/detector-stdout.log | grep "Received"
 ```
 
 **Solución:**
 ```bash
-# Opción 1: Matar procesos anteriores
-make kill-all
+# Reiniciar servicios en orden
+sudo systemctl restart ml-defender-sniffer
+sudo systemctl restart ml-defender-detector
 
-# Opción 2: Reducir socket pool a 1 en sniffer.json
-{
-  "socket_pools": {
-    "push_sockets": 1  // ← Solo 1 socket
-  }
-}
-
-# Opción 3: Cambiar puerto
-{
-  "output": {
-    "zmq_endpoint": "tcp://127.0.0.1:5573"  // Puerto diferente
-  }
-}
+# Verificar configuración de endpoints
+grep -A 5 "zmq" /etc/sniffer/sniffer.json
+grep -A 5 "zmq" /etc/ml-detector/ml_detector_config.json
 ```
 
 ---
 
-### ❌ Error: "Assertion failed: check ()" (ZMQ Crash)
+### ❌ Error: Alto uso de memoria
 
-**Síntoma:**
-```
-Assertion failed: check () (src/msg.cpp:414)
-Abortado
-```
-
-**Causa:** Bug en lifecycle de mensajes ZMQ bajo carga alta.
-
-**Workaround temporal:**
-```json
-// En sniffer.json
-{
-  "batch_processing_size": 1,     // ← Reducir a 1
-  "zmq_sender_threads": 1,        // ← Solo 1 thread
-  "ring_consumer_threads": 1
-}
-```
-
-**Fix definitivo:** Pendiente para v3.3.0 (revisar zmq_msg_close calls).
-
----
-
-### ❌ Error: No packets captured
-
-**Síntoma:** Sniffer arranca pero no captura paquetes.
+**Síntoma:** Uso de memoria >4 GB en Raspberry Pi.
 
 **Diagnóstico:**
 ```bash
-# 1. Verificar que el programa eBPF está cargado
-sudo bpftool prog show | grep sniffer
+# Identificar componente que usa más memoria
+ps aux --sort=-%mem | grep -E "(sniffer|ml-detector|rag)" | head -5
 
-# 2. Verificar que está adjunto a la interfaz
-ip link show eth0  # Buscar 'xdp' en la salida
-
-# 3. Ver estadísticas del ring buffer
-sudo bpftool map dump name stats_map
-
-# 4. Generar tráfico de prueba
-ping -c 10 8.8.8.8
+# Monitorear crecimiento
+watch -n 5 'ps aux | grep -E "(sniffer|ml-detector|rag)" | grep -v grep'
 ```
 
-**Posibles causas:**
+**Soluciones:**
 
-1. **Interfaz incorrecta:**
+1. **Reducir contexto RAG:**
 ```json
-// En sniffer.json, verificar:
+// En /etc/rag-security/system_config.json
 {
-  "capture": {
-    "interface": "eth0"  // ← Debe existir (ip link show)
+  "llama": {
+    "context_size": 512  // Reducir de 1024
   }
 }
 ```
 
-2. **Filtros demasiado restrictivos:**
+2. **Reiniciar servicio RAG:**
 ```bash
-# Ver filtros activos
-sudo bpftool map dump name excluded_ports
-sudo bpftool map dump name included_ports
-
-# Desactivar filtros temporalmente
-{
-  "filter": {
-    "mode": "passthrough"  // ← Todo pasa
-  }
-}
+sudo systemctl restart ml-defender-rag
 ```
 
-3. **Ring buffer lleno:**
+3. **Verificar memory leaks:**
 ```bash
-# Ver tamaño actual
-grep buffer_size config/sniffer.json
+# Ejecutar health check
+/usr/local/bin/ml-defender-health-check
+```
 
-# Incrementar si es necesario
-{
-  "buffer_size": 131072  // ← Duplicar
-}
+---
+
+### ❌ Error: RAG System no responde
+
+**Síntoma:** Comandos `rag ask_llm` no retornan respuesta.
+
+**Diagnóstico:**
+```bash
+# Verificar que el servicio está activo
+sudo systemctl status ml-defender-rag
+
+# Verificar logs de error
+sudo tail -f /var/log/ml-defender/rag-stderr.log
+
+# Probar conectividad al puerto
+telnet localhost 9090
+```
+
+**Soluciones:**
+
+1. **Verificar modelo LLAMA:**
+```bash
+# Verificar que el modelo existe
+ls -lh /opt/rag-security/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+
+# Verificar permisos
+sudo chmod 644 /opt/rag-security/models/*.gguf
+```
+
+2. **Reiniciar servicio:**
+```bash
+sudo systemctl restart ml-defender-rag
+```
+
+3. **Ejecutar en modo debug:**
+```bash
+cd /opt/rag-security/build
+./rag-security --config /etc/rag-security/system_config.json --debug
 ```
 
 ---
@@ -248,184 +238,236 @@ grep buffer_size config/sniffer.json
 
 **Diagnóstico:**
 ```bash
-# 1. Verificar que el archivo existe
-ls -lh build/sniffer.bpf.o
+# Verificar kernel support
+ls -l /sys/kernel/btf/vmlinux
 
-# 2. Verificar permisos
-sudo chmod 644 build/sniffer.bpf.o
+# Verificar que el archivo existe
+ls -lh /usr/local/lib/sniffer/sniffer.bpf.o
 
-# 3. Verificar BTF support en kernel
-cat /sys/kernel/btf/vmlinux | head -1
-
-# 4. Intentar cargar manualmente
-sudo bpftool prog load build/sniffer.bpf.o /sys/fs/bpf/test
+# Verificar permisos
+sudo chmod 644 /usr/local/lib/sniffer/sniffer.bpf.o
 ```
 
 **Soluciones:**
 
 1. **Recompilar programa eBPF:**
 ```bash
-cd build
-make clean
-make bpf_program  # Solo el programa eBPF
+cd /opt/ml-defender/sniffer/build
+make clean && make -j$(nproc)
+sudo cp sniffer.bpf.o /usr/local/lib/sniffer/
 ```
 
-2. **Verificar kernel version:**
+2. **Verificar versión del kernel:**
 ```bash
-uname -r  # Debe ser >= 5.10 para XDP
-```
-
-3. **Check libbpf version:**
-```bash
-dpkg -l | grep libbpf  # Debe ser >= 1.0
+uname -r  # Debe ser >= 6.1
 ```
 
 ---
 
-### ❌ Error: "No such file or directory" (BPF Maps)
+### ❌ Error: No se capturan paquetes
 
-**Síntoma:**
-```
-❌ Failed to get BPF map: excluded_ports (errno: 2)
-```
+**Síntoma:** Sniffer arranca pero no procesa eventos.
 
-**Causa:** Intentando acceder a maps por nombre en lugar de FDs.
-
-**Solución:** Actualizar a v3.2.1+ que usa FD-based access:
+**Diagnóstico:**
 ```bash
-git pull origin feature/ml-detector-tricapa
-make rebuild
+# Verificar programa eBPF cargado
+sudo bpftool prog show | grep sniffer
+
+# Verificar adjunto a interfaz
+ip link show eth0 | grep xdp
+
+# Generar tráfico de prueba
+ping -c 5 8.8.8.8
+
+# Ver logs del sniffer
+sudo tail -f /var/log/ml-defender/sniffer-stdout.log
 ```
 
-**Verificación:**
-```bash
-# Ver logs del sniffer, debe mostrar:
-[INFO] Found excluded_ports map, FD: 6
-[INFO] Found included_ports map, FD: 7
-[INFO] Found filter_settings map, FD: 8
-```
+**Soluciones:**
 
----
-
-### ❌ Error: XDP mode not supported (virtio)
-
-**Síntoma:**
-```
-[WARNING] XDP native mode not supported, using SKB mode
-```
-
-**Causa:** VirtualBox virtio_net no soporta XDP nativo.
-
-**Solución:** Normal en VM, usar SKB mode (ya lo hace automáticamente):
-```cpp
-// El código ya lo maneja:
-if (xdp_native_failed) {
-    use_skb_mode();  // ← Fallback automático
+1. **Verificar interfaz:**
+```json
+// En /etc/sniffer/sniffer.json
+{
+  "interface": "eth0"  // ← Debe coincidir con tu interfaz
 }
 ```
 
-No afecta funcionalidad, solo rendimiento.
+2. **Desactivar filtros temporalmente:**
+```json
+{
+  "filter": {
+    "mode": "passthrough"
+  }
+}
+```
 
 ---
 
 ## ZMQ Communication Issues
 
-### ❌ Detector no recibe mensajes
+### ❌ Error: "Address already in use"
 
-**Síntoma:** Sniffer envía, detector no recibe nada.
-
-**Diagnóstico:**
-```bash
-# 1. Verificar conectividad
-telnet 127.0.0.1 5571
-
-# 2. Ver si detector está escuchando
-netstat -tlnp | grep 5571
-
-# 3. Ver configuración de endpoints
-# Sniffer (sniffer.json):
-grep zmq_endpoint config/sniffer.json
-
-# Detector (ml_detector_config.json):
-grep zmq_input_endpoint config/ml_detector_config.json
+**Síntoma:**
+```
+Address already in use (zmq_bind)
 ```
 
-**Soluciones:**
+**Solución:**
+```bash
+# Ver qué está usando los puertos
+sudo netstat -tlnp | grep -E "(5571|5572|9090)"
 
-1. **Endpoints must match:**
+# Matar procesos anteriores
+sudo pkill -f "sniffer\|ml-detector\|rag-security"
+
+# Reiniciar servicios
+sudo systemctl restart ml-defender-sniffer
+sudo systemctl restart ml-defender-detector
+sudo systemctl restart ml-defender-rag
+```
+
+---
+
+### ❌ Error: Detector no recibe mensajes
+
+**Síntoma:** Sniffer envía pero detector no procesa.
+
+**Verificación de endpoints:**
+```bash
+# Sniffer debe enviar a 5571
+grep "output_endpoint" /etc/sniffer/sniffer.json
+
+# Detector debe recibir de 5571 y enviar a 5572  
+grep -A 3 "zmq" /etc/ml-detector/ml_detector_config.json
+```
+
+**Solución:**
 ```json
-// sniffer.json
+// En /etc/sniffer/sniffer.json
 {
-  "output": {
-    "zmq_endpoint": "tcp://127.0.0.1:5571"  // PUB/PUSH
+  "zmq": {
+    "output_endpoint": "tcp://127.0.0.1:5571"
   }
 }
 
-// ml_detector_config.json
+// En /etc/ml-detector/ml_detector_config.json
 {
-  "zmq_input_endpoint": "tcp://127.0.0.1:5571"  // SUB/PULL
+  "zmq": {
+    "input_endpoint": "tcp://127.0.0.1:5571",
+    "output_endpoint": "tcp://127.0.0.1:5572"
+  }
 }
-```
-
-2. **Verificar patrón ZMQ:**
-```cpp
-// Debe ser PUSH-PULL (no PUB-SUB) para garantizar entrega
-// Verificar en el código que usa zmq_socket(ctx, ZMQ_PUSH/PULL)
-```
-
-3. **Test con zmq_proxy:**
-```bash
-# Herramienta de debug ZMQ
-sudo apt-get install -y zeromq-utils
-# Ver tráfico
-zmq_term
 ```
 
 ---
 
 ## ML Detector Issues
 
-### ❌ Error: "Failed to load ONNX model"
+### ❌ Error: Modelos no cargan
 
 **Síntoma:**
 ```
-[ERROR] Could not load ONNX model: level1_rf_model.onnx
+[ERROR] Failed to load ML model
 ```
 
 **Solución:**
 ```bash
-# 1. Verificar que el modelo existe
-ls -lh ml-detector/models/level1_rf_model.onnx
+# Verificar que los modelos existen
+ls -lh /opt/ml-defender/models/
 
-# 2. Verificar permisos
-chmod 644 ml-detector/models/*.onnx
+# Verificar configuración
+grep "model_path" /etc/ml-detector/ml_detector_config.json
 
-# 3. Verificar que ONNX Runtime está instalada
-dpkg -l | grep onnxruntime
-
-# 4. Regenerar modelo si está corrupto
-cd ml-training
-python scripts/convert_level2_ddos_to_onnx.py
+# Verificar permisos
+sudo chmod 644 /opt/ml-defender/models/*.bin
 ```
 
 ---
 
-### ❌ Error: Feature dimension mismatch
+### ❌ Error: Baja precisión en detecciones
+
+**Síntoma:** Falsos positivos o negativos altos.
+
+**Solución:** Ajustar thresholds en configuración:
+```json
+{
+  "ml_defender": {
+    "thresholds": {
+      "ddos": 0.90,        // Aumentar para menos falsos positivos
+      "ransomware": 0.95,  // Aumentar para ransomware
+      "traffic": 0.75,     // Disminuir para más sensibilidad
+      "internal": 0.80     // Ajustar según red interna
+    }
+  }
+}
+```
+
+---
+
+## RAG System Issues
+
+### ❌ Error: "LLAMA model failed to load"
 
 **Síntoma:**
 ```
-[ERROR] Feature size mismatch: expected 23, got 193
+[ERROR] Failed to load LLAMA model
 ```
 
-**Causa:** Modelo entrenado con 23 features pero se envían 193.
+**Diagnóstico:**
+```bash
+# Verificar que el modelo existe
+ls -lh /opt/rag-security/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+
+# Verificar tamaño (debe ser ~1.5GB)
+du -h /opt/rag-security/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+
+# Verificar configuración
+grep "model_path" /etc/rag-security/system_config.json
+```
 
 **Solución:**
 ```bash
-# Verificar feature extraction en ml-detector
-grep "EXPECTED_FEATURES" ml-detector/src/inference/
+# Re-descargar modelo si está corrupto
+cd /opt/rag-security/models
+rm tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+```
 
-# Debe ser 23 para Level 1 (RF model)
-# Si es diferente, reentrenar modelo con features correctas
+---
+
+### ❌ Error: Respuestas incoherentes del LLAMA
+
+**Síntoma:** El modelo genera respuestas sin sentido.
+
+**Solución:** Mejorar el prompt de sistema:
+```cpp
+// En llama_integration_real.cpp, verificar:
+std::string enhanced_prompt =
+    "<|system|>\n"
+    "Eres un asistente especializado en seguridad informática...\n"
+    "<|user|>\n" + prompt + "\n"
+    "<|assistant|>\n";
+```
+
+---
+
+### ❌ Error: Timeout en consultas RAG
+
+**Síntoma:** Las consultas tardan demasiado o timeout.
+
+**Solución:**
+```json
+// En /etc/rag-security/system_config.json
+{
+  "llama": {
+    "max_tokens": 128,  // Reducir longitud máxima
+    "temperature": 0.3  // Reducir para respuestas más concisas
+  },
+  "security": {
+    "request_timeout_sec": 60  // Aumentar timeout
+  }
+}
 ```
 
 ---
@@ -441,24 +483,22 @@ VBoxManage: error: Failed to create the host-only adapter
 
 **Solución:**
 ```bash
-# macOS: Dar permisos a VirtualBox
-# System Preferences → Security & Privacy → Allow Oracle
+# En host, recrear VM
+cd /vagrant
+vagrant destroy -f
+vagrant up
 
-# Reinstalar VirtualBox extensions
-# https://www.virtualbox.org/wiki/Downloads
-
-# Recrear VM
-make destroy
-make dev-setup
+# Verificar recursos asignados
+# Mínimo: 4GB RAM, 4 CPUs, 10GB disco
 ```
 
 ---
 
-### ❌ Error: Shared folder not mounted
+### ❌ Error: Shared folder no montado
 
 **Síntoma:**
 ```
-ls /vagrant: No such file or directory
+/vagrant: No such file or directory
 ```
 
 **Solución:**
@@ -473,201 +513,166 @@ vagrant ssh -c "ls /vagrant"
 
 ---
 
-### ❌ Error: Out of memory
-
-**Síntoma:**
-```
-Virtual memory exhausted: Cannot allocate memory
-```
-
-**Solución:**
-```ruby
-# En Vagrantfile, incrementar RAM:
-config.vm.provider "virtualbox" do |vb|
-  vb.memory = "8192"  # ← Aumentar a 8GB
-end
-
-vagrant reload
-```
-
----
-
 ## Debug Tools
 
-### bpftool - BPF Introspection
+### Health Check Integral
 
 ```bash
-# Ver todos los programas cargados
-sudo bpftool prog show
+# Ejecutar health check completo
+/usr/local/bin/ml-defender-health-check
 
-# Ver programa específico
-sudo bpftool prog show id <PROG_ID>
+# Verificar estado individual de componentes
+sudo systemctl status ml-defender-sniffer
+sudo systemctl status ml-defender-detector  
+sudo systemctl status ml-defender-rag
 
-# Ver todos los maps
-sudo bpftool map list
-
-# Dumpear contenido de un map
-sudo bpftool map dump id <MAP_ID>
-sudo bpftool map dump name <MAP_NAME>
-
-# Ver BTF info
-sudo bpftool btf dump file /sys/kernel/btf/vmlinux
-
-# Ver programa en assembly
-sudo bpftool prog dump xlated id <PROG_ID>
+# Ver logs en tiempo real
+sudo journalctl -u ml-defender-sniffer -f
+sudo tail -f /var/log/ml-defender/rag-stdout.log
 ```
 
----
-
-### tcpdump - Network Capture
+### Monitoreo de Rendimiento
 
 ```bash
-# Capturar en la interfaz del sniffer
-sudo tcpdump -i eth0 -nn -vv
+# Ver uso de recursos
+/usr/local/bin/ml-defender-monitor
 
-# Solo tráfico en puertos específicos
-sudo tcpdump -i eth0 port 8000
+# Ver procesos específicos
+ps aux | grep -E "(sniffer|ml-detector|rag)" | grep -v grep
 
-# Guardar a archivo para análisis
-sudo tcpdump -i eth0 -w capture.pcap
+# Ver memoria detallada
+cat /proc/$(pgrep rag-security)/status | grep -E "VmSize|VmRSS"
 ```
 
----
-
-### netstat/ss - Network Status
+### Verificación BPF/eBPF
 
 ```bash
-# Ver puertos en uso
-sudo netstat -tlnp
-sudo ss -tlnp
+# Ver programas eBPF cargados
+sudo bpftool prog show | grep sniffer
 
-# Ver conexiones ZMQ
-sudo netstat -an | grep 5571
+# Ver maps eBPF
+sudo bpftool map list | grep sniffer
 
-# Ver todo el tráfico local
-sudo netstat -an | grep 127.0.0.1
+# Ver estadísticas
+sudo bpftool prog show id $(sudo bpftool prog show | grep sniffer | head -1 | awk '{print $1}')
 ```
 
----
-
-### strace - System Call Tracing
+### Test de Comunicación
 
 ```bash
-# Trace sniffer startup
-sudo strace -f ./build/sniffer -c config/sniffer.json 2>&1 | grep -E 'bpf|open|mmap'
+# Test ZMQ endpoints
+nc -zv 127.0.0.1 5571
+nc -zv 127.0.0.1 5572  
+nc -zv 127.0.0.1 9090
 
-# Trace ZMQ calls
-sudo strace -e trace=network ./build/sniffer -c config/sniffer.json
-```
-
----
-
-### perf - Performance Analysis
-
-```bash
-# Ver estadísticas del programa eBPF
-sudo perf stat -e bpf:* ./build/sniffer -c config/sniffer.json
-
-# Profile CPU usage
-sudo perf top -p $(pgrep sniffer)
-```
-
----
-
-## Common Patterns & Solutions
-
-### Pattern: "It worked yesterday, now it doesn't"
-
-**Checklist:**
-1. ✅ Reboot VM: `vagrant reload`
-2. ✅ Kill orphan processes: `make kill-all`
-3. ✅ Clean rebuild: `make rebuild`
-4. ✅ Check disk space: `df -h`
-5. ✅ Check memory: `free -h`
-
----
-
-### Pattern: High CPU usage
-
-**Diagnóstico:**
-```bash
-top  # Ver procesos
-# Si sniffer usa >90% CPU:
-```
-
-**Soluciones:**
-1. Reducir batch size en config
-2. Reducir threads
-3. Activar filtros para reducir tráfico
-4. Verificar que no hay loop infinito en código
-
----
-
-### Pattern: Memory leak
-
-**Diagnóstico:**
-```bash
-# Ver memoria del proceso
-ps aux | grep sniffer
-
-# Monitorear en tiempo real
-watch -n 1 'ps aux | grep sniffer'
-```
-
-**Soluciones:**
-1. Verificar que zmq_msg_close se llama
-2. Verificar que buffers se liberan
-3. Usar valgrind para detectar leaks:
-```bash
-valgrind --leak-check=full ./build/sniffer -c config/sniffer.json
+# Test RAG system interactivo
+telnet localhost 9090
+# Luego ejecutar: rag show_config
 ```
 
 ---
 
 ## Emergency Recovery
 
-### Nuclear Option: Reset Everything
+### Reset Completo del Sistema
 
 ```bash
-# En host macOS
-cd ~/Code/test-zeromq-docker
+# Parar todos los servicios
+sudo systemctl stop ml-defender-rag
+sudo systemctl stop ml-defender-detector
+sudo systemctl stop ml-defender-sniffer
 
-# Destruir y recrear VM completa
-make destroy
-make dev-setup
+# Limpiar procesos residuales
+sudo pkill -f "sniffer\|ml-detector\|rag-security"
 
-# ~15 minutos, pero garantiza estado limpio
+# Limpiar logs
+sudo rm -f /var/log/ml-defender/*.log
+
+# Reiniciar servicios en orden
+sudo systemctl start ml-defender-sniffer
+sudo systemctl start ml-defender-detector
+sudo systemctl start ml-defender-rag
+
+# Verificar estado
+/usr/local/bin/ml-defender-health-check
+```
+
+### Nuclear Option: Reinstalación Completa
+
+```bash
+# En host
+cd /vagrant
+vagrant destroy -f
+vagrant up
+
+# Reinstalar ML Defender
+/vagrant/scripts/install-ml-defender.sh
+```
+
+---
+
+## Common Patterns & Solutions
+
+### Pattern: "Funcionaba y dejó de funcionar"
+
+**Checklist:**
+1. ✅ Verificar recursos: `free -h && df -h`
+2. ✅ Reiniciar servicios: `sudo systemctl restart ml-defender-*`
+3. ✅ Verificar logs: `sudo journalctl -u ml-defender-rag --since "1 hour ago"`
+4. ✅ Health check: `/usr/local/bin/ml-defender-health-check`
+
+### Pattern: Alta latencia en RAG
+
+**Soluciones:**
+1. Reducir `max_tokens` en configuración RAG
+2. Reducir `context_size` si no se necesita contexto largo
+3. Verificar que no hay múltiples instancias ejecutándose
+
+### Pattern: Falsos positivos en ML
+
+**Ajustes recomendados:**
+```json
+{
+  "thresholds": {
+    "ddos": 0.90,
+    "ransomware": 0.95, 
+    "traffic": 0.85,
+    "internal": 0.88
+  }
+}
 ```
 
 ---
 
 ## Getting Help
 
-Si ninguna solución funciona:
+Si los problemas persisten:
 
-1. **Recopilar información de debug:**
+1. **Recolectar información de debug:**
 ```bash
-# Script de diagnóstico completo
-cd /vagrant/sniffer
-./scripts/collect_debug_info.sh > debug_report.txt
+cd /opt/ml-defender
+./scripts/collect_debug_info.sh > ml_defender_debug_$(date +%Y%m%d).txt
 ```
 
-2. **Abrir Issue en GitHub:**
-- [GitHub Issues](https://github.com/alonsoir/test-zeromq-c-/issues)
-- Adjuntar `debug_report.txt`
-- Describir pasos para reproducir
+2. **Verificar documentación:**
+- `README.md` - Visión general del sistema
+- `ARCHITECTURE.md` - Diseño arquitectónico
+- `DEPLOYMENT.md` - Guía de despliegue
+- `AUTHORS.md` - Equipo de desarrollo
 
-3. **Consultar documentación:**
-- [README.md](../README.md)
-- [CHANGELOG.md](CHANGELOG.md)
-- [Architecture Docs](./ARCHITECTURE.md)
+3. **Reportar issues:**
+- Incluir salida del health check
+- Incluir logs relevantes
+- Describir pasos para reproducir
 
 ---
 
 <div align="center">
 
-**🔧 Troubleshooting Guide - ML Detector Tricapa 🔧**
+**🛡️ ML Defender Troubleshooting Guide 🛡️**
 
-*Actualizado: Octubre 25, 2025*
+*Sistema RAG + 4 Detectores ML • Actualizado: Noviembre 20, 2025*
+
+**¡Base sólida establecida! Próximo objetivo: Estabilidad 100% 🚀**
 
 </div>

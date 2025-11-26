@@ -11,7 +11,7 @@
 
 ## 🌟 What Makes This Different?
 
-This isn't just another IDS. This is a **Via Appia quality system** built to last:
+This is my idea about how to design an IDS:
 
 - ⚡ **Sub-microsecond detection** - 4 embedded C++20 RandomForest detectors (400 trees, 6,330 nodes)
 - 🎯 **Zero external dependencies** - Pure C++20 constexpr, no ONNX for core detectors
@@ -20,14 +20,13 @@ This isn't just another IDS. This is a **Via Appia quality system** built to las
 - 🧬 **Autonomous evolution** - Self-improving with transparent methodology
 - 🏥 **Life-critical design** - Built for healthcare and critical infrastructure
 
-**Latest Achievement (Nov 15, 2025) - Phase 0 Complete:**
-- ✅ **4 C++20 embedded detectors** integrated and tested
-- ✅ **Ransomware**: 1.06μs latency, 944K pred/sec
-- ✅ **DDoS**: 0.24μs latency (417x better than target!)
-- ✅ **Traffic**: 0.37μs latency (classification: Internet vs Internal)
-- ✅ **Internal**: 0.33μs latency (lateral movement & exfiltration)
-- ✅ All unit tests passing
-- ✅ Ready for sniffer-eBPF integration
+**Latest Achievement (Nov 20, 2025) - RAG Security System with Real LLAMA:**
+- ✅ **RAG Security System** with TinyLlama-1.1B integration
+- ✅ **KISS Architecture** with centralized WhiteListManager
+- ✅ **Real LLM Integration** - Not simulated, actual model responses
+- ✅ **Robust Validation System** with inheritable BaseValidator
+- ✅ **JSON Persistence** with automatic type validation
+- ✅ **etcd Communication** centralized in WhiteListManager
 
 ---
 
@@ -37,6 +36,7 @@ This isn't just another IDS. This is a **Via Appia quality system** built to las
 │  PHASE 1 STATUS - IN PROGRESS 🔄 (Nov 20, 2025)        │
 ├─────────────────────────────────────────────────────────┤
 │  ✅ DAY 5 COMPLETE: Configurable ML Thresholds          │
+│  ✅ RAG SYSTEM: LLAMA Real Integration Complete         │
 │                                                         │
 │  Configuration System (JSON is the law)                 │
 │     • All 4 detectors: thresholds from sniffer.json   │
@@ -44,6 +44,14 @@ This isn't just another IDS. This is a **Via Appia quality system** built to las
 │     • Traffic: 0.80, Internal: 0.85                   │
 │     • Validation: min=0.5, max=0.99, fallback=0.75    │
 │     • Zero hardcoding - production ready               │
+│                                                         │
+│  RAG Security System (LLAMA Real)                       │
+│     ✅ TinyLlama-1.1B integration (real model)          │
+│     ✅ KISS Architecture with WhiteListManager router   │
+│     ✅ BaseValidator + RagValidator inheritance         │
+│     ✅ Commands: show_config, update_setting, ask_llm   │
+│     ✅ JSON persistence with validation                 │
+│     ⚠️  Known issue: KV cache inconsistency (workaround)│
 │                                                         │
 │  Performance Validation (10-min stress test)            │
 │     ✅ Memory: +1 MB growth (stable, no leaks)         │
@@ -81,8 +89,10 @@ This isn't just another IDS. This is a **Via Appia quality system** built to las
 │     ✅ Configurable detection thresholds                │
 │     ✅ Flow table management (500K flows)               │
 │     ✅ Stress tested & memory validated                 │
+│     ✅ RAG Security System with LLAMA real              │
 └─────────────────────────────────────────────────────────┘
 ```
+
 ---
 
 ## 🚀 Architecture
@@ -142,6 +152,76 @@ This isn't just another IDS. This is a **Via Appia quality system** built to las
 ▼
 Analysis / Response / SIEM
 ```
+
+### **RAG Security System Architecture** (NEW)
+```
+┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│   WhiteList     │    │   RagCommand     │    │   LlamaIntegration│
+│    Manager      │◄---│     Manager      │◄---│     (REAL)       │
+│ (Router + Etcd) │    │ (RAG Core + Val) │    │  TinyLlama-1.1B  │
+└─────────────────┘    └──────────────────┘    └──────────────────┘
+         │                       │                       │
+         │                       ├───────────────────────┘
+         │                       │
+         │              ┌──────────────────┐
+         └------------► │   ConfigManager  │
+                        │  (JSON Persist)  │
+                        └──────────────────┘
+
+Commands Available:
+• rag show_config           - Display system configuration
+• rag update_setting <k> <v> - Update settings with validation
+• rag show_capabilities     - Show RAG system capabilities  
+• rag ask_llm <question>    - Query LLAMA with security questions
+• exit                      - Exit the system
+```
+
+---
+
+## 🆕 RAG Security System with LLAMA Real
+
+### **Architecture Highlights**
+
+**✅ COMPLETED - RAG System Functional:**
+- **WhiteListManager**: Central router with etcd communication
+- **RagCommandManager**: Core RAG logic with validation
+- **LlamaIntegration**: Real TinyLlama-1.1B model integration
+- **BaseValidator**: Inheritable validation system
+- **ConfigManager**: JSON persistence with type validation
+
+**✅ Available Commands:**
+```bash
+SECURITY_SYSTEM> rag show_config
+SECURITY_SYSTEM> rag ask_llm "¿Qué es un firewall en seguridad informática?"
+SECURITY_SYSTEM> rag ask_llm "Explica cómo detectar un ataque DDoS"
+SECURITY_SYSTEM> rag update_setting port 9090
+SECURITY_SYSTEM> rag show_capabilities
+```
+
+**⚠️ Known Issues & Solutions:**
+- **KV Cache Inconsistency**: Manual cache clearing implemented between queries
+- **Position Sequence Errors**: Workaround with batch initialization fixes
+- **Model Stability**: System recovers gracefully from generation errors
+
+**🔧 Technical Implementation:**
+- **Model**: TinyLlama-1.1B (1.1 billion parameters)
+- **Format**: GGUF (Q4_0 quantization)
+- **Location**: `/vagrant/rag/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf`
+- **Integration**: Real llama.cpp bindings (not simulated)
+
+### **Usage Example**
+```bash
+# Start RAG Security System
+cd /vagrant/rag/build && ./rag-security
+
+# Interactive session
+SECURITY_SYSTEM> rag ask_llm "¿Cómo funciona un firewall de aplicaciones?"
+🤖 Consultando LLM: "¿Cómo funciona un firewall de aplicaciones?"
+🎯 Generando respuesta REAL para: "¿Cómo funciona un firewall de aplicaciones?"
+📊 Tokens generados: 86
+🤖 Respuesta: Un firewall de aplicaciones es un sistema de seguridad que filtra el tráfico...
+```
+
 ---
 
 ## 📊 Performance - Phase 0 Results
@@ -268,8 +348,6 @@ struct InternalDetector::Features {
 ```
 
 **Performance:** 0.33μs latency
-
----
 
 ---
 
@@ -417,6 +495,10 @@ cd ml-detector/build
 
 # Run ml-detector
 ./ml-detector --config ../config/ml_detector_config.json --verbose
+
+# Run RAG Security System
+cd rag/build
+./rag-security
 ```
 
 ### **Test Results**
@@ -478,16 +560,18 @@ Like the ancient Roman road that still stands 2,300 years later, we build for pe
 - [x] Internal traffic analyzer (C++20 embedded)
 - [x] Unit tests for all detectors
 - [x] Config validation & fail-fast architecture
+- [x] RAG Security System with LLAMA real integration
 
 ### **Phase 1: Integration** 🔄 IN PROGRESS (5/12 days)
 - [x] **Day 1-4**: eBPF/XDP integration with sniffer
 - [x] **Day 5**: Configurable ML thresholds (JSON single source of truth) ✅
+- [x] **Day 5**: RAG Security System with LLAMA real ✅
 - [ ] **Day 6-7**: firewall-acl-agent development
     - [ ] Dynamic iptables rule generation
     - [ ] Rate limiting per source IP
     - [ ] Connection tracking integration
     - [ ] ACL management API
-- [ ] **Day 8-9**: RAG/etcd/watcher system
+- [ ] **Day 8-9**: RAG/etcd/watcher system enhancement
     - [ ] Distributed config management with etcd
     - [ ] Real-time threshold updates
     - [ ] Model versioning and rollback
@@ -517,6 +601,7 @@ Like the ancient Roman road that still stands 2,300 years later, we build for pe
 - [Synthetic Data Methodology](docs/SYNTHETIC_DATA.md)
 - [Performance Tuning](docs/PERFORMANCE.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [RAG System Documentation](docs/RAG_SYSTEM.md)
 
 ---
 
@@ -545,7 +630,7 @@ MIT License - See [LICENSE](LICENSE) for details
 ## 🙏 Acknowledgments
 
 - **Claude (Anthropic)** - Co-developer and architectural advisor
-- **DeepSeek** - Additional ML insights
+- **DeepSeek** - RAG system development and ML insights
 - The open-source community for foundational tools
 
 ---
