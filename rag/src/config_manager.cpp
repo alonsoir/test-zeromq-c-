@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <stdexcept>
+// rag/src/config_manager.cpp
 
 namespace Rag {
 
@@ -221,6 +222,32 @@ std::string ConfigManager::getComponentId() const {
         throw std::runtime_error("CRITICAL: 'id' field not found in config");
     }
     return config_["id"].get<std::string>();
+}
+
+std::unordered_map<std::string, std::string> ConfigManager::getConfig() const {
+    std::unordered_map<std::string, std::string> result;
+
+    // CORREGIR: Iterar correctamente sobre nlohmann::json
+    for (auto& [key, value] : config_.items()) {
+        if (value.is_string()) {
+            result[key] = value.get<std::string>();
+        } else {
+            result[key] = value.dump(); // Convertir a string
+        }
+    }
+    return result;
+}
+
+std::string ConfigManager::getConfigValue(const std::string& key) const {
+    // CORREGIR: nlohmann::json se accede diferente a unordered_map
+    if (config_.contains(key)) {
+        if (config_[key].is_string()) {
+            return config_[key].get<std::string>();
+        } else {
+            return config_[key].dump(); // Convertir a string para otros tipos
+        }
+    }
+    return "";
 }
 
 bool ConfigManager::validateConfig() const {

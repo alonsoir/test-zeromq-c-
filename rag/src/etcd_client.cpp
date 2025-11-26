@@ -1,3 +1,4 @@
+// rag/src/etcd_client.cpp -
 #include "rag/etcd_client.hpp"
 #include "rag/config_manager.hpp"
 #include <httplib.h>
@@ -147,21 +148,18 @@ struct EtcdClient::Impl {
                 std::cout << "📋 Respuesta: " << res->body << std::endl;
                 return true;
             } else {
-                // Si falla, mostrar error pero intentar continuar con el cierre
                 std::cerr << "❌ Error en desregistro etcd: ";
                 if (res) {
                     std::cerr << "HTTP " << res->status << " - " << res->body << std::endl;
                 } else {
                     std::cerr << "No se pudo conectar al etcd-server" << std::endl;
                 }
-                // Devolver true para no bloquear el cierre del sistema
-                return true;
+                return true; // Permitir cierre incluso si falla el desregistro
             }
 
         } catch (const std::exception& e) {
             std::cerr << "❌ Excepción en unregister_component: " << e.what() << std::endl;
-            // Devolver true para no bloquear el cierre del sistema
-            return true;
+            return true; // Permitir cierre incluso si falla el desregistro
         }
     }
 
@@ -251,11 +249,11 @@ bool EtcdClient::is_connected() const {
 }
 
 bool EtcdClient::registerService() {
-    return pImpl->register_component();
+    return pImpl->register_component(); // Internamente llama al método snake_case
 }
 
 bool EtcdClient::unregisterService() {
-    return pImpl->unregister_component();
+    return pImpl->unregister_component(); // Internamente llama al método snake_case
 }
 
 bool EtcdClient::get_component_config(const std::string& component_name) {

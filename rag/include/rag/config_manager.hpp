@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 
 // Estructuras para configuración
 struct RagConfig {
@@ -19,9 +20,6 @@ namespace Rag {
 
 class ConfigManager {
 public:
-    // ✅ ELIMINAR declaración duplicada del constructor
-    // ConfigManager(); // <- QUITAR ESTA LÍNEA
-
     ~ConfigManager();
 
     // Método Singleton
@@ -44,7 +42,7 @@ public:
     std::string getEtcdEndpoint() const;
     std::string getLogLevel() const;
 
-    // ✅ NUEVOS MÉTODOS para estructura actual
+    // Métodos para estructura actual
     RagConfig getRagConfig() const;
     EtcdConfig getEtcdConfig() const;
 
@@ -57,8 +55,21 @@ public:
     nlohmann::json getConfigForEtcd() const;
     std::string getComponentId() const;
 
+    /**
+     * @brief Obtiene la configuración completa actual
+     * @return Configuración actual como unordered_map
+     */
+    std::unordered_map<std::string, std::string> getConfig() const;
+
+    /**
+     * @brief Obtiene un valor específico de configuración
+     * @param key Clave de configuración
+     * @return Valor de la configuración o string vacío si no existe
+     */
+    std::string getConfigValue(const std::string& key) const;
+
 private:
-    ConfigManager() = default; // ✅ Solo el constructor privado del Singleton
+    ConfigManager() = default;
     nlohmann::json config_;
     std::string current_config_path_;
 

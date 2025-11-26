@@ -1,61 +1,40 @@
-// include/rag/whitelist_manager.hpp
+// rag/include/rag/whitelist_manager.hpp
 #pragma once
+
+#include <memory>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
-#include <regex>
-#include <nlohmann/json.hpp>
+
+namespace Rag {
+    class RagCommandManager;  // ✅ Forward declaration - suficiente para el header
+}
 
 namespace rag {
 
     class WhitelistManager {
     public:
-        struct WhitelistConfig {
-            std::unordered_set<std::string> allowed_commands;
-            std::vector<std::string> allowed_pattern_strings;  // ✅ Almacenar strings también
-            std::vector<std::regex> allowed_patterns;
-            std::unordered_set<std::string> restricted_keys;
-            size_t max_query_length = 1000;
-
-            void clear();
-        };
-
-        struct AuditEntry {
-            std::string timestamp;
-            std::string command;
-            std::string key;
-            bool allowed;
-            std::string reason;
-        };
-
         WhitelistManager();
         ~WhitelistManager();
 
-        bool loadFromFile(const std::string& config_path);
-        bool loadFromJson(const nlohmann::json& json_config);
-        bool saveToFile(const std::string& config_path = "");
+        // Registrar managers especializados
+        void registerManager(const std::string& component,
+                            std::shared_ptr<Rag::RagCommandManager> manager);
 
-        bool isCommandAllowed(const std::string& command) const;
-        bool isKeyAllowed(const std::string& key) const;
-        bool isQueryValid(const std::string& query) const;
-
-        void addCommand(const std::string& command);
-        void removeCommand(const std::string& command);
-        void addPattern(const std::string& pattern);
-        void addRestrictedKey(const std::string& key);
-
-        std::vector<std::string> getAllowedCommands() const;
-
-        void addAuditEntry(const AuditEntry& entry);
-        std::vector<AuditEntry> getAuditLog() const;
+        void processCommand(const std::string& command);
+        void showHelp() const;
 
     private:
-        WhitelistConfig config_;
-        std::vector<AuditEntry> audit_log_;
-        std::string current_config_path_;
+        std::unordered_map<std::string, std::shared_ptr<Rag::RagCommandManager>> managers_;
 
-        bool validatePattern(const std::string& input, const std::regex& pattern) const;
-        std::string getCurrentTimestamp() const;
+        struct ParsedCommand {
+            std::string component;
+            std::string action;
+            std::string parameters;
+            bool valid = false;
+        };
+
+        ParsedCommand parseCommand(const std::string& command) const;
     };
 
 } // namespace rag

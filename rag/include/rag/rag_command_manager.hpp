@@ -1,11 +1,11 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <memory>
-#include "rag/etcd_client.hpp"
-#include "rag/config_manager.hpp"
+#include <vector>
 
 namespace Rag {
+    class EtcdClient;
+    class ConfigManager;
 
     class RagCommandManager {
     public:
@@ -13,23 +13,16 @@ namespace Rag {
                          std::shared_ptr<ConfigManager> config_manager);
         ~RagCommandManager();
 
-        // Comandos específicos del RAG
-        bool showConfig();
-        bool showCapabilities();
-        bool updateSetting(const std::string& setting, const std::string& value);
-        bool updateSecurityLevel(int level);
-        bool toggleLLM(bool enable);
-        bool changeLogLevel(const std::string& level);
+        // ✅ MÉTODOS PRINCIPALES - Interface limpia
+        void showConfig();
+        void showCapabilities();
+        void updateSetting(const std::string& input);
 
-        // Ayuda y validación
-        std::vector<std::string> getAvailableCommands() const;
-        bool isValidSetting(const std::string& setting) const;
+        // ✅ MÉTODO PARA PROCESAR COMANDOS DIRECTAMENTE
+        void processCommand(const std::string& command);
 
     private:
         std::shared_ptr<EtcdClient> etcd_client_;
         std::shared_ptr<ConfigManager> config_manager_;
-
-        bool sendConfigUpdateToEtcd();
     };
-
-} // namespace Rag
+}

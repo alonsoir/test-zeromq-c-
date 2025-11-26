@@ -80,6 +80,7 @@ set(SOURCES
         src/llama_integration_real.cpp
         src/config_manager.cpp
         src/rag_command_manager.cpp
+        src/whitelist_manager.cpp
 )
 
 # ============================================================================
