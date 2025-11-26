@@ -109,59 +109,41 @@ struct EtcdClient::Impl {
     }
 
     bool unregister_component() {
+    std::cout << "🔧 Desregistro asíncrono - enviando solicitud en segundo plano..." << std::endl;
+
+    // Lanzar en un hilo separado para no bloquear la salida
+    std::thread([this]() {
         try {
-            // Parsear el endpoint para obtener host y puerto
-            std::string host = "localhost";
-            int port = 2379;
+            std::cout << "🔄 Procesando desregistro en segundo plano..." << std::endl;
 
-            size_t protocol_pos = endpoint_.find("://");
-            if (protocol_pos != std::string::npos) {
-                std::string without_protocol = endpoint_.substr(protocol_pos + 3);
-                size_t colon_pos = without_protocol.find(':');
-                if (colon_pos != std::string::npos) {
-                    host = without_protocol.substr(0, colon_pos);
-                    port = std::stoi(without_protocol.substr(colon_pos + 1));
-                } else {
-                    host = without_protocol;
-                }
-            }
+            // Enfoque ultra-minimalista
+            httplib::Client cli("127.0.0.1", 2379);
+            cli.set_connection_timeout(1);  // Muy corto
+            cli.set_read_timeout(1);        // Muy corto
 
-            std::cout << "📤 Enviando desregistro a etcd-server: " << host << ":" << port << std::endl;
+            // JSON como string simple, sin nlohmann
+            std::string json_body = "{\"component\":\"" + component_name_ + "\"}";
 
-            // Crear cliente HTTP
-            httplib::Client cli(host, port);
-            cli.set_connection_timeout(5);
+            // Enviar y olvidar - no nos importa la respuesta
+            auto res = cli.Post("/unregister", json_body, "application/json");
 
-            // Preparar datos de desregistro
-            nlohmann::json unregister_data = {
-                {"component", component_name_}
-            };
-
-            std::string request_body = unregister_data.dump();
-            std::cout << "📦 Datos de desregistro: " << request_body << std::endl;
-
-            // Enviar petición POST real al endpoint /unregister
-            auto res = cli.Post("/unregister", request_body, "application/json");
-
-            if (res && res->status == 200) {
-                std::cout << "✅ Desregistro exitoso en etcd-server" << std::endl;
-                std::cout << "📋 Respuesta: " << res->body << std::endl;
-                return true;
+            if (res) {
+                std::cout << "✅ Desregistro confirmado en segundo plano" << std::endl;
             } else {
-                std::cerr << "❌ Error en desregistro etcd: ";
-                if (res) {
-                    std::cerr << "HTTP " << res->status << " - " << res->body << std::endl;
-                } else {
-                    std::cerr << "No se pudo conectar al etcd-server" << std::endl;
-                }
-                return true; // Permitir cierre incluso si falla el desregistro
+                std::cout << "⚠️  Desregistro enviado (sin confirmación)" << std::endl;
             }
-
-        } catch (const std::exception& e) {
-            std::cerr << "❌ Excepción en unregister_component: " << e.what() << std::endl;
-            return true; // Permitir cierre incluso si falla el desregistro
         }
-    }
+        catch (const std::exception& e) {
+            std::cout << "⚠️  Error en desregistro en segundo plano: " << e.what() << std::endl;
+        }
+        catch (...) {
+            std::cout << "⚠️  Error desconocido en desregistro en segundo plano" << std::endl;
+        }
+    }).detach();  // IMPORTANTE: detach para no bloquear
+
+    std::cout << "✅ Solicitud de desregistro enviada (procesándose en fondo)" << std::endl;
+    return true;
+}
 
     bool get_component_config(const std::string& component_name) {
         std::cout << "📋 Getting config for: " << component_name << std::endl;

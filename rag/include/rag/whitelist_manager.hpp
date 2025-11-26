@@ -1,40 +1,39 @@
-// rag/include/rag/whitelist_manager.hpp
 #pragma once
-
+#include "rag/command_manager.hpp"
+#include "rag/etcd_client.hpp"
+#include "rag/config_manager.hpp"
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include <vector>
+#include <string>
 
 namespace Rag {
-    class RagCommandManager;  // ✅ Forward declaration - suficiente para el header
-}
 
-namespace rag {
-
-    class WhitelistManager {
+    class WhiteListManager {
     public:
-        WhitelistManager();
-        ~WhitelistManager();
+        WhiteListManager();
+        ~WhiteListManager();
 
-        // Registrar managers especializados
-        void registerManager(const std::string& component,
-                            std::shared_ptr<Rag::RagCommandManager> manager);
-
-        void processCommand(const std::string& command);
+        bool initialize();
+        void processCommand(const std::string& input);
+        void registerCommandManager(const std::string& component_name,
+                                   std::shared_ptr<CommandManager> manager);
         void showHelp() const;
 
+        // Métodos para gestión de etcd
+        bool registerComponentInEtcd(const std::string& component_name, const nlohmann::json& config);
+        bool unregisterComponentFromEtcd(const std::string& component_name);
+        bool updateComponentConfigInEtcd(const std::string& component_name, const std::string& config);
+
     private:
-        std::unordered_map<std::string, std::shared_ptr<Rag::RagCommandManager>> managers_;
+        std::unordered_map<std::string, std::shared_ptr<CommandManager>> command_managers_;
+        std::unique_ptr<EtcdClient> etcd_client_;
+        // Cambiar a referencia en lugar de shared_ptr
+        ConfigManager& config_manager_;
 
-        struct ParsedCommand {
-            std::string component;
-            std::string action;
-            std::string parameters;
-            bool valid = false;
-        };
-
-        ParsedCommand parseCommand(const std::string& command) const;
+        void registerSystemWithEtcd();
+        void unregisterSystemFromEtcd();
+        std::vector<std::string> tokenizeCommand(const std::string& input);
     };
 
-} // namespace rag
+} // namespace Rag

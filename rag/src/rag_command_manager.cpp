@@ -1,14 +1,15 @@
 #include "rag/rag_command_manager.hpp"
-#include "rag/etcd_client.hpp"
 #include "rag/config_manager.hpp"
+#include "rag/llama_integration.hpp"
 #include <iostream>
 #include <algorithm>
 
+// Declaración externa de la instancia global de LlamaIntegration (namespace global)
+extern std::unique_ptr<LlamaIntegration> llama_integration;
+
 namespace Rag {
 
-RagCommandManager::RagCommandManager(std::shared_ptr<EtcdClient> etcd_client,
-                                     std::shared_ptr<ConfigManager> config_manager)
-    : etcd_client_(etcd_client), config_manager_(config_manager) {
+RagCommandManager::RagCommandManager() : validator_() {
     std::cout << "🔧 RagCommandManager inicializado" << std::endl;
 }
 
@@ -16,13 +17,35 @@ RagCommandManager::~RagCommandManager() {
     std::cout << "🔧 RagCommandManager finalizado" << std::endl;
 }
 
-void RagCommandManager::showConfig() {
+void RagCommandManager::processCommand(const std::vector<std::string>& args) {
+    if (args.empty()) {
+        std::cout << "❌ Comando RAG no especificado" << std::endl;
+        return;
+    }
+
+    const std::string& command = args[0];
+
+    if (command == "show_config") {
+        showConfig(args);
+    } else if (command == "show_capabilities") {
+        showCapabilities(args);
+    } else if (command == "update_setting") {
+        updateSetting(args);
+    } else if (command == "ask_llm") {
+        askLLM(args);
+    } else {
+        std::cout << "❌ Comando RAG no reconocido: " << command << std::endl;
+        std::cout << "💡 Comandos disponibles: show_config, update_setting, show_capabilities, ask_llm" << std::endl;
+    }
+}
+
+void RagCommandManager::showConfig(const std::vector<std::string>& args) {
     std::cout << "\n🔧 CONFIGURACIÓN RAG - MOSTRANDO..." << std::endl;
 
     try {
-        // Obtener configuración RAG
-        auto rag_config = config_manager_->getRagConfig();
-        auto etcd_config = config_manager_->getEtcdConfig();
+        auto& config_manager = ConfigManager::getInstance();
+        auto rag_config = config_manager.getRagConfig();
+        auto etcd_config = config_manager.getEtcdConfig();
 
         std::cout << "📋 Configuración RAG:" << std::endl;
         std::cout << "   - Host: " << rag_config.host << std::endl;
@@ -34,67 +57,80 @@ void RagCommandManager::showConfig() {
         std::cout << "   - Host: " << etcd_config.host << std::endl;
         std::cout << "   - Port: " << etcd_config.port << std::endl;
 
+        // Mostrar estado del LLM
+        std::cout << "🤖 Estado LLM: " << (llama_integration ? "CARGADO" : "NO DISPONIBLE") << std::endl;
+
     } catch (const std::exception& e) {
         std::cerr << "❌ Error al mostrar configuración: " << e.what() << std::endl;
     }
 }
 
-void RagCommandManager::showCapabilities() {
+void RagCommandManager::showCapabilities(const std::vector<std::string>& args) {
     std::cout << "\n🚀 CAPACIDADES DEL SISTEMA RAG" << std::endl;
     std::cout << "===============================" << std::endl;
-    std::cout << "✅ Registro automático en etcd-server" << std::endl;
     std::cout << "✅ Configuración persistente en JSON" << std::endl;
     std::cout << "✅ Comandos de configuración en tiempo real" << std::endl;
-    std::cout << "✅ Manejo robusto de señales (Ctrl+C)" << std::endl;
-    std::cout << "✅ Arquitectura WhiteListManager" << std::endl;
-    std::cout << "🌐 Conectado a etcd-server: " << (etcd_client_->is_connected() ? "Sí" : "No") << std::endl;
+    std::cout << "✅ Validación robusta de configuraciones" << std::endl;
+    std::cout << "✅ Integración con etcd (via WhiteListManager)" << std::endl;
+    std::cout << "🤖 LLAMA Integration: " << (llama_integration ? "ACTIVA" : "INACTIVA") << std::endl;
+    std::cout << "📊 Base Vectorial: PRÓXIMAMENTE (con logs del pipeline)" << std::endl;
     std::cout << "===============================" << std::endl;
 }
 
-void RagCommandManager::updateSetting(const std::string& input) {
-    // Parsear input: "clave valor"
-    size_t space_pos = input.find(' ');
-    if (space_pos == std::string::npos) {
-        std::cout << "❌ Formato incorrecto. Use: update_setting <clave> <valor>" << std::endl;
-        std::cout << "   Ejemplo: rag update_setting model_path /nuevo/path/al/modelo" << std::endl;
+void RagCommandManager::updateSetting(const std::vector<std::string>& args) {
+    if (args.size() != 3) {
+        std::cout << "❌ Error: Uso: rag update_setting <clave> <valor>" << std::endl;
         return;
     }
 
-    std::string key = input.substr(0, space_pos);
-    std::string value = input.substr(space_pos + 1);
+    const std::string& key = args[1];
+    const std::string& value = args[2];
 
-    // Eliminar espacios en blanco sobrantes
-    key.erase(0, key.find_first_not_of(" \t"));
-    key.erase(key.find_last_not_of(" \t") + 1);
-    value.erase(0, value.find_first_not_of(" \t"));
-    value.erase(value.find_last_not_of(" \t") + 1);
-
-    if (key.empty() || value.empty()) {
-        std::cout << "❌ Clave o valor no pueden estar vacíos" << std::endl;
+    // Usar el validador específico de RAG
+    if (!validator_.validate(key, value)) {
         return;
     }
 
-    std::cout << "🔄 Actualizando configuración RAG..." << std::endl;
-    std::cout << "   Clave: " << key << std::endl;
-    std::cout << "   Valor: " << value << std::endl;
+    auto& config_manager = ConfigManager::getInstance();
+    std::string path = "rag." + key;
 
-    // TODO: Implementar actualización real cuando esté disponible en ConfigManager
-    std::cout << "📋 (Actualización de configuración llamada correctamente)" << std::endl;
-    std::cout << "💡 Nota: La persistencia real se implementará próximamente" << std::endl;
+    if (config_manager.updateSetting(path, value)) {
+        std::cout << "✅ Configuración actualizada: " << key << " = " << value << std::endl;
+    } else {
+        std::cout << "❌ Error al actualizar la configuración" << std::endl;
+    }
 }
 
-void RagCommandManager::processCommand(const std::string& command) {
-    if (command == "show_config") {
-        showConfig();
-    } else if (command == "show_capabilities") {
-        showCapabilities();
-    } else if (command.find("update_setting") == 0) {
-        std::string params = command.substr(14); // "update_setting" tiene 14 caracteres
-        params.erase(0, params.find_first_not_of(" \t"));
-        updateSetting(params);
-    } else {
-        std::cout << "❌ Comando RAG no reconocido: " << command << std::endl;
-        std::cout << "💡 Comandos disponibles: show_config, update_setting, show_capabilities" << std::endl;
+void RagCommandManager::askLLM(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        std::cout << "❌ Error: Uso: rag ask_llm <pregunta>" << std::endl;
+        return;
+    }
+
+    // Reconstruir la pregunta completa
+    std::string question;
+    for (size_t i = 1; i < args.size(); ++i) {
+        if (i > 1) question += " ";
+        question += args[i];
+    }
+
+    std::cout << "🤖 Consultando LLM: \"" << question << "\"" << std::endl;
+
+    // Verificar si LLAMA está disponible
+    if (!llama_integration) {
+        std::cout << "❌ LLAMA Integration no disponible" << std::endl;
+        std::cout << "💡 Asegúrate de que el modelo TinyLlama esté en /vagrant/rag/models/" << std::endl;
+        return;
+    }
+
+    try {
+        // Generar respuesta usando LLAMA REAL
+        std::string response = llama_integration->generateResponse(question);
+        std::cout << "\n🤖 Respuesta: " << response << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Error en LLAMA: " << e.what() << std::endl;
+        std::cout << "⚠️  Fallo en la generación de respuesta" << std::endl;
     }
 }
 

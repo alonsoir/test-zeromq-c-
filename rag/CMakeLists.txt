@@ -71,16 +71,17 @@ find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
 find_package(Threads REQUIRED)
 
 # ============================================================================
-# ARCHIVOS FUENTE
+# ARCHIVOS FUENTE - ACTUALIZADO CON NUEVOS COMPONENTES
 # ============================================================================
 set(SOURCES
         src/main.cpp
         src/etcd_client.cpp
-        src/whitelist_manager.cpp
-        src/llama_integration_real.cpp
         src/config_manager.cpp
-        src/rag_command_manager.cpp
         src/whitelist_manager.cpp
+        src/rag_command_manager.cpp
+        src/base_validator.cpp
+        src/rag_validator.cpp
+        src/llama_integration_real.cpp
 )
 
 # ============================================================================
@@ -134,3 +135,4 @@ message(STATUS "   - httplib: ${HTTPLIB_INCLUDE_DIR}")
 message(STATUS "   - nlohmann/json: ${JSON_INCLUDE_DIR}")
 message(STATUS "   - llama.cpp: ${HAVE_LLAMA_CPP}")
 message(STATUS "   - threads: OK")
+message(STATUS "   - Archivos fuente: ${SOURCES}")

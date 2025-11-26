@@ -1,125 +1,139 @@
-// rag/src/whitelist_manager.cpp - CORRECTO ASÍ
 #include "rag/whitelist_manager.hpp"
-#include "rag/rag_command_manager.hpp"
 #include <iostream>
 #include <sstream>
-#include <algorithm>
 
-namespace rag {
+namespace Rag {
 
-WhitelistManager::WhitelistManager() {
+WhiteListManager::WhiteListManager()
+    : config_manager_(ConfigManager::getInstance()) {  // Inicializar referencia
+    // WhiteListManager es el único que crea y usa EtcdClient
+    etcd_client_ = std::make_unique<EtcdClient>(config_manager_.getEtcdEndpoint(), "security-system");
     std::cout << "🔧 Inicializando WhiteListManager..." << std::endl;
 }
 
-WhitelistManager::~WhitelistManager() {
-    std::cout << "🔧 Finalizando WhiteListManager..." << std::endl;
+WhiteListManager::~WhiteListManager() {
+    unregisterSystemFromEtcd();
+    std::cout << "🔧 WhiteListManager finalizado" << std::endl;
 }
 
-void WhitelistManager::registerManager(const std::string& component,
-                                      std::shared_ptr<Rag::RagCommandManager> manager) {
-    managers_[component] = manager;
-    std::cout << "✅ Registrado manager para componente: " << component << std::endl;
+bool WhiteListManager::initialize() {
+    if (!etcd_client_->initialize()) {
+        std::cerr << "❌ Error inicializando etcd client" << std::endl;
+        return false;
+    }
+
+    registerSystemWithEtcd();
+    return true;
 }
 
-void WhitelistManager::processCommand(const std::string& command) {
-    if (command.empty()) return;
+void WhiteListManager::registerCommandManager(const std::string& component_name,
+                                            std::shared_ptr<CommandManager> manager) {
+    command_managers_[component_name] = manager;
+    std::cout << "✅ Registrado manager para componente: " << component_name << std::endl;
 
-    // Comandos globales del sistema
-    if (command == "help" || command == "?") {
+    // Registrar automáticamente el componente en etcd
+    auto config = config_manager_.getConfigForEtcd();
+    registerComponentInEtcd(component_name, config);
+}
+
+void WhiteListManager::processCommand(const std::string& input) {
+    auto tokens = tokenizeCommand(input);
+    if (tokens.empty()) return;
+
+    std::string component = tokens[0];
+
+    if (component == "help") {
         showHelp();
         return;
     }
 
-    if (command == "exit" || command == "quit") {
+    if (component == "exit") {
         std::cout << "👋 Saliendo del sistema..." << std::endl;
         exit(0);
     }
 
-    // Parsear comando específico de componente
-    auto parsed = parseCommand(command);
-
-    if (!parsed.valid) {
-        std::cout << "❌ Comando no válido: " << command << std::endl;
-        showHelp();
-        return;
-    }
-
-    // Enrutar al manager correspondiente
-    auto it = managers_.find(parsed.component);
-    if (it == managers_.end()) {
-        std::cout << "❌ Componente no encontrado: " << parsed.component << std::endl;
-        std::cout << "   Componentes disponibles: ";
-        for (const auto& [comp, _] : managers_) {
-            std::cout << comp << " ";
+    auto it = command_managers_.find(component);
+    if (it != command_managers_.end()) {
+        // Eliminar el componente de los tokens y pasar el resto al manager
+        std::vector<std::string> command_args(tokens.begin() + 1, tokens.end());
+        it->second->processCommand(command_args);
+    } else {
+        std::cout << "❌ Componente no reconocido: " << component << std::endl;
+        std::cout << "💡 Componentes disponibles: ";
+        for (const auto& [name, _] : command_managers_) {
+            std::cout << name << " ";
         }
         std::cout << std::endl;
-        return;
-    }
-
-    // Enrutamiento básico - esto se puede refinar después
-    if (parsed.component == "rag") {
-        if (parsed.action == "show_config") {
-            it->second->showConfig();
-        } else if (parsed.action == "show_capabilities") {
-            it->second->showCapabilities();
-        } else if (parsed.action == "update_setting") {
-            it->second->updateSetting(parsed.parameters);
-        } else {
-            std::cout << "❌ Acción no reconocida para 'rag': " << parsed.action << std::endl;
-        }
     }
 }
 
-WhitelistManager::ParsedCommand WhitelistManager::parseCommand(const std::string& command) const {
-    ParsedCommand result;
-    std::istringstream iss(command);
-    std::vector<std::string> tokens;
-    std::string token;
-
-    // Tokenizar
-    while (std::getline(iss, token, ' ')) {
-        if (!token.empty()) {
-            tokens.push_back(token);
-        }
-    }
-
-    if (tokens.size() < 2) {
-        // Comando demasiado corto
-        return result;
-    }
-
-    result.component = tokens[0];
-    result.action = tokens[1];
-
-    // Reconstruir parámetros (si hay más de 2 tokens)
-    if (tokens.size() > 2) {
-        for (size_t i = 2; i < tokens.size(); ++i) {
-            if (i > 2) result.parameters += " ";
-            result.parameters += tokens[i];
-        }
-    }
-
-    result.valid = true;
-    return result;
-}
-
-void WhitelistManager::showHelp() const {
+void WhiteListManager::showHelp() const {
     std::cout << "\n🎯 SISTEMA DE SEGURIDAD - COMANDOS DISPONIBLES" << std::endl;
     std::cout << "==============================================" << std::endl;
-    std::cout << "rag show_config           - Mostrar configuración RAG" << std::endl;
-    std::cout << "rag update_setting <k> <v> - Actualizar setting RAG" << std::endl;
-    std::cout << "rag show_capabilities     - Mostrar capacidades RAG" << std::endl;
+
+    for (const auto& [component, manager] : command_managers_) {
+        std::cout << component << " [comando] - Comandos para " << component << std::endl;
+        std::cout << "   show_config          - Mostrar configuración" << std::endl;
+        std::cout << "   update_setting <k> <v> - Actualizar setting" << std::endl;
+        std::cout << "   show_capabilities    - Mostrar capacidades" << std::endl;
+        std::cout << "   ask_llm <pregunta>   - Consultar al LLM (TinyLlama)" << std::endl;
+    }
+
     std::cout << "help                      - Mostrar esta ayuda" << std::endl;
     std::cout << "exit                      - Salir del sistema" << std::endl;
     std::cout << "==============================================" << std::endl;
+    std::cout << "Componentes activos: ";
+    for (const auto& [name, _] : command_managers_) {
+        std::cout << name << " ";
+    }
+    std::cout << std::endl;
+}
 
-    if (!managers_.empty()) {
-        std::cout << "Componentes activos: ";
-        for (const auto& [comp, _] : managers_) {
-            std::cout << comp << " ";
-        }
-        std::cout << std::endl;
+bool WhiteListManager::registerComponentInEtcd(const std::string& component_name, const nlohmann::json& config) {
+    std::cout << "🌐 Registrando componente '" << component_name << "' en etcd..." << std::endl;
+    // Usar etcd_client_ para registrar el componente
+    return etcd_client_->update_component_config(component_name, config.dump());
+}
+
+bool WhiteListManager::unregisterComponentFromEtcd(const std::string& component_name) {
+    std::cout << "🌐 Desregistrando componente '" << component_name << "' de etcd..." << std::endl;
+    // Lógica para desregistrar componente específico
+    return true; // Implementar según necesidad
+}
+
+bool WhiteListManager::updateComponentConfigInEtcd(const std::string& component_name, const std::string& config) {
+    // Actualizar configuración del componente en etcd
+    return etcd_client_->update_component_config(component_name, config);
+}
+
+void WhiteListManager::registerSystemWithEtcd() {
+    std::cout << "🌐 Registrando sistema completo en etcd-server..." << std::endl;
+    if (etcd_client_->registerService()) {
+        std::cout << "✅ Registro en etcd completado" << std::endl;
+    } else {
+        std::cerr << "❌ Error en registro etcd" << std::endl;
     }
 }
 
-} // namespace rag
+void WhiteListManager::unregisterSystemFromEtcd() {
+    std::cout << "🌐 Desregistrando sistema de etcd..." << std::endl;
+    if (etcd_client_->unregisterService()) {
+        std::cout << "✅ Sistema desregistrado correctamente" << std::endl;
+    } else {
+        std::cerr << "❌ Error al desregistrar sistema" << std::endl;
+    }
+}
+
+std::vector<std::string> WhiteListManager::tokenizeCommand(const std::string& input) {
+    std::vector<std::string> tokens;
+    std::istringstream iss(input);
+    std::string token;
+
+    while (iss >> token) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
+} // namespace Rag

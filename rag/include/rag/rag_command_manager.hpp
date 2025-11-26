@@ -1,28 +1,23 @@
 #pragma once
-#include <string>
+#include "rag/command_manager.hpp"
+#include "rag/rag_validator.hpp"
 #include <memory>
-#include <vector>
 
 namespace Rag {
-    class EtcdClient;
-    class ConfigManager;
 
-    class RagCommandManager {
-    public:
-        RagCommandManager(std::shared_ptr<EtcdClient> etcd_client,
-                         std::shared_ptr<ConfigManager> config_manager);
-        ~RagCommandManager();
+class RagCommandManager : public CommandManager {
+public:
+    RagCommandManager();
+    ~RagCommandManager();
 
-        // ✅ MÉTODOS PRINCIPALES - Interface limpia
-        void showConfig();
-        void showCapabilities();
-        void updateSetting(const std::string& input);
+    void processCommand(const std::vector<std::string>& args) override;
+    void showConfig(const std::vector<std::string>& args) override;
+    void updateSetting(const std::vector<std::string>& args) override;
+    void showCapabilities(const std::vector<std::string>& args) override;
+    void askLLM(const std::vector<std::string>& args);
 
-        // ✅ MÉTODO PARA PROCESAR COMANDOS DIRECTAMENTE
-        void processCommand(const std::string& command);
+private:
+    RagValidator validator_;
+};
 
-    private:
-        std::shared_ptr<EtcdClient> etcd_client_;
-        std::shared_ptr<ConfigManager> config_manager_;
-    };
-}
+} // namespace Rag
