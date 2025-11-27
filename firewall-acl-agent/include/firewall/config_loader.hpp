@@ -121,13 +121,10 @@ struct FirewallAgentConfig {
     BatchProcessorConfigNew batch_processor;
     ValidationConfig validation;
     LoggingConfigNew logging;
-    // ... resto según necesites
     
     bool is_valid() const { return true; }
     std::vector<std::string> validate() const { return {}; }
 };
-
-} // namespace mldefender::firewall
 
 //===----------------------------------------------------------------------===//
 // ConfigLoader - Loads firewall.json (JSON is LAW, fail fast)
