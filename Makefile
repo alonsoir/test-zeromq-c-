@@ -1,7 +1,7 @@
 .PHONY: help status
 .PHONY: up halt destroy ssh
 .PHONY: lab-start lab-stop lab-restart lab-ps lab-logs lab-clean
-.PHONY: proto sniffer detector firewall all rebuild
+.PHONY: proto proto-unified proto-verify sniffer detector firewall all rebuild
 .PHONY: sniffer-build sniffer-clean sniffer-package sniffer-install
 .PHONY: detector-build detector-clean
 .PHONY: firewall-build firewall-clean
@@ -10,6 +10,7 @@
 .PHONY: run-lab-dev kill-lab status-lab
 .PHONY: kill-all check-ports restart
 .PHONY: clean distclean test dev-setup schema-update
+.PHONY: build-unified rebuild-unified create-verify-script quick-fix dev-setup-unified
 
 # ============================================================================
 # ML Defender Pipeline - Host Makefile
@@ -38,11 +39,15 @@ help:
 	@echo ""
 	@echo "Build:"
 	@echo "  make all             - Build sniffer + detector + firewall"
-	@echo "  make proto           - Regenerate protobuf schema"
+	@echo "  make proto           - Regenerate protobuf schema (unified)"
+	@echo "  make proto-unified   - Protobuf unified system"
+	@echo "  make proto-verify    - Verify protobuf consistency"
 	@echo "  make sniffer         - Build sniffer"
 	@echo "  make detector        - Build ml-detector"
 	@echo "  make firewall        - Build firewall-acl-agent"
-	@echo "  make rebuild         - Clean + build all"
+	@echo "  make rebuild         - Clean + build all (unified)"
+	@echo "  make build-unified   - Build with unified protobuf"
+	@echo "  make rebuild-unified - Clean + unified build"
 	@echo ""
 	@echo "Sniffer Packaging:"
 	@echo "  make sniffer-package - Create .deb package"
@@ -66,8 +71,10 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev-setup       - Full setup (up + lab + build)"
+	@echo "  make dev-setup-unified - Setup with unified protobuf"
 	@echo "  make test            - Check what's built"
 	@echo "  make schema-update   - Update schema + rebuild"
+	@echo "  make quick-fix       - Quick bug fix procedure"
 	@echo ""
 	@echo "Troubleshooting:"
 	@echo "  make kill-all        - Kill all processes"
@@ -123,20 +130,24 @@ lab-clean:
 	@vagrant ssh -c "cd /vagrant && docker-compose down -v"
 
 # ============================================================================
-# Protobuf Schema
+# Protobuf Schema - UNIFIED SYSTEM
 # ============================================================================
 
-proto:
-	@echo "📦 Regenerating protobuf schema..."
-	@vagrant ssh -c "cd /vagrant/protobuf && ./generate.sh"
-	@echo "📋 Copying protobuf to components..."
-	@vagrant ssh -c "mkdir -p /vagrant/firewall-acl-agent/proto"
-	@vagrant ssh -c "cp /vagrant/protobuf/network_security.pb.cc /vagrant/firewall-acl-agent/proto/"
-	@vagrant ssh -c "cp /vagrant/protobuf/network_security.pb.h /vagrant/firewall-acl-agent/proto/"
-	@echo "✅ Protobuf synchronized across all components"
+PROTOBUF_VERIFY_SCRIPT := /vagrant/scripts/verify_protobuf.sh
+
+proto-unified:
+	@echo "🔨 Protobuf Unified System..."
+	@vagrant ssh -c "cd /vagrant/protobuf && chmod +x generate.sh && ./generate.sh"
+
+proto-verify:
+	@echo "🔍 Verificando consistencia protobuf..."
+	@vagrant ssh -c "cd /vagrant && bash scripts/verify_protobuf.sh"
+
+proto: proto-unified
+	@echo "✅ Protobuf unificado generado y distribuido"
 
 # ============================================================================
-# Build Targets
+# Build Targets - UPDATED FOR UNIFIED PROTOBUF
 # ============================================================================
 
 sniffer: proto
@@ -160,14 +171,13 @@ sniffer-install: sniffer-package
 
 detector: proto
 	@echo "🔨 Building ML Detector..."
-	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/src/protobuf && cp /vagrant/protobuf/network_security.pb.cc /vagrant/ml-detector/src/protobuf/ && cp /vagrant/protobuf/network_security.pb.h /vagrant/ml-detector/src/protobuf/ && mkdir -p /vagrant/ml-detector/build && cd /vagrant/ml-detector/build && cmake .. && make -j4"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build && cd /vagrant/ml-detector/build && cmake .. && make -j4"
 
 detector-build: detector
 
 detector-clean:
 	@echo "🧹 Cleaning ML Detector..."
 	@vagrant ssh -c "rm -rf /vagrant/ml-detector/build/*"
-	@vagrant ssh -c "rm -f /vagrant/ml-detector/src/protobuf/network_security.pb.*"
 
 firewall: proto
 	@echo "🔨 Building Firewall ACL Agent..."
@@ -178,13 +188,20 @@ firewall-build: firewall
 firewall-clean:
 	@echo "🧹 Cleaning Firewall ACL Agent..."
 	@vagrant ssh -c "rm -rf /vagrant/firewall-acl-agent/build/*"
-	@vagrant ssh -c "rm -f /vagrant/firewall-acl-agent/proto/network_security.pb.*"
 
-all: sniffer detector firewall
-	@echo "✅ All components built (Sniffer + Detector + Firewall)"
+# Build con protobuf unificado
+build-unified: proto-unified sniffer detector firewall
+	@echo "🚀 Build completo con protobuf unificado"
+	@$(MAKE) proto-verify
 
-rebuild: clean all
-	@echo "✅ Full rebuild complete"
+all: build-unified
+	@echo "✅ All components built con protobuf unificado"
+
+rebuild-unified: clean build-unified
+	@echo "✅ Rebuild completo con protobuf unificado"
+
+rebuild: rebuild-unified
+	@echo "✅ Full rebuild complete con protobuf unificado"
 
 clean: sniffer-clean detector-clean firewall-clean
 	@echo "✅ Clean complete"
@@ -287,5 +304,45 @@ kill-all: kill-lab
 
 restart: kill-lab
 	@echo "♻️  Restart with: make run-lab-dev"
+
+# ============================================================================
+# Scripts de utilidad - CORREGIDO
+# ============================================================================
+
+create-verify-script:
+	@echo "📝 Creando script de verificación protobuf..."
+	@vagrant ssh -c "cat > /vagrant/scripts/verify_protobuf.sh << 'EOF'"
+	@vagrant ssh -c "echo '#!/bin/bash' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"🔍 Verificando consistencia protobuf...\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"========================================\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"📊 Checksums de archivos .pb.cc:\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'find /vagrant -name \"network_security.pb.cc\" -exec sha256sum {} \; | sort' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"📊 Checksums de archivos .pb.h:\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'find /vagrant -name \"network_security.pb.h\" -exec sha256sum {} \; | sort' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"✅ Todos los checksums deben ser IDÉNTICOS\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"❌ Si son diferentes: PROBLEMA DE INCONSISTENCIA\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "chmod +x /vagrant/scripts/verify_protobuf.sh"
+	@echo "✅ Script de verificación creado"
+
+# ============================================================================
+# Desarrollo rápido
+# ============================================================================
+
+quick-fix: kill-lab proto-unified create-verify-script
+	@echo "🔄 Aplicando fix rápido..."
+	@$(MAKE) rebuild-unified
+	@echo "✅ Fix aplicado - verificar con: make proto-verify"
+
+dev-setup-unified: up lab-start build-unified create-verify-script
+	@echo ""
+	@echo "✅ Development environment con protobuf unificado listo"
+	@echo ""
+	@echo "Verificación:"
+	@echo "  make proto-verify          # Verificar consistencia protobuf"
+	@echo "  make run-lab-dev           # Ejecutar lab"
+	@echo "  make logs-lab              # Monitorear logs"
 
 .DEFAULT_GOAL := help

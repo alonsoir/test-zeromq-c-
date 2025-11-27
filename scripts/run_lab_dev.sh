@@ -115,7 +115,7 @@ echo "   ML: 4-layer RandomForest detection pipeline"
 echo ""
 
 cd "$PROJECT_ROOT/ml-detector/build"
-./ml-detector -c config/ml_detector_config.json \
+./ml-detector -c ../config/ml_detector_config.json \
     > "$LOG_DIR/detector.log" 2>&1 &
 DETECTOR_PID=$!
 echo $DETECTOR_PID > "$PID_DIR/detector.pid"
@@ -156,7 +156,7 @@ echo "   Features: 4 groups (RF, Ransomware, Internal, DDoS)"
 echo ""
 
 cd "$PROJECT_ROOT/sniffer/build"
-sudo ./sniffer -c config/sniffer.json \
+sudo ./sniffer -c ../config/sniffer.json \
     > "$LOG_DIR/sniffer.log" 2>&1 &
 SNIFFER_PID=$!
 echo $SNIFFER_PID > "$PID_DIR/sniffer.pid"

@@ -19,7 +19,7 @@
 #include "ml_defender/internal_detector.hpp"
 #include "config_loader.hpp"
 
-#include "../protobuf/network_security.pb.h"
+#include "network_security.pb.h"
 
 namespace ml_detector {
 

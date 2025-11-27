@@ -55,16 +55,42 @@ if [ -f "${PROTO_DIR}/network_security.pb.cc" ] && [ -f "${PROTO_DIR}/network_se
         PY_SIZE=$(wc -l < "${PROTO_DIR}/network_security_pb2.py")
         echo "✅ network_security_pb2.py: ${PY_SIZE} lines"
     fi
-    
+
+    # ============================================================================
+    # DISTRIBUCIÓN PROTOBUF UNIFICADO - CORREGIDO
+    # ============================================================================
     echo ""
+    echo "📦 Distribuyendo protobuf unificado a componentes..."
+
+    # Sniffer
+    mkdir -p /vagrant/sniffer/build/proto
+    cp "${PROTO_DIR}/network_security.pb.cc" /vagrant/sniffer/build/proto/
+    cp "${PROTO_DIR}/network_security.pb.h" /vagrant/sniffer/build/proto/
+    echo "✅ Copiado a sniffer"
+
+    # ML-Detector
+    mkdir -p /vagrant/ml-detector/build/proto
+    cp "${PROTO_DIR}/network_security.pb.cc" /vagrant/ml-detector/build/proto/
+    cp "${PROTO_DIR}/network_security.pb.h" /vagrant/ml-detector/build/proto/
+    echo "✅ Copiado a ml-detector"
+
+    # Firewall
+    mkdir -p /vagrant/firewall-acl-agent/build/proto
+    cp "${PROTO_DIR}/network_security.pb.cc" /vagrant/firewall-acl-agent/build/proto/
+    cp "${PROTO_DIR}/network_security.pb.h" /vagrant/firewall-acl-agent/build/proto/
+    echo "✅ Copiado a firewall"
+
+    echo "🎯 Protobuf unificado distribuido a 3 componentes"
+    echo ""
+
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  ✅ Protobuf generation complete                           ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
     echo "🎯 Next steps:"
-    echo "   1. Review generated files"
-    echo "   2. Rebuild sniffer: cd /vagrant/sniffer && make"
-    echo "   3. Rebuild ml-detector: cd /vagrant/ml-detector/build && cmake .. && make"
+    echo "   1. Rebuild sniffer: cd /vagrant/sniffer && make"
+    echo "   2. Rebuild ml-detector: cd /vagrant/ml-detector/build && cmake .. && make"
+    echo "   3. Rebuild firewall: cd /vagrant/firewall-acl-agent/build && cmake .. && make"
     echo ""
 else
     echo "❌ Generation failed!"
