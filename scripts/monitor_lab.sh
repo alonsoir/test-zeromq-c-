@@ -75,7 +75,7 @@ get_config_file() {
             config_file="/vagrant/firewall-acl-agent/config/firewall.json"
             ;;
         "detector")
-            config_file="/vagrant/ml-detector/config/ml-detector.json"
+            config_file="/vagrant/ml-detector/config/ml_detector_config.json"
             ;;
         "sniffer")
             config_file="/vagrant/sniffer/config/sniffer.json"
@@ -104,13 +104,24 @@ check_zmq_ports() {
 
 # Function to get IPSet stats
 get_ipset_stats() {
-    local entries=$(sudo ipset list ml_defender_blacklist 2>/dev/null | grep -c "^[0-9]")
-    local size=$(sudo ipset list ml_defender_blacklist 2>/dev/null | grep "Size in memory" | awk '{print $4}')
+    local entries=$(sudo ipset list ml_defender_blacklist_test 2>/dev/null | grep -c "^[0-9]")
+    local size=$(sudo ipset list ml_defender_blacklist_test 2>/dev/null | grep "Size in memory" | awk '{print $4}')
 
     if [ -z "$size" ]; then
         echo -e "${RED}❌ IPSet not found${NC}"
     else
         echo -e "${GREEN}✅ Active${NC} - Entries: ${CYAN}${entries}${NC} - Memory: ${CYAN}${size}B${NC}"
+    fi
+}
+
+
+# Function to get sniffer interface and profile
+get_sniffer_info() {
+    local config_file="/vagrant/sniffer/config/sniffer.json"
+    if [ -f "$config_file" ]; then
+        local profile=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$config_file" | cut -d'"' -f4)
+        local interface=$(grep -o '"capture_interface"[[:space:]]*:[[:space:]]*"[^"]*"' "$config_file" | head -1 | cut -d'"' -f4)
+        echo -e "${CYAN}Profile: $profile, Interface: $interface${NC}"
     fi
 }
 
@@ -174,8 +185,8 @@ while true; do
     echo ""
     echo -n "📡 Sniffer:   "
     if get_process_stats "sniffer"; then
-        echo -n "   Config: "
-        get_config_file "sniffer"
+        echo -n "   "
+        get_sniffer_info
     fi
 
     echo ""
@@ -206,7 +217,7 @@ while true; do
     get_ipset_stats
 
     # Show last 5 blocked IPs if any
-    local blocked_ips=$(sudo ipset list ml_defender_blacklist 2>/dev/null | grep "^[0-9]" | tail -5)
+    blocked_ips=$(sudo ipset list ml_defender_blacklist_test 2>/dev/null | grep "^[0-9]" | tail -5)
     if [ ! -z "$blocked_ips" ]; then
         echo ""
         echo -e "${YELLOW}Recent blocked IPs:${NC}"
@@ -238,7 +249,7 @@ while true; do
 
     if [ -f "$LOG_DIR/sniffer.log" ]; then
         echo -e "${MAGENTA}📡 Sniffer:${NC}"
-        tail -5 "$LOG_DIR/sniffer.log" 2>/dev/null | grep -E "ESTADÍSTICAS|Paquetes|Tasa|packets" | tail -3 | sed 's/^/  /'
+        tail -20 "$LOG_DIR/sniffer.log" 2>/dev/null | grep -E "Paquetes procesados:|Paquetes enviados:|Tasa:" | tail -3 | sed 's/^/  /'
         echo ""
     fi
 

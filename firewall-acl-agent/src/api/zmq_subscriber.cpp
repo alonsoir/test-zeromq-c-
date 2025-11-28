@@ -226,13 +226,32 @@ void ZMQSubscriber::receive_loop() {
 }
 
 void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
-    // Parse DetectionBatch protobuf
-    protobuf::DetectionBatch batch;
+    const uint8_t* data_ptr = static_cast<const uint8_t*>(msg_data);
+    size_t data_size = msg_size;
+    
+    // If we have a topic filter, skip the topic prefix
+    // ZMQ PUB/SUB sends: [TOPIC][DATA]
+    if (!config_.topic.empty()) {
+        size_t topic_len = config_.topic.length();
+        
+        if (msg_size > topic_len && 
+            std::memcmp(data_ptr, config_.topic.c_str(), topic_len) == 0) {
+            data_ptr += topic_len;
+            data_size -= topic_len;
+            
+            std::cerr << "[ZMQSubscriber] DEBUG: Skipped topic prefix (" 
+                      << topic_len << " bytes), protobuf data: " 
+                      << data_size << " bytes" << std::endl;
+        }
+    }
+    
+    // Parse NetworkSecurityEvent protobuf
+    protobuf::NetworkSecurityEvent event;
 
     try {
-        if (!batch.ParseFromArray(msg_data, static_cast<int>(msg_size))) {
-            std::cerr << "[ZMQSubscriber] Failed to parse DetectionBatch protobuf ("
-                      << msg_size << " bytes)" << std::endl;
+        if (!event.ParseFromArray(data_ptr, static_cast<int>(data_size))) {
+            std::cerr << "[ZMQSubscriber] Failed to parse NetworkSecurityEvent protobuf ("
+                      << data_size << " bytes)" << std::endl;
             stats_.parse_errors++;
             return;
         }
@@ -243,29 +262,63 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
         return;
     }
 
-    // Update metrics
     stats_.messages_received++;
 
-    // Check if batch is empty
-    if (batch.detections_size() == 0) {
-        stats_.empty_batches++;
+    // Check if event has ML analysis
+    if (!event.has_ml_analysis()) {
         return;
     }
 
-    // Forward detections to batch processor
+    const auto& ml = event.ml_analysis();
+    
+    // Only process if attack was detected at Level 1
+    if (!ml.attack_detected_level1()) {
+        return;
+    }
+
+    // Extract source IP from network_features
+    if (!event.has_network_features()) {
+        std::cerr << "[ZMQSubscriber] Event missing network_features, skipping" << std::endl;
+        return;
+    }
+    
+    const auto& nf = event.network_features();
+    if (nf.source_ip().empty()) {
+        std::cerr << "[ZMQSubscriber] Event missing source_ip, skipping" << std::endl;
+        return;
+    }
+
+    // Create detection
+    std::vector<protobuf::Detection> detections;
+    protobuf::Detection detection;
+    
+    detection.set_src_ip(nf.source_ip());
+    
+    // Set detection type based on threat category
+    std::string threat_cat = event.threat_category();
+    if (threat_cat == "DDOS") {
+        detection.set_type(protobuf::DetectionType::DETECTION_DDOS);
+    } else if (threat_cat == "RANSOMWARE") {
+        detection.set_type(protobuf::DetectionType::DETECTION_RANSOMWARE);
+    } else if (threat_cat == "SUSPICIOUS_INTERNAL") {
+        detection.set_type(protobuf::DetectionType::DETECTION_INTERNAL_THREAT);
+    } else {
+        detection.set_type(protobuf::DetectionType::DETECTION_SUSPICIOUS_TRAFFIC);
+    }
+    
+    detection.set_confidence(ml.level1_confidence());
+    detection.set_timestamp(event.event_timestamp().seconds());
+    detection.set_description("Attack detected: " + threat_cat);
+    
+    detections.push_back(detection);
+
     try {
-        std::vector<protobuf::Detection> detections;
-        detections.reserve(batch.detections_size());
-
-        for (int i = 0; i < batch.detections_size(); ++i) {
-            detections.push_back(batch.detections(i));
-        }
-
-        // Send to processor (thread-safe)
         processor_.add_detections(detections);
-
-        // Update metrics
         stats_.detections_processed += detections.size();
+        
+        std::cerr << "[ZMQSubscriber] Processed attack from " << nf.source_ip() 
+                  << " (type: " << threat_cat << ", conf: " 
+                  << ml.level1_confidence() << ")" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[ZMQSubscriber] Error forwarding detections to processor: "

@@ -54,8 +54,8 @@
     "filter": {
       "version": "1.0",
       "mode": "hybrid",
-      "excluded_ports": [22, 4444, 8080],
-      "included_ports": [8000],
+      "excluded_ports": [22],
+      "included_ports": [],
       "default_action": "capture"
     },
 

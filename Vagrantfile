@@ -21,68 +21,76 @@ Vagrant.configure("2") do |config|
   end
 
   # ════════════════════════════════════════════════════════════════════════
-  # Provisioning: Configuración de Red INTELIGENTE
-  # ════════════════════════════════════════════════════════════════════════
-  config.vm.provision "shell", run: "always", inline: <<-SHELL
-    echo "🔧 Configurando interfaces de red optimizadas..."
+    # Provisioning: Configuración de Red INTELIGENTE + Modo Promiscuo
+    # ════════════════════════════════════════════════════════════════════════
+    config.vm.provision "shell", run: "always", inline: <<-SHELL
+      echo "🔧 Configurando interfaces de red optimizadas..."
 
-    # 1. Instalar herramientas de red
-    apt-get update -qq
-    apt-get install -y ethtool tcpdump
+      # 1. Instalar herramientas de red
+      apt-get update -qq
+      apt-get install -y ethtool tcpdump
 
-    # 2. Detectar interfaz bridge automáticamente (para captura externa)
-    BRIDGE_INTERFACE=""
-    for iface in eth2 eth1; do
-      if ip link show $iface >/dev/null 2>&1; then
-        BRIDGE_INTERFACE=$iface
-        break
+      # 2. Detectar interfaz bridge automáticamente (para captura externa)
+      BRIDGE_INTERFACE=""
+      for iface in eth2 eth1; do
+        if ip link show $iface >/dev/null 2>&1; then
+          BRIDGE_INTERFACE=$iface
+          break
+        fi
+      done
+
+      if [ -z "$BRIDGE_INTERFACE" ]; then
+        echo "⚠️  No se encontró interfaz bridge, usando eth0 para captura"
+        BRIDGE_INTERFACE="eth0"
       fi
-    done
-    
-    if [ -z "$BRIDGE_INTERFACE" ]; then
-      echo "⚠️  No se encontró interfaz bridge, usando eth0 para tráfico interno"
-      BRIDGE_INTERFACE="eth0"
-    fi
 
-    echo "🎯 Interfaz para captura externa: $BRIDGE_INTERFACE"
-    echo "🎯 Interfaz para tráfico interno: eth0"
+      echo "🎯 Interfaz para captura externa: $BRIDGE_INTERFACE"
+      echo "🎯 Interfaz para tráfico interno: eth0"
 
-    # 3. Configurar modo promiscuo SOLO si es interfaz bridge externa
-    if [ "$BRIDGE_INTERFACE" != "eth0" ]; then
-      echo "🔍 Activando modo promiscuo en $BRIDGE_INTERFACE (captura externa)..."
+      # 3. Configurar modo promiscuo en AMBAS interfaces para máxima captura
+      echo "🔍 Activando modo promiscuo en $BRIDGE_INTERFACE..."
       ip link set $BRIDGE_INTERFACE promisc on
 
-      # Desactivar offloading features para XDP
-      echo "⚙️  Desactivando offloading features en $BRIDGE_INTERFACE..."
-      ethtool -K $BRIDGE_INTERFACE gro off 2>/dev/null || true
-      ethtool -K $BRIDGE_INTERFACE tx-checksum-ip-generic off 2>/dev/null || true
-      ethtool -K $BRIDGE_INTERFACE tso off 2>/dev/null || true
-      ethtool -K $BRIDGE_INTERFACE gso off 2>/dev/null || true
-    else
-      echo "ℹ️  Modo promiscuo no necesario en eth0 (tráfico interno)"
-    fi
+      # NUEVO: Activar promiscuo también en eth0 para capturar tráfico local
+      echo "🔍 Activando modo promiscuo en eth0 (captura local)..."
+      ip link set eth0 promisc on
 
-    # 4. Verificar configuración
-    echo ""
-    echo "═══════════════════════════════════════════════════════════"
-    echo "✅ CONFIGURACIÓN DE RED COMPLETADA"
-    echo "═══════════════════════════════════════════════════════════"
-    
-    echo "Interfaz captura externa: $BRIDGE_INTERFACE"
-    if [ "$BRIDGE_INTERFACE" != "eth0" ]; then
+      # Desactivar offloading features para XDP en ambas interfaces
+      for iface in $BRIDGE_INTERFACE eth0; do
+        if ip link show $iface >/dev/null 2>&1; then
+          echo "⚙️  Desactivando offloading features en $iface..."
+          ethtool -K $iface gro off 2>/dev/null || true
+          ethtool -K $iface tx-checksum-ip-generic off 2>/dev/null || true
+          ethtool -K $iface tso off 2>/dev/null || true
+          ethtool -K $iface gso off 2>/dev/null || true
+        fi
+      done
+
+      # 4. Verificar configuración
+      echo ""
+      echo "═══════════════════════════════════════════════════════════"
+      echo "✅ CONFIGURACIÓN DE RED COMPLETADA"
+      echo "═══════════════════════════════════════════════════════════"
+
+      echo "Interfaz captura externa: $BRIDGE_INTERFACE"
       if ip link show $BRIDGE_INTERFACE | grep -q PROMISC; then
         echo "✅ Modo promiscuo: ACTIVO en $BRIDGE_INTERFACE"
       else
         echo "❌ Modo promiscuo: INACTIVO en $BRIDGE_INTERFACE"
       fi
-    fi
-    
-    echo "Interfaz tráfico interno: eth0"
-    echo "Interfaz host-VM: eth1 (192.168.56.20)"
 
-    echo "═══════════════════════════════════════════════════════════"
-    echo ""
-  SHELL
+      echo "Interfaz tráfico local: eth0"
+      if ip link show eth0 | grep -q PROMISC; then
+        echo "✅ Modo promiscuo: ACTIVO en eth0"
+      else
+        echo "❌ Modo promiscuo: INACTIVO en eth0"
+      fi
+
+      echo "Interfaz host-VM: eth1 (192.168.56.20)"
+
+      echo "═══════════════════════════════════════════════════════════"
+      echo ""
+    SHELL
 
   config.vm.network "private_network", ip: "192.168.56.20"
   config.vm.network "public_network", bridge: "en0: Wi-Fi"
