@@ -222,6 +222,16 @@ public:
         const std::string& chain_name,
         IPTablesTable table = IPTablesTable::FILTER
     );
+    //===------------------------------------------------------------------===//
+    // Dry-Run Mode
+    //===------------------------------------------------------------------===//
+
+    /// Enable/disable dry-run mode (no actual commands executed)
+    void set_dry_run(bool enabled) { m_dry_run = enabled; }
+    
+    /// Check if dry-run mode is enabled
+    bool is_dry_run() const { return m_dry_run; }
+
 
     /// List all chains in a table
     std::vector<std::string> list_chains(
@@ -286,6 +296,7 @@ private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
     mutable std::mutex mutex_;  ///< Thread-safety
+    bool m_dry_run = false;  ///< Dry-run mode flag
 
     //===------------------------------------------------------------------===//
     // Internal Helpers

@@ -20,6 +20,7 @@
 #include <fstream>
 #include <regex>
 #include <arpa/inet.h>
+#include <iostream>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -148,6 +149,10 @@ IPSetResult<void> IPSetWrapper::create_set(const IPSetConfig& config) {
 
     cmd << " 2>&1";
 
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd.str());
 
     if (ret != 0) {
@@ -171,6 +176,10 @@ IPSetResult<void> IPSetWrapper::destroy_set(const std::string& set_name) {
     }
 
     std::string cmd = "ipset destroy " + set_name + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {
@@ -234,6 +243,10 @@ IPSetResult<void> IPSetWrapper::flush_set(const std::string& set_name) {
     }
 
     std::string cmd = "ipset flush " + set_name + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {
@@ -319,6 +332,10 @@ IPSetResult<void> IPSetWrapper::add_batch(
 
     // Execute ipset restore (SINGLE SYSCALL for entire batch)
     std::string cmd = "ipset restore < " + std::string(tmpfile) + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     std::remove(tmpfile);
@@ -383,6 +400,10 @@ IPSetResult<void> IPSetWrapper::delete_batch(
     outfile.close();
 
     std::string cmd = "ipset restore -exist < " + std::string(tmpfile) + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     std::remove(tmpfile);
@@ -538,6 +559,10 @@ IPSetResult<void> IPSetWrapper::rename_set(
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::string cmd = "ipset rename " + old_name + " " + new_name + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {
@@ -557,6 +582,10 @@ IPSetResult<void> IPSetWrapper::swap_sets(
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::string cmd = "ipset swap " + set1 + " " + set2 + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {
@@ -573,6 +602,10 @@ IPSetResult<void> IPSetWrapper::save(const std::string& filepath) const {
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::string cmd = "ipset save > " + filepath + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {
@@ -589,6 +622,10 @@ IPSetResult<void> IPSetWrapper::restore(const std::string& filepath) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::string cmd = "ipset restore < " + filepath + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPSetResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {

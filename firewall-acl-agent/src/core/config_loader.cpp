@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
+#include <map>
 
 namespace mldefender::firewall {
 
@@ -112,6 +113,10 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
         config.ipset = parse_ipset(root["ipset"]);
     }
     
+    if (root.isMember("ipsets")) {
+        config.ipsets = parse_ipsets(root["ipsets"]);
+    }
+    
     if (root.isMember("iptables")) {
         config.iptables = parse_iptables(root["iptables"]);
     }
@@ -180,6 +185,21 @@ IPSetConfigNew ConfigLoader::parse_ipset(const Json::Value& json) {
     config.create_if_missing = get_optional<bool>(json, "create_if_missing", true);
     config.flush_on_startup = get_optional<bool>(json, "flush_on_startup", false);
     return config;
+}
+
+std::map<std::string, IPSetConfigNew> ConfigLoader::parse_ipsets(const Json::Value& json) {
+    std::map<std::string, IPSetConfigNew> ipsets;
+    
+    if (!json.isObject()) {
+        return ipsets;
+    }
+    
+    // Iterar sobre cada entrada en "ipsets" (blacklist, whitelist, etc.)
+    for (const auto& key : json.getMemberNames()) {
+        ipsets[key] = parse_ipset(json[key]);
+    }
+    
+    return ipsets;
 }
 
 IPTablesConfigNew ConfigLoader::parse_iptables(const Json::Value& json) {

@@ -20,6 +20,7 @@
 #include <fstream>
 #include <regex>
 #include <algorithm>
+#include <iostream>
 
 namespace mldefender::firewall {
 
@@ -133,6 +134,10 @@ IPTablesResult<void> IPTablesWrapper::create_chain(
     cmd << "iptables -t " << table_to_string(table)
         << " -N " << chain_name << " 2>&1";
 
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd.str());
 
     if (ret != 0) {
@@ -168,6 +173,10 @@ IPTablesResult<void> IPTablesWrapper::delete_chain(
     cmd << "iptables -t " << table_to_string(table)
         << " -X " << chain_name << " 2>&1";
 
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd.str());
 
     if (ret != 0) {
@@ -209,6 +218,10 @@ IPTablesResult<void> IPTablesWrapper::flush_chain(
     cmd << "iptables -t " << table_to_string(table)
         << " -F " << chain_name << " 2>&1";
 
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd.str());
 
     if (ret != 0) {
@@ -358,6 +371,10 @@ IPTablesResult<void> IPTablesWrapper::add_rule(const IPTablesRule& rule) {
 
     cmd << " 2>&1";
 
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd.str());
 
     if (ret != 0) {
@@ -381,6 +398,10 @@ IPTablesResult<void> IPTablesWrapper::delete_rule(
     cmd << "iptables -t " << table_to_string(table)
         << " -D " << chain_name << " " << position << " 2>&1";
 
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd.str());
 
     if (ret != 0) {
@@ -444,6 +465,10 @@ IPTablesResult<void> IPTablesWrapper::setup_base_rules(const FirewallConfig& con
     for (const auto& chain : custom_chains) {
         if (!chain.empty() && !chain_exists_unlocked(chain, IPTablesTable::FILTER)) {
             std::string cmd = "iptables -t filter -N " + chain + " 2>&1";
+            if (m_dry_run) {
+                std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+                return IPTablesResult<void>(); // Success in dry-run
+            }
             auto [ret, output] = execute_command(cmd);
             if (ret != 0) {
                 return IPTablesResult<void>(IPTablesError{
@@ -569,6 +594,13 @@ IPTablesResult<void> IPTablesWrapper::setup_base_rules(const FirewallConfig& con
 IPTablesResult<void> IPTablesWrapper::cleanup_rules(const FirewallConfig& config) {
     std::lock_guard<std::mutex> lock(mutex_);
 
+    // Early return in dry-run mode
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would cleanup ML Defender chains" << std::endl;
+        return IPTablesResult<void>();
+    }
+
+
     // Remove rules that reference our ipsets/chains
     // This is a simplified cleanup - in production you'd want more robust cleanup
 
@@ -615,6 +647,10 @@ IPTablesResult<void> IPTablesWrapper::save(const std::string& filepath) const {
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::string cmd = "iptables-save > " + filepath + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {
@@ -631,6 +667,10 @@ IPTablesResult<void> IPTablesWrapper::restore(const std::string& filepath) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::string cmd = "iptables-restore < " + filepath + " 2>&1";
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
+        return IPTablesResult<void>(); // Success in dry-run
+    }
     auto [ret, output] = execute_command(cmd);
 
     if (ret != 0) {

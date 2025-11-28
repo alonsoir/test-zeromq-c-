@@ -197,6 +197,17 @@ public:
     //===------------------------------------------------------------------===//
     // Set Management
     //===------------------------------------------------------------------===//
+    // Set Management
+    //===------------------------------------------------------------------===//
+
+    /// Enable/disable dry-run mode (no actual commands executed)
+    void set_dry_run(bool enabled) { m_dry_run = enabled; }
+    
+    /// Check if dry-run mode is enabled
+    bool is_dry_run() const { return m_dry_run; }
+
+    /// Create a new ipset with specified configuration
+    //===------------------------------------------------------------------===//
 
     /// Create a new ipset with specified configuration
     /// @param config Set configuration
@@ -410,6 +421,7 @@ private:
     std::unique_ptr<Impl> impl_;
 
     mutable std::mutex mutex_; ///< Thread-safety for kernel operations
+    bool m_dry_run = false;  ///< Dry-run mode flag
 };
 
 //===----------------------------------------------------------------------===//

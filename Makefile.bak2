@@ -244,29 +244,105 @@ run-lab-dev:
 	@echo ""
 	@vagrant ssh -c "cd /vagrant && bash scripts/run_lab_dev.sh"
 
+kill-lab:
+	@echo "💀 Stopping ML Defender Lab..."
 	@vagrant ssh -c "sudo pkill -f -9 firewall-acl-agent || true"
 	@vagrant ssh -c "pkill -f -9 ml-detector || true"
 	@vagrant ssh -c "sudo pkill -f -9 sniffer || true"
 	@sleep 2
 	@echo "✅ Lab stopped"
 
+status-lab:
+	@echo "📊 ML Defender Lab Status:"
+	@echo ""
+	@vagrant ssh -c "pgrep -a firewall-acl-agent | head -1 | awk '{print \"Firewall: ✅ PID\", \$$1}' || echo 'Firewall: ❌ Not running'"
+	@vagrant ssh -c "pgrep -a ml-detector | head -1 | awk '{print \"Detector: ✅ PID\", \$$1}' || echo 'Detector: ❌ Not running'"
+	@vagrant ssh -c "pgrep -a sniffer | head -1 | awk '{print \"Sniffer:  ✅ PID\", \$$1}' || echo 'Sniffer:  ❌ Not running'"
+	@echo ""
+	@vagrant ssh -c "sudo ss -tlnp | grep -E '5571|5572' || echo 'Ports: ⚠️  Not listening'"
 
-kill-lab:
-	@echo "💀 Stopping ML Defender Lab..."
+logs-lab:
+	@echo "📋 Combined Logs (all components):"
+	@vagrant ssh -c "cd /vagrant && bash scripts/monitor_lab.sh"
+
+# ============================================================================
+# Individual Logs
+# ============================================================================
+
+logs-firewall:
+	@vagrant ssh -c "tail -50 /vagrant/firewall-acl-agent/build/logs/*.log 2>/dev/null || tail -50 /var/log/ml-defender/firewall-acl-agent.log 2>/dev/null || echo 'No logs yet'"
+
+logs-detector:
+	@vagrant ssh -c "tail -50 /vagrant/ml-detector/build/logs/*.log 2>/dev/null || echo 'No logs yet'"
+
+logs-sniffer:
+	@vagrant ssh -c "tail -50 /vagrant/sniffer/build/logs/*.log 2>/dev/null || echo 'No logs yet'"
+
+# ============================================================================
+# Development Helpers
+# ============================================================================
+
+dev-setup: up lab-start all
 	@echo ""
-	@echo "Checking processes..."
-	@vagrant ssh -c "pgrep -a -f firewall-acl-agent || echo '  Firewall: ❌ Not running'"
-	@vagrant ssh -c "pgrep -a -f ml-detector || echo '  Detector: ❌ Not running'"
-	@vagrant ssh -c "pgrep -a -f sniffer || echo '  Sniffer:  ❌ Not running'"
+	@echo "✅ Development environment ready"
 	@echo ""
-	@echo "Killing processes..."
-	-@vagrant ssh -c "sudo pkill -9 -f firewall-acl-agent" 2>/dev/null || echo "  Firewall already stopped"
-	-@vagrant ssh -c "pkill -9 -f ml-detector" 2>/dev/null || echo "  Detector already stopped"
-	-@vagrant ssh -c "sudo pkill -9 -f sniffer" 2>/dev/null || echo "  Sniffer already stopped"
-	@sleep 2
+	@echo "Next steps:"
+	@echo "  make run-lab-dev     - Start full integrated lab"
+	@echo "  make ssh             - SSH into VM for debugging"
 	@echo ""
-	@echo "Verifying cleanup..."
-	@vagrant ssh -c "pgrep -a -f 'firewall-acl-agent|ml-detector|sniffer' || echo '✅ All processes stopped'"
+
+test:
+	@echo "🧪 Testing build artifacts..."
+	@vagrant ssh -c "echo 'Sniffer:  \$$([ -f /vagrant/sniffer/build/sniffer ] && echo ✅ || echo ❌)' && echo 'Detector: \$$([ -f /vagrant/ml-detector/build/ml-detector ] && echo ✅ || echo ❌)' && echo 'Firewall: \$$([ -f /vagrant/firewall-acl-agent/build/firewall-acl-agent ] && echo ✅ || echo ❌)' && echo 'Protobuf: \$$([ -f /vagrant/protobuf/network_security.pb.cc ] && echo ✅ || echo ❌)'"
+
+schema-update: proto rebuild
 
 check-ports:
 	@vagrant ssh -c "sudo ss -tlnp | grep -E '5571|5572' && echo '⚠️  Ports in use' || echo '✅ Ports free'"
+
+kill-all: kill-lab
+
+restart: kill-lab
+	@echo "♻️  Restart with: make run-lab-dev"
+
+# ============================================================================
+# Scripts de utilidad - CORREGIDO
+# ============================================================================
+
+create-verify-script:
+	@echo "📝 Creando script de verificación protobuf..."
+	@vagrant ssh -c "cat > /vagrant/scripts/verify_protobuf.sh << 'EOF'"
+	@vagrant ssh -c "echo '#!/bin/bash' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"🔍 Verificando consistencia protobuf...\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"========================================\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"📊 Checksums de archivos .pb.cc:\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'find /vagrant -name \"network_security.pb.cc\" -exec sha256sum {} \; | sort' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"📊 Checksums de archivos .pb.h:\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'find /vagrant -name \"network_security.pb.h\" -exec sha256sum {} \; | sort' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"✅ Todos los checksums deben ser IDÉNTICOS\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "echo 'echo \"❌ Si son diferentes: PROBLEMA DE INCONSISTENCIA\"' >> /vagrant/scripts/verify_protobuf.sh"
+	@vagrant ssh -c "chmod +x /vagrant/scripts/verify_protobuf.sh"
+	@echo "✅ Script de verificación creado"
+
+# ============================================================================
+# Desarrollo rápido
+# ============================================================================
+
+quick-fix: kill-lab proto-unified create-verify-script
+	@echo "🔄 Aplicando fix rápido..."
+	@$(MAKE) rebuild-unified
+	@echo "✅ Fix aplicado - verificar con: make proto-verify"
+
+dev-setup-unified: up lab-start build-unified create-verify-script
+	@echo ""
+	@echo "✅ Development environment con protobuf unificado listo"
+	@echo ""
+	@echo "Verificación:"
+	@echo "  make proto-verify          # Verificar consistencia protobuf"
+	@echo "  make run-lab-dev           # Ejecutar lab"
+	@echo "  make logs-lab              # Monitorear logs"
+
+.DEFAULT_GOAL := help

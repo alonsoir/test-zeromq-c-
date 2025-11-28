@@ -117,6 +117,7 @@ struct FirewallAgentConfig {
     OperationConfig operation;
     ZMQConfigNew zmq;
     IPSetConfigNew ipset;
+    std::map<std::string, IPSetConfigNew> ipsets;  // Multiple ipsets (blacklist, whitelist)
     IPTablesConfigNew iptables;
     BatchProcessorConfigNew batch_processor;
     ValidationConfig validation;
@@ -144,6 +145,7 @@ private:
     static OperationConfig parse_operation(const Json::Value& json);
     static ZMQConfigNew parse_zmq(const Json::Value& json);
     static IPSetConfigNew parse_ipset(const Json::Value& json);
+    static std::map<std::string, IPSetConfigNew> parse_ipsets(const Json::Value& json);
     static IPTablesConfigNew parse_iptables(const Json::Value& json);
     static BatchProcessorConfigNew parse_batch_processor(const Json::Value& json);
     static ValidationConfig parse_validation(const Json::Value& json);
