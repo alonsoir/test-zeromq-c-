@@ -1,260 +1,225 @@
-Cómo sería el **PCAP replay** con tráfico real de malware.
+# PCAP Replay Testing - Phase 2 Validation
 
-## PCAP Replay - Metodología Completa 🔬
-
-### Concepto
-Reproducir capturas de tráfico real de ataques (ransomware, DDoS, etc.) **inyectándolas en eth0** de la VM para que el sniffer las capture como si fueran tráfico en vivo.
-
----
-
-## Fase 1: Obtener PCAPs de Malware Real 📥
-
-### Fuentes públicas confiables:
-
-**1. Malware-Traffic-Analysis.net** (MEJOR FUENTE)
-```bash
-# Ejemplos de datasets disponibles:
-# - Ransomware: Locky, WannaCry, Ryuk, Conti
-# - Banking Trojans: Emotet, Trickbot, Dridex
-# - Exploit Kits: RIG, Magnitude
-# URL: https://www.malware-traffic-analysis.net/
-```
-
-**2. StratosphereIPS Datasets**
-```bash
-# CTU-13 Dataset: 13 diferentes escenarios de botnet
-# URL: https://www.stratosphereips.org/datasets-overview
-```
-
-**3. CAIDA DDoS Attack 2007**
-```bash
-# DDoS real contra servidores raíz DNS
-# URL: https://www.caida.org/catalog/datasets/ddos-20070804_dataset/
-```
-
-**4. SecRepo.com**
-```bash
-# Repositorio con múltiples tipos de ataques
-# URL: http://www.secrepo.com/
-```
+> **Status:** Documentation complete, implementation pending Phase 2
+> **Priority:** After Phase 1 completion (watcher, vector DB, hardening)
+> **Purpose:** Validate ML models against real malware traffic
 
 ---
 
-## Fase 2: Preparar el Entorno 🛠️
+## Overview
 
-### Instalar herramientas necesarias:
+PCAP replay allows testing the ML Defender pipeline with **real malware traffic** in a safe, controlled, reproducible environment. This is the gold standard for IDS validation.
 
+---
+
+## Security First - Hardening Strategy
+
+**Critical:** The VM must be completely isolated BEFORE any malicious traffic replay.
+
+### 1. VM Hardening (Automatic in Vagrantfile)
+
+```ruby
+# Add to Vagrantfile provision (before any PCAP work)
+config.vm.provision "shell", name: "pcap-hardening", inline: <<-SHELL
+  # 1. Block all outbound traffic except allowed
+  iptables -P OUTPUT DROP
+  iptables -P FORWARD DROP
+  
+  # 2. Allow only internal host↔VM communication
+  iptables -A OUTPUT -d 10.0.2.2 -j ACCEPT      # Host (NAT)
+  iptables -A OUTPUT -d 192.168.56.1 -j ACCEPT  # Host (private)
+  iptables -A OUTPUT -o lo -j ACCEPT            # Loopback
+  
+  # 3. Block DNS to external (no data exfiltration)
+  iptables -A OUTPUT -p udp --dport 53 ! -d 10.0.2.2 -j DROP
+  iptables -A OUTPUT -p tcp --dport 53 ! -d 10.0.2.2 -j DROP
+  
+  # 4. Log rejected packets (limited)
+  iptables -A OUTPUT -m limit --limit 5/min -j LOG --log-prefix "BLOCKED: "
+  
+  # 5. Disable IP forwarding
+  echo 0 > /proc/sys/net/ipv4/ip_forward
+  
+  echo "✅ VM hardened for PCAP replay"
+SHELL
+```
+
+### 2. Mount PCAPs as Read-Only
+
+```ruby
+# In Vagrantfile
+config.vm.synced_folder "./pcaps", "/opt/pcaps", 
+  type: "virtualbox",
+  mount_options: ["ro"]  # Read-only!
+```
+
+**Why this matters:**
+- VM cannot modify or exfiltrate PCAPs
+- Malware cannot write back to host
+- No accidental corruption of test data
+
+---
+
+## Methodology - Complete Workflow
+
+### Phase 1: Obtain Real Malware PCAPs (On Host)
+
+**Trusted Sources:**
+
+1. **Malware-Traffic-Analysis.net** (BEST)
+    - Ransomware: Locky, WannaCry, Ryuk, Conti
+    - Banking Trojans: Emotet, Trickbot, Dridex
+    - Exploit Kits: RIG, Magnitude
+    - URL: https://www.malware-traffic-analysis.net/
+
+2. **StratosphereIPS - CTU-13 Dataset**
+    - 13 botnet scenarios (Neris, Rbot, Virut, etc.)
+    - Well-labeled, peer-reviewed
+    - URL: https://www.stratosphereips.org/datasets-overview
+
+3. **CAIDA DDoS Attack 2007**
+    - Real DDoS against DNS root servers
+    - URL: https://www.caida.org/catalog/datasets/ddos-20070804_dataset/
+
+4. **SecRepo.com**
+    - Various attack types
+    - URL: http://www.secrepo.com/
+
+**Download on host (macOS):**
 ```bash
-vagrant ssh
+cd ~/Code/test-zeromq-docker/pcaps
+wget https://www.malware-traffic-analysis.net/.../attack.pcap.zip
+unzip -P infected attack.pcap.zip
+```
 
-# Instalar tcpreplay (inyección de PCAP)
-sudo apt-get update
+### Phase 2: Prepare PCAPs for Replay
+
+**Why rewrite IPs:**
+- Original PCAPs have arbitrary source/dest IPs
+- Need to map to VM's network (10.0.2.0/24, 192.168.100.0/24)
+- Firewall can then block the mapped attacker IP
+
+**Install tools (in VM):**
+```bash
 sudo apt-get install -y tcpreplay tcpdump wireshark-common
-
-# Verificar instalación
-tcpreplay --version
 ```
 
-### Crear directorio de trabajo:
-
+**Rewrite IPs:**
 ```bash
-mkdir -p /vagrant/testing/pcaps
-cd /vagrant/testing/pcaps
-```
-
----
-
-## Fase 3: Descargar PCAP de Ejemplo 📦
-
-### Opción A: Ransomware (Locky)
-
-```bash
-# Descargar PCAP de Locky ransomware
-wget https://www.malware-traffic-analysis.net/2016/09/22/2016-09-22-Locky-infection-traffic.pcap.zip
-
-# Descomprimir (password suele ser "infected")
-unzip -P infected 2016-09-22-Locky-infection-traffic.pcap.zip
-```
-
-### Opción B: DDoS Attack (más fácil para empezar)
-
-```bash
-# DDoS simple - creamos uno sintético para testing inicial
-# (luego usaremos PCAPs reales)
-```
-
-### Opción C: Botnet Traffic (CTU-13)
-
-```bash
-# Descargar capture de botnet Neris
-wget https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-42/detailed-bidirectional-flow-labels/capture20110810.binetflow
-```
-
----
-
-## Fase 4: Inspeccionar el PCAP 🔍
-
-```bash
-# Ver información del PCAP
-capinfos archivo.pcap
-
-# Ver primeros 20 paquetes
-tcpdump -nr archivo.pcap -c 20
-
-# Ver estadísticas de IPs
-tcpdump -nr archivo.pcap | awk '{print $3}' | sort | uniq -c | sort -rn | head -20
-
-# Contar paquetes por protocolo
-tcpdump -nr archivo.pcap -q | awk '{print $3}' | cut -d. -f1-4 | sort | uniq -c
-```
-
----
-
-## Fase 5: Preparar el PCAP para Replay 🎬
-
-### Reescribir IPs (CRÍTICO)
-
-**Problema:** Los PCAPs tienen IPs de las redes originales. Necesitamos reescribirlas para que:
-- La IP de origen sea algo que el firewall pueda bloquear
-- La IP de destino sea algo alcanzable desde la VM
-
-```bash
-# Instalar tcprewrite
-sudo apt-get install -y tcpreplay
-
-# Reescribir IPs: 
-# - Origen: cualquier IP maliciosa → 192.168.100.50 (IP fake atacante)
-# - Destino: cualquier IP víctima → 10.0.2.15 (la VM misma)
-
+# Option A: Simple rewrite (all IPs to VM subnet)
 tcprewrite \
-  --infile=original.pcap \
-  --outfile=rewritten.pcap \
-  --srcipmap=0.0.0.0/0:192.168.100.50/32 \
-  --dstipmap=0.0.0.0/0:10.0.2.15/32 \
-  --enet-dmac=08:00:27:XX:XX:XX \
-  --enet-smac=52:54:00:XX:XX:XX
-
-# Verificar resultado
-tcpdump -nr rewritten.pcap -c 10
-```
-
-### Alternativa más simple (para testing inicial):
-
-```bash
-# Solo reescribir IPs, dejar MACs
-tcprewrite \
-  --infile=original.pcap \
-  --outfile=rewritten.pcap \
+  --infile=/opt/pcaps/original.pcap \
+  --outfile=/tmp/ready.pcap \
   --pnat=0.0.0.0/0:192.168.100.0/24 \
   --fixcsum
+
+# Option B: Specific attacker IP (for blacklist testing)
+tcprewrite \
+  --infile=/opt/pcaps/original.pcap \
+  --outfile=/tmp/ready.pcap \
+  --srcipmap=0.0.0.0/0:192.168.100.50/32 \
+  --dstipmap=0.0.0.0/0:10.0.2.15/32 \
+  --fixcsum
+
+# Verify result
+tcpdump -nr /tmp/ready.pcap -c 20
 ```
 
----
+### Phase 3: Execute Replay
 
-## Fase 6: Ejecutar el Replay 🚀
-
-### Preparación:
-
+**Start ML Defender pipeline:**
 ```bash
-# 1. Asegurar que el lab está corriendo
 cd /vagrant
 make run-lab-dev
+```
 
-# 2. En otra terminal, preparar monitoring
-tail -f /vagrant/logs/lab/detector.log | grep "attacks="
+**In another terminal, start monitoring:**
+```bash
+# Terminal 2: Watch detector stats
+watch -n 1 'grep "attacks=" /vagrant/logs/lab/detector.log | tail -1'
 
-# 3. En otra terminal más, ver IPSet en tiempo real
+# Terminal 3: Watch IPSet blacklist
 watch -n 1 'sudo ipset list ml_defender_blacklist_test'
+
+# Terminal 4: Monitor all logs
+tail -f /vagrant/logs/lab/*.log
 ```
 
-### Replay básico:
-
+**Replay the PCAP:**
 ```bash
-# Replay a velocidad del PCAP original
-sudo tcpreplay --intf1=eth0 rewritten.pcap
+# Basic replay (original speed)
+sudo tcpreplay --intf1=eth0 /tmp/ready.pcap
 
-# Replay más rápido (2x velocidad)
-sudo tcpreplay --intf1=eth0 --multiplier=2 rewritten.pcap
+# Faster (2x speed, for stress testing)
+sudo tcpreplay --intf1=eth0 --multiplier=2 /tmp/ready.pcap
 
-# Replay más lento (útil para debugging)
-sudo tcpreplay --intf1=eth0 --multiplier=0.5 rewritten.pcap
+# Controlled rate (100 Mbps)
+sudo tcpreplay --intf1=eth0 --mbps=100 /tmp/ready.pcap
 
-# Replay en loop (para stress test)
-sudo tcpreplay --intf1=eth0 --loop=10 rewritten.pcap
+# Controlled PPS (1000 packets/sec)
+sudo tcpreplay --intf1=eth0 --pps=1000 /tmp/ready.pcap
+
+# Loop 10 times (stress test)
+sudo tcpreplay --intf1=eth0 --loop=10 /tmp/ready.pcap
+
+# With stats every second
+sudo tcpreplay --intf1=eth0 --stats=1 /tmp/ready.pcap
 ```
 
-### Replay avanzado:
+**Why control speed:**
+- Too fast → artificial volume spikes (false positives)
+- Too slow → takes forever
+- Realistic rate (100-1000 pps) → best for model validation
 
+### Phase 4: Validate Results
+
+**Check if models detected attacks:**
 ```bash
-# Control preciso de velocidad (100 Mbps)
-sudo tcpreplay --intf1=eth0 --mbps=100 rewritten.pcap
-
-# Control por paquetes por segundo
-sudo tcpreplay --intf1=eth0 --pps=1000 rewritten.pcap
-
-# Con estadísticas detalladas
-sudo tcpreplay --intf1=eth0 --stats=1 rewritten.pcap
-```
-
----
-
-## Fase 7: Verificar Detecciones 🎯
-
-### Durante el replay:
-
-```bash
-# 1. Ver si attacks > 0
+# 1. Check attack counter
 grep "attacks=" /vagrant/logs/lab/detector.log | tail -5
 
-# 2. Ver clasificaciones
-grep -E "DDOS|RANSOMWARE|SUSPICIOUS" /vagrant/logs/lab/detector.log | tail -20
+# 2. Check specific detections
+grep -E "DDOS|RANSOMWARE|SUSPICIOUS" /vagrant/logs/lab/detector.log
 
-# 3. Ver si el firewall bloqueó
+# 3. Check firewall blocked IPs
 sudo ipset list ml_defender_blacklist_test
 
-# 4. Ver IPTables counters
+# 4. Check IPTables counters
 sudo iptables -L INPUT -n -v --line-numbers | grep ml_defender
-```
 
-### Después del replay:
-
-```bash
-# Estadísticas finales
-echo "=== SNIFFER ==="
-grep "Paquetes procesados" /vagrant/logs/lab/sniffer.log | tail -1
-
+# 5. Get final stats
 echo "=== DETECTOR ==="
 grep "Stats:" /vagrant/logs/lab/detector.log | tail -1
 
 echo "=== FIREWALL ==="
 grep "METRICS" /vagrant/logs/lab/firewall.log | tail -1
 
-# Ver IPs bloqueadas
-sudo ipset list ml_defender_blacklist_test -o save
+echo "=== SNIFFER ==="
+grep "Paquetes procesados" /vagrant/logs/lab/sniffer.log | tail -1
 ```
 
 ---
 
-## Fase 8: Script Automatizado 📜
+## Automated Testing Script
 
-Creo un script completo para ti:
+**Location:** `/vagrant/scripts/testing/pcap_replay_test.sh`
 
 ```bash
-cat > /vagrant/scripts/testing/pcap_replay_test.sh << 'EOF'
 #!/bin/bash
+set -euo pipefail
 
-PCAP_DIR="/vagrant/testing/pcaps"
-PCAP_FILE="$1"
-SPEED="${2:-1}"  # Default 1x speed
+PCAP_DIR="/opt/pcaps"
+PCAP_FILE="${1:-}"
+SPEED="${2:-1}"
 
-if [ -z "$PCAP_FILE" ]; then
+if [[ -z "$PCAP_FILE" ]]; then
     echo "Usage: $0 <pcap_file> [speed_multiplier]"
     echo "Example: $0 malware.pcap 2"
     exit 1
 fi
 
-if [ ! -f "$PCAP_DIR/$PCAP_FILE" ]; then
-    echo "Error: PCAP file not found: $PCAP_DIR/$PCAP_FILE"
+if [[ ! -f "$PCAP_DIR/$PCAP_FILE" ]]; then
+    echo "❌ Error: PCAP not found: $PCAP_DIR/$PCAP_FILE"
     exit 1
 fi
 
@@ -262,34 +227,35 @@ echo "╔═══════════════════════�
 echo "║  ML Defender - PCAP Replay Test                           ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
-echo "PCAP File: $PCAP_FILE"
-echo "Speed: ${SPEED}x"
+echo "📂 PCAP: $PCAP_FILE"
+echo "⚡ Speed: ${SPEED}x"
+echo "🔒 Hardened: $(iptables -L OUTPUT -n | grep -c DROP || echo 'NO')"
 echo ""
 
-# Get baseline stats
-BASELINE_ATTACKS=$(grep "attacks=" /vagrant/logs/lab/detector.log | tail -1 | grep -oP 'attacks=\K\d+')
-BASELINE_PROCESSED=$(grep "processed=" /vagrant/logs/lab/detector.log | tail -1 | grep -oP 'processed=\K\d+')
+# Baseline stats
+BASELINE_ATTACKS=$(grep "attacks=" /vagrant/logs/lab/detector.log 2>/dev/null | tail -1 | grep -oP 'attacks=\K\d+' || echo 0)
+BASELINE_PROCESSED=$(grep "processed=" /vagrant/logs/lab/detector.log 2>/dev/null | tail -1 | grep -oP 'processed=\K\d+' || echo 0)
 
-echo "Baseline: attacks=$BASELINE_ATTACKS, processed=$BASELINE_PROCESSED"
+echo "📊 Baseline: attacks=$BASELINE_ATTACKS, processed=$BASELINE_PROCESSED"
 echo ""
-echo "Starting replay in 3 seconds..."
+echo "⏳ Starting replay in 3 seconds..."
 sleep 3
 
 # Execute replay
 echo "🚀 Replaying PCAP..."
 sudo tcpreplay \
     --intf1=eth0 \
-    --multiplier=$SPEED \
+    --multiplier="$SPEED" \
     --stats=1 \
     "$PCAP_DIR/$PCAP_FILE"
 
 echo ""
-echo "✅ Replay complete. Waiting 5 seconds for processing..."
+echo "⏳ Waiting 5 seconds for ML processing..."
 sleep 5
 
-# Get final stats
-FINAL_ATTACKS=$(grep "attacks=" /vagrant/logs/lab/detector.log | tail -1 | grep -oP 'attacks=\K\d+')
-FINAL_PROCESSED=$(grep "processed=" /vagrant/logs/lab/detector.log | tail -1 | grep -oP 'processed=\K\d+')
+# Final stats
+FINAL_ATTACKS=$(grep "attacks=" /vagrant/logs/lab/detector.log 2>/dev/null | tail -1 | grep -oP 'attacks=\K\d+' || echo 0)
+FINAL_PROCESSED=$(grep "processed=" /vagrant/logs/lab/detector.log 2>/dev/null | tail -1 | grep -oP 'processed=\K\d+' || echo 0)
 
 NEW_ATTACKS=$((FINAL_ATTACKS - BASELINE_ATTACKS))
 NEW_PROCESSED=$((FINAL_PROCESSED - BASELINE_PROCESSED))
@@ -298,197 +264,180 @@ echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  RESULTS                                                   ║"
 echo "╚════════════════════════════════════════════════════════════╝"
-echo "Events processed: $NEW_PROCESSED"
-echo "Attacks detected: $NEW_ATTACKS"
+echo "📊 Events processed: $NEW_PROCESSED"
+echo "🚨 Attacks detected: $NEW_ATTACKS"
 echo ""
 
-if [ $NEW_ATTACKS -gt 0 ]; then
-    echo "🚨 ATTACKS DETECTED! Checking blocked IPs..."
+if [[ $NEW_ATTACKS -gt 0 ]]; then
+    echo "🎯 ATTACKS DETECTED! Checking blocked IPs..."
     echo ""
     sudo ipset list ml_defender_blacklist_test
     echo ""
     echo "✅ Test PASSED - System detected and blocked attacks!"
 else
-    echo "ℹ️  No attacks detected. Models classified traffic as benign."
-    echo "   This could mean:"
-    echo "   1. PCAP doesn't contain attack patterns models recognize"
-    echo "   2. Models are working correctly (no false positives)"
-    echo "   3. Different PCAP needed for testing"
+    echo "ℹ️  No attacks detected."
+    echo ""
+    echo "Possible reasons:"
+    echo "  1. PCAP doesn't match model training patterns"
+    echo "  2. Models correctly classified as benign (no false positive)"
+    echo "  3. Thresholds too high (check sniffer.json)"
+    echo "  4. Feature extraction mismatch"
 fi
 
 echo ""
-EOF
+echo "💡 For debugging:"
+echo "   tail -50 /vagrant/logs/lab/detector.log"
+echo "   grep 'level1_confidence' /vagrant/logs/lab/detector.log"
+echo ""
+```
 
+**Usage:**
+```bash
 chmod +x /vagrant/scripts/testing/pcap_replay_test.sh
+/vagrant/scripts/testing/pcap_replay_test.sh ransomware.pcap 1
 ```
 
 ---
 
-## Uso Final 🎬
+## Interpretation Guide
+
+### Expected Outcomes
+
+**If attacks detected (attacks > 0):**
+✅ Models are working correctly
+✅ Firewall blocked attacker IPs
+✅ IPSet shows blocked entries
+✅ IPTables DROP counter increased
+
+**If NO attacks detected (attacks = 0):**
+
+Could mean:
+1. **Models too strict** (good for production, bad for testing)
+    - Solution: Lower thresholds in `sniffer.json`
+    - Try: DDoS 0.70, Ransomware 0.75 (from 0.85, 0.90)
+
+2. **PCAP doesn't match training data**
+    - Models trained on specific patterns
+    - PCAP may use different attack vector
+    - Solution: Try different PCAP source
+
+3. **Feature extraction issue**
+    - Check sniffer logs for feature values
+    - Compare with training data ranges
+    - May need feature normalization
+
+4. **Models are actually correct**
+    - Some "malware PCAPs" are just C2 beacons
+    - Low-volume, low-impact traffic
+    - Not every malware PCAP triggers DDoS/Ransomware patterns
+
+### Debugging Commands
 
 ```bash
-# 1. Descargar un PCAP
-cd /vagrant/testing/pcaps
-wget <URL_DEL_PCAP>
+# See confidence scores
+grep "confidence" /vagrant/logs/lab/detector.log | tail -20
 
-# 2. (Opcional) Reescribir IPs
-tcprewrite --infile=original.pcap --outfile=ready.pcap --pnat=0.0.0.0/0:192.168.100.0/24
+# Check feature values
+tail -100 /vagrant/logs/lab/sniffer.log | grep "Features:"
 
-# 3. Ejecutar test
-/vagrant/scripts/testing/pcap_replay_test.sh ready.pcap 1
+# See what was classified
+grep "threat_category" /vagrant/logs/lab/detector.log | tail -20
 
-# 4. Analizar resultados
+# IPTables dropped packets
+sudo iptables -L INPUT -n -v | grep DROP
 ```
 
 ---
 
-## Ventajas del PCAP Replay ✅
+## Safety Checklist
 
-1. **Reproducible**: Mismo tráfico cada vez
-2. **Científico**: Tráfico real de malware documentado
-3. **Seguro**: No hay malware activo, solo captures
-4. **Controlable**: Puedes ajustar velocidad, loops, etc.
-5. **Validación real**: Prueba los modelos contra amenazas reales
+Before ANY PCAP replay:
 
-¿Quieres que empecemos descargando un PCAP específico? 
-
-Te recomiendo empezar con **Malware-Traffic-Analysis.net** - tienen casos muy bien documentados con writeups. 🎯
-
-Aportación de ChatGPT:
-
-Sí. La estructura correcta del plan es esa, pero con un orden y límites claros para mantener **seguridad**, **aislamiento** y **no corromper tu dataset**. Aquí tienes la secuencia exacta y segura:
+- [ ] VM is hardened (iptables OUTPUT DROP in place)
+- [ ] PCAPs mounted as read-only
+- [ ] No internet access from VM (test: `ping 8.8.8.8` should fail)
+- [ ] Firewall logs are capturing events
+- [ ] Backup of current config exists
+- [ ] Know how to kill the lab: `make kill-lab`
 
 ---
 
-# 1. **La VM se hardeniza primero (automático, idempotente)**
+## ChatGPT Insights Integration
 
-Esto debe ocurrir **antes de cualquier tráfico malicioso**.
+**Key points from ChatGPT discussion:**
 
-Dentro del `provision` de Vagrant (shell o Ansible):
+1. ✅ **Harden FIRST, replay SECOND** - Never reverse this order
+2. ✅ **Download on host** - VM should never touch internet for PCAPs
+3. ✅ **Read-only mount** - Prevents malware from modifying test data
+4. ✅ **Controlled replay rate** - Avoid artificial volume spikes
+5. ✅ **This is the industry standard** - Used by Blue Teams, IDS vendors, CI/CD pipelines
 
-1. Crear las reglas de iptables/ipset / eBPF para:
-
-    * Bloqueo de salidas no autorizadas.
-    * Aislamiento total: permitir solo tráfico interno host↔VM.
-    * Denegar DNS externo.
-    * Deshabilitar forwarding.
-    * Logging limitado de paquetes rechazados.
-2. (Opcional) Añadir un eBPF program para monitorizar y abortar si la VM intenta abrir un socket fuera del rango permitido.
-3. Montar un directorio compartido *solo lectura* para introducir los PCAPs.
-
-Esto se lanza cada vez que la VM arranca. No depende del script de ataques.
+**What NOT to do:**
+- ❌ Don't run actual malware executables
+- ❌ Don't give VM internet access during replay
+- ❌ Don't replay without hardening
+- ❌ Don't trust "cleaned" PCAPs without verification
 
 ---
 
-# 2. **Descarga de PCAPs**
+## Recommended Testing Sequence
 
-Hay dos modos:
+### Phase 2.1: Initial Validation (Week 1)
+1. Single Locky ransomware PCAP (well-documented)
+2. Single Emotet banking trojan PCAP
+3. Verify models detect both
 
-### Opción A — Descargarlos *antes* y almacenarlos en el host (más seguro)
+### Phase 2.2: Comprehensive Testing (Week 2)
+4. CTU-13 botnet scenarios (all 13)
+5. Various DDoS types (SYN flood, UDP flood, etc.)
+6. Mixed traffic (benign + malicious)
 
-1. Descargas los PCAPs desde tu máquina real.
-2. Los dejas en un directorio local:
-   `./pcaps/*.pcap`
-3. Ese directorio se monta en Vagrant como:
-
-   ```ruby
-   config.vm.synced_folder "./pcaps", "/opt/pcaps", mount_options: ["ro"]
-   ```
-
-   Montado en *solo lectura* dentro de la VM.
-
-**Ventajas:**
-
-* La VM nunca toca internet.
-* No violas aislamiento.
-* No requiere paquetes extras.
-
-### Opción B — Descargarlos *desde* la VM (menos seguro)
-
-Solo aceptable si:
-
-* Se permite tráfico únicamente hacia una URL estática concreta.
-* Se impone egress filtering estricta: solo IP/443 destino fijo.
-
-Pero la opción A es preferible.
+### Phase 2.3: Stress Testing (Week 3)
+7. Loop replay (10x)
+8. High-speed replay (10x multiplier)
+9. Concurrent attacks
+10. Long-running stability (24h with replays)
 
 ---
 
-# 3. **Reproducción controlada de los PCAP (tcpreplay)**
+## Success Metrics
 
-El “script de ataque” realmente no **genera** ataques: solo los **inyecta** usando `tcpreplay`.
+**Model Validation:**
+- Detection Rate > 90% on known malware
+- False Positive Rate < 5% on benign traffic
+- Latency < 100μs maintained under load
 
-Esto debe ocurrir **dentro** de la VM, una vez hardenizada.
-
-Secuencia típica del script:
-
-```
-#!/bin/bash
-
-PCAP_DIR="/opt/pcaps"
-IFACE="eth1"
-
-for file in "$PCAP_DIR"/*.pcap; do
-    tcpreplay --intf1=$IFACE --pps=100 "$file"
-done
-```
-
-Notas:
-
-* `pps=100` evita saturar y evita anormalidades artificiales (si no, tu IDS detecta “volumen sospechoso” más que el patrón del ataque).
-* Puedes variar la velocidad.
-* La VM estará totalmente aislada: la reproducción no sale al exterior.
+**System Validation:**
+- No crashes during replay
+- Memory stable (<150MB)
+- All blocked IPs in blacklist
+- IPTables counters match detections
 
 ---
 
-# 4. **Completamente desligado del entreno**
+## Future Enhancements
 
-El IDS escucha tráfico real y clasificará:
-
-* Si el PCAP es de ataque → debe detectarlo.
-* Si es normal → no debe marcarlo como ataque.
-
-Esto generará tus ventanas enriquecidas y tu CSV final para reentrenar.
-
----
-
-# 5. Resumen claro
-
-| Paso | Acción                         | Dónde          | Seguridad                         |
-| ---- | ------------------------------ | -------------- | --------------------------------- |
-| 1    | Hardenizar reglas              | VM (provision) | Aísla completamente la máquina    |
-| 2    | Descargar PCAPs                | Host           | VM no toca internet               |
-| 3    | Montar PCAPs RO                | Host→VM        | Evita manipulación o exfiltración |
-| 4    | Reproducir PCAPs con tcpreplay | VM             | Ataques simulados 100% contenidos |
-| 5    | IDS procesa el tráfico         | VM             | Datos limpios para entrenamiento  |
+1. **Automated PCAP library** - Download/catalog common attacks
+2. **Confidence threshold tuning** - Automatically find optimal values
+3. **A/B testing** - Compare model versions
+4. **Continuous validation** - CI/CD integration
+5. **Synthetic PCAP generation** - Create custom attack scenarios
 
 ---
 
-# 6. ¿Es sólido el plan?
+## References
 
-Sí. Es el método estándar usado en:
-
-* Validación de IDS comerciales.
-* Reproducción controlada en Blue Team labs.
-* Dataset generation reproducible.
-* Pruebas de regresión en pipelines CI/CD con tráfico ofensivo mientras mantienes garantías de aislamiento.
-
-Mientras cumplas:
-
-* VM sin salida a internet.
-* PCAPs montados como RO.
-* No ejecutar *scripts* ofensivos reales (solo replay).
-* Firewall estricto desde el arranque.
-
-Entonces el escenario es **completamente seguro**.
+- Malware-Traffic-Analysis.net - Brad Duncan's excellent resources
+- StratosphereIPS - Academic-quality datasets
+- tcpreplay documentation - https://tcpreplay.appneta.com/
+- ChatGPT validation discussion (Nov 28, 2025)
 
 ---
 
-Si quieres, puedo:
+**Status:** Ready to implement in Phase 2
+**Estimated effort:** 2-3 days (after watcher system complete)
+**Priority:** Medium (validation, not blocker)
 
-* Escribir el bloque exacto de iptables/ipset para aislar la VM.
-* Preparar el provisioning para Vagrant.
-* Redactar el script completo que ejecutará el replay.
-* Explicar cómo introducir “atenuación” en tcpreplay para simular tráfico normal mezclado con malicioso.
+---
 
-Indica cuál necesitas.
+*Via Appia Quality: Test with real threats, not assumptions.*
