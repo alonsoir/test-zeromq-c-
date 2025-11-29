@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
 // zmq_subscriber.cpp - ZMQ Subscriber Implementation
+// firewall-acl-agent/src/api/zmq_subscriber.cpp
 //===----------------------------------------------------------------------===//
 
 #include "firewall/zmq_subscriber.hpp"
@@ -31,6 +32,25 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
         );
     }
 
+    // ✅ AÑADIDO: Initialize logger
+    try {
+        logger_ = std::make_unique<FirewallLogger>(
+            config_.log_directory,
+            config_.log_queue_size
+        );
+        logger_->start();
+
+        std::cerr << "[ZMQSubscriber] Logger initialized: "
+                  << config_.log_directory << std::endl;
+        std::cerr << "[ZMQSubscriber] Log queue size: "
+                  << config_.log_queue_size << std::endl;
+
+    } catch (const std::exception& e) {
+        throw std::runtime_error(
+            std::string("Failed to initialize logger: ") + e.what()
+        );
+    }
+
     std::cerr << "[ZMQSubscriber] Initialized with endpoint: "
               << config_.endpoint << std::endl;
 }
@@ -46,6 +66,17 @@ ZMQSubscriber::~ZMQSubscriber() {
         for (int i = 0; i < 10 && running_.load(); ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
+    }
+
+    // ✅ AÑADIDO: Stop logger and print statistics
+    if (logger_) {
+        std::cerr << "[ZMQSubscriber] Stopping logger..." << std::endl;
+        logger_->stop(5000);  // 5 second timeout
+
+        std::cerr << "[ZMQSubscriber] Logger statistics:" << std::endl;
+        std::cerr << "  Events logged:  " << logger_->total_logged() << std::endl;
+        std::cerr << "  Events dropped: " << logger_->total_dropped() << std::endl;
+        std::cerr << "  Queue size:     " << logger_->queue_size() << std::endl;
     }
 
     // Close socket before destroying context
@@ -228,23 +259,23 @@ void ZMQSubscriber::receive_loop() {
 void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
     const uint8_t* data_ptr = static_cast<const uint8_t*>(msg_data);
     size_t data_size = msg_size;
-    
+
     // If we have a topic filter, skip the topic prefix
     // ZMQ PUB/SUB sends: [TOPIC][DATA]
     if (!config_.topic.empty()) {
         size_t topic_len = config_.topic.length();
-        
-        if (msg_size > topic_len && 
+
+        if (msg_size > topic_len &&
             std::memcmp(data_ptr, config_.topic.c_str(), topic_len) == 0) {
             data_ptr += topic_len;
             data_size -= topic_len;
-            
-            std::cerr << "[ZMQSubscriber] DEBUG: Skipped topic prefix (" 
-                      << topic_len << " bytes), protobuf data: " 
+
+            std::cerr << "[ZMQSubscriber] DEBUG: Skipped topic prefix ("
+                      << topic_len << " bytes), protobuf data: "
                       << data_size << " bytes" << std::endl;
         }
     }
-    
+
     // Parse NetworkSecurityEvent protobuf
     protobuf::NetworkSecurityEvent event;
 
@@ -262,6 +293,22 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
         return;
     }
 
+    std::cerr << "[DEBUG] Event parsed successfully" << std::endl;
+    std::cerr << "[DEBUG]   has_ml_analysis: " << event.has_ml_analysis() << std::endl;
+
+    if (event.has_ml_analysis()) {
+        const auto& ml = event.ml_analysis();
+        std::cerr << "[DEBUG]   attack_detected_level1: "
+                  << ml.attack_detected_level1() << std::endl;
+        std::cerr << "[DEBUG]   level1_confidence: "
+                  << ml.level1_confidence() << std::endl;
+    }
+
+    std::cerr << "[DEBUG]   has_network_features: "
+              << event.has_network_features() << std::endl;
+    std::cerr << "[DEBUG]   threat_category: "
+              << event.threat_category() << std::endl;
+
     stats_.messages_received++;
 
     // Check if event has ML analysis
@@ -270,7 +317,7 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
     }
 
     const auto& ml = event.ml_analysis();
-    
+
     // Only process if attack was detected at Level 1
     if (!ml.attack_detected_level1()) {
         return;
@@ -281,21 +328,31 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
         std::cerr << "[ZMQSubscriber] Event missing network_features, skipping" << std::endl;
         return;
     }
-    
+
     const auto& nf = event.network_features();
     if (nf.source_ip().empty()) {
         std::cerr << "[ZMQSubscriber] Event missing source_ip, skipping" << std::endl;
         return;
     }
 
-    // Create detection
+    // Determine ipset and timeout based on threat category
+    std::string ipset_name = "ml_defender_blacklist_test";
+    int timeout_sec = 300;  // 5 minutes default
+
+    std::string threat_cat = event.threat_category();
+    if (threat_cat == "DDOS") {
+        timeout_sec = 600;  // DDoS: 10 minutes
+    } else if (threat_cat == "RANSOMWARE") {
+        timeout_sec = 3600; // Ransomware: 1 hour
+    }
+
+    // Create detection for BatchProcessor
     std::vector<protobuf::Detection> detections;
     protobuf::Detection detection;
-    
+
     detection.set_src_ip(nf.source_ip());
-    
+
     // Set detection type based on threat category
-    std::string threat_cat = event.threat_category();
     if (threat_cat == "DDOS") {
         detection.set_type(protobuf::DetectionType::DETECTION_DDOS);
     } else if (threat_cat == "RANSOMWARE") {
@@ -305,23 +362,56 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
     } else {
         detection.set_type(protobuf::DetectionType::DETECTION_SUSPICIOUS_TRAFFIC);
     }
-    
+
     detection.set_confidence(ml.level1_confidence());
     detection.set_timestamp(event.event_timestamp().seconds());
     detection.set_description("Attack detected: " + threat_cat);
-    
+
     detections.push_back(detection);
 
+    // Forward to BatchProcessor
     try {
         processor_.add_detections(detections);
         stats_.detections_processed += detections.size();
-        
-        std::cerr << "[ZMQSubscriber] Processed attack from " << nf.source_ip() 
-                  << " (type: " << threat_cat << ", conf: " 
+
+        std::cerr << "[ZMQSubscriber] Processed attack from " << nf.source_ip()
+                  << " (type: " << threat_cat << ", conf: "
                   << ml.level1_confidence() << ")" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[ZMQSubscriber] Error forwarding detections to processor: "
+                  << e.what() << std::endl;
+        return;  // Don't log if we didn't actually block
+    }
+
+    // ✅ AÑADIDO: Log the blocked event
+    try {
+        BlockedEvent log_event = create_blocked_event_from_proto(
+            event,
+            "BLOCKED",
+            ipset_name,
+            timeout_sec
+        );
+
+        bool logged = logger_->log_blocked_event(log_event);
+
+        if (logged) {
+            stats_.events_logged++;
+
+            std::cerr << "[ZMQSubscriber] ✅ Logged event: "
+                      << nf.source_ip() << " → "
+                      << config_.log_directory << "/"
+                      << log_event.timestamp_ms << ".{json,proto}"
+                      << std::endl;
+        } else {
+            stats_.log_errors++;
+            std::cerr << "[ZMQSubscriber] ⚠️  Log queue full, event dropped (IP: "
+                      << nf.source_ip() << ")" << std::endl;
+        }
+
+    } catch (const std::exception& e) {
+        stats_.log_errors++;
+        std::cerr << "[ZMQSubscriber] ❌ Error logging event: "
                   << e.what() << std::endl;
     }
 }

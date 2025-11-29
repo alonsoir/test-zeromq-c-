@@ -1,26 +1,30 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
 // zmq_subscriber.hpp - ZMQ Subscriber for ML Detection Messages
-//
+// firewall-acl-agent/include/firewall/zmq_subscriber.hpp
 // Purpose:
-//   - Receives DetectionBatch messages from ml-detector via ZMQ PUB/SUB
+//   - Receives NetworkSecurityEvent messages from ml-detector via ZMQ PUB/SUB
 //   - Parses protobuf binary messages
 //   - Forwards detections to BatchProcessor for IP blocking
+//   - Logs all blocked events to filesystem for RAG ingestion
 //   - Handles reconnection, error recovery, and metrics
 //
 // Architecture:
-//   ml-detector (ZMQ PUB) → zmq_subscriber (ZMQ SUB) → batch_processor
+//   ml-detector (ZMQ PUB) → zmq_subscriber (ZMQ SUB) → batch_processor → ipset
+//                                    ↓
+//                              FirewallLogger → /vagrant/logs/blocked/*.{json,proto}
 //
 // Design Philosophy:
 //   - Simple blocking recv() in dedicated thread (Phase 1)
 //   - Automatic reconnection with exponential backoff
 //   - Parse errors are logged and skipped (don't crash)
 //   - Metrics via atomic counters (zero lock contention)
+//   - Async logging (non-blocking for detection pipeline)
 //
 // Thread Safety:
 //   - run() intended to be called from single dedicated thread
 //   - stop() can be called from any thread (atomic flag)
-//   - BatchProcessor handles its own thread safety
+//   - BatchProcessor and FirewallLogger handle their own thread safety
 //
 // Performance Model:
 //   Detection Rate     Throughput      Latency
@@ -35,6 +39,7 @@
 #define FIREWALL_ZMQ_SUBSCRIBER_HPP
 
 #include "firewall/batch_processor.hpp"
+#include "firewall/logger.hpp"  // ✅ AÑADIDO
 #include "network_security.pb.h"
 #include <zmq.hpp>
 #include <string>
@@ -49,19 +54,22 @@ namespace firewall {
  * @brief ZMQ Subscriber for receiving ML detection messages
  *
  * This class subscribes to a ZMQ PUB socket (typically from ml-detector),
- * receives DetectionBatch protobuf messages, and forwards them to a
- * BatchProcessor for IP blocking.
+ * receives NetworkSecurityEvent protobuf messages, and forwards them to a
+ * BatchProcessor for IP blocking. All blocked events are logged to disk
+ * for RAG ingestion and analysis.
  *
  * Thread Model:
  *   - Call run() from a dedicated thread (blocking event loop)
  *   - Call stop() from any thread to trigger graceful shutdown
  *   - get_stats() and is_running() are thread-safe
+ *   - FirewallLogger runs in its own async thread
  *
  * Example Usage:
  * @code
  *   ZMQSubscriber::Config config;
- *   config.endpoint = "tcp://localhost:5555";
+ *   config.endpoint = "tcp://localhost:5572";
  *   config.topic = "";  // Subscribe to all messages
+ *   config.log_directory = "/vagrant/logs/blocked";
  *
  *   ZMQSubscriber subscriber(batch_processor, config);
  *
@@ -85,7 +93,7 @@ public:
      * @brief Configuration for ZMQ subscriber
      */
     struct Config {
-        std::string endpoint;           ///< ZMQ endpoint (e.g., "tcp://localhost:5555")
+        std::string endpoint;           ///< ZMQ endpoint (e.g., "tcp://localhost:5572")
         std::string topic;              ///< Subscription topic ("" = all messages)
         int recv_timeout_ms;            ///< ZMQ_RCVTIMEO (0 = infinite)
         int linger_ms;                  ///< ZMQ_LINGER on close
@@ -93,17 +101,23 @@ public:
         int max_reconnect_interval_ms;  ///< Max exponential backoff interval
         bool enable_reconnect;          ///< Auto-reconnect on connection loss
 
+        // ✅ AÑADIDO: Logger configuration
+        std::string log_directory;      ///< Directory for blocked event logs
+        size_t log_queue_size;          ///< Max events in logger queue
+
         /**
          * @brief Default configuration
          */
         Config()
-            : endpoint("tcp://localhost:5555")
+            : endpoint("tcp://localhost:5572")
             , topic("")  // Subscribe to all messages
             , recv_timeout_ms(1000)  // 1 second timeout for graceful shutdown
             , linger_ms(1000)        // Wait 1s for pending sends on close
             , reconnect_interval_ms(1000)      // Start with 1s backoff
             , max_reconnect_interval_ms(30000) // Max 30s backoff
             , enable_reconnect(true)
+            , log_directory("/vagrant/logs/blocked")  // ✅ AÑADIDO
+            , log_queue_size(10000)                   // ✅ AÑADIDO
         {}
     };
 
@@ -130,6 +144,10 @@ public:
         std::atomic<bool> currently_connected{false};
         std::atomic<uint64_t> connection_established_at{0};
         std::atomic<uint64_t> last_reconnect_attempt{0};
+
+        // ✅ AÑADIDO: Logger statistics
+        std::atomic<uint64_t> events_logged{0};
+        std::atomic<uint64_t> log_errors{0};
     };
 
     //==========================================================================
@@ -143,6 +161,7 @@ public:
      * @param config ZMQ configuration
      *
      * @throws zmq::error_t if ZMQ context creation fails
+     * @throws std::runtime_error if logger initialization fails
      */
     ZMQSubscriber(BatchProcessor& processor, const Config& config);
 
@@ -168,9 +187,10 @@ public:
      *   1. Connect to the ZMQ endpoint
      *   2. Subscribe to the configured topic
      *   3. Receive messages in a loop until stop() is called
-     *   4. Parse DetectionBatch protobuf messages
+     *   4. Parse NetworkSecurityEvent protobuf messages
      *   5. Forward detections to BatchProcessor
-     *   6. Handle reconnection on errors
+     *   6. Log blocked events to disk
+     *   7. Handle reconnection on errors
      *
      * @note This function blocks until stop() is called
      * @note Should be called from a dedicated thread
@@ -219,6 +239,28 @@ public:
         return config_;
     }
 
+    /**
+     * @brief Get logger statistics
+     *
+     * @return Logger stats (total_logged, total_dropped, queue_size)
+     */
+    struct LoggerStats {
+        uint64_t total_logged;
+        uint64_t total_dropped;
+        size_t queue_size;
+    };
+
+    LoggerStats get_logger_stats() const {
+        if (logger_) {
+            return {
+                logger_->total_logged(),
+                logger_->total_dropped(),
+                logger_->queue_size()
+            };
+        }
+        return {0, 0, 0};
+    }
+
 private:
     //==========================================================================
     // INTERNAL METHODS
@@ -245,7 +287,7 @@ private:
      * @param msg_data Raw message bytes
      * @param msg_size Size of message in bytes
      *
-     * Parses DetectionBatch and forwards to processor.
+     * Parses NetworkSecurityEvent and forwards to processor.
      * Catches and logs parse errors without crashing.
      */
     void handle_message(const void* msg_data, size_t msg_size);
@@ -278,6 +320,9 @@ private:
 
     std::atomic<bool> running_;          ///< Event loop control flag
     int current_reconnect_interval_ms_;  ///< Current backoff interval
+
+    // ✅ AÑADIDO: Logger for blocked events
+    std::unique_ptr<FirewallLogger> logger_;
 };
 
 } // namespace firewall
