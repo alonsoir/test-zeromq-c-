@@ -158,3 +158,6 @@ coverage/
 # Dependencies directories
 **/_deps/
 **/.deps-*
+
+# mawi
+mawi/

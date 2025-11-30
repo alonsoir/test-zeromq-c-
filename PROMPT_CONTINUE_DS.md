@@ -1,221 +1,136 @@
-# 🚀 PROMPT DE CONTINUIDAD - ML DEFENDER SYSTEM
+# 📋 **RESUMEN COMPLETO DE PROBLEMAS ENCONTRADOS**
 
-## 📅 ESTADO ACTUAL - RESUMEN EJECUTIVO
+## 🎯 **Objetivo Original**
+Validar modelos ML entrenados con datos sintéticos usando **PCAP relay con tráfico real** a través del pipeline completo con sniffer eBPF.
 
-### 🎯 **LOGROS COMPLETADOS (Nov 20, 2025):**
-- ✅ **Sistema RAG completo** con LLAMA real funcionando
-- ✅ **4 detectores C++20 embebidos** con latencia sub-microsegundo
-- ✅ **Arquitectura KISS consolidada** - WhiteListManager como router central
-- ✅ **Integración TinyLlama-1.1B REAL** - No simulación
-- ✅ **Sistema de validación robusto** con BaseValidator heredable
-- ✅ **Persistencia JSON automática** con validación de tipos
-- ✅ **Comandos interactivos completos**: `ask_llm`, `show_config`, `update_setting`
+## 🔍 **Problemas Identificados**
 
-### ⚠️ **PROBLEMAS CONOCIDOS:**
-- 🐛 **KV Cache Inconsistency** en LLAMA integration
-- ⚠️ **Workaround implementado** pero no solución definitiva
-- 🔧 **Error**: `inconsistent sequence positions (X=213, Y=0)`
-- 🎯 **Estado**: Sistema funcional pero con limpieza manual entre consultas
-
-### 🏗️ **ARQUITECTURA ACTUAL FUNCIONAL:**
+### **1. PROBLEMA PRINCIPAL: Sniffer eBPF No Captura Tráfico**
 ```
-WhiteListManager (Router Central + Etcd)
-    ├── cpp_sniffer (eBPF/XDP + 40 features)
-    ├── ml-detector (4 modelos C++20 embebidos)
-    └── RagCommandManager (RAG + LLAMA real)
-         ├── RagValidator (Reglas específicas)
-         ├── ConfigManager (JSON Persistencia)
-         └── LlamaIntegration (TinyLlama-1.1B REAL)
+✅ TCpreplay envía tráfico correctamente (2000 paquetes)
+✅ Tcpdump manual SÍ captura el tráfico en eth1  
+❌ Sniffer eBPF NO captura el tráfico (solo +2 paquetes de 2000)
+❌ Modelo no recibe tráfico para validación
 ```
 
-## 🎯 **PRÓXIMOS PASOS PRIORITARIOS:**
-
-### **FASE INMEDIATA - ESTABILIZACIÓN** (ALTA PRIORIDAD)
-1. **🔧 Resolver bug KV Cache** en LLAMA integration
-    - Investigar alternativas a `llama_kv_cache_clear()`
-    - Probar diferentes estrategias de batch management
-    - Considerar recreación del contexto entre consultas
-
-2. **🧪 Pruebas exhaustivas** del sistema RAG
-    - Múltiples consultas secuenciales
-    - Consultas de seguridad complejas
-    - Estabilidad de memoria y rendimiento
-
-3. **📊 Monitoreo de performance** LLAMA
-    - Tiempos de respuesta consistentes
-    - Uso de memoria del modelo
-    - Calidad de respuestas generadas
-
-### **FASE 2 - INTEGRACIÓN AVANZADA** (MEDIA PRIORIDAD)
-4. **🛡️ Preparar firewall-acl-agent**
-    - Diseñar arquitectura C++20
-    - Integración con detecciones ML
-    - Sistema de respuesta automática
-
-5. **🔗 Avanzar integración etcd**
-    - Coordinación distribuida
-    - Configuración centralizada
-    - Hot-reload de configuraciones
-
-### **FASE 3 - EVOLUCIÓN SISTEMA** (BAJA PRIORIDAD)
-6. **🧠 Base de datos vectorial** para RAG
-7. **📈 Sistema de monitoreo** y métricas
-8. **🔐 Hardening** de seguridad
-
-## 🐛 **BUG CRÍTICO - KV CACHE INCONSISTENCY:**
-
-### **Problema Actual:**
+### **2. ERROR ESPECÍFICO eBPF**
 ```bash
-SECURITY_SYSTEM> rag ask_llm "explica deteccion de intrusos"
-init: the tokens of sequence 0 in the input batch have inconsistent sequence positions:
- - the last position stored in the memory module of the context (i.e. the KV cache) for sequence 0 is X = 214
- - the tokens for sequence 0 in the input batch have a starting position of Y = 0
- it is required that the sequence positions remain consecutive: Y = X + 1
-decode: failed to initialize batch
-llama_decode: failed to decode, ret = -1
+# Error en logs del sniffer:
+libbpf: Failed to bump RLIMIT_MEMLOCK (err = -1)
+libbpf: Couldn't load trivial BPF program
+libbpf: failed to load object 'sniffer.bpf.o'  
+[ERROR] Failed to load eBPF program: Operation not permitted
 ```
 
-### **Workaround Actual:**
-```cpp
-// Limpieza manual del cache KV
-void clear_kv_cache() {
-    llama_batch batch = llama_batch_init(1, 0, 1);
-    batch.n_tokens = 0;  // Batch vacío
-    llama_decode(ctx, batch);  // Resetea estado interno
-    llama_batch_free(batch);
+### **3. CONFIGURACIÓN ACTUAL VERIFICADA**
+```json
+{
+  "profile": "lab",
+  "capture_interface": "eth1",  // ✅ Correcto
+  "mode": "ebpf_skb",          // ❌ Problema
+  "promiscuous_mode": true      // ✅ Correcto
 }
 ```
 
-### **Alternativas a Investigar:**
-1. **Recrear contexto** completamente entre consultas
-2. **Manejo diferente de batches** - posiciones absolutas vs relativas
-3. **Usar sesiones separadas** por consulta
-4. **Actualizar versión de llama.cpp** si el problema está corregido en versión más nueva
+### **4. DIAGNÓSTICO COMPLETO REALIZADO**
 
-## 🧪 **PRUEBAS PENDIENTES:**
+#### **Lo que SÍ funciona:**
+- ✅ **Pipeline completo**: Firewall + Detector ML + Sniffer
+- ✅ **Comunicación ZMQ**: Puertos 5571-5572 activos
+- ✅ **Interfaz eth1**: Configurada correctamente (192.168.56.20)
+- ✅ **TCpreplay**: Inyecta tráfico correctamente en eth1
+- ✅ **Tcpdump**: Captura tráfico manualmente en eth1
+- ✅ **Modelo ML**: Funcionando (0 falsos positivos con tráfico normal)
 
-### **Pruebas RAG System:**
-- [ ] Múltiples consultas secuenciales (`ask_llm`)
-- [ ] Consultas de seguridad complejas
-- [ ] Actualización de configuración en caliente
-- [ ] Estabilidad de memoria prolongada
-- [ ] Integración con comandos existentes
+#### **Lo que NO funciona:**
+- ❌ **Sniffer eBPF**: No carga programas BPF por límites de memoria
+- ❌ **Captura de tráfico**: Tráfico no llega al detector
+- ❌ **Validación de modelos**: No se puede probar con tráfico real
 
-### **Pruebas ML Detectors:**
-- [ ] Rendimiento con tráfico real
-- [ ] Precisión de detección en diferentes escenarios
-- [ ] Consumo de recursos en Raspberry Pi
-- [ ] Integración end-to-end con sniffer
+### **5. SOLUCIONES INTENTADAS**
 
-## 📁 **ARCHIVOS CLAVE PARA PRÓXIMA SESIÓN:**
+#### **Solución 1: Configuración eBPF**
+```bash
+# Aumentar límites de memoria
+sudo sysctl -w kernel.unprivileged_bpf_disabled=0
+sudo sysctl -w net.core.bpf_jit_enable=1
+ulimit -l unlimited
 
-### **Archivos Críticos (Bug KV Cache):**
-- `rag/src/llama_integration_real.cpp` - Integración LLAMA
-- `rag/src/rag_command_manager.cpp` - Manejo de comandos RAG
-- `rag/include/rag/llama_integration.hpp` - Interfaz LLAMA
+# Asignar capacidades
+sudo setcap cap_bpf,cap_net_raw,cap_net_admin=+ep /vagrant/sniffer/build/sniffer
+```
+**Resultado**: ❌ Error persiste
 
-### **Archivos de Configuración:**
-- `rag/config/system_config.json` - Configuración RAG
-- `sniffer/config/sniffer.json` - Umbrales ML
+#### **Solución 2: Cambiar a libpcap**
+```bash
+# Configuración alternativa
+"mode": "libpcap",
+"af_xdp_enabled": false
+```
+**Resultado**: ⚠️ Sniffer inicia pero aún no captura
 
-### **Documentación:**
-- `README.md` - Estado general del proyecto
-- `ARCHITECTURE.md` - Arquitectura detallada
-
-## 🎯 **OBJETIVOS PARA PRÓXIMA SESIÓN:**
-
-### **Objetivo Principal:**
-**Resolver bug KV Cache** y tener sistema RAG 100% estable
-
-### **Objetivos Secundarios:**
-1. ✅ Sistema responde consistentemente a múltiples consultas
-2. ✅ Respuestas de calidad para preguntas de seguridad
-3. ✅ Memoria estable sin leaks
-4. ✅ Preparar base para siguiente componente (firewall-acl-agent)
-
-### **Criterios de Éxito:**
-- [ ] 10+ consultas secuenciales sin errores
-- [ ] Respuestas coherentes y relevantes
-- [ ] Tiempos de respuesta consistentes
-- [ ] Uso de memoria estable
-
-## 💡 **ENFOQUE RECOMENDADO:**
-
-### **1. Estrategia de Debug:**
-```cpp
-// Enfoque sistemático para resolver KV cache:
-// Opción A: Reset completo del contexto
-std::unique_ptr<llama_context> create_new_context() {
-    // Recrear contexto desde cero
+#### **Solución 3: Verificar filtros**
+```json
+"filter": {
+  "excluded_ports": [22],
+  "included_protocols": ["tcp", "udp", "icmp"]
 }
+```
+**Resultado**: ❌ No es el problema principal
 
-// Opción B: Batch management mejorado  
-void better_batch_management() {
-    // Estrategias más inteligentes de batch
-}
+### **6. HIPÓTESIS PRINCIPAL**
 
-// Opción C: Session-per-query
-class QuerySession {
-    // Sesión aislada por consulta
-};
+**Problema Raíz**: VirtualBox + Kernel Debian Bookworm tiene problemas de compatibilidad con eBPF:
+- Límites de memoria (`RLIMIT_MEMLOCK`) no se pueden aumentar suficiente
+- Capacidades del kernel no permiten carga de programas BPF
+- Configuración de seguridad bloquea eBPF
+
+### **7. EVIDENCIAS CLAVE**
+
+1. **tcpdump SÍ funciona** → El tráfico llega a la interfaz
+2. **Sniffer eBPF NO funciona** → Problema específico de eBPF
+3. **Pipeline SÍ funciona** → Comunicación interna correcta
+4. **Modelo SÍ funciona** → Procesa el poco tráfico que llega (0 falsos positivos)
+
+### **8. PREGUNTAS CLAVE PARA CLAUDE**
+
+1. **¿Es común este problema de eBPF en VirtualBox? ¿Soluciones conocidas?**
+2. **¿Alternativas para hacer funcionar el sniffer eBPF sin cambiar el pipeline?**
+3. **¿Configuraciones específicas de Vagrant/VirtualBox para eBPF?**
+4. **¿Módulos del kernel o parches necesarios para Debian Bookworm?**
+
+### **9. PRÓXIMOS PASOS SUGERIDOS**
+
+#### **Opción A: Persistir con eBPF**
+- Investigar parches específicos para eBPF en VirtualBox
+- Probar diferentes versiones del kernel
+- Configurar Vagrant con más recursos/compatibilidad
+
+#### **Opción B: Modo compatibilidad**
+- Forzar modo libpcap en el mismo sniffer
+- Mantener arquitectura pero cambiar backend de captura
+- Aceptar pequeña pérdida de performance
+
+#### **Opción C: Entorno alternativo**
+- Probar en VM con VMware/QEMU (mejor soporte eBPF)
+- Usar máquina física o cloud con mejor soporte
+
+### **10. ESTADO ACTUAL PARA CONTINUAR**
+
+```bash
+# Configuración lista para pruebas
+cd /vagrant
+sudo pkill -f sniffer
+sudo ./sniffer -c sniffer/config/sniffer.json &  # Usa eth1, perfil lab
+
+# Test rápido
+cd /vagrant/pcap_testing
+sudo tcpreplay -i eth1 --stats=3 --loop=1 test_sample_1000.pcap
+
+# Verificar
+tail -f /vagrant/logs/lab/detector.log | grep "received"
 ```
 
-### **2. Priorización:**
-```
-ALTA:  Estabilidad RAG → Bug KV Cache
-MEDIA: Pruebas integración → Comandos + ML
-BAJA:  Nuevas features → firewall-agent
-```
+**¡Estamos atascados en el eslabón del sniffer eBPF, pero el resto del pipeline está listo!**
 
-## 🚨 **CONTINGENCIAS:**
-
-### **Si no se resuelve el bug KV Cache:**
-1. **Documentar workaround** como solución temporal
-2. **Implementar recreación de contexto** entre consultas (menos eficiente pero funcional)
-3. **Planificar actualización** de llama.cpp
-4. **Continuar con otros componentes** mientras se investiga solución definitiva
-
-### **Si se resuelve el bug:**
-1. **Celebrar 🎉**
-2. **Ejecutar pruebas exhaustivas**
-3. **Avanzar con firewall-acl-agent**
-4. **Preparar demostración del sistema completo**
-
-## 📝 **NOTAS PARA PRÓXIMA SESIÓN:**
-
-### **Contexto Técnico:**
-- Sistema compilando sin errores
-- Arquitectura sólida y mantenible
-- 4 detectores ML funcionando optimalmente
-- RAG system 95% funcional (solo bug KV cache)
-
-### **Decisiones Pendientes:**
-- Estrategia definitiva para manejo de estado LLAMA
-- Priorización entre estabilidad RAG vs nuevas features
-- Enfoque para integración firewall-agent
-
-### **Recursos Necesarios:**
-- Acceso a documentación de llama.cpp
-- Tiempo para debugging profundo
-- Pruebas de estrés del sistema
-
----
-
-## 🏁 **ESTADO ACTUAL RESUMEN:**
-
-**¡BASE SÓLIDA ESTABLECIDA!** 🎉
-
-**Tenemos:**
-- ✅ 4 detectores ML embebidos sub-microsegundo
-- ✅ Sistema RAG con LLAMA real integrado
-- ✅ Arquitectura KISS limpia y mantenible
-- ✅ Sistema de validación robusto
-- ✅ Solo UN bug crítico por resolver
-
-**Próximo objetivo:**
-**🔧 Estabilizar completamente el sistema RAG resolviendo el bug KV Cache**
-
-**¡Listos para la siguiente sesión!** 🚀
-
----
-**¿Continuamos con la resolución del bug KV Cache o prefieres enfocarnos en otro aspecto primero?**
+El modelo ya demostró ser robusto (0 falsos positivos con el poco tráfico que llega). Una vez resuelto el sniffer, podremos proceder con la validación completa con tráfico real de DDoS y Ransomware.

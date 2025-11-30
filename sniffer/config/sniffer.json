@@ -20,7 +20,7 @@
   "cluster_name": "upgraded-happiness-cluster",
   "profiles": {
     "lab": {
-      "capture_interface": "eth0",
+      "capture_interface": "eth1",
       "promiscuous_mode": true,
       "af_xdp_enabled": true,
       "worker_threads": 2,
