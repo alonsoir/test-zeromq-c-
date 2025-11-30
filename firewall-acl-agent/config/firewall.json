@@ -1,0 +1,154 @@
+{
+  "_comment": "ML Defender - Firewall ACL Agent Configuration - UPDATED FOR DRY-RUN & DEBUGGING",
+  "_version": "1.1.0",
+  "_updated": "2025-11-22 - Added dry-run, debug logging, and ZMQ topic support",
+  "_phase": "Beta Testing - Protobuf Fix Validation",
+  "operation": {
+    "dry_run": false,
+    "log_directory": "/vagrant/firewall-acl-agent/build/logs",
+    "enable_debug_logging": true,
+    "simulate_block": true,
+    "validation_strictness": "high",
+    "max_processing_delay_ms": 10
+  },
+  "zmq": {
+    "endpoint": "tcp://localhost:5572",
+    "topic": "",
+    "recv_timeout_ms": 1000,
+    "linger_ms": 1000,
+    "reconnect_interval_ms": 1000,
+    "max_reconnect_interval_ms": 30000,
+    "enable_reconnect": true,
+    "high_water_mark": 1000,
+    "monitor_interval_sec": 30
+  },
+  "ipset": {
+    "set_name": "ml_defender_blacklist_test",
+    "set_type": "hash:ip",
+    "hash_size": 1024,
+    "max_elements": 1000,
+    "timeout": 3600,
+    "comment": "ML Defender TEST blocked IPs",
+    "family": "inet",
+    "create_if_missing": true,
+    "flush_on_startup": false
+  },
+  "iptables": {
+    "chain_name": "ML_DEFENDER_TEST",
+    "default_policy": "ACCEPT",
+    "log_blocked": true,
+    "log_prefix": "ML_DEFENDER_TEST_DROP: ",
+    "enable_rate_limiting": false,
+    "rate_limit_connections": 100,
+    "create_chain": true,
+    "insert_rule_position": 1
+  },
+  "batch_processor": {
+    "batch_size_threshold": 10,
+    "batch_time_threshold_ms": 1000,
+    "max_pending_ips": 100,
+    "min_confidence": 0.5,
+    "enable_batching": true,
+    "flush_on_shutdown": true
+  },
+  "validation": {
+    "validate_ip_addresses": true,
+    "validate_confidence_scores": true,
+    "min_confidence_score": 0.5,
+    "max_confidence_score": 1.0,
+    "allowed_ip_ranges": [
+      "192.168.0.0/16",
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+    ],
+    "block_localhost": false,
+    "block_gateway": false
+  },
+  "logging": {
+    "level": "debug",
+    "console": true,
+    "syslog": false,
+    "file": "/vagrant/firewall-acl-agent/build/logs/firewall-agent.log",
+    "max_file_size_mb": 10,
+    "backup_count": 5,
+    "log_protobuf_messages": true,
+    "log_zmq_events": true,
+    "log_block_decisions": true,
+    "log_performance_metrics": true
+  },
+  "metrics": {
+    "enable_export": true,
+    "export_interval_sec": 30,
+    "export_format": "json",
+    "export_file": "/vagrant/firewall-acl-agent/build/logs/firewall-metrics.json",
+    "track_zmq_messages": true,
+    "track_processing_times": true,
+    "track_memory_usage": true
+  },
+  "health_check": {
+    "enable": true,
+    "check_interval_sec": 30,
+    "ipset_health_check": true,
+    "iptables_health_check": true,
+    "zmq_connection_check": true,
+    "max_failures_before_restart": 5,
+    "restart_delay_sec": 10
+  },
+  "performance": {
+    "max_processing_threads": 2,
+    "queue_size": 100,
+    "processing_timeout_ms": 5000,
+    "enable_memory_pools": true,
+    "memory_pool_size": 100
+  },
+  "security": {
+    "require_zmq_topic": true,
+    "validate_message_signature": false,
+    "max_message_size_bytes": 65536,
+    "allowed_senders": [],
+    "enable_rate_limiting": true,
+    "max_messages_per_second": 1000
+  },
+  "debug": {
+    "log_raw_protobuf": true,
+    "log_deserialization_errors": true,
+    "log_zmq_connection_events": true,
+    "log_batch_processing": true,
+    "log_memory_allocations": false,
+    "enable_core_dumps": false
+  },
+  "testing": {
+    "simulate_messages": false,
+    "test_message_interval_ms": 5000,
+    "test_ip_addresses": [
+      "192.168.1.100",
+      "10.0.0.50",
+      "172.16.1.200"
+    ],
+    "auto_start_test_mode": false
+  },
+  "ipsets": {
+    "blacklist": {
+      "set_name": "ml_defender_blacklist_test",
+      "set_type": "hash:ip",
+      "hash_size": 1024,
+      "max_elements": 1000,
+      "timeout": 3600,
+      "comment": "ML Defender TEST blocked IPs",
+      "family": "inet",
+      "create_if_missing": true,
+      "flush_on_startup": false
+    },
+    "whitelist": {
+      "set_name": "ml_defender_whitelist",
+      "set_type": "hash:ip",
+      "hash_size": 512,
+      "max_elements": 500,
+      "timeout": 0,
+      "comment": "ML Defender whitelisted IPs",
+      "family": "inet",
+      "create_if_missing": true,
+      "flush_on_startup": false
+    }
+  }
+}

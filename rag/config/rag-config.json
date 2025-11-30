@@ -1,0 +1,30 @@
+{
+  "id": "rag-security-system",
+  "rag": {
+    "host": "localhost",
+    "port": 8080,
+    "model_name": "tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
+    "embedding_dimension": 512,
+    "use_llm": true
+  },
+  "etcd": {
+    "host": "localhost",
+    "port": 2379
+  },
+  "security_level": 3,
+  "log_level": "info",
+  "whitelist_path": "../config/command_whitelist.json",
+  "llama_config": {
+    "context_size": 2048,
+    "batch_size": 512,
+    "gpu_layers": 0,
+    "use_mlock": false,
+    "use_mmap": true
+  },
+  "capabilities": ["component_management", "config_validation", "pipeline_control"],
+  "compression": "lz4",
+  "encryption": "AES-256-CBC",
+  "whitelist_commands": true,
+  "requires_encryption": true,
+  "requires_compression": false
+}

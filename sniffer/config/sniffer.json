@@ -20,7 +20,7 @@
   "cluster_name": "upgraded-happiness-cluster",
   "profiles": {
     "lab": {
-      "capture_interface": "eth0",
+      "capture_interface": "eth1",
       "promiscuous_mode": true,
       "af_xdp_enabled": true,
       "worker_threads": 2,
@@ -54,8 +54,8 @@
     "filter": {
       "version": "1.0",
       "mode": "hybrid",
-      "excluded_ports": [22, 4444, 8080],
-      "included_ports": [8000],
+      "excluded_ports": [22],
+      "included_ports": [],
       "default_action": "capture"
     },
 

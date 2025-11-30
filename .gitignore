@@ -81,3 +81,83 @@ sniffer/build/
 *.orig
 *.rej
 *_INTEGRATION_EXAMPLE.cpp
+
+# ============================================================================
+# NUEVAS EXCLUSIONES PARA RAG Y LLAMA.CPP
+# ============================================================================
+
+# RAG Component build artifacts
+rag/build/
+rag/cmake-build-*/
+rag/CMakeFiles/
+rag/*.cmake
+rag/Makefile
+rag/cmake_install.cmake
+rag/CMakeCache.txt
+
+# llama.cpp - CRÍTICO: NO SUBIR BUILD ARTIFACTS
+third_party/llama.cpp/build/
+third_party/llama.cpp/CMakeFiles/
+third_party/llama.cpp/*.cmake
+third_party/llama.cpp/Makefile
+third_party/llama.cpp/cmake_install.cmake
+third_party/llama.cpp/CMakeCache.txt
+
+# llama.cpp binaries and libraries
+third_party/llama.cpp/bin/
+third_party/llama.cpp/lib/
+third_party/llama.cpp/*.a
+third_party/llama.cpp/*.so
+third_party/llama.cpp/*.dylib
+third_party/llama.cpp/*.dll
+
+# LLM Model files - NO SUBIR (muy grandes)
+*.bin
+*.gguf
+*.ggml
+*.ggmf
+
+# Firewall ACL Agent build artifacts
+firewall-acl-agent/build/
+firewall-acl-agent/cmake-build-*/
+firewall-acl-agent/CMakeFiles/
+firewall-acl-agent/*.cmake
+firewall-acl-agent/Makefile
+firewall-acl-agent/cmake_install.cmake
+firewall-acl-agent/CMakeCache.txt
+
+# ML Training temporary files
+ml-training/scripts/rag_shield/archive_old_models/
+ml-training/scripts/rag_shield/*.json.tmp
+ml-training/scripts/rag_shield/*.pth
+ml-training/scripts/rag_shield/*.pt
+
+# Protobuf generated files (ya están en git, pero builds nuevos)
+**/network_security.pb.cc
+**/network_security.pb.h
+**/*.pb.cc
+**/*.pb.h
+
+# Python cache for ML scripts
+ml-training/scripts/__pycache__/
+ml-training/scripts/*.py[cod]
+ml-training/scripts/*$py.class
+
+# Test executables
+**/test_*
+**/*_test
+**/*_tests
+
+# Coverage reports
+*.gcno
+*.gcda
+*.gcov
+coverage/
+*.info
+
+# Dependencies directories
+**/_deps/
+**/.deps-*
+
+# mawi
+mawi/

@@ -1,44 +1,68 @@
-# 📦 **DEPLOYMENT.md - Production Deployment Guide**
+# 📦 **DEPLOYMENT.md - ML Defender Platform Deployment Guide**
 
-# 📦 Deployment Guide - Ransomware Detection System
+# 📦 Deployment Guide - ML Defender Platform
 
-**Version:** 3.2.0  
-**Last Updated:** November 3, 2025  
-**Target:** Production deployment on bare metal, VM, or Raspberry Pi
+**Version:** 4.0.0  
+**Last Updated:** November 20, 2025  
+**Target:** Production deployment with RAG + ML detectors on bare metal, VM, or Raspberry Pi
 
 ---
 
 ## 📋 Table of Contents
 
+- [System Overview](#system-overview)
 - [System Requirements](#system-requirements)
 - [Pre-Installation Checklist](#pre-installation-checklist)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Systemd Service Setup](#systemd-service-setup)
-- [Verification](#verification)
-- [Monitoring](#monitoring)
+- [Complete Installation](#complete-installation)
+- [Component Configuration](#component-configuration)
+- [Systemd Services Setup](#systemd-services-setup)
+- [Verification & Testing](#verification--testing)
+- [Monitoring & Operations](#monitoring--operations)
 - [Troubleshooting](#troubleshooting)
-- [Updates](#updates)
-- [Uninstallation](#uninstallation)
+- [Updates & Maintenance](#updates--maintenance)
 - [Production Best Practices](#production-best-practices)
+
+---
+
+## 🎯 System Overview
+
+### Architecture Components
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  cpp_sniffer    │────▶│  ml-detector    │────▶│  RAG System     │
+│                 │ ZMQ │                 │ ZMQ │                 │
+│  eBPF Capture   │ 5571│  4 ML Models    │ 5572│  TinyLlama-1.1B │
+│  40+ Features   │     │  Sub-microsecond│     │  Security AI    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+### Deployment Modes
+
+**1. Single Node (All-in-One)**
+- All components on one machine
+- Ideal for: Home use, small networks, testing
+
+**2. Distributed Deployment**
+- Components across multiple servers
+- Ideal for: Enterprise, high-traffic networks
 
 ---
 
 ## 💻 System Requirements
 
-### Minimum Requirements
+### Minimum Requirements (Single Node)
 
 **Hardware:**
 ```
-CPU:        2 cores (x86_64 or ARM64)
-RAM:        512 MB available
-Storage:    100 MB for binaries + logs
-Network:    1 Gbps Ethernet (recommended)
+CPU:        4 cores (x86_64 or ARM64)
+RAM:        4 GB available (2 GB for LLAMA model)
+Storage:    5 GB (1.5 GB for LLAMA + binaries + logs)
+Network:    1 Gbps Ethernet
 ```
 
 **Software:**
 ```
-OS:         Linux (Debian 11+, Ubuntu 20.04+)
+OS:         Linux (Debian 12+, Ubuntu 22.04+)
 Kernel:     6.1+ (eBPF CO-RE support required)
 - BTF enabled (/sys/kernel/btf/vmlinux must exist)
 - eBPF support (CONFIG_BPF=y, CONFIG_BPF_SYSCALL=y)
@@ -48,77 +72,59 @@ Kernel:     6.1+ (eBPF CO-RE support required)
 
 **Hardware:**
 ```
-CPU:        4+ cores (for multi-threaded processing)
-RAM:        2 GB available
-Storage:    1 GB (for logs rotation)
+CPU:        8+ cores (for multi-component processing)
+RAM:        8 GB available (4 GB for LLAMA + ML models)
+Storage:    10 GB (for logs rotation and model storage)
 Network:    10 Gbps (for high-traffic environments)
 ```
 
-**Target Platforms:**
-- ✅ Debian 12 (Bookworm) - Tested
-- ✅ Ubuntu 22.04 LTS - Compatible
-- ✅ Raspberry Pi 5 (ARM64) - Target for home device
-- ⚠️ CentOS/RHEL 8+ - Should work (untested)
-- ⚠️ Arch Linux - Should work (untested)
+### Target Platforms
+- ✅ **Debian 12 (Bookworm)** - Fully tested and validated
+- ✅ **Ubuntu 22.04 LTS** - Compatible
+- ✅ **Raspberry Pi 5 (ARM64)** - Primary target for home deployment
+- ⚠️ **CentOS/RHEL 9+** - Should work (untested)
+- ⚠️ **Arch Linux** - Should work (untested)
+
+### Kernel Compatibility
+
+**Validated Kernels:**
+- ✅ **Kernel 6.1.x** (Debian 12) - Fully tested (17h stability)
+- ✅ **Kernel 6.5.x** (Ubuntu 23.10+) - Compatible
+
+**Required Kernel Features:**
+```bash
+# Verify BTF support (required for eBPF CO-RE)
+ls -l /sys/kernel/btf/vmlinux
+
+# Verify eBPF support
+zgrep CONFIG_BPF /proc/config.gz
+# Should show: CONFIG_BPF=y, CONFIG_BPF_SYSCALL=y
+```
 
 ---
 
-╔═══════════════════════════════════════════════════════════════╗
-║  Kernel 6.1 - LTS Release (Debian 12 Default)                ║
-╚═══════════════════════════════════════════════════════════════╝
-
-Reasons for 6.1+ Requirement:
-✅ Modern eBPF JIT improvements
-✅ Better BTF support (CO-RE reliability)
-✅ XDP performance enhancements
-✅ Security hardening
-✅ Tested and validated (17h stability)
-✅ Debian 12 default (production ready)
-✅ Ubuntu 22.04+ compatible
-✅ Raspberry Pi OS latest
-
-Older Kernels (5.10-6.0):
-⚠️  Should work, but NOT tested
-⚠️  Potential eBPF edge cases
-⚠️  Missing performance optimizations
-
-### Kernel Compatibility Notes
-
-**Validated Kernels:**
-- ✅ Kernel 6.1.x (Debian 12) - Fully tested (17h stability)
-- ✅ Kernel 6.5.x (Ubuntu 23.10+) - Compatible
-
-**Should Work (Untested):**
-- ⚠️ Kernel 5.15+ (Ubuntu 22.04) - Basic eBPF support
-- ⚠️ Kernel 5.10 LTS - Minimum eBPF CO-RE
-
-**Not Supported:**
-- ❌ Kernel < 5.10 - Missing BTF/CO-RE features
-
-**Recommendation:** Use kernel 6.1+ for production deployment.
-
 ## 📋 Pre-Installation Checklist
 
-### 1. Verify Kernel Support
+### 1. System Verification
 
 ```bash
 # Check kernel version
 uname -r
-# Required: 6.1 or higher (tested on Debian 12)
+# Required: 6.1 or higher
 
-# Check BTF support (required for eBPF CO-RE)
-ls -l /sys/kernel/btf/vmlinux
-# Should exist and be readable
+# Check available resources
+free -h
+# Minimum: 4 GB RAM available
 
-# Check eBPF support
-zgrep CONFIG_BPF /proc/config.gz
-# Should show: CONFIG_BPF=y, CONFIG_BPF_SYSCALL=y
+df -h /
+# Minimum: 5 GB free space
 
-# If config.gz doesn't exist, try:
-cat /boot/config-$(uname -r) | grep CONFIG_BPF
+# Check CPU architecture
+lscpu | grep Architecture
+# Should be: x86_64 or aarch64 (ARM64)
 ```
 
-### 2. Check Network Interface
+### 2. Network Interface Verification
 
 ```bash
 # List available interfaces
@@ -126,25 +132,28 @@ ip link show
 
 # Verify target interface exists and is UP
 ip link show eth0
-# Replace 'eth0' with your interface name
+# Replace 'eth0' with your monitoring interface
+
+# Check interface capabilities
+ethtool -i eth0
 ```
 
-### 3. Verify Permissions
+### 3. Permission Requirements
 
 ```bash
 # For eBPF, you need either:
-# Option A: Run as root
+# Option A: Run as root (simpler)
 sudo -v
 
-# Option B: Grant capabilities (preferred)
+# Option B: Grant capabilities (production preferred)
 # We'll set this up during installation
 ```
 
 ---
 
-## 🔧 Installation
+## 🔧 Complete Installation
 
-### Step 1: Install Dependencies
+### Step 1: Install System Dependencies
 
 #### Debian/Ubuntu
 ```bash
@@ -164,7 +173,8 @@ sudo apt-get install -y \
     libjsoncpp-dev \
     liblz4-dev \
     libzstd-dev \
-    zlib1g-dev
+    zlib1g-dev \
+    nlohmann-json3-dev
 
 # Verify clang version
 clang --version
@@ -179,31 +189,46 @@ sudo apt-get install -y \
     build-essential clang-14 llvm-14 libbpf-dev \
     libelf-dev cmake git pkg-config \
     libzmq3-dev protobuf-compiler libprotobuf-dev \
-    libjsoncpp-dev liblz4-dev libzstd-dev
+    libjsoncpp-dev liblz4-dev libzstd-dev \
+    nlohmann-json3-dev
 ```
 
-### Step 2: Clone Repository
+### Step 2: Clone and Setup Repository
 
 ```bash
-# Clone from Git
+# Clone main repository
 cd /opt
-sudo git clone https://github.com/yourusername/sniffer.git
-sudo chown -R $USER:$USER sniffer
-cd sniffer
+sudo git clone https://github.com/yourusername/ml-defender.git
+sudo chown -R $USER:$USER ml-defender
+cd ml-defender
 
-# Or if deploying from archive
+# Clone RAG subsystem
 cd /opt
-sudo tar xzf sniffer-v3.2.0.tar.gz
-sudo chown -R $USER:$USER sniffer
-cd sniffer
+sudo git clone https://github.com/yourusername/rag-security.git
+sudo chown -R $USER:$USER rag-security
 ```
 
-### Step 3: Build
+### Step 3: Download LLAMA Model
 
 ```bash
-cd /opt/sniffer
+# Create model directory
+sudo mkdir -p /opt/rag-security/models
+sudo chown $USER:$USER /opt/rag-security/models
 
-# Create build directory
+# Download TinyLlama-1.1B model (1.5 GB)
+cd /opt/rag-security/models
+wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+
+# Verify download
+ls -lh tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+# Should be ~1.5 GB
+```
+
+### Step 4: Build All Components
+
+#### Build cpp_sniffer
+```bash
+cd /opt/ml-defender/sniffer
 mkdir -p build
 cd build
 
@@ -213,68 +238,85 @@ cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_CXX_COMPILER=clang++-14 \
       ..
 
-# Build (use all cores)
+# Build
 make -j$(nproc)
 
 # Verify build
 ls -lh sniffer sniffer.bpf.o
-# Both files should exist
 ```
 
-### Step 4: Run Tests (Optional but Recommended)
-
+#### Build ml-detector
 ```bash
-cd /opt/sniffer/build
+cd /opt/ml-defender/ml-detector
+mkdir -p build
+cd build
 
-# Run unit tests
-ctest --output-on-failure
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j$(nproc)
 
-# Expected: All tests pass
-# If any fail, check build configuration
+# Verify build
+ls -lh ml-detector
 ```
 
-### Step 5: Install
+#### Build RAG Security System
+```bash
+cd /opt/rag-security
+mkdir -p build
+cd build
+
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j$(nproc)
+
+# Verify build
+ls -lh rag-security
+```
+
+### Step 5: Install Binaries
 
 ```bash
-cd /opt/sniffer/build
-
-# Install to /usr/local
+# Install sniffer
+cd /opt/ml-defender/sniffer/build
 sudo make install
+# or manually:
+sudo cp sniffer /usr/local/bin/
+sudo cp sniffer.bpf.o /usr/local/lib/sniffer/
 
-# This installs:
-# - /usr/local/bin/sniffer           (main binary)
-# - /usr/local/lib/sniffer.bpf.o     (eBPF program)
-# - /usr/local/share/sniffer/*       (configs, docs)
-```
+# Install ml-detector
+cd /opt/ml-defender/ml-detector/build
+sudo cp ml-detector /usr/local/bin/
 
-**Note:** If `make install` is not configured, manually copy:
-```bash
-sudo mkdir -p /usr/local/bin /usr/local/lib/sniffer
-sudo cp build/sniffer /usr/local/bin/
-sudo cp build/sniffer.bpf.o /usr/local/lib/sniffer/
-sudo chmod +x /usr/local/bin/sniffer
+# Install RAG system
+cd /opt/rag-security/build
+sudo cp rag-security /usr/local/bin/
 ```
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Component Configuration
 
-### Step 1: Create Configuration Directory
+### 1. cpp_sniffer Configuration
 
 ```bash
 sudo mkdir -p /etc/sniffer
-sudo chown $USER:$USER /etc/sniffer
-```
-
-### Step 2: Create Configuration File
-
-```bash
-cat > /etc/sniffer/sniffer.json << 'EOFCONFIG'
+sudo tee /etc/sniffer/sniffer.json > /dev/null << 'EOFCONFIG'
 {
   "interface": "eth0",
-  "profile": "lab",
-  "node_id": "sniffer_node_001",
-  "cluster": "production_cluster",
+  "profile": "production",
+  "node_id": "ml_defender_node_001",
+  
+  "ml_defender": {
+    "thresholds": {
+      "ddos": 0.85,
+      "ransomware": 0.90,
+      "traffic": 0.80,
+      "internal": 0.85
+    },
+    "validation": {
+      "min_threshold": 0.5,
+      "max_threshold": 0.99,
+      "fallback_threshold": 0.75
+    }
+  },
   
   "threading": {
     "ring_consumer_threads": 2,
@@ -282,76 +324,120 @@ cat > /etc/sniffer/sniffer.json << 'EOFCONFIG'
     "zmq_sender_threads": 1
   },
   
-  "filter": {
-    "mode": "hybrid",
-    "excluded_ports": [22, 4444, 8080],
-    "included_ports": [8000],
-    "default_action": "capture"
-  },
-  
   "zmq": {
     "output_endpoint": "tcp://127.0.0.1:5571",
     "socket_type": "PUSH"
   },
   
-  "compression": {
-    "enabled": false,
-    "algorithm": "lz4",
-    "level": 1
-  },
-  
-  "encryption": {
-    "enabled": false,
-    "algorithm": "chacha20-poly1305"
-  },
-  
-  "ransomware_detection": {
-    "enabled": true,
-    "fast_detector_window_ms": 10000,
-    "feature_processor_interval_s": 30
+  "buffers": {
+    "flow_state_buffer_entries": 500000
   },
   
   "logging": {
     "level": "info",
-    "file": "/var/log/sniffer/sniffer.log"
+    "file": "/var/log/ml-defender/sniffer.log"
   }
 }
 EOFCONFIG
-
-echo "✅ Configuration created: /etc/sniffer/sniffer.json"
 ```
 
-### Step 3: Adjust for Your Environment
+### 2. ml-detector Configuration
 
 ```bash
-# Edit configuration
-sudo nano /etc/sniffer/sniffer.json
-
-# Key settings to check:
-# - interface: Your network interface (e.g., eth0, enp0s3)
-# - node_id: Unique identifier for this node
-# - zmq.output_endpoint: Where to send events
+sudo mkdir -p /etc/ml-detector
+sudo tee /etc/ml-detector/ml_detector_config.json > /dev/null << 'EOFMLCONFIG'
+{
+  "zmq": {
+    "input_endpoint": "tcp://127.0.0.1:5571",
+    "output_endpoint": "tcp://127.0.0.1:5572",
+    "socket_type": "PULL"
+  },
+  
+  "models": {
+    "ddos": {
+      "path": "/opt/ml-defender/models/ddos_model.bin",
+      "threshold": 0.85
+    },
+    "ransomware": {
+      "path": "/opt/ml-defender/models/ransomware_model.bin", 
+      "threshold": 0.90
+    },
+    "traffic": {
+      "path": "/opt/ml-defender/models/traffic_model.bin",
+      "threshold": 0.80
+    },
+    "internal": {
+      "path": "/opt/ml-defender/models/internal_model.bin",
+      "threshold": 0.85
+    }
+  },
+  
+  "performance": {
+    "batch_size": 32,
+    "max_queue_size": 1000
+  },
+  
+  "logging": {
+    "level": "info",
+    "file": "/var/log/ml-defender/ml-detector.log"
+  }
+}
+EOFMLCONFIG
 ```
 
-### Step 4: Create Log Directory
+### 3. RAG System Configuration
 
 ```bash
-sudo mkdir -p /var/log/sniffer
-sudo chown $USER:$USER /var/log/sniffer
+sudo mkdir -p /etc/rag-security
+sudo tee /etc/rag-security/system_config.json > /dev/null << 'EOFRAGCONFIG'
+{
+  "system": {
+    "name": "ML Defender RAG Security",
+    "version": "4.0.0",
+    "rag_port": 9090
+  },
+  
+  "llama": {
+    "model_path": "/opt/rag-security/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
+    "max_tokens": 256,
+    "temperature": 0.7,
+    "context_size": 1024
+  },
+  
+  "security": {
+    "whitelist_enabled": true,
+    "max_connections": 10,
+    "request_timeout_sec": 30
+  },
+  
+  "logging": {
+    "level": "info",
+    "file": "/var/log/ml-defender/rag-security.log"
+  }
+}
+EOFRAGCONFIG
+```
+
+### 4. Create Log Directories
+
+```bash
+sudo mkdir -p /var/log/ml-defender
+sudo chown -R $USER:$USER /var/log/ml-defender
 ```
 
 ---
 
-## 🚀 Systemd Service Setup
+## 🚀 Systemd Services Setup
 
-### Step 1: Create Service File
+### 1. cpp_sniffer Service
 
 ```bash
-sudo tee /etc/systemd/system/sniffer.service > /dev/null << 'EOFSERVICE'
+sudo tee /etc/systemd/system/ml-defender-sniffer.service > /dev/null << 'EOFSNIFFER'
 [Unit]
-Description=Ransomware Detection Sniffer
+Description=ML Defender Network Sniffer
 After=network.target
 Wants=network-online.target
+Before=ml-defector.service
 
 [Service]
 Type=simple
@@ -368,75 +454,132 @@ ExecStart=/usr/local/bin/sniffer -c /etc/sniffer/sniffer.json
 
 # Restart policy
 Restart=on-failure
-RestartSec=10s
+RestartSec=5s
 
 # Logging
-StandardOutput=append:/var/log/sniffer/stdout.log
-StandardError=append:/var/log/sniffer/stderr.log
+StandardOutput=append:/var/log/ml-defender/sniffer-stdout.log
+StandardError=append:/var/log/ml-defender/sniffer-stderr.log
 
-# Resource limits (optional)
+# Resource limits
 LimitNOFILE=65536
 LimitMEMLOCK=infinity
 
 [Install]
 WantedBy=multi-user.target
-EOFSERVICE
-
-echo "✅ Systemd service created"
+EOFSNIFFER
 ```
 
-### Step 2: Set Capabilities (Preferred over Root)
+### 2. ml-detector Service
 
 ```bash
-# Grant necessary capabilities to binary
+sudo tee /etc/systemd/system/ml-defender-detector.service > /dev/null << 'EOFDETECTOR'
+[Unit]
+Description=ML Defender Threat Detector
+After=ml-defender-sniffer.service
+Wants=ml-defender-sniffer.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Paths
+WorkingDirectory=/opt/ml-defender/ml-detector
+ExecStart=/usr/local/bin/ml-detector --config /etc/ml-detector/ml_detector_config.json
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Logging
+StandardOutput=append:/var/log/ml-defender/detector-stdout.log
+StandardError=append:/var/log/ml-defender/detector-stderr.log
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOFDETECTOR
+```
+
+### 3. RAG Security Service
+
+```bash
+sudo tee /etc/systemd/system/ml-defender-rag.service > /dev/null << 'EOFRAG'
+[Unit]
+Description=ML Defender RAG Security System
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Paths
+WorkingDirectory=/opt/rag-security
+ExecStart=/usr/local/bin/rag-security --config /etc/rag-security/system_config.json
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# Logging
+StandardOutput=append:/var/log/ml-defender/rag-stdout.log
+StandardError=append:/var/log/ml-defender/rag-stderr.log
+
+# Resource limits (LLAMA needs more memory)
+LimitNOFILE=65536
+LimitAS=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOFRAG
+```
+
+### 4. Set Capabilities and Enable Services
+
+```bash
+# Grant capabilities to sniffer
 sudo setcap cap_net_admin,cap_net_raw,cap_bpf,cap_perfmon=eip /usr/local/bin/sniffer
 
-# Verify
+# Verify capabilities
 getcap /usr/local/bin/sniffer
-# Should show: cap_net_admin,cap_net_raw,cap_bpf,cap_perfmon=eip
-```
 
-**Note:** If kernel < 5.8, `CAP_BPF` might not exist. Use only:
-```bash
-sudo setcap cap_net_admin,cap_net_raw=eip /usr/local/bin/sniffer
-```
-
-### Step 3: Enable and Start Service
-
-```bash
-# Reload systemd
+# Reload systemd and enable services
 sudo systemctl daemon-reload
 
-# Enable (start on boot)
-sudo systemctl enable sniffer
+sudo systemctl enable ml-defender-sniffer
+sudo systemctl enable ml-defender-detector  
+sudo systemctl enable ml-defender-rag
 
-# Start now
-sudo systemctl start sniffer
-
-# Check status
-sudo systemctl status sniffer
+# Start services in order
+sudo systemctl start ml-defender-sniffer
+sudo systemctl start ml-defender-detector
+sudo systemctl start ml-defender-rag
 ```
 
 ---
 
-## ✅ Verification
+## ✅ Verification & Testing
 
-### Step 1: Check Service Status
+### 1. Check Service Status
 
 ```bash
-# Service status
-sudo systemctl status sniffer
+# Check all services
+sudo systemctl status ml-defender-sniffer
+sudo systemctl status ml-defender-detector
+sudo systemctl status ml-defender-rag
 
-# Should show: Active: active (running)
+# All should show: Active: active (running)
 
 # View logs
-sudo journalctl -u sniffer -f
-
-# Or direct logs
-tail -f /var/log/sniffer/stdout.log
+sudo journalctl -u ml-defender-sniffer -f
+sudo tail -f /var/log/ml-defender/sniffer-stdout.log
 ```
 
-### Step 2: Verify eBPF Program Loaded
+### 2. Verify eBPF Program Loaded
 
 ```bash
 # Check loaded eBPF programs
@@ -444,72 +587,102 @@ sudo bpftool prog list | grep sniffer
 
 # Check eBPF maps
 sudo bpftool map list | grep sniffer
-
-# Both should show entries if loaded successfully
 ```
 
-### Step 3: Generate Test Traffic
+### 3. Test ML Detectors
 
 ```bash
-# Generate some traffic
+# Generate test traffic
 curl http://example.com
 ping -c 5 8.8.8.8
 
-# Check logs for packet processing
-tail -20 /var/log/sniffer/stdout.log
-
-# Should see:
-# [INFO] Events processed: XXX
-# === ESTADÍSTICAS ===
+# Check ml-detector logs for processing
+tail -f /var/log/ml-defender/detector-stdout.log
+# Should show inference results and threat scores
 ```
 
-### Step 4: Verify ZMQ Output (if ml-detector running)
+### 4. Test RAG System
 
 ```bash
-# If ml-detector is NOT running, you'll see:
-# [ERROR] ZMQ send falló!
-# This is EXPECTED and harmless
+# Connect to RAG system
+telnet localhost 9090
 
-# Once ml-detector is deployed, errors should stop
+# Test commands (in interactive session)
+SECURITY_SYSTEM> rag show_config
+SECURITY_SYSTEM> rag show_capabilities
+SECURITY_SYSTEM> rag ask_llm "What is a DDoS attack?"
+
+# Expected: Should return coherent security-focused response
+```
+
+### 5. Performance Validation
+
+```bash
+# Monitor resource usage
+watch -n 1 'ps aux | grep -E "(sniffer|ml-detector|rag-security)" | grep -v grep'
+
+# Check for memory leaks (run for several hours)
+watch -n 60 'free -h && echo "---" && df -h /'
+
+# Verify no crashes in logs
+grep -i "error\|exception\|segmentation" /var/log/ml-defender/*.log
 ```
 
 ---
 
-## 📊 Monitoring
+## 📊 Monitoring & Operations
 
-### Systemd Status
+### 1. Health Check Script
 
 ```bash
-# Quick status
-sudo systemctl status sniffer
+sudo tee /usr/local/bin/ml-defender-health-check << 'EOFHEALTH'
+#!/bin/bash
+# ML Defender health check script
 
-# Detailed info
-systemctl show sniffer
+COMPONENTS=("ml-defender-sniffer" "ml-defender-detector" "ml-defender-rag")
+HEALTHY=true
 
-# Resource usage
-systemd-cgtop
-# Look for sniffer.service
+for component in "${COMPONENTS[@]}"; do
+    STATUS=$(systemctl is-active "$component")
+    if [ "$STATUS" != "active" ]; then
+        echo "❌ $component not running (status: $STATUS)"
+        HEALTHY=false
+    else
+        echo "✅ $component running"
+    fi
+done
+
+# Check memory usage
+MEM_USAGE=$(ps aux | grep -E "(sniffer|ml-detector|rag-security)" | grep -v grep | awk '{sum += $6} END {print sum}')
+if [ "$MEM_USAGE" -gt 4194304 ]; then  # 4 GB in KB
+    echo "⚠️  High memory usage: $((MEM_USAGE / 1024)) MB"
+    HEALTHY=false
+fi
+
+# Check recent logs for errors
+RECENT_ERRORS=$(find /var/log/ml-defender -name "*.log" -mmin -5 -exec grep -l -i "error\|exception" {} \; | wc -l)
+if [ "$RECENT_ERRORS" -gt 0 ]; then
+    echo "⚠️  Recent errors found in logs"
+    HEALTHY=false
+fi
+
+if [ "$HEALTHY" = true ]; then
+    echo "✅ ML Defender system healthy"
+    exit 0
+else
+    echo "❌ ML Defender system has issues"
+    exit 1
+fi
+EOFHEALTH
+
+sudo chmod +x /usr/local/bin/ml-defender-health-check
 ```
 
-### Performance Monitoring
+### 2. Log Rotation
 
 ```bash
-# CPU and Memory
-watch -n 1 'ps aux | grep sniffer | grep -v grep'
-
-# Network stats
-watch -n 1 'ifconfig eth0 | grep "RX packets"'
-
-# eBPF stats (if available)
-sudo bpftool prog show | grep sniffer
-```
-
-### Log Rotation
-
-```bash
-# Create logrotate config
-sudo tee /etc/logrotate.d/sniffer > /dev/null << 'EOFLOGROTATE'
-/var/log/sniffer/*.log {
+sudo tee /etc/logrotate.d/ml-defender << 'EOFLOGROTATE'
+/var/log/ml-defender/*.log {
     daily
     rotate 7
     compress
@@ -518,381 +691,295 @@ sudo tee /etc/logrotate.d/sniffer > /dev/null << 'EOFLOGROTATE'
     notifempty
     create 0644 root root
     postrotate
-        systemctl reload sniffer > /dev/null 2>&1 || true
+        systemctl reload ml-defender-sniffer > /dev/null 2>&1 || true
+        systemctl reload ml-defender-detector > /dev/null 2>&1 || true  
+        systemctl reload ml-defender-rag > /dev/null 2>&1 || true
     endscript
 }
 EOFLOGROTATE
-
-# Test rotation
-sudo logrotate -f /etc/logrotate.d/sniffer
 ```
 
-### Health Check Script
+### 3. Performance Monitoring
 
 ```bash
-cat > /usr/local/bin/sniffer-health-check << 'EOFHEALTH'
+# Create monitoring script
+sudo tee /usr/local/bin/ml-defender-monitor << 'EOFMONITOR'
 #!/bin/bash
-# Sniffer health check script
+echo "=== ML Defender Performance Monitor ==="
+echo "CPU Usage:"
+ps aux | grep -E "(sniffer|ml-detector|rag-security)" | grep -v grep | awk '{print $3 "% " $11}'
 
-STATUS=$(systemctl is-active sniffer)
-if [ "$STATUS" != "active" ]; then
-    echo "❌ Sniffer not running"
-    exit 1
-fi
+echo -e "\nMemory Usage:"
+ps aux | grep -E "(sniffer|ml-detector|rag-security)" | grep -v grep | awk '{print $6/1024 " MB " $11}'
 
-# Check if processing events (last 5 min)
-RECENT_EVENTS=$(grep "Paquetes procesados" /var/log/sniffer/stdout.log | tail -1)
-if [ -z "$RECENT_EVENTS" ]; then
-    echo "⚠️  No recent events logged"
-    exit 2
-fi
+echo -e "\nNetwork Stats:"
+ifconfig eth0 | grep -E "(RX packets|TX packets)"
 
-# Check memory usage
-MEM=$(ps aux | grep '/usr/local/bin/sniffer' | grep -v grep | awk '{print $6}')
-if [ "$MEM" -gt 102400 ]; then  # 100 MB
-    echo "⚠️  High memory usage: ${MEM} KB"
-    exit 3
-fi
+echo -e "\nRecent Events:"
+tail -5 /var/log/ml-defender/sniffer-stdout.log | grep -E "(processed|alerts)"
+EOFMONITOR
 
-echo "✅ Sniffer healthy"
-exit 0
-EOFHEALTH
-
-sudo chmod +x /usr/local/bin/sniffer-health-check
-
-# Run health check
-/usr/local/bin/sniffer-health-check
+sudo chmod +x /usr/local/bin/ml-defender-monitor
 ```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Service Fails to Start
+### Common Issues and Solutions
 
-**Problem:** `systemctl start sniffer` fails
+#### 1. RAG System - KV Cache Errors
+**Problem:** `inconsistent sequence positions (X=213, Y=0)`
 
-**Solution 1: Check configuration**
+**Solution:** This is a known issue with workaround implemented
 ```bash
-# Validate JSON config
-cat /etc/sniffer/sniffer.json | jq .
-# Should parse without errors
+# Check RAG logs
+tail -f /var/log/ml-defender/rag-stderr.log
 
-# Test manually
-cd /usr/local/lib/sniffer
-sudo /usr/local/bin/sniffer -c /etc/sniffer/sniffer.json -vv
+# If persistent, restart RAG service
+sudo systemctl restart ml-defender-rag
+
+# The system includes automatic cache clearing between queries
 ```
 
-**Solution 2: Check interface**
-```bash
-# Verify interface exists
-ip link show eth0
+#### 2. ML Detector Not Receiving Data
+**Problem:** No inference results in logs
 
-# If interface name is different, update config
-sudo nano /etc/sniffer/sniffer.json
-# Change "interface": "eth0" to your interface
+**Solution:**
+```bash
+# Check ZMQ connectivity
+netstat -tlnp | grep 5571
+netstat -tlnp | grep 5572
+
+# Verify sniffer is sending data
+tail -f /var/log/ml-defender/sniffer-stdout.log | grep "ZMQ"
+
+# Restart services in order
+sudo systemctl restart ml-defender-sniffer
+sudo systemctl restart ml-defender-detector
 ```
 
-**Solution 3: Check kernel support**
+#### 3. High Memory Usage
+**Problem:** Memory usage >4 GB
+
+**Solution:**
 ```bash
-# Verify BTF
+# Identify memory-hungry component
+ps aux | grep -E "(sniffer|ml-detector|rag-security)" | grep -v grep | sort -nk6
+
+# RAG system (LLAMA) typically uses most memory
+# Consider reducing context_size in RAG config if needed
+```
+
+#### 4. eBPF Program Failed to Load
+**Problem:** Sniffer fails to start
+
+**Solution:**
+```bash
+# Check kernel support
 ls -l /sys/kernel/btf/vmlinux
 
-# Verify eBPF support
-zgrep CONFIG_BPF /proc/config.gz
-```
-
-### eBPF Program Fails to Load
-
-**Problem:** "Failed to attach XDP program"
-
-**Solution 1: Use TC mode instead of XDP**
-```bash
-# Edit config
-sudo nano /etc/sniffer/sniffer.json
-
-# Change capture mode to TC (if XDP not supported)
-# This is automatic fallback, but you can force it
-```
-
-**Solution 2: Check interface flags**
-```bash
-# Interface must be UP
-sudo ip link set eth0 up
-
-# Verify
+# Verify interface
 ip link show eth0
-# Should show: state UP
-```
 
-**Solution 3: Check existing XDP programs**
-```bash
-# List existing XDP programs
+# Check existing XDP programs
 sudo bpftool net list
 
-# Remove conflicting program (if any)
+# Remove conflicting programs
 sudo ip link set dev eth0 xdp off
 ```
 
-### High Memory Usage
-
-**Problem:** Memory grows over time
-
-**Solution 1: Check for leaks**
-```bash
-# Monitor memory
-watch -n 5 'ps aux | grep sniffer'
-
-# If growing continuously, restart service
-sudo systemctl restart sniffer
-```
-
-**Solution 2: Reduce thread count**
-```bash
-# Edit config
-sudo nano /etc/sniffer/sniffer.json
-
-# Reduce threads:
-"threading": {
-  "ring_consumer_threads": 1,
-  "feature_processor_threads": 1,
-  "zmq_sender_threads": 1
-}
-
-# Restart
-sudo systemctl restart sniffer
-```
-
-### High CPU Usage
-
-**Problem:** CPU usage >50%
-
-**Solution 1: Reduce packet rate**
-```bash
-# Add port filters
-sudo nano /etc/sniffer/sniffer.json
-
-# Exclude high-traffic ports:
-"excluded_ports": [80, 443, 22]
-
-# Restart
-sudo systemctl restart sniffer
-```
-
-**Solution 2: Check for packet storms**
-```bash
-# Monitor packet rate
-watch -n 1 'ifconfig eth0 | grep "RX packets"'
-
-# If >10000 pps, consider:
-# - Rate limiting at firewall
-# - Filtering specific protocols
-```
-
-### ZMQ Send Errors
-
-**Problem:** `[ERROR] ZMQ send falló!`
-
-**This is NORMAL if ml-detector is not running**
+### Debug Mode
 
 ```bash
-# Check if ml-detector is deployed
-ps aux | grep ml-detector
-
-# If not deployed yet:
-# - These errors are expected
-# - No impact on sniffer functionality
-# - Deploy ml-detector to resolve
+# Run components in foreground for debugging
+sudo /usr/local/bin/sniffer -c /etc/sniffer/sniffer.json -vvv
+sudo /usr/local/bin/ml-detector --config /etc/ml-detector/ml_detector_config.json --verbose
+sudo /usr/local/bin/rag-security --config /etc/rag-security/system_config.json --debug
 ```
 
 ---
 
-## 🔄 Updates
+## 🔄 Updates & Maintenance
 
-### Update Procedure (Zero-Downtime)
+### Update Procedure
 
 ```bash
-# 1. Build new version
-cd /opt/sniffer
-git pull
-cd build
-make clean
-make -j$(nproc)
+# 1. Stop services
+sudo systemctl stop ml-defender-rag
+sudo systemctl stop ml-defender-detector
+sudo systemctl stop ml-defender-sniffer
 
-# 2. Run tests
-ctest --output-on-failure
+# 2. Backup configurations
+sudo cp -r /etc/sniffer /etc/sniffer.backup
+sudo cp -r /etc/ml-detector /etc/ml-detector.backup
+sudo cp -r /etc/rag-security /etc/rag-security.backup
 
-# 3. Stop service
-sudo systemctl stop sniffer
+# 3. Update code
+cd /opt/ml-defender && git pull
+cd /opt/rag-security && git pull
 
-# 4. Backup old binary
-sudo cp /usr/local/bin/sniffer /usr/local/bin/sniffer.backup
+# 4. Rebuild components
+cd /opt/ml-defender/sniffer/build && make clean && make -j$(nproc)
+cd /opt/ml-defender/ml-detector/build && make clean && make -j$(nproc)  
+cd /opt/rag-security/build && make clean && make -j$(nproc)
 
-# 5. Install new version
-sudo cp sniffer /usr/local/bin/
-sudo cp sniffer.bpf.o /usr/local/lib/sniffer/
+# 5. Reinstall
+sudo cp /opt/ml-defender/sniffer/build/sniffer /usr/local/bin/
+sudo cp /opt/ml-defender/ml-detector/build/ml-detector /usr/local/bin/
+sudo cp /opt/rag-security/build/rag-security /usr/local/bin/
 
-# 6. Verify
-/usr/local/bin/sniffer --version
-
-# 7. Start service
-sudo systemctl start sniffer
-
-# 8. Check logs
-sudo journalctl -u sniffer -f
+# 6. Restart services
+sudo systemctl start ml-defender-sniffer
+sudo systemctl start ml-defender-detector
+sudo systemctl start ml-defender-rag
 ```
 
-### Rollback (if update fails)
+### Backup Strategy
 
 ```bash
-# Restore backup
-sudo cp /usr/local/bin/sniffer.backup /usr/local/bin/sniffer
+# Daily backup script
+sudo tee /usr/local/bin/ml-defender-backup << 'EOFBACKUP'
+#!/bin/bash
+BACKUP_DIR="/backup/ml-defender-$(date +%Y%m%d)"
+mkdir -p $BACKUP_DIR
 
-# Restart
-sudo systemctl start sniffer
-```
+# Backup configurations
+cp -r /etc/sniffer $BACKUP_DIR/
+cp -r /etc/ml-detector $BACKUP_DIR/ 
+cp -r /etc/rag-security $BACKUP_DIR/
 
----
+# Backup logs (last 7 days)
+find /var/log/ml-defender -name "*.log" -mtime -7 -exec cp {} $BACKUP_DIR/ \;
 
-## 🗑️ Uninstallation
+# Create archive
+tar czf $BACKUP_DIR.tar.gz $BACKUP_DIR
+echo "Backup created: $BACKUP_DIR.tar.gz"
+EOFBACKUP
 
-### Complete Removal
-
-```bash
-# 1. Stop and disable service
-sudo systemctl stop sniffer
-sudo systemctl disable sniffer
-
-# 2. Remove service file
-sudo rm /etc/systemd/system/sniffer.service
-sudo systemctl daemon-reload
-
-# 3. Remove binaries
-sudo rm /usr/local/bin/sniffer
-sudo rm -rf /usr/local/lib/sniffer
-
-# 4. Remove configuration
-sudo rm -rf /etc/sniffer
-
-# 5. Remove logs
-sudo rm -rf /var/log/sniffer
-
-# 6. Remove source (optional)
-sudo rm -rf /opt/sniffer
-
-echo "✅ Sniffer uninstalled"
+sudo chmod +x /usr/local/bin/ml-defender-backup
 ```
 
 ---
 
 ## 🏆 Production Best Practices
 
-### Security
+### Security Hardening
 
-1. **Run with Capabilities, Not Root**
+1. **Network Segmentation**
    ```bash
-   # Use setcap instead of running as root
-   sudo setcap cap_net_admin,cap_net_raw,cap_bpf=eip /usr/local/bin/sniffer
-   ```
-
-2. **Firewall Rules**
-   ```bash
-   # Allow only necessary ports
-   sudo ufw allow 22/tcp    # SSH
-   sudo ufw allow 5571/tcp  # ZMQ (internal only)
+   # Isolate management interface
+   sudo ufw allow from 192.168.1.0/24 to any port 22
+   sudo ufw allow from 192.168.1.0/24 to any port 9090
    sudo ufw enable
    ```
 
-3. **Log Rotation**
-    - Configure logrotate (see Monitoring section)
-    - Limit log size: `rotate 7` keeps 1 week
-
-4. **File Permissions**
+2. **Service Isolation**
    ```bash
-   sudo chmod 600 /etc/sniffer/sniffer.json
-   sudo chown root:root /etc/sniffer/sniffer.json
+   # Create dedicated user
+   sudo useradd -r -s /bin/false ml-defender
+   sudo chown -R ml-defender:ml-defender /var/log/ml-defender
    ```
 
-### Performance
+3. **Configuration Security**
+   ```bash
+   sudo chmod 600 /etc/sniffer/sniffer.json
+   sudo chmod 600 /etc/ml-detector/ml_detector_config.json
+   sudo chmod 600 /etc/rag-security/system_config.json
+   ```
 
-1. **Thread Configuration**
-    - Start with 1 thread per type
-    - Scale up if CPU < 50% under load
-    - Monitor with `top` or `htop`
+### Performance Optimization
+
+1. **CPU Affinity** (High-traffic environments)
+   ```bash
+   # Pin components to specific cores
+   sudo taskset -c 0,1 /usr/local/bin/sniffer
+   sudo taskset -c 2,3 /usr/local/bin/ml-detector
+   sudo taskset -c 4,5 /usr/local/bin/rag-security
+   ```
 
 2. **Network Tuning**
    ```bash
-   # Increase ring buffer size (if high packet loss)
+   # Increase ring buffers for high packet rates
    sudo ethtool -G eth0 rx 4096 tx 4096
    
-   # Check current
-   ethtool -g eth0
+   # Enable RSS for multi-queue
+   sudo ethtool -L eth0 combined 4
    ```
 
-3. **CPU Affinity (Optional)**
+3. **Memory Optimization**
    ```bash
-   # Pin to specific cores
-   sudo taskset -c 0,1 /usr/local/bin/sniffer -c /etc/sniffer/sniffer.json
-   ```
-
-### Monitoring
-
-1. **Set Up Alerts**
-   ```bash
-   # Monitor service health
-   */5 * * * * /usr/local/bin/sniffer-health-check || mail -s "Sniffer Down" admin@example.com
-   ```
-
-2. **Metrics Collection**
-    - Use Prometheus exporter (future)
-    - Parse logs for metrics
-    - Monitor: events/s, memory, CPU
-
-3. **Backup Configuration**
-   ```bash
-   # Daily backup
-   0 2 * * * tar czf /backup/sniffer-config-$(date +\%Y\%m\%d).tar.gz /etc/sniffer
+   # Adjust RAG context size if memory constrained
+   # In /etc/rag-security/system_config.json:
+   # "context_size": 512  # Reduce from 1024 if needed
    ```
 
 ### High Availability
 
-1. **Multiple Nodes**
-    - Deploy on multiple servers
-    - Each monitors different network segments
-    - Centralized ml-detector
-
-2. **Automatic Restart**
+1. **Multiple Node Deployment**
    ```bash
-   # Already configured in systemd service
-   Restart=on-failure
-   RestartSec=10s
+   # Deploy on 3+ nodes with load balancing
+   # Each node: sniffer + detector + RAG
+   # Use etcd for coordination (future enhancement)
    ```
 
-3. **Health Checks**
-    - Run `/usr/local/bin/sniffer-health-check` regularly
-    - Integrate with monitoring (Nagios, Zabbix, etc.)
+2. **Health Monitoring**
+   ```bash
+   # Add to crontab
+   */5 * * * * /usr/local/bin/ml-defender-health-check || /usr/local/bin/alert-admin.sh
+   ```
+
+3. **Auto-Recovery**
+   ```bash
+   # Systemd already configured with:
+   # Restart=on-failure
+   # RestartSec=5s
+   ```
+
+### Scaling Strategies
+
+**Vertical Scaling:**
+- Increase RAM for larger LLAMA models
+- Add CPU cores for more detection threads
+- Use faster storage for model loading
+
+**Horizontal Scaling:**
+- Deploy multiple sniffers on different network segments
+- Centralized ml-detector cluster
+- Distributed RAG systems with load balancing
 
 ---
 
-## 📞 Support
+## 📞 Support & Resources
 
-### Logs Location
-- **Stdout:** `/var/log/sniffer/stdout.log`
-- **Stderr:** `/var/log/sniffer/stderr.log`
-- **Systemd:** `journalctl -u sniffer`
-
-### Debug Mode
-
-```bash
-# Run in foreground with verbose output
-sudo /usr/local/bin/sniffer -c /etc/sniffer/sniffer.json -vvv
+### Log Locations
+```
+/var/log/ml-defender/sniffer-stdout.log
+/var/log/ml-defender/sniffer-stderr.log
+/var/log/ml-defender/detector-stdout.log  
+/var/log/ml-defender/detector-stderr.log
+/var/log/ml-defender/rag-stdout.log
+/var/log/ml-defender/rag-stderr.log
 ```
 
-### Get Help
+### Configuration Files
+```
+/etc/sniffer/sniffer.json
+/etc/ml-detector/ml_detector_config.json
+/etc/rag-security/system_config.json
+```
 
-- **Documentation:** README.md, ARCHITECTURE.md, TESTING.md
-- **Issues:** GitHub Issues
-- **Testing Scripts:** `scripts/testing/`
+### Documentation
+- **Architecture**: `/opt/ml-defender/docs/ARCHITECTURE.md`
+- **Troubleshooting**: `/opt/ml-defender/docs/TROUBLESHOOTING.md`
+- **API Documentation**: `/opt/rag-security/docs/API.md`
+
+### Getting Help
+
+1. **Check Logs**: Always start with component logs
+2. **Health Check**: Run `ml-defender-health-check`
+3. **Debug Mode**: Start components with `--verbose` flag
+4. **Community**: GitHub Issues and Discussions
 
 ---
 
@@ -901,41 +988,62 @@ sudo /usr/local/bin/sniffer -c /etc/sniffer/sniffer.json -vvv
 ### Essential Commands
 
 ```bash
-# Start
-sudo systemctl start sniffer
+# Start all services
+sudo systemctl start ml-defender-sniffer ml-defender-detector ml-defender-rag
 
-# Stop
-sudo systemctl stop sniffer
+# Stop all services  
+sudo systemctl stop ml-defender-rag ml-defender-detector ml-defender-sniffer
 
-# Restart
-sudo systemctl restart sniffer
+# Check status
+sudo systemctl status ml-defender-*
 
-# Status
-sudo systemctl status sniffer
-
-# Logs (follow)
-sudo journalctl -u sniffer -f
+# View logs
+sudo journalctl -u ml-defender-sniffer -f
+sudo tail -f /var/log/ml-defender/rag-stdout.log
 
 # Health check
-/usr/local/bin/sniffer-health-check
+/usr/local/bin/ml-defender-health-check
+
+# Performance monitor
+/usr/local/bin/ml-defender-monitor
 ```
 
-### Files and Directories
+### Key Files and Directories
 
 ```
-/usr/local/bin/sniffer              # Main binary
-/usr/local/lib/sniffer/             # eBPF programs
-/etc/sniffer/sniffer.json           # Configuration
-/var/log/sniffer/                   # Logs
-/etc/systemd/system/sniffer.service # Service file
+/usr/local/bin/sniffer              # Network sniffer
+/usr/local/bin/ml-detector          # ML threat detection
+/usr/local/bin/rag-security         # AI security analysis
+
+/etc/sniffer/sniffer.json           # Sniffer configuration
+/etc/ml-detector/ml_detector_config.json # Detector config
+/etc/rag-security/system_config.json     # RAG system config
+
+/var/log/ml-defender/               # All component logs
+/opt/rag-security/models/           # LLAMA model storage
+
+/opt/ml-defender/                   # Source code
+/opt/rag-security/                  # RAG system source
 ```
+
+### Default Ports
+- **ZMQ Sniffer Output**: 5571
+- **ZMQ Detector Output**: 5572
+- **RAG System Console**: 9090
 
 ---
 
-**Deployed with ❤️ and tested on 2.08 million packets**
+**Deployed with ❤️ and validated on 35,387+ events**
 
-**Status:** ✅ Production-Ready  
-**Version:** 3.2.0
+**Status:** ✅ Production-Ready with RAG + ML  
+**Version:** 4.0.0  
+**Architecture:** ML Defender Platform Complete
 
 ---
 
+<div align="center">
+
+**🛡️ ML Defender - Protecting Critical Infrastructure with Embedded ML and AI**  
+*Zero crashes in 17h stability testing • Sub-microsecond detection latency • Real LLAMA integration*
+
+</div>

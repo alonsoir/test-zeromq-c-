@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(ml-detector-tricapa VERSION 1.0.0 LANGUAGES CXX)
-#ml-detector/CMakeLists.txt
+
 # ============================================================================
 # C++20 STANDARD
 # ============================================================================
@@ -120,35 +120,18 @@ endif()
 find_package(Threads REQUIRED)
 
 # ============================================================================
-# PROTOBUF INTEGRATION (SHARED FROM ROOT)
+# PROTOBUF UNIFICADO - VERIFICACIÓN Y CONFIGURACIÓN
 # ============================================================================
-set(PROTO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../protobuf")
-set(PROTO_FILE "${PROTO_DIR}/network_security.proto")
 
-# Usar los archivos .pb.cc y .pb.h ya generados
-if(EXISTS "${PROTO_DIR}/network_security.pb.cc")
-    message(STATUS "Using pre-generated protobuf files from: ${PROTO_DIR}")
-    set(PROTO_SOURCES "${PROTO_DIR}/network_security.pb.cc")
-    set(PROTO_HEADERS "${PROTO_DIR}/network_security.pb.h")
+# Verificar que los archivos protobuf unificados existen
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/proto/network_security.pb.cc")
+    message(FATAL_ERROR "❌ Protobuf unificado no encontrado. Ejecuta: cd /vagrant/protobuf && ./generate.sh")
 else()
-    message(STATUS "Generating protobuf files from: ${PROTO_FILE}")
-
-    # Generar si no existen
-    execute_process(
-            COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-            --cpp_out=${PROTO_DIR}
-            --proto_path=${PROTO_DIR}
-            ${PROTO_FILE}
-            RESULT_VARIABLE PROTOC_RESULT
-    )
-
-    if(NOT PROTOC_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to generate protobuf files")
-    endif()
-
-    set(PROTO_SOURCES "${PROTO_DIR}/network_security.pb.cc")
-    set(PROTO_HEADERS "${PROTO_DIR}/network_security.pb.h")
+    message(STATUS "✅ Protobuf unificado encontrado: ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc")
 endif()
+
+set(PROTO_SOURCES ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc)
+set(PROTO_HEADERS ${CMAKE_BINARY_DIR}/proto/network_security.pb.h)
 
 # ============================================================================
 # SOURCE FILES
@@ -161,9 +144,6 @@ set(SOURCES
         src/zmq_handler.cpp
         src/model_loader.cpp
         src/onnx_model.cpp
-        src/feature_extractor.cpp
-        src/zmq_handler.cpp
-        src/zmq_handler.cpp
         src/config_loader.cpp
         src/logger.cpp
         src/stats_collector.cpp
@@ -175,9 +155,6 @@ set(SOURCES
 )
 
 # ML Defender - Ransomware Detector Library
-# Add this section to your existing CMakeLists.txt
-
-# Ransomware Detector Library
 add_library(ransomware_detector
         src/ransomware_detector.cpp
 )
@@ -224,37 +201,15 @@ set(HEADERS
 )
 
 # ============================================================================
-# PROTOBUF SETUP
+# INCLUDE DIRECTORIES - ACTUALIZADO PARA PROTOBUF UNIFICADO
 # ============================================================================
-
-set(PROTO_SHARED_DIR ${CMAKE_SOURCE_DIR}/../protobuf)
-set(PROTO_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/protobuf)
-
-# Check if protobuf files need to be copied/generated
-if(EXISTS ${PROTO_SHARED_DIR}/network_security.pb.cc)
-    message(STATUS "📦 Using shared protobuf files")
-
-    # Copy to src/protobuf
-    configure_file(
-            ${PROTO_SHARED_DIR}/network_security.pb.cc
-            ${PROTO_SOURCE_DIR}/network_security.pb.cc
-            COPYONLY
-    )
-    configure_file(
-            ${PROTO_SHARED_DIR}/network_security.pb.h
-            ${PROTO_SOURCE_DIR}/network_security.pb.h
-            COPYONLY
-    )
-else()
-    message(FATAL_ERROR "❌ Protobuf files not found. Run: cd ${PROTO_SHARED_DIR} && ./generate.sh")
-endif()
-
-# Add protobuf source directory to includes
-include_directories(${PROTO_SOURCE_DIR})
+include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
+)
 
 # ============================================================================
 # MODELS SYMLINK (Single Source of Truth)
-# Philosophy: Make it impossible to fuck up
 # ============================================================================
 message(STATUS "")
 message(STATUS "🔗 Setting up models symlink...")
@@ -319,7 +274,7 @@ add_executable(ml-detector ${SOURCES} ${HEADERS})
 
 target_include_directories(ml-detector PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${PROTO_DIR}
+        ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
 )
 
 # ============================================================================
@@ -431,7 +386,6 @@ if(BUILD_TESTS)
                 tests/unit/test_classifier.cpp
                 tests/unit/test_feature_extractor.cpp
                 tests/unit/test_model_loader.cpp
-                tests/unit/test_detectors.cpp
         )
 
         foreach(test_src ${TEST_SOURCES})
@@ -440,7 +394,7 @@ if(BUILD_TESTS)
 
             target_include_directories(${test_name} PRIVATE
                     ${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${PROTO_DIR}
+                    ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
             )
 
             target_link_libraries(${test_name} PRIVATE
@@ -456,6 +410,33 @@ if(BUILD_TESTS)
 
             add_test(NAME ${test_name} COMMAND ${test_name})
         endforeach()
+
+        # ============================================================================
+        # TEST_DETECTORS - FIXED: Ahora incluye los archivos .cpp de detectores
+        # ============================================================================
+        add_executable(test_detectors
+                tests/unit/test_detectors.cpp
+                src/ddos_detector.cpp
+                src/traffic_detector.cpp
+                src/internal_detector.cpp
+        )
+
+        target_include_directories(test_detectors PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/include
+                ${CMAKE_BINARY_DIR}/proto
+        )
+
+        target_link_libraries(test_detectors PRIVATE
+                GTest::GTest
+                GTest::Main
+                PkgConfig::ZMQ
+                ${Protobuf_LIBRARIES}
+                onnxruntime
+                PkgConfig::LZ4
+                Threads::Threads
+        )
+
+        add_test(NAME test_detectors COMMAND test_detectors)
 
         message(STATUS "Tests enabled")
     else()
@@ -505,84 +486,29 @@ if(BUILD_TESTS)
     add_test(NAME RansomwareDetectorUnit
             COMMAND test_ransomware_detector_unit
     )
+
     # Unit Tests - DDoS, Traffic, Internal Detectors
     add_executable(test_detectors_unit
             tests/unit/test_detectors.cpp
+            src/ddos_detector.cpp
+            src/traffic_detector.cpp
+            src/internal_detector.cpp
     )
 
     target_include_directories(test_detectors_unit PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 
-    # Link directamente los archivos fuente y archivos necesarios
-    target_sources(test_detectors_unit PRIVATE
-            src/ddos_detector.cpp
-            src/traffic_detector.cpp
-            src/internal_detector.cpp
-    )
-    
     target_link_libraries(test_detectors_unit PRIVATE
     )
 
     add_test(NAME DetectorsUnit
             COMMAND test_detectors_unit
     )
-
-
-    # Integration Tests - Detector + pipeline completo
-    # Solo si ya tienes implementada la integración con ClassifierTricapa
-    # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/test_ransomware_detector_integration.cpp)
-    #     add_executable(test_ransomware_detector_integration
-    #             tests/integration/test_ransomware_detector_integration.cpp
-    #             src/classifier_tricapa.cpp
-    #             src/feature_extractor.cpp
-    #             src/config_loader.cpp
-    #             src/model_loader.cpp
-    #             src/onnx_model.cpp
-    #             src/logger.cpp
-    #             src/stats_collector.cpp
-    #             ${PROTO_SOURCES}
-    #     )
-
-    #    target_include_directories(test_ransomware_detector_integration PRIVATE
-    #            ${CMAKE_CURRENT_SOURCE_DIR}/include
-    #            ${PROTO_DIR}
-    #    )
-
-    #    target_link_libraries(test_ransomware_detector_integration PRIVATE
-    #            ransomware_detector
-    #            PkgConfig::ZMQ
-    #            ${Protobuf_LIBRARIES}
-    #            onnxruntime
-    #            PkgConfig::LZ4
-    #            Threads::Threads
-    #    )
-
-        # nlohmann/json
-    #    if(TARGET nlohmann_json::nlohmann_json)
-    #        target_link_libraries(test_ransomware_detector_integration PRIVATE nlohmann_json::nlohmann_json)
-    #    elseif(TARGET nlohmann_json)
-    #        target_link_libraries(test_ransomware_detector_integration PRIVATE nlohmann_json)
-    #    endif()
-
-        # spdlog
-    #    if(TARGET spdlog::spdlog)
-    #        target_link_libraries(test_ransomware_detector_integration PRIVATE spdlog::spdlog)
-    #    elseif(TARGET PkgConfig::SPDLOG)
-    #        target_link_libraries(test_ransomware_detector_integration PRIVATE PkgConfig::SPDLOG)
-    #    endif()
-
-    #    add_test(NAME RansomwareDetectorIntegration
-    #            COMMAND test_ransomware_detector_integration
-    #    )
-
-    #    message(STATUS "Ransomware detector integration tests enabled")
-    endif()
-
-
+endif()
 
 # ============================================================================
-# SUMMARY
+# SUMMARY - ACTUALIZADO
 # ============================================================================
 message(STATUS "")
 message(STATUS "======================================")
@@ -609,13 +535,9 @@ message(STATUS "  LTO:             ${ENABLE_LTO}")
 message(STATUS "  ASAN:            ${ENABLE_ASAN}")
 message(STATUS "  TSAN:            ${ENABLE_TSAN}")
 message(STATUS "")
-message(STATUS "Protobuf:")
-message(STATUS "  Proto dir:       ${PROTO_DIR}")
-message(STATUS "  Proto file:      ${PROTO_FILE}")
-message(STATUS "  Generated:       ${PROTO_SOURCES}")
-message(STATUS "")
 message(STATUS "🎯 Single Source of Truth:")
 message(STATUS "  Models:          ${CMAKE_SOURCE_DIR}/models → build/models (symlink)")
 message(STATUS "  Config:          ${CMAKE_SOURCE_DIR}/config → build/config (symlink)")
+message(STATUS "  Protobuf:        ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc (unificado)")
 message(STATUS "======================================")
 message(STATUS "")

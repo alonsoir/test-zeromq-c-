@@ -175,19 +175,6 @@ bpf_program/fast:
 .PHONY : bpf_program/fast
 
 #=============================================================================
-# Target rules for targets named proto_compilation
-
-# Build rule for target.
-proto_compilation: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 proto_compilation
-.PHONY : proto_compilation
-
-# fast build rule for target.
-proto_compilation/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/proto_compilation.dir/build.make CMakeFiles/proto_compilation.dir/build
-.PHONY : proto_compilation/fast
-
-#=============================================================================
 # Target rules for targets named sniffer
 
 # Build rule for target.
@@ -1081,7 +1068,6 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... bpf_program"
-	@echo "... proto_compilation"
 	@echo "... sniffer"
 	@echo "... test_fast_detector"
 	@echo "... test_integration_simple_event"

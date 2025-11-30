@@ -714,9 +714,43 @@ struct RansomwareFeaturesDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RansomwareFeaturesDefaultTypeInternal _RansomwareFeatures_default_instance_;
+PROTOBUF_CONSTEXPR Detection::Detection(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.src_ip_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.description_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.action_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.type_)*/0
+  , /*decltype(_impl_.confidence_)*/0
+  , /*decltype(_impl_.timestamp_)*/uint64_t{0u}
+  , /*decltype(_impl_.duration_seconds_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct DetectionDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DetectionDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DetectionDefaultTypeInternal() {}
+  union {
+    Detection _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DetectionDefaultTypeInternal _Detection_default_instance_;
+PROTOBUF_CONSTEXPR DetectionBatch::DetectionBatch(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.detections_)*/{}
+  , /*decltype(_impl_.batch_timestamp_)*/nullptr
+  , /*decltype(_impl_.batch_id_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct DetectionBatchDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DetectionBatchDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DetectionBatchDefaultTypeInternal() {}
+  union {
+    DetectionBatch _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DetectionBatchDefaultTypeInternal _DetectionBatch_default_instance_;
 }  // namespace protobuf
-static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[31];
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_network_5fsecurity_2eproto[8];
+static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[33];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_network_5fsecurity_2eproto[9];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_network_5fsecurity_2eproto = nullptr;
 
 const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -1282,6 +1316,28 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.avg_flow_duration_seconds_),
   PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.tcp_rst_ratio_),
   PROTOBUF_FIELD_OFFSET(::protobuf::RansomwareFeatures, _impl_.syn_without_ack_ratio_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.src_ip_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.type_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.confidence_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.timestamp_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.description_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.action_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::Detection, _impl_.duration_seconds_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionBatch, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionBatch, _impl_.detections_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionBatch, _impl_.batch_id_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionBatch, _impl_.batch_timestamp_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::protobuf::DDoSFeatures)},
@@ -1315,6 +1371,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 508, 516, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
   { 518, -1, -1, sizeof(::protobuf::SystemConfiguration)},
   { 536, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
+  { 562, -1, -1, sizeof(::protobuf::Detection)},
+  { 575, -1, -1, sizeof(::protobuf::DetectionBatch)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -1349,6 +1407,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::protobuf::_SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_SystemConfiguration_default_instance_._instance,
   &::protobuf::_RansomwareFeatures_default_instance_._instance,
+  &::protobuf::_Detection_default_instance_._instance,
+  &::protobuf::_DetectionBatch_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -1702,8 +1762,19 @@ const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTI
   "\001(\010\022\036\n\026connection_rate_stddev\030\020 \001(\002\022 \n\030p"
   "rotocol_diversity_score\030\021 \001(\002\022!\n\031avg_flo"
   "w_duration_seconds\030\022 \001(\002\022\025\n\rtcp_rst_rati"
-  "o\030\023 \001(\002\022\035\n\025syn_without_ack_ratio\030\024 \001(\002b\006"
-  "proto3"
+  "o\030\023 \001(\002\022\035\n\025syn_without_ack_ratio\030\024 \001(\002\"\250"
+  "\001\n\tDetection\022\016\n\006src_ip\030\001 \001(\t\022%\n\004type\030\002 \001"
+  "(\0162\027.protobuf.DetectionType\022\022\n\nconfidenc"
+  "e\030\003 \001(\002\022\021\n\ttimestamp\030\004 \001(\004\022\023\n\013descriptio"
+  "n\030\005 \001(\t\022\016\n\006action\030\006 \001(\t\022\030\n\020duration_seco"
+  "nds\030\007 \001(\r\"\200\001\n\016DetectionBatch\022\'\n\ndetectio"
+  "ns\030\001 \003(\0132\023.protobuf.Detection\022\020\n\010batch_i"
+  "d\030\002 \001(\004\0223\n\017batch_timestamp\030\003 \001(\0132\032.googl"
+  "e.protobuf.Timestamp*\225\001\n\rDetectionType\022\025"
+  "\n\021DETECTION_UNKNOWN\020\000\022\022\n\016DETECTION_DDOS\020"
+  "\001\022\030\n\024DETECTION_RANSOMWARE\020\002\022 \n\034DETECTION"
+  "_SUSPICIOUS_TRAFFIC\020\003\022\035\n\031DETECTION_INTER"
+  "NAL_THREAT\020\004b\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fduration_2eproto,
@@ -1711,9 +1782,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_
 };
 static ::_pbi::once_flag descriptor_table_network_5fsecurity_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_network_5fsecurity_2eproto = {
-    false, false, 14046, descriptor_table_protodef_network_5fsecurity_2eproto,
+    false, false, 14500, descriptor_table_protodef_network_5fsecurity_2eproto,
     "network_security.proto",
-    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 31,
+    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 33,
     schemas, file_default_instances, TableStruct_network_5fsecurity_2eproto::offsets,
     file_level_metadata_network_5fsecurity_2eproto, file_level_enum_descriptors_network_5fsecurity_2eproto,
     file_level_service_descriptors_network_5fsecurity_2eproto,
@@ -1953,6 +2024,23 @@ constexpr EventBatch_ProcessingMode EventBatch::ProcessingMode_MIN;
 constexpr EventBatch_ProcessingMode EventBatch::ProcessingMode_MAX;
 constexpr int EventBatch::ProcessingMode_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* DetectionType_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_network_5fsecurity_2eproto);
+  return file_level_enum_descriptors_network_5fsecurity_2eproto[8];
+}
+bool DetectionType_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      return true;
+    default:
+      return false;
+  }
+}
+
 
 // ===================================================================
 
@@ -17726,6 +17814,696 @@ void RansomwareFeatures::InternalSwap(RansomwareFeatures* other) {
       file_level_metadata_network_5fsecurity_2eproto[30]);
 }
 
+// ===================================================================
+
+class Detection::_Internal {
+ public:
+};
+
+Detection::Detection(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.Detection)
+}
+Detection::Detection(const Detection& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  Detection* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.src_ip_){}
+    , decltype(_impl_.description_){}
+    , decltype(_impl_.action_){}
+    , decltype(_impl_.type_){}
+    , decltype(_impl_.confidence_){}
+    , decltype(_impl_.timestamp_){}
+    , decltype(_impl_.duration_seconds_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.src_ip_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.src_ip_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_src_ip().empty()) {
+    _this->_impl_.src_ip_.Set(from._internal_src_ip(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.description_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.description_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_description().empty()) {
+    _this->_impl_.description_.Set(from._internal_description(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.action_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.action_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_action().empty()) {
+    _this->_impl_.action_.Set(from._internal_action(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.type_, &from._impl_.type_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.duration_seconds_) -
+    reinterpret_cast<char*>(&_impl_.type_)) + sizeof(_impl_.duration_seconds_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.Detection)
+}
+
+inline void Detection::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.src_ip_){}
+    , decltype(_impl_.description_){}
+    , decltype(_impl_.action_){}
+    , decltype(_impl_.type_){0}
+    , decltype(_impl_.confidence_){0}
+    , decltype(_impl_.timestamp_){uint64_t{0u}}
+    , decltype(_impl_.duration_seconds_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.src_ip_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.src_ip_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.description_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.description_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.action_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.action_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+Detection::~Detection() {
+  // @@protoc_insertion_point(destructor:protobuf.Detection)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void Detection::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.src_ip_.Destroy();
+  _impl_.description_.Destroy();
+  _impl_.action_.Destroy();
+}
+
+void Detection::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void Detection::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.Detection)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.src_ip_.ClearToEmpty();
+  _impl_.description_.ClearToEmpty();
+  _impl_.action_.ClearToEmpty();
+  ::memset(&_impl_.type_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.duration_seconds_) -
+      reinterpret_cast<char*>(&_impl_.type_)) + sizeof(_impl_.duration_seconds_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* Detection::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string src_ip = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_src_ip();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.Detection.src_ip"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.DetectionType type = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_type(static_cast<::protobuf::DetectionType>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // float confidence = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.confidence_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 timestamp = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.timestamp_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string description = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          auto str = _internal_mutable_description();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.Detection.description"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string action = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
+          auto str = _internal_mutable_action();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.Detection.action"));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 duration_seconds = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
+          _impl_.duration_seconds_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* Detection::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.Detection)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string src_ip = 1;
+  if (!this->_internal_src_ip().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_src_ip().data(), static_cast<int>(this->_internal_src_ip().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.Detection.src_ip");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_src_ip(), target);
+  }
+
+  // .protobuf.DetectionType type = 2;
+  if (this->_internal_type() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      2, this->_internal_type(), target);
+  }
+
+  // float confidence = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_confidence = this->_internal_confidence();
+  uint32_t raw_confidence;
+  memcpy(&raw_confidence, &tmp_confidence, sizeof(tmp_confidence));
+  if (raw_confidence != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_confidence(), target);
+  }
+
+  // uint64 timestamp = 4;
+  if (this->_internal_timestamp() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_timestamp(), target);
+  }
+
+  // string description = 5;
+  if (!this->_internal_description().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_description().data(), static_cast<int>(this->_internal_description().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.Detection.description");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_description(), target);
+  }
+
+  // string action = 6;
+  if (!this->_internal_action().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_action().data(), static_cast<int>(this->_internal_action().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.Detection.action");
+    target = stream->WriteStringMaybeAliased(
+        6, this->_internal_action(), target);
+  }
+
+  // uint32 duration_seconds = 7;
+  if (this->_internal_duration_seconds() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(7, this->_internal_duration_seconds(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.Detection)
+  return target;
+}
+
+size_t Detection::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.Detection)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string src_ip = 1;
+  if (!this->_internal_src_ip().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_src_ip());
+  }
+
+  // string description = 5;
+  if (!this->_internal_description().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_description());
+  }
+
+  // string action = 6;
+  if (!this->_internal_action().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_action());
+  }
+
+  // .protobuf.DetectionType type = 2;
+  if (this->_internal_type() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_type());
+  }
+
+  // float confidence = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_confidence = this->_internal_confidence();
+  uint32_t raw_confidence;
+  memcpy(&raw_confidence, &tmp_confidence, sizeof(tmp_confidence));
+  if (raw_confidence != 0) {
+    total_size += 1 + 4;
+  }
+
+  // uint64 timestamp = 4;
+  if (this->_internal_timestamp() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_timestamp());
+  }
+
+  // uint32 duration_seconds = 7;
+  if (this->_internal_duration_seconds() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_duration_seconds());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData Detection::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    Detection::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*Detection::GetClassData() const { return &_class_data_; }
+
+
+void Detection::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<Detection*>(&to_msg);
+  auto& from = static_cast<const Detection&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.Detection)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_src_ip().empty()) {
+    _this->_internal_set_src_ip(from._internal_src_ip());
+  }
+  if (!from._internal_description().empty()) {
+    _this->_internal_set_description(from._internal_description());
+  }
+  if (!from._internal_action().empty()) {
+    _this->_internal_set_action(from._internal_action());
+  }
+  if (from._internal_type() != 0) {
+    _this->_internal_set_type(from._internal_type());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_confidence = from._internal_confidence();
+  uint32_t raw_confidence;
+  memcpy(&raw_confidence, &tmp_confidence, sizeof(tmp_confidence));
+  if (raw_confidence != 0) {
+    _this->_internal_set_confidence(from._internal_confidence());
+  }
+  if (from._internal_timestamp() != 0) {
+    _this->_internal_set_timestamp(from._internal_timestamp());
+  }
+  if (from._internal_duration_seconds() != 0) {
+    _this->_internal_set_duration_seconds(from._internal_duration_seconds());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void Detection::CopyFrom(const Detection& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.Detection)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool Detection::IsInitialized() const {
+  return true;
+}
+
+void Detection::InternalSwap(Detection* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.src_ip_, lhs_arena,
+      &other->_impl_.src_ip_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.description_, lhs_arena,
+      &other->_impl_.description_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.action_, lhs_arena,
+      &other->_impl_.action_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Detection, _impl_.duration_seconds_)
+      + sizeof(Detection::_impl_.duration_seconds_)
+      - PROTOBUF_FIELD_OFFSET(Detection, _impl_.type_)>(
+          reinterpret_cast<char*>(&_impl_.type_),
+          reinterpret_cast<char*>(&other->_impl_.type_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata Detection::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[31]);
+}
+
+// ===================================================================
+
+class DetectionBatch::_Internal {
+ public:
+  static const ::PROTOBUF_NAMESPACE_ID::Timestamp& batch_timestamp(const DetectionBatch* msg);
+};
+
+const ::PROTOBUF_NAMESPACE_ID::Timestamp&
+DetectionBatch::_Internal::batch_timestamp(const DetectionBatch* msg) {
+  return *msg->_impl_.batch_timestamp_;
+}
+void DetectionBatch::clear_batch_timestamp() {
+  if (GetArenaForAllocation() == nullptr && _impl_.batch_timestamp_ != nullptr) {
+    delete _impl_.batch_timestamp_;
+  }
+  _impl_.batch_timestamp_ = nullptr;
+}
+DetectionBatch::DetectionBatch(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.DetectionBatch)
+}
+DetectionBatch::DetectionBatch(const DetectionBatch& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  DetectionBatch* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.detections_){from._impl_.detections_}
+    , decltype(_impl_.batch_timestamp_){nullptr}
+    , decltype(_impl_.batch_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_batch_timestamp()) {
+    _this->_impl_.batch_timestamp_ = new ::PROTOBUF_NAMESPACE_ID::Timestamp(*from._impl_.batch_timestamp_);
+  }
+  _this->_impl_.batch_id_ = from._impl_.batch_id_;
+  // @@protoc_insertion_point(copy_constructor:protobuf.DetectionBatch)
+}
+
+inline void DetectionBatch::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.detections_){arena}
+    , decltype(_impl_.batch_timestamp_){nullptr}
+    , decltype(_impl_.batch_id_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+DetectionBatch::~DetectionBatch() {
+  // @@protoc_insertion_point(destructor:protobuf.DetectionBatch)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void DetectionBatch::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.detections_.~RepeatedPtrField();
+  if (this != internal_default_instance()) delete _impl_.batch_timestamp_;
+}
+
+void DetectionBatch::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void DetectionBatch::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.DetectionBatch)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.detections_.Clear();
+  if (GetArenaForAllocation() == nullptr && _impl_.batch_timestamp_ != nullptr) {
+    delete _impl_.batch_timestamp_;
+  }
+  _impl_.batch_timestamp_ = nullptr;
+  _impl_.batch_id_ = uint64_t{0u};
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* DetectionBatch::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // repeated .protobuf.Detection detections = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_detections(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 batch_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.batch_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .google.protobuf.Timestamp batch_timestamp = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_batch_timestamp(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* DetectionBatch::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.DetectionBatch)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // repeated .protobuf.Detection detections = 1;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_detections_size()); i < n; i++) {
+    const auto& repfield = this->_internal_detections(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // uint64 batch_id = 2;
+  if (this->_internal_batch_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_batch_id(), target);
+  }
+
+  // .google.protobuf.Timestamp batch_timestamp = 3;
+  if (this->_internal_has_batch_timestamp()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(3, _Internal::batch_timestamp(this),
+        _Internal::batch_timestamp(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.DetectionBatch)
+  return target;
+}
+
+size_t DetectionBatch::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.DetectionBatch)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .protobuf.Detection detections = 1;
+  total_size += 1UL * this->_internal_detections_size();
+  for (const auto& msg : this->_impl_.detections_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // .google.protobuf.Timestamp batch_timestamp = 3;
+  if (this->_internal_has_batch_timestamp()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.batch_timestamp_);
+  }
+
+  // uint64 batch_id = 2;
+  if (this->_internal_batch_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_batch_id());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData DetectionBatch::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    DetectionBatch::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*DetectionBatch::GetClassData() const { return &_class_data_; }
+
+
+void DetectionBatch::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<DetectionBatch*>(&to_msg);
+  auto& from = static_cast<const DetectionBatch&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.DetectionBatch)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.detections_.MergeFrom(from._impl_.detections_);
+  if (from._internal_has_batch_timestamp()) {
+    _this->_internal_mutable_batch_timestamp()->::PROTOBUF_NAMESPACE_ID::Timestamp::MergeFrom(
+        from._internal_batch_timestamp());
+  }
+  if (from._internal_batch_id() != 0) {
+    _this->_internal_set_batch_id(from._internal_batch_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void DetectionBatch::CopyFrom(const DetectionBatch& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.DetectionBatch)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool DetectionBatch::IsInitialized() const {
+  return true;
+}
+
+void DetectionBatch::InternalSwap(DetectionBatch* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.detections_.InternalSwap(&other->_impl_.detections_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(DetectionBatch, _impl_.batch_id_)
+      + sizeof(DetectionBatch::_impl_.batch_id_)
+      - PROTOBUF_FIELD_OFFSET(DetectionBatch, _impl_.batch_timestamp_)>(
+          reinterpret_cast<char*>(&_impl_.batch_timestamp_),
+          reinterpret_cast<char*>(&other->_impl_.batch_timestamp_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata DetectionBatch::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[32]);
+}
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace protobuf
 PROTOBUF_NAMESPACE_OPEN
@@ -17852,6 +18630,14 @@ Arena::CreateMaybeMessage< ::protobuf::SystemConfiguration >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::protobuf::RansomwareFeatures*
 Arena::CreateMaybeMessage< ::protobuf::RansomwareFeatures >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protobuf::RansomwareFeatures >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::Detection*
+Arena::CreateMaybeMessage< ::protobuf::Detection >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::Detection >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::DetectionBatch*
+Arena::CreateMaybeMessage< ::protobuf::DetectionBatch >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::DetectionBatch >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

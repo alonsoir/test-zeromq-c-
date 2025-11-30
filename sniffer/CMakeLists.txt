@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(cpp_evolutionary_sniffer VERSION 3.1.0 LANGUAGES C CXX)
-# sniffer/CMakeLists.txt
+
 # C++20 requirement
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -100,6 +100,7 @@ endif()
 set(BPF_SOURCE ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c)
 set(BPF_OBJECT ${CMAKE_BINARY_DIR}/sniffer.bpf.o)
 
+# Comentado temporalmente - descomentar cuando sea necesario
 add_custom_command(
         OUTPUT ${BPF_OBJECT}
         COMMAND ${CLANG}
@@ -116,32 +117,25 @@ add_custom_command(
 add_custom_target(bpf_program DEPENDS ${BPF_OBJECT})
 
 # ============================================================================
-# PROTOBUF COMPILATION
+# PROTOBUF - USAR ARCHIVOS UNIFICADOS
 # ============================================================================
 
-set(PROTO_SOURCE ${CMAKE_SOURCE_DIR}/../protobuf/network_security.proto)
-set(PROTO_BINARY_DIR ${CMAKE_BINARY_DIR}/proto)
-set(PROTO_SOURCES ${PROTO_BINARY_DIR}/network_security.pb.cc)
-set(PROTO_HEADERS ${PROTO_BINARY_DIR}/network_security.pb.h)
+# Verificar que los archivos protobuf unificados existen
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/proto/network_security.pb.cc")
+    message(FATAL_ERROR "❌ Protobuf unificado no encontrado. Ejecuta: cd /vagrant/protobuf && ./generate.sh")
+else()
+    message(STATUS "✅ Protobuf unificado encontrado: ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc")
+endif()
 
-file(MAKE_DIRECTORY ${PROTO_BINARY_DIR})
+set(PROTO_SOURCES ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc)
+set(PROTO_HEADERS ${CMAKE_BINARY_DIR}/proto/network_security.pb.h)
 
-add_custom_command(
-        OUTPUT ${PROTO_SOURCES} ${PROTO_HEADERS}
-        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-        --cpp_out=${PROTO_BINARY_DIR}
-        --proto_path=${CMAKE_SOURCE_DIR}/../protobuf
-        ${PROTO_SOURCE}
-        DEPENDS ${PROTO_SOURCE}
-        COMMENT "Compiling protobuf from shared schema"
-)
-
-add_custom_target(proto_compilation DEPENDS ${PROTO_SOURCES} ${PROTO_HEADERS})
-
+# ============================================================================
+# ML DEFENDER SOURCES - DEFINIR PRIMERO
+# ============================================================================
 # ML Defender Phase 1 sources
 set(ML_DEFENDER_SOURCES
         src/userspace/ml_defender_features.cpp
-        # Phase 1 Day 4: Embedded C++20 detectors
         ../ml-detector/src/ddos_detector.cpp
         ../ml-detector/src/ransomware_detector.cpp
         ../ml-detector/src/traffic_detector.cpp
@@ -177,14 +171,16 @@ set(SNIFFER_SOURCES
         src/userspace/ransomware_feature_extractor.cpp      # Feature extraction
         src/userspace/ransomware_feature_processor.cpp      # Integration processor
         src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
-        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
         src/userspace/payload_analyzer.cpp
         # ====================================================================
 
         src/userspace/bpf_map_manager.cpp
-        proto/network_security.pb.cc
+        ${PROTO_SOURCES}   # Usar la variable PROTO_SOURCES que apunta a los archivos unificados
         ${ML_DEFENDER_SOURCES}
 )
+
+
+
 
 # Feature-specific sources
 set(SNIFFER_FEATURE_SOURCES "")
@@ -200,16 +196,13 @@ if(CURL_LIBRARY)
     list(APPEND SNIFFER_FEATURE_SOURCES src/userspace/etcd_client.cpp)
 endif()
 
-# Combine all sources
-# set(SNIFFER_SOURCES ${SNIFFER_CORE_SOURCES} ${SNIFFER_FEATURE_SOURCES})
-
 # ============================================================================
 # EXECUTABLE TARGET
 # ============================================================================
 
 add_executable(sniffer ${SNIFFER_SOURCES})
 
-add_dependencies(sniffer bpf_program proto_compilation)
+add_dependencies(sniffer bpf_program )
 
 # ============================================================================
 # LIBRARIES CONFIGURATION
@@ -468,30 +461,24 @@ message(STATUS "   ✅ test_ransomware_feature_extractor configured")
 message(STATUS "")
 
 # ============================================================================
-# ============================================================================
 # INTEGRATION TEST - Phase 1C (Two-layer detection)
 # ============================================================================
 
 add_executable(test_integration_simple_event
-    tests/test_integration_simple_event.cpp
-    
-    # Ransomware detection components
-    src/userspace/flow_tracker.cpp
-    src/userspace/dns_analyzer.cpp
-    src/userspace/ip_whitelist.cpp
-    src/userspace/time_window_aggregator.cpp
-    src/userspace/ransomware_feature_extractor.cpp
-    src/userspace/ransomware_feature_processor.cpp
-        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
-        src/userspace/fast_detector.cpp                     # Layer 1: Fast detection (10s window)
-    src/userspace/fast_detector.cpp  # Layer 1 detection
-    
-    # Protobuf
-    proto/network_security.pb.cc
-)
+        tests/test_integration_simple_event.cpp
 
-# Dependencies
-add_dependencies(test_integration_simple_event proto_compilation)
+        # Ransomware detection components
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ransomware_feature_extractor.cpp
+        src/userspace/ransomware_feature_processor.cpp
+        src/userspace/fast_detector.cpp  # Layer 1 detection
+
+        # Protobuf
+        ${PROTO_SOURCES}   # Usar los archivos protobuf unificados
+)
 
 # Include directories
 target_include_directories(test_integration_simple_event PRIVATE
@@ -507,22 +494,23 @@ target_link_libraries(test_integration_simple_event
 )
 
 message(STATUS "🧪 Integration Test: test_integration_simple_event configured")
+
 # ============================================================================
 # FAST DETECTOR UNIT TEST
 # ============================================================================
 
 add_executable(test_fast_detector
-    tests/test_fast_detector.cpp
-    src/userspace/fast_detector.cpp
-    src/userspace/time_window_aggregator.cpp
+        tests/test_fast_detector.cpp
+        src/userspace/fast_detector.cpp
+        src/userspace/time_window_aggregator.cpp
 )
 
 target_include_directories(test_fast_detector PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(test_fast_detector
-    Threads::Threads
+        Threads::Threads
 )
 
 message(STATUS "🧪 Unit Test: test_fast_detector configured")
