@@ -1033,6 +1033,363 @@ sudo tail -f /var/log/ml-defender/rag-stdout.log
 
 ---
 
+# ML Defender - Deployment Guide
+
+## Table of Contents
+1. [Hardware Requirements](#hardware-requirements)
+2. [Deployment Architectures](#deployment-architectures)
+3. [Configuration](#configuration)
+4. [Setup Procedures](#setup-procedures)
+5. [Testing & Validation](#testing--validation)
+6. [Troubleshooting](#troubleshooting)
+
+---
+
+## Hardware Requirements
+
+### Minimum (Testing/Lab)
+- **CPU:** 4 cores @ 2.0 GHz (Intel/AMD x86-64)
+- **RAM:** 8 GB
+- **Network:** Single 1GbE NIC (Intel i350 recommended)
+- **OS:** Ubuntu 24.04 LTS, Kernel 6.8+
+- **Storage:** 20 GB SSD
+- **Example:** Intel NUC, Raspberry Pi 5 (marginal)
+
+### Recommended (Production)
+- **CPU:** 8 cores @ 3.0 GHz (Intel Xeon, AMD EPYC)
+- **RAM:** 16 GB ECC
+- **Network:** Dual 10GbE NICs (Intel X710, Mellanox ConnectX-5)
+- **OS:** Ubuntu 24.04 LTS, Kernel 6.8+
+- **Storage:** 50 GB NVMe SSD
+- **Example:** Supermicro 1U server, Dell PowerEdge R340
+
+### Budget-Conscious (SMB/Home)
+- **Option 1:** x86 N100 Mini PC (~$200)
+    - 4 cores @ 3.4 GHz
+    - Dual Intel i226 2.5GbE NICs
+    - 16GB RAM, ~1 Gbps sustained throughput
+- **Option 2:** Raspberry Pi CM4 with dual NIC carrier (~$150)
+    - 4 cores @ 1.5 GHz
+    - Dual 1GbE via PCIe
+    - 8GB RAM, ~500 Mbps throughput (marginal)
+
+---
+
+## Deployment Architectures
+
+### 1. Host-Based IDS (Single NIC)
+
+**Use Case:** Protect individual servers from incoming attacks
+```
+Internet → Firewall → [Web Server + ML Defender]
+                      eth0: 192.168.1.100
+```
+
+**What It Does:**
+- Captures traffic **destined to** the host's IP
+- Detects DDoS, ransomware, port scans targeting the server
+- Zero visibility into lateral traffic
+
+**Example:** Django API server, PostgreSQL database, Nginx reverse proxy
+
+**Configuration:**
+```json
+{
+  "deployment": {
+    "mode": "host-only",
+    "host_interface": "eth0"
+  },
+  "profiles": {
+    "default": {
+      "capture_interface": "eth0",
+      "worker_threads": 4
+    }
+  }
+}
+```
+
+---
+
+### 2. Gateway Mode (Dual NIC)
+
+**Use Case:** Protect entire networks with inline inspection
+```
+Internet → [ML Defender Gateway] → Home/Office Network
+           eth0 (WAN): DHCP       eth1 (LAN): 192.168.1.1
+```
+
+**What It Does:**
+- Captures **ALL traffic** passing through the gateway
+- Inspects traffic between Internet and internal devices
+- Acts as transparent security appliance
+
+**Example:** Raspberry Pi router protecting smart home, DMZ monitor for web servers
+
+**Configuration:**
+```json
+{
+  "deployment": {
+    "mode": "gateway-only",
+    "gateway_interface": "eth1",
+    "network_settings": {
+      "enable_ip_forwarding": true,
+      "enable_nat": true,
+      "lan_subnet": "192.168.1.0/24"
+    }
+  }
+}
+```
+
+**Network Setup:**
+```bash
+# Enable IP forwarding
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+
+# Configure NAT (replace eth0 with WAN interface)
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+sudo iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
+sudo iptables -A FORWARD -i eth0 -o eth1 -m state --state RELATED,ESTABLISHED -j ACCEPT
+```
+
+---
+
+### 3. Dual Mode (Host + Gateway)
+
+**Use Case:** Maximum visibility - protect the gateway AND inspect transit traffic
+```
+Internet → [Bastion + ML Defender] → DMZ (Web Servers)
+           │ eth0: Host-based      eth1: Gateway mode
+           │ (protects bastion)    (inspects DMZ traffic)
+```
+
+**What It Does:**
+- eth0: Monitors attacks targeting the bastion host itself
+- eth1: Inspects all traffic flowing to/from DMZ servers
+- Defense-in-depth: Two layers of protection
+
+**Example:** Enterprise jump host, critical infrastructure gateway
+
+**Configuration:**
+```json
+{
+  "deployment": {
+    "mode": "dual",
+    "host_interface": "eth0",
+    "gateway_interface": "eth1",
+    "network_settings": {
+      "enable_ip_forwarding": true,
+      "enable_nat": false
+    },
+    "performance": {
+      "expected_throughput_gbps": 1.0,
+      "max_packets_per_second": 1000000
+    }
+  },
+  "profiles": {
+    "dual_nic": {
+      "worker_threads": 8,
+      "cpu_affinity_enabled": true
+    }
+  }
+}
+```
+
+---
+
+## Configuration
+
+### Full sniffer.json Example (Dual Mode)
+
+See `sniffer/config/sniffer.json` for complete schema. Key sections:
+```json
+{
+  "deployment": {
+    "mode": "dual",
+    "host_interface": "eth0",
+    "gateway_interface": "eth1",
+    "network_settings": {
+      "enable_ip_forwarding": true,
+      "enable_nat": true,
+      "lan_subnet": "192.168.1.0/24"
+    },
+    "performance": {
+      "expected_throughput_gbps": 1.0,
+      "max_packets_per_second": 1000000,
+      "ring_buffer_size_mb": 64
+    },
+    "hardware_requirements": {
+      "minimum": {
+        "cpu_cores": 4,
+        "ram_gb": 8,
+        "nic_speed_gbps": 1
+      },
+      "recommended": {
+        "cpu_cores": 8,
+        "ram_gb": 16,
+        "nic_speed_gbps": 10
+      }
+    }
+  }
+}
+```
+
+---
+
+## Setup Procedures
+
+### 1. Prerequisites
+```bash
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential clang llvm \
+    libbpf-dev libelf-dev \
+    libzmq3-dev libprotobuf-dev \
+    protobuf-compiler cmake \
+    linux-headers-$(uname -r)
+
+# Verify kernel version (6.8+ required)
+uname -r  # Should be 6.8.0 or newer
+
+# Check BPF support
+ls /sys/fs/bpf/  # Should exist
+```
+
+### 2. Build ML Defender
+```bash
+cd /vagrant
+./build.sh
+```
+
+### 3. Configure Deployment
+
+Edit `sniffer/config/sniffer.json` with your deployment mode and interfaces.
+
+### 4. Launch Pipeline
+```bash
+# Terminal 1: Detector
+cd /vagrant/detector
+python3 ml_detector_server.py
+
+# Terminal 2: Firewall
+cd /vagrant/firewall
+sudo python3 firewall_agent.py
+
+# Terminal 3: Sniffer
+cd /vagrant/sniffer/build
+sudo ./sniffer -c ../config/sniffer.json
+```
+
+---
+
+## Testing & Validation
+
+### Host-Based Mode Test
+```bash
+# From external machine (OSX):
+nmap -sS -p 1-1000 192.168.56.20
+hping3 -S -p 80 --flood -c 5000 192.168.56.20
+
+# Check logs:
+tail -f /vagrant/logs/lab/detector.log | grep "Attack detected"
+```
+
+### Gateway Mode Test
+```bash
+# Configure VM as gateway (eth0=WAN, eth1=LAN)
+# Send traffic through VM to internal network
+# Verify ML Defender captures transit traffic
+
+# Check interface metadata:
+tail -f /vagrant/logs/lab/sniffer.log | grep "interface_mode"
+```
+
+### PCAP Replay Test
+```bash
+# Use tcpreplay to inject MAWI traffic
+sudo tcpreplay -i eth1 --topspeed /vagrant/datasets/mawi/*.pcap
+
+# Monitor detection rate:
+watch -n1 'tail -20 /vagrant/logs/lab/detector.log'
+```
+
+---
+
+## Troubleshooting
+
+### Issue: "interface_configs map not found"
+**Cause:** Legacy eBPF binary without dual-NIC support  
+**Fix:** Rebuild sniffer: `cd /vagrant && ./build.sh`
+
+### Issue: Gateway mode not capturing transit traffic
+**Cause:** IP forwarding disabled or NAT misconfigured  
+**Fix:**
+```bash
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+```
+
+### Issue: High packet loss in gateway mode
+**Cause:** Insufficient CPU or ring buffer too small  
+**Fix:** Increase `worker_threads` and `ring_buffer_size_mb` in config
+
+### Issue: Compilation errors with dual_nic_manager.cpp
+**Cause:** jsoncpp version mismatch  
+**Fix:** Ensure Ubuntu 24.04 with `libjsoncpp-dev` installed
+
+---
+
+## Performance Tuning
+
+### CPU Affinity (Recommended for >1Gbps)
+```json
+{
+  "profiles": {
+    "high_performance": {
+      "worker_threads": 8,
+      "cpu_affinity_enabled": true,
+      "cpu_affinity_cores": [0, 1, 2, 3, 4, 5, 6, 7]
+    }
+  }
+}
+```
+
+### NIC Offloading (Intel i350/X710)
+```bash
+# Disable unnecessary offloading for XDP
+sudo ethtool -K eth0 gro off lro off tso off
+
+# Increase RX ring size
+sudo ethtool -G eth0 rx 4096
+```
+
+### Kernel Tuning
+```bash
+# Increase ring buffer memory
+sudo sysctl -w net.core.rmem_max=134217728
+sudo sysctl -w net.core.wmem_max=134217728
+```
+
+---
+
+## Production Checklist
+
+- [ ] Kernel 6.8+ verified
+- [ ] Dual NIC hardware installed (gateway mode)
+- [ ] IP forwarding enabled (gateway mode)
+- [ ] NAT configured (if needed)
+- [ ] ML Defender compiled successfully
+- [ ] Configuration tested in lab environment
+- [ ] Log rotation configured (`/etc/logrotate.d/ml-defender`)
+- [ ] Systemd services created (sniffer, detector, firewall)
+- [ ] Monitoring/alerting configured
+- [ ] Backup configuration saved
+
+---
+
+**Next:** See [README.md](README.md) for architecture details and [DUAL_NIC_TESTING.md](DUAL_NIC_TESTING.md) for test procedures.
+
 **Deployed with ❤️ and validated on 35,387+ events**
 
 **Status:** ✅ Production-Ready with RAG + ML  
