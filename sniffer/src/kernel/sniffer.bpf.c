@@ -1,6 +1,7 @@
 //sniffer/src/kernel/sniffer.bpf.c
-// Enhanced eBPF sniffer v3.2 - Hybrid filtering system
+// Enhanced eBPF sniffer v3.3 - Hybrid filtering + Dual-NIC deployment
 // Supports both blacklist (excluded_ports) and whitelist (included_ports)
+// Phase 1, Day 7: Added dual-NIC deployment support
 
 // Type definitions
 typedef unsigned char __u8;
@@ -46,6 +47,31 @@ struct __sk_buff;
 #define ACTION_DROP 0
 #define ACTION_CAPTURE 1
 
+// ============================================================================
+// DUAL-NIC DEPLOYMENT SUPPORT - Phase 1, Day 7
+// ============================================================================
+
+// Interface deployment modes
+#define INTERFACE_MODE_DISABLED    0
+#define INTERFACE_MODE_HOST_BASED  1  // Capture only traffic destined to host
+#define INTERFACE_MODE_GATEWAY     2  // Capture ALL transit traffic (inline)
+
+// Interface configuration (populated from userspace)
+struct interface_config {
+    __u32 ifindex;           // Network interface index
+    __u8 mode;               // 0=disabled, 1=host-based, 2=gateway
+    __u8 is_wan;             // 1=WAN-facing (internet), 0=LAN-facing (DMZ)
+    __u8 reserved[2];        // Alignment padding
+};
+
+// BPF map: Interface configurations (key=ifindex, value=config)
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 16);              // Support up to 16 NICs
+    __type(key, __u32);                    // ifindex
+    __type(value, struct interface_config);
+} interface_configs SEC(".maps");
+
 // XDP context
 struct xdp_md {
     __u32 data;
@@ -70,6 +96,12 @@ struct simple_event {
     __u64 timestamp;
     __u16 payload_len;
     __u8 payload[512];
+
+    // Dual-NIC deployment metadata (Phase 1, Day 7)
+    __u8 interface_mode;     // 0=disabled, 1=host-based, 2=gateway
+    __u8 is_wan_facing;      // 1=WAN, 0=LAN
+    __u32 source_ifindex;    // Network interface index where packet arrived
+    char source_interface[16]; // Interface name (e.g., "eth0", "eth1")
 } __attribute__((packed));
 
 // Filter configuration
@@ -162,6 +194,15 @@ SEC("xdp")
 int xdp_sniffer_enhanced(struct xdp_md *ctx) {
     void *data = (void *)(long)ctx->data;
     void *data_end = (void *)(long)ctx->data_end;
+
+    // Dual-NIC deployment support - check interface config
+    __u32 ifindex = ctx->ingress_ifindex;
+    struct interface_config *iface_config = bpf_map_lookup_elem(&interface_configs, &ifindex);
+
+    // If interface not configured or disabled, pass packet without processing
+    if (!iface_config || iface_config->mode == INTERFACE_MODE_DISABLED) {
+        return XDP_PASS;
+    }
 
     // Verify ethernet header
     if (data + ETH_HLEN > data_end)
@@ -274,13 +315,14 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
         event->tcp_flags = 0;
         event->l4_header_len = 0;
     }
+
     // ===== Payload Capture with eBPF Verifier Compliance =====
     // Calculate payload start (after IP + L4 headers)
     void *payload_start = ip_start + ihl + event->l4_header_len;
-    
+
     // Initialize payload_len to 0
     event->payload_len = 0;
-    
+
     // Bounds check: ensure payload_start is within packet
     if (payload_start < data_end && payload_start >= data) {
         // Copy up to 512 bytes with explicit bounds checking
@@ -290,13 +332,27 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
             if (payload_start + i >= data_end) {
                 break;
             }
-            
+
             // Safe copy with bounds verification
             event->payload[i] = *(__u8*)(payload_start + i);
             event->payload_len++;
         }
     }
 
+    // Populate dual-NIC metadata before submit
+    event->interface_mode = iface_config->mode;
+    event->is_wan_facing = iface_config->is_wan;
+    event->source_ifindex = ifindex;
+
+    // Store interface index as string (userspace will resolve to name)
+    __builtin_memset(event->source_interface, 0, sizeof(event->source_interface));
+    if (ifindex < 100) {  // Sanity check
+        // Simple ifindex to string conversion
+        event->source_interface[0] = 'i';
+        event->source_interface[1] = 'f';
+        event->source_interface[2] = '0' + (ifindex / 10);
+        event->source_interface[3] = '0' + (ifindex % 10);
+    }
 
     // Submit event to ring buffer
     bpf_ringbuf_submit(event, 0);

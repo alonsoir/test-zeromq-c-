@@ -690,6 +690,12 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     features->set_protocol_number(event.protocol);
     features->set_protocol_name(protocol_to_string(event.protocol));
 
+    // Dual-NIC deployment metadata (Phase 1, Day 7)
+    features->set_interface_mode(event.interface_mode);
+    features->set_is_wan_facing(event.is_wan_facing);
+    features->set_source_ifindex(event.source_ifindex);
+    features->set_source_interface(event.source_interface);
+
     // Basic packet features
     features->set_total_forward_packets(1);
     features->set_total_backward_packets(0);

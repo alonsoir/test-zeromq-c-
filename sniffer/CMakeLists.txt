@@ -160,7 +160,7 @@ set(SNIFFER_SOURCES
         src/userspace/feature_extractor.cpp
         src/userspace/time_window_manager.cpp
         src/userspace/feature_logger.cpp
-
+        src/userspace/dual_nic_manager.cpp
         # ====================================================================
         # RANSOMWARE DETECTION SYSTEM - Phase 1A (3 Critical Features)
         # ====================================================================

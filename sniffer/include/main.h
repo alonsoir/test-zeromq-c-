@@ -1,6 +1,5 @@
 // sniffer/include/main.h
 #pragma once
-
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -32,6 +31,13 @@ struct SimpleEvent {
     uint64_t timestamp;
     uint16_t payload_len;
     uint8_t payload[512];
+
+    // >>> MODIFIED: Dual-NIC deployment metadata (Phase 1, Day 7)
+    uint8_t interface_mode;     // 0=disabled, 1=host-based, 2=gateway
+    uint8_t is_wan_facing;      // 1=WAN, 0=LAN
+    uint32_t source_ifindex;    // Network interface index
+    char source_interface[16];  // Interface name
+    // >>> END MODIFIED
 } __attribute__((packed));
 
 // Helper functions for TCP flags
@@ -55,7 +61,6 @@ inline uint32_t get_payload_length(const SimpleEvent& event) {
 // ✅ SAFE VERSION: Pretty print TCP flags without buffer overflow risk
 inline const char* tcp_flags_to_string(uint8_t flags) {
     static thread_local char buf[64];
-
     if (flags == 0) {
         return "NONE";
     }
