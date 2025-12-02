@@ -11,7 +11,12 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
     vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     vb.customize ["modifyvm", :id, "--nictype3", "virtio"]
-    vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nictype4", "virtio"]  # NUEVO: Para eth3 gateway
+
+    # Promiscuous mode para captura de paquetes
+    vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]  # eth1 (host-only)
+    vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]  # eth2 (public bridge)
+    vb.customize ["modifyvm", :id, "--nicpromisc4", "allow-all"]  # eth3 (gateway LAN) - NUEVO
 
     # Optimizaciones adicionales
     vb.customize ["modifyvm", :id, "--ioapic", "on"]
@@ -21,79 +26,16 @@ Vagrant.configure("2") do |config|
   end
 
   # ════════════════════════════════════════════════════════════════════════
-    # Provisioning: Configuración de Red INTELIGENTE + Modo Promiscuo
-    # ════════════════════════════════════════════════════════════════════════
-    config.vm.provision "shell", run: "always", inline: <<-SHELL
-      echo "🔧 Configurando interfaces de red optimizadas..."
+  # RED - Configuración Dual-NIC para Testing
+  # ════════════════════════════════════════════════════════════════════════
+  # eth0: NAT (Vagrant management)
+  # eth1: 192.168.56.20 (WAN-facing, host-only) - Para ataques desde OSX
+  # eth2: public_network bridge (captura externa opcional)
+  # eth3: 192.168.100.1 (LAN-facing, internal) - NUEVO: Para gateway mode testing
 
-      # 1. Instalar herramientas de red
-      apt-get update -qq
-      apt-get install -y ethtool tcpdump
-
-      # 2. Detectar interfaz bridge automáticamente (para captura externa)
-      BRIDGE_INTERFACE=""
-      for iface in eth2 eth1; do
-        if ip link show $iface >/dev/null 2>&1; then
-          BRIDGE_INTERFACE=$iface
-          break
-        fi
-      done
-
-      if [ -z "$BRIDGE_INTERFACE" ]; then
-        echo "⚠️  No se encontró interfaz bridge, usando eth0 para captura"
-        BRIDGE_INTERFACE="eth0"
-      fi
-
-      echo "🎯 Interfaz para captura externa: $BRIDGE_INTERFACE"
-      echo "🎯 Interfaz para tráfico interno: eth0"
-
-      # 3. Configurar modo promiscuo en AMBAS interfaces para máxima captura
-      echo "🔍 Activando modo promiscuo en $BRIDGE_INTERFACE..."
-      ip link set $BRIDGE_INTERFACE promisc on
-
-      # NUEVO: Activar promiscuo también en eth0 para capturar tráfico local
-      echo "🔍 Activando modo promiscuo en eth0 (captura local)..."
-      ip link set eth0 promisc on
-
-      # Desactivar offloading features para XDP en ambas interfaces
-      for iface in $BRIDGE_INTERFACE eth0; do
-        if ip link show $iface >/dev/null 2>&1; then
-          echo "⚙️  Desactivando offloading features en $iface..."
-          ethtool -K $iface gro off 2>/dev/null || true
-          ethtool -K $iface tx-checksum-ip-generic off 2>/dev/null || true
-          ethtool -K $iface tso off 2>/dev/null || true
-          ethtool -K $iface gso off 2>/dev/null || true
-        fi
-      done
-
-      # 4. Verificar configuración
-      echo ""
-      echo "═══════════════════════════════════════════════════════════"
-      echo "✅ CONFIGURACIÓN DE RED COMPLETADA"
-      echo "═══════════════════════════════════════════════════════════"
-
-      echo "Interfaz captura externa: $BRIDGE_INTERFACE"
-      if ip link show $BRIDGE_INTERFACE | grep -q PROMISC; then
-        echo "✅ Modo promiscuo: ACTIVO en $BRIDGE_INTERFACE"
-      else
-        echo "❌ Modo promiscuo: INACTIVO en $BRIDGE_INTERFACE"
-      fi
-
-      echo "Interfaz tráfico local: eth0"
-      if ip link show eth0 | grep -q PROMISC; then
-        echo "✅ Modo promiscuo: ACTIVO en eth0"
-      else
-        echo "❌ Modo promiscuo: INACTIVO en eth0"
-      fi
-
-      echo "Interfaz host-VM: eth1 (192.168.56.20)"
-
-      echo "═══════════════════════════════════════════════════════════"
-      echo ""
-    SHELL
-
-  config.vm.network "private_network", ip: "192.168.56.20"
-  config.vm.network "public_network", bridge: "en0: Wi-Fi"
+  config.vm.network "private_network", ip: "192.168.56.20"  # eth1: WAN-facing
+  config.vm.network "public_network", bridge: "en0: Wi-Fi"  # eth2: Captura externa
+  config.vm.network "private_network", ip: "192.168.100.1", virtualbox__intnet: "ml_defender_lan"  # eth3: Gateway LAN - NUEVO
 
   config.vm.network "forwarded_port", guest: 5571, host: 5571
   config.vm.network "forwarded_port", guest: 5572, host: 5572
@@ -101,6 +43,110 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox",
       mount_options: ["dmode=775,fmode=775,exec"]
+
+  # ════════════════════════════════════════════════════════════════════════
+  # Provisioning: Configuración de Red DUAL-NIC + Modo Promiscuo
+  # ════════════════════════════════════════════════════════════════════════
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+    echo "🔧 Configurando interfaces de red para Dual-NIC testing..."
+
+    # 1. Instalar herramientas de red
+    apt-get update -qq
+    apt-get install -y ethtool tcpdump
+
+    # 2. Configurar IP forwarding para gateway mode
+    echo "🌐 Activando IP forwarding para gateway mode..."
+    sysctl -w net.ipv4.ip_forward=1
+    if ! grep -q "net.ipv4.ip_forward=1" /etc/sysctl.conf; then
+      echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+    fi
+
+    # 3. Detectar interfaz bridge automáticamente (para captura externa)
+    BRIDGE_INTERFACE=""
+    for iface in eth2; do
+      if ip link show $iface >/dev/null 2>&1; then
+        BRIDGE_INTERFACE=$iface
+        break
+      fi
+    done
+
+    if [ -z "$BRIDGE_INTERFACE" ]; then
+      echo "⚠️  No se encontró interfaz bridge, captura externa no disponible"
+      BRIDGE_INTERFACE="none"
+    fi
+
+    echo "═══════════════════════════════════════════════════════════"
+    echo "🎯 CONFIGURACIÓN DUAL-NIC ML DEFENDER"
+    echo "═══════════════════════════════════════════════════════════"
+    echo "eth0: NAT (Vagrant management)"
+    echo "eth1: 192.168.56.20 (WAN-facing, host-only) - Host-Based IDS"
+    echo "eth2: $BRIDGE_INTERFACE (Captura externa opcional)"
+    echo "eth3: 192.168.100.1 (LAN-facing, internal) - Gateway Mode"
+    echo "═══════════════════════════════════════════════════════════"
+
+    # 4. Configurar modo promiscuo en interfaces de captura
+    # eth1: Host-Based Mode (captura ataques desde OSX)
+    echo "🔍 Configurando eth1 (WAN-facing, host-based)..."
+    if ip link show eth1 >/dev/null 2>&1; then
+      ip link set eth1 promisc on
+      ethtool -K eth1 gro off 2>/dev/null || true
+      ethtool -K eth1 tx-checksum-ip-generic off 2>/dev/null || true
+      ethtool -K eth1 tso off 2>/dev/null || true
+      ethtool -K eth1 gso off 2>/dev/null || true
+
+      if ip link show eth1 | grep -q PROMISC; then
+        echo "✅ eth1: Modo promiscuo ACTIVO (Host-Based IDS)"
+      else
+        echo "❌ eth1: Modo promiscuo INACTIVO"
+      fi
+    fi
+
+    # eth2: Captura externa (bridge a Wi-Fi)
+    if [ "$BRIDGE_INTERFACE" != "none" ]; then
+      echo "🔍 Configurando eth2 (captura externa)..."
+      ip link set $BRIDGE_INTERFACE promisc on
+      ethtool -K $BRIDGE_INTERFACE gro off 2>/dev/null || true
+      ethtool -K $BRIDGE_INTERFACE tx-checksum-ip-generic off 2>/dev/null || true
+      ethtool -K $BRIDGE_INTERFACE tso off 2>/dev/null || true
+      ethtool -K $BRIDGE_INTERFACE gso off 2>/dev/null || true
+
+      if ip link show $BRIDGE_INTERFACE | grep -q PROMISC; then
+        echo "✅ eth2: Modo promiscuo ACTIVO (Captura externa)"
+      else
+        echo "❌ eth2: Modo promiscuo INACTIVO"
+      fi
+    fi
+
+    # eth3: Gateway Mode (nuevo para Day 8)
+    echo "🔍 Configurando eth3 (LAN-facing, gateway mode)..."
+    if ip link show eth3 >/dev/null 2>&1; then
+      ip link set eth3 promisc on
+      ethtool -K eth3 gro off 2>/dev/null || true
+      ethtool -K eth3 tx-checksum-ip-generic off 2>/dev/null || true
+      ethtool -K eth3 tso off 2>/dev/null || true
+      ethtool -K eth3 gso off 2>/dev/null || true
+
+      if ip link show eth3 | grep -q PROMISC; then
+        echo "✅ eth3: Modo promiscuo ACTIVO (Gateway Mode)"
+      else
+        echo "❌ eth3: Modo promiscuo INACTIVO"
+      fi
+    else
+      echo "⚠️  eth3 no encontrada (normal si no usas gateway mode)"
+    fi
+
+    # 5. Verificación final
+    echo ""
+    echo "═══════════════════════════════════════════════════════════"
+    echo "✅ CONFIGURACIÓN DE RED COMPLETADA"
+    echo "═══════════════════════════════════════════════════════════"
+    echo "Interfaces disponibles:"
+    ip addr show | grep -E '^[0-9]+:|inet ' | grep -v '127.0.0.1'
+    echo ""
+    echo "IP Forwarding: $(sysctl net.ipv4.ip_forward | cut -d= -f2)"
+    echo "═══════════════════════════════════════════════════════════"
+    echo ""
+  SHELL
 
   # ========================================
   # SINGLE PHASE: ALL DEPENDENCIES
@@ -111,6 +157,9 @@ Vagrant.configure("2") do |config|
 
     # Activar trace completo
     set -x
+
+    # CRITICAL: Prevent interactive prompts during apt installations
+    export DEBIAN_FRONTEND=noninteractive
 
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  Installing ALL dependencies - Single Phase                ║"
@@ -237,6 +286,19 @@ Vagrant.configure("2") do |config|
       python3-venv \
       python3-dev
     echo "DEBUG: Python install exit code: $?"
+
+    # ========================================
+    # TESTING TOOLS (NUEVO para Day 8)
+    # ========================================
+    echo "=== PHASE 9.5: TESTING TOOLS ==="
+    apt-get install -y \
+      hping3 \
+      nmap \
+      tcpreplay \
+      netcat-openbsd \
+      iperf3 \
+      net-tools
+    echo "DEBUG: Testing tools install exit code: $?"
 
     # ========================================
     # DOCKER & DOCKER COMPOSE - CON CHECKS EXPLÍCITOS
@@ -403,7 +465,7 @@ Vagrant.configure("2") do |config|
         cmake .. \
             -DBUILD_SHARED_LIBS=OFF \
             -DLLAMA_BUILD_TESTS=OFF \
-            -DLLAMA_BUILD_EXAMPLES=ON \  # Para probar con llama-cli
+            -DLLAMA_BUILD_EXAMPLES=ON \
             -DLLAMA_NATIVE=OFF \
             -DLLAMA_NO_ACCELERATE=ON \
             -DLLAMA_METAL=OFF \
@@ -535,6 +597,7 @@ EOF
     mkdir -p /vagrant/ml-training/outputs/onnx
     mkdir -p /vagrant/firewall-acl-agent/build/logs
     mkdir -p /vagrant/rag/build/logs
+    mkdir -p /vagrant/logs/lab
     mkdir -p /var/log/ml-defender
     chown -R vagrant:vagrant /var/log/ml-defender
     chmod 755 /var/log/ml-defender
@@ -607,6 +670,12 @@ alias run-lab='cd /vagrant && bash scripts/run_lab_dev.sh'
 alias kill-lab='sudo pkill -9 firewall-acl-agent; pkill -9 ml-detector; sudo pkill -9 sniffer; pkill -9 rag-security'
 alias status-lab='pgrep -a firewall-acl-agent; pgrep -a ml-detector; pgrep -a sniffer; pgrep -a rag-security'
 
+# Day 8: Dual-NIC Testing Shortcuts
+alias test-host-mode='echo "Testing host-based mode on eth1..." && sudo tcpdump -i eth1 -c 10'
+alias test-gateway-mode='echo "Testing gateway mode on eth3..." && sudo tcpdump -i eth3 -c 10'
+alias check-interfaces='echo "Network Interfaces:" && ip addr show | grep -E "^[0-9]+:|inet "'
+alias check-promiscuous='echo "Promiscuous Mode Status:" && ip link show | grep -E "eth[0-9]:|PROMISC"'
+
 # ML Model Deployment (from host macOS training)
 alias sync-models='rsync -av /vagrant/ml-training/outputs/onnx/*.onnx /vagrant/ml-detector/models/production/ 2>/dev/null && echo "✅ Models synced from host" || echo "⚠️  No models found in ml-training/outputs/onnx/"'
 alias list-models='echo "Available ONNX models:" && find /vagrant/ml-detector/models/production -name "*.onnx" -exec ls -lh {} \;'
@@ -617,7 +686,7 @@ alias setup-rag-model='echo "Downloading test model..." && cd /vagrant/rag/model
 # Logs
 alias logs-firewall='tail -f /vagrant/firewall-acl-agent/build/logs/*.log /var/log/ml-defender/firewall-acl-agent.log 2>/dev/null || echo "No logs yet"'
 alias logs-detector='tail -f /vagrant/ml-detector/build/logs/*.log 2>/dev/null || echo "No logs yet"'
-alias logs-sniffer='tail -f /vagrant/sniffer/build/logs/*.log 2>/dev/null || echo "No logs yet"'
+alias logs-sniffer='tail -f /vagrant/logs/lab/sniffer.log 2>/dev/null || echo "No logs yet"'
 alias logs-rag='tail -f /vagrant/rag/build/logs/*.log 2>/dev/null || echo "No logs yet"'
 alias logs-lab='cd /vagrant && bash scripts/monitor_lab.sh'
 
@@ -638,12 +707,22 @@ cat << 'WELCOME'
 
 ╔════════════════════════════════════════════════════════════╗
 ║  ML Defender - Network Security Pipeline                   ║
-║  Development Environment                                   ║
+║  Development Environment - DUAL-NIC READY                  ║
 ╚════════════════════════════════════════════════════════════╝
 
 🎯 Pipeline Architecture:
    Sniffer (eBPF/XDP) → ML Detector → Firewall ACL Agent → RAG Security
       PUSH 5571           PUB 5572       SUB 5572           AI Commands
+
+🌐 Dual-NIC Configuration (Day 8):
+   eth1: 192.168.56.20 (WAN-facing, host-based IDS)
+   eth3: 192.168.100.1 (LAN-facing, gateway mode)
+
+🧪 Dual-NIC Testing:
+   check-interfaces     # Show all network interfaces
+   check-promiscuous    # Verify promiscuous mode
+   test-host-mode       # Quick host-based capture test
+   test-gateway-mode    # Quick gateway capture test
 
 🚀 Quick Start:
    run-lab              # Start full pipeline (background + monitor)
@@ -676,7 +755,7 @@ cat << 'WELCOME'
 📊 Monitoring:
    logs-firewall        # Firewall logs
    logs-detector        # Detector logs
-   logs-sniffer         # Sniffer logs
+   logs-sniffer         # Sniffer logs (→ /vagrant/logs/lab/sniffer.log)
    logs-rag             # RAG Security logs
    logs-lab             # Combined monitoring
 
@@ -690,7 +769,7 @@ EOF
     # ========================================
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
-    echo "║              ML DEFENDER - STATUS SUMMARY                 ║"
+    echo "║       ML DEFENDER - STATUS SUMMARY (DUAL-NIC READY)       ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo ""
 
@@ -708,19 +787,23 @@ EOF
     echo "📚 CORE DEPENDENCIES:"
     echo "┌──────────────────────┬─────────────┬─────────────────────┐"
         [ -f /usr/local/lib/libetcd-cpp-api.so ] && echo "│ etcd-cpp-api         │     ✅      │ Installed           │" || echo "│ etcd-cpp-api         │     ❌      │ Missing             │"
-        [ -f /usr/local/lib/libdrogon.a ] && echo "│ Drogon Framework     │     ✅      │ Installed           │" || echo "│ Drogon Framework     │     ❌      │ Missing             │"
+        [ -f /usr/local/include/httplib.h ] && echo "│ cpp-httplib          │     ✅      │ Installed           │" || echo "│ cpp-httplib          │     ❌      │ Missing             │"
         [ -f /usr/local/lib/libonnxruntime.so ] && echo "│ ONNX Runtime         │     ✅      │ Installed           │" || echo "│ ONNX Runtime         │     ❌      │ Missing             │"
         [ -f /vagrant/third_party/llama.cpp/build/src/libllama.a ] && echo "│ llama.cpp            │     ✅      │ Compiled            │" || echo "│ llama.cpp            │     ❌      │ Not compiled        │"
         which docker >/dev/null && echo "│ Docker               │     ✅      │ Installed           │" || echo "│ Docker               │     ❌      │ Missing             │"
         which cmake >/dev/null && echo "│ CMake                │     ✅      │ Installed           │" || echo "│ CMake                │     ❌      │ Missing             │"
+        which hping3 >/dev/null && echo "│ Testing Tools        │     ✅      │ Installed           │" || echo "│ Testing Tools        │     ❌      │ Missing             │"
     echo "└──────────────────────┴─────────────┴─────────────────────┘"
 
-    # Network Status
-    echo "🌐 NETWORK STATUS:"
+    # Network Status (DUAL-NIC)
+    echo "🌐 NETWORK STATUS (DUAL-NIC):"
     echo "┌──────────────────────┬─────────────┬─────────────────────┐"
-    ip link show eth2 | grep -q PROMISC && echo "│ eth2 (Capture)       │     ✅      │ Promiscuous mode    │" || echo "│ eth2 (Capture)       │     ❌      │ Normal mode         │"
-    ip link show eth0 | grep -q UP && echo "│ eth0 (Internal)       │     ✅      │ Active              │" || echo "│ eth0 (Internal)       │     ❌      │ Inactive            │"
-    ip link show eth1 | grep -q UP && echo "│ eth1 (Host-Only)      │     ✅      │ Active              │" || echo "│ eth1 (Host-Only)      │     ❌      │ Inactive            │"
+    ip link show eth1 | grep -q UP && echo "│ eth1 (WAN Host-Based) │     ✅      │ Active              │" || echo "│ eth1 (WAN Host-Based) │     ❌      │ Inactive            │"
+    ip link show eth1 | grep -q PROMISC && echo "│   └─ Promiscuous     │     ✅      │ Enabled             │" || echo "│   └─ Promiscuous     │     ❌      │ Disabled            │"
+    ip link show eth2 | grep -q UP && echo "│ eth2 (External Cap)   │     ✅      │ Active              │" || echo "│ eth2 (External Cap)   │     🔄      │ Optional            │"
+    ip link show eth3 | grep -q UP && echo "│ eth3 (LAN Gateway)    │     ✅      │ Active              │" || echo "│ eth3 (LAN Gateway)    │     ❌      │ Inactive            │"
+    ip link show eth3 | grep -q PROMISC && echo "│   └─ Promiscuous     │     ✅      │ Enabled             │" || echo "│   └─ Promiscuous     │     ❌      │ Disabled            │"
+    sysctl net.ipv4.ip_forward | grep -q "= 1" && echo "│ IP Forwarding        │     ✅      │ Enabled             │" || echo "│ IP Forwarding        │     ❌      │ Disabled            │"
     echo "└──────────────────────┴─────────────┴─────────────────────┘"
     echo ""
 
@@ -735,35 +818,38 @@ EOF
     echo ""
 
     # Quick Start
-    echo "🚀 QUICK START:"
+    echo "🚀 QUICK START (DUAL-NIC TESTING):"
     echo "┌────────────────────────────────────────────────────────────┐"
     echo "│ vagrant ssh             # Enter the VM                    │"
-    echo "│ run-lab                 # Start full pipeline             │"
-    echo "│ build-rag               # Build RAG Security System       │"
-    echo "│ status-lab              # Check component status          │"
-    echo "│ logs-lab                # Monitor all logs                │"
+    echo "│ check-interfaces        # Verify dual-NIC setup           │"
+    echo "│ check-promiscuous       # Verify capture mode             │"
+    echo "│ run-sniffer             # Start ML Defender               │"
+    echo "│ logs-sniffer            # Monitor sniffer logs            │"
     echo "└────────────────────────────────────────────────────────────┘"
     echo ""
 
-    # Next Steps
-    echo "🎯 NEXT STEPS FOR RAG IMPLEMENTATION:"
+    # Day 8 Testing
+    echo "🧪 DAY 8 DUAL-NIC TESTING:"
     echo "┌────────────────────────────────────────────────────────────┐"
-    echo "│ 1. Update Rag/CMakeLists.txt with dependencies            │"
-    echo "│ 2. Implement etcd_client.cpp                              │"
-    echo "│ 3. Create unit tests                                      │"
-    echo "│ 4. Implement llama_integration.cpp                        │"
-    echo "│ 5. Build and test: build-rag && test-rag                  │"
+    echo "│ FROM OSX: Attack eth1 (host-based mode)                   │"
+    echo "│   sudo nmap -sS -p 1-1000 192.168.56.20                   │"
+    echo "│   sudo hping3 -S -p 80 --flood -c 5000 192.168.56.20      │"
+    echo "│                                                            │"
+    echo "│ FROM VM: Test eth3 (gateway mode)                         │"
+    echo "│   sudo tcpreplay -i eth3 --mbps 100 dataset.pcap          │"
+    echo "│                                                            │"
+    echo "│ Expected: interface_mode=1 on eth1, mode=2 on eth3        │"
     echo "└────────────────────────────────────────────────────────────┘"
     echo ""
 
     # Final Status
     echo "✅ PROVISIONING COMPLETED SUCCESSFULLY!"
     echo "🎯 PIPELINE STATUS: OPERATIONAL"
-    echo "🚀 READY FOR RAG SECURITY SYSTEM IMPLEMENTATION"
+    echo "🌐 DUAL-NIC STATUS: READY FOR DAY 8 TESTING"
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
-    echo "║                  CLOSING VAGRANTFILE TOPIC                ║"
-    echo "║               MOVING TO RAG IMPLEMENTATION                ║"
+    echo "║                   ML DEFENDER PHASE 1 DAY 8               ║"
+    echo "║              DUAL-NIC VALIDATION ENVIRONMENT              ║"
     echo "╚════════════════════════════════════════════════════════════╝"
 
     echo "DEBUG: Provision completed at $(date)"
