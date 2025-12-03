@@ -95,12 +95,12 @@ void DualNICManager::parse_deployment_config() {
     }
 }
 
-void DualNICManager::configure_bpf_map(int interface_configs_fd) {
-    if (interface_configs_fd < 0) {
+void DualNICManager::configure_bpf_map(int iface_configs_fd) {
+    if (iface_configs_fd < 0) {
         throw std::runtime_error("Invalid BPF map file descriptor");
     }
 
-    std::cout << "[DualNICManager] Configuring BPF interface_configs map..." << std::endl;
+    std::cout << "[DualNICManager] Configuring BPF iface_configs map..." << std::endl;
 
     for (const auto& iface : interfaces_) {
         bpf_interface_config kern_config = {
@@ -110,7 +110,7 @@ void DualNICManager::configure_bpf_map(int interface_configs_fd) {
             .reserved = {0, 0}
         };
 
-        int ret = bpf_map_update_elem(interface_configs_fd,
+        int ret = bpf_map_update_elem(iface_configs_fd,
                                        &iface.ifindex,
                                        &kern_config,
                                        BPF_ANY);

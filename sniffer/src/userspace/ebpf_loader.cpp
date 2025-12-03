@@ -156,13 +156,13 @@ bool EbpfLoader::load_program(const std::string& bpf_obj_path) {
         std::cerr << "[WARNING] filter_settings map not found in eBPF program" << std::endl;
     }
 
-    interface_configs_map_ = bpf_object__find_map_by_name(bpf_obj_, "zz_interface_configs");
+    interface_configs_map_ = bpf_object__find_map_by_name(bpf_obj_, "iface_configs");
     if (interface_configs_map_) {
         interface_configs_fd_ = bpf_map__fd(interface_configs_map_);
-        std::cout << "[INFO] Found interface_configs map (Dual-NIC), FD: "
+        std::cout << "[INFO] Found iface_configs map (Dual-NIC), FD: "
                   << interface_configs_fd_ << std::endl;
     } else {
-        std::cout << "[INFO] interface_configs map not found (legacy single-interface mode)" << std::endl;
+        std::cout << "[INFO] iface_configs map not found (legacy single-interface mode)" << std::endl;
     }
 
     program_loaded_ = true;

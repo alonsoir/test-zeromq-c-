@@ -70,7 +70,7 @@ struct {
     __uint(max_entries, 16);              // Support up to 16 NICs
     __type(key, __u32);                    // ifindex
     __type(value, struct interface_config);
-} interface_configs SEC(".maps");
+} iface_configs SEC(".maps");
 
 // XDP context
 struct xdp_md {
@@ -197,7 +197,7 @@ int xdp_sniffer_enhanced(struct xdp_md *ctx) {
 
     // Dual-NIC deployment support - check interface config
     __u32 ifindex = ctx->ingress_ifindex;
-    struct interface_config *iface_config = bpf_map_lookup_elem(&interface_configs, &ifindex);
+    struct interface_config *iface_config = bpf_map_lookup_elem(&iface_configs, &ifindex);
 
     // If interface not configured or disabled, pass packet without processing
     if (!iface_config || iface_config->mode == INTERFACE_MODE_DISABLED) {

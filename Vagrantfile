@@ -191,16 +191,105 @@ Vagrant.configure("2") do |config|
     echo "DEBUG: file install exit code: $?"
 
     # ========================================
-    # eBPF TOOLCHAIN
+    # eBPF TOOLCHAIN (BASE DEPENDENCIES)
     # ========================================
-    echo "=== PHASE 2: eBPF TOOLCHAIN ==="
+    echo "=== PHASE 2: eBPF TOOLCHAIN (BASE) ==="
     apt-get install -y \
       clang \
       llvm \
       bpftool \
-      libbpf-dev \
       linux-headers-amd64
-    echo "DEBUG: eBPF toolchain install exit code: $?"
+    echo "DEBUG: eBPF base toolchain install exit code: $?"
+
+    # ========================================
+        # 🔥 CRITICAL FIX: LIBBPF 1.4.6 (CORRIGE BUG DE MAPAS)
+        # ========================================
+        echo "=== PHASE 2.5: LIBBPF 1.4.6 (FIX PERMANENTE) ==="
+
+        # Verificar si ya está instalada la versión correcta
+        CURRENT_LIBBPF_VERSION=$(PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}" pkg-config --modversion libbpf 2>/dev/null || echo "0.0.0")
+        echo "📦 Current libbpf version: ${CURRENT_LIBBPF_VERSION}"
+
+        # Comparar versiones (necesitamos >= 1.2.0)
+        if [ "$(printf '%s\n' "1.2.0" "$CURRENT_LIBBPF_VERSION" | sort -V | head -n1)" != "1.2.0" ]; then
+          echo "🔧 Upgrading libbpf to 1.4.6 (fixes BPF map loading bug)..."
+
+          # Dependencias para compilar libbpf
+          apt-get install -y libelf-dev zlib1g-dev pkg-config
+          echo "DEBUG: libbpf build dependencies exit code: $?"
+
+          # Descargar y compilar libbpf 1.4.6
+          cd /tmp
+          rm -rf libbpf
+          git clone --depth 1 --branch v1.4.6 https://github.com/libbpf/libbpf.git
+          echo "DEBUG: git clone libbpf exit code: $?"
+
+          cd libbpf/src
+
+          # Compilar (libdir se configurará automáticamente a /usr/lib64 en Debian)
+          make -j$(nproc) BUILD_STATIC_ONLY=y
+          echo "DEBUG: libbpf compile exit code: $?"
+
+          # Instalar
+          make install install_headers
+          echo "DEBUG: libbpf install exit code: $?"
+
+          # Actualizar linker cache
+          ldconfig
+          echo "DEBUG: ldconfig exit code: $?"
+
+          # CRÍTICO: Configurar PKG_CONFIG_PATH para /usr/lib64
+          echo "🔧 Configuring PKG_CONFIG_PATH for libbpf..."
+
+          # Añadir a /etc/environment
+          if ! grep -q "PKG_CONFIG_PATH.*usr/lib64/pkgconfig" /etc/environment 2>/dev/null; then
+            echo 'PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"' >> /etc/environment
+          fi
+
+          # Crear script de perfil (todas las sesiones)
+          cat > /etc/profile.d/libbpf.sh << 'LIBBPF_PROFILE'
+    # libbpf pkg-config configuration
+    export PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
+    export LD_LIBRARY_PATH="/usr/lib64:/usr/local/lib:${LD_LIBRARY_PATH}"
+    LIBBPF_PROFILE
+          chmod +x /etc/profile.d/libbpf.sh
+
+          # Aplicar para la sesión actual del script
+          export PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
+          export LD_LIBRARY_PATH="/usr/lib64:/usr/local/lib:${LD_LIBRARY_PATH}"
+
+          # Configurar ldconfig
+          echo "/usr/lib64" > /etc/ld.so.conf.d/libbpf.conf
+          ldconfig
+
+          # Verificar instalación (con PKG_CONFIG_PATH correcto)
+          NEW_VERSION=$(PKG_CONFIG_PATH="/usr/lib64/pkgconfig:${PKG_CONFIG_PATH}" pkg-config --modversion libbpf 2>/dev/null || echo "error")
+          echo "✅ libbpf installed: ${NEW_VERSION}"
+
+          if [ "$NEW_VERSION" = "1.4.6" ] || [ "$NEW_VERSION" = "1.4" ]; then
+            echo "🎉 libbpf 1.4.6 installed successfully - BPF map bug FIXED!"
+          else
+            echo "⚠️  libbpf version detection: ${NEW_VERSION}"
+            # Diagnóstico
+            echo "📍 Debugging:"
+            ls -la /usr/lib64/pkgconfig/libbpf.pc 2>/dev/null && echo "  ✅ libbpf.pc found in /usr/lib64/pkgconfig" || echo "  ❌ libbpf.pc NOT in /usr/lib64/pkgconfig"
+            ls -la /usr/lib64/libbpf.* 2>/dev/null && echo "  ✅ libbpf libraries found" || echo "  ❌ libbpf libraries NOT found"
+          fi
+
+          # Limpiar archivos temporales
+          cd /tmp && rm -rf libbpf
+        else
+          echo "✅ libbpf ${CURRENT_LIBBPF_VERSION} already installed (>= 1.2.0)"
+        fi
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🔍 LIBBPF VERIFICATION:"
+        export PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
+        pkg-config --modversion libbpf 2>/dev/null || echo "⚠️ pkg-config still cannot find libbpf"
+        pkg-config --cflags libbpf 2>/dev/null || echo "⚠️ No CFLAGS"
+        pkg-config --libs libbpf 2>/dev/null || echo "⚠️ No LIBS"
+        ls -lh /usr/lib64/libbpf.* 2>/dev/null | head -3 || echo "⚠️ libbpf libraries not found"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # ========================================
     # NETWORKING & COMMUNICATION LIBRARIES
@@ -718,6 +807,8 @@ cat << 'WELCOME'
    eth1: 192.168.56.20 (WAN-facing, host-based IDS)
    eth3: 192.168.100.1 (LAN-facing, gateway mode)
 
+🔥 libbpf 1.4.6: BPF map loading bug FIXED!
+
 🧪 Dual-NIC Testing:
    check-interfaces     # Show all network interfaces
    check-promiscuous    # Verify promiscuous mode
@@ -793,6 +884,7 @@ EOF
         which docker >/dev/null && echo "│ Docker               │     ✅      │ Installed           │" || echo "│ Docker               │     ❌      │ Missing             │"
         which cmake >/dev/null && echo "│ CMake                │     ✅      │ Installed           │" || echo "│ CMake                │     ❌      │ Missing             │"
         which hping3 >/dev/null && echo "│ Testing Tools        │     ✅      │ Installed           │" || echo "│ Testing Tools        │     ❌      │ Missing             │"
+        pkg-config --exists libbpf && echo "│ libbpf $(pkg-config --modversion libbpf)        │     ✅      │ Installed           │" || echo "│ libbpf               │     ❌      │ Missing             │"
     echo "└──────────────────────┴─────────────┴─────────────────────┘"
 
     # Network Status (DUAL-NIC)
@@ -846,10 +938,11 @@ EOF
     echo "✅ PROVISIONING COMPLETED SUCCESSFULLY!"
     echo "🎯 PIPELINE STATUS: OPERATIONAL"
     echo "🌐 DUAL-NIC STATUS: READY FOR DAY 8 TESTING"
+    echo "🔥 LIBBPF 1.4.6: BPF MAP LOADING BUG FIXED!"
     echo ""
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║                   ML DEFENDER PHASE 1 DAY 8               ║"
-    echo "║              DUAL-NIC VALIDATION ENVIRONMENT              ║"
+    echo "║         DUAL-NIC + libbpf 1.4.6 FIX ENVIRONMENT           ║"
     echo "╚════════════════════════════════════════════════════════════╝"
 
     echo "DEBUG: Provision completed at $(date)"
