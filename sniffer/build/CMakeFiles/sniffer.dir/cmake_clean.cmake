@@ -11,6 +11,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o.d"
+  "CMakeFiles/sniffer.dir/src/userspace/dual_nic_manager.cpp.o"
+  "CMakeFiles/sniffer.dir/src/userspace/dual_nic_manager.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o"

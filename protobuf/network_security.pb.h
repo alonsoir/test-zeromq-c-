@@ -1623,8 +1623,9 @@ class NetworkFeatures final :
     kSourceIpFieldNumber = 1,
     kDestinationIpFieldNumber = 2,
     kProtocolNameFieldNumber = 6,
-    kFlowStartTimeFieldNumber = 7,
-    kFlowDurationFieldNumber = 8,
+    kSourceInterfaceFieldNumber = 10,
+    kFlowStartTimeFieldNumber = 11,
+    kFlowDurationFieldNumber = 12,
     kRansomwareFieldNumber = 106,
     kDdosEmbeddedFieldNumber = 112,
     kRansomwareEmbeddedFieldNumber = 113,
@@ -1632,11 +1633,15 @@ class NetworkFeatures final :
     kInternalAnomalyFieldNumber = 115,
     kSourcePortFieldNumber = 3,
     kDestinationPortFieldNumber = 4,
-    kFlowDurationMicrosecondsFieldNumber = 9,
-    kTotalForwardPacketsFieldNumber = 10,
-    kTotalBackwardPacketsFieldNumber = 11,
-    kTotalForwardBytesFieldNumber = 12,
-    kTotalBackwardBytesFieldNumber = 13,
+    kProtocolNumberFieldNumber = 5,
+    kInterfaceModeFieldNumber = 7,
+    kIsWanFacingFieldNumber = 8,
+    kSourceIfindexFieldNumber = 9,
+    kFlowDurationMicrosecondsFieldNumber = 13,
+    kTotalForwardPacketsFieldNumber = 14,
+    kTotalBackwardPacketsFieldNumber = 15,
+    kTotalForwardBytesFieldNumber = 16,
+    kTotalBackwardBytesFieldNumber = 17,
     kForwardPacketLengthMaxFieldNumber = 20,
     kForwardPacketLengthMinFieldNumber = 21,
     kForwardPacketLengthMeanFieldNumber = 22,
@@ -1645,8 +1650,6 @@ class NetworkFeatures final :
     kBackwardPacketLengthMinFieldNumber = 31,
     kBackwardPacketLengthMeanFieldNumber = 32,
     kBackwardPacketLengthStdFieldNumber = 33,
-    kProtocolNumberFieldNumber = 5,
-    kFinFlagCountFieldNumber = 70,
     kFlowBytesPerSecondFieldNumber = 40,
     kFlowPacketsPerSecondFieldNumber = 41,
     kForwardPacketsPerSecondFieldNumber = 42,
@@ -1669,6 +1672,7 @@ class NetworkFeatures final :
     kBackwardInterArrivalTimeStdFieldNumber = 61,
     kBackwardInterArrivalTimeMaxFieldNumber = 62,
     kBackwardInterArrivalTimeMinFieldNumber = 63,
+    kFinFlagCountFieldNumber = 70,
     kSynFlagCountFieldNumber = 71,
     kRstFlagCountFieldNumber = 72,
     kPshFlagCountFieldNumber = 73,
@@ -1679,6 +1683,7 @@ class NetworkFeatures final :
     kForwardPshFlagsFieldNumber = 78,
     kBackwardPshFlagsFieldNumber = 79,
     kForwardUrgFlagsFieldNumber = 80,
+    kBackwardUrgFlagsFieldNumber = 81,
     kForwardHeaderLengthFieldNumber = 85,
     kBackwardHeaderLengthFieldNumber = 86,
     kForwardAverageBytesBulkFieldNumber = 87,
@@ -1694,7 +1699,6 @@ class NetworkFeatures final :
     kPacketLengthVarianceFieldNumber = 99,
     kActiveMeanFieldNumber = 104,
     kIdleMeanFieldNumber = 105,
-    kBackwardUrgFlagsFieldNumber = 81,
   };
   // repeated double ddos_features = 100;
   int ddos_features_size() const;
@@ -1860,7 +1864,21 @@ class NetworkFeatures final :
   std::string* _internal_mutable_protocol_name();
   public:
 
-  // .google.protobuf.Timestamp flow_start_time = 7;
+  // string source_interface = 10;
+  void clear_source_interface();
+  const std::string& source_interface() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_source_interface(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_source_interface();
+  PROTOBUF_NODISCARD std::string* release_source_interface();
+  void set_allocated_source_interface(std::string* source_interface);
+  private:
+  const std::string& _internal_source_interface() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_source_interface(const std::string& value);
+  std::string* _internal_mutable_source_interface();
+  public:
+
+  // .google.protobuf.Timestamp flow_start_time = 11;
   bool has_flow_start_time() const;
   private:
   bool _internal_has_flow_start_time() const;
@@ -1878,7 +1896,7 @@ class NetworkFeatures final :
       ::PROTOBUF_NAMESPACE_ID::Timestamp* flow_start_time);
   ::PROTOBUF_NAMESPACE_ID::Timestamp* unsafe_arena_release_flow_start_time();
 
-  // .google.protobuf.Duration flow_duration = 8;
+  // .google.protobuf.Duration flow_duration = 12;
   bool has_flow_duration() const;
   private:
   bool _internal_has_flow_duration() const;
@@ -2004,7 +2022,43 @@ class NetworkFeatures final :
   void _internal_set_destination_port(uint32_t value);
   public:
 
-  // uint64 flow_duration_microseconds = 9;
+  // uint32 protocol_number = 5;
+  void clear_protocol_number();
+  uint32_t protocol_number() const;
+  void set_protocol_number(uint32_t value);
+  private:
+  uint32_t _internal_protocol_number() const;
+  void _internal_set_protocol_number(uint32_t value);
+  public:
+
+  // uint32 interface_mode = 7;
+  void clear_interface_mode();
+  uint32_t interface_mode() const;
+  void set_interface_mode(uint32_t value);
+  private:
+  uint32_t _internal_interface_mode() const;
+  void _internal_set_interface_mode(uint32_t value);
+  public:
+
+  // bool is_wan_facing = 8;
+  void clear_is_wan_facing();
+  bool is_wan_facing() const;
+  void set_is_wan_facing(bool value);
+  private:
+  bool _internal_is_wan_facing() const;
+  void _internal_set_is_wan_facing(bool value);
+  public:
+
+  // uint32 source_ifindex = 9;
+  void clear_source_ifindex();
+  uint32_t source_ifindex() const;
+  void set_source_ifindex(uint32_t value);
+  private:
+  uint32_t _internal_source_ifindex() const;
+  void _internal_set_source_ifindex(uint32_t value);
+  public:
+
+  // uint64 flow_duration_microseconds = 13;
   void clear_flow_duration_microseconds();
   uint64_t flow_duration_microseconds() const;
   void set_flow_duration_microseconds(uint64_t value);
@@ -2013,7 +2067,7 @@ class NetworkFeatures final :
   void _internal_set_flow_duration_microseconds(uint64_t value);
   public:
 
-  // uint64 total_forward_packets = 10;
+  // uint64 total_forward_packets = 14;
   void clear_total_forward_packets();
   uint64_t total_forward_packets() const;
   void set_total_forward_packets(uint64_t value);
@@ -2022,7 +2076,7 @@ class NetworkFeatures final :
   void _internal_set_total_forward_packets(uint64_t value);
   public:
 
-  // uint64 total_backward_packets = 11;
+  // uint64 total_backward_packets = 15;
   void clear_total_backward_packets();
   uint64_t total_backward_packets() const;
   void set_total_backward_packets(uint64_t value);
@@ -2031,7 +2085,7 @@ class NetworkFeatures final :
   void _internal_set_total_backward_packets(uint64_t value);
   public:
 
-  // uint64 total_forward_bytes = 12;
+  // uint64 total_forward_bytes = 16;
   void clear_total_forward_bytes();
   uint64_t total_forward_bytes() const;
   void set_total_forward_bytes(uint64_t value);
@@ -2040,7 +2094,7 @@ class NetworkFeatures final :
   void _internal_set_total_forward_bytes(uint64_t value);
   public:
 
-  // uint64 total_backward_bytes = 13;
+  // uint64 total_backward_bytes = 17;
   void clear_total_backward_bytes();
   uint64_t total_backward_bytes() const;
   void set_total_backward_bytes(uint64_t value);
@@ -2119,24 +2173,6 @@ class NetworkFeatures final :
   private:
   double _internal_backward_packet_length_std() const;
   void _internal_set_backward_packet_length_std(double value);
-  public:
-
-  // uint32 protocol_number = 5;
-  void clear_protocol_number();
-  uint32_t protocol_number() const;
-  void set_protocol_number(uint32_t value);
-  private:
-  uint32_t _internal_protocol_number() const;
-  void _internal_set_protocol_number(uint32_t value);
-  public:
-
-  // uint32 fin_flag_count = 70;
-  void clear_fin_flag_count();
-  uint32_t fin_flag_count() const;
-  void set_fin_flag_count(uint32_t value);
-  private:
-  uint32_t _internal_fin_flag_count() const;
-  void _internal_set_fin_flag_count(uint32_t value);
   public:
 
   // double flow_bytes_per_second = 40;
@@ -2337,6 +2373,15 @@ class NetworkFeatures final :
   void _internal_set_backward_inter_arrival_time_min(uint64_t value);
   public:
 
+  // uint32 fin_flag_count = 70;
+  void clear_fin_flag_count();
+  uint32_t fin_flag_count() const;
+  void set_fin_flag_count(uint32_t value);
+  private:
+  uint32_t _internal_fin_flag_count() const;
+  void _internal_set_fin_flag_count(uint32_t value);
+  public:
+
   // uint32 syn_flag_count = 71;
   void clear_syn_flag_count();
   uint32_t syn_flag_count() const;
@@ -2425,6 +2470,15 @@ class NetworkFeatures final :
   private:
   uint32_t _internal_forward_urg_flags() const;
   void _internal_set_forward_urg_flags(uint32_t value);
+  public:
+
+  // uint32 backward_urg_flags = 81;
+  void clear_backward_urg_flags();
+  uint32_t backward_urg_flags() const;
+  void set_backward_urg_flags(uint32_t value);
+  private:
+  uint32_t _internal_backward_urg_flags() const;
+  void _internal_set_backward_urg_flags(uint32_t value);
   public:
 
   // double forward_header_length = 85;
@@ -2562,15 +2616,6 @@ class NetworkFeatures final :
   void _internal_set_idle_mean(double value);
   public:
 
-  // uint32 backward_urg_flags = 81;
-  void clear_backward_urg_flags();
-  uint32_t backward_urg_flags() const;
-  void set_backward_urg_flags(uint32_t value);
-  private:
-  uint32_t _internal_backward_urg_flags() const;
-  void _internal_set_backward_urg_flags(uint32_t value);
-  public:
-
   // @@protoc_insertion_point(class_scope:protobuf.NetworkFeatures)
  private:
   class _Internal;
@@ -2596,6 +2641,7 @@ class NetworkFeatures final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr source_ip_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr destination_ip_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr protocol_name_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr source_interface_;
     ::PROTOBUF_NAMESPACE_ID::Timestamp* flow_start_time_;
     ::PROTOBUF_NAMESPACE_ID::Duration* flow_duration_;
     ::protobuf::RansomwareFeatures* ransomware_;
@@ -2605,6 +2651,10 @@ class NetworkFeatures final :
     ::protobuf::InternalFeatures* internal_anomaly_;
     uint32_t source_port_;
     uint32_t destination_port_;
+    uint32_t protocol_number_;
+    uint32_t interface_mode_;
+    bool is_wan_facing_;
+    uint32_t source_ifindex_;
     uint64_t flow_duration_microseconds_;
     uint64_t total_forward_packets_;
     uint64_t total_backward_packets_;
@@ -2618,8 +2668,6 @@ class NetworkFeatures final :
     uint64_t backward_packet_length_min_;
     double backward_packet_length_mean_;
     double backward_packet_length_std_;
-    uint32_t protocol_number_;
-    uint32_t fin_flag_count_;
     double flow_bytes_per_second_;
     double flow_packets_per_second_;
     double forward_packets_per_second_;
@@ -2642,6 +2690,7 @@ class NetworkFeatures final :
     double backward_inter_arrival_time_std_;
     uint64_t backward_inter_arrival_time_max_;
     uint64_t backward_inter_arrival_time_min_;
+    uint32_t fin_flag_count_;
     uint32_t syn_flag_count_;
     uint32_t rst_flag_count_;
     uint32_t psh_flag_count_;
@@ -2652,6 +2701,7 @@ class NetworkFeatures final :
     uint32_t forward_psh_flags_;
     uint32_t backward_psh_flags_;
     uint32_t forward_urg_flags_;
+    uint32_t backward_urg_flags_;
     double forward_header_length_;
     double backward_header_length_;
     double forward_average_bytes_bulk_;
@@ -2667,7 +2717,6 @@ class NetworkFeatures final :
     double packet_length_variance_;
     double active_mean_;
     double idle_mean_;
-    uint32_t backward_urg_flags_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -10056,7 +10105,117 @@ inline void NetworkFeatures::set_allocated_protocol_name(std::string* protocol_n
   // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.protocol_name)
 }
 
-// .google.protobuf.Timestamp flow_start_time = 7;
+// uint32 interface_mode = 7;
+inline void NetworkFeatures::clear_interface_mode() {
+  _impl_.interface_mode_ = 0u;
+}
+inline uint32_t NetworkFeatures::_internal_interface_mode() const {
+  return _impl_.interface_mode_;
+}
+inline uint32_t NetworkFeatures::interface_mode() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.interface_mode)
+  return _internal_interface_mode();
+}
+inline void NetworkFeatures::_internal_set_interface_mode(uint32_t value) {
+  
+  _impl_.interface_mode_ = value;
+}
+inline void NetworkFeatures::set_interface_mode(uint32_t value) {
+  _internal_set_interface_mode(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.interface_mode)
+}
+
+// bool is_wan_facing = 8;
+inline void NetworkFeatures::clear_is_wan_facing() {
+  _impl_.is_wan_facing_ = false;
+}
+inline bool NetworkFeatures::_internal_is_wan_facing() const {
+  return _impl_.is_wan_facing_;
+}
+inline bool NetworkFeatures::is_wan_facing() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.is_wan_facing)
+  return _internal_is_wan_facing();
+}
+inline void NetworkFeatures::_internal_set_is_wan_facing(bool value) {
+  
+  _impl_.is_wan_facing_ = value;
+}
+inline void NetworkFeatures::set_is_wan_facing(bool value) {
+  _internal_set_is_wan_facing(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.is_wan_facing)
+}
+
+// uint32 source_ifindex = 9;
+inline void NetworkFeatures::clear_source_ifindex() {
+  _impl_.source_ifindex_ = 0u;
+}
+inline uint32_t NetworkFeatures::_internal_source_ifindex() const {
+  return _impl_.source_ifindex_;
+}
+inline uint32_t NetworkFeatures::source_ifindex() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.source_ifindex)
+  return _internal_source_ifindex();
+}
+inline void NetworkFeatures::_internal_set_source_ifindex(uint32_t value) {
+  
+  _impl_.source_ifindex_ = value;
+}
+inline void NetworkFeatures::set_source_ifindex(uint32_t value) {
+  _internal_set_source_ifindex(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.source_ifindex)
+}
+
+// string source_interface = 10;
+inline void NetworkFeatures::clear_source_interface() {
+  _impl_.source_interface_.ClearToEmpty();
+}
+inline const std::string& NetworkFeatures::source_interface() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.source_interface)
+  return _internal_source_interface();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void NetworkFeatures::set_source_interface(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.source_interface_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.source_interface)
+}
+inline std::string* NetworkFeatures::mutable_source_interface() {
+  std::string* _s = _internal_mutable_source_interface();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.source_interface)
+  return _s;
+}
+inline const std::string& NetworkFeatures::_internal_source_interface() const {
+  return _impl_.source_interface_.Get();
+}
+inline void NetworkFeatures::_internal_set_source_interface(const std::string& value) {
+  
+  _impl_.source_interface_.Set(value, GetArenaForAllocation());
+}
+inline std::string* NetworkFeatures::_internal_mutable_source_interface() {
+  
+  return _impl_.source_interface_.Mutable(GetArenaForAllocation());
+}
+inline std::string* NetworkFeatures::release_source_interface() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.source_interface)
+  return _impl_.source_interface_.Release();
+}
+inline void NetworkFeatures::set_allocated_source_interface(std::string* source_interface) {
+  if (source_interface != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.source_interface_.SetAllocated(source_interface, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.source_interface_.IsDefault()) {
+    _impl_.source_interface_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.source_interface)
+}
+
+// .google.protobuf.Timestamp flow_start_time = 11;
 inline bool NetworkFeatures::_internal_has_flow_start_time() const {
   return this != internal_default_instance() && _impl_.flow_start_time_ != nullptr;
 }
@@ -10141,7 +10300,7 @@ inline void NetworkFeatures::set_allocated_flow_start_time(::PROTOBUF_NAMESPACE_
   // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.flow_start_time)
 }
 
-// .google.protobuf.Duration flow_duration = 8;
+// .google.protobuf.Duration flow_duration = 12;
 inline bool NetworkFeatures::_internal_has_flow_duration() const {
   return this != internal_default_instance() && _impl_.flow_duration_ != nullptr;
 }
@@ -10226,7 +10385,7 @@ inline void NetworkFeatures::set_allocated_flow_duration(::PROTOBUF_NAMESPACE_ID
   // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.flow_duration)
 }
 
-// uint64 flow_duration_microseconds = 9;
+// uint64 flow_duration_microseconds = 13;
 inline void NetworkFeatures::clear_flow_duration_microseconds() {
   _impl_.flow_duration_microseconds_ = uint64_t{0u};
 }
@@ -10246,7 +10405,7 @@ inline void NetworkFeatures::set_flow_duration_microseconds(uint64_t value) {
   // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.flow_duration_microseconds)
 }
 
-// uint64 total_forward_packets = 10;
+// uint64 total_forward_packets = 14;
 inline void NetworkFeatures::clear_total_forward_packets() {
   _impl_.total_forward_packets_ = uint64_t{0u};
 }
@@ -10266,7 +10425,7 @@ inline void NetworkFeatures::set_total_forward_packets(uint64_t value) {
   // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.total_forward_packets)
 }
 
-// uint64 total_backward_packets = 11;
+// uint64 total_backward_packets = 15;
 inline void NetworkFeatures::clear_total_backward_packets() {
   _impl_.total_backward_packets_ = uint64_t{0u};
 }
@@ -10286,7 +10445,7 @@ inline void NetworkFeatures::set_total_backward_packets(uint64_t value) {
   // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.total_backward_packets)
 }
 
-// uint64 total_forward_bytes = 12;
+// uint64 total_forward_bytes = 16;
 inline void NetworkFeatures::clear_total_forward_bytes() {
   _impl_.total_forward_bytes_ = uint64_t{0u};
 }
@@ -10306,7 +10465,7 @@ inline void NetworkFeatures::set_total_forward_bytes(uint64_t value) {
   // @@protoc_insertion_point(field_set:protobuf.NetworkFeatures.total_forward_bytes)
 }
 
-// uint64 total_backward_bytes = 13;
+// uint64 total_backward_bytes = 17;
 inline void NetworkFeatures::clear_total_backward_bytes() {
   _impl_.total_backward_bytes_ = uint64_t{0u};
 }

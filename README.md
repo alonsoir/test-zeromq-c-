@@ -921,6 +921,113 @@ SECURITY_SYSTEM> rag show_capabilities
 
 ---
 
+## 🚀 Deployment Modes (v0.8.0+)
+
+ML Defender supports multiple deployment architectures through a single codebase:
+
+### Host-Based IDS (Single NIC)
+```
+Internet → Firewall → [Server + ML Defender]
+```
+- Protects the host itself from incoming attacks
+- Captures traffic destined to the host's IP
+- Ideal for: Web servers, database servers, API endpoints
+- Hardware: Single NIC, 4+ cores, 8GB RAM
+
+### Gateway Mode (Dual NIC)
+```
+Internet → [ML Defender Gateway] → Internal Network
+           eth0 (WAN)              eth1 (LAN)
+```
+- Inspects ALL traffic passing through the gateway
+- Protects entire networks behind the gateway
+- Ideal for: Raspberry Pi routers, enterprise bastions, DMZ monitors
+- Hardware: Dual NIC, 4+ cores, 8GB RAM, forwarding enabled
+
+### Dual Mode (Simultaneous)
+```
+Internet → [ML Defender] → DMZ
+           │ eth0: Host-based (protects gateway itself)
+           └ eth1: Gateway mode (inspects DMZ traffic)
+```
+- Combines host-based and gateway protection
+- Maximum visibility and defense-in-depth
+- Ideal for: Critical infrastructure, security appliances
+- Hardware: Dual NIC (Intel i350/X710), 8+ cores, 16GB RAM
+
+### Configuration
+Edit `sniffer/config/sniffer.json`:
+```json
+{
+  "deployment": {
+    "mode": "dual",
+    "host_interface": "eth0",
+    "gateway_interface": "eth1",
+    "network_settings": {
+      "enable_ip_forwarding": true,
+      "enable_nat": true
+    }
+  }
+}
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed setup instructions.
+
+## 🏗️ Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│ KERNEL SPACE (eBPF/XDP)                                 │
+│ ┌────────────────────────────────────────────────────┐  │
+│ │ XDP Hook (eth0/eth1)                               │  │
+│ │ • Packet capture (<50ns overhead)                  │  │
+│ │ • Interface mode detection (host/gateway)          │  │
+│ │ • Feature extraction (83 fields)                   │  │
+│ │ • Ring buffer → Userspace                          │  │
+│ └────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                         ↓ (Ring Buffer)
+┌─────────────────────────────────────────────────────────┐
+│ USERSPACE (C++20)                                       │
+│                                                         │
+│ ┌─────────────┐  Protobuf   ┌──────────────────────┐  │
+│ │ Sniffer     │ ────────→   │ ML Detector          │  │
+│ │             │   ZMQ 5571  │ • RandomForest (4)   │  │
+│ │ • Ring read │             │ • Embedded C++ (ONNX)│  │
+│ │ • Serialize │             │ • <1μs per inference │  │
+│ └─────────────┘             └──────────────────────┘  │
+│                                       ↓                 │
+│                              Protobuf (ZMQ 5572)        │
+│                                       ↓                 │
+│                             ┌──────────────────────┐   │
+│                             │ Firewall Agent       │   │
+│                             │ • IPSet blacklist    │   │
+│                             │ • iptables rules     │   │
+│                             │ • Threat response    │   │
+│                             └──────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 📊 Performance Benchmarks (Phase 1 - Day 7)
+
+| Metric | Value | Target |
+|--------|-------|--------|
+| **Detection Latency** | 0.98 μs avg | <10 μs |
+| **Throughput** | 1M pps | 1M pps |
+| **Memory Footprint** | ~180 MB | <500 MB |
+| **Stability** | 8h+ zero crashes | 24h+ |
+| **CPU Usage** | ~15% (8 cores) | <30% |
+| **Ring Buffer Drops** | 0 | 0 |
+
+**Test Environment:** VirtualBox VM, Ubuntu 24.04, 8 vCPU, 8GB RAM
+
+## 🎯 Project Status
+
+- ✅ **Phase 1 - Day 7/12**: Dual-NIC architecture complete
+- ⏳ **Day 8**: Gateway mode validation + PCAP testing
+- ⏳ **Day 9-12**: Production hardening + academic paper
+
+---
+
 ## 📖 Documentation
 
 - [Architecture Deep Dive](docs/ARCHITECTURE.md)

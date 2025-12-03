@@ -36,6 +36,7 @@
 #include <random>
 #include <fstream>
 #include "feature_logger.hpp"
+#include "dual_nic_manager.hpp"
 
 FeatureLogger::VerbosityLevel g_verbosity = FeatureLogger::VerbosityLevel::NONE;
 
@@ -343,6 +344,38 @@ int main(int argc, char* argv[]) {
             std::cerr << "❌ Failed to load eBPF program: " << g_config.kernel_space.ebpf_program << std::endl;
             return 1;
         }
+
+        // ============================================================================
+        // >>> NUEVO: DUAL-NIC DEPLOYMENT CONFIGURATION (Phase 1, Day 7)
+        // ============================================================================
+        std::cout << "\n[Dual-NIC] Configuring deployment mode..." << std::endl;
+
+        try {
+            sniffer::DualNICManager dual_nic_manager(json_root);
+            dual_nic_manager.initialize();
+
+            // Configure interface_configs BPF map
+            int interface_configs_fd = ebpf_loader.get_interface_configs_fd();
+            if (interface_configs_fd >= 0) {
+                dual_nic_manager.configure_bpf_map(interface_configs_fd);
+
+                // Setup network if needed (gateway mode)
+                if (dual_nic_manager.is_dual_mode()) {
+                    dual_nic_manager.enable_ip_forwarding();
+                    dual_nic_manager.setup_nat_rules();
+                }
+            } else {
+                std::cout << "[WARNING] interface_configs map not found - using legacy single-interface mode" << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[WARNING] Dual-NIC configuration failed: " << e.what() << std::endl;
+            std::cerr << "          Falling back to legacy single-interface mode" << std::endl;
+        }
+
+        std::cout << "✅ Deployment configuration complete\n" << std::endl;
+        // ============================================================================
+        // >>> FIN DUAL-NIC CONFIGURATION
+        // ============================================================================
 
         // Usar capture_interface en lugar de g_config.capture.interface
         // Use attach method based on capture mode

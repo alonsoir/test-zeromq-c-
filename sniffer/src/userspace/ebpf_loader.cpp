@@ -156,6 +156,15 @@ bool EbpfLoader::load_program(const std::string& bpf_obj_path) {
         std::cerr << "[WARNING] filter_settings map not found in eBPF program" << std::endl;
     }
 
+    interface_configs_map_ = bpf_object__find_map_by_name(bpf_obj_, "iface_configs");
+    if (interface_configs_map_) {
+        interface_configs_fd_ = bpf_map__fd(interface_configs_map_);
+        std::cout << "[INFO] Found iface_configs map (Dual-NIC), FD: "
+                  << interface_configs_fd_ << std::endl;
+    } else {
+        std::cout << "[INFO] iface_configs map not found (legacy single-interface mode)" << std::endl;
+    }
+
     program_loaded_ = true;
     std::cout << "[INFO] eBPF program loaded successfully" << std::endl;
     std::cout << "[INFO] Program FD: " << prog_fd_ << ", Events FD: " << events_fd_ 
@@ -309,18 +318,6 @@ uint64_t EbpfLoader::get_packet_count() {
 
 int EbpfLoader::get_ifindex(const std::string& interface_name) {
     return if_nametoindex(interface_name.c_str());
-}
-
-    int EbpfLoader::get_excluded_ports_fd() const {
-    return excluded_ports_fd_;
-}
-
-    int EbpfLoader::get_included_ports_fd() const {
-    return included_ports_fd_;
-}
-
-    int EbpfLoader::get_filter_settings_fd() const {
-    return filter_settings_fd_;
 }
 
 } // namespace sniffer

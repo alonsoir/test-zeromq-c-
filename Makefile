@@ -11,6 +11,7 @@
 .PHONY: kill-all check-ports restart
 .PHONY: clean distclean test dev-setup schema-update
 .PHONY: build-unified rebuild-unified create-verify-script quick-fix dev-setup-unified
+.PHONY: check-libbpf verify-bpf-maps diagnose-bpf  # NUEVO
 
 # ============================================================================
 # ML Defender Pipeline - Host Makefile
@@ -28,7 +29,7 @@ help:
 	@echo "  make halt            - Stop VM"
 	@echo "  make destroy         - Destroy VM"
 	@echo "  make ssh             - SSH into VM"
-	@echo "  make status          - Show VM status"
+	@echo "  make status          - Show VM status + libbpf version"
 	@echo ""
 	@echo "Docker Lab:"
 	@echo "  make lab-start       - Start docker-compose lab"
@@ -79,6 +80,9 @@ help:
 	@echo "Troubleshooting:"
 	@echo "  make kill-all        - Kill all processes"
 	@echo "  make check-ports     - Check if ports are in use"
+	@echo "  make check-libbpf    - 🔥 Verify libbpf >= 1.2.0 (Day 8 fix)"
+	@echo "  make verify-bpf-maps - 🔍 Verify BPF maps load correctly"
+	@echo "  make diagnose-bpf    - 🔧 Full BPF diagnostics"
 	@echo "  make clean           - Clean build artifacts"
 	@echo ""
 
@@ -99,7 +103,15 @@ ssh:
 	@vagrant ssh
 
 status:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "VM Status:"
 	@vagrant status
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "libbpf Status (Day 8 Fix):"
+	@vagrant ssh -c "pkg-config --modversion libbpf 2>/dev/null || echo '❌ libbpf not found'" | \
+		awk '{if ($$1 >= "1.2.0") print "✅ libbpf " $$1 " (BPF map bug FIXED)"; else print "⚠️  libbpf " $$1 " (needs upgrade to 1.2.0+)"}'
+	@echo "════════════════════════════════════════════════════════════"
 
 # ============================================================================
 # Docker Lab
@@ -210,6 +222,76 @@ distclean: clean
 	@vagrant ssh -c "rm -f /vagrant/protobuf/network_security.pb.* /vagrant/protobuf/network_security_pb2.py"
 
 # ============================================================================
+# BPF Diagnostics (Day 8 Fix Verification) - NUEVO
+# ============================================================================
+
+check-libbpf:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔍 Checking libbpf installation (Day 8 Fix)"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  libbpf version:"
+	@vagrant ssh -c "pkg-config --modversion libbpf 2>/dev/null || echo '❌ libbpf not found'"
+	@echo ""
+	@echo "2️⃣  libbpf CFLAGS:"
+	@vagrant ssh -c "pkg-config --cflags libbpf 2>/dev/null || echo '❌ pkg-config failed'"
+	@echo ""
+	@echo "3️⃣  libbpf LDFLAGS:"
+	@vagrant ssh -c "pkg-config --libs libbpf 2>/dev/null || echo '❌ pkg-config failed'"
+	@echo ""
+	@echo "4️⃣  libbpf library files:"
+	@vagrant ssh -c "ls -lh /usr/lib64/libbpf.* 2>/dev/null | head -3 || ls -lh /usr/local/lib/libbpf.* 2>/dev/null | head -3 || echo '❌ Libraries not found'"
+	@echo ""
+	@echo "5️⃣  Verification:"
+	@vagrant ssh -c "LIBBPF_VER=\$$(pkg-config --modversion libbpf 2>/dev/null); \
+		if [ -z \"\$$LIBBPF_VER\" ]; then \
+			echo '❌ libbpf NOT installed - run: vagrant provision'; \
+		elif [ \"\$$(printf '%s\n' '1.2.0' \"\$$LIBBPF_VER\" | sort -V | head -n1)\" = '1.2.0' ]; then \
+			echo \"✅ libbpf \$$LIBBPF_VER >= 1.2.0 (BPF map bug FIXED)\"; \
+		else \
+			echo \"⚠️  libbpf \$$LIBBPF_VER < 1.2.0 (BUG PRESENT - run: vagrant provision)\"; \
+		fi"
+	@echo "════════════════════════════════════════════════════════════"
+
+verify-bpf-maps:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔍 Verifying BPF Maps Loading (Day 8 interface_configs)"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Compiling sniffer..."
+	@vagrant ssh -c "cd /vagrant/sniffer && make clean && make" > /dev/null 2>&1 && echo "   ✅ Compiled successfully" || echo "   ❌ Compilation failed"
+	@echo ""
+	@echo "2️⃣  Checking BPF object file:"
+	@vagrant ssh -c "ls -lh /vagrant/sniffer/build/sniffer.bpf.o 2>/dev/null || echo '   ❌ BPF object not found'"
+	@echo ""
+	@echo "3️⃣  Searching for interface_configs in object:"
+	@vagrant ssh -c "llvm-objdump -h /vagrant/sniffer/build/sniffer.bpf.o 2>/dev/null | grep -i maps && echo '   ✅ .maps section found' || echo '   ❌ .maps section not found'"
+	@echo ""
+	@echo "4️⃣  Checking BTF for interface_config type:"
+	@vagrant ssh -c "bpftool btf dump file /vagrant/sniffer/build/sniffer.bpf.o 2>/dev/null | grep -A 5 'interface_config' | head -10 || echo '   ⚠️  interface_config not in BTF'"
+	@echo ""
+	@echo "5️⃣  Testing map load (requires root):"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && sudo timeout 5s ./sniffer --test-load 2>&1 | grep -E 'interface_configs|map.*load' || echo '   ℹ️  Run sniffer to test map loading'"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "💡 TIP: If maps don't load, verify libbpf >= 1.2.0"
+	@echo "    Run: make check-libbpf"
+	@echo "════════════════════════════════════════════════════════════"
+
+diagnose-bpf: check-libbpf verify-bpf-maps
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔧 BPF DIAGNOSTICS COMPLETE"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "If interface_configs map still fails to load:"
+	@echo "  1. Verify libbpf >= 1.2.0: make check-libbpf"
+	@echo "  2. Rebuild from scratch: make rebuild"
+	@echo "  3. Check kernel compatibility: vagrant ssh -c 'uname -r'"
+	@echo "  4. Enable debug: vagrant ssh -c 'cd /vagrant/sniffer && make DEBUG=1'"
+	@echo ""
+
+# ============================================================================
 # Run Individual Components
 # ============================================================================
 
@@ -268,5 +350,62 @@ kill-lab:
 	@echo "Verifying cleanup..."
 	@vagrant ssh -c "pgrep -a -f 'firewall-acl-agent|ml-detector|sniffer' || echo '✅ All processes stopped'"
 
+status-lab:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "ML Defender Lab Status:"
+	@echo "════════════════════════════════════════════════════════════"
+	@vagrant ssh -c "pgrep -a -f firewall-acl-agent && echo '✅ Firewall: RUNNING' || echo '❌ Firewall: STOPPED'"
+	@vagrant ssh -c "pgrep -a -f ml-detector && echo '✅ Detector: RUNNING' || echo '❌ Detector: STOPPED'"
+	@vagrant ssh -c "pgrep -a -f 'sniffer.*-c' && echo '✅ Sniffer:  RUNNING' || echo '❌ Sniffer:  STOPPED'"
+	@echo "════════════════════════════════════════════════════════════"
+
 check-ports:
 	@vagrant ssh -c "sudo ss -tlnp | grep -E '5571|5572' && echo '⚠️  Ports in use' || echo '✅ Ports free'"
+
+# ============================================================================
+# Logs
+# ============================================================================
+
+logs-firewall:
+	@vagrant ssh -c "tail -f /vagrant/firewall-acl-agent/build/logs/*.log 2>/dev/null || echo 'No firewall logs yet'"
+
+logs-detector:
+	@vagrant ssh -c "tail -f /vagrant/ml-detector/build/logs/*.log 2>/dev/null || echo 'No detector logs yet'"
+
+logs-sniffer:
+	@vagrant ssh -c "tail -f /vagrant/logs/lab/sniffer.log 2>/dev/null || echo 'No sniffer logs yet'"
+
+logs-lab:
+	@echo "📋 Combined Lab Logs (CTRL+C to exit)..."
+	@vagrant ssh -c "cd /vagrant && bash scripts/monitor_lab.sh"
+
+# ============================================================================
+# Development Workflows
+# ============================================================================
+
+dev-setup: up lab-start build-unified
+	@echo "✅ Development environment ready"
+
+dev-setup-unified: up lab-start build-unified
+	@echo "✅ Development environment ready (unified protobuf)"
+
+test:
+	@echo "Checking built components..."
+	@vagrant ssh -c "ls -lh /vagrant/sniffer/build/sniffer 2>/dev/null && echo '✅ Sniffer built' || echo '❌ Sniffer not built'"
+	@vagrant ssh -c "ls -lh /vagrant/ml-detector/build/ml-detector 2>/dev/null && echo '✅ Detector built' || echo '❌ Detector not built'"
+	@vagrant ssh -c "ls -lh /vagrant/firewall-acl-agent/build/firewall-acl-agent 2>/dev/null && echo '✅ Firewall built' || echo '❌ Firewall not built'"
+
+schema-update: proto rebuild
+	@echo "✅ Schema updated and components rebuilt"
+
+quick-fix:
+	@echo "🔧 Quick bug fix procedure..."
+	@$(MAKE) kill-lab
+	@$(MAKE) rebuild
+	@echo "✅ Ready to test fix"
+
+kill-all:
+	@echo "💀 Killing all ML Defender processes..."
+	@$(MAKE) kill-lab
+	@vagrant ssh -c "docker-compose down 2>/dev/null || true"
+	@echo "✅ All processes terminated"

@@ -35,9 +35,10 @@ public:
     int get_stats_fd() const;
 
     // Get filter map file descriptors
-    int get_excluded_ports_fd() const;
-    int get_included_ports_fd() const;
-    int get_filter_settings_fd() const;
+    int get_excluded_ports_fd() const { return excluded_ports_fd_; }
+    int get_included_ports_fd() const { return included_ports_fd_; }
+    int get_filter_settings_fd() const { return filter_settings_fd_; }
+    int get_interface_configs_fd() const { return interface_configs_fd_; }
 
     // Verificar si el programa está cargado y adjuntado
     bool is_loaded() const { return program_loaded_; }
@@ -52,18 +53,18 @@ private:
     struct bpf_map* events_map_;
     struct bpf_map* stats_map_;
 
-    struct bpf_map* excluded_ports_map_;
-    struct bpf_map* included_ports_map_;
-    struct bpf_map* filter_settings_map_;
-
+    struct bpf_map* excluded_ports_map_ = nullptr;
+    struct bpf_map* included_ports_map_ = nullptr;
+    struct bpf_map* filter_settings_map_ = nullptr;
+    struct bpf_map* interface_configs_map_ = nullptr;  // <<< AÑADIR
     int prog_fd_;
     int events_fd_;
     int stats_fd_;
 
-    int excluded_ports_fd_;
-    int included_ports_fd_;
-    int filter_settings_fd_;
-
+    int excluded_ports_fd_ = -1;
+    int included_ports_fd_ = -1;
+    int filter_settings_fd_ = -1;
+    int interface_configs_fd_ = -1;
     bool program_loaded_;
     bool xdp_attached_;
     bool skb_attached_;

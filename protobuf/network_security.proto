@@ -83,24 +83,30 @@ message InternalFeatures {
 // =====================================================================
 
 message NetworkFeatures {
-  // 🔍 IDENTIFICACIÓN BÁSICA DEL FLUJO
-  string source_ip = 1;
-  string destination_ip = 2;
-  uint32 source_port = 3;
-  uint32 destination_port = 4;
-  uint32 protocol_number = 5;           // Protocolo como número (6=TCP, 17=UDP)
-  string protocol_name = 6;             // Protocolo como string ("TCP", "UDP", "ICMP")
+    // 🔍 IDENTIFICACIÓN BÁSICA DEL FLUJO
+    string source_ip = 1;
+    string destination_ip = 2;
+    uint32 source_port = 3;
+    uint32 destination_port = 4;
+    uint32 protocol_number = 5;
+    string protocol_name = 6;
 
-  // ⏰ TIMING PRECISO
-  google.protobuf.Timestamp flow_start_time = 7;
-  google.protobuf.Duration flow_duration = 8;
-  uint64 flow_duration_microseconds = 9;
+    // 🌐 DUAL-NIC DEPLOYMENT METADATA - Phase 1, Day 7
+    uint32 interface_mode = 7;            // 0=disabled, 1=host-based, 2=gateway
+    bool is_wan_facing = 8;               // true=WAN, false=LAN
+    uint32 source_ifindex = 9;            // Network interface index where packet arrived
+    string source_interface = 10;         // Interface name (e.g., "eth0", "eth1")
+
+    // ⏰ TIMING PRECISO
+    google.protobuf.Timestamp flow_start_time = 11;
+    google.protobuf.Duration flow_duration = 12;
+    uint64 flow_duration_microseconds = 13;
 
   // 📊 ESTADÍSTICAS BÁSICAS DE PAQUETES
-  uint64 total_forward_packets = 10;
-  uint64 total_backward_packets = 11;
-  uint64 total_forward_bytes = 12;
-  uint64 total_backward_bytes = 13;
+  uint64 total_forward_packets = 14;
+  uint64 total_backward_packets = 15;
+  uint64 total_forward_bytes = 16;
+  uint64 total_backward_bytes = 17;
 
   // 📏 ESTADÍSTICAS DE LONGITUD - FORWARD
   uint64 forward_packet_length_max = 20;

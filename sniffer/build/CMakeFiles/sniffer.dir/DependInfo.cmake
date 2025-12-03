@@ -14,6 +14,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/vagrant/sniffer/src/userspace/config_manager.cpp" "CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o.d"
   "/vagrant/sniffer/src/userspace/config_types.cpp" "CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.o.d"
   "/vagrant/sniffer/src/userspace/dns_analyzer.cpp" "CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o.d"
+  "/vagrant/sniffer/src/userspace/dual_nic_manager.cpp" "CMakeFiles/sniffer.dir/src/userspace/dual_nic_manager.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/dual_nic_manager.cpp.o.d"
   "/vagrant/sniffer/src/userspace/ebpf_loader.cpp" "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o.d"
   "/vagrant/sniffer/src/userspace/etcd_client.cpp" "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o.d"
   "/vagrant/sniffer/src/userspace/fast_detector.cpp" "CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o" "gcc" "CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o.d"
