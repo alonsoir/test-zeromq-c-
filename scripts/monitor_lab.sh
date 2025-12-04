@@ -1,5 +1,5 @@
 #!/bin/bash
-# ML Defender - Lab Monitoring Script (Enhanced v2.2)
+# ML Defender - Lab Monitoring Script (Enhanced v2.3)
 # Shows: CPU, RAM, ZMQ ports, IPSet stats, config files, uptime, logs
 # Includes: etcd-server, RAG, Dual-NIC monitoring
 # scripts/monitor_lab.sh
@@ -276,21 +276,48 @@ get_dual_nic_config() {
     fi
 
     # Buscar la sección de configuración dual-nic
-    local start_line=$(grep -n "Dual-NIC Deployment Configuration" "$log_file" | head -1 | cut -d: -f1)
+    local start_line=$(grep -n "╔════════════════════════════════════════════════════════════╗" "$log_file" | tail -1 | cut -d: -f1)
 
     if [ -z "$start_line" ]; then
         return 1
     fi
 
-    # Extraer desde la línea de inicio hasta la próxima línea de cierre
-    local end_line=$(tail -n +$start_line "$log_file" | grep -n "╚════════════════════════════════════════════════════════════╝" | head -1 | cut -d: -f1)
+    # Verificar que esta línea contiene "Dual-NIC Deployment Configuration"
+    local title_line=$(sed -n "${start_line}p" "$log_file")
+    if [[ ! "$title_line" == *"Dual-NIC Deployment Configuration"* ]]; then
+        # Buscar desde el principio nuevamente
+        start_line=$(grep -n "Dual-NIC Deployment Configuration" "$log_file" | tail -1 | cut -d: -f1)
+        if [ -z "$start_line" ]; then
+            return 1
+        fi
+        # Retroceder 1 línea para obtener la línea de inicio de la caja
+        start_line=$((start_line - 1))
+    fi
+
+    # Buscar la línea de cierre de la caja (debería ser la tercera ocurrencia después del inicio)
+    local line_num=$start_line
+    local box_count=0
+    local end_line=""
+    local total_lines=$(wc -l < "$log_file")
+
+    while [ $line_num -le $total_lines ] && [ $box_count -lt 3 ]; do
+        local line_content=$(sed -n "${line_num}p" "$log_file")
+        if [[ "$line_content" == *"╚════════════════════════════════════════════════════════════╝"* ]]; then
+            box_count=$((box_count + 1))
+            if [ $box_count -eq 3 ]; then
+                end_line=$line_num
+                break
+            fi
+        fi
+        line_num=$((line_num + 1))
+    done
 
     if [ -z "$end_line" ]; then
-        # Si no encontramos el cierre, tomar las siguientes 12 líneas
-        tail -n +$start_line "$log_file" | head -12
+        # Si no encontramos el cierre exacto, tomar 15 líneas desde el inicio
+        sed -n "${start_line},$((start_line + 14))p" "$log_file"
     else
-        # Tomar desde la línea de inicio hasta la línea de cierre
-        tail -n +$start_line "$log_file" | head -$((end_line))
+        # Mostrar desde la línea de inicio hasta la línea de cierre
+        sed -n "${start_line},${end_line}p" "$log_file"
     fi
 }
 
@@ -303,7 +330,7 @@ while true; do
     # Header
     clear
     echo "╔════════════════════════════════════════════════════════════╗"
-    echo "║  ML Defender Lab - Live Monitoring (Enhanced v2.2)         ║"
+    echo "║  ML Defender Lab - Live Monitoring (Enhanced v2.3)         ║"
     echo "║  $TIMESTAMP                                ║"
     echo "║  System Uptime: $SYSTEM_UPTIME                            "
     echo "╚════════════════════════════════════════════════════════════╝"

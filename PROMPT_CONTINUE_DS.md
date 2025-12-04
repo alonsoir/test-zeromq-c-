@@ -1,136 +1,361 @@
-# 📋 **RESUMEN COMPLETO DE PROBLEMAS ENCONTRADOS**
+# **PROMPT DE CONTINUIDAD: FASE 2 - INTEGRACIÓN ETCD-SERVER Y CIFRADO UNIFICADO**
 
-## 🎯 **Objetivo Original**
-Validar modelos ML entrenados con datos sintéticos usando **PCAP relay con tráfico real** a través del pipeline completo con sniffer eBPF.
-
-## 🔍 **Problemas Identificados**
-
-### **1. PROBLEMA PRINCIPAL: Sniffer eBPF No Captura Tráfico**
+## **🎯 Contexto Actual (Día 8 Completado)**
 ```
-✅ TCpreplay envía tráfico correctamente (2000 paquetes)
-✅ Tcpdump manual SÍ captura el tráfico en eth1  
-❌ Sniffer eBPF NO captura el tráfico (solo +2 paquetes de 2000)
-❌ Modelo no recibe tráfico para validación
+✅ DUAL-NIC VALIDADO: Kernel-userspace metadata pipeline operacional
+✅ libbpf 1.4.6: Bug crítico resuelto, iface_configs map funciona
+✅ 43+ paquetes con metadata dual-NIC, latencia 59.63μs avg
+✅ Pipeline ML Defender: eBPF → Ring Buffer → Protobuf → 4 modelos ML
 ```
 
-### **2. ERROR ESPECÍFICO eBPF**
+## **📋 PRÓXIMOS OBJETIVOS (Días 9-12)**
+
+### **1. 🎯 OBJETIVO PRINCIPAL: Centralización de Configuración y Cifrado**
+**Meta:** Convertir etcd-server en el hub central de gestión para todos los componentes del ML Defender.
+
+### **2. 🏗️ ARQUITECTURA PROPUESTA**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   etcd-server (Central Hub)                  │
+│  ├─ /config/sniffer/json       (configuración del sniffer)   │
+│  ├─ /config/detector/json      (configuración del detector)  │
+│  ├─ /config/firewall/json      (configuración del firewall)  │
+│  ├─ /keys/encryption/seed      (semilla de cifrado común)    │
+│  ├─ /keys/encryption/rotation  (rotación programada)         │
+│  └─ /status/components/*       (estado de componentes)       │
+└─────────────────────────────────────────────────────────────┘
+         ▲            ▲                ▲
+         │            │                │
+┌────────┴────┐ ┌────┴────────┐ ┌─────┴─────────┐
+│   Sniffer   │ │   Detector   │ │    Firewall   │
+│  (etcd-client) │  (etcd-client) │   (etcd-client) │
+└─────────────┘ └──────────────┘ └───────────────┘
+```
+
+### **3. 🔧 IMPLEMENTACIÓN PASO A PASO**
+
+#### **FASE 2.1: Análisis del Cliente etcd Existente en RAG**
 ```bash
-# Error en logs del sniffer:
-libbpf: Failed to bump RLIMIT_MEMLOCK (err = -1)
-libbpf: Couldn't load trivial BPF program
-libbpf: failed to load object 'sniffer.bpf.o'  
-[ERROR] Failed to load eBPF program: Operation not permitted
+# Examinar la implementación actual en RAG
+cd /vagrant/rag
+grep -r "etcd" --include="*.cpp" --include="*.hpp"
+cat src/etcd_client.cpp  # Si existe
 ```
 
-### **3. CONFIGURACIÓN ACTUAL VERIFICADA**
+#### **FASE 2.2: Crear Biblioteca Compartida de etcd-client**
+```
+/vagrant/common/etcd-client/
+├── CMakeLists.txt
+├── include/
+│   ├── etcd_client.hpp
+│   └── config_manager.hpp
+├── src/
+│   ├── etcd_client.cpp
+│   └── config_manager.cpp
+└── examples/
+    ├── basic_usage.cpp
+    └── config_watcher.cpp
+```
+
+**Características clave del cliente compartido:**
+```cpp
+class UnifiedEtcdClient {
+public:
+    // 1. Conexión automática con reconexión
+    bool connect(const std::string& endpoints = "127.0.0.1:2379");
+    
+    // 2. Gestión de configuración JSON
+    bool put_config(const std::string& component, const nlohmann::json& config);
+    nlohmann::json get_config(const std::string& component);
+    
+    // 3. Gestión de claves de cifrado
+    std::string get_encryption_seed();
+    bool update_encryption_seed(const std::string& new_seed);
+    
+    // 4. Watch/notificaciones de cambios
+    void watch_config(const std::string& component, 
+                      std::function<void(nlohmann::json)> callback);
+    
+    // 5. Health checks y métricas
+    bool is_healthy();
+    std::map<std::string, std::string> get_metrics();
+};
+```
+
+#### **FASE 2.3: Integración en Cada Componente**
+
+**A. Sniffer Integration:**
+```cpp
+// sniffer/src/etcd_integration.cpp
+class SnifferEtcdIntegration {
+private:
+    UnifiedEtcdClient etcd_client_;
+    std::string encryption_seed_;
+    
+public:
+    void init() {
+        // 1. Conectar a etcd
+        etcd_client_.connect();
+        
+        // 2. Subir configuración actual
+        nlohmann::json config = load_current_config();
+        etcd_client_.put_config("sniffer", config);
+        
+        // 3. Obtener semilla de cifrado
+        encryption_seed_ = etcd_client_.get_encryption_seed();
+        
+        // 4. Configurar watcher para cambios
+        etcd_client_.watch_config("sniffer", [this](auto new_config) {
+            this->on_config_updated(new_config);
+        });
+    }
+    
+    void on_config_updated(const nlohmann::json& new_config) {
+        // Aplicar nueva configuración en caliente
+        apply_configuration(new_config);
+        LOG_INFO("[ETCD] Configuración actualizada en tiempo real");
+    }
+};
+```
+
+**B. Detector Integration:**
+```cpp
+// ml-detector/src/etcd_integration.cpp
+class DetectorEtcdIntegration {
+public:
+    void init() {
+        // Obtener thresholds desde etcd
+        auto config = etcd_client_.get_config("detector");
+        update_model_thresholds(config["thresholds"]);
+        
+        // Sincronizar estado del modelo
+        publish_model_status();
+    }
+    
+    void publish_model_status() {
+        nlohmann::json status = {
+            {"model_version", current_model_version_},
+            {"inference_time", avg_inference_time_},
+            {"accuracy", current_accuracy_}
+        };
+        etcd_client_.put_key("/status/detector/model", status.dump());
+    }
+};
+```
+
+**C. Firewall Integration:**
+```cpp
+// firewall-acl-agent/src/etcd_integration.cpp
+class FirewallEtcdIntegration {
+public:
+    void init() {
+        // Sincronizar reglas de firewall
+        sync_firewall_rules();
+        
+        // Publicar estadísticas de bloqueo
+        start_metrics_publisher();
+    }
+    
+    void sync_firewall_rules() {
+        auto rules = etcd_client_.get_config("firewall/rules");
+        apply_iptables_rules(rules);
+    }
+};
+```
+
+#### **FASE 2.4: Sistema de Cifrado Unificado**
+
+**Estructura de claves en etcd:**
 ```json
 {
-  "profile": "lab",
-  "capture_interface": "eth1",  // ✅ Correcto
-  "mode": "ebpf_skb",          // ❌ Problema
-  "promiscuous_mode": true      // ✅ Correcto
+  "/keys/encryption/current": {
+    "seed": "a1b2c3d4e5f67890123456789abcdef0",
+    "algorithm": "chacha20-poly1305",
+    "created_at": "2025-12-04T10:30:00Z",
+    "expires_at": "2025-12-11T10:30:00Z"
+  },
+  "/keys/encryption/previous": [
+    {
+      "seed": "old_seed_1",
+      "expired_at": "2025-12-03T10:30:00Z"
+    }
+  ],
+  "/keys/encryption/rotation_schedule": {
+    "interval_hours": 168,
+    "next_rotation": "2025-12-11T10:30:00Z"
+  }
 }
 ```
 
-### **4. DIAGNÓSTICO COMPLETO REALIZADO**
-
-#### **Lo que SÍ funciona:**
-- ✅ **Pipeline completo**: Firewall + Detector ML + Sniffer
-- ✅ **Comunicación ZMQ**: Puertos 5571-5572 activos
-- ✅ **Interfaz eth1**: Configurada correctamente (192.168.56.20)
-- ✅ **TCpreplay**: Inyecta tráfico correctamente en eth1
-- ✅ **Tcpdump**: Captura tráfico manualmente en eth1
-- ✅ **Modelo ML**: Funcionando (0 falsos positivos con tráfico normal)
-
-#### **Lo que NO funciona:**
-- ❌ **Sniffer eBPF**: No carga programas BPF por límites de memoria
-- ❌ **Captura de tráfico**: Tráfico no llega al detector
-- ❌ **Validación de modelos**: No se puede probar con tráfico real
-
-### **5. SOLUCIONES INTENTADAS**
-
-#### **Solución 1: Configuración eBPF**
-```bash
-# Aumentar límites de memoria
-sudo sysctl -w kernel.unprivileged_bpf_disabled=0
-sudo sysctl -w net.core.bpf_jit_enable=1
-ulimit -l unlimited
-
-# Asignar capacidades
-sudo setcap cap_bpf,cap_net_raw,cap_net_admin=+ep /vagrant/sniffer/build/sniffer
+**Implementación del cifrado:**
+```cpp
+class UnifiedEncryption {
+public:
+    static std::vector<uint8_t> encrypt(const std::string& plaintext) {
+        auto seed = etcd_client_.get_encryption_seed();
+        auto key = derive_key(seed, "ml-defender-encryption");
+        return chacha20_poly1305_encrypt(plaintext, key);
+    }
+    
+    static std::string decrypt(const std::vector<uint8_t>& ciphertext) {
+        auto seed = etcd_client_.get_encryption_seed();
+        auto key = derive_key(seed, "ml-defender-encryption");
+        return chacha20_poly1305_decrypt(ciphertext, key);
+    }
+};
 ```
-**Resultado**: ❌ Error persiste
 
-#### **Solución 2: Cambiar a libpcap**
-```bash
-# Configuración alternativa
-"mode": "libpcap",
-"af_xdp_enabled": false
+#### **FASE 2.5: Makefile y Sistema de Build Unificado**
+
+**Actualizar /vagrant/Makefile principal:**
+```makefile
+# ============================================
+# ETCD-CLIENT COMMON LIBRARY
+# ============================================
+ETCD_CLIENT_DIR = $(COMMON_DIR)/etcd-client
+ETCD_CLIENT_INCLUDE = $(ETCD_CLIENT_DIR)/include
+ETCD_CLIENT_SRC = $(wildcard $(ETCD_CLIENT_DIR)/src/*.cpp)
+ETCD_CLIENT_OBJ = $(ETCD_CLIENT_SRC:.cpp=.o)
+ETCD_CLIENT_LIB = $(LIB_DIR)/libetcdclient.a
+
+$(ETCD_CLIENT_LIB): $(ETCD_CLIENT_OBJ)
+	@echo "[ETCD] Creando librería compartida..."
+	@mkdir -p $(LIB_DIR)
+	@ar rcs $@ $^
+
+# ============================================
+# COMPONENTES CON ETCD INTEGRATION
+# ============================================
+SNIFFER_ETCD_SRC = $(SNIFFER_DIR)/src/etcd_integration.cpp
+DETECTOR_ETCD_SRC = $(DETECTOR_DIR)/src/etcd_integration.cpp
+FIREWALL_ETCD_SRC = $(FIREWALL_DIR)/src/etcd_integration.cpp
+
+# Reglas para construir con etcd-client
+build-with-etcd: $(ETCD_CLIENT_LIB) build-sniffer-etcd build-detector-etcd build-firewall-etcd
+
+build-sniffer-etcd: $(ETCD_CLIENT_LIB)
+	@echo "[BUILD] Compilando sniffer con etcd-client..."
+	cd $(SNIFFER_DIR) && make ETCD_ENABLED=1
+
+# ============================================
+# DEPLOYMENT Y CONFIGURACIÓN
+# ============================================
+deploy-etcd-config:
+	@echo "[ETCD] Desplegando configuraciones a etcd-server..."
+	@python3 scripts/deploy_configs_to_etcd.py
 ```
-**Resultado**: ⚠️ Sniffer inicia pero aún no captura
 
-#### **Solución 3: Verificar filtros**
-```json
-"filter": {
-  "excluded_ports": [22],
-  "included_protocols": ["tcp", "udp", "icmp"]
-}
-```
-**Resultado**: ❌ No es el problema principal
+### **4. 🧪 PLAN DE PRUEBAS Y VALIDACIÓN**
 
-### **6. HIPÓTESIS PRINCIPAL**
-
-**Problema Raíz**: VirtualBox + Kernel Debian Bookworm tiene problemas de compatibilidad con eBPF:
-- Límites de memoria (`RLIMIT_MEMLOCK`) no se pueden aumentar suficiente
-- Capacidades del kernel no permiten carga de programas BPF
-- Configuración de seguridad bloquea eBPF
-
-### **7. EVIDENCIAS CLAVE**
-
-1. **tcpdump SÍ funciona** → El tráfico llega a la interfaz
-2. **Sniffer eBPF NO funciona** → Problema específico de eBPF
-3. **Pipeline SÍ funciona** → Comunicación interna correcta
-4. **Modelo SÍ funciona** → Procesa el poco tráfico que llega (0 falsos positivos)
-
-### **8. PREGUNTAS CLAVE PARA CLAUDE**
-
-1. **¿Es común este problema de eBPF en VirtualBox? ¿Soluciones conocidas?**
-2. **¿Alternativas para hacer funcionar el sniffer eBPF sin cambiar el pipeline?**
-3. **¿Configuraciones específicas de Vagrant/VirtualBox para eBPF?**
-4. **¿Módulos del kernel o parches necesarios para Debian Bookworm?**
-
-### **9. PRÓXIMOS PASOS SUGERIDOS**
-
-#### **Opción A: Persistir con eBPF**
-- Investigar parches específicos para eBPF en VirtualBox
-- Probar diferentes versiones del kernel
-- Configurar Vagrant con más recursos/compatibilidad
-
-#### **Opción B: Modo compatibilidad**
-- Forzar modo libpcap en el mismo sniffer
-- Mantener arquitectura pero cambiar backend de captura
-- Aceptar pequeña pérdida de performance
-
-#### **Opción C: Entorno alternativo**
-- Probar en VM con VMware/QEMU (mejor soporte eBPF)
-- Usar máquina física o cloud con mejor soporte
-
-### **10. ESTADO ACTUAL PARA CONTINUAR**
-
+#### **Test 1: Conectividad Básica**
 ```bash
-# Configuración lista para pruebas
+# Verificar que todos los componentes pueden conectar a etcd
 cd /vagrant
-sudo pkill -f sniffer
-sudo ./sniffer -c sniffer/config/sniffer.json &  # Usa eth1, perfil lab
+make test-etcd-connectivity
 
-# Test rápido
-cd /vagrant/pcap_testing
-sudo tcpreplay -i eth1 --stats=3 --loop=1 test_sample_1000.pcap
-
-# Verificar
-tail -f /vagrant/logs/lab/detector.log | grep "received"
+# Salida esperada:
+# [OK] etcd-server: listening on 127.0.0.1:2379
+# [OK] sniffer: connected to etcd, version: 3.5.0
+# [OK] detector: connected to etcd, config retrieved
+# [OK] firewall: connected to etcd, encryption seed obtained
 ```
 
-**¡Estamos atascados en el eslabón del sniffer eBPF, pero el resto del pipeline está listo!**
+#### **Test 2: Sincronización de Configuración**
+```bash
+# Prueba de actualización en caliente
+cd /vagrant/scripts
+python3 test_hot_reload.py
 
-El modelo ya demostró ser robusto (0 falsos positivos con el poco tráfico que llega). Una vez resuelto el sniffer, podremos proceder con la validación completa con tráfico real de DDoS y Ransomware.
+# 1. Modificar configuración en etcd
+# 2. Verificar que sniffer aplica cambios sin reiniciar
+# 3. Validar que detector actualiza thresholds
+# 4. Confirmar que firewall actualiza reglas
+```
+
+#### **Test 3: Cifrado End-to-End**
+```bash
+# Validar que el cifrado funciona entre componentes
+cd /vagrant
+make test-encryption-pipeline
+
+# Proceso:
+# 1. Sniffer cifra datos con semilla de etcd
+# 2. Datos viajan por ZMQ cifrados
+# 3. Detector descifra con misma semilla
+# 4. Firewall aplica reglas sobre datos descifrados
+```
+
+### **5. 📊 MÉTRICAS Y MONITOREO (Actualizar Script)**
+
+**Actualizar /vagrant/scripts/monitor_lab.sh:**
+```bash
+# Nueva sección para etcd
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${BLUE}🗄️  ETCD-Server Status & Metrics${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Verificar claves almacenadas
+etcd_keys=$(etcdctl get --prefix /config 2>/dev/null | wc -l)
+echo -e "Config keys stored: ${GREEN}${etcd_keys}${NC}"
+
+# Verificar conexiones de clientes
+echo -e "Connected clients: ${YELLOW}$(netstat -an | grep 2379 | grep ESTABLISHED | wc -l)${NC}"
+
+# Mostrar última rotación de clave
+last_rotation=$(etcdctl get /keys/encryption/current --print-value-only 2>/dev/null | jq -r '.created_at')
+echo -e "Last key rotation: ${CYAN}${last_rotation}${NC}"
+```
+
+### **6. 🚀 PLAN DE IMPLEMENTACIÓN POR DÍAS**
+
+**Día 9 (Con Claude):**
+- [ ] Recap relay con MAWI dataset en Gateway Mode
+- [ ] Validar eth3 captura tráfico transit
+- [ ] Benchmark performance dual-NIC
+
+**Día 10 (Contigo):**
+- [ ] Analizar etcd-client del RAG existente
+- [ ] Diseñar interfaz común UnifiedEtcdClient
+- [ ] Crear biblioteca compartida en /vagrant/common/
+
+**Día 11:**
+- [ ] Integrar etcd-client en Sniffer
+- [ ] Implementar hot-reload de configuración
+- [ ] Pruebas de conectividad y sincronización
+
+**Día 12:**
+- [ ] Integrar etcd-client en Detector y Firewall
+- [ ] Implementar sistema de cifrado unificado
+- [ ] Pruebas end-to-end con rotación de claves
+
+### **7. ⚠️ CONSIDERACIONES CRÍTICAS**
+
+1. **Backward Compatibility:** Los componentes deben funcionar sin etcd como fallback
+2. **Seguridad:** Semillas de cifrado nunca en logs, rotación automática
+3. **Performance:** Conexiones persistentes a etcd, no abrir/cerrar por transacción
+4. **Resiliencia:** Reconexión automática si etcd se cae
+5. **Observabilidad:** Métricas detalladas de cada interacción con etcd
+
+### **8. 📁 ESTRUCTURA FINAL PROPUESTA**
+```
+/vagrant/
+├── common/etcd-client/           # Biblioteca compartida
+├── scripts/deploy_configs_to_etcd.py
+├── scripts/encryption_key_rotator.py
+├── tests/etcd_integration_tests/
+│   ├── test_connectivity.cpp
+│   ├── test_hot_reload.cpp
+│   └── test_encryption.cpp
+└── docs/etcd-integration-guide.md
+```
+
+---
+
+**¿Listo para comenzar?** Cuando termines el recap relay con Claude, podemos:
+
+1. Examinar el etcd-client existente en RAG
+2. Diseñar la interfaz común
+3. Crear la biblioteca compartida
+4. Integrar progresivamente en cada componente
+
+**Pregunta clave:** ¿Prefieres comenzar por el componente más simple (firewall) o por el más complejo (sniffer) para la integración?
