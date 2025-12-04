@@ -691,6 +691,11 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     features->set_protocol_name(protocol_to_string(event.protocol));
 
     // Dual-NIC deployment metadata (Phase 1, Day 7)
+    // [DEBUG] Dual-NIC values from eBPF
+    std::cout << "[DUAL-NIC] ifindex=" << event.source_ifindex 
+              << " mode=" << (int)event.interface_mode 
+              << " wan=" << (int)event.is_wan_facing 
+              << " iface=" << event.source_interface << std::endl;
     features->set_interface_mode(event.interface_mode);
     features->set_is_wan_facing(event.is_wan_facing);
     features->set_source_ifindex(event.source_ifindex);

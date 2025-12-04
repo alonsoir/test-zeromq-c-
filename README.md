@@ -35,92 +35,146 @@ This is my vision of how to design a modern IDS:
 ## 🎯 Current Status
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  PHASE 1 STATUS - VALIDATION BREAKTHROUGH 🎉            │
-│  (Nov 30, 2025 - Day 7)                                 │
+│  PHASE 1 STATUS - DAY 8 COMPLETE 🎉                     │
+│  (Dec 4, 2025)                                          │
 ├─────────────────────────────────────────────────────────┤
-│  ✅ DAY 7 COMPLETE: Host-Based IDS Architecture         │
-│     Validation & Real Attack Testing                    │
+│  ✅ DAY 8 COMPLETE: Dual-NIC Architecture Validated     │
+│     End-to-End Metadata Flow Confirmed                  │
 │                                                         │
-│  🔍 ARCHITECTURAL DISCOVERY (CRITICAL)                  │
-│     ML Defender is a HOST-BASED IDS (not network-based) │
-│     • eBPF/XDP captures traffic TO/FROM the host        │
-│     • Does NOT capture traffic in transit (by design)   │
-│     • This is CORRECT behavior for host-based IDS       │
-│     • Gateway mode planned for network-wide protection  │
+│  🔍 DUAL-NIC VALIDATION (CRITICAL MILESTONE)            │
+│     • eBPF kernel-userspace pipeline: FUNCTIONAL ✅     │
+│     • Metadata propagation: CONFIRMED ✅                │
+│     • libbpf 1.4.6 upgrade: BUG RESOLVED ✅             │
+│     • iface_configs map: OPERATIONAL ✅                 │
 │                                                         │
-│  End-to-End Validation (130K+ EVENTS)                   │
-│     ✅ 130,910+ events processed (real attack traffic)  │
-│     ✅ 3+ hours continuous operation                    │
-│     ✅ 0 crashes, 0 errors, 0 memory leaks              │
-│     ✅ Pipeline stability confirmed                     │
-│     ✅ Score analysis: Models working correctly         │
-│        • Ransomware: 0.70 score (threshold 0.90)        │
-│        • Level1: 0.56 score (threshold 0.65)            │
-│        • Classification: SUSPICIOUS (not ATTACK)        │
-│     ✅ Flow management: 10K concurrent flows            │
-│        • Overflow handling tested                       │
-│        • Warning system operational                     │
+│  Technical Validation:                                  │
+│     ✅ 43+ packets captured with dual-NIC metadata      │
+│     ✅ ifindex=3 (eth1), mode=1 (HOST_BASED), wan=1     │
+│     ✅ Pipeline latency: 59.63μs avg                    │
+│     ✅ Zero kernel-userspace size mismatches            │
+│     ✅ struct alignment verified (packed)               │
 │                                                         │
-│  Scientific Findings                                    │
-│     ✅ hping3 flood ≠ real attack (correctly classified)│
-│     ✅ Models are ROBUST (no false positives)           │
-│     ✅ Thresholds calibrated for REAL threats           │
-│     ✅ Synthetic tools correctly identified as benign   │
-│     → This validates model quality, not a bug           │
+│  Code Archaeology Results:                              │
+│     ✅ eBPF: ctx->ingress_ifindex → map lookup          │
+│     ✅ Kernel: iface_config populated correctly         │
+│     ✅ Userspace: fields read & protobuf serialized     │
+│     ✅ Ring buffer: events flow without drops           │
 │                                                         │
-│  PREVIOUS ACHIEVEMENTS (Days 1-6.5):                    │
-│     ✅ Complete pipeline: Sniffer → Detector → Firewall │
-│     ✅ 8,871 events processed (stress test)             │
-│     ✅ ETCD-Server (central configuration hub)          │
-│     ✅ RAG + LLAMA (TinyLlama-1.1B real integration)    │
-│     ✅ Multi-IPSet automatic management                 │
-│     ✅ Async logger (JSON + Protobuf dual-format)       │
-│     ✅ NetworkSecurityEvent protobuf parsing            │
-│     ✅ 5/6 unit tests passing (83% success)             │
+│  Scientific Process:                                    │
+│     ✅ Systematic auditing from eBPF → userspace        │
+│     ✅ Hypothesis validation through logs               │
+│     ✅ Root cause analysis (libbpf bug)                 │
+│     ✅ Evidence-based conclusions                       │
 │                                                         │
-│  📊 PHASE 1 PROGRESS: 7/12 days complete (58%)          │
+│  Day 8 Blocker Resolution:                              │
+│     ❌ Bug: libbpf 1.1.2 - struct map loading failed    │
+│     ✅ Fix: Upgraded to libbpf 1.4.6                    │
+│     ✅ Result: iface_configs map loads correctly        │
+│     ✅ Validation: [DUAL-NIC] logs confirm data flow    │
+│                                                         │
+│  PREVIOUS ACHIEVEMENTS (Days 1-7):                      │
+│     ✅ Host-based IDS: 130,910+ events validated        │
+│     ✅ Ransomware detection: 2-layer system             │
+│     ✅ ML detectors: <1.06μs latency (4 models)         │
+│     ✅ RAG + LLAMA: Real integration                    │
+│     ✅ ETCD-Server: Central config hub                  │
+│     ✅ Firewall-ACL-Agent: Autonomous blocking          │
+│                                                         │
+│  📊 PHASE 1 PROGRESS: 8/12 days complete (67%)          │
 │                                                         │
 │  🎯 NEXT PRIORITIES:                                    │
-│     1. Gateway Mode Implementation (HIGH PRIORITY)      │
-│        → Modify XDP to process ALL packets              │
-│        → Add IP forwarding support                      │
-│        → Enable network-wide protection                 │
-│        → Validate with MAWI dataset                     │
-│        → Estimated: 3-4 hours implementation            │
+│     1. Gateway Mode PCAP Replay (HIGH PRIORITY)         │
+│        → MAWI dataset validation                        │
+│        → Recap relay with tcpreplay                     │
+│        → Verify eth3 captures transit traffic           │
+│        → Performance benchmarking                       │
+│        → Estimated: 2-3 hours                           │
 │                                                         │
-│     2. Real Malware Validation (CRITICAL)               │
+│     2. Dual-NIC Mode Switching                          │
+│        → Runtime interface role detection               │
+│        → Separate host/gateway processing               │
+│        → Firewall rule optimization per mode            │
+│                                                         │
+│     3. Real Malware Validation (CRITICAL)               │
 │        → CTU-13 botnet dataset                          │
 │        → Real ransomware PCAPs                          │
-│        → Real DDoS captures                             │
 │        → Evidence-based threshold tuning                │
 │                                                         │
-│     3. Watcher System (ALL components)                  │
-│        → Runtime config reload from etcd                │
-│        → Hot-reload without restart                     │
-│        → Threshold updates on-the-fly                   │
-│                                                         │
-│     4. Logging + Vector DB Pipeline                     │
-│        → Firewall comprehensive logging                 │
-│        → Async ingestion to vector DB                   │
-│        → RAG integration for log queries                │
-│        → Natural language incident analysis             │
-│                                                         │
-│  COMPLETED (Phase 0 + Phase 1 Days 1-7):                │
+│  COMPLETED (Phase 0 + Phase 1 Days 1-8):                │
 │     ✅ 4 embedded C++20 detectors (<1.06μs)              │
-│     ✅ eBPF/XDP high-performance capture                 │
+│     ✅ eBPF/XDP dual-NIC metadata extraction             │
+│     ✅ Kernel-userspace struct alignment                 │
 │     ✅ 40-feature ML pipeline                            │
-│     ✅ Protobuf/ZMQ end-to-end (unified)                 │
-│     ✅ Configurable detection thresholds                 │
-│     ✅ Flow table management (500K flows)                │
-│     ✅ Stress tested & memory validated                  │
-│     ✅ RAG Security System with LLAMA real               │
-│     ✅ ETCD-Server with validation & backup              │
-│     ✅ Firewall-ACL-Agent ZMQ integration                │
-│     ✅ Multi-ipset + IPTables automation                 │
-│     ✅ Host-based IDS architecture validated             │
-│     ✅ Real attack traffic testing (130K+ events)        │
+│     ✅ Dual-NIC deployment architecture                  │
+│     ✅ Host-based IDS (130K+ events validated)           │
+│     ✅ libbpf 1.4.6 migration (critical bugfix)          │
+│     ✅ iface_configs BPF map operational                 │
 └─────────────────────────────────────────────────────────┘
 ```
+
+## 🛡️ Dual-NIC Deployment Architecture (VALIDATED ✅)
+
+### **Phase 1 Day 8 Achievement**
+
+**Complete kernel-to-userspace metadata pipeline operational:**
+```c
+// eBPF Kernel Space
+__u32 ifindex = ctx->ingress_ifindex;  // ← Get interface
+struct interface_config *cfg = bpf_map_lookup_elem(&iface_configs, &ifindex);
+
+event->interface_mode = cfg->mode;      // ← Populate event
+event->is_wan_facing = cfg->is_wan;
+event->source_ifindex = ifindex;
+
+bpf_ringbuf_submit(event, 0);          // ← Send to userspace
+```
+```cpp
+// C++ Userspace
+void populate_protobuf_event(const SimpleEvent& event, ...) {
+    // [DUAL-NIC] ifindex=3 mode=1 wan=1 iface=if03
+    features->set_interface_mode(event.interface_mode);
+    features->set_is_wan_facing(event.is_wan_facing);
+    features->set_source_ifindex(event.source_ifindex);
+}
+```
+
+**Validation Evidence:**
+```
+[DUAL-NIC] ifindex=3 mode=1 wan=1 iface=if03  ← 43 times
+Events processed: 24
+Avg processing time: 59.63 μs
+BPF stats: 47 packets
+```
+
+### **Deployment Modes**
+
+#### **1. Host-Based IDS (VALIDATED ✅)**
+```
+Internet → eth1 (192.168.56.20) → [ML Defender Host]
+```
+- ✅ Captures traffic TO/FROM this host
+- ✅ ifindex=3, mode=HOST_BASED, wan=1
+- ✅ Tested with 130K+ events from macOS
+- ✅ Pipeline: eBPF → Ring Buffer → Protobuf → ML
+
+#### **2. Gateway Mode (NEXT - Day 9)**
+```
+Internet → eth1 (WAN) → [ML Defender Gateway] → eth3 (LAN) → DMZ
+```
+- ⏳ Captures ALL transit traffic
+- ⏳ ifindex=3 (WAN) + ifindex=5 (LAN)
+- ⏳ IP forwarding enabled
+- ⏳ Test with MAWI dataset replay
+
+#### **3. Dual Mode (SIMULTANEOUS)**
+```
+Internet → eth1 (host-based) ┐
+                             ├→ [ML Defender]
+DMZ traffic → eth3 (gateway) ┘
+```
+- ⏳ Both modes active simultaneously
+- ⏳ Interface-specific detection rules
+- ⏳ Maximum visibility + defense-in-depth
 
 ---
 

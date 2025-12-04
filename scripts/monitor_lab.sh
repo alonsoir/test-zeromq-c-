@@ -1,6 +1,8 @@
 #!/bin/bash
-# ML Defender - Lab Monitoring Script (Enhanced)
+# ML Defender - Lab Monitoring Script (Enhanced v2.2)
 # Shows: CPU, RAM, ZMQ ports, IPSet stats, config files, uptime, logs
+# Includes: etcd-server, RAG, Dual-NIC monitoring
+# scripts/monitor_lab.sh
 
 PROJECT_ROOT="/vagrant"
 LOG_DIR="$PROJECT_ROOT/logs/lab"
@@ -13,6 +15,8 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 WHITE='\033[1;37m'
+ORANGE='\033[0;33m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Function to get process stats with uptime
@@ -69,24 +73,52 @@ format_uptime() {
 get_config_file() {
     local component=$1
     local config_file=""
+    local found=0
 
     case $component in
         "firewall")
             config_file="/vagrant/firewall-acl-agent/config/firewall.json"
+            if [ -f "$config_file" ]; then
+                echo -e "${CYAN}$(basename $config_file)${NC}"
+                found=1
+            fi
             ;;
         "detector")
             config_file="/vagrant/ml-detector/config/ml_detector_config.json"
+            if [ -f "$config_file" ]; then
+                echo -e "${CYAN}$(basename $config_file)${NC}"
+                found=1
+            fi
             ;;
         "sniffer")
             config_file="/vagrant/sniffer/config/sniffer.json"
+            if [ -f "$config_file" ]; then
+                echo -e "${CYAN}$(basename $config_file)${NC}"
+                found=1
+            fi
+            ;;
+        "etcd")
+            # Buscar en múltiples ubicaciones posibles
+            if [ -f "/vagrant/etcd-server/config/etcd.conf" ]; then
+                echo -e "${CYAN}etcd.conf${NC}"
+                found=1
+            elif [ -f "/vagrant/etcd-server/etcd.conf" ]; then
+                echo -e "${CYAN}etcd.conf${NC}"
+                found=1
+            else
+                echo -e "${YELLOW}No config file found${NC}"
+            fi
+            ;;
+        "rag")
+            config_file="/vagrant/rag/config/rag-config.json"
+            if [ -f "$config_file" ]; then
+                echo -e "${CYAN}$(basename $config_file)${NC}"
+                found=1
+            else
+                echo -e "${YELLOW}No config file found${NC}"
+            fi
             ;;
     esac
-
-    if [ -f "$config_file" ]; then
-        echo -e "${CYAN}$(basename $config_file)${NC}"
-    else
-        echo -e "${RED}Not found${NC}"
-    fi
 }
 
 # Function to check ZMQ ports
@@ -114,14 +146,101 @@ get_ipset_stats() {
     fi
 }
 
+# Function to get etcd cluster status
+get_etcd_status() {
+    if pgrep -f "etcd-server" > /dev/null; then
+        # Try to get etcd cluster health
+        if command -v etcdctl > /dev/null; then
+            local health=$(etcdctl endpoint health --endpoints=127.0.0.1:2379 2>/dev/null)
+            if echo "$health" | grep -q "healthy"; then
+                echo -e "${GREEN}✅ Healthy${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Running${NC}"
+            fi
+        else
+            echo -e "${GREEN}✅ Running${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Not running${NC}"
+    fi
+}
 
-# Function to get sniffer interface and profile
+# Function to get sniffer dual-nic info
 get_sniffer_info() {
     local config_file="/vagrant/sniffer/config/sniffer.json"
     if [ -f "$config_file" ]; then
         local profile=$(grep -o '"profile"[[:space:]]*:[[:space:]]*"[^"]*"' "$config_file" | cut -d'"' -f4)
         local interface=$(grep -o '"capture_interface"[[:space:]]*:[[:space:]]*"[^"]*"' "$config_file" | head -1 | cut -d'"' -f4)
-        echo -e "${CYAN}Profile: $profile, Interface: $interface${NC}"
+
+        echo -e "${CYAN}Profile: ${profile}${NC}"
+        echo -e "  ${YELLOW}Interface: ${interface}${NC}"
+    fi
+}
+
+# Function to get RAG status
+get_rag_status() {
+    if pgrep -f "rag" > /dev/null; then
+        # Check if RAG is responding (assuming HTTP port 8080)
+        if command -v curl > /dev/null; then
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health 2>/dev/null | grep -q "200\|OK"; then
+                echo -e "${GREEN}✅ Healthy${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Running${NC}"
+            fi
+        else
+            echo -e "${GREEN}✅ Running${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Not running${NC}"
+    fi
+}
+
+# Function to get system stats (sin bc)
+get_system_stats() {
+    echo -n "CPU: "
+    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4}' | cut -d'.' -f1)
+    if [ -z "$cpu_usage" ]; then
+        cpu_usage=$(top -bn1 | grep "%Cpu" | awk '{print $2 + $4}' | cut -d'.' -f1)
+    fi
+
+    if [ -n "$cpu_usage" ]; then
+        if [ "$cpu_usage" -gt 80 ]; then
+            echo -e "${RED}${cpu_usage}%${NC}"
+        elif [ "$cpu_usage" -gt 50 ]; then
+            echo -e "${YELLOW}${cpu_usage}%${NC}"
+        else
+            echo -e "${GREEN}${cpu_usage}%${NC}"
+        fi
+    else
+        echo -e "${RED}N/A${NC}"
+    fi
+
+    echo -n "RAM: "
+    local mem_usage=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
+    if [ -n "$mem_usage" ]; then
+        if [ "$mem_usage" -gt 80 ]; then
+            echo -e "${RED}${mem_usage}%${NC}"
+        elif [ "$mem_usage" -gt 50 ]; then
+            echo -e "${YELLOW}${mem_usage}%${NC}"
+        else
+            echo -e "${GREEN}${mem_usage}%${NC}"
+        fi
+    else
+        echo -e "${RED}N/A${NC}"
+    fi
+
+    echo -n "Disk: "
+    local disk_usage=$(df -h / | tail -1 | awk '{print $5}' | sed 's/%//')
+    if [ -n "$disk_usage" ]; then
+        if [ "$disk_usage" -gt 80 ]; then
+            echo -e "${RED}${disk_usage}%${NC}"
+        elif [ "$disk_usage" -gt 50 ]; then
+            echo -e "${YELLOW}${disk_usage}%${NC}"
+        else
+            echo -e "${GREEN}${disk_usage}%${NC}"
+        fi
+    else
+        echo -e "${RED}N/A${NC}"
     fi
 }
 
@@ -132,19 +251,47 @@ show_log_commands() {
     echo -e "${BLUE}📋 Log File Commands${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    if [ -f "$LOG_DIR/firewall.log" ]; then
-        echo -e "${WHITE}Firewall:${NC}  tail -f $LOG_DIR/firewall.log"
-    fi
+    declare -A log_files=(
+        ["Firewall"]="$LOG_DIR/firewall.log"
+        ["Detector"]="$LOG_DIR/detector.log"
+        ["Sniffer"]="$LOG_DIR/sniffer.log"
+        ["etcd"]="$LOG_DIR/etcd-server.log"
+        ["RAG"]="$LOG_DIR/rag.log"
+    )
 
-    if [ -f "$LOG_DIR/detector.log" ]; then
-        echo -e "${WHITE}Detector:${NC}  tail -f $LOG_DIR/detector.log"
-    fi
-
-    if [ -f "$LOG_DIR/sniffer.log" ]; then
-        echo -e "${WHITE}Sniffer:${NC}   tail -f $LOG_DIR/sniffer.log"
-    fi
+    for component in "${!log_files[@]}"; do
+        if [ -f "${log_files[$component]}" ]; then
+            echo -e "${WHITE}${component}:${NC}  tail -f ${log_files[$component]}"
+        fi
+    done
 
     echo -e "${WHITE}All logs:${NC}   tail -f $LOG_DIR/*.log"
+}
+
+# Function to get dual-nic configuration from sniffer log
+get_dual_nic_config() {
+    local log_file="$LOG_DIR/sniffer.log"
+    if [ ! -f "$log_file" ]; then
+        return 1
+    fi
+
+    # Buscar la sección de configuración dual-nic
+    local start_line=$(grep -n "Dual-NIC Deployment Configuration" "$log_file" | head -1 | cut -d: -f1)
+
+    if [ -z "$start_line" ]; then
+        return 1
+    fi
+
+    # Extraer desde la línea de inicio hasta la próxima línea de cierre
+    local end_line=$(tail -n +$start_line "$log_file" | grep -n "╚════════════════════════════════════════════════════════════╝" | head -1 | cut -d: -f1)
+
+    if [ -z "$end_line" ]; then
+        # Si no encontramos el cierre, tomar las siguientes 12 líneas
+        tail -n +$start_line "$log_file" | head -12
+    else
+        # Tomar desde la línea de inicio hasta la línea de cierre
+        tail -n +$start_line "$log_file" | head -$((end_line))
+    fi
 }
 
 # Main monitoring loop
@@ -156,10 +303,19 @@ while true; do
     # Header
     clear
     echo "╔════════════════════════════════════════════════════════════╗"
-    echo "║  ML Defender Lab - Live Monitoring (Enhanced)              ║"
+    echo "║  ML Defender Lab - Live Monitoring (Enhanced v2.2)         ║"
     echo "║  $TIMESTAMP                                ║"
     echo "║  System Uptime: $SYSTEM_UPTIME                            "
     echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+
+    # ========================================
+    # System Stats
+    # ========================================
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "${BLUE}📈 System Statistics${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    get_system_stats
     echo ""
 
     # ========================================
@@ -185,17 +341,35 @@ while true; do
     echo ""
     echo -n "📡 Sniffer:   "
     if get_process_stats "sniffer"; then
-        echo -n "   "
+        echo ""
         get_sniffer_info
+    fi
+
+    echo ""
+    echo -n "🗄️  etcd-server: "
+    if get_process_stats "etcd-server"; then
+        echo -n "   Status: "
+        get_etcd_status
+        echo -n "          Config: "
+        get_config_file "etcd"
+    fi
+
+    echo ""
+    echo -n "🧠 RAG Engine: "
+    if get_process_stats "rag"; then
+        echo -n "   Status: "
+        get_rag_status
+        echo -n "          Config: "
+        get_config_file "rag"
     fi
 
     echo ""
 
     # ========================================
-    # ZMQ Ports
+    # Network Ports
     # ========================================
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "${BLUE}🔌 ZMQ Communication Channels${NC}"
+    echo -e "${BLUE}🔌 Communication Channels${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     echo -n "Port 5571 (Sniffer → Detector): "
@@ -203,6 +377,15 @@ while true; do
 
     echo -n "Port 5572 (Detector → Firewall): "
     check_zmq_ports 5572
+
+    echo -n "Port 2379 (etcd client): "
+    check_zmq_ports 2379
+
+    echo -n "Port 2380 (etcd peer): "
+    check_zmq_ports 2380
+
+    echo -n "Port 8080 (RAG API): "
+    check_zmq_ports 8080
 
     echo ""
 
@@ -235,21 +418,58 @@ while true; do
     echo -e "${BLUE}📋 Recent Activity (last 5 lines)${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    if [ -f "$LOG_DIR/firewall.log" ]; then
-        echo -e "${MAGENTA}🔥 Firewall:${NC}"
-        tail -5 "$LOG_DIR/firewall.log" 2>/dev/null | sed 's/^/  /'
-        echo ""
-    fi
+    declare -A log_files=(
+        ["🔥 Firewall"]="$LOG_DIR/firewall.log"
+        ["🤖 Detector"]="$LOG_DIR/detector.log"
+        ["📡 Sniffer"]="$LOG_DIR/sniffer.log"
+        ["🗄️  etcd"]="$LOG_DIR/etcd-server.log"
+        ["🧠 RAG"]="$LOG_DIR/rag.log"
+    )
 
-    if [ -f "$LOG_DIR/detector.log" ]; then
-        echo -e "${MAGENTA}🤖 Detector:${NC}"
-        tail -5 "$LOG_DIR/detector.log" 2>/dev/null | grep -E "Stats|ERROR|WARNING|Detection|Processed" | tail -3 | sed 's/^/  /'
-        echo ""
-    fi
+    for component in "${!log_files[@]}"; do
+        if [ -f "${log_files[$component]}" ]; then
+            echo -e "${MAGENTA}$component:${NC}"
 
-    if [ -f "$LOG_DIR/sniffer.log" ]; then
-        echo -e "${MAGENTA}📡 Sniffer:${NC}"
-        tail -20 "$LOG_DIR/sniffer.log" 2>/dev/null | grep -E "Paquetes procesados:|Paquetes enviados:|Tasa:" | tail -3 | sed 's/^/  /'
+            # Get base component name for pattern matching
+            base_comp=$(echo "$component" | sed 's/[^a-zA-Z0-9 ]//g' | xargs)
+
+            case $base_comp in
+                "Firewall")
+                    tail -5 "${log_files[$component]}" 2>/dev/null | sed 's/^/  /'
+                    ;;
+                "Detector")
+                    tail -50 "${log_files[$component]}" 2>/dev/null | grep -E "Stats|ERROR|WARNING|Detection|Processed" | tail -3 | sed 's/^/  /'
+                    ;;
+                "Sniffer")
+                    tail -50 "${log_files[$component]}" 2>/dev/null | grep -E "Paquetes procesados:|Paquetes enviados:|Tasa:|Dual-NIC|eth[0-9]" | tail -5 | sed 's/^/  /'
+                    ;;
+                "etcd")
+                    tail -5 "${log_files[$component]}" 2>/dev/null | sed 's/^/  /'
+                    ;;
+                "RAG")
+                    tail -5 "${log_files[$component]}" 2>/dev/null | sed 's/^/  /'
+                    ;;
+            esac
+            echo ""
+        fi
+    done
+
+    # ========================================
+    # Dual-NIC Specific Information
+    # ========================================
+    if pgrep -f "sniffer" > /dev/null && [ -f "$LOG_DIR/sniffer.log" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo -e "${BLUE}🔧 Dual-NIC Deployment Status${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Obtener información dual-nic
+        dual_nic_info=$(get_dual_nic_config)
+
+        if [ -n "$dual_nic_info" ]; then
+            echo "$dual_nic_info"
+        else
+            echo -e "  ${YELLOW}No dual-nic configuration found in logs${NC}"
+        fi
         echo ""
     fi
 
@@ -263,8 +483,8 @@ while true; do
     # ========================================
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "${YELLOW}Press Ctrl+C to exit${NC} | Refreshing every 2 seconds..."
+    echo -e "${YELLOW}Press Ctrl+C to exit${NC} | Refreshing every 3 seconds..."
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    sleep 2
+    sleep 3
 done

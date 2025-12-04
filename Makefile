@@ -409,3 +409,190 @@ kill-all:
 	@$(MAKE) kill-lab
 	@vagrant ssh -c "docker-compose down 2>/dev/null || true"
 	@echo "✅ All processes terminated"
+
+# ============================================================================
+# RAG Ecosystem Integration (RAG + etcd-server)
+# ============================================================================
+
+rag-build:
+	@echo "🔨 Building RAG Security System..."
+	@vagrant ssh -c "cd /vagrant/rag && make build"
+
+rag-clean:
+	@echo "🧹 Cleaning RAG..."
+	@vagrant ssh -c "cd /vagrant/rag && make clean"
+
+rag-start:
+	@echo "🚀 Starting RAG Security System..."
+	@vagrant ssh -c "mkdir -p /vagrant/logs"
+	@vagrant ssh -c "if ! pgrep -f rag-security > /dev/null; then \
+		cd /vagrant/rag/build && nohup ./rag-security -c ../config/rag-config.json > /vagrant/logs/rag.log 2>&1 & \
+		sleep 2; \
+		echo '✅ RAG started'; \
+	else \
+		echo '⚠️  RAG already running'; \
+	fi"
+
+rag-stop:
+	@echo "🛑 Stopping RAG..."
+	@vagrant ssh -c "pkill -f rag-security 2>/dev/null || true"
+
+rag-status:
+        @echo "🔍 RAG Status:"
+        @vagrant ssh -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi"
+
+rag-logs:
+	@echo "📋 RAG Logs:"
+	@vagrant ssh -c "tail -20 /vagrant/logs/rag.log 2>/dev/null || echo 'No logs found'"
+
+rag-download-model:
+	@echo "📥 Downloading LLM model for RAG..."
+	@vagrant ssh -c "cd /vagrant/rag && \
+		if [ ! -f models/default.gguf ]; then \
+			mkdir -p models && cd models && \
+			wget -q --show-progress https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_0.gguf && \
+			ln -sf tinyllama-1.1b-chat-v1.0.Q4_0.gguf default.gguf && \
+			echo '✅ Model downloaded'; \
+		else \
+			echo '✅ Model already exists'; \
+		fi"
+# ----------------------------------------------------------------------------
+
+etcd-server-build:
+	@echo "🔨 Building custom etcd-server..."
+	@vagrant ssh -c "cd /vagrant/etcd-server && make build"
+
+etcd-server-clean:
+	@echo "🧹 Cleaning etcd-server..."
+	@vagrant ssh -c "cd /vagrant/etcd-server && make clean"
+
+etcd-server-start:
+	@echo "🚀 Starting etcd-server..."
+	@vagrant ssh -c "mkdir -p /vagrant/logs && cd /vagrant/etcd-server/build && nohup ./etcd-server > /vagrant/logs/etcd-server.log 2>&1 &"
+	@echo "✅ etcd-server started (logs: /vagrant/logs/etcd-server.log)"
+
+etcd-server-stop:
+	@echo "🛑 Stopping etcd-server..."
+	@vagrant ssh -c "pkill -f etcd-server 2>/dev/null || true"
+
+etcd-server-status:
+	@echo "🔍 etcd-server Status:"
+@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi"
+
+etcd-server-logs:
+	@echo "📋 etcd-server Logs:"
+	@vagrant ssh -c "tail -20 /vagrant/logs/etcd-server.log 2>/dev/null || echo 'No logs found'"
+
+etcd-server-health:
+	@echo "🩺 Checking etcd-server health..."
+	@vagrant ssh -c "curl -s http://localhost:2379/health 2>/dev/null | grep -i healthy || echo '⚠️  etcd-server health check failed'"
+# ----------------------------------------------------------------------------
+
+rag-etcd-build: rag-build etcd-server-build
+	@echo "✅ RAG ecosystem built"
+
+rag-etcd-start: etcd-server-start rag-start
+	@echo "✅ RAG ecosystem started (etcd-server + RAG)"
+	@echo "   etcd-server: http://localhost:2379"
+	@echo "   RAG CLI: cd /vagrant/rag/build && ./rag-security"
+
+rag-etcd-stop: rag-stop etcd-server-stop
+	@echo "✅ RAG ecosystem stopped"
+
+rag-etcd-status: etcd-server-status rag-status
+	@echo "✅ RAG ecosystem status checked"
+
+rag-etcd-logs:
+	@echo "📋 Combined RAG ecosystem logs:"
+	@echo "=== etcd-server (last 10 lines) ==="
+	@vagrant ssh -c "tail -10 /vagrant/logs/etcd-server.log 2>/dev/null || echo 'No etcd-server logs'"
+	@echo -e "\n=== RAG (last 10 lines) ==="
+	@vagrant ssh -c "tail -10 /vagrant/logs/rag.log 2>/dev/null || echo 'No RAG logs'"
+
+# ============================================================================
+# Full System Integration (ML Defender + RAG Ecosystem)
+# ============================================================================
+
+# Build everything including RAG ecosystem
+all-with-rag: build-unified rag-etcd-build
+	@echo "✅ All components built including RAG ecosystem"
+
+# Start full system
+start-all: rag-etcd-start
+	@echo "⏳ Waiting for RAG ecosystem to initialize..."
+	@sleep 3
+	@make run-lab-dev
+	@echo "✅ Full system started (RAG ecosystem + ML Defender lab)"
+
+# Stop full system
+stop-all: rag-etcd-stop
+	@make kill-lab
+	@echo "✅ Full system stopped"
+
+# Status of everything
+status-all:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "ML Defender Full System Status"
+	@echo "════════════════════════════════════════════════════════════"
+	@make status-lab
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "RAG Ecosystem Status"
+	@echo "════════════════════════════════════════════════════════════"
+	@make rag-etcd-status
+	@echo "════════════════════════════════════════════════════════════"
+
+# Clean everything
+clean-all: clean rag-clean etcd-server-clean
+	@echo "✅ All components cleaned including RAG ecosystem"
+
+# ============================================================================
+# Quick Start/Test targets
+# ============================================================================
+
+test-rag-etcd: rag-etcd-build rag-etcd-start
+	@echo "✅ RAG ecosystem built and started"
+	@echo "Testing communication..."
+	@vagrant ssh -c "sleep 2 && curl -s http://localhost:2379/health || echo 'etcd-server health check failed'"
+	@echo "✅ RAG ecosystem test complete"
+
+quick-rag: rag-build rag-start
+	@echo "✅ RAG started quickly (assuming etcd-server already running)"
+
+# ============================================================================
+# Help updates
+# ============================================================================
+
+help-rag:
+	@echo "RAG Ecosystem Commands:"
+	@echo "  make rag-build           - Build RAG Security System"
+	@echo "  make rag-start           - Start RAG"
+	@echo "  make rag-stop            - Stop RAG"
+	@echo "  make rag-status          - Check RAG status"
+	@echo "  make rag-logs            - Show RAG logs"
+	@echo ""
+	@echo "  make etcd-server-build   - Build custom etcd-server"
+	@echo "  make etcd-server-start   - Start etcd-server"
+	@echo "  make etcd-server-stop    - Stop etcd-server"
+	@echo "  make etcd-server-status  - Check etcd-server status"
+	@echo "  make etcd-server-logs    - Show etcd-server logs"
+	@echo ""
+	@echo "  make rag-etcd-build      - Build both RAG and etcd-server"
+	@echo "  make rag-etcd-start      - Start RAG ecosystem"
+	@echo "  make rag-etcd-stop       - Stop RAG ecosystem"
+	@echo "  make rag-etcd-status     - Check RAG ecosystem status"
+	@echo "  make rag-etcd-logs       - Show combined logs"
+	@echo ""
+	@echo "  make all-with-rag        - Build everything including RAG"
+	@echo "  make start-all           - Start full system"
+	@echo "  make stop-all            - Stop full system"
+	@echo "  make status-all          - Check everything"
+	@echo "  make clean-all           - Clean everything"
+	@echo ""
+	@echo "  make test-rag-etcd       - Quick test of RAG ecosystem"
+	@echo "  make quick-rag           - Quick start RAG (needs etcd-server)"
+
+# Update main help to include RAG
+help: help-rag
+	@echo ""
+	@echo "RAG Ecosystem:"
+	@echo "  make help-rag            - Show RAG ecosystem commands"
