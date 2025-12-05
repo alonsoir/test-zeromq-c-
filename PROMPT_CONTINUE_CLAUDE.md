@@ -66,3 +66,7 @@ DOCUMENTACIÓN PENDIENTE:
 - Gateway mode architecture diagram
 
 Este es el estado completo. ¿Por dónde empezamos con MAWI?
+
+Hay un problema temporal con la conectividad de Claude.
+
+vagrant@bookworm:/vagrant/sniffer$ grep -n "DualNICManager" src/userspace/main.cpp | head -10 355:            sniffer::DualNICManager dual_nic_manager(json_root); vagrant@bookworm:/vagrant/sniffer$

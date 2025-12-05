@@ -37,6 +37,7 @@
 #include <fstream>
 #include "feature_logger.hpp"
 #include "dual_nic_manager.hpp"
+#include <algorithm>
 
 FeatureLogger::VerbosityLevel g_verbosity = FeatureLogger::VerbosityLevel::NONE;
 
@@ -377,23 +378,36 @@ int main(int argc, char* argv[]) {
         // >>> FIN DUAL-NIC CONFIGURATION
         // ============================================================================
 
-        // Usar capture_interface en lugar de g_config.capture.interface
-        // Use attach method based on capture mode
         bool attached = false;
-        if (g_config.capture_mode == "ebpf_skb") {
-            std::cout << "[INFO] Using SKB mode (TC-based eBPF)" << std::endl;
-            attached = ebpf_loader.attach_skb(g_config.capture_interface);
+        std::cout << "[INFO] Using SKB mode (TC-based eBPF)" << std::endl;
+
+        // Dual-NIC: attach a todas las interfaces configuradas
+        if (dual_nic_mgr && dual_nic_mgr->is_dual_mode()) {
+            std::cout << "[INFO] Dual-NIC mode: attaching to multiple interfaces" << std::endl;
+            const auto& interfaces = dual_nic_mgr->get_interfaces();
+            attached = true;
+
+            for (const auto& iface : interfaces) {
+                bool iface_attached = ebpf_loader.attach_skb(iface.name);
+                if (!iface_attached) {
+                    std::cerr << "❌ Failed to attach to interface: " << iface.name << std::endl;
+                    attached = false;
+                } else {
+                    std::cout << "✅ eBPF program attached to interface: " << iface.name << std::endl;
+                }
+            }
         } else {
-            std::cout << "[INFO] Using XDP mode (native XDP)" << std::endl;
-            attached = ebpf_loader.attach_xdp(g_config.capture_interface);
+            // Single-NIC mode
+            attached = ebpf_loader.attach_skb(g_config.capture_interface);
+            if (attached) {
+                std::cout << "✅ eBPF program attached to interface: " << g_config.capture_interface << std::endl;
+            }
         }
 
         if (!attached) {
-            std::cerr << "❌ Failed to attach to interface: " << g_config.capture_interface << std::endl;
+            std::cerr << "❌ Failed to attach eBPF program" << std::endl;
             return 1;
         }
-
-        std::cout << "✅ eBPF program attached to interface: " << g_config.capture_interface << std::endl;
 
         int ring_fd = ebpf_loader.get_ringbuf_fd();
         if (ring_fd < 0) {

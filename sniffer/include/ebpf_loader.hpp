@@ -4,6 +4,8 @@
 #include <memory>
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>
+#include <vector>
+#include <algorithm>
 // sniffer/src/userspace/ebpf_loader.hpp
 
 namespace sniffer {
@@ -68,7 +70,7 @@ private:
     bool program_loaded_;
     bool xdp_attached_;
     bool skb_attached_;
-    int attached_ifindex_;
+    std::vector<int> attached_ifindexes_;
     
     // Helper para obtener ifindex desde nombre
     int get_ifindex(const std::string& interface_name);
