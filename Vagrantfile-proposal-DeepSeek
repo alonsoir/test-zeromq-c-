@@ -1,0 +1,566 @@
+# Vagrantfile para validación Gateway Mode - Día 10
+Vagrant.configure("2") do |config|
+  # Configuración global
+  config.vm.box = "debian/bookworm64"
+  config.vm.box_version = "12.20240905.1"
+
+  # =========================================================================
+  # VM 1: ML DEFENDER (Configuración dual-NIC optimizada)
+  # =========================================================================
+  config.vm.define "defender", primary: true do |defender|
+    defender.vm.hostname = "ml-defender-gateway"
+    defender.vm.provider "virtualbox" do |vb|
+      vb.name = "ml-defender-gateway"
+      vb.memory = "4096"    # 4GB RAM (reducido de 8GB)
+      vb.cpus = 4           # 4 cores (reducido de 6)
+      vb.customize ["modifyvm", :id, "--ioapic", "on"]
+
+      # Optimización NICs: todas VirtIO
+      (1..4).each do |nic|
+        vb.customize ["modifyvm", :id, "--nictype#{nic}", "virtio"]
+        vb.customize ["modifyvm", :id, "--nicpromisc#{nic}", "allow-all"]
+      end
+    end
+
+    # 🔥 REDES CRÍTICAS para Gateway Mode:
+    # eth0: NAT (Vagrant management) - OBLIGATORIO
+    # eth1: 192.168.56.20 (WAN-facing, host-only) - Para conexión desde host
+    # eth2: (OPCIONAL) public_network para captura externa
+    # eth3: 192.168.100.1 (LAN-facing, internal) - INTERFAZ GATEWAY MODE
+
+    # eth1: WAN interface (host-only, desde macOS)
+    defender.vm.network "private_network",
+      ip: "192.168.56.20",
+      virtualbox__intnet: false  # host-only network
+
+    # eth3: LAN interface (internal network para gateway mode) - PRIORIDAD 1
+    defender.vm.network "private_network",
+      ip: "192.168.100.1",
+      virtualbox__intnet: "ml_defender_gateway_lan"  # CRÍTICO: misma red que client
+
+    # eth2: Public network (opcional, comentado para velocidad)
+    # defender.vm.network "public_network",
+    #   bridge: "en0: Wi-Fi",
+    #   auto_config: false
+
+    # Puertos forward (solo los esenciales)
+    defender.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
+    defender.vm.network "forwarded_port", guest: 5571, host: 5571  # ZMQ sniffer
+
+    # Sync folder optimizado
+    defender.vm.synced_folder ".", "/vagrant",
+      type: "virtualbox",
+      mount_options: ["dmode=775,fmode=775"]
+
+    # 🔥 PROVISIONING OPTIMIZADO (solo para gateway validation)
+    defender.vm.provision "shell", name: "gateway-setup", run: "always", inline: <<-DEFENDER_SHELL
+      set -x
+      echo "╔════════════════════════════════════════════════════════════╗"
+      echo "║  ML DEFENDER - GATEWAY MODE SETUP (DÍA 10)                ║"
+      echo "╚════════════════════════════════════════════════════════════╝"
+
+      # 1. Instalación RÁPIDA de dependencias críticas
+      echo "📦 Instalando dependencias críticas..."
+      apt-get update -qq
+      apt-get install -y --no-install-recommends \
+        build-essential \
+        clang llvm bpftool linux-headers-amd64 \
+        libbpf-dev libelf-dev zlib1g-dev \
+        libzmq3-dev libjsoncpp-dev \
+        protobuf-compiler libprotobuf-dev \
+        tcpdump ethtool iptables iproute2 \
+        hping3 nmap tcpreplay iperf3 \
+        curl wget git sudo
+
+      # 2. Configuración de red GATEWAY MODE
+      echo "🌐 Configurando Gateway Mode..."
+
+      # Activar IP forwarding
+      sysctl -w net.ipv4.ip_forward=1
+      echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+
+      # Configurar NAT básico (para que client pueda salir a internet)
+      iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+      iptables -A FORWARD -i eth3 -o eth1 -j ACCEPT
+      iptables -A FORWARD -i eth1 -o eth3 -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+      # 3. Configurar interfaces
+      echo "🔧 Configurando interfaces..."
+
+      # eth1 (WAN) - host-based mode
+      if ip link show eth1 >/dev/null 2>&1; then
+        ip link set eth1 up
+        ip link set eth1 promisc on
+        ethtool -K eth1 gro off tso off gso off 2>/dev/null || true
+        echo "✅ eth1 (WAN): 192.168.56.20 - promisc on"
+      fi
+
+      # eth3 (LAN) - gateway mode (CRÍTICO)
+      if ip link show eth3 >/dev/null 2>&1; then
+        ip link set eth3 up
+        ip link set eth3 promisc on
+        ethtool -K eth3 gro off tso off gso off 2>/dev/null || true
+        echo "✅ eth3 (LAN): 192.168.100.1 - gateway mode ready"
+      else
+        echo "❌ ERROR: eth3 no encontrada - Gateway mode imposible"
+        exit 1
+      fi
+
+      # 4. Compilación RÁPIDA del sniffer
+      echo "🔨 Compilando sniffer (solo eBPF + userspace)..."
+      cd /vagrant/sniffer
+
+      # Limpiar solo si existe build
+      [ -d build ] && rm -rf build
+      mkdir -p build
+      cd build
+
+      # Compilación mínima
+      cmake .. \
+        -DENABLE_ML_DETECTOR=OFF \
+        -DENABLE_RAG=OFF \
+        -DENABLE_FIREWALL=OFF \
+        -DCMAKE_BUILD_TYPE=Release
+
+      make -j$(nproc) sniffer
+
+      if [ -f "sniffer" ]; then
+        echo "✅ Sniffer compilado exitosamente"
+      else
+        echo "❌ ERROR: Fallo en compilación del sniffer"
+        exit 1
+      fi
+
+      # 5. Configuración automática del sniffer
+      echo "⚙️  Creando configuración automática..."
+      cat > /vagrant/sniffer/build/config_gateway.json << 'EOF'
+{
+  "mode": "dual_nic",
+  "interfaces": [
+    {
+      "name": "eth1",
+      "ip": "192.168.56.20",
+      "mode": "host_based",
+      "wan_facing": true
+    },
+    {
+      "name": "eth3",
+      "ip": "192.168.100.1",
+      "mode": "gateway",
+      "wan_facing": false
+    }
+  ],
+  "zmq_port": 5571,
+  "ring_buffer_size": 32,
+  "capture_threads": 2,
+  "log_level": "INFO",
+  "log_file": "/tmp/sniffer_gateway.log"
+}
+EOF
+
+      # 6. Crear script de inicio automático
+      cat > /vagrant/start_gateway_test.sh << 'EOF'
+#!/bin/bash
+echo "🚀 Iniciando ML Defender en modo Gateway..."
+cd /vagrant/sniffer/build
+
+# Matar procesos previos
+sudo pkill -9 sniffer 2>/dev/null || true
+sleep 1
+
+# Iniciar sniffer con configuración gateway
+sudo ./sniffer -c config_gateway.json > /tmp/sniffer_output.log 2>&1 &
+SNIFFER_PID=$!
+
+# Esperar 2 segundos para inicialización
+sleep 2
+
+# Verificar que está corriendo
+if ps -p $SNIFFER_PID > /dev/null; then
+    echo "✅ Sniffer iniciado (PID: $SNIFFER_PID)"
+    echo "📊 Monitor: tail -f /tmp/sniffer_output.log"
+    echo $SNIFFER_PID > /tmp/sniffer.pid
+else
+    echo "❌ Error iniciando sniffer"
+    cat /tmp/sniffer_output.log
+    exit 1
+fi
+EOF
+
+      chmod +x /vagrant/start_gateway_test.sh
+
+      # 7. Crear script de validación
+      cat > /vagrant/validate_gateway.sh << 'EOF'
+#!/bin/bash
+echo "🔍 Validando Gateway Mode..."
+echo "══════════════════════════════════════════════════════════"
+
+# Verificar que el sniffer está corriendo
+if [ ! -f /tmp/sniffer.pid ]; then
+    echo "❌ Sniffer no está corriendo"
+    echo "   Ejecuta: /vagrant/start_gateway_test.sh"
+    exit 1
+fi
+
+PID=$(cat /tmp/sniffer.pid)
+if ! ps -p $PID > /dev/null; then
+    echo "❌ Sniffer no está activo (PID: $PID)"
+    exit 1
+fi
+
+# Verificar logs para eventos gateway
+echo "📊 Analizando logs del sniffer..."
+LOG_FILE="/tmp/sniffer_output.log"
+
+if [ ! -f "$LOG_FILE" ]; then
+    echo "❌ No hay archivo de logs"
+    exit 1
+fi
+
+# Buscar eventos con ifindex=5 (eth3 en gateway mode)
+ETH3_EVENTS=$(grep -c "ifindex=5" "$LOG_FILE" 2>/dev/null || echo "0")
+ETH1_EVENTS=$(grep -c "ifindex=3" "$LOG_FILE" 2>/dev/null || echo "0")
+
+echo "┌─────────────────────────────────────────────┐"
+echo "│  EVENTOS CAPTURADOS (últimos 60 segundos)  │"
+echo "├─────────────────────────────────────────────┤"
+echo "│ eth1 (ifindex=3): $ETH1_EVENTS eventos     │"
+echo "│ eth3 (ifindex=5): $ETH3_EVENTS eventos     │"
+echo "└─────────────────────────────────────────────┘"
+
+if [ "$ETH3_EVENTS" -gt 0 ]; then
+    echo "✅ ✅ ✅ GATEWAY MODE VALIDADO ✅ ✅ ✅"
+    echo "   Se capturaron $ETH3_EVENTS eventos en eth3 (gateway mode)"
+    exit 0
+else
+    echo "❌ GATEWAY MODE NO DETECTADO"
+    echo "   Esperando eventos en eth3 (ifindex=5)..."
+    echo "   Verifica que el cliente esté generando tráfico"
+    exit 1
+fi
+EOF
+
+      chmod +x /vagrant/validate_gateway.sh
+
+      # 8. Dashboard en tiempo real
+      cat > /vagrant/gateway_dashboard.sh << 'EOF'
+#!/bin/bash
+clear
+echo "=== ML DEFENDER GATEWAY DASHBOARD ==="
+echo "Presiona Ctrl+C para salir"
+echo "══════════════════════════════════════"
+
+while true; do
+    # Obtener timestamp
+    TIMESTAMP=$(date '+%H:%M:%S')
+
+    # Obtener estadísticas de red
+    ETH1_PACKETS=$(cat /sys/class/net/eth1/statistics/rx_packets 2>/dev/null || echo "0")
+    ETH3_PACKETS=$(cat /sys/class/net/eth3/statistics/rx_packets 2>/dev/null || echo "0")
+
+    # Obtener eventos del sniffer
+    if [ -f /tmp/sniffer_output.log ]; then
+        ETH3_EVENTS=$(tail -100 /tmp/sniffer_output.log | grep -c "ifindex=5")
+        ETH1_EVENTS=$(tail -100 /tmp/sniffer_output.log | grep -c "ifindex=3")
+    else
+        ETH3_EVENTS="0"
+        ETH1_EVENTS="0"
+    fi
+
+    # Obtener uso de CPU del sniffer
+    if [ -f /tmp/sniffer.pid ]; then
+        SNIFFER_PID=$(cat /tmp/sniffer.pid)
+        CPU_USAGE=$(ps -p $SNIFFER_PID -o %cpu 2>/dev/null | tail -1 | tr -d ' ' || echo "0.0")
+    else
+        CPU_USAGE="0.0"
+    fi
+
+    # Mostrar dashboard
+    clear
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  ML DEFENDER - GATEWAY MODE DASHBOARD                   ║"
+    echo "║  Time: $TIMESTAMP                                      ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  INTERFACE    PACKETS    EVENTS     STATUS              ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  eth1 (WAN)   $ETH1_PACKETS       $ETH1_EVENTS       Host-Based        ║"
+    echo "║  eth3 (LAN)   $ETH3_PACKETS       $ETH3_EVENTS       Gateway Mode      ║"
+    echo "╠══════════════════════════════════════════════════════════╣"
+    echo "║  Sniffer CPU: ${CPU_USAGE}%                               ║"
+    echo "║                                                     ║"
+
+    # Estado de validación
+    if [ "$ETH3_EVENTS" -gt 0 ]; then
+        echo "║  ✅ GATEWAY MODE VALIDATED                         ║"
+        echo "║  Events captured on eth3: $ETH3_EVENTS              ║"
+    else
+        echo "║  🔄 Waiting for gateway traffic...                 ║"
+        echo "║  Send traffic from client VM to trigger capture    ║"
+    fi
+
+    echo "║                                                     ║"
+    echo "║  Commands:                                         ║"
+    echo "║    • /vagrant/validate_gateway.sh                  ║"
+    echo "║    • tail -f /tmp/sniffer_output.log               ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+
+    sleep 2
+done
+EOF
+
+      chmod +x /vagrant/gateway_dashboard.sh
+
+      echo ""
+      echo "╔══════════════════════════════════════════════════════════╗"
+      echo "║  ML DEFENDER - GATEWAY MODE READY                       ║"
+      echo "╠══════════════════════════════════════════════════════════╣"
+      echo "║  COMANDOS DISPONIBLES:                                  ║"
+      echo "║                                                         ║"
+      echo "║  1. Iniciar sniffer:  /vagrant/start_gateway_test.sh    ║"
+      echo "║  2. Validar gateway:  /vagrant/validate_gateway.sh      ║"
+      echo "║  3. Dashboard:        /vagrant/gateway_dashboard.sh     ║"
+      echo "║                                                         ║"
+      echo "║  INTERFACES CONFIGURADAS:                               ║"
+      echo "║    • eth1: 192.168.56.20 (WAN, host-based)             ║"
+      echo "║    • eth3: 192.168.100.1 (LAN, gateway mode)           ║"
+      echo "║                                                         ║"
+      echo "║  CLIENT VM debe usar gateway: 192.168.100.1             ║"
+      echo "╚══════════════════════════════════════════════════════════╝"
+
+    DEFENDER_SHELL
+
+    # Provisioning final (post-setup)
+    defender.vm.provision "shell", name: "post-setup", run: "once", inline: <<-POST_SHELL
+      echo "🎉 Setup completado!"
+      echo "Para comenzar:"
+      echo "1. vagrant ssh defender"
+      echo "2. /vagrant/start_gateway_test.sh"
+      echo "3. En otra terminal: vagrant ssh client"
+      echo "4. En client: /vagrant/generate_traffic.sh"
+    POST_SHELL
+  end
+
+  # =========================================================================
+  # VM 2: CLIENT (Generador de tráfico para validación)
+  # =========================================================================
+  config.vm.define "client" do |client|
+    client.vm.hostname = "ml-client"
+    client.vm.provider "virtualbox" do |vb|
+      vb.name = "ml-defender-client"
+      vb.memory = "1024"    # 1GB RAM
+      vb.cpus = 2           # 2 cores
+      vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+      vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+    end
+
+    # 🔥 RED: Solo necesita estar en la misma LAN que eth3 del defender
+    # eth0: NAT (Vagrant management)
+    # eth1: 192.168.100.50 (LAN, misma red que eth3 del defender)
+    client.vm.network "private_network",
+      ip: "192.168.100.50",
+      virtualbox__intnet: "ml_defender_gateway_lan"  # CRÍTICO: misma red
+
+    # Provisioning del cliente (mínimo, solo herramientas de test)
+    client.vm.provision "shell", name: "client-setup", run: "always", inline: <<-CLIENT_SHELL
+      set -x
+      echo "╔════════════════════════════════════════════════════════════╗"
+      echo "║  ML CLIENT - Traffic Generator Setup (DÍA 10)             ║"
+      echo "╚════════════════════════════════════════════════════════════╝"
+
+      # 1. Instalación rápida de herramientas
+      apt-get update -qq
+      apt-get install -y --no-install-recommends \
+        curl wget iperf3 hping3 nmap iproute2 \
+        tcpdump netcat-openbsd dnsutils
+
+      # 2. Configurar red (gateway = defender eth3)
+      echo "🌐 Configurando red con gateway a defender..."
+      ip route add default via 192.168.100.1 dev eth1
+
+      # Configurar DNS
+      echo "nameserver 8.8.8.8" > /etc/resolv.conf
+      echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+
+      # 3. Crear scripts de generación de tráfico
+      cat > /vagrant/generate_traffic.sh << 'EOF'
+#!/bin/bash
+echo "🚀 Generador de tráfico para validación Gateway Mode"
+echo "══════════════════════════════════════════════════════════"
+echo "Selecciona tipo de tráfico:"
+echo "1) Tráfico HTTP/HTTPS (curl a internet)"
+echo "2) Tráfico ICMP (ping a internet)"
+echo "3) Escaneo de puertos (nmap al defender)"
+echo "4) Tráfico iperf3 (performance testing)"
+echo "5) Tráfico mixto (completo)"
+echo "6) Validar conectividad"
+echo "══════════════════════════════════════════════════════════"
+read -p "Opción [1-6]: " OPTION
+
+case $OPTION in
+    1)
+        echo "🌐 Generando tráfico HTTP/HTTPS..."
+        for i in {1..10}; do
+            echo "Request $i:"
+            curl -s -I --connect-timeout 3 http://google.com | grep HTTP || echo "Failed"
+            curl -s -I --connect-timeout 3 https://cloudflare.com | grep HTTP || echo "Failed"
+            sleep 0.5
+        done
+        ;;
+    2)
+        echo "📡 Generando tráfico ICMP..."
+        ping -c 10 8.8.8.8
+        ping -c 5 192.168.100.1
+        ;;
+    3)
+        echo "🔍 Escaneo de puertos al defender..."
+        nmap -sS -p 22,80,443,8080,5571 192.168.100.1
+        ;;
+    4)
+        echo "📊 Performance testing con iperf3..."
+        # Primero verificar que iperf3 server está corriendo en defender
+        echo "Nota: En defender ejecuta: iperf3 -s"
+        read -p "¿Está corriendo iperf3 server en defender? (y/n): " CONFIRM
+        if [ "$CONFIRM" = "y" ]; then
+            iperf3 -c 192.168.100.1 -t 10
+        else
+            echo "Skipping iperf3 test"
+        fi
+        ;;
+    5)
+        echo "🌀 Generando tráfico mixto completo..."
+        echo "Fase 1: ICMP"
+        ping -c 5 8.8.8.8 &
+        ping -c 5 192.168.100.1 &
+
+        echo "Fase 2: HTTP"
+        for i in {1..5}; do
+            curl -s http://example.com > /dev/null &
+            curl -s https://httpbin.org/get > /dev/null &
+            sleep 0.3
+        done
+
+        echo "Fase 3: DNS"
+        for i in {1..5}; do
+            dig @8.8.8.8 google.com +short > /dev/null &
+            nslookup cloudflare.com 1.1.1.1 > /dev/null &
+            sleep 0.2
+        done
+
+        wait
+        echo "✅ Tráfico mixto generado"
+        ;;
+    6)
+        echo "🔍 Validando conectividad..."
+        echo "1. Gateway local (defender):"
+        ping -c 2 192.168.100.1 && echo "✅ Defender alcanzable" || echo "❌ Defender NO alcanzable"
+
+        echo "2. Internet (vía gateway):"
+        ping -c 2 8.8.8.8 && echo "✅ Internet alcanzable" || echo "❌ Internet NO alcanzable"
+
+        echo "3. DNS resolution:"
+        nslookup google.com 8.8.8.8 && echo "✅ DNS funcionando" || echo "❌ DNS fallando"
+
+        echo "4. Ruta por defecto:"
+        ip route show default
+        ;;
+    *)
+        echo "❌ Opción inválida"
+        ;;
+esac
+
+echo ""
+echo "⚠️  Recuerda: El tráfico debe pasar por eth3 del defender"
+echo "   Verifica logs en defender: tail -f /tmp/sniffer_output.log"
+echo "   Busca eventos con 'ifindex=5' (eth3 en gateway mode)"
+EOF
+
+      chmod +x /vagrant/generate_traffic.sh
+
+      # 4. Script de validación automática
+      cat > /vagrant/auto_validate.sh << 'EOF'
+#!/bin/bash
+echo "🤖 VALIDACIÓN AUTOMÁTICA GATEWAY MODE"
+echo "══════════════════════════════════════════════════════════"
+echo "Este script generará tráfico y validará automáticamente"
+echo "que el defender está capturando en modo gateway"
+echo ""
+read -p "¿Comenzar validación automática? (y/n): " START
+
+if [ "$START" != "y" ]; then
+    echo "Validación cancelada"
+    exit 0
+fi
+
+echo ""
+echo "FASE 1: Validación de conectividad básica"
+echo "════════════════════════════════════════════"
+ping -c 3 192.168.100.1
+if [ $? -eq 0 ]; then
+    echo "✅ Defender alcanzable"
+else
+    echo "❌ ERROR: Defender no alcanzable"
+    exit 1
+fi
+
+ping -c 3 8.8.8.8
+if [ $? -eq 0 ]; then
+    echo "✅ Internet alcanzable (vía gateway)"
+else
+    echo "⚠️  Advertencia: Internet no alcanzable, continuando..."
+fi
+
+echo ""
+echo "FASE 2: Generación de tráfico de prueba"
+echo "════════════════════════════════════════════"
+echo "Generando tráfico HTTP/HTTPS..."
+for i in {1..5}; do
+    echo "Request $i..."
+    curl -s -I --connect-timeout 2 http://example.com > /dev/null
+    curl -s -I --connect-timeout 2 https://httpbin.org/get > /dev/null
+    sleep 0.5
+done
+
+echo "Generando tráfico ICMP..."
+ping -c 5 8.8.8.8 > /dev/null &
+
+echo "Generando tráfico DNS..."
+for i in {1..3}; do
+    dig @8.8.8.8 google.com +short > /dev/null
+    sleep 0.3
+done
+
+wait
+
+echo ""
+echo "FASE 3: Resultados de validación"
+echo "════════════════════════════════════════════"
+echo "⚠️  IMPORTANTE: Ahora ejecuta en el defender:"
+echo "   /vagrant/validate_gateway.sh"
+echo ""
+echo "Si ves 'GATEWAY MODE VALIDATED', ¡éxito!"
+echo "Si ves 'GATEWAY MODE NO DETECTADO', revisa:"
+echo "1. ¿El sniffer está corriendo en defender?"
+echo "2. ¿La configuración dual-NIC es correcta?"
+echo "3. ¿El tráfico realmente pasa por eth3?"
+EOF
+
+      chmod +x /vagrant/auto_validate.sh
+
+      echo ""
+      echo "╔══════════════════════════════════════════════════════════╗"
+      echo "║  CLIENT - TRAFFIC GENERATOR READY                       ║"
+      echo "╠══════════════════════════════════════════════════════════╣"
+      echo "║  COMANDOS DISPONIBLES:                                  ║"
+      echo "║                                                         ║"
+      echo "║  1. Generar tráfico: /vagrant/generate_traffic.sh       ║"
+      echo "║  2. Validación auto: /vagrant/auto_validate.sh          ║"
+      echo "║                                                         ║"
+      echo "║  CONFIGURACIÓN DE RED:                                  ║"
+      echo "║    • IP: 192.168.100.50                                 ║"
+      echo "║    • Gateway: 192.168.100.1 (defender eth3)             ║"
+      echo "║    • DNS: 8.8.8.8, 1.1.1.1                              ║"
+      echo "╚══════════════════════════════════════════════════════════╝"
+
+    CLIENT_SHELL
+  end
+end

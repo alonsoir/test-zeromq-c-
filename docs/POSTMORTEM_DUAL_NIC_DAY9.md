@@ -12,9 +12,9 @@ Validar la funcionalidad de **gateway mode** en la arquitectura dual-NIC de ML D
 
 **Success Criteria**:
 - [ ] XDP attached a eth1 (WAN) y eth3 (LAN) simultáneamente
-- [ ] Eventos capturados con `ifindex=5` (eth3, gateway mode)
-- [ ] Metadata correcta: `mode=2` (GATEWAY), `wan=0`
-- [ ] Validación con dataset MAWI o tráfico real
+  - [ ] Eventos capturados con `ifindex=5` (eth3, gateway mode)
+  - [ ] Metadata correcta: `mode=2` (GATEWAY), `wan=0`
+  - [ ] Validación con dataset MAWI o tráfico real
 
 ---
 
@@ -94,9 +94,9 @@ $ sudo bpftool map dump name iface_configs
 
 **Confirmado funcionamiento en eth1**:
 - 100+ eventos capturados durante testing
-- Metadata correcta: `[DUAL-NIC] ifindex=3 mode=1 wan=1 iface=if03`
-- Latencia promedio: 59.63 μs
-- Zero packet drops
+  - Metadata correcta: `[DUAL-NIC] ifindex=3 mode=1 wan=1 iface=if03`
+  - Latencia promedio: 59.63 μs
+  - Zero packet drops
 
 ---
 
@@ -113,9 +113,9 @@ sudo tcpreplay -i eth3 --pps=100 /vagrant/mawi/mawi-ready.pcap
 
 **Resultado**:
 - tcpreplay: 47,213 paquetes enviados (0 failed)
-- tcpdump en eth3: 10 paquetes visibles
-- **XDP captured**: 0 eventos con ifindex=5 ❌
-- Todos los eventos fueron ifindex=3 (SSH en eth1)
+  - tcpdump en eth3: 10 paquetes visibles
+  - **XDP captured**: 0 eventos con ifindex=5 ❌
+  - Todos los eventos fueron ifindex=3 (SSH en eth1)
 
 **Conclusión**: tcpreplay local bypasea XDP Generic.
 
@@ -136,8 +136,8 @@ curl http://192.168.100.1:8080  # Loop 20 veces
 
 **Resultado**:
 - HTTP server: 20 peticiones recibidas ✅
-- curl: 20 successful requests ✅
-- **XDP captured**: 0 eventos con ifindex=5 ❌
+  - curl: 20 successful requests ✅
+  - **XDP captured**: 0 eventos con ifindex=5 ❌
 
 **Conclusión**: Loopback interno no pasa por XDP Generic.
 
@@ -165,13 +165,13 @@ sudo ip netns exec client tcpreplay -i veth-client --pps=100 --duration=10 /vagr
 
 **Resultado**:
 - tcpreplay: 2,002 paquetes enviados (0 failed)
-- **XDP captured**: 0 eventos con ifindex=5 ❌
+  - **XDP captured**: 0 eventos con ifindex=5 ❌
 
 **Análisis adicional**:
 - Bridge con eth3: No funciona (ARP OK pero ICMP falla)
-- Ruta directa: Mismo resultado
-- rp_filter disabled: Sin cambios
-- proxy_arp enabled: Sin efecto
+  - Ruta directa: Mismo resultado
+  - rp_filter disabled: Sin cambios
+  - proxy_arp enabled: Sin efecto
 
 **Conclusión**: XDP Generic no captura tráfico entre namespaces ni bridges.
 
@@ -183,22 +183,22 @@ sudo ip netns exec client tcpreplay -i veth-client --pps=100 --duration=10 /vagr
 
 **XDP Generic (SKB mode) NO captura**:
 - ❌ Tráfico generado localmente (loopback)
-- ❌ Tráfico entre network namespaces
-- ❌ Tráfico procesado por Linux bridges
-- ❌ Paquetes inyectados con tcpreplay local
-- ❌ Cualquier tráfico que no entre físicamente por la NIC
+  - ❌ Tráfico entre network namespaces
+  - ❌ Tráfico procesado por Linux bridges
+  - ❌ Paquetes inyectados con tcpreplay local
+  - ❌ Cualquier tráfico que no entre físicamente por la NIC
 
 **XDP Generic SOLO captura**:
 - ✅ Tráfico que entra FÍSICAMENTE desde fuera de la VM
-- ✅ Ejemplo: SSH desde macOS → eth1 de la VM
+  - ✅ Ejemplo: SSH desde macOS → eth1 de la VM
 
 ### Explicación Técnica
 
 XDP Generic opera en el **software path** del networking stack, después de que el kernel haya tomado decisiones de routing. Cuando el tráfico es:
 
 1. **Generado localmente**: Nunca pasa por el ingress path de la interfaz
-2. **Entre namespaces**: El kernel optimiza con shortcuts internos
-3. **Via bridges**: El bridging ocurre en layer 2, antes del XDP hook
+   2. **Entre namespaces**: El kernel optimiza con shortcuts internos
+   3. **Via bridges**: El bridging ocurre en layer 2, antes del XDP hook
 
 **Diagrama del problema**:
 ```
@@ -289,11 +289,11 @@ SSH from macOS          ~100            ~100            100%
 
 **For Development**:
 - XDP Generic: OK para host-based IDS
-- XDP Generic: Insuficiente para gateway mode testing con tráfico sintético
+  - XDP Generic: Insuficiente para gateway mode testing con tráfico sintético
 
 **For Production**:
 - Native XDP: Requerido para gateway mode confiable
-- Hardware con NICs compatibles (ixgbe, mlx5, etc.)
+  - Hardware con NICs compatibles (ixgbe, mlx5, etc.)
 
 ### 2. Testing Strategy Must Match Deployment
 
@@ -301,8 +301,8 @@ SSH from macOS          ~100            ~100            100%
 
 **Options for validation**:
 1. Segunda VM física conectada a la LAN
-2. Hardware deployment con NICs reales
-3. TC-BPF como alternativa más compatible (menor performance)
+   2. Hardware deployment con NICs reales
+   3. TC-BPF como alternativa más compatible (menor performance)
 
 ### 3. Infrastructure is Ready
 
@@ -310,9 +310,9 @@ SSH from macOS          ~100            ~100            100%
 
 **Confidence level**: ALTO
 - Código correcto
-- BPF maps correctas
-- Dual attachment funcional
-- Host-based mode validado
+  - BPF maps correctas
+  - Dual attachment funcional
+  - Host-based mode validado
 
 ---
 
@@ -325,38 +325,38 @@ SSH from macOS          ~100            ~100            100%
     - Dual BPF map configuration
     - Proper metadata handling
 
-2. **Host-Based IDS VALIDADO**
-    - 100+ eventos capturados
-    - Sub-microsecond latency
-    - Zero drops
+   2. **Host-Based IDS VALIDADO**
+       - 100+ eventos capturados
+       - Sub-microsecond latency
+       - Zero drops
 
-3. **Gateway Mode READY**
-    - Código listo para producción
-    - Falta solo validación con tráfico real externo
+   3. **Gateway Mode READY**
+       - Código listo para producción
+       - Falta solo validación con tráfico real externo
 
-4. **Limitation IDENTIFICADA**
-    - XDP Generic no apto para testing de gateway mode
-    - Documentada científicamente
-    - Estrategia de validación alternativa definida
+   4. **Limitation IDENTIFICADA**
+       - XDP Generic no apto para testing de gateway mode
+       - Documentada científicamente
+       - Estrategia de validación alternativa definida
 
 ### Honest Assessment 📊
 
 **What we KNOW works**:
 - ✅ Dual XDP attachment (verified with bpftool)
-- ✅ BPF map configuration (verified with map dump)
-- ✅ Host-based capture (verified with 100+ events)
-- ✅ Code quality and architecture
+  - ✅ BPF map configuration (verified with map dump)
+  - ✅ Host-based capture (verified with 100+ events)
+  - ✅ Code quality and architecture
 
 **What we CANNOT confirm yet**:
 - ⏳ Gateway mode capture with transit traffic
-- ⏳ Performance metrics for gateway mode
-- ⏳ MAWI dataset processing in gateway mode
+  - ⏳ Performance metrics for gateway mode
+  - ⏳ MAWI dataset processing in gateway mode
 
 **Why we're confident it will work**:
 1. Same XDP program, same code path
-2. BPF map correctly identifies eth3 as gateway mode
-3. IP forwarding and routing operational
-4. Only missing: external traffic source
+   2. BPF map correctly identifies eth3 as gateway mode
+   3. IP forwarding and routing operational
+   4. Only missing: external traffic source
 
 ---
 
@@ -412,9 +412,9 @@ Internet
 
 **Success Criteria**:
 - [ ] Logs show: `[DUAL-NIC] ifindex=5 mode=2 wan=0 iface=if05`
-- [ ] Packet count increases with client traffic
-- [ ] Both host-based (eth1) and gateway (eth3) modes operational simultaneously
-- [ ] Performance metrics: pps, latency, drops
+  - [ ] Packet count increases with client traffic
+  - [ ] Both host-based (eth1) and gateway (eth3) modes operational simultaneously
+  - [ ] Performance metrics: pps, latency, drops
 
 ### Medium Term (This Week)
 
@@ -423,15 +423,15 @@ Internet
     - Latency measurements
     - Compare with host-based mode
 
-2. **MAWI dataset validation**
-    - Process full MAWI dataset through gateway mode
-    - Compare with host-based results
-    - Document any behavioral differences
+   2. **MAWI dataset validation**
+       - Process full MAWI dataset through gateway mode
+       - Compare with host-based results
+       - Document any behavioral differences
 
-3. **Model evaluation**
-    - Test RandomForest detectors on gateway traffic
-    - Verify threshold effectiveness
-    - Document false positive/negative rates
+   3. **Model evaluation**
+       - Test RandomForest detectors on gateway traffic
+       - Verify threshold effectiveness
+       - Document false positive/negative rates
 
 ### Long Term (Production Deployment)
 
@@ -440,15 +440,15 @@ Internet
     - Test on physical hardware
     - Benchmark native vs generic XDP
 
-2. **Deployment Documentation**
-    - Gateway mode deployment guide
-    - Hardware requirements
-    - Performance expectations
+   2. **Deployment Documentation**
+       - Gateway mode deployment guide
+       - Hardware requirements
+       - Performance expectations
 
-3. **Monitoring & Alerting**
-    - Dashboard for dual-NIC metrics
-    - Alerts for interface-specific issues
-    - Per-interface performance tracking
+   3. **Monitoring & Alerting**
+       - Dashboard for dual-NIC metrics
+       - Alerts for interface-specific issues
+       - Per-interface performance tracking
 
 ---
 
@@ -457,22 +457,22 @@ Internet
 ### Code Changes
 
 - **PR Branch**: `feature/day9-dual-xdp-attachment`
-- **Files Modified**:
-    - `include/ebpf_loader.hpp` - Multi-interface support
-    - `src/userspace/ebpf_loader.cpp` - Dual attachment logic
-    - `src/userspace/main.cpp` - Interface iteration
+  - **Files Modified**:
+      - `include/ebpf_loader.hpp` - Multi-interface support
+      - `src/userspace/ebpf_loader.cpp` - Dual attachment logic
+      - `src/userspace/main.cpp` - Interface iteration
 
 ### Documentation
 
 - XDP Generic limitations: [kernel.org/doc/html/latest/bpf/xdp.html]
-- VirtualBox networking: Internal networks vs host-only
-- Network namespaces: Linux namespace behavior with XDP
+  - VirtualBox networking: Internal networks vs host-only
+  - Network namespaces: Linux namespace behavior with XDP
 
 ### Testing Artifacts
 
 - Experiment logs: Day 9 session transcripts
-- bpftool outputs: XDP attachment verification
-- tcpreplay results: All three experiment attempts
+  - bpftool outputs: XDP attachment verification
+  - tcpreplay results: All three experiment attempts
 
 ---
 
@@ -482,9 +482,9 @@ Internet
 
 Este postmortem documenta **honestamente**:
 - ✅ Lo que funcionó (dual attachment, host-based)
-- ✅ Lo que NO funcionó (gateway validation con tráfico sintético)
-- ✅ Por qué no funcionó (limitación de XDP Generic)
-- ✅ Qué aprendimos (testing strategy must match deployment)
+  - ✅ Lo que NO funcionó (gateway validation con tráfico sintético)
+  - ✅ Por qué no funcionó (limitación de XDP Generic)
+  - ✅ Qué aprendimos (testing strategy must match deployment)
 
 No hay "*funciona pero no lo puedo demostrar*" - somos claros: **funciona en host-based, falta validar gateway con setup correcto**.
 
@@ -492,29 +492,29 @@ No hay "*funciona pero no lo puedo demostrar*" - somos claros: **funciona en hos
 
 **Código production-ready**:
 - Clean architecture
-- Proper error handling
-- Comprehensive logging
-- BPF map validation
+  - Proper error handling
+  - Comprehensive logging
+  - BPF map validation
 
 **No technical debt**:
 - No workarounds
-- No hacks
-- No "temporary" fixes
-- Robust multi-interface support
+  - No hacks
+  - No "temporary" fixes
+  - Robust multi-interface support
 
 ### Methodical Approach ✅
 
 **Systematic experimentation**:
 1. Hypothesis → Test → Analyze → Conclude
-2. Three different approaches attempted
-3. Each experiment properly documented
-4. Failure analyzed scientifically
+   2. Three different approaches attempted
+   3. Each experiment properly documented
+   4. Failure analyzed scientifically
 
 **Next steps clearly defined**:
 - Not "try random things"
-- Clear validation strategy
-- Measurable success criteria
-- Realistic timeline
+  - Clear validation strategy
+  - Measurable success criteria
+  - Realistic timeline
 
 ---
 
@@ -527,10 +527,10 @@ No hay "*funciona pero no lo puedo demostrar*" - somos claros: **funciona en hos
 
 **Key Deliverables**:
 - ✅ Dual XDP attachment implementation
-- ✅ Multi-interface BPF map support
-- ✅ Host-based IDS validation
-- ✅ XDP Generic limitation documented
-- ✅ Day 10 strategy defined
+  - ✅ Multi-interface BPF map support
+  - ✅ Host-based IDS validation
+  - ✅ XDP Generic limitation documented
+  - ✅ Day 10 strategy defined
 
 **Blockers**: NONE  
 **Risks**: NONE  
