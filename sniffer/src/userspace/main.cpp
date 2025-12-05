@@ -38,6 +38,7 @@
 #include "feature_logger.hpp"
 #include "dual_nic_manager.hpp"
 #include <algorithm>
+#include <memory>
 
 FeatureLogger::VerbosityLevel g_verbosity = FeatureLogger::VerbosityLevel::NONE;
 
@@ -351,19 +352,24 @@ int main(int argc, char* argv[]) {
         // ============================================================================
         std::cout << "\n[Dual-NIC] Configuring deployment mode..." << std::endl;
 
+        // ✅ Declarar FUERA del try-catch
+        std::unique_ptr<sniffer::DualNICManager> dual_nic_manager;
+        bool dual_mode_enabled = false;
+
         try {
-            sniffer::DualNICManager dual_nic_manager(json_root);
-            dual_nic_manager.initialize();
+            dual_nic_manager = std::make_unique<sniffer::DualNICManager>(json_root);
+            dual_nic_manager->initialize();
 
             // Configure interface_configs BPF map
             int interface_configs_fd = ebpf_loader.get_interface_configs_fd();
             if (interface_configs_fd >= 0) {
-                dual_nic_manager.configure_bpf_map(interface_configs_fd);
+                dual_nic_manager->configure_bpf_map(interface_configs_fd);
 
                 // Setup network if needed (gateway mode)
-                if (dual_nic_manager.is_dual_mode()) {
-                    dual_nic_manager.enable_ip_forwarding();
-                    dual_nic_manager.setup_nat_rules();
+                if (dual_nic_manager->is_dual_mode()) {
+                    dual_nic_manager->enable_ip_forwarding();
+                    dual_nic_manager->setup_nat_rules();
+                    dual_mode_enabled = true;
                 }
             } else {
                 std::cout << "[WARNING] interface_configs map not found - using legacy single-interface mode" << std::endl;
@@ -371,6 +377,7 @@ int main(int argc, char* argv[]) {
         } catch (const std::exception& e) {
             std::cerr << "[WARNING] Dual-NIC configuration failed: " << e.what() << std::endl;
             std::cerr << "          Falling back to legacy single-interface mode" << std::endl;
+            dual_nic_manager.reset();
         }
 
         std::cout << "✅ Deployment configuration complete\n" << std::endl;
@@ -382,9 +389,9 @@ int main(int argc, char* argv[]) {
         std::cout << "[INFO] Using SKB mode (TC-based eBPF)" << std::endl;
 
         // Dual-NIC: attach a todas las interfaces configuradas
-        if (dual_nic_mgr && dual_nic_mgr->is_dual_mode()) {
+        if (dual_nic_manager && dual_mode_enabled) {
             std::cout << "[INFO] Dual-NIC mode: attaching to multiple interfaces" << std::endl;
-            const auto& interfaces = dual_nic_mgr->get_interfaces();
+            const auto& interfaces = dual_nic_manager->get_interfaces();
             attached = true;
 
             for (const auto& iface : interfaces) {

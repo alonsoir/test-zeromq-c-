@@ -25,9 +25,7 @@ EbpfLoader::EbpfLoader()
       filter_settings_fd_(-1),
       program_loaded_(false),
       xdp_attached_(false),
-      skb_attached_(false),
-      attached_ifindex_() {
-}
+      skb_attached_(false){}
 
     EbpfLoader::~EbpfLoader() {
     // Guardar stderr original
