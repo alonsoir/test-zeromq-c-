@@ -64,6 +64,15 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--audio", "none"]
       vb.customize ["modifyvm", :id, "--usb", "off"]
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+
+      # GROK4'S SECRET SAUCE – Máximo rendimiento XDP en VirtualBox
+      vb.customize ["modifyvm", :id, "--nictrace3", "on"]
+      vb.customize ["modifyvm", :id, "--nictracefile3", "gateway.pcap"]
+      vb.customize ["modifyvm", :id, "--cableconnected3", "on"]
+
+      # Fuerza driver más rápido para la interfaz gateway (eth3)
+      # GROK4'S SECRET SAUCE – Máximo rendimiento XDP en VirtualBox
+      vb.customize ["modifyvm", :id, "--nictype3", "82545EM"]  # Intel PRO/1000 MT Desktop → mejor con XDP
     end
 
     # ════════════════════════════════════════════════════════════════════════
