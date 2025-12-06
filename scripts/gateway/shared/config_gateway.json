@@ -1,0 +1,39 @@
+{
+  "mode": "dual_nic",
+  "deployment": "dual",
+  "interfaces": [
+    {
+      "name": "eth1",
+      "ip": "192.168.56.20",
+      "mode": "host_based",
+      "wan_facing": true,
+      "description": "WAN-facing interface for host-based IDS (attacks from macOS)"
+    },
+    {
+      "name": "eth3",
+      "ip": "192.168.100.1",
+      "mode": "gateway",
+      "wan_facing": false,
+      "description": "LAN-facing interface for gateway mode (traffic from client VM)"
+    }
+  ],
+  "zmq_port": 5571,
+  "ring_buffer_size": 32,
+  "capture_threads": 2,
+  "log_level": "INFO",
+  "log_file": "/tmp/sniffer_gateway.log",
+  "comments": {
+    "deployment_modes": [
+      "single: Host-based IDS on single interface",
+      "dual: Dual-NIC with host-based + gateway modes simultaneously"
+    ],
+    "interface_modes": [
+      "host_based: Capture traffic destined to this host (ifindex=3, eth1)",
+      "gateway: Capture transit traffic passing through (ifindex=5, eth3)"
+    ],
+    "validation": {
+      "host_based": "Look for events with ifindex=3 in logs",
+      "gateway": "Look for events with ifindex=5 in logs (DAY 10 objective)"
+    }
+  }
+}
