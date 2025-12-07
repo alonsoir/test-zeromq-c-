@@ -76,7 +76,6 @@ sniffer/logs/
 
 # IDE
 .vscode/
-sniffer/build/
 *.backup*
 *.orig
 *.rej
@@ -161,3 +160,5 @@ coverage/
 
 # mawi
 mawi/
+
+datasets/
