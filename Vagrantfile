@@ -15,11 +15,11 @@
 # │  │                         │         │                              │   │
 # │  │  • eBPF/XDP Sniffer     │◄────────│  • Attack simulation         │   │
 # │  │  • ML Detector          │   LAN   │  • Gateway testing           │   │
-# │  │  • Firewall ACL Agent   │  eth3   │  • MAWI dataset replay       │   │
+# │  │  • Firewall ACL Agent   │  eth2   │  • PCAP dataset replay       │   │
 # │  │  • RAG Security System  │         │  • Performance benchmarks    │   │
 # │  │                         │         │                              │   │
 # │  │  eth1: 192.168.56.20    │         │  eth1: 192.168.100.50        │   │
-# │  │  eth3: 192.168.100.1    │         │  Gateway: 192.168.100.1      │   │
+# │  │  eth2: 192.168.100.1    │         │  Gateway: 192.168.100.1      │   │
 # │  └─────────────────────────┘         └──────────────────────────────┘   │
 # └──────────────────────────────────────────────────────────────────────────┘
 #
@@ -44,48 +44,38 @@ Vagrant.configure("2") do |config|
     defender.vm.box_version = "12.20240905.1"
 
     defender.vm.provider "virtualbox" do |vb|
-      vb.name = "ml-defender-gateway-lab"  # Changed to avoid conflict
+      vb.name = "ml-defender-gateway-lab"
       vb.memory = "8192"
       vb.cpus = 6
 
-      # Optimizaciones para red
-      vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
-      vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
-      vb.customize ["modifyvm", :id, "--nictype3", "virtio"]
-      vb.customize ["modifyvm", :id, "--nictype4", "virtio"]  # eth3 gateway
+      # Network optimizations - Simple virtio (stable, proven)
+      vb.customize ["modifyvm", :id, "--nictype1", "virtio"]  # NAT
+      vb.customize ["modifyvm", :id, "--nictype2", "virtio"]  # WAN (eth1)
+      vb.customize ["modifyvm", :id, "--nictype3", "virtio"]  # Gateway (eth2)
 
       # Promiscuous mode para captura de paquetes
-      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]  # eth1 (host-only)
-      vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]  # eth2 (public bridge)
-      vb.customize ["modifyvm", :id, "--nicpromisc4", "allow-all"]  # eth3 (gateway LAN)
+      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]  # eth1 (WAN)
+      vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]  # eth2 (Gateway)
 
-      # Optimizaciones adicionales
+      # General optimizations
       vb.customize ["modifyvm", :id, "--ioapic", "on"]
       vb.customize ["modifyvm", :id, "--audio", "none"]
       vb.customize ["modifyvm", :id, "--usb", "off"]
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-
-      # GROK4'S SECRET SAUCE – Máximo rendimiento XDP en VirtualBox
-      vb.customize ["modifyvm", :id, "--nictrace3", "on"]
-      vb.customize ["modifyvm", :id, "--nictracefile3", "gateway.pcap"]
-      vb.customize ["modifyvm", :id, "--cableconnected3", "on"]
-
-      # Fuerza driver más rápido para la interfaz gateway (eth3)
-      # GROK4'S SECRET SAUCE – Máximo rendimiento XDP en VirtualBox
-      vb.customize ["modifyvm", :id, "--nictype3", "82545EM"]  # Intel PRO/1000 MT Desktop → mejor con XDP
     end
 
     # ════════════════════════════════════════════════════════════════════════
-    # RED - Configuración Dual-NIC para Testing
+    # RED - Configuración Dual-NIC para Testing (STABLE)
     # ════════════════════════════════════════════════════════════════════════
     # eth0: NAT (Vagrant management)
-    # eth1: 192.168.56.20 (WAN-facing, host-only) - Para ataques desde OSX
-    # eth2: public_network bridge (captura externa opcional)
-    # eth3: 192.168.100.1 (LAN-facing, internal) - Para gateway mode testing
+    # eth1: 192.168.56.20 (WAN-facing, host-only) - Host-based IDS
+    # eth2: 192.168.100.1 (LAN-facing, internal) - Gateway mode
+    # Note: public_network removed for stability (caused NIC reordering)
 
     defender.vm.network "private_network", ip: "192.168.56.20"  # eth1: WAN-facing
-    defender.vm.network "public_network", bridge: "en0: Wi-Fi"  # eth2: Captura externa
-    defender.vm.network "private_network", ip: "192.168.100.1", virtualbox__intnet: "ml_defender_gateway_lan"  # eth3: Gateway LAN
+    # defender.vm.network "public_network", bridge: "en0: Wi-Fi"  # DISABLED - caused interface swap
+    defender.vm.network "private_network", ip: "192.168.100.1",
+      virtualbox__intnet: "ml_defender_gateway_lan"  # eth2: Gateway LAN
 
     defender.vm.network "forwarded_port", guest: 5571, host: 5571
     defender.vm.network "forwarded_port", guest: 5572, host: 5572
@@ -113,36 +103,29 @@ Vagrant.configure("2") do |config|
         echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
       fi
 
-      # 3. CRITICAL: Disable rp_filter (Qwen edge case fix)
-      echo "🔧 Disabling rp_filter (prevents routing issues)..."
+      # 3. CRITICAL: Disable rp_filter (prevents routing issues)
+      echo "🔧 Disabling rp_filter..."
       sysctl -w net.ipv4.conf.all.rp_filter=0
       sysctl -w net.ipv4.conf.eth1.rp_filter=0
-      sysctl -w net.ipv4.conf.eth3.rp_filter=0
+      sysctl -w net.ipv4.conf.eth2.rp_filter=0
       if ! grep -q "net.ipv4.conf.all.rp_filter" /etc/sysctl.conf; then
         echo "net.ipv4.conf.all.rp_filter=0" >> /etc/sysctl.conf
         echo "net.ipv4.conf.eth1.rp_filter=0" >> /etc/sysctl.conf
-        echo "net.ipv4.conf.eth3.rp_filter=0" >> /etc/sysctl.conf
+        echo "net.ipv4.conf.eth2.rp_filter=0" >> /etc/sysctl.conf
       fi
 
       # 4. Configure NAT for gateway mode
       echo "🔥 Configuring NAT/MASQUERADE..."
       iptables -t nat -F POSTROUTING
       iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
-      iptables -A FORWARD -i eth3 -o eth1 -j ACCEPT
-      iptables -A FORWARD -i eth1 -o eth3 -m state --state RELATED,ESTABLISHED -j ACCEPT
+      iptables -A FORWARD -i eth2 -o eth1 -j ACCEPT
+      iptables -A FORWARD -i eth1 -o eth2 -m state --state RELATED,ESTABLISHED -j ACCEPT
 
-      # 5. Detectar interfaz bridge automáticamente (para captura externa)
-      BRIDGE_INTERFACE=""
-      for iface in eth2; do
-        if ip link show $iface >/dev/null 2>&1; then
-          BRIDGE_INTERFACE=$iface
-          break
-        fi
-      done
-
-      if [ -z "$BRIDGE_INTERFACE" ]; then
-        echo "⚠️  No se encontró interfaz bridge, captura externa no disponible"
-        BRIDGE_INTERFACE="none"
+      # 5. Detectar interfaz gateway automáticamente
+      GATEWAY_IFACE=$(ip -o addr show | grep "192.168.100.1" | awk '{print $2}')
+      if [ -z "$GATEWAY_IFACE" ]; then
+        echo "⚠️  Gateway interface not found, defaulting to eth2"
+        GATEWAY_IFACE="eth2"
       fi
 
       echo "═══════════════════════════════════════════════════════════"
@@ -150,14 +133,13 @@ Vagrant.configure("2") do |config|
       echo "═══════════════════════════════════════════════════════════"
       echo "eth0: NAT (Vagrant management)"
       echo "eth1: 192.168.56.20 (WAN-facing, host-only) - Host-Based IDS"
-      echo "eth2: $BRIDGE_INTERFACE (Captura externa opcional)"
-      echo "eth3: 192.168.100.1 (LAN-facing, internal) - Gateway Mode"
+      echo "eth2: 192.168.100.1 (LAN-facing, internal) - Gateway Mode"
       echo "IP Forwarding: $(sysctl net.ipv4.ip_forward | cut -d= -f2)"
       echo "rp_filter: $(sysctl net.ipv4.conf.all.rp_filter | cut -d= -f2)"
+      echo "Gateway Interface: $GATEWAY_IFACE"
       echo "═══════════════════════════════════════════════════════════"
 
       # 6. Configurar modo promiscuo en interfaces de captura
-      # eth1: Host-Based Mode
       echo "🔍 Configurando eth1 (WAN-facing, host-based)..."
       if ip link show eth1 >/dev/null 2>&1; then
         ip link set eth1 up
@@ -171,34 +153,19 @@ Vagrant.configure("2") do |config|
         fi
       fi
 
-      # eth2: Captura externa (bridge a Wi-Fi)
-      if [ "$BRIDGE_INTERFACE" != "none" ]; then
-        echo "🔍 Configurando eth2 (captura externa)..."
-        ip link set $BRIDGE_INTERFACE up
-        ip link set $BRIDGE_INTERFACE promisc on
-        ethtool -K $BRIDGE_INTERFACE gro off tso off gso off 2>/dev/null || true
+      echo "🔍 Configurando $GATEWAY_IFACE (LAN-facing, gateway mode)..."
+      if ip link show $GATEWAY_IFACE >/dev/null 2>&1; then
+        ip link set $GATEWAY_IFACE up
+        ip link set $GATEWAY_IFACE promisc on
+        ethtool -K $GATEWAY_IFACE gro off tso off gso off 2>/dev/null || true
 
-        if ip link show $BRIDGE_INTERFACE | grep -q PROMISC; then
-          echo "✅ eth2: Modo promiscuo ACTIVO (Captura externa)"
+        if ip link show $GATEWAY_IFACE | grep -q PROMISC; then
+          echo "✅ $GATEWAY_IFACE: Modo promiscuo ACTIVO (Gateway Mode)"
         else
-          echo "❌ eth2: Modo promiscuo INACTIVO"
-        fi
-      fi
-
-      # eth3: Gateway Mode
-      echo "🔍 Configurando eth3 (LAN-facing, gateway mode)..."
-      if ip link show eth3 >/dev/null 2>&1; then
-        ip link set eth3 up
-        ip link set eth3 promisc on
-        ethtool -K eth3 gro off tso off gso off 2>/dev/null || true
-
-        if ip link show eth3 | grep -q PROMISC; then
-          echo "✅ eth3: Modo promiscuo ACTIVO (Gateway Mode)"
-        else
-          echo "❌ eth3: Modo promiscuo INACTIVO"
+          echo "❌ $GATEWAY_IFACE: Modo promiscuo INACTIVO"
         fi
       else
-        echo "⚠️  eth3 no encontrada (normal si no usas gateway mode)"
+        echo "⚠️  $GATEWAY_IFACE no encontrada"
       fi
 
       # 7. Verificación final
@@ -213,13 +180,10 @@ Vagrant.configure("2") do |config|
       echo ""
     SHELL
 
-    # [FULL PROVISIONING SCRIPT FROM ORIGINAL VAGRANTFILE CONTINUES HERE...]
-    # This maintains 100% compatibility with existing infrastructure
-
+    # ════════════════════════════════════════════════════════════════════════
+    # Provisioning: ALL Dependencies
+    # ════════════════════════════════════════════════════════════════════════
     defender.vm.provision "shell", name: "all-dependencies", inline: <<-DEPENDENCIES_EOF
-      # Full provisioning script from original Vagrantfile preserved below
-      # Lines 250-1100 of original document maintained intact
-
       export DEBIAN_FRONTEND=noninteractive
       set -x
 
@@ -285,7 +249,7 @@ LIBBPF_PROFILE
       # Python
       apt-get install -y python3 python3-pip python3-venv python3-dev
 
-      # Testing tools (NUEVO para gateway testing)
+      # Testing tools (para gateway testing)
       apt-get install -y hping3 nmap tcpreplay netcat-openbsd iperf3 net-tools dnsutils
 
       # Docker
@@ -424,7 +388,7 @@ EOF
         cmake .. && make -j4
       fi
 
-      # Bash aliases (full set from original)
+      # Bash aliases
       if ! grep -q "build-rag" /home/vagrant/.bashrc; then
         cat >> /home/vagrant/.bashrc << 'BASHRC_EOF'
 # ML Defender aliases
@@ -434,8 +398,8 @@ alias build-firewall='cd /vagrant/firewall-acl-agent/build && rm -rf * && cmake 
 alias build-rag='cd /vagrant/rag/build && rm -rf * && cmake .. && make -j4'
 alias proto-regen='cd /vagrant/protobuf && ./generate.sh && cp network_security.pb.* /vagrant/firewall-acl-agent/proto/'
 alias run-firewall='cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent -c ../config/firewall.json'
-alias run-detector='cd /vagrant/ml-detector/build && ./ml-detector -c config/ml_detector_config.json'
-alias run-sniffer='cd /vagrant/sniffer/build && sudo ./sniffer -c config/sniffer.json'
+alias run-detector='cd /vagrant/ml-detector/build && ./ml-detector -c ../config/ml_detector_config.json'
+alias run-sniffer='cd /vagrant/sniffer/build && sudo ./sniffer -c ../config/sniffer.json'
 alias run-rag='cd /vagrant/rag/build && ./rag-security -c ../config/rag_config.json'
 alias run-lab='cd /vagrant && bash scripts/run_lab_dev.sh'
 alias kill-lab='sudo pkill -9 firewall-acl-agent; pkill -9 ml-detector; sudo pkill -9 sniffer; pkill -9 rag-security'
@@ -446,7 +410,7 @@ alias logs-sniffer='tail -f /vagrant/logs/lab/sniffer.log 2>/dev/null'
 alias logs-rag='tail -f /vagrant/rag/build/logs/*.log 2>/dev/null'
 alias logs-lab='cd /vagrant && bash scripts/monitor_lab.sh'
 
-# Gateway testing aliases (DAY 10)
+# Gateway testing aliases
 alias test-gateway='/vagrant/scripts/gateway/defender/validate_gateway.sh'
 alias start-gateway='/vagrant/scripts/gateway/defender/start_gateway_test.sh'
 alias gateway-dash='/vagrant/scripts/gateway/defender/gateway_dashboard.sh'
@@ -461,7 +425,7 @@ cat << 'WELCOME'
 ╚════════════════════════════════════════════════════════════╝
 🎯 Dual-NIC Configuration:
    eth1: 192.168.56.20 (WAN-facing, host-based IDS)
-   eth3: 192.168.100.1 (LAN-facing, gateway mode)
+   eth2: 192.168.100.1 (LAN-facing, gateway mode)
 🚀 Gateway Testing:
    start-gateway    # Start sniffer in gateway mode
    test-gateway     # Validate gateway capture
@@ -473,12 +437,47 @@ BASHRC_EOF
       echo "✅ PROVISIONING COMPLETED SUCCESSFULLY!"
     DEPENDENCIES_EOF
 
+    # ════════════════════════════════════════════════════════════════════════
+    # Provisioning: Auto-configure sniffer.json
+    # ════════════════════════════════════════════════════════════════════════
+    defender.vm.provision "shell", name: "configure-sniffer", run: "always", inline: <<-SNIFFER_CONFIG
+      echo "🔧 Auto-configuring sniffer.json for current network topology..."
+
+      # Detect gateway interface
+      GATEWAY_IFACE=$(ip -o addr show | grep "192.168.100.1" | awk '{print $2}')
+
+      if [ -z "$GATEWAY_IFACE" ]; then
+        echo "⚠️  Gateway interface not found, defaulting to eth2"
+        GATEWAY_IFACE="eth2"
+      fi
+
+      echo "✅ Gateway interface detected: $GATEWAY_IFACE"
+
+      # Update sniffer.json with correct interface
+      if [ -f /vagrant/sniffer/config/sniffer.json ]; then
+        # Backup
+        cp /vagrant/sniffer/config/sniffer.json /vagrant/sniffer/config/sniffer.json.auto.backup
+
+        # Update using sed (simple and reliable)
+        sed -i "s/\\"interface\\": \\"eth[0-9]\\"/\\"interface\\": \\"$GATEWAY_IFACE\\"/g" /vagrant/sniffer/config/sniffer.json
+
+        echo "✅ sniffer.json updated with gateway interface: $GATEWAY_IFACE"
+      else
+        echo "⚠️  sniffer.json not found at /vagrant/sniffer/config/sniffer.json"
+      fi
+
+      echo "═══════════════════════════════════════════════════════════"
+      echo "🎯 SNIFFER AUTO-CONFIGURATION COMPLETE"
+      echo "═══════════════════════════════════════════════════════════"
+      echo "WAN interface:     eth1 (192.168.56.20)"
+      echo "Gateway interface: $GATEWAY_IFACE (192.168.100.1)"
+      echo "═══════════════════════════════════════════════════════════"
+    SNIFFER_CONFIG
+
   end  # End defender VM
 
   # ════════════════════════════════════════════════════════════════════════════
   # CLIENT VM - Traffic Generator & Gateway Testing
-  # TOGGLE: autostart: false (disabled by default for development)
-  #         autostart: true (enables for gateway testing)
   # ════════════════════════════════════════════════════════════════════════════
 
   config.vm.define "client", autostart: false do |client|
@@ -494,7 +493,7 @@ BASHRC_EOF
       vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     end
 
-    # Network: LAN only (connects to defender eth3)
+    # Network: LAN only (connects to defender eth2)
     client.vm.network "private_network",
       ip: "192.168.100.50",
       virtualbox__intnet: "ml_defender_gateway_lan"
@@ -506,7 +505,7 @@ BASHRC_EOF
       echo "║  ML CLIENT - Traffic Generator Setup                            ║"
       echo "═══════════════════════════════════════════════════════════════════"
 
-      # Install tools (with robust apt flags)
+      # Install tools
       apt-get update -qq
       apt-get install -y --no-install-recommends \
         --allow-downgrades --allow-remove-essential --allow-change-held-packages \
@@ -515,7 +514,7 @@ BASHRC_EOF
         tcpdump tcpreplay netcat-openbsd dnsutils \
         iputils-ping net-tools
 
-      # Install iperf3 separately (can cause systemd issues during provisioning)
+      # Install iperf3 separately
       apt-get install -y --no-install-recommends \
         -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         iperf3 || echo "⚠️  iperf3 install had issues (non-critical)"
@@ -530,7 +529,7 @@ BASHRC_EOF
 
       echo "✅ CLIENT READY"
       echo "   IP: 192.168.100.50"
-      echo "   Gateway: 192.168.100.1 (defender eth3)"
+      echo "   Gateway: 192.168.100.1 (defender eth2)"
     CLIENT
 
   end  # End client VM
