@@ -1,17 +1,18 @@
 {
-  "_header": "C++20 SNIFFER v3.3.1 - Day 11 Dual-NIC Configuration (eth2 Gateway)",
+  "_header": "C++20 SNIFFER v3.3.3 - Day 12 Fast Detector Externalized Thresholds",
   "_refactor_notes": {
-    "date": "2025-12-07",
+    "date": "2025-12-08",
     "changes": [
       "v3.2 (2025-10-28): Removed duplicate capture.interface fields, centralized in profiles",
       "v3.3 (2025-12-01): Added dual-NIC deployment support for host-based + gateway modes",
       "v3.3.1 (2025-12-02): Adapted for Day 8 testing - eth1 (WAN) + eth3 (LAN) mapping",
-      "v3.3.2 (2025-12-07): Fixed for Day 11 - eth1 (WAN) + eth2 (LAN) after removing public_network"
+      "v3.3.2 (2025-12-07): Fixed for Day 11 - eth1 (WAN) + eth2 (LAN) after removing public_network",
+      "v3.3.3 (2025-12-08): DAY 12 - Externalized Fast Detector thresholds (Via Appia Quality)"
     ]
   },
   "component": {
     "name": "cpp_evolutionary_sniffer",
-    "version": "3.3.2",
+    "version": "3.3.3",
     "mode": "kernel_user_hybrid",
     "kernel_version_required": "6.1.0"
   },
@@ -121,7 +122,7 @@
     }
   },
 
-  "node_id": "cpp_sniffer_v33_day11",
+  "node_id": "cpp_sniffer_v33_day12",
   "cluster_name": "ml-defender-dual-nic-stable",
 
   "profiles": {
@@ -497,7 +498,7 @@
 
   "ml_defender": {
     "_comment": "ML Defender Embedded C++20 Detectors - Day 11 Conservative Thresholds",
-    "_source": "Single source of truth for detection thresholds",
+    "_source": "Single source of truth for ML Tricapa detection thresholds",
     "_calibration": "Conservative values for PCAP replay validation",
     "_day11_goal": "Validate models with real-world traffic (CTU-13, tcpreplay samples)",
     "thresholds": {
@@ -510,6 +511,78 @@
       "min_threshold": 0.5,
       "max_threshold": 0.99,
       "fallback_threshold": 0.75
+    }
+  },
+
+  "fast_detector": {
+    "_comment": "Fast Path Heuristic Detection (Sniffer-side) - Day 12 Externalized Config",
+    "_philosophy": "Via Appia Quality: No hardcoded thresholds, JSON is the law",
+    "_performance": "Sub-microsecond heuristics for obvious threats (C&C, lateral movement)",
+    "_activation": "Triggers on specific ransomware/C&C patterns detected by TimeWindowAggregator",
+    "_scope": "Selective detection - only activates when suspicious patterns exceed thresholds",
+
+    "enabled": true,
+
+    "ransomware": {
+      "_description": "Ransomware-specific heuristics (C&C communication, lateral movement, exfiltration)",
+
+      "scores": {
+        "high_threat": 0.95,
+        "suspicious": 0.70,
+        "alert": 0.75
+      },
+
+      "activation_thresholds": {
+        "_comment": "Conditions that trigger Fast Detector (ANY condition = activation)",
+        "external_ips_30s": 15,
+        "smb_diversity": 10,
+        "dns_entropy": 2.5,
+        "failed_dns_ratio": 0.3,
+        "upload_download_ratio": 3.0,
+        "burst_connections": 50,
+        "unique_destinations_30s": 30
+      },
+
+      "classification": {
+        "_comment": "High threat if MULTIPLE strong indicators (ExtIPs OR SMB diversity)",
+        "high_threat_conditions": [
+          "external_ips_30s > threshold",
+          "smb_diversity > threshold"
+        ],
+        "suspicious_conditions": [
+          "dns_entropy > threshold",
+          "burst_connections > threshold"
+        ]
+      }
+    },
+
+    "ddos": {
+      "_description": "DDoS-specific heuristics (future - currently not implemented)",
+      "_status": "PLANNED",
+      "scores": {
+        "high_threat": 0.95,
+        "suspicious": 0.70
+      },
+      "activation_thresholds": {
+        "syn_flood_rate": 10000,
+        "udp_flood_rate": 50000,
+        "icmp_flood_rate": 5000
+      }
+    },
+
+    "logging": {
+      "_comment": "Detailed logging for F1-score validation",
+      "log_activations": true,
+      "log_features": true,
+      "log_decisions": true,
+      "log_frequency_seconds": 1,
+      "_day12_goal": "Log every detection for precision/recall calculation vs ground truth"
+    },
+
+    "performance": {
+      "max_latency_us": 1,
+      "enable_metrics": true,
+      "track_activation_rate": true
     }
   }
 }

@@ -1,4 +1,4 @@
-// main.cpp - Enhanced Sniffer v3.2 with Hybrid Filtering
+// sniffer/src/userspace/main.cpp - Enhanced Sniffer v3.2 with Hybrid Filtering
 // FECHA: 31 de Octubre de 2025
 // FUNCIONALIDAD: Sistema de filtros híbridos con BPF Maps
 // Stats handled by RingBufferConsumer internally
@@ -8,6 +8,7 @@
 #include "main.h"
 #include "network_security.pb.h"
 #include "config_manager.hpp"
+#include "fast_detector_config.hpp"  // Day 12 - Externalized thresholds
 #include "zmq_pool_manager.hpp"
 #include "ebpf_loader.hpp"
 #include "ring_consumer.hpp"
@@ -293,6 +294,56 @@ int main(int argc, char* argv[]) {
         std::cout << "✅ Configuration loaded successfully" << std::endl;
 
         // ============================================================================
+        // EXTRACT FAST DETECTOR CONFIGURATION (Day 12)
+        // ============================================================================
+        sniffer::FastDetectorConfig fast_detector_config;
+        fast_detector_config.enabled = g_config.fast_detector.enabled;
+
+        // Ransomware scores
+        fast_detector_config.ransomware.scores.high_threat =
+            g_config.fast_detector.ransomware.scores.high_threat;
+        fast_detector_config.ransomware.scores.suspicious =
+            g_config.fast_detector.ransomware.scores.suspicious;
+        fast_detector_config.ransomware.scores.alert =
+            g_config.fast_detector.ransomware.scores.alert;
+
+        // Ransomware thresholds
+        fast_detector_config.ransomware.activation_thresholds.external_ips_30s =
+            g_config.fast_detector.ransomware.activation_thresholds.external_ips_30s;
+        fast_detector_config.ransomware.activation_thresholds.smb_diversity =
+            g_config.fast_detector.ransomware.activation_thresholds.smb_diversity;
+        fast_detector_config.ransomware.activation_thresholds.dns_entropy =
+            g_config.fast_detector.ransomware.activation_thresholds.dns_entropy;
+        fast_detector_config.ransomware.activation_thresholds.failed_dns_ratio =
+            g_config.fast_detector.ransomware.activation_thresholds.failed_dns_ratio;
+        fast_detector_config.ransomware.activation_thresholds.upload_download_ratio =
+            g_config.fast_detector.ransomware.activation_thresholds.upload_download_ratio;
+        fast_detector_config.ransomware.activation_thresholds.burst_connections =
+            g_config.fast_detector.ransomware.activation_thresholds.burst_connections;
+        fast_detector_config.ransomware.activation_thresholds.unique_destinations_30s =
+            g_config.fast_detector.ransomware.activation_thresholds.unique_destinations_30s;
+
+        // Logging
+        fast_detector_config.logging.log_activations =
+            g_config.fast_detector.logging.log_activations;
+        fast_detector_config.logging.log_features =
+            g_config.fast_detector.logging.log_features;
+        fast_detector_config.logging.log_decisions =
+            g_config.fast_detector.logging.log_decisions;
+        fast_detector_config.logging.log_frequency_seconds =
+            g_config.fast_detector.logging.log_frequency_seconds;
+
+        // Performance
+        fast_detector_config.performance.max_latency_us =
+            g_config.fast_detector.performance.max_latency_us;
+        fast_detector_config.performance.enable_metrics =
+            g_config.fast_detector.performance.enable_metrics;
+        fast_detector_config.performance.track_activation_rate =
+            g_config.fast_detector.performance.track_activation_rate;
+
+        std::cout << "✅ Fast Detector configuration extracted" << std::endl;
+
+        // ============================================================================
         // PARSE FILTER CONFIGURATION (v3.2)
         // ============================================================================
         std::cout << "\n[Filter] Parsing filter configuration..." << std::endl;
@@ -562,7 +613,7 @@ int main(int argc, char* argv[]) {
         sniffer_config.transport.compression.compression_ratio_threshold = g_config.compression.compression_ratio_threshold;
         sniffer_config.transport.compression.adaptive_compression = g_config.compression.adaptive_compression;
 
-        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config);
+        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config, fast_detector_config);
         auto& ring_consumer = *ring_consumer_ptr;
 
         // Configure stats interval from monitoring config

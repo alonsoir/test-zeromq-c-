@@ -3,6 +3,7 @@
 
 #include "protocol_numbers.hpp"  // IANA protocol numbers
 #include "main.h"
+#include "fast_detector_config.hpp"
 #include "network_security.pb.h"
 #include "thread_manager.hpp"
 #include "fast_detector.hpp"
@@ -93,8 +94,9 @@ class RingBufferConsumer {
 public:
     using EventCallback = std::function<void(const SimpleEvent&)>;
 
-    explicit RingBufferConsumer(const SnifferConfig& config);
-    ~RingBufferConsumer();
+	explicit RingBufferConsumer(const SnifferConfig& config,const FastDetectorConfig& fast_detector_config = FastDetectorConfig{});
+
+	~RingBufferConsumer();
 
     bool initialize(int ring_fd, std::shared_ptr<ThreadManager> thread_manager);
     bool start();
@@ -165,7 +167,8 @@ private:
 
     // Configuration
     SnifferConfig config_;
-    int stats_interval_seconds_{30};  // Default 30 seconds
+	FastDetectorConfig fast_detector_config_;  // Day 12 - Externalized thresholds
+    int stats_interval_seconds_{30};  // Default 30 seconds todo esto hay que cambiarlo, quitar números mágicos
 
     // Ring buffer
     ring_buffer* ring_buf_;

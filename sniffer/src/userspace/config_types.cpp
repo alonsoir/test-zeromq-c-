@@ -1,4 +1,4 @@
-// config_types.cpp - Minimal implementation for v3.2
+// sniffer/src/userspace/config_types.cpp - Minimal implementation for v3.2
 // Implements strict_load_json_config using existing ConfigManager
 #include "config_types.h"
 #include "config_manager.hpp"
@@ -140,6 +140,79 @@ bool strict_load_json_config(const std::string& config_path, StrictSnifferConfig
         // Monitoring
         config.monitoring.stats_interval_seconds = sniffer_config->monitoring.stats_interval_seconds;
 
+        // Fast Detector - Parse directly from JSON since it's new
+        Json::Value root;
+        std::ifstream config_file(config_path);
+        if (config_file.is_open()) {
+            config_file >> root;
+            config_file.close();
+
+            if (root.isMember("fast_detector")) {
+                const auto& fd = root["fast_detector"];
+
+                // Main settings
+                config.fast_detector.enabled = fd.get("enabled", true).asBool();
+
+                // Ransomware scores
+                if (fd.isMember("ransomware") && fd["ransomware"].isMember("scores")) {
+                    const auto& scores = fd["ransomware"]["scores"];
+                    config.fast_detector.ransomware.scores.high_threat = scores.get("high_threat", 0.95).asDouble();
+                    config.fast_detector.ransomware.scores.suspicious = scores.get("suspicious", 0.70).asDouble();
+                    config.fast_detector.ransomware.scores.alert = scores.get("alert", 0.75).asDouble();
+                }
+
+                // Ransomware thresholds
+                if (fd.isMember("ransomware") && fd["ransomware"].isMember("activation_thresholds")) {
+                    const auto& thresholds = fd["ransomware"]["activation_thresholds"];
+                    config.fast_detector.ransomware.activation_thresholds.external_ips_30s =
+                        thresholds.get("external_ips_30s", 15).asInt();
+                    config.fast_detector.ransomware.activation_thresholds.smb_diversity =
+                        thresholds.get("smb_diversity", 10).asInt();
+                    config.fast_detector.ransomware.activation_thresholds.dns_entropy =
+                        thresholds.get("dns_entropy", 2.5).asDouble();
+                    config.fast_detector.ransomware.activation_thresholds.failed_dns_ratio =
+                        thresholds.get("failed_dns_ratio", 0.3).asDouble();
+                    config.fast_detector.ransomware.activation_thresholds.upload_download_ratio =
+                        thresholds.get("upload_download_ratio", 3.0).asDouble();
+                    config.fast_detector.ransomware.activation_thresholds.burst_connections =
+                        thresholds.get("burst_connections", 50).asInt();
+                    config.fast_detector.ransomware.activation_thresholds.unique_destinations_30s =
+                        thresholds.get("unique_destinations_30s", 30).asInt();
+                }
+
+                // Logging
+                if (fd.isMember("logging")) {
+                    const auto& logging = fd["logging"];
+                    config.fast_detector.logging.log_activations = logging.get("log_activations", true).asBool();
+                    config.fast_detector.logging.log_features = logging.get("log_features", true).asBool();
+                    config.fast_detector.logging.log_decisions = logging.get("log_decisions", true).asBool();
+                    config.fast_detector.logging.log_frequency_seconds = logging.get("log_frequency_seconds", 60).asInt();
+                }
+
+                // Performance
+                if (fd.isMember("performance")) {
+                    const auto& perf = fd["performance"];
+                    config.fast_detector.performance.max_latency_us = perf.get("max_latency_us", 10).asInt();
+                    config.fast_detector.performance.enable_metrics = perf.get("enable_metrics", true).asBool();
+                    config.fast_detector.performance.track_activation_rate = perf.get("track_activation_rate", true).asBool();
+                }
+
+                if (verbose) {
+                    std::cout << "✅ Fast Detector configuration loaded:" << std::endl;
+                    std::cout << "   - Enabled: " << (config.fast_detector.enabled ? "YES" : "NO") << std::endl;
+                    std::cout << "   - High threat score: " << config.fast_detector.ransomware.scores.high_threat << std::endl;
+                    std::cout << "   - ExtIPs threshold: " << config.fast_detector.ransomware.activation_thresholds.external_ips_30s << std::endl;
+                    std::cout << "   - SMB diversity threshold: " << config.fast_detector.ransomware.activation_thresholds.smb_diversity << std::endl;
+                }
+            } else {
+                // Set defaults if section missing
+                config.fast_detector.enabled = false;
+                if (verbose) {
+                    std::cout << "⚠️  Fast Detector section not found, disabled by default" << std::endl;
+                }
+            }
+        }
+
         if (verbose) {
             std::cout << "✅ Configuration loaded and converted successfully" << std::endl;
         }
@@ -173,3 +246,4 @@ void validate_logging_section(const Json::Value&, StrictSnifferConfig&, bool) {}
 void validate_protobuf_section(const Json::Value&, StrictSnifferConfig&, bool) {}
 void validate_security_section(const Json::Value&, StrictSnifferConfig&, bool) {}
 void validate_backpressure_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+void validate_fast_detector_section(const Json::Value&, StrictSnifferConfig&, bool) {}
