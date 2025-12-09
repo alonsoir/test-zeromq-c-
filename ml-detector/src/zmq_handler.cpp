@@ -199,8 +199,18 @@ void ZMQHandler::process_event(const std::string& message) {
         logger_->debug("📦 Event received: id={}", event.event_id());
 
         // ====================================================================
-        // LEVEL 1: GENERAL ATTACK DETECTION (ONNX)
+        // DAY 13: READ FAST DETECTOR SCORE
         // ====================================================================
+        double fast_score = event.fast_detector_score();
+        bool fast_triggered = event.fast_detector_triggered();
+        std::string fast_reason = event.fast_detector_reason();
+
+        logger_->debug("🎯 Fast Detector: score={:.4f}, triggered={}, reason={}",
+                       fast_score, fast_triggered, fast_reason);
+
+        // ====================================================================
+        // LEVEL 1: GENERAL ATTACK DETECTION (ONNX)
+
         std::vector<float> features_l1;
         try {
             features_l1 = extractor_->extract_level1_features(event);
@@ -239,18 +249,59 @@ void ZMQHandler::process_event(const std::string& message) {
         }
 
         // Enriquecer con Level 1
-        auto* ml_analysis = event.mutable_ml_analysis();
-        auto* level1_pred = ml_analysis->mutable_level1_general_detection();
-        level1_pred->set_model_name("level1_attack_detector");
-        level1_pred->set_model_version("1.0.0");
-        level1_pred->set_model_type(protobuf::ModelPrediction::RANDOM_FOREST_GENERAL);
-        level1_pred->set_prediction_class(label_l1 == 0 ? "BENIGN" : "ATTACK");
-        level1_pred->set_confidence_score(confidence_l1);
+auto* ml_analysis = event.mutable_ml_analysis();
+auto* level1_pred = ml_analysis->mutable_level1_general_detection();
+level1_pred->set_model_name("level1_attack_detector");
+level1_pred->set_model_version("1.0.0");
+level1_pred->set_model_type(protobuf::ModelPrediction::RANDOM_FOREST_GENERAL);
+level1_pred->set_prediction_class(label_l1 == 0 ? "BENIGN" : "ATTACK");
+level1_pred->set_confidence_score(confidence_l1);
 
-        ml_analysis->set_attack_detected_level1(label_l1 == 1);
-        ml_analysis->set_level1_confidence(confidence_l1);
-        event.set_final_classification(label_l1 == 0 ? "BENIGN" : "MALICIOUS");
-        event.set_overall_threat_score(label_l1 == 1 ? confidence_l1 : (1.0 - confidence_l1));
+ml_analysis->set_attack_detected_level1(label_l1 == 1);
+ml_analysis->set_level1_confidence(confidence_l1);
+
+// ====================================================================
+// DAY 13: DUAL-SCORE ARCHITECTURE - Maximum Threat Wins
+// ====================================================================
+// Calculate ML score (from Level 1)
+double ml_score = label_l1 == 1 ? confidence_l1 : (1.0 - confidence_l1);
+event.set_ml_detector_score(ml_score);
+
+// Maximum Threat Wins
+double final_score = std::max(fast_score, ml_score);
+event.set_overall_threat_score(final_score);
+
+// Determine authoritative source
+double score_divergence = std::abs(fast_score - ml_score);
+
+if (score_divergence > 0.30) {
+    // Divergencia significativa
+    event.set_authoritative_source(protobuf::DETECTOR_SOURCE_DIVERGENCE);
+    logger_->warn("⚠️  Score divergence: fast={:.4f}, ml={:.4f}, diff={:.4f}",
+                  fast_score, ml_score, score_divergence);
+} else if (fast_triggered && ml_score > 0.5) {
+    // Ambos detectores activos y concordantes
+    event.set_authoritative_source(protobuf::DETECTOR_SOURCE_CONSENSUS);
+} else if (fast_score > ml_score) {
+    event.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_PRIORITY);
+} else {
+    event.set_authoritative_source(protobuf::DETECTOR_SOURCE_ML_PRIORITY);
+}
+
+// Decision metadata
+auto* metadata = event.mutable_decision_metadata();
+metadata->set_score_divergence(score_divergence);
+metadata->set_requires_rag_analysis(score_divergence > 0.30 || final_score >= 0.85);
+metadata->set_confidence_level(std::min(fast_score, ml_score)); // Conservative
+
+// F1-Score Logging para validation
+logger_->info("[DUAL-SCORE] event={}, fast={:.4f}, ml={:.4f}, final={:.4f}, source={}, div={:.4f}",
+              event.event_id(), fast_score, ml_score, final_score,
+              protobuf::DetectorSource_Name(event.authoritative_source()),
+              score_divergence);
+
+// Set classification based on final score
+event.set_final_classification(final_score >= 0.70 ? "MALICIOUS" : "BENIGN");
 
         // ====================================================================
         // LEVEL 2 & 3: SPECIALIZED DETECTORS (si Level 1 detectó ATTACK)

@@ -1059,7 +1059,15 @@ void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
         net_features->set_protocol_name(sniffer::protocol_to_string(event.protocol));
         
         alert.set_overall_threat_score(fast_detector_config_.ransomware.scores.alert);
-        alert.set_final_classification("SUSPICIOUS");
+
+		// 🎯 DAY 13: Dual-Score Architecture
+		alert.set_fast_detector_score(fast_detector_config_.ransomware.scores.alert);
+		alert.set_ml_detector_score(0.0);  // ML no ha ejecutado aún
+		alert.set_fast_detector_triggered(true);
+		alert.set_fast_detector_reason("high_external_ips");
+		alert.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_ONLY);
+
+		alert.set_final_classification("SUSPICIOUS");
         alert.set_threat_category("RANSOMWARE_FAST_DETECTION");
         
         auto snapshot = fast_detector_.snapshot();
@@ -1116,8 +1124,24 @@ void RingBufferConsumer::send_ransomware_features(const protobuf::RansomwareFeat
     features.smb_connection_diversity() > fast_detector_config_.ransomware.activation_thresholds.smb_diversity
 );
 
+// Calculate fast detector score
+double fast_score = high_threat
+    ? fast_detector_config_.ransomware.scores.high_threat
+    : fast_detector_config_.ransomware.scores.suspicious;
+
+// 🎯 DAY 13: Dual-Score Architecture
+event.set_fast_detector_score(fast_score);
+event.set_ml_detector_score(0.0);  // ML no ha ejecutado aún
+event.set_fast_detector_triggered(true);
+event.set_fast_detector_reason(
+    high_threat ? "external_ips_smb_high" : "external_ips_smb_medium"
+);
+event.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_ONLY);
+
+// Set overall score and classification
+event.set_overall_threat_score(fast_score);
+
 if (high_threat) {
-    event.set_overall_threat_score(fast_detector_config_.ransomware.scores.high_threat);
     event.set_final_classification("MALICIOUS");
     stats_.ransomware_confirmed_threats++;
 
@@ -1129,11 +1153,10 @@ if (high_threat) {
                   << "SMB=" << features.smb_connection_diversity()
                   << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.smb_diversity << "), "
                   << "DNS=" << std::fixed << std::setprecision(2) << features.dns_query_entropy()
-                  << ", Score=" << fast_detector_config_.ransomware.scores.high_threat
+                  << ", FastScore=" << fast_score
                   << std::endl;
     }
 } else {
-    event.set_overall_threat_score(fast_detector_config_.ransomware.scores.suspicious);
     event.set_final_classification("SUSPICIOUS");
 
     // ✅ Day 12: Logging detallado con configuración externalizada
@@ -1144,7 +1167,7 @@ if (high_threat) {
                   << "SMB=" << features.smb_connection_diversity()
                   << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.smb_diversity << "), "
                   << "DNS=" << std::fixed << std::setprecision(2) << features.dns_query_entropy()
-                  << ", Score=" << fast_detector_config_.ransomware.scores.suspicious
+                  << ", FastScore=" << fast_score
                   << std::endl;
     }
 }
