@@ -77,8 +77,8 @@ test/fast: test
 
 # Special rule for the target edit_cache
 edit_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
+	/usr/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -551,6 +551,30 @@ src/onnx_model.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/onnx_model.cpp.s
 .PHONY : src/onnx_model.cpp.s
 
+src/rag_logger.o: src/rag_logger.cpp.o
+.PHONY : src/rag_logger.o
+
+# target to build an object file
+src/rag_logger.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/rag_logger.cpp.o
+.PHONY : src/rag_logger.cpp.o
+
+src/rag_logger.i: src/rag_logger.cpp.i
+.PHONY : src/rag_logger.i
+
+# target to preprocess a source file
+src/rag_logger.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/rag_logger.cpp.i
+.PHONY : src/rag_logger.cpp.i
+
+src/rag_logger.s: src/rag_logger.cpp.s
+.PHONY : src/rag_logger.s
+
+# target to generate assembly for a file
+src/rag_logger.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/rag_logger.cpp.s
+.PHONY : src/rag_logger.cpp.s
+
 src/ransomware_detector.o: src/ransomware_detector.cpp.o
 .PHONY : src/ransomware_detector.o
 
@@ -833,6 +857,9 @@ help:
 	@echo "... src/onnx_model.o"
 	@echo "... src/onnx_model.i"
 	@echo "... src/onnx_model.s"
+	@echo "... src/rag_logger.o"
+	@echo "... src/rag_logger.i"
+	@echo "... src/rag_logger.s"
 	@echo "... src/ransomware_detector.o"
 	@echo "... src/ransomware_detector.i"
 	@echo "... src/ransomware_detector.s"

@@ -21,6 +21,9 @@
 
 #include "network_security.pb.h"
 
+// 🎯 DAY 14: RAG Logger
+#include "rag_logger.hpp"
+
 namespace ml_detector {
 
 class ZMQHandler {
@@ -40,10 +43,10 @@ public:
         const DetectorConfig& config,
         std::shared_ptr<ONNXModel> level1_model,
         std::shared_ptr<FeatureExtractor> extractor,
-        std::shared_ptr<ml_defender::DDoSDetector> ddos_detector,           // ✨ NUEVO
+        std::shared_ptr<ml_defender::DDoSDetector> ddos_detector,
         std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
-        std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,     // ✨ NUEVO
-        std::shared_ptr<ml_defender::InternalDetector> internal_detector    // ✨ NUEVO
+        std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
+        std::shared_ptr<ml_defender::InternalDetector> internal_detector
     );
 
     ~ZMQHandler();
@@ -54,18 +57,29 @@ public:
     Stats get_stats() const;
     void reset_stats();
 
+    void start_memory_monitoring();
+    void stop_memory_monitoring();
+    double get_memory_usage_mb();
+
 private:
     void run();
     void process_event(const std::string& message);
     void send_enriched_event(const protobuf::NetworkSecurityEvent& event);
 
+    // 🎯 DAY 14: RAG Logger methods
+    void log_rag_statistics();
+    uint64_t calculate_events_per_minute();
+    void log_periodic_stats();
+    void periodic_health_check();
+    void memory_monitor_loop();
+
     // Config & Models
     DetectorConfig config_;
     std::shared_ptr<ONNXModel> level1_model_;
-    std::shared_ptr<ml_defender::DDoSDetector> ddos_detector_;              // ✨ NUEVO
+    std::shared_ptr<ml_defender::DDoSDetector> ddos_detector_;
     std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector_;
-    std::shared_ptr<ml_defender::TrafficDetector> traffic_detector_;        // ✨ NUEVO
-    std::shared_ptr<ml_defender::InternalDetector> internal_detector_;      // ✨ NUEVO
+    std::shared_ptr<ml_defender::TrafficDetector> traffic_detector_;
+    std::shared_ptr<ml_defender::InternalDetector> internal_detector_;
     std::shared_ptr<FeatureExtractor> extractor_;
 
     // ZMQ
@@ -84,6 +98,16 @@ private:
 
     // Logging
     std::shared_ptr<spdlog::logger> logger_;
+
+    // 🎯 DAY 14: RAG Logger
+    std::unique_ptr<ml_defender::RAGLogger> rag_logger_;
+    uint64_t events_processed_total_{0};
+    std::chrono::system_clock::time_point start_time_;
+
+    // Memory monitoring thread
+    std::thread memory_monitor_thread_;
+    std::atomic<bool> memory_monitor_running_{false};
+    std::atomic<double> current_memory_mb_{0.0};
 };
 
 } // namespace ml_detector
