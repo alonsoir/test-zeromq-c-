@@ -18,7 +18,7 @@
 .PHONY: clean-day13-logs stats-dual-score
 .PHONY: analyze-dual-scores test-analyze-workflow test-day13-full quick-analyze
 .PHONY: rag-log-init rag-log-clean rag-log-status rag-log-analyze rag-log-tail rag-log-tail-live
-.PHONY: test-rag-integration test-rag-quick
+.PHONY: test-rag-integration test-rag-quick rag-watch rag-validate test-rag-small test-rag-neris test-rag-big
 
 # ============================================================================
 # ML Defender Pipeline - Host Makefile
@@ -725,7 +725,17 @@ CTU13_SMALL := /vagrant/datasets/ctu13/smallFlows.pcap
 CTU13_NERIS := /vagrant/datasets/ctu13/botnet-capture-20110810-neris.pcap
 CTU13_BIG := /vagrant/datasets/ctu13/bigFlows.pcap
 
+
 # Replay targets with logging
+test-rag-small:
+	@./scripts/test_rag_logger.sh datasets/ctu13/smallFlows.pcap
+
+test-rag-neris:
+	@./scripts/test_rag_logger.sh datasets/ctu13/capture20110810.neris.pcap
+
+test-rag-big:
+	@./scripts/test_rag_logger.sh datasets/ctu13/bigFlows.pcap
+
 test-replay-small:
 	@echo "🧪 Replaying CTU-13 smallFlows.pcap..."
 	@vagrant ssh client -c "mkdir -p /vagrant/logs/lab && \
@@ -960,6 +970,16 @@ test-rag-quick: rag-clean rag-log-init
 	@sleep 5
 	@$(MAKE) rag-stats-summary
 	@$(MAKE) rag-analyze
+
+rag-watch:
+	@echo "📺 Live RAG monitoring (Ctrl+C to stop)..."
+	@vagrant ssh defender -c "watch -n 5 'echo \"=== RAG Stats ===\";\
+	  cat /vagrant/logs/rag/events/*.jsonl 2>/dev/null | wc -l | xargs echo \"Total events:\";\
+	  ps aux | grep ml-detector | grep -v grep | awk \"{print \\\"CPU: \\\"\\\$$3\\\"%\\\"}\"'"
+
+rag-validate:
+	@echo "🔍 Validating RAG logs..."
+	@vagrant ssh defender -c "cat /vagrant/logs/rag/events/*.jsonl | jq empty && echo '✅ All logs valid JSON' || echo '❌ Invalid JSON found'"
 # ============================================================================
 # Help updates
 # ============================================================================

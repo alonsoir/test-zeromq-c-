@@ -21,7 +21,7 @@
     "_comment": "Log rotation and artifact settings",
     "max_events_per_file": 10000,
     "max_file_size_mb": 100,
-    "save_protobuf_artifacts": true,
+    "save_protobuf_artifacts": false,
     "save_json_artifacts": true,
     "compress_on_rotate": false
   },
