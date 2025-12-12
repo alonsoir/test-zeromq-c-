@@ -1,4 +1,4 @@
-// main.cpp - Enhanced Sniffer v3.2 with Hybrid Filtering
+// sniffer/src/userspace/main.cpp - Enhanced Sniffer v3.2 with Hybrid Filtering
 // FECHA: 31 de Octubre de 2025
 // FUNCIONALIDAD: Sistema de filtros híbridos con BPF Maps
 // Stats handled by RingBufferConsumer internally
@@ -8,6 +8,7 @@
 #include "main.h"
 #include "network_security.pb.h"
 #include "config_manager.hpp"
+#include "fast_detector_config.hpp"  // Day 12 - Externalized thresholds
 #include "zmq_pool_manager.hpp"
 #include "ebpf_loader.hpp"
 #include "ring_consumer.hpp"
@@ -37,6 +38,8 @@
 #include <fstream>
 #include "feature_logger.hpp"
 #include "dual_nic_manager.hpp"
+#include <algorithm>
+#include <memory>
 
 FeatureLogger::VerbosityLevel g_verbosity = FeatureLogger::VerbosityLevel::NONE;
 
@@ -291,6 +294,56 @@ int main(int argc, char* argv[]) {
         std::cout << "✅ Configuration loaded successfully" << std::endl;
 
         // ============================================================================
+        // EXTRACT FAST DETECTOR CONFIGURATION (Day 12)
+        // ============================================================================
+        sniffer::FastDetectorConfig fast_detector_config;
+        fast_detector_config.enabled = g_config.fast_detector.enabled;
+
+        // Ransomware scores
+        fast_detector_config.ransomware.scores.high_threat =
+            g_config.fast_detector.ransomware.scores.high_threat;
+        fast_detector_config.ransomware.scores.suspicious =
+            g_config.fast_detector.ransomware.scores.suspicious;
+        fast_detector_config.ransomware.scores.alert =
+            g_config.fast_detector.ransomware.scores.alert;
+
+        // Ransomware thresholds
+        fast_detector_config.ransomware.activation_thresholds.external_ips_30s =
+            g_config.fast_detector.ransomware.activation_thresholds.external_ips_30s;
+        fast_detector_config.ransomware.activation_thresholds.smb_diversity =
+            g_config.fast_detector.ransomware.activation_thresholds.smb_diversity;
+        fast_detector_config.ransomware.activation_thresholds.dns_entropy =
+            g_config.fast_detector.ransomware.activation_thresholds.dns_entropy;
+        fast_detector_config.ransomware.activation_thresholds.failed_dns_ratio =
+            g_config.fast_detector.ransomware.activation_thresholds.failed_dns_ratio;
+        fast_detector_config.ransomware.activation_thresholds.upload_download_ratio =
+            g_config.fast_detector.ransomware.activation_thresholds.upload_download_ratio;
+        fast_detector_config.ransomware.activation_thresholds.burst_connections =
+            g_config.fast_detector.ransomware.activation_thresholds.burst_connections;
+        fast_detector_config.ransomware.activation_thresholds.unique_destinations_30s =
+            g_config.fast_detector.ransomware.activation_thresholds.unique_destinations_30s;
+
+        // Logging
+        fast_detector_config.logging.log_activations =
+            g_config.fast_detector.logging.log_activations;
+        fast_detector_config.logging.log_features =
+            g_config.fast_detector.logging.log_features;
+        fast_detector_config.logging.log_decisions =
+            g_config.fast_detector.logging.log_decisions;
+        fast_detector_config.logging.log_frequency_seconds =
+            g_config.fast_detector.logging.log_frequency_seconds;
+
+        // Performance
+        fast_detector_config.performance.max_latency_us =
+            g_config.fast_detector.performance.max_latency_us;
+        fast_detector_config.performance.enable_metrics =
+            g_config.fast_detector.performance.enable_metrics;
+        fast_detector_config.performance.track_activation_rate =
+            g_config.fast_detector.performance.track_activation_rate;
+
+        std::cout << "✅ Fast Detector configuration extracted" << std::endl;
+
+        // ============================================================================
         // PARSE FILTER CONFIGURATION (v3.2)
         // ============================================================================
         std::cout << "\n[Filter] Parsing filter configuration..." << std::endl;
@@ -350,19 +403,24 @@ int main(int argc, char* argv[]) {
         // ============================================================================
         std::cout << "\n[Dual-NIC] Configuring deployment mode..." << std::endl;
 
+        // ✅ Declarar FUERA del try-catch
+        std::unique_ptr<sniffer::DualNICManager> dual_nic_manager;
+        bool dual_mode_enabled = false;
+
         try {
-            sniffer::DualNICManager dual_nic_manager(json_root);
-            dual_nic_manager.initialize();
+            dual_nic_manager = std::make_unique<sniffer::DualNICManager>(json_root);
+            dual_nic_manager->initialize();
 
             // Configure interface_configs BPF map
             int interface_configs_fd = ebpf_loader.get_interface_configs_fd();
             if (interface_configs_fd >= 0) {
-                dual_nic_manager.configure_bpf_map(interface_configs_fd);
+                dual_nic_manager->configure_bpf_map(interface_configs_fd);
 
                 // Setup network if needed (gateway mode)
-                if (dual_nic_manager.is_dual_mode()) {
-                    dual_nic_manager.enable_ip_forwarding();
-                    dual_nic_manager.setup_nat_rules();
+                if (dual_nic_manager->is_dual_mode()) {
+                    dual_nic_manager->enable_ip_forwarding();
+                    dual_nic_manager->setup_nat_rules();
+                    dual_mode_enabled = true;
                 }
             } else {
                 std::cout << "[WARNING] interface_configs map not found - using legacy single-interface mode" << std::endl;
@@ -370,6 +428,7 @@ int main(int argc, char* argv[]) {
         } catch (const std::exception& e) {
             std::cerr << "[WARNING] Dual-NIC configuration failed: " << e.what() << std::endl;
             std::cerr << "          Falling back to legacy single-interface mode" << std::endl;
+            dual_nic_manager.reset();
         }
 
         std::cout << "✅ Deployment configuration complete\n" << std::endl;
@@ -377,23 +436,36 @@ int main(int argc, char* argv[]) {
         // >>> FIN DUAL-NIC CONFIGURATION
         // ============================================================================
 
-        // Usar capture_interface en lugar de g_config.capture.interface
-        // Use attach method based on capture mode
         bool attached = false;
-        if (g_config.capture_mode == "ebpf_skb") {
-            std::cout << "[INFO] Using SKB mode (TC-based eBPF)" << std::endl;
-            attached = ebpf_loader.attach_skb(g_config.capture_interface);
+        std::cout << "[INFO] Using SKB mode (TC-based eBPF)" << std::endl;
+
+        // Dual-NIC: attach a todas las interfaces configuradas
+        if (dual_nic_manager && dual_mode_enabled) {
+            std::cout << "[INFO] Dual-NIC mode: attaching to multiple interfaces" << std::endl;
+            const auto& interfaces = dual_nic_manager->get_interfaces();
+            attached = true;
+
+            for (const auto& iface : interfaces) {
+                bool iface_attached = ebpf_loader.attach_skb(iface.name);
+                if (!iface_attached) {
+                    std::cerr << "❌ Failed to attach to interface: " << iface.name << std::endl;
+                    attached = false;
+                } else {
+                    std::cout << "✅ eBPF program attached to interface: " << iface.name << std::endl;
+                }
+            }
         } else {
-            std::cout << "[INFO] Using XDP mode (native XDP)" << std::endl;
-            attached = ebpf_loader.attach_xdp(g_config.capture_interface);
+            // Single-NIC mode
+            attached = ebpf_loader.attach_skb(g_config.capture_interface);
+            if (attached) {
+                std::cout << "✅ eBPF program attached to interface: " << g_config.capture_interface << std::endl;
+            }
         }
 
         if (!attached) {
-            std::cerr << "❌ Failed to attach to interface: " << g_config.capture_interface << std::endl;
+            std::cerr << "❌ Failed to attach eBPF program" << std::endl;
             return 1;
         }
-
-        std::cout << "✅ eBPF program attached to interface: " << g_config.capture_interface << std::endl;
 
         int ring_fd = ebpf_loader.get_ringbuf_fd();
         if (ring_fd < 0) {
@@ -541,7 +613,7 @@ int main(int argc, char* argv[]) {
         sniffer_config.transport.compression.compression_ratio_threshold = g_config.compression.compression_ratio_threshold;
         sniffer_config.transport.compression.adaptive_compression = g_config.compression.adaptive_compression;
 
-        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config);
+        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config, fast_detector_config);
         auto& ring_consumer = *ring_consumer_ptr;
 
         // Configure stats interval from monitoring config

@@ -1,24 +1,27 @@
 {
-  "_header": "C++20 SNIFFER v3.3.1 - Day 8 Dual-NIC Testing Configuration",
+  "_header": "C++20 SNIFFER v3.3.3 - Day 12 Fast Detector Externalized Thresholds",
   "_refactor_notes": {
-    "date": "2025-12-02",
+    "date": "2025-12-08",
     "changes": [
       "v3.2 (2025-10-28): Removed duplicate capture.interface fields, centralized in profiles",
       "v3.3 (2025-12-01): Added dual-NIC deployment support for host-based + gateway modes",
-      "v3.3.1 (2025-12-02): Adapted for Day 8 testing - eth1 (WAN) + eth3 (LAN) mapping"
+      "v3.3.1 (2025-12-02): Adapted for Day 8 testing - eth1 (WAN) + eth3 (LAN) mapping",
+      "v3.3.2 (2025-12-07): Fixed for Day 11 - eth1 (WAN) + eth2 (LAN) after removing public_network",
+      "v3.3.3 (2025-12-08): DAY 12 - Externalized Fast Detector thresholds (Via Appia Quality)"
     ]
   },
   "component": {
     "name": "cpp_evolutionary_sniffer",
-    "version": "3.3.1",
+    "version": "3.3.3",
     "mode": "kernel_user_hybrid",
     "kernel_version_required": "6.1.0"
   },
 
   "deployment": {
-    "_comment": "Dual-NIC deployment configuration - Phase 1, Day 8 Testing",
-    "_architecture": "Host-based IDS (WAN eth1) + Gateway IDS (LAN eth3) simultaneous operation",
-    "_vagrant_mapping": "eth0=NAT, eth1=192.168.56.20 (WAN), eth2=bridge, eth3=192.168.100.1 (LAN)",
+    "_comment": "Dual-NIC deployment configuration - Day 11 Stable Testing",
+    "_architecture": "Host-based IDS (WAN eth1) + Gateway IDS (LAN eth2) simultaneous operation",
+    "_vagrant_mapping": "eth0=NAT, eth1=192.168.56.20 (WAN), eth2=192.168.100.1 (LAN, Gateway)",
+    "_fix_note": "eth2 is gateway after removing public_network bridge (was eth3 in Day 8)",
 
     "mode": "dual",
     "_mode_options": [
@@ -43,11 +46,11 @@
       "promiscuous": true,
       "capture_direction": "ingress_only",
       "_behavior": "Captures packets DESTINED to this host (interface_mode=1)",
-      "_day8_test": "Attack from OSX: nmap, hping3 → 192.168.56.20"
+      "_day11_test": "Attack from OSX: nmap, hping3 → 192.168.56.20"
     },
 
     "gateway_interface": {
-      "name": "eth3",
+      "name": "eth2",
       "role": "lan",
       "mode": "gateway",
       "description": "LAN-facing interface (192.168.100.1) - inspects transit traffic",
@@ -55,26 +58,28 @@
       "promiscuous": true,
       "capture_direction": "bidirectional",
       "_behavior": "Captures ALL transit traffic passing through (interface_mode=2)",
-      "_day8_test": "PCAP replay: tcpreplay -i eth3 --mbps 100 dataset.pcap"
+      "_day11_test": "PCAP replay: tcpreplay -i eth1 --mbps=1-10 dataset.pcap from client VM",
+      "_fix": "Changed from eth3 to eth2 after removing public_network bridge"
     },
 
     "network_settings": {
       "enable_ip_forwarding": true,
       "enable_nat": false,
-      "_nat_note": "NAT disabled for Day 8 testing - pure inspection mode",
+      "_nat_note": "NAT disabled for Day 11 testing - pure inspection mode",
       "enable_bridge_mode": false,
       "mtu": 1500,
       "txqueuelen": 10000
     },
 
     "performance": {
-      "expected_throughput_gbps": 1.0,
-      "max_pps_per_interface": 1000000,
+      "expected_throughput_gbps": 0.1,
+      "max_pps_per_interface": 10000,
       "target_latency_us": 100,
       "buffer_tuning": {
         "rx_ring_size": 4096,
         "tx_ring_size": 4096
-      }
+      },
+      "_day11_reality": "XDP Generic in VirtualBox: ~1-5 Mbps sustained, ~1000 pps"
     },
 
     "detection": {
@@ -102,21 +107,23 @@
       "_reality_check": {
         "raspberry_pi_5": "~100 Mbps (insufficient for 1Gbps)",
         "raspberry_pi_cm4_dual_nic": "~500 Mbps (marginal)",
-        "x86_n100_mini_pc": "~1 Gbps (sweet spot for SMB)"
+        "x86_n100_mini_pc": "~1 Gbps (sweet spot for SMB)",
+        "virtualbox_xdp_generic": "~1-5 Mbps (Day 11 lab environment)"
       }
     },
 
     "validation_mode": {
       "enabled": false,
       "libpcap_replay": true,
-      "pcap_source_interface": "eth2",
+      "pcap_source_interface": "eth1",
       "accept_any_dst_ip": true,
-      "_use_case": "For PCAP replay testing (MAWI, CTU-13, etc) via bridge interface"
+      "_use_case": "For PCAP replay testing (CTU-13, tcpreplay samples) from client VM",
+      "_day11": "Client VM replays via eth1, captured on defender eth2 gateway"
     }
   },
 
-  "node_id": "cpp_sniffer_v33_day8",
-  "cluster_name": "ml-defender-dual-nic-test",
+  "node_id": "cpp_sniffer_v33_day12",
+  "cluster_name": "ml-defender-dual-nic-stable",
 
   "profiles": {
     "lab": {
@@ -125,7 +132,7 @@
       "af_xdp_enabled": true,
       "worker_threads": 2,
       "compression_level": 1,
-      "_note": "Day 8 testing profile - eth1 (WAN-facing)"
+      "_note": "Day 11 testing profile - eth1 (WAN-facing)"
     },
     "cloud": {
       "capture_interface": "eth0",
@@ -143,15 +150,15 @@
       "cpu_affinity_enabled": true
     },
     "dual_nic": {
-      "_new": "Phase 1, Day 8 - Dual-NIC testing profile",
+      "_new": "Day 11 - Dual-NIC stable testing profile",
       "capture_interface": "eth1",
-      "_note": "Primary WAN interface eth1, gateway eth3 configured via deployment section",
+      "_note": "Primary WAN interface eth1, gateway eth2 configured via deployment section",
       "promiscuous_mode": true,
       "af_xdp_enabled": true,
       "worker_threads": 6,
       "compression_level": 1,
       "cpu_affinity_enabled": false,
-      "_day8_config": "6 workers for dual-NIC load (8GB RAM, 6 cores available)"
+      "_day11_config": "6 workers for dual-NIC load (8GB RAM, 6 cores available, eth2 gateway)"
     }
   },
 
@@ -451,7 +458,7 @@
     "include_performance_logs": true,
     "include_compression_stats": true,
     "include_thread_stats": true,
-    "_day8_note": "Logs to /vagrant/logs/lab/ for easy access from host OSX"
+    "_day11_note": "Logs to /vagrant/logs/lab/ for easy access from host OSX"
   },
 
   "protobuf": {
@@ -490,10 +497,10 @@
   },
 
   "ml_defender": {
-    "_comment": "ML Defender Embedded C++20 Detectors - Day 8 Conservative Thresholds",
-    "_source": "Single source of truth for detection thresholds",
-    "_calibration": "Conservative values for initial dual-NIC validation",
-    "_day8_tuning": "After 2+ hour stress test, adjust based on false positive rate",
+    "_comment": "ML Defender Embedded C++20 Detectors - Day 11 Conservative Thresholds",
+    "_source": "Single source of truth for ML Tricapa detection thresholds",
+    "_calibration": "Conservative values for PCAP replay validation",
+    "_day11_goal": "Validate models with real-world traffic (CTU-13, tcpreplay samples)",
     "thresholds": {
       "ddos": 0.85,
       "ransomware": 0.90,
@@ -504,6 +511,78 @@
       "min_threshold": 0.5,
       "max_threshold": 0.99,
       "fallback_threshold": 0.75
+    }
+  },
+
+  "fast_detector": {
+    "_comment": "Fast Path Heuristic Detection (Sniffer-side) - Day 12 Externalized Config",
+    "_philosophy": "Via Appia Quality: No hardcoded thresholds, JSON is the law",
+    "_performance": "Sub-microsecond heuristics for obvious threats (C&C, lateral movement)",
+    "_activation": "Triggers on specific ransomware/C&C patterns detected by TimeWindowAggregator",
+    "_scope": "Selective detection - only activates when suspicious patterns exceed thresholds",
+
+    "enabled": true,
+
+    "ransomware": {
+      "_description": "Ransomware-specific heuristics (C&C communication, lateral movement, exfiltration)",
+
+      "scores": {
+        "high_threat": 0.95,
+        "suspicious": 0.70,
+        "alert": 0.75
+      },
+
+      "activation_thresholds": {
+        "_comment": "Conditions that trigger Fast Detector (ANY condition = activation)",
+        "external_ips_30s": 15,
+        "smb_diversity": 10,
+        "dns_entropy": 2.5,
+        "failed_dns_ratio": 0.3,
+        "upload_download_ratio": 3.0,
+        "burst_connections": 50,
+        "unique_destinations_30s": 30
+      },
+
+      "classification": {
+        "_comment": "High threat if MULTIPLE strong indicators (ExtIPs OR SMB diversity)",
+        "high_threat_conditions": [
+          "external_ips_30s > threshold",
+          "smb_diversity > threshold"
+        ],
+        "suspicious_conditions": [
+          "dns_entropy > threshold",
+          "burst_connections > threshold"
+        ]
+      }
+    },
+
+    "ddos": {
+      "_description": "DDoS-specific heuristics (future - currently not implemented)",
+      "_status": "PLANNED",
+      "scores": {
+        "high_threat": 0.95,
+        "suspicious": 0.70
+      },
+      "activation_thresholds": {
+        "syn_flood_rate": 10000,
+        "udp_flood_rate": 50000,
+        "icmp_flood_rate": 5000
+      }
+    },
+
+    "logging": {
+      "_comment": "Detailed logging for F1-score validation",
+      "log_activations": true,
+      "log_features": true,
+      "log_decisions": true,
+      "log_frequency_seconds": 1,
+      "_day12_goal": "Log every detection for precision/recall calculation vs ground truth"
+    },
+
+    "performance": {
+      "max_latency_us": 1,
+      "enable_metrics": true,
+      "track_activation_rate": true
     }
   }
 }

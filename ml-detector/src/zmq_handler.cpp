@@ -1,8 +1,14 @@
 #include "zmq_handler.hpp"
+#include "rag_logger.hpp"
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <chrono>
 #include <sstream>
+#include <unistd.h>  // Para sysconf()
+#include <cstdio>    // Para FILE, fopen, etc.
 
+/*
+ * todo esta clase necesita refactorizacion porque hay muchas números mágicos.
+ */
 namespace ml_detector {
 
 ZMQHandler::ZMQHandler(
@@ -25,6 +31,7 @@ ZMQHandler::ZMQHandler(
     , running_(false)
     , logger_(spdlog::get("ml-detector"))
     , last_stats_report_(std::chrono::steady_clock::now())
+    , start_time_(std::chrono::system_clock::now())
 {
     if (!logger_) {
         logger_ = spdlog::stdout_color_mt("zmq-handler");
@@ -90,10 +97,31 @@ ZMQHandler::ZMQHandler(
         logger_->error("❌ ZMQ initialization failed: {}", e.what());
         throw;
     }
+
+    // 🎯 DAY 14: Initialize RAG Logger
+    try {
+        rag_logger_ = ml_defender::create_rag_logger_from_config(
+            "../config/rag_logger_config.json",
+            logger_
+        );
+        logger_->info("✅ RAG Logger initialized successfully");
+    } catch (const std::exception& e) {
+        logger_->error("❌ Failed to initialize RAG Logger: {}", e.what());
+        logger_->warn("⚠️  Continuing without RAG logging");
+        rag_logger_ = nullptr;
+    }
 }
 
 ZMQHandler::~ZMQHandler() {
     stop();
+    if (rag_logger_) {
+        logger_->info("🔄 Flushing RAG logger...");
+        rag_logger_->flush();
+
+        // Print statistics
+        auto stats = rag_logger_->get_statistics();
+        logger_->info("📊 RAG Statistics: {}", stats.dump(2));
+    }
 }
 
 void ZMQHandler::start() {
@@ -199,6 +227,16 @@ void ZMQHandler::process_event(const std::string& message) {
         logger_->debug("📦 Event received: id={}", event.event_id());
 
         // ====================================================================
+        // DAY 13: READ FAST DETECTOR SCORE
+        // ====================================================================
+        double fast_score = event.fast_detector_score();
+        bool fast_triggered = event.fast_detector_triggered();
+        std::string fast_reason = event.fast_detector_reason();
+
+        logger_->debug("🎯 Fast Detector: score={:.4f}, triggered={}, reason={}",
+                       fast_score, fast_triggered, fast_reason);
+
+        // ====================================================================
         // LEVEL 1: GENERAL ATTACK DETECTION (ONNX)
         // ====================================================================
         std::vector<float> features_l1;
@@ -249,8 +287,95 @@ void ZMQHandler::process_event(const std::string& message) {
 
         ml_analysis->set_attack_detected_level1(label_l1 == 1);
         ml_analysis->set_level1_confidence(confidence_l1);
-        event.set_final_classification(label_l1 == 0 ? "BENIGN" : "MALICIOUS");
-        event.set_overall_threat_score(label_l1 == 1 ? confidence_l1 : (1.0 - confidence_l1));
+
+        // ====================================================================
+        // DAY 13: DUAL-SCORE ARCHITECTURE - Maximum Threat Wins
+        // ====================================================================
+        // Calculate ML score (from Level 1)
+        double ml_score = label_l1 == 1 ? confidence_l1 : (1.0 - confidence_l1);
+        event.set_ml_detector_score(ml_score);
+
+        // Maximum Threat Wins
+        double final_score = std::max(fast_score, ml_score);
+        event.set_overall_threat_score(final_score);
+
+        // Determine authoritative source
+        double score_divergence = std::abs(fast_score - ml_score);
+
+        if (score_divergence > 0.30) {
+            // Divergencia significativa
+            event.set_authoritative_source(protobuf::DETECTOR_SOURCE_DIVERGENCE);
+            logger_->warn("⚠️  Score divergence: fast={:.4f}, ml={:.4f}, diff={:.4f}",
+                          fast_score, ml_score, score_divergence);
+        } else if (fast_triggered && ml_score > 0.5) {
+            // Ambos detectores activos y concordantes
+            event.set_authoritative_source(protobuf::DETECTOR_SOURCE_CONSENSUS);
+        } else if (fast_score > ml_score) {
+            event.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_PRIORITY);
+        } else {
+            event.set_authoritative_source(protobuf::DETECTOR_SOURCE_ML_PRIORITY);
+        }
+
+        // Decision metadata
+        // todo esos números mágicos dan miedo, además, esta función es ENORME!!
+        auto* metadata = event.mutable_decision_metadata();
+        metadata->set_score_divergence(score_divergence);
+        metadata->set_requires_rag_analysis(score_divergence > 0.30 || final_score >= 0.85);
+        metadata->set_confidence_level(std::min(fast_score, ml_score)); // Conservative
+
+        // F1-Score Logging para validation
+        logger_->info("[DUAL-SCORE] event={}, fast={:.4f}, ml={:.4f}, final={:.4f}, source={}, div={:.4f}",
+                      event.event_id(), fast_score, ml_score, final_score,
+                      protobuf::DetectorSource_Name(event.authoritative_source()),
+                      score_divergence);
+
+        // Set classification based on final score
+        event.set_final_classification(final_score >= 0.70 ? "MALICIOUS" : "BENIGN");
+
+        // ========================================================================
+        // 🎯 DAY 14: RAG LOGGING
+        // ========================================================================
+
+        // Build ML context for RAG
+        ml_defender::MLContext ml_context;
+
+        // System state
+        ml_context.events_processed_total = ++events_processed_total_;
+        ml_context.events_in_last_minute = calculate_events_per_minute();
+        ml_context.memory_usage_mb = get_memory_usage_mb();
+        ml_context.cpu_usage_percent = 0.0;  // TODO: Implement if needed
+        ml_context.uptime_seconds = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now() - start_time_
+        ).count();
+
+        // Detection context (from Level 1 detector)
+        ml_context.attack_family = "RANSOMWARE";  // TODO: Get from detector
+        ml_context.level_1_label = label_l1 == 1 ? "MALICIOUS" : "BENIGN";
+        ml_context.level_2_category = "UNKNOWN";   // Level 2 not always active
+        ml_context.level_3_subcategory = "UNKNOWN"; // Level 3 not always active
+        ml_context.level_1_confidence = confidence_l1;
+
+        // Temporal window
+        ml_context.window_start = std::chrono::system_clock::now() - std::chrono::seconds(30);
+        ml_context.window_end = std::chrono::system_clock::now();
+        ml_context.events_in_window = 1;  // TODO: Track window events
+
+        // Investigation priority
+        if (score_divergence > 0.40) {
+            ml_context.investigation_priority = "HIGH";
+        } else if (score_divergence > 0.30) {
+            ml_context.investigation_priority = "MEDIUM";
+        } else {
+            ml_context.investigation_priority = "LOW";
+        }
+
+        // Log to RAG if enabled
+        if (rag_logger_) {
+            bool logged = rag_logger_->log_event(event, ml_context);
+            if (logged) {
+                logger_->debug("📝 Event logged to RAG: {}", event.event_id());
+            }
+        }
 
         // ====================================================================
         // LEVEL 2 & 3: SPECIALIZED DETECTORS (si Level 1 detectó ATTACK)
@@ -599,7 +724,7 @@ void ZMQHandler::process_event(const std::string& message) {
             stats_.events_processed++;
             stats_.avg_processing_time_ms =
                 (stats_.avg_processing_time_ms * (stats_.events_processed - 1) + duration_ms) /
-                stats_.events_processed;
+                static_cast<double>(stats_.events_processed);
         }
 
         if (label_l1 == 1) {
@@ -653,6 +778,99 @@ void ZMQHandler::reset_stats() {
     stats_ = Stats{};
     last_stats_report_ = std::chrono::steady_clock::now();
     logger_->info("📊 Stats reset");
+}
+
+// ============================================================================
+// 🎯 DAY 14: RAG Logger Helper Methods
+// ============================================================================
+
+void ZMQHandler::log_rag_statistics() {
+    if (rag_logger_) {
+        auto stats = rag_logger_->get_statistics();
+        logger_->info("📊 RAG Stats: {} events logged, {} divergent, {} consensus",
+                     stats["events_logged"],
+                     stats["divergent_events"],
+                     stats["consensus_events"]);
+    }
+}
+
+uint64_t ZMQHandler::calculate_events_per_minute() {
+    // Calculate uptime in seconds
+    auto uptime_s = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now() - start_time_
+    ).count();
+
+    // Avoid division by zero
+    if (uptime_s < 60) {
+        return events_processed_total_;
+    }
+
+    // Return events per minute (average)
+    return events_processed_total_ / (uptime_s / 60);
+}
+
+void ZMQHandler::log_periodic_stats() {
+    double memory_mb = get_memory_usage_mb();
+    auto stats = get_stats();
+
+    logger_->info("📈 Periodic Stats - Memory: {:.1f} MB, Events: {} received, {} processed",
+                  memory_mb, stats.events_received, stats.events_processed);
+}
+
+void ZMQHandler::periodic_health_check() {
+    double memory_mb = get_memory_usage_mb();
+
+    auto uptime_s = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now() - start_time_
+    ).count();
+
+    logger_->info("🧠 ML Detector Health - Memory: {:.1f} MB, Uptime: {}s",
+                  memory_mb, uptime_s);
+
+    // Alert if memory is too high
+    if (memory_mb > 500.0) {  // 500 MB threshold
+        logger_->warn("⚠️  High memory usage: {:.1f} MB", memory_mb);
+    }
+}
+
+// ============================================================================
+// Memory Monitoring
+// ============================================================================
+
+void ZMQHandler::start_memory_monitoring() {
+    memory_monitor_running_ = true;
+    memory_monitor_thread_ = std::thread(&ZMQHandler::memory_monitor_loop, this);
+    logger_->info("📊 Memory monitoring started");
+}
+
+void ZMQHandler::stop_memory_monitoring() {
+    memory_monitor_running_ = false;
+    if (memory_monitor_thread_.joinable()) {
+        memory_monitor_thread_.join();
+    }
+    logger_->info("📊 Memory monitoring stopped");
+}
+
+void ZMQHandler::memory_monitor_loop() {
+    while (memory_monitor_running_) {
+        // Read from /proc/self/statm (lightweight)
+        FILE* file = fopen("/proc/self/statm", "r");
+        if (file) {
+            long pages = 0;
+            if (fscanf(file, "%*d %ld", &pages) == 1) {
+                long page_size = sysconf(_SC_PAGESIZE);
+                current_memory_mb_.store((pages * page_size) / (1024.0 * 1024.0));
+            }
+            fclose(file);
+        }
+
+        // Sleep for 1 second
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+double ZMQHandler::get_memory_usage_mb() {
+    return current_memory_mb_.load();
 }
 
 } // namespace ml_detector

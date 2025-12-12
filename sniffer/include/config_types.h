@@ -314,6 +314,42 @@ struct StrictSnifferConfig {
         int recovery_time_seconds;
         bool enable_queue_monitoring;
     } backpressure;
+    // Fast Detector - Day 12 Externalized Thresholds (TODOS REQUERIDOS)
+    struct {
+        bool enabled;
+
+        struct {
+            struct {
+                double high_threat;
+                double suspicious;
+                double alert;
+            } scores;
+
+            struct {
+                int external_ips_30s;
+                int smb_diversity;
+                double dns_entropy;
+                double failed_dns_ratio;
+                double upload_download_ratio;
+                int burst_connections;
+                int unique_destinations_30s;
+            } activation_thresholds;
+        } ransomware;
+
+        struct {
+            bool log_activations;
+            bool log_features;
+            bool log_decisions;
+            int log_frequency_seconds;
+        } logging;
+
+        struct {
+            int max_latency_us;
+            bool enable_metrics;
+            bool track_activation_rate;
+        } performance;
+    } fast_detector;
+
 };
 
 struct DetailedStats {
@@ -447,6 +483,7 @@ void validate_protobuf_section(const Json::Value& root, StrictSnifferConfig& con
 void validate_logging_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose);
 void validate_security_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose);
 void validate_backpressure_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose);
+void validate_fast_detector_section(const Json::Value& root, StrictSnifferConfig& config, bool verbose);
 
 // Configuration display
 void print_complete_config(const StrictSnifferConfig& config, bool verbose);

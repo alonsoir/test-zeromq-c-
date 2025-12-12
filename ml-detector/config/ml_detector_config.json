@@ -361,7 +361,7 @@
   },
   "logging": {
     "level": "INFO",
-    "file": "logs/cpp_ml_detector_tricapa_v1.log",
+    "file": "/vagrant/logs/lab/detector.log",
     "max_file_size_mb": 200,
     "backup_count": 10,
     "include_performance_logs": true,

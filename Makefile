@@ -12,6 +12,13 @@
 .PHONY: clean distclean test dev-setup schema-update
 .PHONY: build-unified rebuild-unified create-verify-script quick-fix dev-setup-unified
 .PHONY: check-libbpf verify-bpf-maps diagnose-bpf  # NUEVO
+.PHONY: test-replay-small test-replay-neris test-replay-big
+.PHONY: monitor-day13-tmux logs-dual-score logs-dual-score-live extract-dual-scores
+.PHONY: test-integration-day13 test-integration-day13-tmux test-dual-score-quick
+.PHONY: clean-day13-logs stats-dual-score
+.PHONY: analyze-dual-scores test-analyze-workflow test-day13-full quick-analyze
+.PHONY: rag-log-init rag-log-clean rag-log-status rag-log-analyze rag-log-tail rag-log-tail-live
+.PHONY: test-rag-integration test-rag-quick rag-watch rag-validate test-rag-small test-rag-neris test-rag-big
 
 # ============================================================================
 # ML Defender Pipeline - Host Makefile
@@ -438,8 +445,8 @@ rag-stop:
 	@vagrant ssh -c "pkill -f rag-security 2>/dev/null || true"
 
 rag-status:
-        @echo "🔍 RAG Status:"
-        @vagrant ssh -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi"
+	@echo "🔍 RAG Status:"
+    @vagrant ssh defender -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi""
 
 rag-logs:
 	@echo "📋 RAG Logs:"
@@ -457,6 +464,157 @@ rag-download-model:
 			echo '✅ Model already exists'; \
 		fi"
 # ----------------------------------------------------------------------------
+
+# Initialize RAG directories
+rag-log-init:
+	@echo "🎯 Initializing RAG directories..."
+	mkdir -p /vagrant/logs/rag/events
+	mkdir -p /vagrant/logs/rag/artifacts
+	mkdir -p /vagrant/logs/rag/stats
+	@echo "✅ RAG directories created"
+	@ls -la /vagrant/logs/rag/
+
+# Clean RAG logs (CAREFUL!)
+rag-log-clean:
+	@echo "⚠️  WARNING: This will delete all RAG logs!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo "🗑️  Cleaning RAG logs..."; \
+		rm -rf /vagrant/logs/rag/events/*; \
+		rm -rf /vagrant/logs/rag/artifacts/*; \
+		rm -rf /vagrant/logs/rag/stats/*; \
+		echo "✅ RAG logs cleaned"; \
+	else \
+		echo "❌ Cancelled"; \
+	fi
+
+# Show RAG status
+rag-log-status:
+	@echo "=" | tr '=' '=' | head -c 80; echo
+	@echo "📊 RAG LOGGER STATUS"
+	@echo "=" | tr '=' '=' | head -c 80; echo
+	@echo
+	@echo "📂 Directory sizes:"
+	@du -sh /vagrant/logs/rag/events 2>/dev/null || echo "  events: (empty)"
+	@du -sh /vagrant/logs/rag/artifacts 2>/dev/null || echo "  artifacts: (empty)"
+	@du -sh /vagrant/logs/rag/stats 2>/dev/null || echo "  stats: (empty)"
+	@echo
+	@echo "📄 Event files:"
+	@ls -lh /vagrant/logs/rag/events/ 2>/dev/null | tail -n +2 || echo "  (no files)"
+	@echo
+	@echo "📊 Event counts:"
+	@for file in /vagrant/logs/rag/events/*.jsonl; do \
+		[ -f "$$file" ] || continue; \
+		count=$$(wc -l < "$$file"); \
+		echo "  $$(basename $$file): $$count events"; \
+	done
+	@echo
+	@echo "📦 Artifact counts:"
+	@for dir in /vagrant/logs/rag/artifacts/*/; do \
+		[ -d "$$dir" ] || continue; \
+		pb_count=$$(find "$$dir" -name "*.pb" | wc -l); \
+		json_count=$$(find "$$dir" -name "*.json" | wc -l); \
+		echo "  $$(basename $$dir): $$pb_count .pb files, $$json_count .json files"; \
+	done
+
+# Analyze today's RAG log
+rag-log-analyze:
+	@TODAY=$$(date +%Y-%m-%d); \
+	LOG_FILE="/vagrant/logs/rag/events/$$TODAY.jsonl"; \
+	if [ -f "$$LOG_FILE" ]; then \
+		echo "📊 Analyzing $$LOG_FILE..."; \
+		python3 /vagrant/scripts/analyze_rag_logs.py "$$LOG_FILE"; \
+	else \
+		echo "❌ No log file found for today: $$LOG_FILE"; \
+	fi
+
+# Analyze specific date
+rag-log-analyze-date:
+	@read -p "Enter date (YYYY-MM-DD): " date; \
+	LOG_FILE="/vagrant/logs/rag/events/$$date.jsonl"; \
+	if [ -f "$$LOG_FILE" ]; then \
+		echo "📊 Analyzing $$LOG_FILE..."; \
+		python3 /vagrant/scripts/analyze_rag_logs.py "$$LOG_FILE"; \
+	else \
+		echo "❌ No log file found: $$LOG_FILE"; \
+	fi
+
+# Tail RAG logs (follow mode)
+rag-log-tail:
+	@TODAY=$$(date +%Y-%m-%d); \
+	LOG_FILE="/vagrant/logs/rag/events/$$TODAY.jsonl"; \
+	if [ -f "$$LOG_FILE" ]; then \
+		echo "📜 Tailing $$LOG_FILE (Ctrl+C to stop)..."; \
+		tail -f "$$LOG_FILE"; \
+	else \
+		echo "❌ No log file found for today: $$LOG_FILE"; \
+		echo "Waiting for file to be created..."; \
+		tail -f "$$LOG_FILE" 2>/dev/null || echo "File not created yet"; \
+	fi
+
+# Tail RAG logs with pretty-printing
+rag-log-tail-live:
+	@TODAY=$$(date +%Y-%m-%d); \
+	LOG_FILE="/vagrant/logs/rag/events/$$TODAY.jsonl"; \
+	echo "📜 Live RAG log (pretty-printed, Ctrl+C to stop)..."; \
+	tail -f "$$LOG_FILE" 2>/dev/null | while read -r line; do \
+		echo "$$line" | jq -C '.' 2>/dev/null || echo "$$line"; \
+	done
+
+# View specific event artifact
+rag-log-view-event:
+	@read -p "Enter event ID: " event_id; \
+	TODAY=$$(date +%Y-%m-%d); \
+	ARTIFACT="/vagrant/logs/rag/artifacts/$$TODAY/event_$$event_id.json"; \
+	if [ -f "$$ARTIFACT" ]; then \
+		echo "📄 Viewing $$ARTIFACT:"; \
+		jq -C '.' "$$ARTIFACT" | less -R; \
+	else \
+		echo "❌ Artifact not found: $$ARTIFACT"; \
+		echo "Searching in other dates..."; \
+		find /vagrant/logs/rag/artifacts -name "event_$$event_id.json" -exec cat {} \; | jq -C '.' | less -R; \
+	fi
+
+# Export RAG logs to CSV (for Excel analysis)
+rag-log-export-csv:
+	@TODAY=$$(date +%Y-%m-%d); \
+	LOG_FILE="/vagrant/logs/rag/events/$$TODAY.jsonl"; \
+	OUTPUT="/vagrant/logs/rag/stats/$$TODAY.csv"; \
+	if [ -f "$$LOG_FILE" ]; then \
+		echo "📊 Exporting to CSV: $$OUTPUT"; \
+		python3 /vagrant/scripts/export_rag_to_csv.py "$$LOG_FILE" "$$OUTPUT"; \
+		echo "✅ Exported to: $$OUTPUT"; \
+	else \
+		echo "❌ No log file found for today: $$LOG_FILE"; \
+	fi
+
+# Compress old logs (> 7 days)
+rag-log-compress-old:
+	@echo "🗜️  Compressing logs older than 7 days..."
+	@find /vagrant/logs/rag/events -name "*.jsonl" -mtime +7 -exec gzip {} \;
+	@find /vagrant/logs/rag/artifacts -type d -mtime +7 -exec tar -czf {}.tar.gz {} \; -exec rm -rf {} \;
+	@echo "✅ Old logs compressed"
+
+# Show RAG statistics summary
+rag-log-stats-summary:
+	@echo "=" | tr '=' '=' | head -c 80; echo
+	@echo "📊 RAG STATISTICS SUMMARY"
+	@echo "=" | tr '=' '=' | head -c 80; echo
+	@echo
+	@echo "Total events logged (all time):"
+	@find /vagrant/logs/rag/events -name "*.jsonl" -exec wc -l {} + | tail -1 | awk '{print "  " $$1 " events"}'
+	@echo
+	@echo "Total artifacts saved (all time):"
+	@find /vagrant/logs/rag/artifacts -name "*.pb" | wc -l | awk '{print "  " $$1 " protobuf files"}'
+	@find /vagrant/logs/rag/artifacts -name "*.json" | wc -l | awk '{print "  " $$1 " json files"}'
+	@echo
+	@echo "Disk usage:"
+	@du -sh /vagrant/logs/rag | awk '{print "  Total: " $$1}'
+	@echo
+	@echo "Latest 5 event files:"
+	@ls -lt /vagrant/logs/rag/events/*.jsonl 2>/dev/null | head -5 | awk '{print "  " $$9 " (" $$5 " bytes)"}'
+
 
 etcd-server-build:
 	@echo "🔨 Building custom etcd-server..."
@@ -477,7 +635,7 @@ etcd-server-stop:
 
 etcd-server-status:
 	@echo "🔍 etcd-server Status:"
-@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi"
+@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi""
 
 etcd-server-logs:
 	@echo "📋 etcd-server Logs:"
@@ -559,6 +717,270 @@ quick-rag: rag-build rag-start
 	@echo "✅ RAG started quickly (assuming etcd-server already running)"
 
 # ============================================================================
+# Day 13 - Dual-Score Architecture Testing (CTU-13 Dataset)
+# ============================================================================
+
+# Dataset paths
+CTU13_SMALL := /vagrant/datasets/ctu13/smallFlows.pcap
+CTU13_NERIS := /vagrant/datasets/ctu13/botnet-capture-20110810-neris.pcap
+CTU13_BIG := /vagrant/datasets/ctu13/bigFlows.pcap
+
+
+# Replay targets with logging
+test-rag-small:
+	@./scripts/test_rag_logger.sh datasets/ctu13/smallFlows.pcap
+
+test-rag-neris:
+	@./scripts/test_rag_logger.sh datasets/ctu13/capture20110810.neris.pcap
+
+test-rag-big:
+	@./scripts/test_rag_logger.sh datasets/ctu13/bigFlows.pcap
+
+test-replay-small:
+	@echo "🧪 Replaying CTU-13 smallFlows.pcap..."
+	@vagrant ssh client -c "mkdir -p /vagrant/logs/lab && \
+		sudo tcpreplay -i eth1 --mbps=10 --stats=2 $(CTU13_SMALL) 2>&1 | tee /vagrant/logs/lab/tcpreplay.log"
+	@echo "✅ Replay complete"
+
+test-replay-neris:
+	@echo "🧪 Replaying CTU-13 Neris botnet (492K events)..."
+	@echo "⚠️  This will take ~5-10 minutes"
+	@vagrant ssh client -c "mkdir -p /vagrant/logs/lab && \
+		sudo tcpreplay -i eth1 --mbps=10 --stats=5 $(CTU13_NERIS) 2>&1 | tee /vagrant/logs/lab/tcpreplay.log"
+	@echo "✅ Replay complete"
+
+test-replay-big:
+	@echo "🧪 Replaying CTU-13 bigFlows.pcap (352M)..."
+	@echo "⚠️  This will take ~30-60 minutes"
+	@vagrant ssh client -c "mkdir -p /vagrant/logs/lab && \
+		sudo tcpreplay -i eth1 --mbps=10 --stats=10 $(CTU13_BIG) 2>&1 | tee /vagrant/logs/lab/tcpreplay.log"
+	@echo "✅ Replay complete"
+
+# Monitor targets
+monitor-day13-tmux:
+	@echo "🚀 Starting Day 13 tmux multi-panel monitor..."
+	@echo "   Layout: 4 panels (tcpreplay + logs + stats)"
+	@vagrant ssh defender -c "cd /vagrant && bash scripts/monitor_day13_test.sh"
+
+logs-dual-score:
+	@echo "📊 Monitoring Dual-Score logs (CTRL+C to exit)..."
+	@vagrant ssh defender -c "tail -f /tmp/ml-detector.log | grep -E 'DUAL-SCORE|⚠️'"
+
+logs-dual-score-live:
+	@echo "📊 Live Dual-Score analysis with highlighting..."
+	@vagrant ssh defender -c "tail -f /tmp/ml-detector.log | grep --line-buffered 'DUAL-SCORE' | \
+		awk '{print \$$0; divergence=\$$NF; if (divergence+0 > 0.30) print \"  ⚠️  HIGH DIVERGENCE DETECTED\"}'"
+
+# Extract logs for F1-score calculation
+extract-dual-scores:
+	@echo "📥 Extracting Dual-Score logs..."
+	@vagrant ssh defender -c "grep 'DUAL-SCORE' /vagrant/logs/lab/detector.log > /vagrant/logs/dual_scores_$(shell date +%Y%m%d_%H%M%S).txt" || true
+	@echo "✅ Logs extracted to /vagrant/logs/"
+	@ls -lh logs/dual_scores_*.txt 2>/dev/null | tail -1 || echo "No logs found yet"
+
+# Integration test with tmux monitoring
+test-integration-day13-tmux:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 Day 13 Integration Test - tmux Multi-Panel            ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "This will open a 4-panel tmux session showing:"
+	@echo "  Panel 1: tcpreplay progress"
+	@echo "  Panel 2: Dual-Score logs"
+	@echo "  Panel 3: Sniffer activity"
+	@echo "  Panel 4: Live statistics"
+	@echo ""
+	@echo "Step 1: Starting ML Defender lab..."
+	@$(MAKE) run-lab-dev
+	@echo ""
+	@echo "⏳ Waiting for components to initialize (10s)..."
+	@sleep 10
+	@echo ""
+	@echo "Step 2: Verify lab status..."
+	@$(MAKE) status-lab
+	@echo ""
+	@echo "Step 3: Open tmux monitor in a new terminal"
+	@echo "   Run: make monitor-day13-tmux"
+	@echo ""
+	@echo "Step 4: Start replay from another terminal"
+	@echo "   Run: make test-replay-small"
+	@echo ""
+	@echo "💡 TIP: Use 'tmux detach' (Ctrl+B, D) to keep monitor running"
+
+# Original simple integration test (non-tmux)
+test-integration-day13:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 Day 13 Integration Test - Dual-Score Architecture      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Step 1: Verify protobuf sync..."
+	@$(MAKE) proto-verify
+	@echo ""
+	@echo "Step 2: Start ML Defender lab..."
+	@$(MAKE) run-lab-dev
+	@echo ""
+	@echo "⏳ Waiting for components to initialize (10s)..."
+	@sleep 10
+	@echo ""
+	@echo "Step 3: Verify lab status..."
+	@$(MAKE) status-lab
+	@echo ""
+	@echo "Step 4: Replay CTU-13 smallFlows.pcap..."
+	@$(MAKE) test-replay-small
+	@echo ""
+	@echo "Step 5: Extract Dual-Score logs..."
+	@$(MAKE) extract-dual-scores
+	@echo ""
+	@echo "✅ Integration test complete!"
+	@echo "📊 Check logs/dual_scores_*.txt for F1-score analysis"
+
+# Quick test (fast validation)
+test-dual-score-quick:
+	@echo "⚡ Quick Dual-Score Test..."
+	@echo "Starting components in background..."
+	@$(MAKE) run-lab-dev > /dev/null 2>&1 &
+	@sleep 8
+	@echo "Replaying small dataset..."
+	@$(MAKE) test-replay-small
+	@sleep 2
+	@echo "Checking for Dual-Score logs..."
+	@vagrant ssh defender -c "grep -c 'DUAL-SCORE' /tmp/ml-detector.log && echo '✅ Dual-Score logging working' || echo '❌ No Dual-Score logs found'"
+
+# Show Day 13 statistics
+stats-dual-score:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 13 Dual-Score Statistics"
+	@echo "════════════════════════════════════════════════════════════"
+	@vagrant ssh defender -c "if [ -f /vagrant/logs/lab/detector.log ]; then \
+		echo 'Total Dual-Score events:'; \
+		grep -c 'DUAL-SCORE' /vagrant/logs/lab/detector.log; \
+		echo ''; \
+		echo 'Authoritative Sources:'; \
+		grep 'DUAL-SCORE' /vagrant/logs/lab/detector.log | grep -oP 'source=\K[A-Z_]+' | sort | uniq -c; \
+		echo ''; \
+		echo 'High Divergence (>0.30):'; \
+		grep 'Score divergence' /vagrant/logs/lab/detector.log | wc -l; \
+	else \
+		echo 'No logs found. Run a test first.'; \
+	fi"
+	@echo "════════════════════════════════════════════════════════════"
+
+# Clean Day 13 logs
+clean-day13-logs:
+	@echo "🧹 Cleaning Day 13 logs..."
+	@vagrant ssh defender -c "sudo truncate -s 0 /vagrant/logs/lab/detector.log"
+	@vagrant ssh defender -c "sudo truncate -s 0 /vagrant/logs/lab/sniffer.log"
+	@vagrant ssh defender -c "sudo truncate -s 0 /vagrant/logs/lab/firewall.log"
+	@vagrant ssh client -c "sudo rm -f /vagrant/logs/lab/tcpreplay.log"
+	@rm -f logs/dual_scores_*.txt
+	@echo "✅ Logs cleaned"
+
+# ============================================================================
+# Day 13 - Analysis Tools
+# ============================================================================
+
+# Analyze dual-score logs
+analyze-dual-scores:
+	@echo "📊 Analyzing Dual-Score logs..."
+	@if [ -f logs/dual_scores_manual.txt ]; then \
+		python3 scripts/analyze_dual_scores.py logs/dual_scores_manual.txt; \
+	else \
+		echo "❌ No dual_scores_manual.txt found. Run: make extract-dual-scores"; \
+	fi
+
+# Full analysis workflow
+test-analyze-workflow:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  Day 13 - Complete Analysis Workflow                      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Step 1: Extract dual-score logs..."
+	@$(MAKE) extract-dual-scores
+	@echo ""
+	@echo "Step 2: Analyze results..."
+	@$(MAKE) analyze-dual-scores
+	@echo ""
+	@echo "✅ Analysis complete"
+
+# Full Day 13 test cycle (clean → test → analyze)
+test-day13-full:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  Day 13 - Full Test Cycle (Clean → Test → Analyze)        ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Step 1: Clean previous logs..."
+	@$(MAKE) clean-day13-logs
+	@echo ""
+	@echo "Step 2: Start lab..."
+	@$(MAKE) run-lab-dev
+	@sleep 10
+	@echo ""
+	@echo "Step 3: Verify lab status..."
+	@$(MAKE) status-lab
+	@echo ""
+	@echo "Step 4: Replay dataset (open monitor in another terminal)..."
+	@echo "   Terminal 2: make monitor-day13-tmux"
+	@echo "   Terminal 3: make test-replay-small (or test-replay-neris)"
+	@read -p "Press ENTER when replay is complete..." dummy
+	@echo ""
+	@echo "Step 5: Extract and analyze..."
+	@$(MAKE) test-analyze-workflow
+	@echo ""
+	@echo "✅ Full test cycle complete"
+
+# Quick analysis of current logs (no extraction)
+quick-analyze:
+	@echo "⚡ Quick analysis of current detector logs..."
+	@vagrant ssh defender -c "grep 'DUAL-SCORE' /vagrant/logs/lab/detector.log" > logs/dual_scores_quick.txt
+	@python3 scripts/analyze_dual_scores.py logs/dual_scores_quick.txt
+	@rm -f logs/dual_scores_quick.txt
+
+# Full integration test with RAG
+test-rag-integration: rag-log-init
+	@echo "🧪 Running RAG integration test..."
+	@echo
+	@echo "1️⃣  Starting lab..."
+	@$(MAKE) run-lab-dev
+	@sleep 5
+	@echo
+	@echo "2️⃣  Starting monitoring..."
+	@$(MAKE) monitor-day13-tmux &
+	@sleep 2
+	@echo
+	@echo "3️⃣  Replaying test dataset..."
+	@$(MAKE) test-replay-small
+	@echo
+	@echo "4️⃣  Waiting for processing..."
+	@sleep 10
+	@echo
+	@echo "5️⃣  Analyzing results..."
+	@$(MAKE) rag-status
+	@$(MAKE) rag-analyze
+	@echo
+	@echo "✅ Integration test complete"
+
+# Quick RAG test (no tmux)
+test-rag-quick: rag-clean rag-log-init
+	@echo "⚡ Quick RAG test..."
+	@$(MAKE) test-replay-small
+	@sleep 5
+	@$(MAKE) rag-stats-summary
+	@$(MAKE) rag-analyze
+
+rag-watch:
+	@echo "📺 Live RAG monitoring (Ctrl+C to stop)..."
+	@vagrant ssh defender -c "watch -n 5 'echo \"=== RAG Stats ===\";\
+	  cat /vagrant/logs/rag/events/*.jsonl 2>/dev/null | wc -l | xargs echo \"Total events:\";\
+	  ps aux | grep ml-detector | grep -v grep | awk \"{print \\\"CPU: \\\"\\\$$3\\\"%\\\"}\"'"
+
+rag-validate:
+	@echo "🔍 Validating RAG logs..."
+	@vagrant ssh defender -c "cat /vagrant/logs/rag/events/*.jsonl | jq empty && echo '✅ All logs valid JSON' || echo '❌ Invalid JSON found'"
+# ============================================================================
 # Help updates
 # ============================================================================
 
@@ -590,9 +1012,16 @@ help-rag:
 	@echo ""
 	@echo "  make test-rag-etcd       - Quick test of RAG ecosystem"
 	@echo "  make quick-rag           - Quick start RAG (needs etcd-server)"
+	@echo "RAG Logger Management Commands:"
 
-# Update main help to include RAG
-help: help-rag
-	@echo ""
-	@echo "RAG Ecosystem:"
-	@echo "  make help-rag            - Show RAG ecosystem commands"
+help-day13:
+	@echo "Day 13 - Dual-Score Testing (tmux):"
+	@echo "  make test-integration-day13-tmux - 🚀 Full test with tmux monitor"
+	@echo "  make monitor-day13-tmux      - 📊 Open 4-panel tmux monitor"
+	@echo "  make test-dual-score-quick   - ⚡ Quick validation test"
+	@echo "  make test-replay-small       - Replay smallFlows.pcap"
+	@echo "  make test-replay-neris       - Replay Neris botnet"
+	@echo "  make logs-dual-score         - Monitor Dual-Score logs"
+	@echo "  make extract-dual-scores     - Extract logs for F1-calculation"
+	@echo "  make stats-dual-score        - Show Dual-Score statistics"
+	@echo "  make clean-day13-logs        - Clean Day 13 logs"

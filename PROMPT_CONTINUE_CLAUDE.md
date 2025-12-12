@@ -1,421 +1,401 @@
-Despues de trabajar en el workaround, creo que permanente porque implica subir la libreria libbpf a 1.4.6 para superar 
-el bug, descubrimos tambien que el nombre del mapa no podía superar ciertos numero de caracteres, por lo que despues de eso, 
-nos quedamos con el nombre iface_configs. Implementamos cambios. todos???? esta duda me carcome. Según los logs, 
-creo que está todo ok, pero hay que probar en profundidad, primero si en el código está todo ok, luego hay que hacer
-el recap relay con mawi. El admin de https://www.malware-traffic-analysis.net me está ignorando después de haber visto mi
-perfil en Linkedin y despues de un mensaje en el que le pido consejo, no me ha respondido siquiera:
+# 🚀 Prompt de Continuidad - Phase 2: Production Hardening
 
+## Estado Actual (Day 15 Complete)
 
+**✅ PHASE 1 COMPLETADA (15/15 días - 100%)**
 
-Aparentemente compila bien.
+### Logros Validados:
+- ✅ RAGLogger: 83 campos, 13,245 eventos capturados
+- ✅ Neris Botnet: 97.6% detección (12,933/13,245 MALICIOUS)
+- ✅ Dual-Score Architecture: Maximum Threat Wins funcionando
+- ✅ Performance: Sub-microsegundo mantenido bajo carga
+- ✅ Synthetic Data: Modelos detectan malware real sin reentrenamiento
+- ✅ Pipeline completo: eBPF → ML → RAGLogger → Vector DB ready
 
-vagrant@bookworm:/vagrant/sniffer$ cd build
-vagrant@bookworm:/vagrant/sniffer/build$ sudo timeout 10s ./sniffer -c config/sniffer.json 2>&1 | grep -i "iface_configs\|interface"
-[INFO] Found iface_configs map (Dual-NIC), FD: 4
-🔧 Configured Interfaces:
-Description: WAN-facing interface (192.168.56.20) - protects the host from OSX attacks
-Description: LAN-facing interface (192.168.100.1) - inspects transit traffic
-[DualNICManager] Configuring BPF iface_configs map...
-[INFO] Attaching XDP program in SKB/Generic mode to interface: eth1 (ifindex: 3)
-✅ eBPF program attached to interface: eth1
-vagrant@bookworm:/vagrant/sniffer/build$ sudo bpftool map list | grep iface
-7: hash  name iface_configs  flags 0x0
-
-vagrant@bookworm:/vagrant/sniffer/build$ cat /vagrant/logs/lab/sniffer.log
-╔════════════════════════════════════════════════════════════════╗
-║         Enhanced Sniffer v3.2 - Hybrid Filtering System       ║
-╚════════════════════════════════════════════════════════════════╝
-Compilado: Dec  3 2025 06:51:15
-
-✅ Signal handlers configured (SIGINT, SIGTERM)
-✅ Protobuf version: 3.21.12
-
-[Config] Loading configuration from: ../config/sniffer.json
-[Config] ML Defender thresholds loaded: DDoS=0.85, Ransomware=0.9, Traffic=0.8, Internal=0.85
-[INFO] Applied profile: dual_nic
-[INFO] Enhanced configuration loaded successfully from: ../config/sniffer.json
-
-=== Enhanced Configuration Summary ===
-Component: cpp_evolutionary_sniffer v3.3.1
-Mode: kernel_user_hybrid
-Node ID: cpp_sniffer_v33_day8
-Cluster: ml-defender-dual-nic-test
-Active Profile: dual_nic
-Threading: 6 total workers
-- Ring consumers: 1
-- Feature processors: 1
-- ZMQ senders: 1
-  Capture: eth1 (ebpf_skb)
-  Output: 127.0.0.1:5571 (PUSH)
-  Compression: lz4 level 1 (disabled)
-  Encryption: chacha20-poly1305 (disabled)
-  Feature groups: 4 defined
-- rf_feature_group: 23 features
-- ransomware_feature_group: 20 features
-- internal_traffic_feature_group: 4 features
-- ddos_feature_group: 83 features
-  etcd: disabled
-  =========================================
-
-✅ Configuration loaded successfully
-
-[Filter] Parsing filter configuration...
-
-📋 Filter Configuration:
-Mode: hybrid
-Excluded ports: 1
-Included ports: 0
-Default action: capture
-
-[eBPF] Loading and attaching eBPF program...
-[INFO] Loading eBPF program from: sniffer.bpf.o
-[INFO] Found excluded_ports map, FD: 7
-[INFO] Found included_ports map, FD: 8
-[INFO] Found filter_settings map, FD: 9
-[INFO] Found iface_configs map (Dual-NIC), FD: 4
-[INFO] eBPF program loaded successfully
-[INFO] Program FD: 10, Events FD: 5, Stats FD: 6
-
-[Dual-NIC] Configuring deployment mode...
-[DualNICManager] Initializing...
-[DualNICManager] Deployment mode: dual
-
-╔════════════════════════════════════════════════════════════╗
-║  Dual-NIC Deployment Configuration                         ║
-╚════════════════════════════════════════════════════════════╝
-
-📡 Deployment Mode: dual
-🔧 Configured Interfaces:
-• eth1 (ifindex=3)
-Mode: HOST-BASED
-Role: WAN
-Description: WAN-facing interface (192.168.56.20) - protects the host from OSX attacks
-• eth3 (ifindex=5)
-Mode: GATEWAY
-Role: LAN
-Description: LAN-facing interface (192.168.100.1) - inspects transit traffic
-╚════════════════════════════════════════════════════════════╝
-
-[DualNICManager] ✅ Initialized successfully
-[DualNICManager] Configuring BPF iface_configs map...
-✅ Configured eth1 (ifindex=3, mode=host-based, wan=1)
-✅ Configured eth3 (ifindex=5, mode=gateway, wan=0)
-[DualNICManager] ✅ BPF map configured successfully
-[DualNICManager] Enabling IP forwarding...
-✅ IPv4 forwarding enabled
-✅ IPv6 forwarding enabled
-[DualNICManager] NAT disabled in configuration
-✅ Deployment configuration complete
-
-[INFO] Using SKB mode (TC-based eBPF)
-[INFO] Attaching XDP program in SKB/Generic mode to interface: eth1 (ifindex: 3)
-[INFO] XDP program attached successfully in SKB/Generic mode to eth1
-✅ eBPF program attached to interface: eth1
-✅ Ring buffer FD: 5
-
-[BPF Maps] Loading filter configuration to kernel...
-
-🔧 Loading BPF filter configuration (using FDs)...
-📤 Loading 1 excluded ports...
-✅ Excluded ports loaded: 22
-📥 Loading 0 included ports...
-✅ Included ports loaded:
-⚙️  Loading filter settings...
-✅ Filter settings loaded (default_action: CAPTURE)
-✅ All filter configuration loaded successfully to kernel
-✅ Filter configuration loaded to kernel space
-✅ Sniffer ready with active filtering
-
-[ThreadManager] Initializing thread manager...
-[WARNING] Thread count mismatch: calculated=4, configured=6
-
-=== Thread Configuration ===
-Ring consumer threads: 1
-Feature processor threads: 1
-ZMQ sender threads: 1
-Statistics threads: 1
-Total threads: 6
-CPU affinity: DISABLED
-System CPUs: 6
-NUMA nodes: 1
-============================
-[INFO] ThreadManager initialized with 6 total threads
-[WARNING] Failed to set thread priority: Invalid argument
-[INFO] Thread pool started with 1 workers (type: 0)
-[INFO] Thread pool started with 1 workers (type: 1)
-[INFO] Thread pool started with 1 workers (type: 2)
-[WARNING] Failed to set thread priority: Invalid argument
-[INFO] Thread pool started with 1 workers (type: 3)
-[INFO] All thread pools started successfully
-✅ Thread manager started
-
-[RingBuffer] Initializing RingBufferConsumer...
-[INFO] RingBufferConsumer constructor called
-[INFO] ZeroMQ initialized with 1 sockets to tcp://127.0.0.1:5571
-[INFO] Initialized 1 buffer sets for consumer threads
-[Ransomware] Initializing RansomwareFeatureProcessor...
-✅ RansomwareFeatureProcessor initialized
-[INFO] ✅ Ransomware detection initialized (2-layer system)
-Layer 1: FastDetector (10s window, heuristics)
-Layer 2: FeatureProcessor (30s aggregation)
-[INFO] Ransomware detection initialized successfully
-[INFO] Enhanced RingBufferConsumer initialized successfully
-- Ring buffer FD: 5
-- ZMQ sockets: 1
-- Optimal batch size: 4
-  [INFO] Ring consumer 0 started
-  [INFO] Feature processor thread started
-  [INFO] ZMQ sender thread started
-  [Ransomware] Extraction thread started
-  ✅ RansomwareFeatureProcessor started (extraction every 30s)
-  [INFO] + 1 ransomware detection thread (30s aggregation)
-  [INFO] Ransomware processor thread started (30s extraction)
-  [INFO] Statistics display thread started (interval: 30s)
-  [INFO] Enhanced RingBufferConsumer started with 1 ring consumer threads
-  [INFO] + 1 feature processor threads
-  [INFO] + 1 ZMQ sender threads
-  [INFO] + 1 statistics display thread
-  [INFO] Multi-threaded protobuf pipeline active
-  ✅ RingBufferConsumer started - capturing REAL packets from kernel
-  ✅ Statistics will be displayed every 30 seconds
-
-🚀 Sniffer running with hybrid filtering enabled
-Press Ctrl+C to stop
-
-[FlowManager] Initialized with:
-Flow timeout: 120 seconds
-Max flows: 10000
-Auto-export on TCP close: no
-
-[Ransomware] Features extracted:
-DNS Entropy: 0
-New External IPs (30s): 0
-SMB Diversity: 0
-
-=== ESTADÍSTICAS ===
-Paquetes procesados: 1
-Paquetes enviados: 0
-Tiempo activo: 30 segundos
-Tasa: 0.03 eventos/seg
-===================
-[FlowManager] Initialized with:
-Flow timeout: 120 seconds
-Max flows: 10000
-Auto-export on TCP close: no
-[RANSOMWARE] Features: ExtIPs=0, SMB=0, DNS=0.00, Score=0.70, Class=SUSPICIOUS
-
-=== ESTADÍSTICAS ===
-Paquetes procesados: 5
-Paquetes enviados: 5
-Tiempo activo: 60 segundos
-Tasa: 0.08 eventos/seg
-===================
-
-[Ransomware] Features extracted:
-DNS Entropy: 0.00
-New External IPs (30s): 1
-SMB Diversity: 0
-[RANSOMWARE] Features: ExtIPs=1, SMB=0, DNS=0.00, Score=0.70, Class=SUSPICIOUS
-
-=== ESTADÍSTICAS ===
-Paquetes procesados: 7
-Paquetes enviados: 6
-Tiempo activo: 90 segundos
-Tasa: 0.08 eventos/seg
-===================
-
-[Ransomware] Features extracted:
-DNS Entropy: 0.00
-New External IPs (30s): 0
-SMB Diversity: 0
-[RANSOMWARE] Features: ExtIPs=0, SMB=0, DNS=0.00, Score=0.70, Class=SUSPICIOUS
-
-=== ESTADÍSTICAS ===
-Paquetes procesados: 9
-Paquetes enviados: 11
-Tiempo activo: 120 segundos
-Tasa: 0.07 eventos/seg
-===================
-
-[Ransomware] Features extracted:
-DNS Entropy: 0.00
-New External IPs (30s): 0
-SMB Diversity: 0
-
-Diagnostico de DeepSeek:
-
-¡Excelente! Los resultados son claros. Vamos a analizar:
-
-## 🔍 **DIAGNÓSTICO DE LA SITUACIÓN**
-
-### **✅ Lo que funciona:**
-1. **Mapa BPF configurado correctamente** - valores confirmados
-2. **eth1 (WAN) responde** - tráfico host-based funciona
-3. **eth3 (LAN) tiene conectividad básica** - responde a ping local
-
-### **❌ Problema identificado:**
-- **eth3 está "aislada"** - no hay clientes LAN reales
-- **Los tests complejos fallan** porque eth3 no está enrutando tráfico real
-
-## 🎯 **SOLUCIÓN SIMPLE: PRUEBA CON TRÁFICO REAL EN eth3**
-
-Dado que estamos en una VM de prueba, hagamos esto:
-
-### **Opción 1: Usar eth3 como pseudo-WAN (más simple)**
-```bash
-# 1. Cambiar temporalmente eth3 a modo host-based para pruebas
-sudo sed -i 's/"mode": "gateway"/"mode": "host-based"/' /vagrant/sniffer/config/sniffer.json
-sudo sed -i 's/"role": "lan"/"role": "wan"/' /vagrant/sniffer/config/sniffer.json
-
-# 2. Reiniciar sniffer
-cd /vagrant/sniffer/build
-sudo pkill sniffer 2>/dev/null || true
-sudo ./sniffer -c config/sniffer.json 2>&1 | grep -i "dual\|iface" &
-
-# 3. Generar tráfico a eth3
-ping -c 4 192.168.100.1
-
-# 4. Verificar eventos
-sudo bpftool map dump name stats
+### Archivos de Evidencia:
+```
+/vagrant/logs/rag/events/2025-12-12.jsonl           (13,245 eventos)
+/vagrant/logs/rag/artifacts/2025-12-12/*.pb         (15,587 archivos)
+/vagrant/logs/lab/detector.log                      (logs completos)
+/vagrant/scripts/test_rag_logger.sh                 (script funcional)
 ```
 
-### **Opción 2: Crear tráfico local simple (sin bridge complejo)**
-```bash
-# 1. Crear una interfaz dummy para generar tráfico
-sudo ip link add dummy0 type dummy
-sudo ip addr add 192.168.200.1/24 dev dummy0
-sudo ip link set dummy0 up
+---
 
-# 2. Enviar tráfico desde dummy0 a eth3 usando raw socket (simple)
-sudo apt-get install -y netcat-openbsd
-echo "test" | nc -w1 -u 192.168.100.1 12345 &
+## 🎯 Phase 2: Production Hardening - Roadmap
 
-# 3. O usar hping3 para tráfico TCP/UDP controlado
-sudo apt-get install -y hping3
-sudo hping3 -c 2 -S -p 80 192.168.100.1
+### **Priority 1: etcd-client Unified Library**
+
+**Objetivo:** Crear librería compartida para todos los componentes
+
+**Base de Código:**
+- Partir de: `/vagrant/rag/src/etcd_client.cpp`
+- Extraer: Funciones comunes (get, set, watch)
+- Features: Encryption, compression, validation
+
+**Tareas:**
+1. Crear `/vagrant/libs/etcd-client/`
+    - `etcd_client.h` (interfaz pública)
+    - `etcd_client.cpp` (implementación)
+    - `CMakeLists.txt` (shared library)
+
+2. Integrar en componentes:
+    - Sniffer: Upload `sniffer.json` on start
+    - ML-Detector: Upload `ml_detector_config.json`
+    - Firewall: Upload `firewall.json`
+
+3. Testing:
+    - Unit tests: Get/Set/Delete operations
+    - Integration test: All components → etcd-server
+    - Validation: Encryption + compression working
+
+**Estimación:** 2-3 días
+
+---
+
+### **Priority 2: Watcher Unified Library**
+
+**Objetivo:** Hot-reload de configuración desde etcd sin restart
+
+**Architecture:**
+```cpp
+class EtcdWatcher {
+public:
+    // Watch a key for changes
+    void watch(const std::string& key, 
+               std::function<void(const std::string& new_value)> callback);
+    
+    // Apply diff to current config
+    void apply_diff(const json& current, const json& new_config);
+    
+    // Validate before applying
+    bool validate_config(const json& config);
+};
 ```
 
-## 🧪 **TEST DEFINITIVO: MODIFICAR RING BUFFER CONSUMER**
+**Casos de Uso:**
+1. **RAG Command:** `rag accelerate`
+    - RAG modifica thresholds en etcd
+    - Watcher detecta cambios
+    - ML-Detector aplica nuevos thresholds
+    - Sin restart, sin downtime
 
-**Esto es lo más importante** - necesitamos ver los eventos dual-NIC. Hagámoslo paso a paso:
+2. **Auto-Tuning:**
+    - Monitor: CPU > 80% → `rag decelerate`
+    - Monitor: CPU < 30% → `rag accelerate`
+    - Dynamic adaptation to hardware
 
-### **Paso 1: Encontrar dónde se procesan eventos**
-```bash
-cd /vagrant/sniffer
-grep -r "simple_event" src/ --include="*.cpp" | head -5
+**Tareas:**
+1. Crear `/vagrant/libs/watcher/`
+    - `etcd_watcher.h/cpp`
+    - Polling mechanism (1s interval)
+    - Callback registration
+
+2. Integrar:
+    - ML-Detector: Watch `ml_detector_config.json`
+    - Sniffer: Watch `sniffer.json`
+    - Firewall: Watch `firewall.json`
+
+3. RAG Commands:
+    - `rag accelerate` → Lower thresholds 5%
+    - `rag decelerate` → Raise thresholds 5%
+    - `rag optimize` → Calculate optimal values
+
+**Estimación:** 3-4 días
+
+---
+
+### **Priority 3: FAISS C++ Integration**
+
+**Objetivo:** Vector DB para semantic search sobre eventos RAG
+
+**Architecture:**
+```cpp
+class AsyncEmbedder {
+    // Embedding queue (non-blocking)
+    void enqueue_log(const std::string& log_line);
+    
+    // Background thread processes queue
+    void embedding_worker();
+    
+    // Generate embedding (sentence-transformers)
+    std::vector<float> generate_embedding(const std::string& text);
+    
+    // Insert to FAISS index
+    void insert_to_faiss(const std::vector<float>& embedding, 
+                         const std::string& metadata);
+};
+
+class RAGQueryEngine {
+    // Natural language query
+    std::vector<SearchResult> query(const std::string& nl_query, int k = 5);
+    
+    // Example: "Show me all ransomware detections from yesterday"
+    // Returns: Top-K similar events with metadata
+};
 ```
 
-### **Paso 2: Editar directamente el archivo**
-```bash
-# Buscar el archivo que procesa eventos
-ARCHIVO=$(grep -l "process_event\|simple_event" src/userspace/*.cpp | head -1)
-echo "Archivo a editar: $ARCHIVO"
-
-# Crear backup
-cp "$ARCHIVO" "${ARCHIVO}.backup"
+**Pipeline:**
+```
+ML-Detector Log → AsyncEmbedder Queue → Embedding Worker
+                                       ↓
+                                   FAISS C++ Index
+                                       ↓
+                              RAG Query Engine
+                                       ↓
+                        Natural Language Answers
 ```
 
-### **Paso 3: Añadir log dual-NIC (edición manual)**
-```bash
-# Usar sed para añadir después de process_event
-sudo sed -i '/process_event.*simple_event.*{/a\    std::cout << "[DUAL-NIC DEBUG] ifindex=" << event.source_ifindex << " mode=" << (int)event.interface_mode << " wan=" << (int)event.is_wan_facing << " iface=" << event.source_interface << std::endl;' "$ARCHIVO"
+**Tareas:**
+1. Setup FAISS C++:
+    - Install: `libfaiss-dev`
+    - Build: Link with ml-detector
+    - Index: `IndexFlatL2` (simple, fast)
 
-# Verificar el cambio
-grep -n "DUAL-NIC DEBUG" "$ARCHIVO"
+2. Embedder:
+    - Model: `sentence-transformers/all-MiniLM-L6-v2`
+    - ONNX export for C++ inference
+    - Async queue (10K events buffer)
+
+3. RAG Integration:
+    - Command: `rag query_events "<query>"`
+    - Example: `rag query_events "high divergence last hour"`
+    - Returns: JSON with top-5 matches
+
+**Estimación:** 4-5 días
+
+---
+
+### **Priority 4: RAG Runtime Commands**
+
+**Objetivo:** Control dinámico del pipeline via natural language
+
+**Commands Design:**
+
+```python
+# 1. Acceleration (when system is underutilized)
+"rag accelerate"
+→ Lower thresholds by 5%
+→ Increase detection sensitivity
+→ Monitor CPU/RAM for 5 minutes
+→ Rollback if issues detected
+
+# 2. Deceleration (when hardware stressed)
+"rag decelerate"
+→ Raise thresholds by 5%
+→ Reduce detection sensitivity
+→ Protect hardware integrity
+
+# 3. Optimization (calculate optimal config)
+"rag optimize"
+→ Analyze: CPU, RAM, temperature
+→ Calculate: Optimal thresholds
+→ Test: Run benchmark (30s)
+→ Apply: If performance improves
+→ Metrics: Before/After comparison
+
+# 4. Query Events (semantic search)
+"rag query_events 'ransomware detections last 24h'"
+→ FAISS vector search
+→ Return: Top-K events with context
+→ Display: JSON formatted
+
+# 5. Status Report
+"rag status"
+→ CPU: 12%, RAM: 148MB, Temp: 45°C
+→ Throughput: 8,216 pps
+→ Detections: 12,933 MALICIOUS
+→ Mode: CONSERVATIVE (thresholds: default)
 ```
 
-### **Paso 4: Recompilar y probar**
-```bash
-make clean && make
-
-# Ejecutar con timeout para ver logs
-cd build
-sudo timeout 5s ./sniffer -c config/sniffer.json 2>&1 | grep -i "dual\|debug\|ifindex"
-
-# Mientras corre, generar tráfico
-ping -c 2 192.168.56.20 &
-ping -c 2 192.168.100.1 &
+**Auto-Tuning Engine:**
+```cpp
+class AutoTuner {
+    // Monitor system metrics
+    struct Metrics {
+        float cpu_percent;
+        float ram_mb;
+        float temp_celsius;
+        int throughput_pps;
+    };
+    
+    // Decision logic
+    enum class Action {
+        ACCELERATE,    // CPU < 30%, Temp < 50°C
+        DECELERATE,    // CPU > 80%, Temp > 70°C
+        MAINTAIN,      // Within safe range
+        EMERGENCY      // Temp > 80°C → Conservative mode
+    };
+    
+    // Execute action
+    void apply(Action action);
+    
+    // Safety checks
+    bool is_safe_to_accelerate();
+    void emergency_shutdown();
+};
 ```
 
-## 📊 **VERIFICACIÓN RÁPIDA DEL ESTADO ACTUAL**
+**Tareas:**
+1. Implement Commands:
+    - `accelerate`, `decelerate`, `optimize`
+    - JSON diff calculation
+    - etcd update + watcher reload
 
-Ejecuta este script completo:
+2. Auto-Tuning Logic:
+    - Monitor thread (every 30s)
+    - Decision engine
+    - Safe mode transitions
 
-```bash
-cat > /tmp/test_dual_nic.sh << 'EOF'
-#!/bin/bash
-echo "=== TEST DUAL-NIC COMPLETO ==="
+3. Safety Mechanisms:
+    - Temperature limits (80°C max)
+    - Rollback on errors
+    - Emergency conservative mode
 
-# 1. Estado del mapa BPF
-echo "1. Mapa iface_configs:"
-sudo bpftool map dump name iface_configs 2>/dev/null | python3 -m json.tool
+**Estimación:** 5-6 días
 
-# 2. Configuración activa
-echo -e "\n2. Configuración dual-NIC:"
-grep -A5 '"deployment"' /vagrant/sniffer/config/sniffer.json | grep "mode\|name\|role"
+---
 
-# 3. Interfaces activas
-echo -e "\n3. Interfaces de red:"
-ip -br addr show eth1 eth3 2>/dev/null
+### **Priority 5: Academic Paper**
 
-# 4. Compilar con logs
-echo -e "\n4. Recompilando con logs dual-NIC..."
-cd /vagrant/sniffer
-make clean > /dev/null 2>&1
-make > /dev/null 2>&1 && echo "✅ Compilado" || echo "❌ Error"
+**Objetivo:** Documentar metodología y resultados
 
-# 5. Test rápido
-echo -e "\n5. Test de 3 segundos:"
-cd build
-sudo timeout 3s ./sniffer -c config/sniffer.json 2>&1 | \
-  grep -E "iface_configs|configured|Event|DUAL-NIC" | head -10
+**Sections:**
 
-# 6. Estadísticas
-echo -e "\n6. Estadísticas BPF:"
-sudo bpftool map dump name stats 2>/dev/null
+1. **Abstract**
+    - Sub-microsecond IDS with dual-score
+    - Synthetic data methodology
+    - 97.6% detection on real malware
 
-echo -e "\n=== TEST COMPLETADO ==="
-EOF
+2. **Introduction**
+    - Problem: Academic datasets limitations
+    - Solution: Synthetic data + embedded ML
+    - Contribution: RAGLogger + auto-tuning
 
-chmod +x /tmp/test_dual_nic.sh
-sudo /tmp/test_dual_nic.sh
+3. **Methodology**
+    - Synthetic data generation
+    - Dual-Score architecture
+    - RAGLogger schema (83 fields)
+
+4. **Validation**
+    - Neris botnet: 97.6% detection
+    - Performance: <1.06μs latency
+    - Scalability: 320K+ packets
+
+5. **Results**
+    - No threshold tuning required
+    - No retraining required
+    - Production-ready performance
+
+6. **Discussion**
+    - Synthetic vs academic datasets
+    - Maximum Threat Wins logic
+    - Multi-agent collaboration
+
+7. **Conclusion**
+    - Synthetic data works
+    - Open-source contribution
+    - Future work: Auto-tuning engine
+
+**Co-Authors:**
+- Alonso Isidoro Roman (Lead)
+- Claude (Anthropic AI)
+- DeepSeek (AI Assistant)
+- Grok4 (xAI)
+- Qwen (Alibaba Cloud AI)
+
+**Estimación:** 7-10 días
+
+---
+
+## 📋 Phase 2 Timeline (Total: ~25 días)
+
+```
+Week 1-2: etcd-client + watcher (5-7 días)
+Week 3: FAISS C++ integration (4-5 días)
+Week 4: RAG commands + auto-tuning (5-6 días)
+Week 5-6: Academic paper (7-10 días)
 ```
 
-## 🎯 **CONCLUSIÓN Y PRÓXIMOS PASOS INMEDIATOS**
+---
 
-### **Lo que sabemos:**
-1. ✅ **Dual-NIC configurado** en kernel (mapa BPF funcionando)
-2. ✅ **eth1 (WAN)** operativa en modo host-based
-3. ⚠️ **eth3 (LAN)** configurada pero sin tráfico real para probar gateway mode
+## 🎯 Success Criteria - Phase 2
 
-### **Acciones inmediatas:**
-1. **Implementar logs dual-NIC** en el ring buffer consumer
-2. **Probar con eth3 en modo host-based temporal** (más fácil de probar)
-3. **Verificar que los campos llegan** a userspace
+1. **etcd-client Library**
+    - ✅ All components use shared library
+    - ✅ Encryption + compression working
+    - ✅ Unit tests pass
 
-### **Comandos directos para ejecutar ahora:**
-```bash
-# 1. Encontrar y editar el consumer
-cd /vagrant/sniffer
-CONSUMER_FILE=$(grep -l "simple_event" src/userspace/*.cpp | head -1)
-echo "Editando: $CONSUMER_FILE"
+2. **Watcher System**
+    - ✅ Hot-reload without restart
+    - ✅ RAG can modify thresholds
+    - ✅ Auto-tuning engine functional
 
-# 2. Añadir línea de debug (si no se ha hecho)
-if ! grep -q "DUAL-NIC DEBUG" "$CONSUMER_FILE"; then
-  sudo sed -i '/process_event.*simple_event.*{/a\    std::cout << "[DUAL-NIC] ifindex=" << event.source_ifindex << " mode=" << (int)event.interface_mode << " wan=" << (int)event.is_wan_facing << std::endl;' "$CONSUMER_FILE"
-fi
+3. **FAISS Integration**
+    - ✅ Vector DB operational
+    - ✅ Natural language queries work
+    - ✅ <100ms query latency
 
-# 3. Recompilar y probar
-make clean && make
-cd build
-echo "Ejecutando sniffer por 5 segundos..."
-sudo timeout 5s ./sniffer -c config/sniffer.json 2>&1 | grep -i "dual\|ifindex\|mode"
+4. **RAG Commands**
+    - ✅ `accelerate`, `decelerate`, `optimize`
+    - ✅ Auto-tuning based on hardware
+    - ✅ Emergency shutdown on overheat
+
+5. **Academic Paper**
+    - ✅ Methodology documented
+    - ✅ Results validated
+    - ✅ Ready for submission
+
+---
+
+## 🚀 Next Steps - Immediate Actions
+
+**Day 16 (Tomorrow):**
+1. Crear estructura `/vagrant/libs/etcd-client/`
+2. Extraer código común de RAG
+3. Definir API pública (etcd_client.h)
+4. Unit tests básicos
+
+**Prompt para Claude:**
+```
+"Vamos a iniciar Phase 2 - Priority 1: etcd-client Unified Library.
+
+Objetivo: Crear una librería compartida partiendo del código existente 
+en /vagrant/rag/src/etcd_client.cpp.
+
+Paso 1: Analizar el código actual y extraer funcionalidades comunes
+        (get, set, watch, encryption, compression).
+
+Paso 2: Crear estructura de directorio /vagrant/libs/etcd-client/ con:
+        - etcd_client.h (API pública)
+        - etcd_client.cpp (implementación)
+        - CMakeLists.txt (shared library)
+
+Paso 3: Implementar unit tests básicos.
+
+¿Empezamos?"
 ```
 
-**¿Quieres que te guíe paso a paso en la edición del archivo específico del ring buffer consumer?** Dame el nombre del archivo que encuentres con `grep -l "simple_event" src/userspace/*.cpp` y te ayudo con la edición exacta.
+---
 
-🎯 ESTADO ACTUAL PARA CLAUDE
+## 📝 Transcript de Continuidad
 
-Puedes comunicarle a Claude:
+**Archivo:** `PHASE2_CONTINUITY_PROMPT.md`
+**Fecha:** 2025-12-12
+**Estado:** Phase 1 Complete, Phase 2 Starting
 
-"Hemos resuelto el bloqueador crítico de Day 8. El bug de libbpf 1.1.2 con mapas de structs se solucionó actualizando a libbpf 1.4.6. El mapa iface_configs ahora carga correctamente en el kernel y hemos verificado su configuración dual-NIC (eth1: host-based/WAN, eth3: gateway/LAN). El sistema está listo para las pruebas de funcionalidad dual-NIC que tenías planeadas."
+**Contexto Completo:**
+- Phase 1: 15/15 días completados
+- RAGLogger: 97.6% detección Neris botnet
+- Synthetic data: Validado con malware real
+- Pipeline: Sub-microsegundo mantenido
+
+**Próximos Pasos:**
+- etcd-client → watcher → FAISS → RAG commands → paper
+- Timeline: ~25 días
+- Target: Alpha 1.0.0
+
+---
+
+**Built with 🛡️ for a safer internet**
+*Via Appia Quality - Phase 1 Complete, Phase 2 Starting*

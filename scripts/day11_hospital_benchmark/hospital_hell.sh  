@@ -1,0 +1,121 @@
+#!/bin/bash
+# hospital_hell.sh - Grok4's Hospital-from-Hell Stress Test
+# Diseñado para ML Defender Day 11 - Performance Benchmarking
+# Ejecutar DESDE LA MÁQUINA CLIENTE (192.168.100.50)
+
+set -euo pipefail
+
+# Colores para que sea bonito en el dashboard
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${RED}════════════════════════════════════════════════${NC}"
+echo -e "${RED}     HOSPITAL FROM HELL - STRESS TEST v1.0     ${NC}"
+echo -e "${RED}   PACS bursts • EHR floods • VoIP chaos • C2   ${NC}"
+echo -e "${RED}════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}Advertencia: Esto va a saturar el gateway como nunca antes${NC}"
+sleep 3
+
+# 1. EHR Polling intensivo (HL7 sobre TCP puerto 2575 y 5555)
+ehr_flood() {
+    echo -e "${GREEN}[+] EHR Flood - 800 conexiones/segundo simuladas${NC}"
+    while true; do
+        # Simula múltiples sistemas HIS enviando mensajes HL7 cada pocos ms
+        (
+            echo -e "MSH|^~\&|EPIC|HOSPITAL|MLDEFENDER|GATEWAY|20251206||ADT^A01|12345|P|2.5.1"
+            echo -e "PID|1||123456||DOE^JOHN"
+            echo ""
+        ) | nc -q 1 192.168.56.20 2575 >/dev/null 2>&1 &
+        sleep 0.001
+    done
+}
+
+# 2. PACS Bursts reales (DICOM C-STORE 5–50 MB)
+pacs_bursts() {
+    echo -e "${GREEN}[+] PACS Bursts - Imágenes reales de 5 a 50 MB${NC}"
+    # Descargamos un par de imágenes DICOM públicas reales (una sola vez)
+    [ ! -f CR-Chest.dcm ] && wget -q https://tinyurl.com/dicom-cr-chest -O CR-Chest.dcm
+    [ ! -f CT-Head-50MB.dcm ] && wget -q https://tinyurl.com/dicom-ct-50mb -O CT-Head-50MB.dcm
+
+    while true; do
+        # 70% imágenes pequeñas (CR, RX), 30% estudios pesados (TC, RM)
+        if (( RANDOM % 10 < 7 )); then
+            curl -s --data-binary @CR-Chest.dcm http://192.168.56.20:8042/instances >/dev/null
+        else
+            curl -s --data-binary @CT-Head-50MB.dcm http://192.168.56.20:8042/instances >/dev/null
+        fi
+        # Burst cada 2–8 segundos (como en radiología real)
+        sleep $(shuf -i 2-8 -n 1)
+    done
+}
+
+# 3. VoIP/SIP + RTP (consultas simultáneas)
+voip_chaos() {
+    echo -e "${GREEN}[+] VoIP Chaos - 40 llamadas simultáneas${NC}"
+    while true; do
+        # Simula tráfico RTP constante (G.711 20ms paquetes)
+        for i in {5000..5080..2}; do
+            # 80 bytes payload = G.711 típico
+            dd if=/dev/urandom bs=80 count=1 2>/dev/null | nc -u -p $i 192.168.56.20 $((i+1)) >/dev/null &
+        done
+        sleep 20  # duración media de consulta
+        pkill -f "nc -u" || true
+        sleep $(shuf -i 3-15 -n 1)  # tiempo entre llamadas
+    done
+}
+
+# 4. Beaconing C2 disfrazado de telemetría médica (¡maligno!)
+c2_beacon() {
+    echo -e "${RED}[+] C2 Beaconing - Implant disfrazado de monitor de paciente${NC}"
+    while true; do
+        # Beacon cada 15 segundos a servidor C2 (simulado con DNS tunneling ligero)
+        dig +short txt $(echo "$(date +%s%N | md5sum | head -c 16).c2.hospital.local") @8.8.8.8 >/dev/null 2>&1 || true
+        curl -s -m 3 http://192.168.56.20/telemetry/$(hostname)-$(openssl rand -hex 8) >/dev/null || true
+        sleep 15
+    done
+}
+
+# 5. Fondo de tráfico normal (HTTP/S a sitios médicos reales)
+normal_traffic() {
+    while true; do
+        sites=(
+            "pubmed.ncbi.nlm.nih.gov"
+            "uptodate.com"
+            "radiopaedia.org"
+            "who.int"
+            "cdc.gov"
+        )
+        site=${sites[$RANDOM % ${#sites[@]}]}
+        curl -s -m 5 "https://$site" -H "User-Agent: HospitalBrowser/1.0" >/dev/null || true
+        sleep $(shuf -i 1-7 -n 1)
+    done
+}
+
+# LANZAMIENTO SIMULTÁNEO
+echo -e "${YELLOW}[!] Lanzando el infierno hospitalario en 5 segundos...${NC}"
+sleep 5
+
+normal_traffic &
+normal_pid=$!
+
+ehr_flood &
+ehr_pid=$!
+
+pacs_bursts &
+pacs_pid=$!
+
+voip_chaos &
+voip_pid=$!
+
+c2_beacon &
+c2_pid=$!
+
+echo -e "${RED}[FIRE] HOSPITAL FROM HELL ACTIVADO${NC}"
+echo -e "${YELLOW}PIDs: Normal=$normal_pid  EHR=$ehr_pid  PACS=$pacs_pid  VoIP=$voip_pid  C2=$c2_pid${NC}"
+echo -e "${YELLOW}Duración recomendada: 15–25 minutos continuos${NC}"
+echo -e "${YELLOW}Para parar: pkill -f hospital_hell.sh${NC}"
+
+# Mantener el script vivo
+wait

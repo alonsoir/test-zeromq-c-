@@ -5,7 +5,7 @@
   "_phase": "Beta Testing - Protobuf Fix Validation",
   "operation": {
     "dry_run": false,
-    "log_directory": "/vagrant/firewall-acl-agent/build/logs",
+    "log_directory": "/vagrant/logs/lab",
     "enable_debug_logging": true,
     "simulate_block": true,
     "validation_strictness": "high",
@@ -65,10 +65,10 @@
     "block_gateway": false
   },
   "logging": {
-    "level": "debug",
+    "level": "info",
     "console": true,
     "syslog": false,
-    "file": "/vagrant/firewall-acl-agent/build/logs/firewall-agent.log",
+    "file": "/vagrant/logs/lab/firewall-agent.log",
     "max_file_size_mb": 10,
     "backup_count": 5,
     "log_protobuf_messages": true,
@@ -80,7 +80,7 @@
     "enable_export": true,
     "export_interval_sec": 30,
     "export_format": "json",
-    "export_file": "/vagrant/firewall-acl-agent/build/logs/firewall-metrics.json",
+    "export_file": "/vagrant/logs/lab/firewall-metrics.json",
     "track_zmq_messages": true,
     "track_processing_times": true,
     "track_memory_usage": true

@@ -1,8 +1,8 @@
-# 🏗️ System Architecture - ML Defender Platform
+# **ARCHITECTURE.md - ML Defender Platform (Actualizado Día 9)**
 
-**Version:** 4.0.0  
-**Last Updated:** November 20, 2025  
-**Status:** Phase 1 Complete - Production Ready
+**Version:** 4.1.0  
+**Last Updated:** December 5, 2025  
+**Status:** Phase 1 Complete - Gateway Mode Ready (Pending Validation)
 
 ---
 
@@ -12,6 +12,7 @@
 - [System Components](#system-components)
 - [Data Flow](#data-flow)
 - [cpp_sniffer Architecture](#cpp_sniffer-architecture)
+- [XDP Mode Selection & Gateway Mode Architecture](#xdp-mode-selection--gateway-mode-architecture)
 - [ml-detector Architecture](#ml-detector-architecture)
 - [RAG Security System Architecture](#rag-security-system-architecture)
 - [Enterprise Features](#enterprise-features)
@@ -47,6 +48,7 @@ The ML Defender Platform is a **distributed, multi-component system** designed t
 │                 │  ZMQ   │                 │  ZMQ   │     -agent      │
 │  eBPF Capture   │  PUSH  │  ML Inference   │  REQ   │  iptables/nft   │
 │  3-Layer Detect │        │  4 C++20 Models │        │  Auto Response  │
+│  Dual-NIC Ready │        │                 │        │                 │
 └─────────────────┘        └─────────────────┘        └─────────────────┘
         │                           │                           │
         │                           │                           │
@@ -68,7 +70,7 @@ The ML Defender Platform is a **distributed, multi-component system** designed t
 
 | Component | Role | Status | Language |
 |-----------|------|--------|----------|
-| **cpp_sniffer** | Packet capture + feature extraction | ✅ Production | C++20 + eBPF |
+| **cpp_sniffer** | Packet capture + feature extraction | ✅ Production (Host-Based) | C++20 + eBPF |
 | **ml-detector** | ML inference + threat scoring | ✅ 4 Models Complete | C++20 |
 | **RAG Security System** | LLM intelligence + analysis | ✅ LLAMA Real | C++20 |
 | **firewall-acl-agent** | Automated response | 📋 Planned | C++20 |
@@ -85,6 +87,7 @@ Network Traffic
 ┌─────────────┐
 │ cpp_sniffer │ Capture + Extract Features
 │ eBPF/XDP    │ 40 ML features
+│ Dual-NIC    │ Gateway Mode Ready
 └──────┬──────┘
        │ ZMQ (Protobuf) port 5571
        ↓
@@ -134,7 +137,7 @@ Commands Available:
 
 **Repository:** This repo  
 **Language:** C++20 + eBPF/C  
-**Status:** ✅ Production Ready (Phase 1 Complete)
+**Status:** ✅ Production Ready (Host-Based Mode)
 
 ### Three-Layer Detection Pipeline
 ```
@@ -179,9 +182,16 @@ Commands Available:
 │  ┌────────────────────────────────────────────────────┐    │
 │  │  Protobuf Serialization                            │    │
 │  │  (NetworkSecurityEvent)                            │    │
-│  └────────────────────────────────────────────────────┘    │
-│                            ↓                                 │
-│  ┌────────────────────────────────────────────────────┐    │
+│  └───────────────────────┬────────────────────────────┘    │
+│                           │ Dual-NIC Support                │
+│  ┌───────────────────────▼────────────────────────────┐    │
+│  │  Gateway Mode Metadata                              │    │
+│  │  • ifindex detection (eth1=3, eth3=5)              │    │
+│  │  • mode identification (HOST=1, GATEWAY=2)         │    │
+│  │  • WAN flag (1=WAN-facing, 0=LAN-facing)           │    │
+│  └───────────────────────┬────────────────────────────┘    │
+│                           │                                 │
+│  ┌───────────────────────▼────────────────────────────┐    │
 │  │  ZMQ PUSH Socket                                    │    │
 │  │  tcp://127.0.0.1:5571                              │    │
 │  └────────────────────────────────────────────────────┘    │
@@ -210,6 +220,60 @@ struct simple_event {
 // Total size: 544 bytes
 ```
 
+### Dual-NIC Implementation (Day 9)
+
+**Multi-Interface XDP Attachment:**
+```cpp
+// include/ebpf_loader.hpp
+std::vector<int> attached_ifindexes_;  // Multiple interfaces tracking
+
+// src/userspace/ebpf_loader.cpp
+bool EbpfLoader::attach_skb(const std::string& interface_name) {
+    // Check if ALREADY attached to THIS interface
+    if (std::find(attached_ifindexes_.begin(), attached_ifindexes_.end(), ifindex) 
+        != attached_ifindexes_.end()) {
+        return true;  // Already attached
+    }
+    
+    // Attach and add to tracking list
+    int err = bpf_xdp_attach(ifindex, prog_fd_, xdp_flags, nullptr);
+    if (!err) {
+        attached_ifindexes_.push_back(ifindex);
+    }
+    return !err;
+}
+```
+
+**BPF Map Configuration for Gateway Mode:**
+```c
+// BPF map for interface configuration
+struct iface_config {
+    __u32 ifindex;    // Interface index (e.g., 3 for eth1, 5 for eth3)
+    __u8 mode;        // 1=HOST_BASED, 2=GATEWAY
+    __u8 is_wan;      // 1=WAN-facing, 0=LAN-facing
+    __u8 reserved[2]; // Padding
+};
+```
+
+**Example Configuration:**
+```json
+// eth1 (WAN interface): Host-based mode, WAN-facing
+{
+    "ifindex": 3,
+    "mode": 1,    // HOST_BASED
+    "is_wan": 1,  // WAN-facing
+    "reserved": [0, 0]
+}
+
+// eth3 (LAN interface): Gateway mode, LAN-facing
+{
+    "ifindex": 5,
+    "mode": 2,    // GATEWAY
+    "is_wan": 0,  // LAN-facing
+    "reserved": [0, 0]
+}
+```
+
 ### Performance Characteristics
 
 | Metric | Value | Validated |
@@ -219,6 +283,208 @@ struct simple_event {
 | **Memory** | 4.5 MB | ✅ Stable 17h |
 | **CPU (load)** | 5-10% | ✅ Under stress |
 | **CPU (idle)** | 0% | ✅ Background |
+| **Dual-NIC Attach** | ✅ Working | Verified with bpftool |
+
+---
+
+## ⚡ XDP Mode Selection & Gateway Mode Architecture
+
+**Critical Learning (Day 9):** XDP Generic (SKB mode) has fundamental limitations for gateway mode validation in development environments.
+
+### **XDP Generic (Software Mode) Limitations**
+
+#### **What XDP Generic CAN Capture:**
+```
+✅ Tráfico que entra FÍSICAMENTE desde fuera del host
+  - SSH desde máquina externa hacia la VM
+  - HTTP requests desde navegador externo
+  - Cualquier paquete que cruce el límite físico de la VM
+```
+
+#### **What XDP Generic CANNOT Capture:**
+```
+❌ Tráfico generado localmente en la misma VM
+  - tcpreplay desde VM hacia sus propias interfaces
+  - curl/wget a servicios locales en la misma VM
+  - Loopback interno (127.0.0.1)
+
+❌ Tráfico entre network namespaces
+  - Namespace client → veth pair → bridge → eth3
+  - veth pairs, bridges, tunnels internos
+
+❌ Tráfico inyectado artificialmente
+  - Paquetes creados en userspace y enviados directamente
+  - Scapy, raw sockets, netcat desde la misma máquina
+```
+
+### **Technical Explanation**
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Packet Flow in Linux Networking Stack               │
+└──────────────────────────────────────────────────────┘
+
+EXTERNAL TRAFFIC (from physical network):
+  NIC Driver → XDP Generic Hook → Networking Stack → Application
+                    ↑
+            [XDP CAN CAPTURE HERE] ✅
+
+LOCAL TRAFFIC (generated on same host):
+  Application → Networking Stack → Loopback/Output
+                    ↑
+            [XDP HOOK NEVER TRIGGERED] ❌
+
+INTER-VM TRAFFIC (via virtual networks):
+  VM1 App → Virtual Network → Hypervisor → VM2 NIC
+                                       ↑
+                            [PHYSICAL BOUNDARY]
+                                       ↓
+                              XDP CAN CAPTURE ✅
+```
+
+### **Implications for Testing Strategy**
+
+#### **1. Host-Based IDS Testing:**
+```bash
+# ✅ VALID - XDP Generic works for external traffic
+ssh usuario@192.168.56.20        # Desde macOS hacia VM
+curl http://192.168.56.20        # Desde navegador externo
+```
+
+#### **2. Gateway Mode Testing:**
+```bash
+# ❌ INVALID - Won't capture with XDP Generic
+sudo tcpreplay -i eth3 traffic.pcap    # Misma VM
+sudo curl http://192.168.100.1:8080    # Loopback interno
+
+# ✅ VALID - Requires physical traffic crossing boundary
+# Option A: Multi-VM setup
+# Option B: Physical hardware with real NICs
+```
+
+### **XDP Mode Comparison Table**
+
+| Feature | XDP Generic (SKB) | Native XDP (Driver) | TC-BPF (Alternative) |
+|---------|-------------------|---------------------|----------------------|
+| **Performance** | ~1M pps | 10M+ pps | ~500K pps |
+| **Capture Scope** | External only | All traffic | All traffic |
+| **Driver Support** | All NICs | Limited (ixgbe, mlx5) | All NICs |
+| **Gateway Mode** | Limited testing | Full support | Full support |
+| **Development** | Easy | Hardware required | Easy |
+| **Our Use Case** | Host-based OK | Production gateway | Fallback option |
+
+### **Gateway Mode Validation Strategy**
+
+#### **Development/Testing Environment:**
+```ruby
+# Vagrantfile Multi-VM Setup (Day 10 Strategy)
+Vagrant.configure("2") do |config|
+  # Defender VM (ML Defender)
+  config.vm.define "defender" do |defender|
+    defender.vm.network "private_network",
+                      ip: "192.168.100.1",
+                      virtualbox__intnet: "lan"
+    defender.vm.network "public_network",
+                      bridge: "en0: Wi-Fi"
+  end
+  
+  # Client VM (Traffic Generator)
+  config.vm.define "client" do |client|
+    client.vm.network "private_network",
+                      ip: "192.168.100.50",
+                      virtualbox__intnet: "lan"
+  end
+end
+```
+
+#### **Traffic Flow for Validation:**
+```
+Client VM (192.168.100.50)
+  ↓ curl 8.8.8.8
+  ↓ VirtualBox Internal Network "lan"
+  ↓
+Defender eth3 (192.168.100.1) ← ✅ XDP GENERIC CAN CAPTURE
+  (Traffic crosses VM boundary)
+  ↓ IP forwarding + NAT
+  ↓
+Defender eth1 (192.168.56.20)
+  ↓
+Internet
+```
+
+#### **Success Criteria for Gateway Mode:**
+1. **Traffic must cross VM boundary** (physical network hop)
+2. **eth3 must be in gateway mode** (`mode=2, wan=0`)
+3. **Metadata must propagate** (`ifindex=5` events appear)
+4. **Performance must be measured** (throughput, latency, drops)
+
+### **Production Deployment Requirements**
+
+#### **For Small Office/Home Office (SOHO):**
+```
+RECOMMENDED: Native XDP-capable NIC
+  - Intel i210/i350 (supports native XDP)
+  - Throughput: 1 Gbps full duplex
+  - Latency: <10 μs per packet
+
+FALLBACK: TC-BPF if Native XDP unavailable
+  - Works with any NIC
+  - Throughput: ~500 Mbps
+  - Latency: ~50 μs per packet
+```
+
+#### **For Enterprise Deployment:**
+```
+REQUIRED: Native XDP with hardware offload
+  - Mellanox ConnectX-5/6 (mlx5 driver)
+  - Intel E810 (ice driver)
+  - Throughput: 10-100 Gbps
+  - Latency: <5 μs per packet
+```
+
+### **Testing Methodology Updates**
+
+#### **Updated Test Categories:**
+
+1. **Unit Tests** - Individual components
+2. **Integration Tests** - Component interactions
+3. **Host-Based Validation** - External → VM traffic
+4. **Gateway Mode Validation** - Multi-VM or physical setup
+5. **Performance Benchmarks** - Throughput, latency, drops
+6. **Long-Running Stability** - 24h+ continuous operation
+
+#### **Gateway-Specific Tests:**
+```bash
+# Test 1: Multi-VM traffic validation
+vagrant up defender client
+vagrant ssh client -c "curl 8.8.8.8"
+# Verify: Events with ifindex=5 appear in defender logs
+
+# Test 2: Performance under load
+vagrant ssh client -c "iperf3 -c 8.8.8.8 -t 30"
+# Measure: Throughput, CPU usage, packet drops
+
+# Test 3: Protocol coverage
+vagrant ssh client -c "nmap -sS -sU -p 1-1000 8.8.8.8"
+# Verify: TCP/UDP packets captured correctly
+```
+
+### **Key Takeaways for Developers**
+
+1. **XDP Generic is sufficient for:**
+    - Host-based IDS development
+    - Unit/integration testing
+    - Feature development
+
+2. **XDP Generic is insufficient for:**
+    - Gateway mode validation with synthetic traffic
+    - Performance benchmarking of transit traffic
+    - Production gateway deployments
+
+3. **Validation requires:**
+    - Physical traffic crossing VM/host boundary
+    - Multi-VM setup or physical hardware
+    - Real-world traffic patterns
 
 ---
 
@@ -804,26 +1070,70 @@ Removed:
 3. **Stress Test** - 1h high load (200+ evt/s)
 4. **Long-Running** - 17h+ stability
 5. **Regression** - All previous tests pass
+6. **Environment Validation** - Verify testing matches production environment constraints
 
-**Current Status:**
-- ✅ Phase 1 (cpp_sniffer): 17h test passed
-- ✅ Phase 1 (ml-detector): 4 models validated
-- ✅ Phase 1 (RAG System): LLAMA integration complete
-- 📋 Phase 2 (firewall-acl): Not yet started
+### **XDP-Specific Testing Requirements:**
+
+#### **For Host-Based Mode:**
+- [x] External traffic validation (SSH, HTTP from outside)
+- [x] Performance metrics under external load
+- [x] Multi-protocol capture validation
+
+#### **For Gateway Mode:**
+- [ ] Multi-VM setup for validation (Day 10)
+- [ ] Physical boundary crossing verification
+- [ ] Transit traffic performance benchmarks
+- [ ] NAT/routing integration testing
+
+### **Current Test Status:**
+
+| Test Type | Host-Based | Gateway Mode | Notes |
+|-----------|------------|--------------|-------|
+| Unit Tests | ✅ Complete | ✅ Complete | Same code base |
+| Integration | ✅ Complete | ⚠️ Needs Setup | Multi-VM required |
+| Performance | ✅ 17h Stable | ⏳ Pending | Requires physical traffic |
+| Gateway Validation | N/A | 🔄 Day 10 | Multi-VM strategy defined |
+
+---
+
+## 📝 Documentación a Actualizar Basado en Aprendizajes Día 9
+
+### **Documentation Updates Required:**
+
+1. **`TESTING.md`** - Add gateway mode validation procedures
+2. **`DEPLOYMENT.md`** - Hardware requirements for production
+3. **`TROUBLESHOOTING.md`** - XDP capture issues guide
+4. **`ARCHITECTURE.md`** - This document (updated)
+
+### **New Documentation to Create:**
+```markdown
+docs/gateway-mode-validation/
+├── multi-vm-setup.md
+├── hardware-requirements.md
+├── performance-benchmarks.md
+└── troubleshooting-capture-issues.md
+```
 
 ---
 
 ## 🎯 Milestones
 
-### Milestone 1: Core Detection Complete ✅ (Nov 20, 2025)
-- [x] cpp_sniffer production-ready
+### Milestone 1: Core Detection Complete ✅ **Updated: Dec 5, 2025**
+- [x] cpp_sniffer production-ready (host-based mode)
 - [x] ml-detector (4 embedded C++20 models)
 - [x] RAG Security System with LLAMA real
 - [x] Configuration system with JSON validation
-- [ ] Integration testing
+- [x] Dual-NIC architecture implementation
+- [x] XDP limitations documented and understood
+- [ ] Gateway mode validation with multi-VM setup
 - [ ] Raspberry Pi image
 
-**Current Status:** 80% Complete
+**Current Status:** 85% Complete
+
+**New Dependencies Identified:**
+1. Multi-VM testing environment for gateway validation
+2. Hardware with Native XDP support for production gateway
+3. Updated deployment documentation for mode-specific requirements
 
 ### Milestone 2: Automated Response
 - [ ] firewall-acl-agent development
@@ -852,7 +1162,15 @@ Removed:
 
 ---
 
-## 🆕 Recent Achievements (November 20, 2025)
+## 🆕 Recent Achievements (December 5, 2025)
+
+### Dual-NIC Gateway Architecture (Day 9)
+- ✅ **Dual XDP Attachment** - Simultaneous attachment to multiple interfaces
+- ✅ **BPF Map Configuration** - Per-interface settings (mode, wan flag)
+- ✅ **Host-Based Validation** - 100+ events captured with correct metadata
+- ✅ **Scientific Rigor** - Multiple experiments, honest documentation
+- ⚠️ **XDP Generic Limitation Identified** - Requires physical traffic for gateway validation
+- ✅ **Validation Strategy Defined** - Multi-VM setup for Day 10
 
 ### RAG Security System with Real LLAMA
 - ✅ **TinyLlama-1.1B integration** - Real model, not simulation
@@ -875,8 +1193,16 @@ Removed:
 - ✅ **Configurable thresholds** - JSON single source of truth
 - ✅ **Zero hardcoding** - All settings from configuration
 
+### Key Technical Learnings (Day 9):
+1. **XDP Generic vs Native XDP** - Fundamental differences in capture scope
+2. **Testing Methodology** - Environment must match production use case
+3. **Gateway Mode Validation** - Requires traffic crossing physical boundaries
+4. **Documentation Honesty** - Clear about what works and what needs validation
+
 ---
 
-**Built with ❤️ and rigorous testing**
+**Built with ❤️, rigorous testing, and scientific honesty**
 
-**This architecture represents state-of-the-art embedded ML security with real AI intelligence.** 🛡️💚
+**Esta arquitectura representa lo último en seguridad ML embebida con inteligencia IA real, documentada con integridad técnica tras el descubrimiento de limitaciones críticas del entorno de desarrollo.** 🛡️💚
+
+*Documentado el 5 de diciembre de 2025, tras 4 horas de experimentación intensiva que definieron los límites de XDP Generic y establecieron una estrategia robusta de validación para el modo gateway.*

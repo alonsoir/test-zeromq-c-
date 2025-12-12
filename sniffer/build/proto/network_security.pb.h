@@ -54,6 +54,9 @@ namespace protobuf {
 class DDoSFeatures;
 struct DDoSFeaturesDefaultTypeInternal;
 extern DDoSFeaturesDefaultTypeInternal _DDoSFeatures_default_instance_;
+class DecisionMetadata;
+struct DecisionMetadataDefaultTypeInternal;
+extern DecisionMetadataDefaultTypeInternal _DecisionMetadata_default_instance_;
 class Detection;
 struct DetectionDefaultTypeInternal;
 extern DetectionDefaultTypeInternal _Detection_default_instance_;
@@ -153,6 +156,7 @@ extern TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUseDefaultTypeInterna
 }  // namespace protobuf
 PROTOBUF_NAMESPACE_OPEN
 template<> ::protobuf::DDoSFeatures* Arena::CreateMaybeMessage<::protobuf::DDoSFeatures>(Arena*);
+template<> ::protobuf::DecisionMetadata* Arena::CreateMaybeMessage<::protobuf::DecisionMetadata>(Arena*);
 template<> ::protobuf::Detection* Arena::CreateMaybeMessage<::protobuf::Detection>(Arena*);
 template<> ::protobuf::DetectionBatch* Arena::CreateMaybeMessage<::protobuf::DetectionBatch>(Arena*);
 template<> ::protobuf::DistributedNode* Arena::CreateMaybeMessage<::protobuf::DistributedNode>(Arena*);
@@ -445,6 +449,36 @@ inline bool DetectionType_Parse(
     ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, DetectionType* value) {
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<DetectionType>(
     DetectionType_descriptor(), name, value);
+}
+enum DetectorSource : int {
+  DETECTOR_SOURCE_UNKNOWN = 0,
+  DETECTOR_SOURCE_FAST_ONLY = 1,
+  DETECTOR_SOURCE_ML_ONLY = 2,
+  DETECTOR_SOURCE_FAST_PRIORITY = 3,
+  DETECTOR_SOURCE_ML_PRIORITY = 4,
+  DETECTOR_SOURCE_CONSENSUS = 5,
+  DETECTOR_SOURCE_DIVERGENCE = 6,
+  DetectorSource_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  DetectorSource_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool DetectorSource_IsValid(int value);
+constexpr DetectorSource DetectorSource_MIN = DETECTOR_SOURCE_UNKNOWN;
+constexpr DetectorSource DetectorSource_MAX = DETECTOR_SOURCE_DIVERGENCE;
+constexpr int DetectorSource_ARRAYSIZE = DetectorSource_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* DetectorSource_descriptor();
+template<typename T>
+inline const std::string& DetectorSource_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, DetectorSource>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function DetectorSource_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    DetectorSource_descriptor(), enum_t_value);
+}
+inline bool DetectorSource_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, DetectorSource* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<DetectorSource>(
+    DetectorSource_descriptor(), name, value);
 }
 // ===================================================================
 
@@ -7210,6 +7244,7 @@ class NetworkSecurityEvent final :
     kCorrelationIdFieldNumber = 20,
     kEventChainIdFieldNumber = 22,
     kProtobufVersionFieldNumber = 28,
+    kFastDetectorReasonFieldNumber = 33,
     kEventTimestampFieldNumber = 2,
     kNetworkFeaturesFieldNumber = 4,
     kGeoEnrichmentFieldNumber = 5,
@@ -7219,8 +7254,13 @@ class NetworkSecurityEvent final :
     kPipelineTrackingFieldNumber = 10,
     kRagAnalysisFieldNumber = 11,
     kHumanReviewFieldNumber = 12,
+    kDecisionMetadataFieldNumber = 34,
     kOverallThreatScoreFieldNumber = 15,
     kSchemaVersionFieldNumber = 25,
+    kAuthoritativeSourceFieldNumber = 31,
+    kFastDetectorScoreFieldNumber = 29,
+    kMlDetectorScoreFieldNumber = 30,
+    kFastDetectorTriggeredFieldNumber = 32,
   };
   // repeated .protobuf.ModelPrediction additional_model_predictions = 8;
   int additional_model_predictions_size() const;
@@ -7403,6 +7443,20 @@ class NetworkSecurityEvent final :
   std::string* _internal_mutable_protobuf_version();
   public:
 
+  // string fast_detector_reason = 33;
+  void clear_fast_detector_reason();
+  const std::string& fast_detector_reason() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_fast_detector_reason(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_fast_detector_reason();
+  PROTOBUF_NODISCARD std::string* release_fast_detector_reason();
+  void set_allocated_fast_detector_reason(std::string* fast_detector_reason);
+  private:
+  const std::string& _internal_fast_detector_reason() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_fast_detector_reason(const std::string& value);
+  std::string* _internal_mutable_fast_detector_reason();
+  public:
+
   // .google.protobuf.Timestamp event_timestamp = 2;
   bool has_event_timestamp() const;
   private:
@@ -7565,6 +7619,24 @@ class NetworkSecurityEvent final :
       ::protobuf::HumanInTheLoopReview* human_review);
   ::protobuf::HumanInTheLoopReview* unsafe_arena_release_human_review();
 
+  // .protobuf.DecisionMetadata decision_metadata = 34;
+  bool has_decision_metadata() const;
+  private:
+  bool _internal_has_decision_metadata() const;
+  public:
+  void clear_decision_metadata();
+  const ::protobuf::DecisionMetadata& decision_metadata() const;
+  PROTOBUF_NODISCARD ::protobuf::DecisionMetadata* release_decision_metadata();
+  ::protobuf::DecisionMetadata* mutable_decision_metadata();
+  void set_allocated_decision_metadata(::protobuf::DecisionMetadata* decision_metadata);
+  private:
+  const ::protobuf::DecisionMetadata& _internal_decision_metadata() const;
+  ::protobuf::DecisionMetadata* _internal_mutable_decision_metadata();
+  public:
+  void unsafe_arena_set_allocated_decision_metadata(
+      ::protobuf::DecisionMetadata* decision_metadata);
+  ::protobuf::DecisionMetadata* unsafe_arena_release_decision_metadata();
+
   // double overall_threat_score = 15;
   void clear_overall_threat_score();
   double overall_threat_score() const;
@@ -7581,6 +7653,42 @@ class NetworkSecurityEvent final :
   private:
   uint32_t _internal_schema_version() const;
   void _internal_set_schema_version(uint32_t value);
+  public:
+
+  // .protobuf.DetectorSource authoritative_source = 31;
+  void clear_authoritative_source();
+  ::protobuf::DetectorSource authoritative_source() const;
+  void set_authoritative_source(::protobuf::DetectorSource value);
+  private:
+  ::protobuf::DetectorSource _internal_authoritative_source() const;
+  void _internal_set_authoritative_source(::protobuf::DetectorSource value);
+  public:
+
+  // double fast_detector_score = 29;
+  void clear_fast_detector_score();
+  double fast_detector_score() const;
+  void set_fast_detector_score(double value);
+  private:
+  double _internal_fast_detector_score() const;
+  void _internal_set_fast_detector_score(double value);
+  public:
+
+  // double ml_detector_score = 30;
+  void clear_ml_detector_score();
+  double ml_detector_score() const;
+  void set_ml_detector_score(double value);
+  private:
+  double _internal_ml_detector_score() const;
+  void _internal_set_ml_detector_score(double value);
+  public:
+
+  // bool fast_detector_triggered = 32;
+  void clear_fast_detector_triggered();
+  bool fast_detector_triggered() const;
+  void set_fast_detector_triggered(bool value);
+  private:
+  bool _internal_fast_detector_triggered() const;
+  void _internal_set_fast_detector_triggered(bool value);
   public:
 
   // @@protoc_insertion_point(class_scope:protobuf.NetworkSecurityEvent)
@@ -7606,6 +7714,7 @@ class NetworkSecurityEvent final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr correlation_id_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr event_chain_id_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr protobuf_version_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr fast_detector_reason_;
     ::PROTOBUF_NAMESPACE_ID::Timestamp* event_timestamp_;
     ::protobuf::NetworkFeatures* network_features_;
     ::protobuf::GeoEnrichment* geo_enrichment_;
@@ -7615,8 +7724,13 @@ class NetworkSecurityEvent final :
     ::protobuf::PipelineTracking* pipeline_tracking_;
     ::protobuf::RAGAnalysis* rag_analysis_;
     ::protobuf::HumanInTheLoopReview* human_review_;
+    ::protobuf::DecisionMetadata* decision_metadata_;
     double overall_threat_score_;
     uint32_t schema_version_;
+    int authoritative_source_;
+    double fast_detector_score_;
+    double ml_detector_score_;
+    bool fast_detector_triggered_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -8649,6 +8763,254 @@ class RansomwareFeatures final :
 };
 // -------------------------------------------------------------------
 
+class DecisionMetadata final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.DecisionMetadata) */ {
+ public:
+  inline DecisionMetadata() : DecisionMetadata(nullptr) {}
+  ~DecisionMetadata() override;
+  explicit PROTOBUF_CONSTEXPR DecisionMetadata(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DecisionMetadata(const DecisionMetadata& from);
+  DecisionMetadata(DecisionMetadata&& from) noexcept
+    : DecisionMetadata() {
+    *this = ::std::move(from);
+  }
+
+  inline DecisionMetadata& operator=(const DecisionMetadata& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DecisionMetadata& operator=(DecisionMetadata&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DecisionMetadata& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DecisionMetadata* internal_default_instance() {
+    return reinterpret_cast<const DecisionMetadata*>(
+               &_DecisionMetadata_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    31;
+
+  friend void swap(DecisionMetadata& a, DecisionMetadata& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DecisionMetadata* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DecisionMetadata* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DecisionMetadata* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DecisionMetadata>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DecisionMetadata& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DecisionMetadata& from) {
+    DecisionMetadata::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DecisionMetadata* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.DecisionMetadata";
+  }
+  protected:
+  explicit DecisionMetadata(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kAnomalyFlagsFieldNumber = 5,
+    kDivergenceReasonFieldNumber = 2,
+    kInvestigationPriorityFieldNumber = 4,
+    kDecisionTimestampFieldNumber = 7,
+    kScoreDivergenceFieldNumber = 1,
+    kConfidenceLevelFieldNumber = 6,
+    kRequiresRagAnalysisFieldNumber = 3,
+  };
+  // repeated string anomaly_flags = 5;
+  int anomaly_flags_size() const;
+  private:
+  int _internal_anomaly_flags_size() const;
+  public:
+  void clear_anomaly_flags();
+  const std::string& anomaly_flags(int index) const;
+  std::string* mutable_anomaly_flags(int index);
+  void set_anomaly_flags(int index, const std::string& value);
+  void set_anomaly_flags(int index, std::string&& value);
+  void set_anomaly_flags(int index, const char* value);
+  void set_anomaly_flags(int index, const char* value, size_t size);
+  std::string* add_anomaly_flags();
+  void add_anomaly_flags(const std::string& value);
+  void add_anomaly_flags(std::string&& value);
+  void add_anomaly_flags(const char* value);
+  void add_anomaly_flags(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& anomaly_flags() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_anomaly_flags();
+  private:
+  const std::string& _internal_anomaly_flags(int index) const;
+  std::string* _internal_add_anomaly_flags();
+  public:
+
+  // string divergence_reason = 2;
+  void clear_divergence_reason();
+  const std::string& divergence_reason() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_divergence_reason(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_divergence_reason();
+  PROTOBUF_NODISCARD std::string* release_divergence_reason();
+  void set_allocated_divergence_reason(std::string* divergence_reason);
+  private:
+  const std::string& _internal_divergence_reason() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_divergence_reason(const std::string& value);
+  std::string* _internal_mutable_divergence_reason();
+  public:
+
+  // string investigation_priority = 4;
+  void clear_investigation_priority();
+  const std::string& investigation_priority() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_investigation_priority(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_investigation_priority();
+  PROTOBUF_NODISCARD std::string* release_investigation_priority();
+  void set_allocated_investigation_priority(std::string* investigation_priority);
+  private:
+  const std::string& _internal_investigation_priority() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_investigation_priority(const std::string& value);
+  std::string* _internal_mutable_investigation_priority();
+  public:
+
+  // .google.protobuf.Timestamp decision_timestamp = 7;
+  bool has_decision_timestamp() const;
+  private:
+  bool _internal_has_decision_timestamp() const;
+  public:
+  void clear_decision_timestamp();
+  const ::PROTOBUF_NAMESPACE_ID::Timestamp& decision_timestamp() const;
+  PROTOBUF_NODISCARD ::PROTOBUF_NAMESPACE_ID::Timestamp* release_decision_timestamp();
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* mutable_decision_timestamp();
+  void set_allocated_decision_timestamp(::PROTOBUF_NAMESPACE_ID::Timestamp* decision_timestamp);
+  private:
+  const ::PROTOBUF_NAMESPACE_ID::Timestamp& _internal_decision_timestamp() const;
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* _internal_mutable_decision_timestamp();
+  public:
+  void unsafe_arena_set_allocated_decision_timestamp(
+      ::PROTOBUF_NAMESPACE_ID::Timestamp* decision_timestamp);
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* unsafe_arena_release_decision_timestamp();
+
+  // double score_divergence = 1;
+  void clear_score_divergence();
+  double score_divergence() const;
+  void set_score_divergence(double value);
+  private:
+  double _internal_score_divergence() const;
+  void _internal_set_score_divergence(double value);
+  public:
+
+  // double confidence_level = 6;
+  void clear_confidence_level();
+  double confidence_level() const;
+  void set_confidence_level(double value);
+  private:
+  double _internal_confidence_level() const;
+  void _internal_set_confidence_level(double value);
+  public:
+
+  // bool requires_rag_analysis = 3;
+  void clear_requires_rag_analysis();
+  bool requires_rag_analysis() const;
+  void set_requires_rag_analysis(bool value);
+  private:
+  bool _internal_requires_rag_analysis() const;
+  void _internal_set_requires_rag_analysis(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.DecisionMetadata)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> anomaly_flags_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr divergence_reason_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr investigation_priority_;
+    ::PROTOBUF_NAMESPACE_ID::Timestamp* decision_timestamp_;
+    double score_divergence_;
+    double confidence_level_;
+    bool requires_rag_analysis_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
 class Detection final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.Detection) */ {
  public:
@@ -8697,7 +9059,7 @@ class Detection final :
                &_Detection_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    32;
 
   friend void swap(Detection& a, Detection& b) {
     a.Swap(&b);
@@ -8926,7 +9288,7 @@ class DetectionBatch final :
                &_DetectionBatch_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    33;
 
   friend void swap(DetectionBatch& a, DetectionBatch& b) {
     a.Swap(&b);
@@ -20610,6 +20972,226 @@ inline void NetworkSecurityEvent::set_allocated_protobuf_version(std::string* pr
   // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkSecurityEvent.protobuf_version)
 }
 
+// double fast_detector_score = 29;
+inline void NetworkSecurityEvent::clear_fast_detector_score() {
+  _impl_.fast_detector_score_ = 0;
+}
+inline double NetworkSecurityEvent::_internal_fast_detector_score() const {
+  return _impl_.fast_detector_score_;
+}
+inline double NetworkSecurityEvent::fast_detector_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.fast_detector_score)
+  return _internal_fast_detector_score();
+}
+inline void NetworkSecurityEvent::_internal_set_fast_detector_score(double value) {
+  
+  _impl_.fast_detector_score_ = value;
+}
+inline void NetworkSecurityEvent::set_fast_detector_score(double value) {
+  _internal_set_fast_detector_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkSecurityEvent.fast_detector_score)
+}
+
+// double ml_detector_score = 30;
+inline void NetworkSecurityEvent::clear_ml_detector_score() {
+  _impl_.ml_detector_score_ = 0;
+}
+inline double NetworkSecurityEvent::_internal_ml_detector_score() const {
+  return _impl_.ml_detector_score_;
+}
+inline double NetworkSecurityEvent::ml_detector_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.ml_detector_score)
+  return _internal_ml_detector_score();
+}
+inline void NetworkSecurityEvent::_internal_set_ml_detector_score(double value) {
+  
+  _impl_.ml_detector_score_ = value;
+}
+inline void NetworkSecurityEvent::set_ml_detector_score(double value) {
+  _internal_set_ml_detector_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkSecurityEvent.ml_detector_score)
+}
+
+// .protobuf.DetectorSource authoritative_source = 31;
+inline void NetworkSecurityEvent::clear_authoritative_source() {
+  _impl_.authoritative_source_ = 0;
+}
+inline ::protobuf::DetectorSource NetworkSecurityEvent::_internal_authoritative_source() const {
+  return static_cast< ::protobuf::DetectorSource >(_impl_.authoritative_source_);
+}
+inline ::protobuf::DetectorSource NetworkSecurityEvent::authoritative_source() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.authoritative_source)
+  return _internal_authoritative_source();
+}
+inline void NetworkSecurityEvent::_internal_set_authoritative_source(::protobuf::DetectorSource value) {
+  
+  _impl_.authoritative_source_ = value;
+}
+inline void NetworkSecurityEvent::set_authoritative_source(::protobuf::DetectorSource value) {
+  _internal_set_authoritative_source(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkSecurityEvent.authoritative_source)
+}
+
+// bool fast_detector_triggered = 32;
+inline void NetworkSecurityEvent::clear_fast_detector_triggered() {
+  _impl_.fast_detector_triggered_ = false;
+}
+inline bool NetworkSecurityEvent::_internal_fast_detector_triggered() const {
+  return _impl_.fast_detector_triggered_;
+}
+inline bool NetworkSecurityEvent::fast_detector_triggered() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.fast_detector_triggered)
+  return _internal_fast_detector_triggered();
+}
+inline void NetworkSecurityEvent::_internal_set_fast_detector_triggered(bool value) {
+  
+  _impl_.fast_detector_triggered_ = value;
+}
+inline void NetworkSecurityEvent::set_fast_detector_triggered(bool value) {
+  _internal_set_fast_detector_triggered(value);
+  // @@protoc_insertion_point(field_set:protobuf.NetworkSecurityEvent.fast_detector_triggered)
+}
+
+// string fast_detector_reason = 33;
+inline void NetworkSecurityEvent::clear_fast_detector_reason() {
+  _impl_.fast_detector_reason_.ClearToEmpty();
+}
+inline const std::string& NetworkSecurityEvent::fast_detector_reason() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.fast_detector_reason)
+  return _internal_fast_detector_reason();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void NetworkSecurityEvent::set_fast_detector_reason(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.fast_detector_reason_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.NetworkSecurityEvent.fast_detector_reason)
+}
+inline std::string* NetworkSecurityEvent::mutable_fast_detector_reason() {
+  std::string* _s = _internal_mutable_fast_detector_reason();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkSecurityEvent.fast_detector_reason)
+  return _s;
+}
+inline const std::string& NetworkSecurityEvent::_internal_fast_detector_reason() const {
+  return _impl_.fast_detector_reason_.Get();
+}
+inline void NetworkSecurityEvent::_internal_set_fast_detector_reason(const std::string& value) {
+  
+  _impl_.fast_detector_reason_.Set(value, GetArenaForAllocation());
+}
+inline std::string* NetworkSecurityEvent::_internal_mutable_fast_detector_reason() {
+  
+  return _impl_.fast_detector_reason_.Mutable(GetArenaForAllocation());
+}
+inline std::string* NetworkSecurityEvent::release_fast_detector_reason() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkSecurityEvent.fast_detector_reason)
+  return _impl_.fast_detector_reason_.Release();
+}
+inline void NetworkSecurityEvent::set_allocated_fast_detector_reason(std::string* fast_detector_reason) {
+  if (fast_detector_reason != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.fast_detector_reason_.SetAllocated(fast_detector_reason, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.fast_detector_reason_.IsDefault()) {
+    _impl_.fast_detector_reason_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkSecurityEvent.fast_detector_reason)
+}
+
+// .protobuf.DecisionMetadata decision_metadata = 34;
+inline bool NetworkSecurityEvent::_internal_has_decision_metadata() const {
+  return this != internal_default_instance() && _impl_.decision_metadata_ != nullptr;
+}
+inline bool NetworkSecurityEvent::has_decision_metadata() const {
+  return _internal_has_decision_metadata();
+}
+inline void NetworkSecurityEvent::clear_decision_metadata() {
+  if (GetArenaForAllocation() == nullptr && _impl_.decision_metadata_ != nullptr) {
+    delete _impl_.decision_metadata_;
+  }
+  _impl_.decision_metadata_ = nullptr;
+}
+inline const ::protobuf::DecisionMetadata& NetworkSecurityEvent::_internal_decision_metadata() const {
+  const ::protobuf::DecisionMetadata* p = _impl_.decision_metadata_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::DecisionMetadata&>(
+      ::protobuf::_DecisionMetadata_default_instance_);
+}
+inline const ::protobuf::DecisionMetadata& NetworkSecurityEvent::decision_metadata() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.decision_metadata)
+  return _internal_decision_metadata();
+}
+inline void NetworkSecurityEvent::unsafe_arena_set_allocated_decision_metadata(
+    ::protobuf::DecisionMetadata* decision_metadata) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.decision_metadata_);
+  }
+  _impl_.decision_metadata_ = decision_metadata;
+  if (decision_metadata) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkSecurityEvent.decision_metadata)
+}
+inline ::protobuf::DecisionMetadata* NetworkSecurityEvent::release_decision_metadata() {
+  
+  ::protobuf::DecisionMetadata* temp = _impl_.decision_metadata_;
+  _impl_.decision_metadata_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::DecisionMetadata* NetworkSecurityEvent::unsafe_arena_release_decision_metadata() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkSecurityEvent.decision_metadata)
+  
+  ::protobuf::DecisionMetadata* temp = _impl_.decision_metadata_;
+  _impl_.decision_metadata_ = nullptr;
+  return temp;
+}
+inline ::protobuf::DecisionMetadata* NetworkSecurityEvent::_internal_mutable_decision_metadata() {
+  
+  if (_impl_.decision_metadata_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::DecisionMetadata>(GetArenaForAllocation());
+    _impl_.decision_metadata_ = p;
+  }
+  return _impl_.decision_metadata_;
+}
+inline ::protobuf::DecisionMetadata* NetworkSecurityEvent::mutable_decision_metadata() {
+  ::protobuf::DecisionMetadata* _msg = _internal_mutable_decision_metadata();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkSecurityEvent.decision_metadata)
+  return _msg;
+}
+inline void NetworkSecurityEvent::set_allocated_decision_metadata(::protobuf::DecisionMetadata* decision_metadata) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.decision_metadata_;
+  }
+  if (decision_metadata) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(decision_metadata);
+    if (message_arena != submessage_arena) {
+      decision_metadata = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, decision_metadata, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.decision_metadata_ = decision_metadata;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkSecurityEvent.decision_metadata)
+}
+
 // -------------------------------------------------------------------
 
 // EventBatch
@@ -21776,6 +22358,330 @@ inline void RansomwareFeatures::set_syn_without_ack_ratio(float value) {
 
 // -------------------------------------------------------------------
 
+// DecisionMetadata
+
+// double score_divergence = 1;
+inline void DecisionMetadata::clear_score_divergence() {
+  _impl_.score_divergence_ = 0;
+}
+inline double DecisionMetadata::_internal_score_divergence() const {
+  return _impl_.score_divergence_;
+}
+inline double DecisionMetadata::score_divergence() const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.score_divergence)
+  return _internal_score_divergence();
+}
+inline void DecisionMetadata::_internal_set_score_divergence(double value) {
+  
+  _impl_.score_divergence_ = value;
+}
+inline void DecisionMetadata::set_score_divergence(double value) {
+  _internal_set_score_divergence(value);
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.score_divergence)
+}
+
+// string divergence_reason = 2;
+inline void DecisionMetadata::clear_divergence_reason() {
+  _impl_.divergence_reason_.ClearToEmpty();
+}
+inline const std::string& DecisionMetadata::divergence_reason() const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.divergence_reason)
+  return _internal_divergence_reason();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DecisionMetadata::set_divergence_reason(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.divergence_reason_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.divergence_reason)
+}
+inline std::string* DecisionMetadata::mutable_divergence_reason() {
+  std::string* _s = _internal_mutable_divergence_reason();
+  // @@protoc_insertion_point(field_mutable:protobuf.DecisionMetadata.divergence_reason)
+  return _s;
+}
+inline const std::string& DecisionMetadata::_internal_divergence_reason() const {
+  return _impl_.divergence_reason_.Get();
+}
+inline void DecisionMetadata::_internal_set_divergence_reason(const std::string& value) {
+  
+  _impl_.divergence_reason_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DecisionMetadata::_internal_mutable_divergence_reason() {
+  
+  return _impl_.divergence_reason_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DecisionMetadata::release_divergence_reason() {
+  // @@protoc_insertion_point(field_release:protobuf.DecisionMetadata.divergence_reason)
+  return _impl_.divergence_reason_.Release();
+}
+inline void DecisionMetadata::set_allocated_divergence_reason(std::string* divergence_reason) {
+  if (divergence_reason != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.divergence_reason_.SetAllocated(divergence_reason, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.divergence_reason_.IsDefault()) {
+    _impl_.divergence_reason_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DecisionMetadata.divergence_reason)
+}
+
+// bool requires_rag_analysis = 3;
+inline void DecisionMetadata::clear_requires_rag_analysis() {
+  _impl_.requires_rag_analysis_ = false;
+}
+inline bool DecisionMetadata::_internal_requires_rag_analysis() const {
+  return _impl_.requires_rag_analysis_;
+}
+inline bool DecisionMetadata::requires_rag_analysis() const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.requires_rag_analysis)
+  return _internal_requires_rag_analysis();
+}
+inline void DecisionMetadata::_internal_set_requires_rag_analysis(bool value) {
+  
+  _impl_.requires_rag_analysis_ = value;
+}
+inline void DecisionMetadata::set_requires_rag_analysis(bool value) {
+  _internal_set_requires_rag_analysis(value);
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.requires_rag_analysis)
+}
+
+// string investigation_priority = 4;
+inline void DecisionMetadata::clear_investigation_priority() {
+  _impl_.investigation_priority_.ClearToEmpty();
+}
+inline const std::string& DecisionMetadata::investigation_priority() const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.investigation_priority)
+  return _internal_investigation_priority();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DecisionMetadata::set_investigation_priority(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.investigation_priority_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.investigation_priority)
+}
+inline std::string* DecisionMetadata::mutable_investigation_priority() {
+  std::string* _s = _internal_mutable_investigation_priority();
+  // @@protoc_insertion_point(field_mutable:protobuf.DecisionMetadata.investigation_priority)
+  return _s;
+}
+inline const std::string& DecisionMetadata::_internal_investigation_priority() const {
+  return _impl_.investigation_priority_.Get();
+}
+inline void DecisionMetadata::_internal_set_investigation_priority(const std::string& value) {
+  
+  _impl_.investigation_priority_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DecisionMetadata::_internal_mutable_investigation_priority() {
+  
+  return _impl_.investigation_priority_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DecisionMetadata::release_investigation_priority() {
+  // @@protoc_insertion_point(field_release:protobuf.DecisionMetadata.investigation_priority)
+  return _impl_.investigation_priority_.Release();
+}
+inline void DecisionMetadata::set_allocated_investigation_priority(std::string* investigation_priority) {
+  if (investigation_priority != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.investigation_priority_.SetAllocated(investigation_priority, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.investigation_priority_.IsDefault()) {
+    _impl_.investigation_priority_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DecisionMetadata.investigation_priority)
+}
+
+// repeated string anomaly_flags = 5;
+inline int DecisionMetadata::_internal_anomaly_flags_size() const {
+  return _impl_.anomaly_flags_.size();
+}
+inline int DecisionMetadata::anomaly_flags_size() const {
+  return _internal_anomaly_flags_size();
+}
+inline void DecisionMetadata::clear_anomaly_flags() {
+  _impl_.anomaly_flags_.Clear();
+}
+inline std::string* DecisionMetadata::add_anomaly_flags() {
+  std::string* _s = _internal_add_anomaly_flags();
+  // @@protoc_insertion_point(field_add_mutable:protobuf.DecisionMetadata.anomaly_flags)
+  return _s;
+}
+inline const std::string& DecisionMetadata::_internal_anomaly_flags(int index) const {
+  return _impl_.anomaly_flags_.Get(index);
+}
+inline const std::string& DecisionMetadata::anomaly_flags(int index) const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.anomaly_flags)
+  return _internal_anomaly_flags(index);
+}
+inline std::string* DecisionMetadata::mutable_anomaly_flags(int index) {
+  // @@protoc_insertion_point(field_mutable:protobuf.DecisionMetadata.anomaly_flags)
+  return _impl_.anomaly_flags_.Mutable(index);
+}
+inline void DecisionMetadata::set_anomaly_flags(int index, const std::string& value) {
+  _impl_.anomaly_flags_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline void DecisionMetadata::set_anomaly_flags(int index, std::string&& value) {
+  _impl_.anomaly_flags_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline void DecisionMetadata::set_anomaly_flags(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.anomaly_flags_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline void DecisionMetadata::set_anomaly_flags(int index, const char* value, size_t size) {
+  _impl_.anomaly_flags_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline std::string* DecisionMetadata::_internal_add_anomaly_flags() {
+  return _impl_.anomaly_flags_.Add();
+}
+inline void DecisionMetadata::add_anomaly_flags(const std::string& value) {
+  _impl_.anomaly_flags_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline void DecisionMetadata::add_anomaly_flags(std::string&& value) {
+  _impl_.anomaly_flags_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline void DecisionMetadata::add_anomaly_flags(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.anomaly_flags_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline void DecisionMetadata::add_anomaly_flags(const char* value, size_t size) {
+  _impl_.anomaly_flags_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:protobuf.DecisionMetadata.anomaly_flags)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+DecisionMetadata::anomaly_flags() const {
+  // @@protoc_insertion_point(field_list:protobuf.DecisionMetadata.anomaly_flags)
+  return _impl_.anomaly_flags_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+DecisionMetadata::mutable_anomaly_flags() {
+  // @@protoc_insertion_point(field_mutable_list:protobuf.DecisionMetadata.anomaly_flags)
+  return &_impl_.anomaly_flags_;
+}
+
+// double confidence_level = 6;
+inline void DecisionMetadata::clear_confidence_level() {
+  _impl_.confidence_level_ = 0;
+}
+inline double DecisionMetadata::_internal_confidence_level() const {
+  return _impl_.confidence_level_;
+}
+inline double DecisionMetadata::confidence_level() const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.confidence_level)
+  return _internal_confidence_level();
+}
+inline void DecisionMetadata::_internal_set_confidence_level(double value) {
+  
+  _impl_.confidence_level_ = value;
+}
+inline void DecisionMetadata::set_confidence_level(double value) {
+  _internal_set_confidence_level(value);
+  // @@protoc_insertion_point(field_set:protobuf.DecisionMetadata.confidence_level)
+}
+
+// .google.protobuf.Timestamp decision_timestamp = 7;
+inline bool DecisionMetadata::_internal_has_decision_timestamp() const {
+  return this != internal_default_instance() && _impl_.decision_timestamp_ != nullptr;
+}
+inline bool DecisionMetadata::has_decision_timestamp() const {
+  return _internal_has_decision_timestamp();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Timestamp& DecisionMetadata::_internal_decision_timestamp() const {
+  const ::PROTOBUF_NAMESPACE_ID::Timestamp* p = _impl_.decision_timestamp_;
+  return p != nullptr ? *p : reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Timestamp&>(
+      ::PROTOBUF_NAMESPACE_ID::_Timestamp_default_instance_);
+}
+inline const ::PROTOBUF_NAMESPACE_ID::Timestamp& DecisionMetadata::decision_timestamp() const {
+  // @@protoc_insertion_point(field_get:protobuf.DecisionMetadata.decision_timestamp)
+  return _internal_decision_timestamp();
+}
+inline void DecisionMetadata::unsafe_arena_set_allocated_decision_timestamp(
+    ::PROTOBUF_NAMESPACE_ID::Timestamp* decision_timestamp) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.decision_timestamp_);
+  }
+  _impl_.decision_timestamp_ = decision_timestamp;
+  if (decision_timestamp) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.DecisionMetadata.decision_timestamp)
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DecisionMetadata::release_decision_timestamp() {
+  
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* temp = _impl_.decision_timestamp_;
+  _impl_.decision_timestamp_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DecisionMetadata::unsafe_arena_release_decision_timestamp() {
+  // @@protoc_insertion_point(field_release:protobuf.DecisionMetadata.decision_timestamp)
+  
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* temp = _impl_.decision_timestamp_;
+  _impl_.decision_timestamp_ = nullptr;
+  return temp;
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DecisionMetadata::_internal_mutable_decision_timestamp() {
+  
+  if (_impl_.decision_timestamp_ == nullptr) {
+    auto* p = CreateMaybeMessage<::PROTOBUF_NAMESPACE_ID::Timestamp>(GetArenaForAllocation());
+    _impl_.decision_timestamp_ = p;
+  }
+  return _impl_.decision_timestamp_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::Timestamp* DecisionMetadata::mutable_decision_timestamp() {
+  ::PROTOBUF_NAMESPACE_ID::Timestamp* _msg = _internal_mutable_decision_timestamp();
+  // @@protoc_insertion_point(field_mutable:protobuf.DecisionMetadata.decision_timestamp)
+  return _msg;
+}
+inline void DecisionMetadata::set_allocated_decision_timestamp(::PROTOBUF_NAMESPACE_ID::Timestamp* decision_timestamp) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.decision_timestamp_);
+  }
+  if (decision_timestamp) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(decision_timestamp));
+    if (message_arena != submessage_arena) {
+      decision_timestamp = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, decision_timestamp, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.decision_timestamp_ = decision_timestamp;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DecisionMetadata.decision_timestamp)
+}
+
+// -------------------------------------------------------------------
+
 // Detection
 
 // string src_ip = 1;
@@ -22224,6 +23130,8 @@ inline void DetectionBatch::set_allocated_batch_timestamp(::PROTOBUF_NAMESPACE_I
 
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
@@ -22275,6 +23183,11 @@ template <> struct is_proto_enum< ::protobuf::DetectionType> : ::std::true_type 
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::protobuf::DetectionType>() {
   return ::protobuf::DetectionType_descriptor();
+}
+template <> struct is_proto_enum< ::protobuf::DetectorSource> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::protobuf::DetectorSource>() {
+  return ::protobuf::DetectorSource_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

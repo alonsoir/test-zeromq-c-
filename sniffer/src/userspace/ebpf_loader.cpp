@@ -25,9 +25,7 @@ EbpfLoader::EbpfLoader()
       filter_settings_fd_(-1),
       program_loaded_(false),
       xdp_attached_(false),
-      skb_attached_(false),
-      attached_ifindex_(-1) {
-}
+      skb_attached_(false){}
 
     EbpfLoader::~EbpfLoader() {
     // Guardar stderr original
@@ -41,19 +39,14 @@ EbpfLoader::EbpfLoader()
         close(devnull);
     }
 
-    if (xdp_attached_ && attached_ifindex_ >= 0) {
-        // Desadjuntar XDP
-        bpf_xdp_detach(attached_ifindex_, 0, nullptr);
-    }
-
-    if (skb_attached_ && attached_ifindex_ >= 0) {
-        // Desadjuntar SKB (TC)
-        LIBBPF_OPTS(bpf_tc_hook, hook,
-                    .ifindex = attached_ifindex_,
-                    .attach_point = BPF_TC_INGRESS);
-        LIBBPF_OPTS(bpf_tc_opts, opts, .handle = 1, .priority = 1);
-        bpf_tc_detach(&hook, &opts);
-        bpf_tc_hook_destroy(&hook);
+    if (skb_attached_) {
+        // Desadjuntar de TODAS las interfaces
+        for (int ifindex : attached_ifindexes_) {
+            int err = bpf_xdp_detach(ifindex, 0, nullptr);
+            if (err) {
+                // Silencioso - ya redirigimos stderr a /dev/null
+            }
+        }
     }
 
     // Restaurar stderr
@@ -196,8 +189,7 @@ bool EbpfLoader::attach_xdp(const std::string& interface_name) {
     }
     
     xdp_attached_ = true;
-    attached_ifindex_ = ifindex;
-    
+
     std::cout << "[INFO] XDP program attached successfully to " << interface_name << std::endl;
     return true;
 }
@@ -223,21 +215,15 @@ bool EbpfLoader::detach_xdp(const std::string& interface_name) {
     }
     
     xdp_attached_ = false;
-    attached_ifindex_ = -1;
-    
+
     std::cout << "[INFO] XDP program detached successfully" << std::endl;
     return true;
 }
 
-bool EbpfLoader::attach_skb(const std::string& interface_name) {
+    bool EbpfLoader::attach_skb(const std::string& interface_name) {
     if (!program_loaded_) {
         std::cerr << "[ERROR] eBPF program not loaded" << std::endl;
         return false;
-    }
-
-    if (skb_attached_) {
-        std::cout << "[WARN] SKB program already attached" << std::endl;
-        return true;
     }
 
     int ifindex = get_ifindex(interface_name);
@@ -246,12 +232,18 @@ bool EbpfLoader::attach_skb(const std::string& interface_name) {
         return false;
     }
 
+    // Verificar si YA está attached a ESTA interfaz
+    if (std::find(attached_ifindexes_.begin(), attached_ifindexes_.end(), ifindex)
+        != attached_ifindexes_.end()) {
+        std::cout << "[INFO] XDP already attached to " << interface_name << std::endl;
+        return true;
+        }
+
     std::cout << "[INFO] Attaching XDP program in SKB/Generic mode to interface: " << interface_name
               << " (ifindex: " << ifindex << ")" << std::endl;
 
-    // Usar XDP en modo genérico (software) - compatible con virtio_net
-    // XDP_FLAGS_SKB_MODE = (1U << 1) = modo genérico/software
-    __u32 xdp_flags = (1U << 1);  // XDP_FLAGS_SKB_MODE
+    // XDP_FLAGS_SKB_MODE = modo genérico/software
+    __u32 xdp_flags = (1U << 1);
 
     int err = bpf_xdp_attach(ifindex, prog_fd_, xdp_flags, nullptr);
     if (err) {
@@ -260,7 +252,7 @@ bool EbpfLoader::attach_skb(const std::string& interface_name) {
     }
 
     skb_attached_ = true;
-    attached_ifindex_ = ifindex;
+    attached_ifindexes_.push_back(ifindex);  // ✅ Agregar a la lista
 
     std::cout << "[INFO] XDP program attached successfully in SKB/Generic mode to " << interface_name << std::endl;
     return true;
@@ -286,7 +278,6 @@ bool EbpfLoader::detach_skb(const std::string& interface_name) {
     }
 
     skb_attached_ = false;
-    attached_ifindex_ = -1;
 
     std::cout << "[INFO] XDP program (SKB mode) detached from " << interface_name << std::endl;
     return true;

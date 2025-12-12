@@ -36,6 +36,11 @@ message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 # PkgConfig for system libraries
 find_package(PkgConfig REQUIRED)
 
+find_package(OpenSSL REQUIRED)
+message(STATUS "Found OpenSSL")
+find_package(nlohmann_json REQUIRED)
+message(STATUS "Found nlohmann_json")
+
 # ZeroMQ
 pkg_check_modules(ZMQ REQUIRED IMPORTED_TARGET libzmq)
 message(STATUS "Found ZeroMQ: ${ZMQ_VERSION}")
@@ -141,6 +146,7 @@ set(SOURCES
         src/ml_detector.cpp
         src/classifier_tricapa.cpp
         src/feature_extractor.cpp
+        src/rag_logger.cpp
         src/zmq_handler.cpp
         src/model_loader.cpp
         src/onnx_model.cpp
@@ -287,6 +293,9 @@ target_link_libraries(ml-detector PRIVATE
         PkgConfig::LZ4
         Threads::Threads
         ransomware_detector
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        nlohmann_json::nlohmann_json
 )
 
 # nlohmann/json

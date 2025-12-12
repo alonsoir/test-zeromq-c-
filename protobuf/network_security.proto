@@ -1,6 +1,7 @@
 // network_security.proto
-// FECHA: 16 de Noviembre de 2025 - PHASE 1 UPDATE
+// FECHA: 9 de Diciembre de 2025 - DAY 13 DUAL-SCORE ARCHITECTURE
 // ✅ PHASE 1: 4 detectores embebidos (DDoS, Ransomware, Traffic, Internal)
+// ✅ DAY 13: Dual-Score validation system para F1-score calculation
 // DESCRIPCIÓN: Protobuf heredado de upgraded-happiness, pensado para su version c++
 //
 // FILOSOFÍA: TODO O NADA - Sin campos legacy confusos
@@ -558,6 +559,15 @@ message NetworkSecurityEvent {
   map<string, string> custom_metadata = 26;
   repeated string event_tags = 27;
   string protobuf_version = 28;         // "3.1.0"
+
+  // 🎯 DUAL-SCORE ARCHITECTURE - DAY 13 (December 2025)
+  // Preserva scores de ambos detectores para F1-score validation contra CTU-13
+  double fast_detector_score = 29;           // Layer 1 heuristic score (0.0-1.0)
+  double ml_detector_score = 30;             // Layer 3 ML inference score (0.0-1.0)
+  DetectorSource authoritative_source = 31;  // ¿Quién determinó la amenaza final?
+  bool fast_detector_triggered = 32;         // ¿Se activó el Fast Detector?
+  string fast_detector_reason = 33;          // Razón de activación ("high_external_ips", etc)
+  DecisionMetadata decision_metadata = 34;   // Metadatos para RAG e investigación
 }
 
 // =====================================================================
@@ -637,6 +647,7 @@ message RansomwareFeatures {
     float tcp_rst_ratio = 19;
     float syn_without_ack_ratio = 20;
 }
+
 // =====================================================================
 // 🛡️ FIREWALL ACL AGENT - Simple Detection Messages
 // =====================================================================
@@ -648,6 +659,32 @@ enum DetectionType {
     DETECTION_SUSPICIOUS_TRAFFIC = 3;
     DETECTION_INTERNAL_THREAT = 4;
 }
+
+// =====================================================================
+// 🎯 DUAL-SCORE DECISION SYSTEM - DAY 13 (December 2025)
+// =====================================================================
+
+enum DetectorSource {
+    DETECTOR_SOURCE_UNKNOWN = 0;
+    DETECTOR_SOURCE_FAST_ONLY = 1;        // Solo Fast Detector activado
+    DETECTOR_SOURCE_ML_ONLY = 2;          // Solo ML Detector activado
+    DETECTOR_SOURCE_FAST_PRIORITY = 3;    // Ambos activos, Fast score mayor
+    DETECTOR_SOURCE_ML_PRIORITY = 4;      // Ambos activos, ML score mayor
+    DETECTOR_SOURCE_CONSENSUS = 5;        // Ambos activos, scores similares
+    DETECTOR_SOURCE_DIVERGENCE = 6;       // Divergencia significativa (>0.30)
+}
+
+message DecisionMetadata {
+    double score_divergence = 1;              // |fast_score - ml_score|
+    string divergence_reason = 2;             // Por qué divergen
+    bool requires_rag_analysis = 3;           // ¿Enviar a RAG para investigación?
+    string investigation_priority = 4;        // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+    repeated string anomaly_flags = 5;        // Flags específicos detectados
+    double confidence_level = 6;              // Confianza en la decisión (0.0-1.0)
+    google.protobuf.Timestamp decision_timestamp = 7;
+}
+
+// =====================================================================
 
 message Detection {
     string src_ip = 1;
