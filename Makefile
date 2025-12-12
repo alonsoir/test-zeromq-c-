@@ -445,8 +445,8 @@ rag-stop:
 	@vagrant ssh -c "pkill -f rag-security 2>/dev/null || true"
 
 rag-status:
-        @echo "🔍 RAG Status:"
-        @vagrant ssh -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi"
+	@echo "🔍 RAG Status:"
+    @vagrant ssh defender -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi""
 
 rag-logs:
 	@echo "📋 RAG Logs:"
@@ -635,7 +635,7 @@ etcd-server-stop:
 
 etcd-server-status:
 	@echo "🔍 etcd-server Status:"
-@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi"
+@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi""
 
 etcd-server-logs:
 	@echo "📋 etcd-server Logs:"
