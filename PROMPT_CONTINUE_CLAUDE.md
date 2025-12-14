@@ -1,401 +1,448 @@
-# 🚀 Prompt de Continuidad - Phase 2: Production Hardening
-
-## Estado Actual (Day 15 Complete)
-
-**✅ PHASE 1 COMPLETADA (15/15 días - 100%)**
-
-### Logros Validados:
-- ✅ RAGLogger: 83 campos, 13,245 eventos capturados
-- ✅ Neris Botnet: 97.6% detección (12,933/13,245 MALICIOUS)
-- ✅ Dual-Score Architecture: Maximum Threat Wins funcionando
-- ✅ Performance: Sub-microsegundo mantenido bajo carga
-- ✅ Synthetic Data: Modelos detectan malware real sin reentrenamiento
-- ✅ Pipeline completo: eBPF → ML → RAGLogger → Vector DB ready
-
-### Archivos de Evidencia:
-```
-/vagrant/logs/rag/events/2025-12-12.jsonl           (13,245 eventos)
-/vagrant/logs/rag/artifacts/2025-12-12/*.pb         (15,587 archivos)
-/vagrant/logs/lab/detector.log                      (logs completos)
-/vagrant/scripts/test_rag_logger.sh                 (script funcional)
-```
+# 🚀 ML Defender - Phase 2A Continuity Prompt (Day 16+)
+**Date:** December 15, 2025  
+**Status:** Phase 1 Complete (100%) - Starting Phase 2A  
+**Team:** Alonso + Claude + DeepSeek + Grok4 + Qwen
 
 ---
 
-## 🎯 Phase 2: Production Hardening - Roadmap
+## 📊 Current State (End of Day 15)
 
-### **Priority 1: etcd-client Unified Library**
+### **What We Accomplished Today**
 
-**Objetivo:** Crear librería compartida para todos los componentes
+✅ **RAGLogger System Operational**
+- 83-field comprehensive event capture working
+- Artifacts directory = authoritative source (8,384+ events)
+- .jsonl consolidation = best-effort (unreliable timing)
+- 45+ minutes continuous operation (no crashes)
+- Test script validated end-to-end
 
-**Base de Código:**
-- Partir de: `/vagrant/rag/src/etcd_client.cpp`
-- Extraer: Funciones comunes (get, set, watch)
-- Features: Encryption, compression, validation
+✅ **Critical Bug Identified & Worked Around**
+- Race condition in RAGLogger causes crash with release builds
+- Debug builds (`-O0 + sanitizers`) = stable (45+ min uptime)
+- Release builds (`-O2`/`-O3`) = crash after 1-2 minutes
+- Workaround: Compile with debug flags for now
 
-**Tareas:**
-1. Crear `/vagrant/libs/etcd-client/`
-    - `etcd_client.h` (interfaz pública)
-    - `etcd_client.cpp` (implementación)
-    - `CMakeLists.txt` (shared library)
+✅ **Architectural Decision Made**
+- **Artifacts = Source of Truth** for RAG ingestion
+- .jsonl = convenience feature for quick analysis
+- Phase 2 will use artifacts directory, not .jsonl
 
-2. Integrar en componentes:
-    - Sniffer: Upload `sniffer.json` on start
-    - ML-Detector: Upload `ml_detector_config.json`
-    - Firewall: Upload `firewall.json`
-
-3. Testing:
-    - Unit tests: Get/Set/Delete operations
-    - Integration test: All components → etcd-server
-    - Validation: Encryption + compression working
-
-**Estimación:** 2-3 días
+✅ **Detection Pipeline Validated**
+- eBPF → Sniffer (Fast Detector) → ML-Detector (Dual-Score) → RAGLogger
+- Sub-microsecond latency maintained
+- Dual-Score architecture working correctly
+- Maximum Threat Wins logic validated
 
 ---
 
-### **Priority 2: Watcher Unified Library**
+## 🎯 Phase 2A Priorities (Week 3)
 
-**Objetivo:** Hot-reload de configuración desde etcd sin restart
+### **Priority 0: RAGLogger Race Condition Fix** ⚠️ CRITICAL
+**Problem:** Release builds crash after 1-2 minutes  
+**Root Cause:** Race condition in RAGLogger (suspected in flush logic)  
+**Investigation Tools:**
+- ThreadSanitizer (`-fsanitize=thread -O1`)
+- Mutex/lock audit in `rag_logger.cpp`
+- Review concurrent access to:
+   - Event buffer
+   - File handles
+   - Rotation logic
+
+**Files to Examine:**
+- `/vagrant/ml-detector/src/rag_logger.cpp` (lines 100-300: flush, rotation)
+- `/vagrant/ml-detector/include/rag_logger.hpp` (class definition)
+
+**Expected Outcome:**
+- Identify exact race condition
+- Add proper mutex protection
+- Validate with ThreadSanitizer
+- Test with release flags (`-O3 -march=native`)
+- 8+ hour stress test without crashes
+
+**Estimated Time:** 1-2 days
+
+---
+
+### **Priority 1: FAISS C++ Integration** 🔥 NEXT FOCUS
+
+**Goal:** Semantic search over RAGLogger artifacts
 
 **Architecture:**
-```cpp
-class EtcdWatcher {
-public:
-    // Watch a key for changes
-    void watch(const std::string& key, 
-               std::function<void(const std::string& new_value)> callback);
-    
-    // Apply diff to current config
-    void apply_diff(const json& current, const json& new_config);
-    
-    // Validate before applying
-    bool validate_config(const json& config);
-};
+```
+Artifacts Directory → Embedder → FAISS Vector DB → RAG Queries
+/vagrant/logs/rag/artifacts/YYYY-MM-DD/*.json
 ```
 
-**Casos de Uso:**
-1. **RAG Command:** `rag accelerate`
-    - RAG modifica thresholds en etcd
-    - Watcher detecta cambios
-    - ML-Detector aplica nuevos thresholds
-    - Sin restart, sin downtime
+**Implementation Plan:**
 
-2. **Auto-Tuning:**
-    - Monitor: CPU > 80% → `rag decelerate`
-    - Monitor: CPU < 30% → `rag accelerate`
-    - Dynamic adaptation to hardware
+#### **Step 1: FAISS Setup (Day 1)**
+1. Install FAISS C++ library in Vagrant VM
+2. Create test program: embed + search small dataset
+3. Benchmark: 10K events, query latency <100ms
+4. File: `/vagrant/rag/src/faiss_manager.cpp`
 
-**Tareas:**
-1. Crear `/vagrant/libs/watcher/`
-    - `etcd_watcher.h/cpp`
-    - Polling mechanism (1s interval)
-    - Callback registration
+#### **Step 2: Async Embedder (Day 2)**
+1. Background thread watches artifacts directory
+2. On new `.json` file → extract text fields
+3. Generate embedding (sentence-transformers compatible)
+4. Insert into FAISS index
+5. File: `/vagrant/rag/src/embedder.cpp`
 
-2. Integrar:
-    - ML-Detector: Watch `ml_detector_config.json`
-    - Sniffer: Watch `sniffer.json`
-    - Firewall: Watch `firewall.json`
+#### **Step 3: RAG Integration (Day 3)**
+1. Add FAISS queries to RAG system
+2. Natural language: "Show me high divergence events from yesterday"
+3. Semantic search: "Find botnet-like behavior"
+4. Return ranked artifacts with context
+5. File: `/vagrant/rag/src/rag_engine.cpp` (update)
 
-3. RAG Commands:
-    - `rag accelerate` → Lower thresholds 5%
-    - `rag decelerate` → Raise thresholds 5%
-    - `rag optimize` → Calculate optimal values
+#### **Step 4: Validation (Day 4)**
+1. Ingest 8,384 events from Dec 14 artifacts
+2. Query: "Fast detector triggered but ML disagreed"
+3. Expected: Return divergent events (100% in our case)
+4. Benchmark: <200ms for semantic search over 10K events
 
-**Estimación:** 3-4 días
+**Dependencies:**
+- FAISS C++ (libfaiss.so)
+- Sentence-transformers model (via ONNX or native C++)
+- JSON parsing (nlohmann/json - already present)
+
+**Estimated Time:** 3-4 days
 
 ---
 
-### **Priority 3: FAISS C++ Integration**
+### **Priority 2: etcd-client Unified Library**
 
-**Objetivo:** Vector DB para semantic search sobre eventos RAG
+**Goal:** Extract etcd code from RAG, create shared library
+
+**Current State:**
+- RAG has etcd integration (`rag/src/etcd_client.cpp`)
+- Encryption, compression, validation already implemented
+- Other components (sniffer, ml-detector, firewall) need same
+
+**Implementation Plan:**
+
+1. **Extract Common Code (Day 1)**
+   - Create `/vagrant/etcd-client/` directory
+   - Move `etcd_client.cpp` → `etcd-client/src/`
+   - Create CMakeLists.txt for shared library
+   - Build: `libetcd_client.so`
+
+2. **API Design (Day 1)**
+   ```cpp
+   class EtcdClient {
+   public:
+     void set(key, value, encrypt=true, compress=true);
+     std::string get(key);
+     void watch(key, callback);
+     void validate_schema(key, schema);
+   };
+   ```
+
+3. **Integration (Day 2)**
+   - Update RAG to use shared library
+   - Update sniffer config to use etcd
+   - Update ml-detector config to use etcd
+   - Update firewall config to use etcd
+
+**Estimated Time:** 2-3 days
+
+---
+
+### **Priority 3: Watcher Unified Library**
+
+**Goal:** Hot-reload config without restart
 
 **Architecture:**
-```cpp
-class AsyncEmbedder {
-    // Embedding queue (non-blocking)
-    void enqueue_log(const std::string& log_line);
-    
-    // Background thread processes queue
-    void embedding_worker();
-    
-    // Generate embedding (sentence-transformers)
-    std::vector<float> generate_embedding(const std::string& text);
-    
-    // Insert to FAISS index
-    void insert_to_faiss(const std::vector<float>& embedding, 
-                         const std::string& metadata);
-};
-
-class RAGQueryEngine {
-    // Natural language query
-    std::vector<SearchResult> query(const std::string& nl_query, int k = 5);
-    
-    // Example: "Show me all ransomware detections from yesterday"
-    // Returns: Top-K similar events with metadata
-};
+```
+etcd (config changes) → Watcher → Apply Diff → Component (no restart)
 ```
 
-**Pipeline:**
+**Implementation Plan:**
+
+1. **Watcher Core (Day 1)**
+   - File: `/vagrant/watcher/src/config_watcher.cpp`
+   - Watch etcd key changes
+   - Calculate diff (old vs new config)
+   - Validate new config before apply
+
+2. **Safe Apply (Day 2)**
+   - Apply changes atomically
+   - Rollback on validation failure
+   - Log all config changes
+   - Send metrics to RAG
+
+3. **Component Integration (Day 3)**
+   - ml-detector: Update thresholds at runtime
+   - sniffer: Update fast detector rules
+   - firewall: Update ACL rules
+   - RAG command: "accelerate pipeline" (increase thresholds)
+
+**RAG Commands:**
+```bash
+# Increase sensitivity (more detections)
+rag accelerate
+
+# Decrease sensitivity (fewer detections)
+rag decelerate
+
+# Auto-tune based on hardware
+rag optimize --cpu 80 --ram 4096 --temp 65
 ```
-ML-Detector Log → AsyncEmbedder Queue → Embedding Worker
-                                       ↓
-                                   FAISS C++ Index
-                                       ↓
-                              RAG Query Engine
-                                       ↓
-                        Natural Language Answers
-```
 
-**Tareas:**
-1. Setup FAISS C++:
-    - Install: `libfaiss-dev`
-    - Build: Link with ml-detector
-    - Index: `IndexFlatL2` (simple, fast)
-
-2. Embedder:
-    - Model: `sentence-transformers/all-MiniLM-L6-v2`
-    - ONNX export for C++ inference
-    - Async queue (10K events buffer)
-
-3. RAG Integration:
-    - Command: `rag query_events "<query>"`
-    - Example: `rag query_events "high divergence last hour"`
-    - Returns: JSON with top-5 matches
-
-**Estimación:** 4-5 días
+**Estimated Time:** 3-4 days
 
 ---
 
-### **Priority 4: RAG Runtime Commands**
+## 📂 Key Files & Locations
 
-**Objetivo:** Control dinámico del pipeline via natural language
-
-**Commands Design:**
-
-```python
-# 1. Acceleration (when system is underutilized)
-"rag accelerate"
-→ Lower thresholds by 5%
-→ Increase detection sensitivity
-→ Monitor CPU/RAM for 5 minutes
-→ Rollback if issues detected
-
-# 2. Deceleration (when hardware stressed)
-"rag decelerate"
-→ Raise thresholds by 5%
-→ Reduce detection sensitivity
-→ Protect hardware integrity
-
-# 3. Optimization (calculate optimal config)
-"rag optimize"
-→ Analyze: CPU, RAM, temperature
-→ Calculate: Optimal thresholds
-→ Test: Run benchmark (30s)
-→ Apply: If performance improves
-→ Metrics: Before/After comparison
-
-# 4. Query Events (semantic search)
-"rag query_events 'ransomware detections last 24h'"
-→ FAISS vector search
-→ Return: Top-K events with context
-→ Display: JSON formatted
-
-# 5. Status Report
-"rag status"
-→ CPU: 12%, RAM: 148MB, Temp: 45°C
-→ Throughput: 8,216 pps
-→ Detections: 12,933 MALICIOUS
-→ Mode: CONSERVATIVE (thresholds: default)
+### **RAGLogger Implementation**
+```
+/vagrant/ml-detector/src/rag_logger.cpp       # Main implementation
+/vagrant/ml-detector/include/rag_logger.hpp   # Header
+/vagrant/ml-detector/config/ml_detector_config.json  # Config
 ```
 
-**Auto-Tuning Engine:**
-```cpp
-class AutoTuner {
-    // Monitor system metrics
-    struct Metrics {
-        float cpu_percent;
-        float ram_mb;
-        float temp_celsius;
-        int throughput_pps;
-    };
-    
-    // Decision logic
-    enum class Action {
-        ACCELERATE,    // CPU < 30%, Temp < 50°C
-        DECELERATE,    // CPU > 80%, Temp > 70°C
-        MAINTAIN,      // Within safe range
-        EMERGENCY      // Temp > 80°C → Conservative mode
-    };
-    
-    // Execute action
-    void apply(Action action);
-    
-    // Safety checks
-    bool is_safe_to_accelerate();
-    void emergency_shutdown();
-};
+### **Artifacts Storage**
+```
+/vagrant/logs/rag/artifacts/YYYY-MM-DD/
+  event_<id>.pb      # Protobuf binary (authoritative)
+  event_<id>.json    # Human-readable (authoritative)
+
+/vagrant/logs/rag/events/YYYY-MM-DD.jsonl  # Consolidated (best-effort)
 ```
 
-**Tareas:**
-1. Implement Commands:
-    - `accelerate`, `decelerate`, `optimize`
-    - JSON diff calculation
-    - etcd update + watcher reload
-
-2. Auto-Tuning Logic:
-    - Monitor thread (every 30s)
-    - Decision engine
-    - Safe mode transitions
-
-3. Safety Mechanisms:
-    - Temperature limits (80°C max)
-    - Rollback on errors
-    - Emergency conservative mode
-
-**Estimación:** 5-6 días
-
----
-
-### **Priority 5: Academic Paper**
-
-**Objetivo:** Documentar metodología y resultados
-
-**Sections:**
-
-1. **Abstract**
-    - Sub-microsecond IDS with dual-score
-    - Synthetic data methodology
-    - 97.6% detection on real malware
-
-2. **Introduction**
-    - Problem: Academic datasets limitations
-    - Solution: Synthetic data + embedded ML
-    - Contribution: RAGLogger + auto-tuning
-
-3. **Methodology**
-    - Synthetic data generation
-    - Dual-Score architecture
-    - RAGLogger schema (83 fields)
-
-4. **Validation**
-    - Neris botnet: 97.6% detection
-    - Performance: <1.06μs latency
-    - Scalability: 320K+ packets
-
-5. **Results**
-    - No threshold tuning required
-    - No retraining required
-    - Production-ready performance
-
-6. **Discussion**
-    - Synthetic vs academic datasets
-    - Maximum Threat Wins logic
-    - Multi-agent collaboration
-
-7. **Conclusion**
-    - Synthetic data works
-    - Open-source contribution
-    - Future work: Auto-tuning engine
-
-**Co-Authors:**
-- Alonso Isidoro Roman (Lead)
-- Claude (Anthropic AI)
-- DeepSeek (AI Assistant)
-- Grok4 (xAI)
-- Qwen (Alibaba Cloud AI)
-
-**Estimación:** 7-10 días
-
----
-
-## 📋 Phase 2 Timeline (Total: ~25 días)
-
+### **Test Scripts**
 ```
-Week 1-2: etcd-client + watcher (5-7 días)
-Week 3: FAISS C++ integration (4-5 días)
-Week 4: RAG commands + auto-tuning (5-6 días)
-Week 5-6: Academic paper (7-10 días)
+/vagrant/scripts/test_rag_logger.sh           # End-to-end test
+/vagrant/scripts/run_lab_dev.sh               # Start lab
+/vagrant/scripts/monitor_day13_test.sh        # Real-time monitoring
+```
+
+### **Compilation**
+```
+Makefile targets:
+  make detector-debug   # ✅ STABLE (use this)
+  make detector         # ❌ CRASHES (don't use until race fixed)
 ```
 
 ---
 
-## 🎯 Success Criteria - Phase 2
+## 🐛 Known Issues & Workarounds
 
-1. **etcd-client Library**
-    - ✅ All components use shared library
-    - ✅ Encryption + compression working
-    - ✅ Unit tests pass
+### **Issue 1: RAGLogger Race Condition**
+- **Symptom:** ml-detector crashes after 1-2 min (release builds)
+- **Workaround:** Compile with debug flags (`make detector-debug`)
+- **Fix Required:** ThreadSanitizer investigation (Priority 0)
 
-2. **Watcher System**
-    - ✅ Hot-reload without restart
-    - ✅ RAG can modify thresholds
-    - ✅ Auto-tuning engine functional
+### **Issue 2: .jsonl Flush Timing**
+- **Symptom:** Consolidated log missing events after restart
+- **Workaround:** Use artifacts directory, not .jsonl
+- **Status:** Architectural decision - artifacts = source of truth
 
-3. **FAISS Integration**
-    - ✅ Vector DB operational
-    - ✅ Natural language queries work
-    - ✅ <100ms query latency
-
-4. **RAG Commands**
-    - ✅ `accelerate`, `decelerate`, `optimize`
-    - ✅ Auto-tuning based on hardware
-    - ✅ Emergency shutdown on overheat
-
-5. **Academic Paper**
-    - ✅ Methodology documented
-    - ✅ Results validated
-    - ✅ Ready for submission
+### **Issue 3: make status-lab False Positives**
+- **Symptom:** Shows "RUNNING" when detector is dead
+- **Cause:** `pgrep -f ml-detector` matches own grep process
+- **Workaround:** Use `ps aux | grep ml-detector | grep -v grep`
 
 ---
 
-## 🚀 Next Steps - Immediate Actions
+## 🧪 Testing Protocol
 
-**Day 16 (Tomorrow):**
-1. Crear estructura `/vagrant/libs/etcd-client/`
-2. Extraer código común de RAG
-3. Definir API pública (etcd_client.h)
-4. Unit tests básicos
+### **Before Starting Work**
+```bash
+# 1. Verify VMs running
+vagrant status
 
-**Prompt para Claude:**
-```
-"Vamos a iniciar Phase 2 - Priority 1: etcd-client Unified Library.
+# 2. Clean previous logs
+rm -rf logs/rag/artifacts/$(date +%Y-%m-%d)
+rm -f logs/rag/events/$(date +%Y-%m-%d).jsonl
 
-Objetivo: Crear una librería compartida partiendo del código existente 
-en /vagrant/rag/src/etcd_client.cpp.
+# 3. Start fresh lab
+make kill-lab
+sleep 3
+make run-lab-dev
+sleep 15
 
-Paso 1: Analizar el código actual y extraer funcionalidades comunes
-        (get, set, watch, encryption, compression).
-
-Paso 2: Crear estructura de directorio /vagrant/libs/etcd-client/ con:
-        - etcd_client.h (API pública)
-        - etcd_client.cpp (implementación)
-        - CMakeLists.txt (shared library)
-
-Paso 3: Implementar unit tests básicos.
-
-¿Empezamos?"
+# 4. Verify components alive
+vagrant ssh defender -c "ps aux | grep -E 'ml-detector|sniffer|firewall' | grep -v grep"
 ```
 
+### **After Changes**
+```bash
+# 1. Rebuild affected component
+make detector-debug  # or make sniffer, etc.
+
+# 2. Restart lab
+make kill-lab
+make run-lab-dev
+
+# 3. Run validation test
+make test-rag-small
+
+# 4. Check for crashes
+vagrant ssh defender -c 'start=$(date +%s); while pgrep ml-detector > /dev/null 2>&1; do elapsed=$(($(date +%s) - start)); printf "\r⏱️  Uptime: %02d:%02d" $((elapsed/60)) $((elapsed%60)); sleep 1; done'
+# Target: 10+ minutes without crash
+
+# 5. Verify artifacts
+vagrant ssh defender -c "ls -lh /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d) | wc -l"
+# Should show >100 files
+```
+
 ---
 
-## 📝 Transcript de Continuidad
+## 🎯 Tomorrow's Suggested Plan
 
-**Archivo:** `PHASE2_CONTINUITY_PROMPT.md`
-**Fecha:** 2025-12-12
-**Estado:** Phase 1 Complete, Phase 2 Starting
+### **Morning Session (3-4 hours)**
 
-**Contexto Completo:**
-- Phase 1: 15/15 días completados
-- RAGLogger: 97.6% detección Neris botnet
-- Synthetic data: Validado con malware real
-- Pipeline: Sub-microsegundo mantenido
+**Option A: Fix Race Condition (Conservative)**
+1. Compile with ThreadSanitizer
+2. Run 30-minute stress test
+3. Analyze TSan output
+4. Identify problematic mutex/lock
+5. Document findings
 
-**Próximos Pasos:**
-- etcd-client → watcher → FAISS → RAG commands → paper
-- Timeline: ~25 días
-- Target: Alpha 1.0.0
+**Option B: Start FAISS (Aggressive)**
+1. Install FAISS C++ in VM
+2. Create hello-world embedding test
+3. Benchmark 1K event embeddings
+4. Design FAISS manager class
+
+### **Afternoon Session (3-4 hours)**
+
+**If Option A (Race Fix):**
+- Implement mutex fix
+- Validate with ThreadSanitizer
+- Test with release flags
+- 8-hour stress test overnight
+
+**If Option B (FAISS):**
+- Implement artifact watcher
+- Extract text from .json files
+- Generate embeddings
+- Insert into FAISS index
 
 ---
 
-**Built with 🛡️ for a safer internet**
-*Via Appia Quality - Phase 1 Complete, Phase 2 Starting*
+## 💡 Strategic Considerations
+
+### **Why FAISS First (Recommended)**
+
+**Pros:**
+- RAG ingestion is THE goal of Phase 2
+- Race condition workaround is stable (debug builds work)
+- FAISS enables semantic search → immediate value
+- Can fix race condition in parallel
+
+**Cons:**
+- ml-detector still uses debug flags (slower)
+- Production deployment delayed until race fixed
+
+### **Why Race Condition First (Alternative)**
+
+**Pros:**
+- Production-ready ml-detector sooner
+- Can use optimized flags (`-O3`)
+- Eliminates technical debt
+
+**Cons:**
+- May take 1-2 days to diagnose
+- FAISS delayed
+- Workaround is already stable
+
+### **Alonso's Decision (From Today):**
+> "Es mejor saber, que no saber... pero ahora lo importante es tener
+> los logs agregados para la fase del RAG. La configuración del compilador
+> establece una condición durable y estable. PERFECTO!"
+
+**Interpretation:** FAISS first, race condition later. We have stable logs now.
+
+---
+
+## 📚 Reference Materials
+
+### **FAISS Resources**
+- GitHub: https://github.com/facebookresearch/faiss
+- C++ Tutorial: https://github.com/facebookresearch/faiss/wiki/Getting-started
+- Embeddings: sentence-transformers or ONNX models
+
+### **ThreadSanitizer (If Needed)**
+- Docs: https://clang.llvm.org/docs/ThreadSanitizer.html
+- Compile: `-fsanitize=thread -O1 -g`
+- Run: Detector will print race conditions to stderr
+
+### **etcd C++ Client**
+- GitHub: https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3
+- Already integrated in RAG system
+
+---
+
+## 🤝 Collaboration Protocol
+
+When working with other AI agents:
+
+1. **Read this prompt completely** before starting
+2. **Check current state** (files, logs, component status)
+3. **Follow testing protocol** (build, test, validate)
+4. **Document findings** in code comments + commit messages
+5. **Update this prompt** if priorities change
+
+### **Communication with Alonso**
+
+**He values:**
+- ✅ Scientific honesty (report reality, not ideals)
+- ✅ Via Appia Quality (build to last decades)
+- ✅ Funciona > Perfecto (working beats perfect)
+- ✅ Clear explanations in Spanish/English mix
+- ✅ Direct answers without excessive hedging
+
+**He dislikes:**
+- ❌ Over-apologizing for bugs (they're data, not failures)
+- ❌ Excessive safety disclaimers
+- ❌ Vague "might" language (be direct)
+- ❌ Making decisions without consulting him
+
+---
+
+## 🎆 Vision for Phase 2
+
+**End State (4-6 weeks):**
+
+```
+┌────────────────────────────────────────────────┐
+│  ML Defender - Production-Ready System         │
+│                                                │
+│  1. ✅ RAGLogger: 83-field artifacts           │
+│  2. 🔄 FAISS: Semantic search over events      │
+│  3. 🔄 RAG Commands: Natural language control  │
+│  4. 🔄 Hot-Reload: Zero-downtime updates       │
+│  5. 🔄 Auto-Tuning: Hardware-aware optimization│
+│  6. 🔄 Distributed: Multi-node coordination    │
+│  7. 📝 Paper: Academic publication submitted   │
+│                                                │
+│  Deployment: Raspberry Pi 5 ($35-100) to      │
+│              Enterprise servers                │
+│  Target: Hospitals, schools, SMBs              │
+│  Mission: Democratize network security         │
+└────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Let's Build Tomorrow
+
+**Suggested First Command:**
+```bash
+vagrant up defender && make status-lab
+```
+
+**Then decide:**
+- [ ] Option A: Install FAISS, start integration
+- [ ] Option B: ThreadSanitizer investigation
+- [ ] Option C: Alonso's call based on morning priorities
+
+**Compañeros del metal y del carbono** - Phase 2A begins! 🔷✨
+
+---
+
+**End of Continuity Prompt**  
+**Next Update:** After completing Priority 0 or Priority 1

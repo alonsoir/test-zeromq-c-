@@ -19,6 +19,7 @@
 .PHONY: analyze-dual-scores test-analyze-workflow test-day13-full quick-analyze
 .PHONY: rag-log-init rag-log-clean rag-log-status rag-log-analyze rag-log-tail rag-log-tail-live
 .PHONY: test-rag-integration test-rag-quick rag-watch rag-validate test-rag-small test-rag-neris test-rag-big
+.PHONY: quick-lab-test rag-consolidate detector-debug
 
 # ============================================================================
 # ML Defender Pipeline - Host Makefile
@@ -190,7 +191,18 @@ sniffer-install: sniffer-package
 
 detector: proto
 	@echo "🔨 Building ML Detector..."
-	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build && cd /vagrant/ml-detector/build && cmake .. && make -j4"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && cd /vagrant/ml-detector/build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' .. && make clean && make -j4"
+
+# Debido a un bug no detectado, esta configuracion en modo debug da más estabilidad al build, por lo que va a ser configuracion por defecto para compilar este componente.
+detector-debug: proto
+	@echo "🔨 Building ML Detector (DEBUG + SANITIZERS)..."
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && cd /vagrant/ml-detector/build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' .. && make clean && make -j4"
+
+# Por probar, hay que saber el hardware que tendremos...
+detector-production: proto
+	@echo "🔨 Building ML Detector (PRODUCTION - Optimized)..."
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && cd /vagrant/ml-detector/build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-O3 -march=native -DNDEBUG' .. && make -j4"
+	@echo "⚠️  Production build requires hardware-specific tuning"
 
 detector-build: detector
 
@@ -416,6 +428,58 @@ kill-all:
 	@$(MAKE) kill-lab
 	@vagrant ssh -c "docker-compose down 2>/dev/null || true"
 	@echo "✅ All processes terminated"
+
+quick-lab-test:
+	@echo "⚡ Quick Lab Test (smallFlows dataset)..."
+	@$(MAKE) clean-day13-logs
+	@$(MAKE) run-lab-dev
+	@sleep 10
+	@$(MAKE) status-lab
+	@$(MAKE) test-replay-small
+	@sleep 5
+	@$(MAKE) extract-dual-scores
+	@echo "✅ Quick test complete - check logs/dual_scores_*.txt"
+
+lab-full-test:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 ML Defender - Full Lab Test (Integrated)              ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Step 1: Clean previous logs..."
+	@$(MAKE) clean-day13-logs
+	@echo ""
+	@echo "Step 2: Starting ML Defender lab..."
+	@$(MAKE) run-lab-dev
+	@echo ""
+	@echo "⏳ Waiting for components to initialize (15s)..."
+	@sleep 15
+	@echo ""
+	@echo "Step 3: Verify lab status..."
+	@$(MAKE) status-lab
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "💡 OPTIONAL: Open tmux monitor in another terminal"
+	@echo "   Run: make monitor-day13-tmux"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@read -p "Press ENTER when ready to start replay..." dummy
+	@echo ""
+	@echo "Step 4: Replaying CTU-13 Neris (this will take ~5-10 min)..."
+	@$(MAKE) test-rag-neris
+	@echo ""
+	@echo "⏳ Waiting for pipeline to process events (10s)..."
+	@sleep 10
+	@echo ""
+	@echo "Step 5: Extract dual-score logs..."
+	@$(MAKE) extract-dual-scores
+	@echo ""
+	@echo "✅ Full lab test complete!"
+	@echo ""
+	@echo "📊 Next steps:"
+	@echo "   - Analyze results: make analyze-dual-scores"
+	@echo "   - Check RAG logs: make rag-log-status"
+	@echo "   - View stats: make stats-dual-score"
 
 # ============================================================================
 # RAG Ecosystem Integration (RAG + etcd-server)
@@ -731,7 +795,12 @@ test-rag-small:
 	@./scripts/test_rag_logger.sh datasets/ctu13/smallFlows.pcap
 
 test-rag-neris:
-	@./scripts/test_rag_logger.sh datasets/ctu13/capture20110810.neris.pcap
+	@./scripts/test_rag_logger.sh datasets/ctu13/botnet-capture-20110810-neris.pcap
+
+rag-consolidate:
+	@echo "📦 Consolidating artifacts into .jsonl..."
+	@TODAY=$$(date +%Y-%m-%d); \
+	vagrant ssh defender -c "find /vagrant/logs/rag/artifacts/$$TODAY -name 'event_*.json' -exec cat {} \; | jq -c '.' > /vagrant/logs/rag/events/$$TODAY.jsonl && echo '✅ Consolidated: /vagrant/logs/rag/events/$$TODAY.jsonl'"
 
 test-rag-big:
 	@./scripts/test_rag_logger.sh datasets/ctu13/bigFlows.pcap
@@ -980,6 +1049,7 @@ rag-watch:
 rag-validate:
 	@echo "🔍 Validating RAG logs..."
 	@vagrant ssh defender -c "cat /vagrant/logs/rag/events/*.jsonl | jq empty && echo '✅ All logs valid JSON' || echo '❌ Invalid JSON found'"
+
 # ============================================================================
 # Help updates
 # ============================================================================

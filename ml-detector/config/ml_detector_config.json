@@ -3,10 +3,10 @@
   "_refactor_notes": {
     "date": "2025-11-15",
     "changes": [
-      "\u2728 UPDATED: Level 2 DDoS changed from ONNX to Embedded C++20",
-      "\u2728 UPDATED: Level 2 Ransomware enabled (Embedded C++20)",
-      "\u2728 UPDATED: Level 3 Web enabled for Traffic classification (Embedded C++20)",
-      "\u2728 UPDATED: Level 3 Internal already configured, just enabled (Embedded C++20)"
+      "✨ UPDATED: Level 2 DDoS changed from ONNX to Embedded C++20",
+      "✨ UPDATED: Level 2 Ransomware enabled (Embedded C++20)",
+      "✨ UPDATED: Level 3 Web enabled for Traffic classification (Embedded C++20)",
+      "✨ UPDATED: Level 3 Internal already configured, just enabled (Embedded C++20)"
     ]
   },
   "component": {
@@ -170,7 +170,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "\u2728 DDoS Detection - Embedded C++20 RandomForest (100 trees, 612 nodes, <50\u03bcs latency)",
+        "description": "✨ DDoS Detection - Embedded C++20 RandomForest (100 trees, 612 nodes, <50μs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "implementation": "native_cpp",
@@ -193,7 +193,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "\u2728 Ransomware Detection - Embedded C++20 RandomForest (100 trees, 3764 nodes, <55\u03bcs latency)",
+        "description": "✨ Ransomware Detection - Embedded C++20 RandomForest (100 trees, 3764 nodes, <55μs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "threshold": 0.75,
@@ -219,7 +219,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "\u2728 Traffic Classification (Internet vs Internal) - Embedded C++20 RandomForest (100 trees, 1014 nodes, <50\u03bcs latency)",
+        "description": "✨ Traffic Classification (Internet vs Internal) - Embedded C++20 RandomForest (100 trees, 1014 nodes, <50μs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "implementation": "native_cpp",
@@ -242,7 +242,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "\u2728 Internal Traffic Analysis - Embedded C++20 RandomForest (100 trees, 940 nodes, <48\u03bcs latency) - Lateral Movement & Data Exfiltration",
+        "description": "✨ Internal Traffic Analysis - Embedded C++20 RandomForest (100 trees, 940 nodes, <48μs latency) - Lateral Movement & Data Exfiltration",
         "requires_scaling": false,
         "timeout_ms": 1,
         "implementation": "native_cpp",
@@ -399,5 +399,16 @@
     "enable_simd": true,
     "enable_avx2": true,
     "cache_line_size": 64
+  },
+  "rag_logger": {
+    "enabled": true,
+    "base_dir": "/vagrant/logs/rag",
+    "log_all_events": false,
+    "log_detections_only": true,
+    "min_score_threshold": 0.5,
+    "buffer_size": 100,
+    "flush_interval_seconds": 1,
+    "include_artifacts": true,
+    "artifact_format": "protobuf"
   }
 }
