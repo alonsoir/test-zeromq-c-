@@ -1,451 +1,1049 @@
-# 🚀 ML Defender - Phase 2A Continuity Prompt (Day 16+)
-**Date:** December 15, 2025  
-**Status:** Phase 1 Complete (100%) - Starting Phase 2A  
+# 🚀 ML Defender - Day 17 Continuity Prompt
+**Date:** December 17, 2025  
+**Status:** Starting Day 17 - etcd-client Unified Library  
 **Team:** Alonso + Claude + DeepSeek + Grok4 + Qwen
 
 ---
 
-## 📊 Current State (End of Day 15)
+## 📊 Current State (End of Day 16)
 
-### **What We Accomplished Today**
+### **✅ Day 16 Achievement: Race Condition Fixed**
 
-✅ **RAGLogger System Operational**
-- 83-field comprehensive event capture working
-- Artifacts directory = authoritative source (8,384+ events)
-- .jsonl consolidation = best-effort (unreliable timing)
-- 45+ minutes continuous operation (no crashes)
-- Test script validated end-to-end
+**RAGLogger Production-Ready:**
+- ✅ Race conditions eliminated (current_date_, current_log_, counters)
+- ✅ Release optimization flags working (-O3 -march=native)
+- ✅ 20+ minutes continuous uptime validated
+- ✅ 1,152 artifacts generated, 575 JSONL lines
+- ✅ Zero crashes, zero memory leaks
+- ✅ Full lab test passed (sniffer + ml-detector + firewall)
 
-✅ **Critical Bug Identified & Worked Around**
-- Race condition in RAGLogger causes crash with release builds
-- Debug builds (`-O0 + sanitizers`) = stable (45+ min uptime)
-- Release builds (`-O2`/`-O3`) = crash after 1-2 minutes
-- Workaround: Compile with debug flags for now
-
-✅ **Architectural Decision Made**
-- **Artifacts = Source of Truth** for RAG ingestion
-- .jsonl = convenience feature for quick analysis
-- Phase 2 will use artifacts directory, not .jsonl
-
-✅ **Detection Pipeline Validated**
-- eBPF → Sniffer (Fast Detector) → ML-Detector (Dual-Score) → RAGLogger
-- Sub-microsecond latency maintained
-- Dual-Score architecture working correctly
-- Maximum Threat Wins logic validated
-
----
-
-## 🎯 Phase 2A Priorities (Week 3)
-
-### **Priority 0: RAGLogger Race Condition Fix** ⚠️ CRITICAL
-**Problem:** Release builds crash after 1-2 minutes  
-**Root Cause:** Race condition in RAGLogger (suspected in flush logic)  
-**Investigation Tools:**
-- ThreadSanitizer (`-fsanitize=thread -O1`)
-- Mutex/lock audit in `rag_logger.cpp`
-- Review concurrent access to:
-   - Event buffer
-   - File handles
-   - Rotation logic
-
-**Files to Examine:**
-- `/vagrant/ml-detector/src/rag_logger.cpp` (lines 100-300: flush, rotation)
-- `/vagrant/ml-detector/include/rag_logger.hpp` (class definition)
-
-**Expected Outcome:**
-- Identify exact race condition
-- Add proper mutex protection
-- Validate with ThreadSanitizer
-- Test with release flags (`-O3 -march=native`)
-- 8+ hour stress test without crashes
-
-**Estimated Time:** 1-2 days
-
----
-
-### **Priority 1: FAISS C++ Integration** 🔥 NEXT FOCUS
-
-**Goal:** Semantic search over RAGLogger artifacts
-
-**Architecture:**
+**Current System Status:**
 ```
-Artifacts Directory → Embedder → FAISS Vector DB → RAG Queries
-/vagrant/logs/rag/artifacts/YYYY-MM-DD/*.json
+Phase 1: ✅ COMPLETE (100%)
+  - 4 embedded C++20 detectors (<1.06μs)
+  - eBPF/XDP dual-NIC capture
+  - Dual-Score Architecture
+  - RAGLogger 83-field logging
+  - Production-ready stability
+
+Phase 2A: 🔄 IN PROGRESS (15%)
+  - ✅ Epic 2A.1: RAGLogger stability (COMPLETED Day 16)
+  - 🔥 Epic 2A.2: FAISS integration (DEFERRED - after etcd)
+  - 🎯 Epic 2A.3: etcd-client library (STARTING Day 17)
 ```
 
-**Implementation Plan:**
-
-#### **Step 1: FAISS Setup (Day 1)**
-1. Install FAISS C++ library in Vagrant VM
-2. Create test program: embed + search small dataset
-3. Benchmark: 10K events, query latency <100ms
-4. File: `/vagrant/rag/src/faiss_manager.cpp`
-
-#### **Step 2: Async Embedder (Day 2)**
-1. Background thread watches artifacts directory
-2. On new `.json` file → extract text fields
-3. Generate embedding (sentence-transformers compatible)
-4. Insert into FAISS index
-5. File: `/vagrant/rag/src/embedder.cpp`
-
-#### **Step 3: RAG Integration (Day 3)**
-1. Add FAISS queries to RAG system
-2. Natural language: "Show me high divergence events from yesterday"
-3. Semantic search: "Find botnet-like behavior"
-4. Return ranked artifacts with context
-5. File: `/vagrant/rag/src/rag_engine.cpp` (update)
-
-#### **Step 4: Validation (Day 4)**
-1. Ingest 8,384 events from Dec 14 artifacts
-2. Query: "Fast detector triggered but ML disagreed"
-3. Expected: Return divergent events (100% in our case)
-4. Benchmark: <200ms for semantic search over 10K events
-
-**Dependencies:**
-- FAISS C++ (libfaiss.so)
-- Sentence-transformers model (via ONNX or native C++)
-- JSON parsing (nlohmann/json - already present)
-
-**Estimated Time:** 3-4 days
+**Lab Currently Running:**
+- Started: Night of Dec 16
+- Goal: Generate large JSONL file overnight
+- Components: sniffer + ml-detector + firewall
+- Expected: 10K+ artifacts by morning
 
 ---
 
-### **Priority 2: etcd-client Unified Library**
+## 🎯 Day 17 Objective: etcd-client Unified Library
 
-**Goal:** Extract etcd code from RAG, create shared library
+### **Goal**
+Extract etcd-client code from RAG component and create a shared library that ALL components can use for distributed configuration.
 
-**Current State:**
-- RAG has etcd integration (`rag/src/etcd_client.cpp`)
-- Encryption, compression, validation already implemented
-- Other components (sniffer, ml-detector, firewall) need same
+### **Why This Matters**
+Currently, only RAG has etcd integration. We need:
+- ✅ **Sniffer** to discover itself and register config
+- ✅ **ml-detector** to discover itself and register thresholds
+- ✅ **firewall** to discover itself and register ACL rules
+- ✅ **RAG** to continue using etcd (refactored to library)
 
-**Implementation Plan:**
+All components should:
+1. Auto-discover themselves to etcd-server
+2. Upload their JSON config file
+3. Use encryption + compression transparently
+4. Watch for config changes (Phase 2A.4 - Watcher)
 
-1. **Extract Common Code (Day 1)**
-   - Create `/vagrant/etcd-client/` directory
-   - Move `etcd_client.cpp` → `etcd-client/src/`
-   - Create CMakeLists.txt for shared library
-   - Build: `libetcd_client.so`
+---
 
-2. **API Design (Day 1)**
-   ```cpp
-   class EtcdClient {
-   public:
-     void set(key, value, encrypt=true, compress=true);
-     std::string get(key);
-     void watch(key, callback);
-     void validate_schema(key, schema);
-   };
+## 📂 Current etcd-client Implementation
+
+### **Location of Existing Code**
+```
+/vagrant/rag/
+├── src/
+│   ├── etcd_client.cpp          ← REVIEW THIS
+│   ├── etcd_client.hpp          ← AND THIS
+│   └── rag_command_manager.cpp  ← Uses etcd_client
+├── include/
+│   └── etcd_client.hpp          ← Header
+└── CMakeLists.txt               ← Build config
+```
+
+### **Known Features (From Previous Discussions)**
+- ✅ Encryption (config values encrypted before storage)
+- ✅ Compression (config values compressed)
+- ✅ Validation (schema validation for configs)
+- ✅ Key-value storage interface
+- ⚠️ **VERIFY:** Is encryption in etcd_client or elsewhere?
+- ⚠️ **VERIFY:** Is compression in etcd_client or elsewhere?
+
+### **Suspected API (To Confirm)**
+```cpp
+class EtcdClient {
+public:
+    void set(key, value, encrypt=true, compress=true);
+    std::string get(key);
+    void watch(key, callback);
+    void validate_schema(key, schema);
+    
+    // Component discovery (may need to add)
+    void register_component(name, config_path);
+    void heartbeat(component_name);
+};
+```
+
+---
+
+## 🔐 CRITICAL TECHNICAL DETAILS (From Alonso - Dec 16)
+
+### **Encryption Implementation**
+- ✅ **Algorithm:** SHA256 (NOT ChaCha20 - had C++ issues)
+- ✅ **Key Management:** etcd-server GENERATES and PROVIDES the key
+- ✅ **Key Distribution:** Single shared key for ALL components (avoid "galimatías")
+- ✅ **Key Rotation (Phase 2B - Nice to Have):**
+   - Time-windowed key rotation
+   - Buffer/set of keys for smooth transition
+   - Allow components to operate with old key while receiving new one
+   - Avoid downtime during key changes
+
+### **Compression Implementation**
+- ⚠️ **Algorithm:** TBD - review RAG code (zlib? lz4? snappy?)
+- ✅ **Configurable:** Via JSON config (all compression settings)
+
+### **CRITICAL OPERATION ORDER**
+```
+SENDING:
+  Data → Compress → Encrypt → Send
+
+RECEIVING:
+  Receive → Decrypt → Decompress → Read
+
+⚠️ WARNING: Encryption INCREASES payload size significantly!
+           Always compress BEFORE encrypting.
+```
+
+### **etcd-server Configuration Versioning**
+```
+For each component, etcd-server maintains:
+
+1. MASTER COPY (Immutable)
+   - Original config uploaded by component at registration
+   - NEVER modified
+   - Used for rollback
+
+2. ACTIVE COPY (Mutable)
+   - Current working config
+   - All commits go here
+   - RAG can modify this
+   - Watcher pulls from this
+
+3. Rollback Strategy:
+   - On error → revert to MASTER
+   - On validation failure → revert to MASTER
+   - Manual rollback command available
+```
+
+### **etcd-server High Availability**
+- ✅ **Domestic Mode:** 3-node quorum (even for home deployments)
+- ✅ **Resource Usage:** ~1MB per node (very lightweight)
+- ✅ **Rationale:** Process is so light we can afford HA even domestically
+- ✅ **Benefit:** Automatic failover, no single point of failure
+
+### **Misconfiguration Detection**
+etcd-server MUST detect and alert via RAG when:
+- ❌ Component sends encrypted data with wrong key
+- ❌ Component sends compressed data with wrong algorithm
+- ❌ Payload size anomalies (encryption/compression mismatch)
+- ❌ Decode failures (bad key, bad compression)
+
+**Alert Mechanism:**
+- Log to RAG system
+- Notify operators
+- Prevent mass deployment with bad config
+- Allow etcd-server to push corrected config
+
+### **Thread Safety Requirements**
+- ✅ All etcd-client operations must be thread-safe
+- ✅ Encryption/decryption thread-safe
+- ✅ Compression/decompression thread-safe
+- ✅ Config updates atomic (no partial writes)
+
+---
+
+## 🔍 Day 17 Tasks - Detailed Breakdown
+
+### **Task 1: Code Review & Analysis (Morning - 2 hours)**
+
+**Goal:** Understand current implementation completely
+
+**KNOWN FROM ALONSO:**
+- Encryption: SHA256 (verify implementation details)
+- Key source: etcd-server generates and distributes
+- Compression: Unknown algorithm - FIND IN CODE
+- Order: Compress → Encrypt → Send (VERIFY THIS)
+- Configurable: Everything via JSON
+
+**Steps:**
+1. **Review etcd_client.cpp/hpp in RAG**
+   ```bash
+   cd /vagrant/rag
+   cat src/etcd_client.cpp | less
+   cat include/etcd_client.hpp | less
    ```
 
-3. **Integration (Day 2)**
-   - Update RAG to use shared library
-   - Update sniffer config to use etcd
-   - Update ml-detector config to use etcd
-   - Update firewall config to use etcd
+2. **Identify Key Functionality:**
+   - [ ] Connection to etcd-server (host:port)
+   - [ ] Key-value get/set operations
+   - [x] Encryption mechanism: SHA256 (confirm in code)
+   - [ ] Compression mechanism: FIND ALGORITHM (zlib? lz4? snappy?)
+   - [ ] Verify operation order: Compress → Encrypt → Send
+   - [ ] Key distribution: How does component receive key from etcd-server?
+   - [ ] Error handling
+   - [ ] Thread safety (mutexes?)
 
-**Estimated Time:** 2-3 days
+3. **Check Dependencies:**
+   ```bash
+   grep -r "etcd" /vagrant/rag/CMakeLists.txt
+   grep -r "crypto\|ssl\|SHA256" /vagrant/rag/CMakeLists.txt
+   grep -r "compress\|zlib\|lz4\|snappy" /vagrant/rag/CMakeLists.txt
+   ```
+
+4. **Trace Usage in RAG:**
+   ```bash
+   grep -r "EtcdClient\|etcd_client" /vagrant/rag/src/
+   grep -r "encrypt\|decrypt" /vagrant/rag/src/
+   grep -r "compress\|decompress" /vagrant/rag/src/
+   ```
+   - How does RAG initialize it?
+   - How does RAG receive encryption key from etcd-server?
+   - What configs does RAG store?
+   - How often does RAG read/write?
+
+5. **Document Findings:**
+   - Create `/vagrant/docs/ETCD_CLIENT_ANALYSIS.md`
+   - Document SHA256 encryption details
+   - Document compression algorithm found
+   - Document key distribution mechanism
+   - Document operation order verification
+   - Note any RAG-specific code that needs abstraction
+
+**Deliverables:**
+- ✅ Complete understanding of current code
+- ✅ Compression algorithm identified
+- ✅ Key distribution mechanism documented
+- ✅ Operation order verified (Compress → Encrypt → Send)
+- ✅ Thread safety status documented
+- ✅ Dependencies identified
+- ✅ Documentation of encryption/compression
 
 ---
 
-### **Priority 3: Watcher Unified Library**
+### **Task 2: Library Design (Afternoon - 2 hours)**
 
-**Goal:** Hot-reload config without restart
+**Goal:** Design clean, reusable API for all components
 
 **Architecture:**
 ```
-etcd (config changes) → Watcher → Apply Diff → Component (no restart)
+etcd-client (shared library)
+├── Core Functions:
+│   ├── connect(host, port)
+│   ├── set(key, value, encrypt, compress)
+│   ├── get(key, decrypt, decompress)
+│   ├── delete(key)
+│   ├── watch(key, callback)
+│   └── list(prefix)
+│
+├── Component Discovery:
+│   ├── register_component(name, config_json)
+│   ├── heartbeat(component_name)
+│   ├── get_component_status(name)
+│   └── list_components()
+│
+├── Utilities:
+│   ├── encrypt(data, key)
+│   ├── decrypt(data, key)
+│   ├── compress(data)
+│   ├── decompress(data)
+│   └── validate_json(json, schema)
+│
+└── Thread Safety:
+    ├── std::mutex for all operations
+    └── Connection pool (optional)
 ```
 
-**Implementation Plan:**
+**Design Decisions (Based on Alonso's Architecture):**
 
-1. **Watcher Core (Day 1)**
-   - File: `/vagrant/watcher/src/config_watcher.cpp`
-   - Watch etcd key changes
-   - Calculate diff (old vs new config)
-   - Validate new config before apply
+1. **Encryption Strategy (CONFIRMED):**
+   - [x] Algorithm: SHA256 (confirmed - ChaCha20 had C++ issues)
+   - [x] Key management: etcd-server GENERATES and DISTRIBUTES key
+   - [x] Key scope: SINGLE shared key for ALL components
+   - [x] Default: encrypt=true (configurable via JSON)
+   - [ ] Implementation details to verify in RAG code
+   - [ ] Key distribution protocol to design
 
-2. **Safe Apply (Day 2)**
-   - Apply changes atomically
-   - Rollback on validation failure
-   - Log all config changes
-   - Send metrics to RAG
+2. **Compression Strategy (TO IDENTIFY):**
+   - [ ] Find algorithm in RAG code (zlib? lz4? snappy?)
+   - [x] Order: MUST compress BEFORE encrypting
+   - [x] Configurable via JSON
+   - [ ] Threshold: Compress if size > X bytes? (TBD from code review)
+   - [x] Default: compress=true (configurable via JSON)
 
-3. **Component Integration (Day 3)**
-   - ml-detector: Update thresholds at runtime
-   - sniffer: Update fast detector rules
-   - firewall: Update ACL rules
-   - RAG command: "accelerate pipeline" (increase thresholds)
+3. **CRITICAL Operation Order (CONFIRMED):**
+   ```
+   WRITE: Data → Compress → Encrypt → etcd.set()
+   READ:  etcd.get() → Decrypt → Decompress → Data
+   
+   ⚠️ NEVER encrypt before compressing (size explosion!)
+   ```
 
-**RAG Commands:**
+4. **etcd-server Config Versioning (NEW REQUIREMENT):**
+   ```
+   /components/<name>/
+   ├── master_config      ← IMMUTABLE (original)
+   ├── active_config      ← MUTABLE (current, accepts commits)
+   ├── metadata
+   │   ├── version
+   │   ├── last_modified
+   │   └── modified_by
+   └── status
+   ```
+   - Master config: Never modified, rollback target
+   - Active config: Working copy, RAG can modify
+   - Rollback: Copy master → active
+
+5. **Key Distribution Protocol (TO DESIGN):**
+   ```
+   Component Registration:
+   1. Component → etcd-server: "Register: ml-detector"
+   2. etcd-server → Component: "Encryption key: <key>"
+   3. Component stores key in memory (NOT disk)
+   4. Component uses key for all etcd operations
+   
+   Key Rotation (Phase 2B - Nice to Have):
+   1. etcd-server generates new key
+   2. etcd-server broadcasts to all components
+   3. Components maintain buffer: [old_key, new_key]
+   4. Transition period: Accept both keys
+   5. After timeout: Remove old key
+   ```
+
+3. **API Style:**
+   ```cpp
+   // Option A: Explicit flags
+   client.set("key", "value", /*encrypt=*/true, /*compress=*/true);
+   
+   // Option B: Builder pattern
+   client.set("key", "value")
+         .with_encryption()
+         .with_compression()
+         .execute();
+   
+   // Option C: Config object
+   EtcdSetOptions opts;
+   opts.encrypt = true;
+   opts.compress = true;
+   client.set("key", "value", opts);
+   ```
+
+4. **Component Config Format:**
+   ```json
+   {
+     "component": "ml-detector",
+     "node_id": "detector-01",
+     "version": "1.0.0",
+     "config_path": "/vagrant/ml-detector/config/ml_detector_config.json",
+     "status": "RUNNING",
+     "last_heartbeat": "2025-12-17T10:30:00Z",
+     "capabilities": ["ddos", "ransomware", "traffic", "internal"]
+   }
+   ```
+
+**Deliverables:**
+- ✅ API specification document
+- ✅ Class diagram
+- ✅ Component discovery protocol
+- ✅ Encryption/compression decisions
+
+---
+
+### **Task 3: Library Extraction (Next Day - 3-4 hours)**
+
+**Goal:** Create `/vagrant/etcd-client/` as standalone library
+
+**Directory Structure:**
+```
+/vagrant/etcd-client/
+├── CMakeLists.txt              ← Build configuration
+├── include/
+│   └── etcd_client.hpp         ← Public API
+├── src/
+│   ├── etcd_client.cpp         ← Core implementation
+│   ├── encryption.cpp          ← Encryption utilities
+│   └── compression.cpp         ← Compression utilities
+├── tests/
+│   ├── test_basic.cpp          ← Basic get/set tests
+│   ├── test_encryption.cpp     ← Encryption tests
+│   └── test_discovery.cpp      ← Component discovery tests
+└── README.md                   ← Usage documentation
+```
+
+**Steps:**
+
+1. **Create Directory Structure:**
+   ```bash
+   mkdir -p /vagrant/etcd-client/{include,src,tests}
+   ```
+
+2. **Extract Code from RAG:**
+   ```bash
+   # Copy existing code as starting point
+   cp /vagrant/rag/src/etcd_client.cpp /vagrant/etcd-client/src/
+   cp /vagrant/rag/include/etcd_client.hpp /vagrant/etcd-client/include/
+   ```
+
+3. **Remove RAG-Specific Code:**
+   - Strip out RAG command handling
+   - Keep only generic etcd operations
+   - Abstract away hardcoded RAG paths
+
+4. **Add Component Discovery:**
+   ```cpp
+   bool EtcdClient::register_component(
+       const std::string& component_name,
+       const std::string& config_json_path
+   ) {
+       // Read JSON config
+       // Store in etcd: /components/<name>/config
+       // Store metadata: /components/<name>/metadata
+       // Set initial status: STARTING
+   }
+   
+   void EtcdClient::heartbeat(const std::string& component_name) {
+       // Update: /components/<name>/last_heartbeat
+       // Update: /components/<name>/status = RUNNING
+   }
+   ```
+
+5. **Create CMakeLists.txt:**
+   ```cmake
+   project(etcd-client)
+   
+   add_library(etcd_client SHARED
+       src/etcd_client.cpp
+       src/encryption.cpp
+       src/compression.cpp
+   )
+   
+   target_include_directories(etcd_client PUBLIC include)
+   target_link_libraries(etcd_client
+       etcd-cpp-api
+       crypto
+       ssl
+       z  # zlib for compression
+   )
+   ```
+
+6. **Write Tests:**
+   ```cpp
+   // test_basic.cpp
+   TEST(EtcdClient, BasicSetGet) {
+       EtcdClient client("127.0.0.1", 2379);
+       client.set("test_key", "test_value");
+       auto result = client.get("test_key");
+       ASSERT_EQ(result, "test_value");
+   }
+   ```
+
+**Deliverables:**
+- ✅ `/vagrant/etcd-client/` library created
+- ✅ Builds successfully: `libetcd_client.so`
+- ✅ Tests pass
+- ✅ No RAG-specific code remains
+
+---
+
+### **Task 4: Component Integration (Next Day - 3-4 hours)**
+
+**Goal:** Update all components to use shared library
+
+**Components to Update:**
+1. ✅ RAG (refactor existing usage)
+2. 🆕 Sniffer (add etcd support)
+3. 🆕 ml-detector (add etcd support)
+4. 🆕 Firewall (add etcd support)
+
+**Integration Pattern (same for all):**
+
+```cpp
+// In component initialization
+#include <etcd_client.hpp>
+
+int main() {
+    // Connect to etcd
+    EtcdClient etcd("127.0.0.1", 2379);
+    
+    // Register component
+    etcd.register_component("sniffer", "/vagrant/sniffer/config/config.json");
+    
+    // Start heartbeat thread
+    std::thread heartbeat_thread([&etcd]() {
+        while (running) {
+            etcd.heartbeat("sniffer");
+            std::this_thread::sleep_for(std::chrono::seconds(30));
+        }
+    });
+    
+    // Main loop...
+    
+    // On shutdown
+    etcd.set("/components/sniffer/status", "STOPPED");
+}
+```
+
+**CMakeLists.txt Updates:**
+```cmake
+# Each component's CMakeLists.txt
+target_link_libraries(sniffer
+    etcd_client  # ← NEW
+    # ... other libs
+)
+```
+
+**Deliverables:**
+- ✅ RAG refactored to use library
+- ✅ Sniffer discovers itself to etcd
+- ✅ ml-detector discovers itself to etcd
+- ✅ Firewall discovers itself to etcd
+- ✅ All components build successfully
+
+---
+
+### **Task 5: Makefile & Monitoring Updates (Evening - 1-2 hours)**
+
+**Goal:** Integrate etcd-server into standard workflow
+
+**Makefile Changes:**
+
+```makefile
+# Add etcd-client library build
+.PHONY: etcd-client
+etcd-client:
+	@echo "🔨 Building etcd-client library..."
+	cd etcd-client && mkdir -p build && cd build && \
+	cmake .. && make
+	@echo "✅ libetcd_client.so built"
+
+# Update run-lab-dev to start etcd-server first
+.PHONY: run-lab-dev
+run-lab-dev: etcd-server etcd-client
+	@echo "🚀 Starting Full Lab (with etcd-server)..."
+	@echo "Step 1: Starting etcd-server..."
+	vagrant ssh defender -c "cd /vagrant/etcd-server && ./etcd-server &"
+	@sleep 5
+	@echo "Step 2: Starting sniffer..."
+	vagrant ssh defender -c "cd /vagrant/sniffer && sudo ./cpp_sniffer config/config.json &"
+	@sleep 3
+	@echo "Step 3: Starting ml-detector..."
+	vagrant ssh defender -c "cd /vagrant/ml-detector && ./build/ml-detector config/ml_detector_config.json &"
+	@sleep 3
+	@echo "Step 4: Starting firewall..."
+	vagrant ssh defender -c "cd /vagrant/firewall && ./firewall-agent &"
+	@echo "✅ Lab running with etcd coordination"
+
+# Add etcd status check
+.PHONY: status-etcd
+status-etcd:
+	@echo "📊 etcd-server Status:"
+	@vagrant ssh defender -c "curl -s http://127.0.0.1:2379/v2/keys/components | jq '.'"
+```
+
+**Monitor Script Updates:**
+
 ```bash
-# Increase sensitivity (more detections)
-rag accelerate
+# scripts/monitor_day17.sh
 
-# Decrease sensitivity (fewer detections)
-rag decelerate
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║  ML Defender - Day 17 Monitor (with etcd)             ║"
+echo "╚════════════════════════════════════════════════════════╝"
 
-# Auto-tune based on hardware
-rag optimize --cpu 80 --ram 4096 --temp 65
+# Check etcd-server
+echo "🔍 etcd-server:"
+curl -s http://127.0.0.1:2379/health || echo "❌ DOWN"
+
+# Check registered components
+echo ""
+echo "📋 Registered Components:"
+curl -s http://127.0.0.1:2379/v2/keys/components?recursive=true | \
+  jq -r '.node.nodes[]? | .key + " = " + .value' || echo "None"
+
+# Check component heartbeats
+echo ""
+echo "💓 Component Heartbeats:"
+for component in sniffer ml-detector firewall rag; do
+    last_hb=$(curl -s "http://127.0.0.1:2379/v2/keys/components/$component/last_heartbeat" | jq -r '.node.value' 2>/dev/null)
+    if [ -n "$last_hb" ]; then
+        echo "  ✅ $component: $last_hb"
+    else
+        echo "  ❌ $component: Not registered"
+    fi
+done
+
+# Standard monitoring continues...
+echo ""
+echo "📊 Artifacts: $(ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ 2>/dev/null | wc -l)"
+# ... rest of monitoring
 ```
 
-**Estimated Time:** 3-4 days
+**Deliverables:**
+- ✅ Makefile targets updated
+- ✅ Monitor script shows etcd status
+- ✅ `make run-lab-dev` starts etcd first
+- ✅ `make status-etcd` shows components
 
 ---
 
-## 📂 Key Files & Locations
+## 🏢 etcd-server High Availability Architecture
 
-### **RAGLogger Implementation**
+### **Why 3-Node Quorum Even for Domestic?**
+
+**Alonso's Rationale:**
+- Process is VERY lightweight (~1MB per node)
+- Can afford HA even on Raspberry Pi
+- Eliminates single point of failure
+- No excuse NOT to do it
+
+### **Architecture:**
 ```
-/vagrant/ml-detector/src/rag_logger.cpp       # Main implementation
-/vagrant/ml-detector/include/rag_logger.hpp   # Header
-/vagrant/ml-detector/config/ml_detector_config.json  # Config
+┌──────────────────────────────────────────────────┐
+│  etcd-server Cluster (3 nodes, quorum-based)     │
+│                                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ etcd-01  │  │ etcd-02  │  │ etcd-03  │       │
+│  │ (Leader) │  │(Follower)│  │(Follower)│       │
+│  │ ~1MB RAM │  │ ~1MB RAM │  │ ~1MB RAM │       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
+│       └────────┬────┴──────────────┘             │
+│                │ Raft Consensus                   │
+│                ▼                                  │
+│  ┌─────────────────────────────────────────┐     │
+│  │  Shared State:                          │     │
+│  │  • Component configs (master + active)  │     │
+│  │  • Encryption keys                      │     │
+│  │  • Heartbeat status                     │     │
+│  │  • Metadata                             │     │
+│  └─────────────────────────────────────────┘     │
+└──────────────────────────────────────────────────┘
+                     │
+                     ▼
+    ┌────────────────┴────────────────┐
+    │                                  │
+    ▼                                  ▼
+┌─────────┐  ┌──────────┐  ┌─────────┐  ┌─────┐
+│ Sniffer │  │ml-detector│  │Firewall │  │ RAG │
+│(client) │  │ (client)  │  │(client) │  │(cli)│
+└─────────┘  └──────────┘  └─────────┘  └─────┘
 ```
 
-### **Artifacts Storage**
-```
-/vagrant/logs/rag/artifacts/YYYY-MM-DD/
-  event_<id>.pb      # Protobuf binary (authoritative)
-  event_<id>.json    # Human-readable (authoritative)
+### **Benefits:**
+- ✅ **Automatic failover:** If leader dies, election in <1s
+- ✅ **No data loss:** Quorum ensures consistency
+- ✅ **Zero-downtime updates:** Rolling restart
+- ✅ **Read scaling:** Followers can serve reads
 
-/vagrant/logs/rag/events/YYYY-MM-DD.jsonl  # Consolidated (best-effort)
-```
+### **Resource Cost:**
+- 3 nodes × 1MB RAM = 3MB total
+- Negligible CPU (<1% per node)
+- Tiny network overhead (heartbeats)
 
-### **Test Scripts**
-```
-/vagrant/scripts/test_rag_logger.sh           # End-to-end test
-/vagrant/scripts/run_lab_dev.sh               # Start lab
-/vagrant/scripts/monitor_day13_test.sh        # Real-time monitoring
-```
-
-### **Compilation**
-```
-Makefile targets:
-  make detector-debug   # ✅ STABLE (use this)
-  make detector         # ❌ CRASHES (don't use until race fixed)
-```
-
----
-
-## 🐛 Known Issues & Workarounds
-
-### **Issue 1: RAGLogger Race Condition**
-- **Symptom:** ml-detector crashes after 1-2 min (release builds)
-- **Workaround:** Compile with debug flags (`make detector-debug`)
-- **Fix Required:** ThreadSanitizer investigation (Priority 0)
-
-### **Issue 2: .jsonl Flush Timing**
-- **Symptom:** Consolidated log missing events after restart
-- **Workaround:** Use artifacts directory, not .jsonl
-- **Status:** Architectural decision - artifacts = source of truth
-
-### **Issue 3: make status-lab False Positives**
-- **Symptom:** Shows "RUNNING" when detector is dead
-- **Cause:** `pgrep -f ml-detector` matches own grep process
-- **Workaround:** Use `ps aux | grep ml-detector | grep -v grep`
-
----
-
-## 🧪 Testing Protocol
-
-### **Before Starting Work**
+### **Implementation (Phase 2A):**
 ```bash
-# 1. Verify VMs running
-vagrant status
+# Start 3-node cluster
+./etcd-server --name=etcd-01 --initial-cluster=etcd-01=...,etcd-02=...,etcd-03=...
+./etcd-server --name=etcd-02 --initial-cluster=...
+./etcd-server --name=etcd-03 --initial-cluster=...
 
-# 2. Clean previous logs
-rm -rf logs/rag/artifacts/$(date +%Y-%m-%d)
-rm -f logs/rag/events/$(date +%Y-%m-%d).jsonl
+# Components connect to any node (automatic failover)
+EtcdClient client({"127.0.0.1:2379", "127.0.0.1:2380", "127.0.0.1:2381"});
+```
 
-# 3. Start fresh lab
-make kill-lab
-sleep 3
+### **Deployment Modes:**
+
+**Domestic (Home Lab):**
+- 3 nodes on same Raspberry Pi (different ports)
+- Ports: 2379, 2380, 2381
+
+**Enterprise:**
+- 3 physical nodes for true HA
+- Each on separate hardware
+- Can scale to 5 or 7 nodes for geo-distribution
+
+---
+
+## 🔬 Verification & Validation
+
+### **Smoke Tests (End of Day 17)**
+
+```bash
+# 1. Library builds
+cd /vagrant/etcd-client
+make
+ls -lh build/libetcd_client.so  # Should exist
+
+# 2. Components link against it
+cd /vagrant/ml-detector
+make clean && make
+ldd build/ml-detector | grep etcd_client  # Should show library
+
+# 3. etcd-server running
+curl http://127.0.0.1:2379/health
+# Expected: {"health":"true"}
+
+# 4. Components register
 make run-lab-dev
-sleep 15
+sleep 30
+curl -s http://127.0.0.1:2379/v2/keys/components | jq '.node.nodes | length'
+# Expected: 4 (sniffer, ml-detector, firewall, rag)
 
-# 4. Verify components alive
-vagrant ssh defender -c "ps aux | grep -E 'ml-detector|sniffer|firewall' | grep -v grep"
+# 5. Heartbeats working
+sleep 60
+curl -s http://127.0.0.1:2379/v2/keys/components/ml-detector/last_heartbeat | jq -r '.node.value'
+# Expected: Recent timestamp
+
+# 6. Config uploaded
+curl -s http://127.0.0.1:2379/v2/keys/components/ml-detector/config | jq '.'
+# Expected: JSON config visible (encrypted if configured)
 ```
 
-### **After Changes**
-```bash
-# 1. Rebuild affected component
-make detector-debug  # or make sniffer, etc.
+### **Success Criteria**
 
-# 2. Restart lab
-make kill-lab
-make run-lab-dev
+- ✅ `libetcd_client.so` builds without errors
+- ✅ All components build with library
+- ✅ etcd-server starts in pipeline
+- ✅ 4 components register themselves
+- ✅ Heartbeats every 30 seconds
+- ✅ Configs uploaded and retrievable
+- ✅ Encryption/compression working (if enabled)
+- ✅ Monitor script shows etcd status
+- ✅ Zero runtime errors
 
-# 3. Run validation test
-make test-rag-small
+---
 
-# 4. Check for crashes
-vagrant ssh defender -c 'start=$(date +%s); while pgrep ml-detector > /dev/null 2>&1; do elapsed=$(($(date +%s) - start)); printf "\r⏱️  Uptime: %02d:%02d" $((elapsed/60)) $((elapsed%60)); sleep 1; done'
-# Target: 10+ minutes without crash
+## 📚 Key Files to Review
 
-# 5. Verify artifacts
-vagrant ssh defender -c "ls -lh /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d) | wc -l"
-# Should show >100 files
+### **Existing Code (RAG):**
+```
+/vagrant/rag/src/etcd_client.cpp         ← Main implementation
+/vagrant/rag/include/etcd_client.hpp     ← API definition
+/vagrant/rag/src/rag_command_manager.cpp ← Usage example
+/vagrant/rag/CMakeLists.txt              ← Build dependencies
+```
+
+### **New Files to Create:**
+```
+/vagrant/etcd-client/CMakeLists.txt      ← Library build
+/vagrant/etcd-client/include/etcd_client.hpp
+/vagrant/etcd-client/src/etcd_client.cpp
+/vagrant/etcd-client/src/encryption.cpp  ← If separate
+/vagrant/etcd-client/src/compression.cpp ← If separate
+/vagrant/etcd-client/tests/test_basic.cpp
+/vagrant/docs/ETCD_CLIENT_ANALYSIS.md    ← Analysis doc
+/vagrant/docs/ETCD_CLIENT_API.md         ← API reference
+```
+
+### **Files to Modify:**
+```
+/vagrant/Makefile                        ← Add etcd targets
+/vagrant/scripts/monitor_day17.sh        ← New monitoring
+/vagrant/sniffer/CMakeLists.txt          ← Link etcd_client
+/vagrant/ml-detector/CMakeLists.txt      ← Link etcd_client
+/vagrant/firewall/CMakeLists.txt         ← Link etcd_client
+/vagrant/rag/CMakeLists.txt              ← Use shared lib
 ```
 
 ---
 
-## 🎯 Tomorrow's Suggested Plan
+## 🎯 Critical Questions to Answer
 
-### **Morning Session (3-4 hours)**
+### **About Current Implementation:**
+1. [x] Does RAG's etcd_client use SHA256 for encryption? (CONFIRMED by Alonso)
+2. ❓ What compression algorithm? (zlib? lz4? snappy?) - FIND IN CODE
+3. [x] Is encryption/compression configurable? (YES - via JSON)
+4. [x] Where is the encryption key stored? (Generated by etcd-server, sent to components)
+5. ❓ Is the code thread-safe? - VERIFY IN CODE
+6. ❓ What etcd C++ library is used? (etcd-cpp-apiv3?) - VERIFY
+7. [x] Operation order? (Compress → Encrypt → Send) - CONFIRMED
 
-Vamos a revisar los dos ficheros del RagLogger y vamos a encontrar la condicion de carrera. Ahora mismo en cuanto
-te pase los dos ficheros
-**Option A: Fix Race Condition (Conservative)**
-1. Compile with ThreadSanitizer
-2. Run 30-minute stress test
-3. Analyze TSan output
-4. Identify problematic mutex/lock
-5. Document findings
+### **About New Design:**
+1. [x] Should encryption be enabled by default? (YES - configurable via JSON)
+2. [x] Should we use the same encryption key for all components? (YES - single shared key)
+3. [x] Should component configs be encrypted in etcd? (YES - always)
+4. ❓ How to handle etcd-server failures? (retry? local cache?) - TO DESIGN
+5. [x] Should we add config versioning? (YES - master + active copies)
+6. ❓ Key rotation mechanism? (Phase 2B - buffer strategy designed, but optional)
 
-**Option B: Start FAISS (Aggressive)**
-1. Install FAISS C++ in VM
-2. Create hello-world embedding test
-3. Benchmark 1K event embeddings
-4. Design FAISS manager class
+### **About Integration:**
+1. ❓ Do all components need heartbeats? (YES - but define interval)
+2. ❓ What happens if a component misses heartbeat? (Alert? Auto-restart?)
+3. ❓ Should we implement leader election? (For multiple ml-detectors in HA)
+4. ❓ Should we add config change notifications? (YES - watcher library Phase 2A.4)
 
-### **Afternoon Session (3-4 hours)**
-
-**If Option A (Race Fix):**
-- Implement mutex fix
-- Validate with ThreadSanitizer
-- Test with release flags
-- 8-hour stress test overnight
-
-**If Option B (FAISS):**
-- Implement artifact watcher
-- Extract text from .json files
-- Generate embeddings
-- Insert into FAISS index
+### **About etcd-server Architecture:**
+1. [x] Should we support HA mode? (YES - 3-node quorum even domestically)
+2. [x] Config versioning strategy? (Master immutable + Active mutable)
+3. ❓ How does etcd-server detect misconfiguration? (Design validation logic)
+4. ❓ How does etcd-server alert via RAG? (Define alert protocol)
 
 ---
 
-## 💡 Strategic Considerations
+## 💡 Design Considerations
 
-### **Why FAISS First (Recommended)**
+### **Security:**
+- 🔐 Encryption for sensitive configs (API keys, credentials)
+- 🔓 Plain text for non-sensitive (thresholds, timeouts)
+- 🔑 Key rotation strategy (future Phase 2B)
+- 🔒 TLS for etcd communication (optional Phase 3)
 
-**Pros:**
-- RAG ingestion is THE goal of Phase 2
-- Race condition workaround is stable (debug builds work)
-- FAISS enables semantic search → immediate value
-- Can fix race condition in parallel
+### **Performance:**
+- ⚡ Minimize etcd calls (cache configs locally)
+- ⚡ Async heartbeats (don't block main thread)
+- ⚡ Batch updates when possible
+- ⚡ Connection pooling (if needed)
 
-**Cons:**
-- ml-detector still uses debug flags (slower)
-- Production deployment delayed until race fixed
+### **Reliability:**
+- 🔄 Retry on connection failure (exponential backoff)
+- 💾 Local config cache (work offline if etcd down)
+- 🚨 Health checks before critical operations
+- 📝 Log all etcd errors
 
-### **Why Race Condition First (Alternative)**
+### **Maintainability:**
+- 📖 Clear API documentation
+- 🧪 Comprehensive tests
+- 🔍 Debugging utilities (dump all keys)
+- 📊 Metrics (calls/sec, errors, latency)
 
-**Pros:**
-- Production-ready ml-detector sooner
-- Can use optimized flags (`-O3`)
-- Eliminates technical debt
-
-**Cons:**
-- May take 1-2 days to diagnose
-- FAISS delayed
-- Workaround is already stable
-
-### **Alonso's Decision (From Today):**
-> "Es mejor saber, que no saber... pero ahora lo importante es tener
-> los logs agregados para la fase del RAG. La configuración del compilador
-> establece una condición durable y estable. PERFECTO!"
-
-**Interpretation:** FAISS first, race condition later. We have stable logs now.
-
----
-
-## 📚 Reference Materials
-
-### **FAISS Resources**
-- GitHub: https://github.com/facebookresearch/faiss
-- C++ Tutorial: https://github.com/facebookresearch/faiss/wiki/Getting-started
-- Embeddings: sentence-transformers or ONNX models
-
-### **ThreadSanitizer (If Needed)**
-- Docs: https://clang.llvm.org/docs/ThreadSanitizer.html
-- Compile: `-fsanitize=thread -O1 -g`
-- Run: Detector will print race conditions to stderr
-
-### **etcd C++ Client**
-- GitHub: https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3
-- Already integrated in RAG system
-Mejor te enseño la implementacion actual del etcd-client en el rag, no recuerdo muchos detalles de su implementacion 
-- actual.
 ---
 
 ## 🤝 Collaboration Protocol
 
-When working with other AI agents:
+### **For AI Assistants:**
+1. **Read this entire prompt** before starting
+2. **Check existing RAG code** first (don't reinvent)
+3. **Ask Alonso** before major design decisions
+4. **Document findings** as you go
+5. **Test incrementally** (don't code everything then test)
 
-1. **Read this prompt completely** before starting
-2. **Check current state** (files, logs, component status)
-3. **Follow testing protocol** (build, test, validate)
-4. **Document findings** in code comments + commit messages
-5. **Update this prompt** if priorities change
-
-### **Communication with Alonso**
+### **Communication with Alonso:**
 
 **He values:**
-- ✅ Scientific honesty (report reality, not ideals)
-- ✅ Via Appia Quality (build to last decades)
-- ✅ Funciona > Perfecto (working beats perfect)
-- ✅ Clear explanations in Spanish/English mix
-- ✅ Direct answers without excessive hedging
+- ✅ Reuse existing code (RAG already has encryption/compression)
+- ✅ Simple design > Complex design
+- ✅ Working > Perfect
+- ✅ Incremental progress (commit often)
+- ✅ Clear explanations (English + Spanish OK)
 
 **He dislikes:**
-- ❌ Over-apologizing for bugs (they're data, not failures)
-- ❌ Excessive safety disclaimers
+- ❌ Rewriting working code unnecessarily
+- ❌ Over-engineering (KISS principle)
+- ❌ Breaking existing functionality
 - ❌ Vague "might" language (be direct)
-- ❌ Making decisions without consulting him
 
 ---
 
-## 🎆 Vision for Phase 2
+## 🌙 Overnight Lab Status
 
-**End State (4-6 weeks):**
+**Lab Started:** Night of Dec 16  
+**Expected State (Morning Dec 17):**
+- ✅ ml-detector running for 8+ hours
+- ✅ Large JSONL file generated (5K-10K+ lines)
+- ✅ Artifacts directory with thousands of events
+- ✅ Memory stable, no leaks
+- ✅ Zero crashes (race condition fixed)
 
-```
-┌────────────────────────────────────────────────┐
-│  ML Defender - Production-Ready System         │
-│                                                │
-│  1. ✅ RAGLogger: 83-field artifacts           │
-│  2. 🔄 FAISS: Semantic search over events      │
-│  3. 🔄 RAG Commands: Natural language control  │
-│  4. 🔄 Hot-Reload: Zero-downtime updates       │
-│  5. 🔄 Auto-Tuning: Hardware-aware optimization│
-│  6. 🔄 Distributed: Multi-node coordination    │
-│  7. 📝 Paper: Academic publication submitted   │
-│                                                │
-│  Deployment: Raspberry Pi 5 ($35-100) to      │
-│              Enterprise servers                │
-│  Target: Hospitals, schools, SMBs              │
-│  Mission: Democratize network security         │
-└────────────────────────────────────────────────┘
-```
-
----
-
-## 🚀 Let's Build Tomorrow
-
-**Suggested First Command:**
+**Morning Check Commands:**
 ```bash
-vagrant up defender && make status-lab
+# Check uptime
+vagrant ssh defender -c "ps -p \$(pgrep ml-detector) -o etime="
+
+# Check artifacts
+vagrant ssh defender -c "ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l"
+
+# Check JSONL
+vagrant ssh defender -c "wc -l /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl"
+
+# Verify no crashes
+vagrant ssh defender -c "tail -50 /vagrant/ml-detector/logs/ml_detector.log | grep -i crash"
 ```
 
-**Then decide:**
-- [ ] Option A: Install FAISS, start integration
-- [ ] Option B: ThreadSanitizer investigation
-- [ ] Option C: Alonso's call based on morning priorities
+**If lab crashed overnight:**
+- Check logs for root cause
+- Document in Day 17 report
+- Fix if needed before starting etcd work
 
-**Compañeros del metal y del carbono** - Phase 2A begins! 🔷✨
+---
+
+## 📋 Day 17 Deliverables Checklist
+
+### **MUST HAVE (Priority P0):**
+- [ ] RAG etcd_client code reviewed
+- [ ] Compression algorithm identified (zlib/lz4/snappy)
+- [ ] SHA256 encryption verified in code
+- [ ] Operation order verified (Compress → Encrypt → Send)
+- [ ] ETCD_CLIENT_ANALYSIS.md created
+- [ ] API specification written
+- [ ] Class diagram created
+- [ ] Key distribution protocol designed
+
+### **SHOULD HAVE (Priority P1):**
+- [ ] `/vagrant/etcd-client/` library structure created
+- [ ] Encryption/compression decisions documented
+- [ ] Component discovery protocol designed
+- [ ] Thread-safety strategy defined
+- [ ] Config versioning (master + active) designed
+
+### **NICE TO HAVE (Can defer to Day 18):**
+- [ ] Library extracted from RAG
+- [ ] Tests written
+- [ ] One component integrated
+- [ ] Makefile updated
+
+### **DEFERRED TO PHASE 2B (Acknowledged as overkill for now):**
+- [ ] Key rotation with time windows
+- [ ] Buffer-based key transition
+- [ ] 3-node etcd-server HA (can start with single node)
+- [ ] Misconfiguration auto-detection
+- [ ] Automatic config push from etcd-server
+
+**Alonso's Guidance:**
+> "Es un nice to have y probablemente overkill para el momento en el que estamos."
+
+**Translation:** Some features (like time-windowed key rotation) are nice but overkill for current phase. Focus on solid foundation first.
+
+---
+
+## 🎯 Success Definition
+
+**Day 17 is successful if:**
+1. ✅ We understand RAG's etcd_client completely
+2. ✅ We have a clear design for shared library
+3. ✅ We've started extraction (even if not complete)
+4. ✅ We have a plan for Day 18 implementation
+5. ✅ Overnight lab data is validated
+
+**Bonus success:**
+- ✅ Library extracted and building
+- ✅ One component integrated (e.g., RAG refactored)
+- ✅ Tests written and passing
+
+---
+
+## 🚀 After Day 17
+
+**Day 18-19: Complete Integration**
+- Finish library implementation
+- Integrate all components
+- Update monitoring
+- Full system test
+
+**Day 20-23: FAISS Integration**
+- Semantic search over artifacts
+- Natural language queries
+- Vector DB implementation
+
+**Day 24+: Watcher + Academic Paper**
+- Hot-reload config changes
+- Documentation for publication
+- Multi-agent attribution
+
+---
+
+## 💬 Quick Reference
+
+**etcd-server endpoints:**
+```bash
+# Health check
+curl http://127.0.0.1:2379/health
+
+# List all keys
+curl http://127.0.0.1:2379/v2/keys/?recursive=true
+
+# Get specific key
+curl http://127.0.0.1:2379/v2/keys/components/ml-detector/config
+
+# Set key
+curl -X PUT http://127.0.0.1:2379/v2/keys/test -d value="hello"
+
+# Delete key
+curl -X DELETE http://127.0.0.1:2379/v2/keys/test
+```
+
+**Component config paths:**
+```
+/vagrant/sniffer/config/config.json
+/vagrant/ml-detector/config/ml_detector_config.json
+/vagrant/firewall/config/firewall_config.json
+/vagrant/rag/config/rag_config.json
+```
+
+---
+
+## 🏛️ Via Appia Quality Reminder
+
+> "Smooth is fast. Base sólida primero, optimizaciones después.  
+> Código reutilizable > Código duplicado.  
+> Una librería compartida bien hecha > Cuatro implementaciones mediocres."
+
+---
+
+## 💬 Alonso's Vision (Dec 16, 2025)
+
+> "Estamos construyendo un pedazo de beta con muchísimas características que  
+> jamás he visto en una beta. Pero reconozco que nos estamos quedando a gusto  
+> y estamos desarrollando lo que siempre he tenido en mente."
+
+**Translation:** We're building an amazing beta with features rarely seen in betas.
+We're enjoying the process and building what I've always envisioned.
+
+**Key Insights:**
+- ✅ This is MORE than a typical beta
+- ✅ Features are ambitious but intentional
+- ✅ We're building the vision, not just a prototype
+- ✅ Team (Alonso + AI collaborators) working well together
+
+**Scope Acknowledgment:**
+- Some features are "nice to have" (key rotation with time windows)
+- Some features are "overkill for now" (but aligned with vision)
+- We're allowed to dream big AND execute smart
+- Priority is: Solid foundation → Then optimization
+
+**Development Philosophy:**
+- Build what's needed for production
+- Don't cut corners on architecture
+- But don't over-engineer Phase 1
+- Some features deferred to Phase 2B/3 (OK!)
+
+**This prompt's goal:**
+- Extract etcd-client (essential for distributed system)
+- Keep it simple (KISS)
+- But design it right (Via Appia Quality)
+- No rush - get it working, then get it perfect
+
+---
+
+**Ready to start Day 17!** 🔷✨
+
+**First command:**
+```bash
+cd /vagrant/rag
+cat src/etcd_client.cpp | less
+# Let's see what we have to work with
+```
 
 ---
 
 **End of Continuity Prompt**  
-**Next Update:** After completing Priority 0 or Priority 1
+**Next Update:** After Day 17 etcd-client analysis + design complete
