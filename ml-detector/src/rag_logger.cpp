@@ -1,6 +1,11 @@
 // rag_logger.cpp - RAG Event Logger Implementation
-// Day 14 Implementation - December 2025
+// Day 16 - RACE CONDITION FIX Applied
 // Authors: Alonso Isidoro Roman + Claude (Anthropic)
+//
+// CHANGES from Day 14:
+// - check_rotation() moved INSIDE write_jsonl() critical section
+// - Added check_rotation_locked() and rotate_logs_locked()
+// - Eliminates race conditions on current_date_, current_log_, events_in_current_file_
 
 #include "rag_logger.hpp"
 #include <fstream>
@@ -67,7 +72,7 @@ bool RAGLogger::log_event(const protobuf::NetworkSecurityEvent& event,
         // Build JSON record
         auto json_record = build_json_record(event, context);
 
-        // Write to log (thread-safe)
+        // Write to log (thread-safe) - rotation check happens INSIDE
         bool success = write_jsonl(json_record);
 
         if (success) {
@@ -84,8 +89,7 @@ bool RAGLogger::log_event(const protobuf::NetworkSecurityEvent& event,
                 save_artifacts(event, json_record);
             }
 
-            // Check rotation
-            check_rotation();
+            // FIX: Removed check_rotation() call here - now happens inside write_jsonl()
         }
 
         return success;
@@ -105,26 +109,7 @@ void RAGLogger::flush() {
 
 void RAGLogger::rotate_logs() {
     std::lock_guard<std::mutex> lock(mutex_);
-
-    std::string new_date = get_date_string();
-    if (new_date != current_date_) {
-        // Date changed, rotate
-        logger_->info("📅 Date changed, rotating RAG log file");
-
-        if (current_log_.is_open()) {
-            current_log_.close();
-        }
-
-        current_date_ = new_date;
-        current_log_path_ = get_current_log_path();
-        current_log_.open(current_log_path_, std::ios::app);
-
-        events_in_current_file_ = 0;
-
-        if (!current_log_.is_open()) {
-            logger_->error("Failed to open new RAG log file: {}", current_log_path_);
-        }
-    }
+    rotate_logs_locked();
 }
 
 nlohmann::json RAGLogger::get_statistics() const {
@@ -367,6 +352,12 @@ bool RAGLogger::write_jsonl(const nlohmann::json& record) {
     try {
         current_log_ << record.dump() << "\n";
         events_in_current_file_++;
+
+        // FIX: Check rotation INSIDE the critical section
+        // This ensures current_date_, current_log_, and events_in_current_file_
+        // are all accessed atomically
+        check_rotation_locked();
+
         return true;
     } catch (const std::exception& e) {
         logger_->error("Failed to write JSON record: {}", e.what());
@@ -411,11 +402,14 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
     }
 }
 
-void RAGLogger::check_rotation() {
+// FIX: New function that assumes mutex_ is already held
+void RAGLogger::check_rotation_locked() {
+    // PRECONDITION: mutex_ must be held by caller
+
     // Check if date changed
     std::string new_date = get_date_string();
     if (new_date != current_date_) {
-        rotate_logs();
+        rotate_logs_locked();
         return;
     }
 
@@ -423,7 +417,32 @@ void RAGLogger::check_rotation() {
     if (events_in_current_file_ >= config_.max_events_per_file) {
         logger_->info("RAG log file reached max events ({}), rotating",
                      config_.max_events_per_file);
-        rotate_logs();
+        rotate_logs_locked();
+    }
+}
+
+// FIX: New function that assumes mutex_ is already held
+void RAGLogger::rotate_logs_locked() {
+    // PRECONDITION: mutex_ must be held by caller
+
+    std::string new_date = get_date_string();
+    if (new_date != current_date_) {
+        // Date changed, rotate
+        logger_->info("📅 Date changed, rotating RAG log file");
+
+        if (current_log_.is_open()) {
+            current_log_.close();
+        }
+
+        current_date_ = new_date;
+        current_log_path_ = get_current_log_path();
+        current_log_.open(current_log_path_, std::ios::app);
+
+        events_in_current_file_ = 0;
+
+        if (!current_log_.is_open()) {
+            logger_->error("Failed to open new RAG log file: {}", current_log_path_);
+        }
     }
 }
 

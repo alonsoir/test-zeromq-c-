@@ -1,6 +1,7 @@
 // rag_logger.hpp - RAG Event Logger Header
-// Day 14 Implementation - December 2025
+// Day 16 - RACE CONDITION FIX Applied
 // Authors: Alonso Isidoro Roman + Claude (Anthropic)
+// Changes: Moved rotation check inside critical section
 
 #pragma once
 
@@ -123,7 +124,10 @@ private:
     bool write_jsonl(const nlohmann::json& record);
     void save_artifacts(const protobuf::NetworkSecurityEvent& event,
                        const nlohmann::json& json_record);
-    void check_rotation();
+
+    // FIX: New functions that assume mutex is already held
+    void check_rotation_locked();
+    void rotate_logs_locked();
 
     // Utilities
     void ensure_directories() const;

@@ -22,6 +22,28 @@
 .PHONY: quick-lab-test rag-consolidate detector-debug
 
 # ============================================================================
+# ThreadSanitizer Build (Race Condition Detection)
+# ============================================================================
+# TSan requires specific compiler flags
+TSAN_CXXFLAGS = -fsanitize=thread -O1 -g -fno-omit-frame-pointer
+TSAN_LDFLAGS = -fsanitize=thread
+
+.PHONY: detector-tsan
+detector-tsan: CXXFLAGS += $(TSAN_CXXFLAGS)
+detector-tsan: LDFLAGS += $(TSAN_LDFLAGS)
+detector-tsan: clean ml-detector
+	@echo "✅ ml-detector compiled with ThreadSanitizer"
+	@echo "   Run with: TSAN_OPTIONS='log_path=tsan.log' ./build/ml-detector config.json"
+
+# Quick test with TSan (5 minute run)
+.PHONY: test-tsan
+test-tsan: detector-tsan
+	@echo "🔬 Running ThreadSanitizer test (5 minutes)..."
+	@TSAN_OPTIONS="log_path=tsan_$(shell date +%Y%m%d_%H%M%S).txt" \
+		timeout 300 ./build/ml-detector config/ml_detector_config.json || true
+	@echo "✅ Test complete. Check tsan_*.txt for race reports."
+
+# ============================================================================
 # ML Defender Pipeline - Host Makefile
 # Run from macOS - Commands execute in VM via vagrant ssh -c
 # ============================================================================
@@ -510,7 +532,7 @@ rag-stop:
 
 rag-status:
 	@echo "🔍 RAG Status:"
-    @vagrant ssh defender -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi""
+	@vagrant ssh defender -c "pid=\$$(pgrep -f rag-security); if [ -n \"\$$pid\" ]; then echo \"✅ RAG running (PID: \$$pid)\"; else echo '❌ RAG stopped'; fi"
 
 rag-logs:
 	@echo "📋 RAG Logs:"
@@ -699,7 +721,7 @@ etcd-server-stop:
 
 etcd-server-status:
 	@echo "🔍 etcd-server Status:"
-@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi""
+	@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi""
 
 etcd-server-logs:
 	@echo "📋 etcd-server Logs:"

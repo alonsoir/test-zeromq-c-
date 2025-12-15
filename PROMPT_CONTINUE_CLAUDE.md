@@ -294,6 +294,8 @@ vagrant ssh defender -c "ls -lh /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d) | 
 
 ### **Morning Session (3-4 hours)**
 
+Vamos a revisar los dos ficheros del RagLogger y vamos a encontrar la condicion de carrera. Ahora mismo en cuanto
+te pase los dos ficheros
 **Option A: Fix Race Condition (Conservative)**
 1. Compile with ThreadSanitizer
 2. Run 30-minute stress test
@@ -373,7 +375,8 @@ vagrant ssh defender -c "ls -lh /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d) | 
 ### **etcd C++ Client**
 - GitHub: https://github.com/etcd-cpp-apiv3/etcd-cpp-apiv3
 - Already integrated in RAG system
-
+Mejor te enseño la implementacion actual del etcd-client en el rag, no recuerdo muchos detalles de su implementacion 
+- actual.
 ---
 
 ## 🤝 Collaboration Protocol
