@@ -5,11 +5,7 @@
 #include <vector>
 #include <functional>
 #include <cstdint>
-
-// Forward declaration for JSON to avoid including heavy header
-namespace nlohmann {
-    class json;
-}
+#include <nlohmann/json.hpp>  // ← Include completo, no forward declaration
 
 namespace etcd_client {
 
