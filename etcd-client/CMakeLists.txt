@@ -110,7 +110,7 @@ install(DIRECTORY include/etcd_client
 )
 
 # Tests (optional)
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_TESTS "Build tests" ON)
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
