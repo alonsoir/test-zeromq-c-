@@ -1,479 +1,434 @@
-cat > docs/DAY_18_CONTINUITY_PROMPT.md << 'EOF'
-# Day 18 Continuity Prompt - RAG Integration with etcd-client Library
+# 🚀 Day 18 - Part 2: Testing & Validation (Continuity Prompt)
 
-## 📊 Current Status (End of Day 17)
+**Date:** December 18, 2025  
+**Status:** Ready for end-to-end testing  
+**Context:** Yesterday we implemented `put_config()` bidirectional functionality
 
-### ✅ Day 17 Achievements - etcd-client Library Complete
+---
 
-**Library Created (1,238 lines C++20):**
-- `etcd-client/` directory structure
-- `include/etcd_client/etcd_client.hpp` - Complete API (145 lines)
-- `src/config_loader.cpp` - JSON config loading (110 lines)
-- `src/compression_lz4.cpp` - LZ4 compression (82 lines)
-- `src/crypto_chacha20.cpp` - ChaCha20-Poly1305 encryption (142 lines)
-- `src/http_client.cpp` - HTTP wrapper with retry (178 lines)
-- `src/component_registration.cpp` - Component discovery (119 lines)
-- `src/etcd_client.cpp` - Main PIMPL implementation (607 lines)
+## 📋 What We Accomplished Yesterday (Day 18 Part 1)
 
-**Tests Validated (515 lines, 100% passing):**
-- `tests/test_compression.cpp` - LZ4 validation (136 lines)
-- `tests/test_encryption.cpp` - ChaCha20 validation (202 lines)
-- `tests/test_pipeline.cpp` - Complete pipeline (177 lines)
-- CTest results: 3/3 passed (0.05 seconds)
+### ✅ **etcd-client Library Updates**
 
-**Performance Metrics:**
-- Compression: 10KB → 59 bytes (0.59%)
-- Encryption overhead: +40 bytes fixed (nonce + MAC)
-- Pipeline: 100KB → 452 bytes (0.452% total size!)
-- JSON config: 535 → 460 bytes (86% efficiency)
+**File:** `/vagrant/etcd-client/src/http_client.cpp`
+- ✅ Added `Response put()` function (lines 128-178)
+- ✅ Follows same pattern as `get()` and `post()`
+- ✅ Supports retry logic with exponential backoff
+
+**File:** `/vagrant/etcd-client/src/etcd_client.cpp`
+- ✅ Implemented `EtcdClient::put_config()` method
+- ✅ Uses `pImpl->process_outgoing_data()` for automatic compression + encryption
+- ✅ Calls `http::put()` with proper parameters
+- ✅ Returns structured error messages
 
 **Compilation:**
-- Library: `libetcd_client.so.1.0.0` (1.1 MB)
-- Compiler: g++ 12.2.0 with -std=c++20
-- Dependencies: libsodium 1.0.18, liblz4 1.9.4
-- Status: Zero warnings, zero errors
-
-**Security Design:**
-- ChaCha20-Poly1305 (TLS 1.3 standard)
-- Key management: etcd-server generates (hardware RNG)
-- Mutual TLS (mTLS) roadmap documented (Phase 2B)
-- HSM integration planned (Phase 3)
-
----
-
-## 🎯 Day 18 Objectives - RAG Integration
-
-### **Goal:** Replace RAG's custom etcd_client with shared library
-
-### **Priority 1: Update RAG Build System (1-2 hours)**
-
-**Files to modify:**
-1. `rag/CMakeLists.txt` - Add etcd-client library dependency
-2. `rag/src/etcd_client.cpp` - REMOVE (replaced by library)
-3. `rag/include/rag/etcd_client.hpp` - REMOVE (use library header)
-
-**Changes in rag/CMakeLists.txt:**
-```cmake
-# Add etcd-client library
-add_subdirectory(../etcd-client etcd-client)
-
-target_link_libraries(rag-system
-    PRIVATE
-        etcd_client  # NEW: Shared library
-        # ... other libs
-)
-
-target_include_directories(rag-system
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/../etcd-client/include  # NEW
-        # ... other includes
-)
-```
-
-**Remove old files:**
-- Delete `rag/src/etcd_client.cpp` (old stub implementation)
-- Delete `rag/include/rag/etcd_client.hpp` (old header)
-
----
-
-### **Priority 2: Update RAG Config Format (30 min)**
-
-**Current format (rag/config/rag-config.json):**
-```json
-{
-  "rag": {
-    "host": "0.0.0.0",
-    "port": 8080,
-    "model_name": "tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
-    "embedding_dimension": 768
-  },
-  "etcd": {
-    "host": "127.0.0.1",
-    "port": 2379
-  }
-}
-```
-
-**New format (use etcd-client standard):**
-```json
-{
-  "rag": {
-    "host": "0.0.0.0",
-    "port": 8080,
-    "model_name": "tinyllama-1.1b-chat-v1.0.Q4_0.gguf",
-    "embedding_dimension": 768
-  },
-  "etcd_client": {
-    "server": {
-      "host": "127.0.0.1",
-      "port": 2379,
-      "timeout_seconds": 5
-    },
-    "component": {
-      "name": "rag-engine",
-      "config_path": "/vagrant/rag/config/rag-config.json"
-    },
-    "encryption": {
-      "enabled": true,
-      "algorithm": "chacha20-poly1305",
-      "key_source": "etcd-server"
-    },
-    "compression": {
-      "enabled": true,
-      "algorithm": "lz4",
-      "min_size_bytes": 256
-    },
-    "heartbeat": {
-      "enabled": true,
-      "interval_seconds": 30
-    },
-    "retry": {
-      "max_attempts": 3,
-      "backoff_seconds": 2
-    }
-  }
-}
-```
-
----
-
-### **Priority 3: Update RAG Code (2-3 hours)**
-
-**Files to modify:**
-1. `rag/src/rag_command_manager.cpp` - Update etcd client usage
-2. `rag/src/main.cpp` - Update initialization
-
-**Changes in rag_command_manager.cpp:**
-```cpp
-// OLD (remove):
-#include "rag/etcd_client.hpp"
-Rag::EtcdClient etcd_client(endpoint, "rag-engine");
-
-// NEW (use library):
-#include <etcd_client/etcd_client.hpp>
-etcd_client::EtcdClient etcd_client(config_json_path);
-
-// Then use same API:
-etcd_client.connect();
-etcd_client.register_component();
-// ... etc
-```
-
-**Key API changes:**
-- Constructor: `EtcdClient(config_path)` instead of `EtcdClient(endpoint, name)`
-- Everything else: SAME API (designed to be drop-in replacement)
-
----
-
-### **Priority 4: Test Integration (1 hour)**
-
-**Test sequence:**
 ```bash
-# 1. Compile RAG with new library
-cd /vagrant
-make rag
+cd /vagrant/etcd-client/build
+make -j$(nproc)
+# Result: SUCCESS ✅
+# Tests: 3/3 PASSED ✅
+```
 
-# 2. Start etcd-server
-vagrant ssh defender -c "cd /vagrant/etcd-server && ./etcd-server &"
+---
 
-# 3. Start RAG
-vagrant ssh defender -c "cd /vagrant/rag && ./rag-system &"
+### ✅ **etcd-server Updates**
 
-# 4. Verify registration
-# Should see: "✅ Component registered: rag-engine"
+**File:** `/vagrant/etcd-server/src/etcd_server.cpp`
+- ✅ Added new endpoint `PUT /v1/config/(.*)` (after line 238)
+- ✅ Handles two content types:
+    - `application/octet-stream` → decrypts with `decrypt_data()`
+    - `application/json` → accepts plain JSON (Phase 1 MVP)
+- ✅ Validates JSON structure
+- ✅ Stores using `register_component()`
+- ✅ Returns structured JSON response
 
-# 5. Check heartbeat
-# Wait 30s, verify heartbeat logs
+**Compilation:**
+```bash
+cd /vagrant/etcd-server/build
+make -j$(nproc)
+# Result: SUCCESS ✅
+```
 
-# 6. Test commands
-curl -X POST http://localhost:8080/command \
+---
+
+## 🎯 Current Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ CLIENT (ml-detector, rag, sniffer)                          │
+│                                                              │
+│  put_config(json_string)                                     │
+│    ↓                                                         │
+│  1. Validate JSON                                            │
+│  2. process_outgoing_data()                                  │
+│     → Compress (LZ4) if size > threshold                     │
+│     → Encrypt (ChaCha20) if key present                      │
+│  3. http::put(host, port, path, data, "octet-stream")       │
+└─────────────────┬────────────────────────────────────────────┘
+                  │
+                  │ HTTP PUT /v1/config/{component_id}
+                  │ Content-Type: application/octet-stream
+                  │ Body: encrypted+compressed data
+                  ▼
+┌──────────────────────────────────────────────────────────────┐
+│ ETCD-SERVER                                                  │
+│                                                              │
+│  PUT /v1/config/{component_id}                               │
+│    ↓                                                         │
+│  1. Check Content-Type                                       │
+│  2. If octet-stream: decrypt_data()                          │
+│  3. Parse JSON                                               │
+│  4. register_component(component_id, json)                   │
+│  5. Return 200 OK with metadata                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧪 Testing Plan for Today
+
+### **Test 1: Start etcd-server**
+
+Terminal 1:
+```bash
+vagrant ssh defender
+cd /vagrant/etcd-server/build
+./etcd-server --port 8080
+```
+
+**Expected output:**
+```
+[ETCD-SERVER] 🔧 Inicializando servidor en puerto 8080
+🌐 Configurando endpoints...
+✅ Endpoints configurados
+🚀 Servidor escuchando en 0.0.0.0:8080
+```
+
+---
+
+### **Test 2: Manual curl test (baseline)**
+
+Terminal 2:
+```bash
+# Test with plain JSON (Phase 1 MVP)
+curl -X PUT \
   -H "Content-Type: application/json" \
-  -d '{"command": "get_pipeline_status"}'
+  -d '{"enabled": true, "test": "day18", "component_name": "test-manual"}' \
+  http://localhost:8080/v1/config/test-manual
 
-# 7. Verify encryption
-# etcd-server logs should show encrypted payloads
-# RAG should decrypt successfully
-```
-
----
-
-## 📋 Key Files Reference
-
-### **Library Files (read-only for Day 18):**
-- `etcd-client/include/etcd_client/etcd_client.hpp` - API reference
-- `etcd-client/config/etcd_client_config.json` - Example config
-- `etcd-client/README.md` - Library documentation
-
-### **RAG Files (to modify):**
-- `rag/CMakeLists.txt` - Build system
-- `rag/config/rag-config.json` - Config format
-- `rag/src/rag_command_manager.cpp` - Main usage
-- `rag/src/main.cpp` - Initialization
-- `rag/src/etcd_client.cpp` - DELETE THIS
-- `rag/include/rag/etcd_client.hpp` - DELETE THIS
-
-### **Test Files:**
-- `rag/test/` - Integration tests (if needed)
-
----
-
-## 🔧 Technical Notes
-
-### **API Compatibility:**
-
-**OLD RAG API:**
-```cpp
-EtcdClient(const std::string& endpoint, const std::string& component_name);
-bool registerService();
-bool unregisterService();
-```
-
-**NEW Library API:**
-```cpp
-EtcdClient(const std::string& config_json_path);
-bool register_component();
-bool unregister_component();
-```
-
-**Migration strategy:**
-- Replace constructor call
-- Replace `registerService()` → `register_component()`
-- Replace `unregisterService()` → `unregister_component()`
-- Everything else stays same
-
-### **Config Loading:**
-
-**OLD:**
-```cpp
-auto& config_manager = ConfigManager::getInstance();
-auto etcd_config = config_manager.getEtcdConfig();
-std::string endpoint = etcd_config.host + ":" + std::to_string(etcd_config.port);
-EtcdClient client(endpoint, "rag-engine");
-```
-
-**NEW:**
-```cpp
-EtcdClient client("/vagrant/rag/config/rag-config.json");
-```
-
-Much simpler!
-
-### **Heartbeat:**
-
-**OLD:** Manual heartbeat implementation (if any)
-
-**NEW:** Automatic! Library starts heartbeat thread on `register_component()`
-- Interval: 30 seconds (configurable in JSON)
-- Automatic in background
-- Stops on `unregister_component()` or destructor
-
-### **Error Handling:**
-
-**Library throws exceptions on critical errors:**
-```cpp
-try {
-    etcd_client.connect();
-    etcd_client.register_component();
-} catch (const std::exception& e) {
-    std::cerr << "Failed to connect to etcd: " << e.what() << std::endl;
-    return 1;
+# Expected response:
+{
+  "status": "success",
+  "component_id": "test-manual",
+  "size_bytes": 57,
+  "timestamp": 1734508800
 }
 ```
 
+**Validation:**
+- ✅ Server logs show: `📤 PUT /v1/config/test-manual (57 bytes)`
+- ✅ Server logs show: `✅ Config guardada para test-manual`
+- ✅ HTTP 200 response
+- ✅ JSON response with correct structure
+
 ---
 
-## ⚠️ Potential Issues & Solutions
+### **Test 3: Create C++ test program**
 
-### **Issue 1: ConfigManager dependency**
+Create: `/vagrant/etcd-client/tests/test_put_config_integration.cpp`
 
-**Problem:** RAG might have ConfigManager that reads old format
-
-**Solution:**
-- Keep ConfigManager for RAG-specific config
-- Use etcd-client Config for etcd settings
-- Two separate configs, no conflict
-
-### **Issue 2: Linking errors**
-
-**Problem:** Library not found during linking
-
-**Solution:**
-```cmake
-# In rag/CMakeLists.txt
-link_directories(${CMAKE_SOURCE_DIR}/../etcd-client/build)
-```
-
-### **Issue 3: Include paths**
-
-**Problem:** Headers not found
-
-**Solution:**
-```cmake
-target_include_directories(rag-system
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/../etcd-client/include
-)
-```
-
-### **Issue 4: Namespace conflicts**
-
-**Problem:** Old `Rag::EtcdClient` vs new `etcd_client::EtcdClient`
-
-**Solution:**
 ```cpp
-// Use fully qualified names
-etcd_client::EtcdClient client(...);
+#include "etcd_client/etcd_client.hpp"
+#include <nlohmann/json.hpp>
+#include <iostream>
 
-// Or namespace alias
-namespace ec = etcd_client;
-ec::EtcdClient client(...);
+int main() {
+    std::cout << "=== Testing put_config() Integration ===" << std::endl;
+    
+    // 1. Configure client
+    etcd_client::Config config;
+    config.component_name = "test-cpp-client";
+    config.component_id = "test-001";
+    config.host = "localhost";
+    config.port = 8080;
+    config.encryption_enabled = true;
+    config.compression_enabled = true;
+    
+    // 2. Create client and connect
+    etcd_client::EtcdClient client(config);
+    
+    // Set encryption key (32 bytes for ChaCha20)
+    std::string key = "test_key_32_bytes_for_chacha20!!";
+    client.set_encryption_key(key);
+    
+    if (!client.connect()) {
+        std::cerr << "❌ Failed to connect" << std::endl;
+        return 1;
+    }
+    
+    // 3. Create test config
+    nlohmann::json test_config = {
+        {"component_name", "test-cpp-client"},
+        {"enabled", true},
+        {"threshold", 0.75},
+        {"models", {
+            {"model_a", {{"enabled", true}, {"path", "/models/a.bin"}}},
+            {"model_b", {{"enabled", false}, {"path", "/models/b.bin"}}}
+        }},
+        {"rag_logger", {
+            {"enabled", true},
+            {"output_dir", "/logs/rag"}
+        }}
+    };
+    
+    std::string json_str = test_config.dump(2);
+    std::cout << "\n📝 Test config (" << json_str.size() << " bytes):" << std::endl;
+    std::cout << json_str << std::endl;
+    
+    // 4. Upload config
+    std::cout << "\n📤 Uploading config..." << std::endl;
+    if (client.put_config(json_str)) {
+        std::cout << "\n✅ SUCCESS: Config uploaded!" << std::endl;
+        return 0;
+    } else {
+        std::cerr << "\n❌ FAILED: Config upload failed" << std::endl;
+        return 1;
+    }
+}
 ```
 
----
-
-## 📊 Success Criteria for Day 18
-
-### **Minimum (Must Achieve):**
-- ✅ RAG compiles with etcd-client library
-- ✅ Old etcd_client.cpp removed
-- ✅ Config format updated
-- ✅ Registration works (see logs)
-
-### **Target (Should Achieve):**
-- ✅ All of above +
-- ✅ Heartbeat working (30s interval)
-- ✅ Commands work through RAG
-- ✅ Encryption validated (etcd-server logs)
-
-### **Stretch (If Time Permits):**
-- ✅ All of above +
-- ✅ Other components (ml-detector, sniffer, firewall)
-- ✅ End-to-end encrypted pipeline
-- ✅ Performance benchmarks
-
----
-
-## 🎯 Day 18 Timeline (Estimated)
-```
-Morning (2-3 hours):
-  [30 min] Review library API and example config
-  [60 min] Update RAG CMakeLists.txt
-  [30 min] Update rag-config.json format
-  [60 min] Update rag_command_manager.cpp
-
-Afternoon (2-3 hours):
-  [30 min] Remove old etcd_client files
-  [60 min] Compile and fix errors
-  [60 min] Test with etcd-server
-  [30 min] Validate encryption/compression
-
-Evening (optional):
-  [60 min] Start ml-detector integration
-  [30 min] Documentation updates
-  [30 min] Commit and push
-```
-
----
-
-## 📝 Commands for Day 18
+**Compile:**
 ```bash
-# Start fresh
-cd /vagrant
-git checkout feature/etcd-client-lib
-git pull
+cd /vagrant/etcd-client/tests
+g++ -std=c++20 -o test_put_config_integration test_put_config_integration.cpp \
+    -I../include \
+    -L../build \
+    -letcd_client \
+    -pthread
 
-# Review library
-cat etcd-client/include/etcd_client/etcd_client.hpp
-cat etcd-client/config/etcd_client_config.json
+# Run
+export LD_LIBRARY_PATH=/vagrant/etcd-client/build:$LD_LIBRARY_PATH
+./test_put_config_integration
+```
 
-# Backup old RAG etcd_client
-cp rag/src/etcd_client.cpp rag/src/etcd_client.cpp.OLD
-cp rag/include/rag/etcd_client.hpp rag/include/rag/etcd_client.hpp.OLD
+**Expected output:**
+```
+=== Testing put_config() Integration ===
+🔗 Connecting to etcd-server: localhost:8080
+✅ Connected to etcd-server
 
-# Edit files
-vim rag/CMakeLists.txt
-vim rag/config/rag-config.json
-vim rag/src/rag_command_manager.cpp
+📝 Test config (234 bytes):
+{
+  "component_name": "test-cpp-client",
+  "enabled": true,
+  ...
+}
 
-# Compile
-make rag
+📤 Uploading config...
+📦 Compressed: 234 → 180 bytes
+🔒 Encrypted: 180 bytes
+📤 [etcd-client] Uploading config to localhost:8080/v1/config/test-cpp-client
+   Original: 234 -> Processed: 220 bytes
+✅ [etcd-client] Config uploaded successfully!
 
-# Test
-vagrant ssh defender -c "cd /vagrant/etcd-server && ./etcd-server &"
-vagrant ssh defender -c "cd /vagrant/rag && ./rag-system"
-
-# Verify
-curl http://localhost:8080/command -X POST -d '{"command":"get_pipeline_status"}'
-
-# Commit
-git add rag/
-git commit -m "feat(rag): Integrate etcd-client library"
-git push
+✅ SUCCESS: Config uploaded!
 ```
 
 ---
 
-## 🔐 Security Reminders
+### **Test 4: Verify server stored the config**
 
-**Key Management (Day 17 decision):**
-- ❌ NO custom keys in config (security anti-pattern)
-- ✅ etcd-server generates keys (hardware RNG: /dev/random)
-- ✅ Keys distributed via registration handshake
-- ✅ Keys stored ONLY in memory (never disk)
-- ✅ mTLS planned for Phase 2B (client certificates)
+```bash
+# GET the config back
+curl http://localhost:8080/config/test-cpp-client | jq '.'
 
-**For Day 18:**
-- Focus on HTTP (unencrypted) first
-- TLS/mTLS postponed to Phase 2B
-- Current: Key distributed in plaintext HTTP (dev only)
-- Production: Will use TLS (Phase 2B)
-
----
-
-## 💡 Tips for Success
-
-1. **Read library docs first** - `etcd-client/README.md`
-2. **Use example config** - Copy from `etcd-client/config/`
-3. **Test incrementally** - Compile after each change
-4. **Keep old files as .OLD** - Easy rollback if needed
-5. **Check etcd-server logs** - Verify registration
-6. **Verify encryption** - Check payload sizes in logs
-7. **Ask questions** - If unclear, ask before coding
-
----
-
-## 📚 References
-
-- [etcd-client README](../etcd-client/README.md)
-- [etcd-client API](../etcd-client/include/etcd_client/etcd_client.hpp)
-- [Example Config](../etcd-client/config/etcd_client_config.json)
-- [Test Examples](../etcd-client/tests/)
-- [Day 17 Summary](./DAY_17_ETCD_CLIENT_LIBRARY.md)
-- [Security Roadmap](./SECURITY_ROADMAP.md)
-
----
-
-## 🎉 Expected End State (Day 18)
-```
-✅ RAG using shared etcd-client library
-✅ Old custom etcd_client code removed
-✅ Config format standardized
-✅ Registration working
-✅ Heartbeat automatic
-✅ Encryption validated
-✅ Compression validated
-✅ Ready for other components (Day 19)
-
-Next Day 19:
-  → ml-detector integration
-  → sniffer integration
-  → firewall integration
-  → End-to-end encrypted pipeline
+# Expected: Full config JSON
 ```
 
 ---
 
-**Good luck with Day 18!** 🚀
+## 🐛 Troubleshooting Guide
 
-*Via Appia Quality - One solid stone at a time*
-EOF
+### **Issue: Connection refused**
+```bash
+# Check if server is running
+ps aux | grep etcd-server
+
+# Check port
+netstat -tlnp | grep 8080
+
+# Restart server
+cd /vagrant/etcd-server/build
+./etcd-server --port 8080
+```
+
+### **Issue: Compilation error**
+```bash
+# Verify backups exist
+ls -lh /vagrant/etcd-client/src/*.backup
+ls -lh /vagrant/etcd-server/src/*.backup
+
+# Restore if needed
+cp /vagrant/etcd-client/src/etcd_client.cpp.backup \
+   /vagrant/etcd-client/src/etcd_client.cpp
+```
+
+### **Issue: put_config() returns false**
+```bash
+# Check server logs in Terminal 1
+# Look for error messages
+
+# Test with curl first to isolate issue
+curl -v -X PUT \
+  -H "Content-Type: application/json" \
+  -d '{"test": true}' \
+  http://localhost:8080/v1/config/debug
+```
+
+### **Issue: Encryption/decryption error**
+- Verify both client and server use same encryption key
+- Check if `component_registry_->decrypt_data()` is working
+- Try with plain JSON first (`application/json`)
+
+---
+
+## 📊 Success Criteria
+
+- [ ] etcd-server starts without errors
+- [ ] curl PUT test succeeds (HTTP 200)
+- [ ] C++ test program compiles
+- [ ] C++ test program uploads config successfully
+- [ ] Server logs show correct processing
+- [ ] Config can be retrieved with GET endpoint
+- [ ] Compression working (size reduction visible)
+- [ ] Encryption working (no errors in logs)
+
+---
+
+## 🎯 Next Steps After Testing
+
+### **If all tests pass:**
+
+1. **Commit the changes:**
+```bash
+git add etcd-client/src/http_client.cpp
+git add etcd-client/src/etcd_client.cpp
+git add etcd-server/src/etcd_server.cpp
+git commit -m "feat(day18): implement bidirectional put_config() with encryption
+
+- Add http::put() function to etcd-client
+- Implement EtcdClient::put_config() with auto compression/encryption
+- Add PUT /v1/config/:id endpoint to etcd-server
+- Support both encrypted (octet-stream) and plain (json) formats
+- Phase 1 MVP complete: bidirectional config management ready
+
+Tested: Manual curl + C++ integration test
+Status: All tests passing ✅"
+```
+
+2. **Update README:**
+- Document new `put_config()` API
+- Add usage examples
+- Update architecture diagram
+
+3. **Move to Phase 2:**
+- Day 19: Integrate RAG with etcd-client library
+- Day 20: Add FAISS semantic search
+- Day 21: Watcher unified library
+
+### **If tests fail:**
+
+1. Document the exact error
+2. Check server and client logs
+3. Verify compilation was successful
+4. Test with plain JSON first (bypass encryption)
+5. Iterate until working
+
+---
+
+## 📝 Key Files Modified
+
+```
+etcd-client/
+├── src/
+│   ├── http_client.cpp          ✅ Added put() function
+│   ├── etcd_client.cpp          ✅ Added put_config() method
+│   ├── http_client.cpp.backup   📦 Backup
+│   └── etcd_client.cpp.backup   📦 Backup
+└── build/
+    └── libetcd_client.so.1.0.0  ✅ Compiled successfully
+
+etcd-server/
+├── src/
+│   ├── etcd_server.cpp          ✅ Added PUT /v1/config/:id endpoint
+│   └── etcd_server.cpp.backup   📦 Backup
+└── build/
+    └── etcd-server              ✅ Compiled successfully
+```
+
+---
+
+## 💡 Important Notes
+
+1. **Encryption is optional:**
+    - If no encryption key set, data sent uncompressed/unencrypted
+    - Server auto-detects based on Content-Type header
+
+2. **Compression threshold:**
+    - Default: 100 bytes minimum
+    - Configurable via `config.compression_min_size`
+
+3. **Error handling:**
+    - Client returns `false` on any error
+    - Server returns appropriate HTTP status codes
+    - Both log detailed error messages
+
+4. **Thread safety:**
+    - `put_config()` uses mutex lock (same as other operations)
+    - Safe for concurrent access
+
+---
+
+## 🎉 Why This Matters
+
+> "Sin poder hacer PUT del fichero de configuración, estábamos cojos."  
+> — Alonso
+
+**Before Day 18:**
+- ❌ Config was read-only (GET only)
+- ❌ Components couldn't update their own config
+- ❌ Manual server-side editing required
+- ❌ No bidirectional communication
+
+**After Day 18:**
+- ✅ Full bidirectional config management
+- ✅ Components can update configs programmatically
+- ✅ Automatic encryption + compression
+- ✅ Production-ready architecture
+- ✅ Foundation for RAG integration (Day 19)
+
+---
+
+## 🚀 Ready to Resume
+
+**Start with:**
+```bash
+# Terminal 1: Start server
+vagrant ssh defender
+cd /vagrant/etcd-server/build
+./etcd-server --port 8080
+
+# Terminal 2: Run tests
+vagrant ssh defender
+# Follow Test 2 (curl) first
+# Then create and run Test 3 (C++ program)
+```
+
+**Expected time:** 30-45 minutes for complete testing and validation
+
+---
+
+**Via Appia Quality** - Functional > Perfect 🛡️
+
+*Generated: December 17, 2025*  
+*Status: Ready for Day 18 Part 2*

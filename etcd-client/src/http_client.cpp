@@ -124,6 +124,59 @@ Response get(const std::string& host,
     return response;
 }
 
+// Perform HTTP PUT with retry logic
+Response put(const std::string& host,
+             int port,
+             const std::string& path,
+             const std::string& body,
+             const std::string& content_type,
+             int timeout_seconds,
+             int max_retries,
+             int backoff_seconds) {
+    
+    Response response;
+    
+    for (int attempt = 0; attempt < max_retries; ++attempt) {
+        try {
+            httplib::Client cli(host, port);
+            cli.set_connection_timeout(timeout_seconds);
+            cli.set_read_timeout(timeout_seconds);
+            cli.set_write_timeout(timeout_seconds);
+            
+            auto res = cli.Put(path, body, content_type.c_str());
+            
+            if (res) {
+                response.status_code = res->status;
+                response.body = res->body;
+                response.success = (res->status >= 200 && res->status < 300);
+                
+                if (response.success) {
+                    return response;
+                }
+                
+                std::cerr << "⚠️  HTTP PUT failed: " << res->status 
+                          << " - " << res->body << std::endl;
+            } else {
+                std::cerr << "⚠️  HTTP PUT connection failed to " 
+                          << host << ":" << port << path << std::endl;
+            }
+            
+        } catch (const std::exception& e) {
+            std::cerr << "⚠️  HTTP PUT exception: " << e.what() << std::endl;
+        }
+        
+        if (attempt < max_retries - 1) {
+            std::cerr << "🔄 Retrying in " << backoff_seconds 
+                      << "s (attempt " << (attempt + 2) << "/" << max_retries << ")" 
+                      << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(backoff_seconds));
+        }
+    }
+    
+    response.success = false;
+    return response;
+}
+
 // Perform HTTP DELETE with retry logic
 Response del(const std::string& host,
              int port,

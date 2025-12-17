@@ -125,6 +125,14 @@ public:
     
     // Get active config
     std::string get_config_active();
+
+    /**
+     * Upload configuration to etcd-server
+     * Compresses and encrypts the JSON before sending
+     * @param json_config JSON configuration string
+     * @return true if successful, false otherwise
+     */
+    bool put_config(const std::string& json_config);
     
     // Rollback active to master
     bool rollback_config();
