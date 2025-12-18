@@ -25,8 +25,9 @@ namespace http {
     Response del(const std::string& host, int port, const std::string& path,
                  int timeout_seconds, int max_retries, int backoff_seconds);
     Response put(const std::string& host, int port, const std::string& path,
-                 const std::string& body, const std::string& content_type,
-                 int timeout_seconds, int max_retries, int backoff_seconds);
+             const std::string& body, const std::string& content_type,
+             int timeout_seconds, int max_retries, int backoff_seconds,
+             size_t original_size = 0);
 }
 
 namespace compression {
@@ -614,12 +615,12 @@ std::string EtcdClient::get_config_active() {
 
 bool EtcdClient::put_config(const std::string& json_config) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
-    
+
     if (!pImpl->connected_) {
         std::cerr << "❌ [etcd-client] Not connected to etcd-server" << std::endl;
         return false;
     }
-    
+
     // 1. Validate JSON
     try {
         auto parsed = nlohmann::json::parse(json_config);
@@ -629,52 +630,62 @@ bool EtcdClient::put_config(const std::string& json_config) {
         std::cerr << "❌ [etcd-client] Invalid JSON: " << e.what() << std::endl;
         return false;
     }
-    
+
     try {
+        // Store original size before compression
+        size_t original_size = json_config.size();
+
         // 2. Process data (compress + encrypt)
         std::string processed_config = pImpl->process_outgoing_data(json_config);
-        
+
         // 3. Build path
         std::string path = "/v1/config/" + pImpl->config_.component_name;
-        
-        std::cout << "📤 [etcd-client] Uploading config to " 
+
+        // 4. Determine content type
+        std::string content_type = "application/json";
+        if (pImpl->config_.encryption_enabled || pImpl->config_.compression_enabled) {
+            content_type = "application/octet-stream";
+        }
+
+        std::cout << "📤 [etcd-client] Uploading config to "
                   << pImpl->config_.host << ":" << pImpl->config_.port << path << std::endl;
-        std::cout << "   Original: " << json_config.size() 
+        std::cout << "   Original: " << json_config.size()
                   << " -> Processed: " << processed_config.size() << " bytes" << std::endl;
-        
-        // 4. Send PUT request
+
+        // 5. Send PUT request
         auto response = http::put(
             pImpl->config_.host,
             pImpl->config_.port,
             path,
-            processed_data,
+            processed_config,
             content_type,
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
             pImpl->config_.retry_backoff_seconds,
             original_size
         );
-        
-        // 5. Check response
+
+        // 6. Check response
         if (!response.success) {
             std::cerr << "❌ [etcd-client] PUT request failed" << std::endl;
             return false;
         }
-        
+
         if (response.status_code != 200 && response.status_code != 201) {
-            std::cerr << "❌ [etcd-client] Server returned " 
+            std::cerr << "❌ [etcd-client] Server returned "
                       << response.status_code << ": " << response.body << std::endl;
             return false;
         }
-        
+
         std::cout << "✅ [etcd-client] Config uploaded successfully!" << std::endl;
         return true;
-        
+
     } catch (const std::exception& e) {
         std::cerr << "❌ [etcd-client] Exception in put_config(): " << e.what() << std::endl;
         return false;
     }
 }
+
 
 bool EtcdClient::rollback_config() {
     std::string master = get_config_master();
