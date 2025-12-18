@@ -1,5 +1,6 @@
 #include "etcd_server/etcd_server.hpp"
 #include "etcd_server/component_registry.hpp"
+#include "etcd_server/compression_lz4.hpp"
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -79,7 +80,8 @@ void EtcdServer::run_server() {
                 json response = {
                     {"status", "success"},
                     {"message", "Componente registrado correctamente"},
-                    {"component", component_name}
+                    {"component", component_name},
+                    {"encryption_key", component_registry_->get_encryption_key()}
                 };
                 res.set_content(response.dump(), "application/json");
             } else {
@@ -238,61 +240,73 @@ void EtcdServer::run_server() {
     });
     
     // Endpoint v1 para subir configuración completa (cifrada/comprimida)
-    server.Put("/v1/config/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
-        std::string component = req.matches[1];
-        std::cout << "[ETCD-SERVER] 📤 PUT /v1/config/" << component 
-                  << " (" << req.body.size() << " bytes)" << std::endl;
-        
-        try {
-            std::string config_json;
-            std::string content_type = req.get_header_value("Content-Type");
-            
-            if (content_type == "application/octet-stream") {
-                std::cout << "[ETCD-SERVER] 🔓 Descifrando datos..." << std::endl;
-                config_json = component_registry_->decrypt_data(req.body);
-                std::cout << "[ETCD-SERVER] ✅ Descifrado: " << config_json.size() << " bytes" << std::endl;
-            } else {
-                config_json = req.body;
-            }
-            
-            auto parsed = json::parse(config_json);
-            
-            if (component_registry_->register_component(component, config_json)) {
-                json response = {
-                    {"status", "success"},
-                    {"component_id", component},
-                    {"size_bytes", config_json.size()},
-                    {"timestamp", std::time(nullptr)}
-                };
-                res.set_content(response.dump(2), "application/json");
-                std::cout << "[ETCD-SERVER] ✅ Config guardada para " << component << std::endl;
-            } else {
-                res.status = 500;
-                json error = {
-                    {"status", "error"},
-                    {"message", "Error guardando configuración"}
-                };
-                res.set_content(error.dump(), "application/json");
-            }
-            
-        } catch (const json::parse_error& e) {
-            res.status = 400;
-            json error = {
-                {"status", "error"},
-                {"error", "Invalid JSON"},
-                {"details", e.what()}
+server.Put("/v1/config/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    std::cout << "[ETCD-SERVER] 📤 PUT /v1/config/" << component
+              << " (" << req.body.size() << " bytes)" << std::endl;
+
+    try {
+        std::string processed_data = req.body;
+        std::string content_type = req.get_header_value("Content-Type");
+
+        // Step 1: Decrypt if encrypted (octet-stream indicates encryption)
+        if (content_type == "application/octet-stream") {
+            std::cout << "[ETCD-SERVER] 🔓 Descifrando datos..." << std::endl;
+            processed_data = component_registry_->decrypt_data(processed_data);
+            std::cout << "[ETCD-SERVER] ✅ Descifrado: " << processed_data.size() << " bytes" << std::endl;
+        }
+
+        // Step 2: Decompress if compressed (check for X-Original-Size header)
+        std::string original_size_header = req.get_header_value("X-Original-Size");
+        if (!original_size_header.empty()) {
+            size_t original_size = std::stoull(original_size_header);
+            std::cout << "[ETCD-SERVER] 📦 Descomprimiendo datos (tamaño original: "
+                      << original_size << " bytes)..." << std::endl;
+
+            processed_data = compression::decompress_lz4(processed_data, original_size);
+            std::cout << "[ETCD-SERVER] ✅ Descomprimido: " << processed_data.size() << " bytes" << std::endl;
+        }
+
+        // Step 3: Validate JSON
+        auto parsed = json::parse(processed_data);
+
+        // Step 4: Register component
+        if (component_registry_->register_component(component, processed_data)) {
+            json response = {
+                {"status", "success"},
+                {"component_id", component},
+                {"size_bytes", processed_data.size()},
+                {"timestamp", std::time(nullptr)}
             };
-            res.set_content(error.dump(), "application/json");
-        } catch (const std::exception& e) {
+            res.set_content(response.dump(2), "application/json");
+            std::cout << "[ETCD-SERVER] ✅ Config guardada para " << component << std::endl;
+        } else {
             res.status = 500;
             json error = {
                 {"status", "error"},
-                {"error", "Internal error"},
-                {"details", e.what()}
+                {"message", "Error guardando configuración"}
             };
             res.set_content(error.dump(), "application/json");
         }
-    });
+
+    } catch (const json::parse_error& e) {
+        res.status = 400;
+        json error = {
+            {"status", "error"},
+            {"error", "Invalid JSON"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"error", "Internal error"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+    }
+});
 
     // Endpoint de salud
     server.Get("/health", [](const httplib::Request& /*req*/, httplib::Response& res) {

@@ -25,6 +25,7 @@ public:
 
     // Cifrado
     std::string get_encryption_seed() const;
+    std::string get_encryption_key() const;
     std::string encrypt_data(const std::string& plaintext);
     std::string decrypt_data(const std::string& ciphertext);
 

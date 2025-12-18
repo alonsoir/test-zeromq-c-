@@ -2,15 +2,18 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <sodium.h>
 
-// Headers para AES-CBC
-#include <cryptopp/aes.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/filters.h>
-#include <cryptopp/sha.h>
+// Headers para HKDF (mantener CryptoPP solo para derivación de clave)
 #include <cryptopp/hkdf.h>
+#include <cryptopp/sha.h>
 
 CryptoManager::CryptoManager() {
+    // Initialize libsodium
+    if (sodium_init() < 0) {
+        throw std::runtime_error("Failed to initialize libsodium");
+    }
+    
     // Generar una seed inicial automáticamente
     seed_ = generate_random_seed();
     if (!generate_key_from_seed(seed_)) {
@@ -22,18 +25,14 @@ CryptoManager::CryptoManager() {
 
 bool CryptoManager::generate_key_from_seed(const std::string& seed) {
     try {
-        // Usar HKDF para derivación segura de clave (mejor que SHA256 directo)
-        CryptoPP::SecByteBlock derived_key(KEY_SIZE + IV_SIZE);
+        // Usar HKDF para derivación segura de clave
+        CryptoPP::SecByteBlock derived_key(KEY_SIZE);
 
         CryptoPP::HKDF<CryptoPP::SHA256> hkdf;
         hkdf.DeriveKey(derived_key, derived_key.size(),
             (const CryptoPP::byte*)seed.data(), seed.size(),
             (const CryptoPP::byte*)"etcd-server-salt", 16,  // salt
-            (const CryptoPP::byte*)"AES-256-CBC", 11);      // info
-
-        // Generar IV aleatorio único
-        CryptoPP::AutoSeededRandomPool rng;
-        rng.GenerateBlock(iv_, iv_.size());
+            (const CryptoPP::byte*)"ChaCha20-Poly1305", 17); // info
 
         encryption_key_.Assign(derived_key, KEY_SIZE);
         key_generation_time_ = std::chrono::system_clock::now();
@@ -41,7 +40,6 @@ bool CryptoManager::generate_key_from_seed(const std::string& seed) {
 
         std::cout << "[CRYPTO] 🔑 Clave derivada con HKDF desde seed" << std::endl;
         std::cout << "[CRYPTO]   Key: " << bytes_to_hex(encryption_key_) << std::endl;
-        std::cout << "[CRYPTO]   IV: " << bytes_to_hex(iv_) << std::endl;
 
         return true;
 
@@ -55,11 +53,13 @@ std::string CryptoManager::get_current_seed() const {
     return seed_;
 }
 
+std::string CryptoManager::get_encryption_key() const {
+    return bytes_to_hex(encryption_key_);
+}
+
 bool CryptoManager::should_rotate_key() const {
     auto now = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::hours>(now - key_generation_time_);
-
-    // Rotar cada 24 horas (en producción podría ser más frecuente)
     return duration.count() >= 24;
 }
 
@@ -73,27 +73,45 @@ void CryptoManager::rotate_key() {
 
 std::string CryptoManager::encrypt(const std::string& plaintext) {
     try {
-        CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encryptor;
-        encryptor.SetKeyWithIV(encryption_key_, encryption_key_.size(), iv_, iv_.size());
-
-        std::string ciphertext;
-        CryptoPP::StringSource ss(plaintext, true,
-            new CryptoPP::StreamTransformationFilter(encryptor,
-                new CryptoPP::StringSink(ciphertext)
-            )
+        if (plaintext.empty()) {
+            return "";
+        }
+        
+        // Verify key size
+        if (encryption_key_.size() != crypto_secretbox_KEYBYTES) {
+            throw std::runtime_error("Invalid key size for ChaCha20");
+        }
+        
+        // Generate random nonce
+        std::vector<unsigned char> nonce(crypto_secretbox_NONCEBYTES);
+        randombytes_buf(nonce.data(), nonce.size());
+        
+        // Allocate buffer for ciphertext (plaintext + MAC)
+        std::vector<unsigned char> ciphertext(plaintext.size() + crypto_secretbox_MACBYTES);
+        
+        // Encrypt
+        int ret = crypto_secretbox_easy(
+            ciphertext.data(),
+            reinterpret_cast<const unsigned char*>(plaintext.data()),
+            plaintext.size(),
+            nonce.data(),
+            encryption_key_.data()
         );
-
-        // Codificar en hexadecimal para facilitar el transporte
-        std::string encoded;
-        CryptoPP::StringSource ss2(ciphertext, true,
-            new CryptoPP::HexEncoder(
-                new CryptoPP::StringSink(encoded)
-            )
-        );
-
-        std::cout << "[CRYPTO] 🔒 Cifrado CBC: " << plaintext.length()
-                  << " bytes -> " << encoded.length() << " bytes hex" << std::endl;
-        return encoded;
+        
+        if (ret != 0) {
+            throw std::runtime_error("ChaCha20 encryption failed");
+        }
+        
+        // Return: nonce + ciphertext (as raw bytes, not hex)
+        std::string result;
+        result.reserve(nonce.size() + ciphertext.size());
+        result.append(reinterpret_cast<const char*>(nonce.data()), nonce.size());
+        result.append(reinterpret_cast<const char*>(ciphertext.data()), ciphertext.size());
+        
+        std::cout << "[CRYPTO] 🔒 Cifrado ChaCha20: " << plaintext.length()
+                  << " bytes -> " << result.length() << " bytes" << std::endl;
+        
+        return result;
 
     } catch (const std::exception& e) {
         std::cerr << "[CRYPTO] ❌ Error cifrando: " << e.what() << std::endl;
@@ -101,29 +119,56 @@ std::string CryptoManager::encrypt(const std::string& plaintext) {
     }
 }
 
-std::string CryptoManager::decrypt(const std::string& ciphertext_hex) {
+std::string CryptoManager::decrypt(const std::string& encrypted_data) {
     try {
-        // Decodificar desde hexadecimal
-        std::string ciphertext;
-        CryptoPP::StringSource ss(ciphertext_hex, true,
-            new CryptoPP::HexDecoder(
-                new CryptoPP::StringSink(ciphertext)
-            )
+        if (encrypted_data.empty()) {
+            return "";
+        }
+        
+        // Verify key size
+        if (encryption_key_.size() != crypto_secretbox_KEYBYTES) {
+            throw std::runtime_error("Invalid key size for ChaCha20");
+        }
+        
+        // Minimum size: nonce + MAC
+        size_t min_size = crypto_secretbox_NONCEBYTES + crypto_secretbox_MACBYTES;
+        if (encrypted_data.size() < min_size) {
+            throw std::runtime_error("Encrypted data too short (corrupted?)");
+        }
+        
+        // Extract nonce
+        const unsigned char* nonce = reinterpret_cast<const unsigned char*>(
+            encrypted_data.data()
         );
-
-        CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption decryptor;
-        decryptor.SetKeyWithIV(encryption_key_, encryption_key_.size(), iv_, iv_.size());
-
-        std::string plaintext;
-        CryptoPP::StringSource ss2(ciphertext, true,
-            new CryptoPP::StreamTransformationFilter(decryptor,
-                new CryptoPP::StringSink(plaintext)
-            )
+        
+        // Extract ciphertext
+        const unsigned char* ciphertext = reinterpret_cast<const unsigned char*>(
+            encrypted_data.data() + crypto_secretbox_NONCEBYTES
         );
-
-        std::cout << "[CRYPTO] 🔓 Descifrado CBC: " << ciphertext_hex.length()
-                  << " bytes hex -> " << plaintext.length() << " bytes" << std::endl;
-        return plaintext;
+        size_t ciphertext_len = encrypted_data.size() - crypto_secretbox_NONCEBYTES;
+        
+        // Allocate buffer for plaintext
+        std::vector<unsigned char> plaintext(ciphertext_len - crypto_secretbox_MACBYTES);
+        
+        // Decrypt
+        int ret = crypto_secretbox_open_easy(
+            plaintext.data(),
+            ciphertext,
+            ciphertext_len,
+            nonce,
+            encryption_key_.data()
+        );
+        
+        if (ret != 0) {
+            throw std::runtime_error("ChaCha20 decryption failed (wrong key or corrupted data)");
+        }
+        
+        std::string result(reinterpret_cast<const char*>(plaintext.data()), plaintext.size());
+        
+        std::cout << "[CRYPTO] 🔓 Descifrado ChaCha20: " << encrypted_data.length()
+                  << " bytes -> " << result.length() << " bytes" << std::endl;
+        
+        return result;
 
     } catch (const std::exception& e) {
         std::cerr << "[CRYPTO] ❌ Error descifrando: " << e.what() << std::endl;
@@ -163,19 +208,9 @@ std::string CryptoManager::generate_random_seed() {
 }
 
 bool CryptoManager::validate_ciphertext(const std::string& ciphertext) {
-    // Validación básica: debe ser hexadecimal y tener longitud mínima
-    if (ciphertext.empty() || ciphertext.length() < 2) {
-        return false;
-    }
-
-    // Verificar que todos los caracteres son hexadecimales
-    for (char c : ciphertext) {
-        if (!std::isxdigit(c)) {
-            return false;
-        }
-    }
-
-    return true;
+    // ChaCha20 validation: must have minimum size (nonce + MAC)
+    size_t min_size = crypto_secretbox_NONCEBYTES + crypto_secretbox_MACBYTES;
+    return ciphertext.size() >= min_size;
 }
 
 void CryptoManager::generate_random_bytes(CryptoPP::SecByteBlock& buffer, size_t size) {
@@ -183,7 +218,7 @@ void CryptoManager::generate_random_bytes(CryptoPP::SecByteBlock& buffer, size_t
     rng.GenerateBlock(buffer, size);
 }
 
-std::string CryptoManager::bytes_to_hex(const CryptoPP::SecByteBlock& bytes) {
+std::string CryptoManager::bytes_to_hex(const CryptoPP::SecByteBlock& bytes) const {
     std::string hex;
     CryptoPP::StringSource ss(bytes, bytes.size(), true,
         new CryptoPP::HexEncoder(

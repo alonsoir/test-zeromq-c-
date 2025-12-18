@@ -86,6 +86,13 @@ std::string ComponentRegistry::get_encryption_seed() const {
     return crypto_manager_->get_current_seed();
 }
 
+std::string ComponentRegistry::get_encryption_key() const {
+    if (!crypto_manager_) {
+        throw std::runtime_error("CryptoManager no inicializado");
+    }
+    return crypto_manager_->get_encryption_key();
+}
+
 std::string ComponentRegistry::encrypt_data(const std::string& plaintext) {
     if (!encryption_enabled_ || !crypto_manager_) {
         return plaintext; // Devolver sin cifrar si está desactivado

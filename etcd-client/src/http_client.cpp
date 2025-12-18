@@ -123,7 +123,7 @@ Response get(const std::string& host,
     response.success = false;
     return response;
 }
-
+// todo esto hay que reformarlo para que acepte la nueva cabecera de tamañao variable original_size
 // Perform HTTP PUT with retry logic
 Response put(const std::string& host,
              int port,
@@ -132,7 +132,8 @@ Response put(const std::string& host,
              const std::string& content_type,
              int timeout_seconds,
              int max_retries,
-             int backoff_seconds) {
+             int backoff_seconds,
+             size_t original_size = 0) {
     
     Response response;
     
@@ -142,9 +143,17 @@ Response put(const std::string& host,
             cli.set_connection_timeout(timeout_seconds);
             cli.set_read_timeout(timeout_seconds);
             cli.set_write_timeout(timeout_seconds);
-            
-            auto res = cli.Put(path, body, content_type.c_str());
-            
+
+            httplib::Headers headers = {
+                {"Content-Type", content_type}
+            };
+
+            if (original_size > 0) {
+                headers.insert({"X-Original-Size", std::to_string(original_size)});
+            }
+
+            auto res = cli.Put(path.c_str(), headers, body, content_type.c_str());
+
             if (res) {
                 response.status_code = res->status;
                 response.body = res->body;

@@ -10,6 +10,21 @@ find_package(Threads REQUIRED)
 
 pkg_check_modules(CRYPTOPP REQUIRED libcrypto++)
 
+# Find libsodium for ChaCha20
+pkg_check_modules(LIBSODIUM REQUIRED libsodium)
+if(LIBSODIUM_FOUND)
+    message(STATUS "✅ libsodium found - Using ChaCha20-Poly1305")
+else()
+    message(FATAL_ERROR "libsodium not found - Install: sudo apt-get install libsodium-dev")
+endif()
+
+# Find LZ4 for compression
+pkg_check_modules(LZ4 REQUIRED liblz4)
+if(NOT LZ4_FOUND)
+    message(FATAL_ERROR "liblz4 not found. Install: sudo apt-get install liblz4-dev")
+endif()
+message(STATUS "✅ LZ4 found - Compression enabled")
+
 # Directorios de inclusión
 include_directories(include)
 include_directories(/usr/local/include)
@@ -21,6 +36,7 @@ set(SOURCES
         src/etcd_server.cpp
         src/component_registry.cpp
         src/crypto_manager.cpp
+        src/compression_lz4.cpp
 )
 
 # Ejecutable principal
@@ -34,10 +50,17 @@ target_link_libraries(etcd-server
         ssl
         crypto
         ${CRYPTOPP_LIBRARIES}
+        ${LIBSODIUM_LIBRARIES}
+        ${LZ4_LIBRARIES}
 )
 
 # Incluir directorios de Crypto++
-target_include_directories(etcd-server PRIVATE ${CRYPTOPP_INCLUDE_DIRS})
+target_include_directories(etcd-server
+                            PRIVATE
+                            ${CRYPTOPP_INCLUDE_DIRS}
+                            ${CMAKE_CURRENT_SOURCE_DIR}/include
+                            ${LIBSODIUM_INCLUDE_DIRS}
+                            ${LZ4_INCLUDE_DIRS})
 
 # Opciones de compilación
 target_compile_options(etcd-server PRIVATE -Wall -Wextra -O2)

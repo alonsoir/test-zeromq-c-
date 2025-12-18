@@ -40,6 +40,20 @@ namespace crypto {
     std::string decrypt_chacha20(const std::string& encrypted_data, const std::string& key);
     std::string generate_key();
     size_t get_key_size();
+    // Helper: Convert hex string to bytes
+    std::string hex_to_bytes(const std::string& hex) {
+        if (hex.length() % 2 != 0) {
+            throw std::runtime_error("Hex string must have even length");
+        }
+        std::string bytes;
+        bytes.reserve(hex.length() / 2);
+        for (size_t i = 0; i < hex.length(); i += 2) {
+            std::string byte_str = hex.substr(i, 2);
+            char byte = static_cast<char>(std::stoi(byte_str, nullptr, 16));
+            bytes.push_back(byte);
+        }
+        return bytes;
+    }
 }
 
 namespace component {
@@ -220,37 +234,48 @@ EtcdClient::EtcdClient(EtcdClient&&) noexcept = default;
 EtcdClient& EtcdClient::operator=(EtcdClient&&) noexcept = default;
 
 // Connection management
-bool EtcdClient::connect() {
-    std::lock_guard<std::mutex> lock(pImpl->mutex_);
-    
-    if (pImpl->connected_) {
-        std::cout << "✅ Already connected" << std::endl;
-        return true;
-    }
-    
-    std::cout << "🔗 Connecting to etcd-server: " 
-              << pImpl->config_.host << ":" << pImpl->config_.port << std::endl;
-    
-    // Test connection with a simple GET request
-    auto response = http::get(
-        pImpl->config_.host,
-        pImpl->config_.port,
-        "/health",
-        pImpl->config_.timeout_seconds,
-        pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
-    );
-    
-    pImpl->connected_ = response.success;
-    
-    if (pImpl->connected_) {
+    bool EtcdClient::connect() {
+        std::lock_guard<std::mutex> lock(pImpl->mutex_);
+
+        if (pImpl->connected_) {
+            std::cout << "✅ Already connected" << std::endl;
+            return true;
+        }
+
+        std::cout << "🔗 Connecting to etcd-server: "
+                  << pImpl->config_.host << ":" << pImpl->config_.port << std::endl;
+
+        // Test connection with health check
+        auto health_response = http::get(
+            pImpl->config_.host,
+            pImpl->config_.port,
+            "/health",
+            pImpl->config_.timeout_seconds,
+            pImpl->config_.max_retry_attempts,
+            pImpl->config_.retry_backoff_seconds
+        );
+
+        if (!health_response.success) {
+            std::cerr << "❌ Server health check failed" << std::endl;
+            return false;
+        }
+
+        pImpl->connected_ = true;
         std::cout << "✅ Connected to etcd-server" << std::endl;
-    } else {
-        std::cerr << "❌ Failed to connect to etcd-server" << std::endl;
+
+        // Register component and get encryption key
+        pImpl->mutex_.unlock();
+        bool registered = register_component();
+        pImpl->mutex_.lock();
+
+        if (!registered) {
+            std::cerr << "⚠️  Component registration failed (continuing anyway)" << std::endl;
+        }
+
+        return true;
+
     }
-    
-    return pImpl->connected_;
-}
+
 
 bool EtcdClient::is_connected() const {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
@@ -452,6 +477,19 @@ bool EtcdClient::register_component() {
     );
     
     if (response.success) {
+        // Parse response and extract encryption key
+        try {
+            json j = json::parse(response.body);
+            if (j.contains("encryption_key")) {
+                std::string hex_key = j["encryption_key"].get<std::string>();
+                pImpl->encryption_key_ = crypto::hex_to_bytes(hex_key);
+                std::cout << "🔑 Encryption key received from server ("
+                          << pImpl->encryption_key_.size() << " bytes)" << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "⚠️  Failed to parse encryption key: " << e.what() << std::endl;
+        }
+
         std::cout << "✅ Component registered: " << pImpl->config_.component_name << std::endl;
         
         // Start heartbeat thread
@@ -609,11 +647,12 @@ bool EtcdClient::put_config(const std::string& json_config) {
             pImpl->config_.host,
             pImpl->config_.port,
             path,
-            processed_config,
-            "application/octet-stream",
+            processed_data,
+            content_type,
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            original_size
         );
         
         // 5. Check response
