@@ -1,0 +1,6 @@
+rag/build/CMakeFiles/3.25.0/CompilerIdCXX/CMakeCXXCompilerId.cpp:758:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+rag/build/CMakeFiles/3.25.0/CompilerIdCXX/CMakeCXXCompilerId.cpp:730:28: error: syntax error [syntaxError]
+rag/build/CMakeFiles/3.25.1/CompilerIdCXX/CMakeCXXCompilerId.cpp:758:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+rag/build/CMakeFiles/3.25.1/CompilerIdCXX/CMakeCXXCompilerId.cpp:730:28: error: syntax error [syntaxError]
+rag/src/base_validator.cpp:257:14: warning: Return value of function std::stoi() is not used. [ignoredReturnValue]
+rag/src/base_validator.cpp:267:14: warning: Return value of function std::stod() is not used. [ignoredReturnValue]

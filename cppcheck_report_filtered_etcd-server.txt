@@ -1,0 +1,6 @@
+etcd-server/build/CMakeFiles/3.25.1/CompilerIdC/CMakeCCompilerId.c:773:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+etcd-server/build/CMakeFiles/3.25.1/CompilerIdC/CMakeCCompilerId.c:745:28: error: syntax error [syntaxError]
+etcd-server/build/CMakeFiles/3.25.1/CompilerIdCXX/CMakeCXXCompilerId.cpp:758:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+etcd-server/build/CMakeFiles/3.25.1/CompilerIdCXX/CMakeCXXCompilerId.cpp:730:28: error: syntax error [syntaxError]
+etcd-server/src/crypto_manager.cpp:34:13: warning: Potentially invalid type conversion in old-style C cast, clarify/fix with C++ cast [dangerousTypeCast]
+etcd-server/src/crypto_manager.cpp:35:13: warning: Potentially invalid type conversion in old-style C cast, clarify/fix with C++ cast [dangerousTypeCast]
