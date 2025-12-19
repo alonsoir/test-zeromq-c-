@@ -613,6 +613,39 @@ std::string EtcdClient::get_config_active() {
     return get("/config/" + pImpl->config_.component_name + "/active");
 }
 
+std::string EtcdClient::get_component_config(const std::string& component_name) {
+    std::lock_guard<std::mutex> lock(pImpl->mutex_);
+
+    if (!pImpl->connected_) {
+        std::cerr << "❌ [etcd-client] Not connected to etcd-server" << std::endl;
+        return "";
+    }
+
+    try {
+        // Request component config from server
+        auto response = http::get(
+            pImpl->config_.host,
+            pImpl->config_.port,
+            "/config/" + component_name,
+            pImpl->config_.timeout_seconds,
+            pImpl->config_.max_retry_attempts,
+            pImpl->config_.retry_backoff_seconds
+        );
+
+        if (!response.success) {
+            std::cerr << "❌ [etcd-client] Failed to get config for: " << component_name << std::endl;
+            return "";
+        }
+
+        std::cout << "✅ [etcd-client] Config retrieved for: " << component_name << std::endl;
+        return response.body;
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ [etcd-client] Exception getting config: " << e.what() << std::endl;
+        return "";
+    }
+}
+
 bool EtcdClient::put_config(const std::string& json_config) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
 

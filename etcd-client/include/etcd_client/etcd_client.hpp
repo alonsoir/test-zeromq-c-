@@ -126,6 +126,8 @@ public:
     // Get active config
     std::string get_config_active();
 
+    std::string get_component_config(const std::string& component_name);
+
     /**
      * Upload configuration to etcd-server
      * Compresses and encrypts the JSON before sending

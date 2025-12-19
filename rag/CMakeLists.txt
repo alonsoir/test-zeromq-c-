@@ -71,6 +71,24 @@ find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
 find_package(Threads REQUIRED)
 
 # ============================================================================
+# ETCD-CLIENT LIBRARY (New)
+# ============================================================================
+message(STATUS "🔍 Buscando etcd-client library...")
+
+find_library(ETCD_CLIENT_LIB
+        NAMES etcd_client
+        PATHS /vagrant/etcd-client/build
+        REQUIRED
+)
+
+if(ETCD_CLIENT_LIB)
+    message(STATUS "✅ Found etcd-client library: ${ETCD_CLIENT_LIB}")
+    set(ETCD_CLIENT_INCLUDE_DIR /vagrant/etcd-client/include)
+else()
+    message(FATAL_ERROR "❌ etcd-client library not found")
+endif()
+
+# ============================================================================
 # ARCHIVOS FUENTE - ACTUALIZADO CON NUEVOS COMPONENTES
 # ============================================================================
 set(SOURCES
@@ -96,12 +114,15 @@ target_include_directories(rag-security PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${HTTPLIB_INCLUDE_DIR}
         ${JSON_INCLUDE_DIR}
+        ${ETCD_CLIENT_INCLUDE_DIR}
 )
 
 # ============================================================================
 # LINKING
 # ============================================================================
-target_link_libraries(rag-security PRIVATE Threads::Threads)
+target_link_libraries(rag-security PRIVATE
+                    Threads::Threads
+                    ${ETCD_CLIENT_LIB})
 
 if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
     target_link_libraries(rag-security PRIVATE "${LLAMA_LIB_PATH}")

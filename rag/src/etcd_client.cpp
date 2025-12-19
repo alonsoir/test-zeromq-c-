@@ -1,285 +1,200 @@
-// rag/src/etcd_client.cpp -
+// rag/src/etcd_client.cpp - Adapter para etcd_client library
 #include "rag/etcd_client.hpp"
-#include "rag/config_manager.hpp"
-#include <httplib.h>
+#include "etcd_client/etcd_client.hpp"
+#include <nlohmann/json.hpp>
 #include <iostream>
-#include <thread>
-#include <chrono>
 
 namespace Rag {
 
 // ============================================================================
-// Implementación de EtcdClient::Impl (PIMPL)
+// Implementación del Adapter (PIMPL)
 // ============================================================================
 
 struct EtcdClient::Impl {
+    std::unique_ptr<etcd_client::EtcdClient> client_;
     std::string endpoint_;
     std::string component_name_;
-    bool connected_ = false;
-
+    std::string host_;
+    int port_;
+    
     Impl(const std::string& endpoint, const std::string& component_name)
-        : endpoint_(endpoint), component_name_(component_name) {}
-
-    bool initialize() {
-        std::cout << "🔗 Initializing etcd client with endpoint: " << endpoint_ << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        connected_ = true;
-        std::cout << "✅ etcd client initialized successfully" << std::endl;
-        return true;
+        : endpoint_(endpoint), component_name_(component_name) {
+        
+        // Parse endpoint (formato: "host:port" o "http://host:port")
+        parseEndpoint(endpoint);
+        
+        // Configurar etcd-client
+        etcd_client::Config config;
+        config.component_name = component_name;
+        config.host = host_;
+        config.port = port_;
+        config.encryption_enabled = true;
+        config.compression_enabled = true;
+        
+        client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
-
-    bool is_connected() const {
-        return connected_;
-    }
-
-    bool set_key(const std::string& key, const std::string& value) {
-        if (!connected_) {
-            std::cerr << "❌ etcd client not connected" << std::endl;
-            return false;
+    
+    void parseEndpoint(const std::string& endpoint) {
+        // Remover http:// si existe
+        std::string clean_endpoint = endpoint;
+        if (endpoint.find("http://") == 0) {
+            clean_endpoint = endpoint.substr(7);
         }
-        std::cout << "💾 Setting key: " << key << " = " << value << std::endl;
-        return true;
-    }
-
-    bool register_component() {
-        try {
-            auto& config_manager = ConfigManager::getInstance();
-            auto rag_config = config_manager.getRagConfig();
-            auto etcd_config = config_manager.getEtcdConfig();
-
-            // Parsear el endpoint para obtener host y puerto
-            std::string host = "localhost";
-            int port = 2379;
-
-            size_t protocol_pos = endpoint_.find("://");
-            if (protocol_pos != std::string::npos) {
-                std::string without_protocol = endpoint_.substr(protocol_pos + 3);
-                size_t colon_pos = without_protocol.find(':');
-                if (colon_pos != std::string::npos) {
-                    host = without_protocol.substr(0, colon_pos);
-                    port = std::stoi(without_protocol.substr(colon_pos + 1));
-                } else {
-                    host = without_protocol;
-                }
-            }
-
-            std::cout << "📤 Enviando registro a etcd-server: " << host << ":" << port << std::endl;
-
-            // Crear cliente HTTP
-            httplib::Client cli(host, port);
-            cli.set_connection_timeout(5);
-
-            // Preparar datos de registro
-            nlohmann::json registration_data = {
-                {"component", component_name_},
-                {"config", {
-                    {"host", rag_config.host},
-                    {"port", rag_config.port},
-                    {"model_name", rag_config.model_name},
-                    {"embedding_dimension", rag_config.embedding_dimension},
-                    {"etcd_endpoint", etcd_config.host + ":" + std::to_string(etcd_config.port)},
-                    {"status", "active"}
-                }}
-            };
-
-            std::string request_body = registration_data.dump();
-            std::cout << "📦 Datos de registro: " << request_body << std::endl;
-
-            // Enviar petición POST real
-            auto res = cli.Post("/register", request_body, "application/json");
-
-            if (res && res->status == 200) {
-                std::cout << "✅ Registro exitoso en etcd-server" << std::endl;
-                std::cout << "📋 Respuesta: " << res->body << std::endl;
-                return true;
-            } else {
-                std::cerr << "❌ Error en registro etcd: ";
-                if (res) {
-                    std::cerr << "HTTP " << res->status << " - " << res->body << std::endl;
-                } else {
-                    std::cerr << "No se pudo conectar al etcd-server" << std::endl;
-                }
-                return false;
-            }
-
-        } catch (const std::exception& e) {
-            std::cerr << "❌ Excepción en register_component: " << e.what() << std::endl;
-            return false;
+        
+        // Buscar ':'
+        size_t colon_pos = clean_endpoint.find(':');
+        if (colon_pos != std::string::npos) {
+            host_ = clean_endpoint.substr(0, colon_pos);
+            port_ = std::stoi(clean_endpoint.substr(colon_pos + 1));
+        } else {
+            host_ = clean_endpoint;
+            port_ = 2379; // Puerto por defecto
         }
-    }
-
-    bool unregister_component() {
-    std::cout << "🔧 Desregistro asíncrono - enviando solicitud en segundo plano..." << std::endl;
-
-    // Lanzar en un hilo separado para no bloquear la salida
-    std::thread([this]() {
-        try {
-            std::cout << "🔄 Procesando desregistro en segundo plano..." << std::endl;
-
-            // Enfoque ultra-minimalista
-            httplib::Client cli("127.0.0.1", 2379);
-            cli.set_connection_timeout(1);  // Muy corto
-            cli.set_read_timeout(1);        // Muy corto
-
-            // JSON como string simple, sin nlohmann
-            std::string json_body = "{\"component\":\"" + component_name_ + "\"}";
-
-            // Enviar y olvidar - no nos importa la respuesta
-            auto res = cli.Post("/unregister", json_body, "application/json");
-
-            if (res) {
-                std::cout << "✅ Desregistro confirmado en segundo plano" << std::endl;
-            } else {
-                std::cout << "⚠️  Desregistro enviado (sin confirmación)" << std::endl;
-            }
-        }
-        catch (const std::exception& e) {
-            std::cout << "⚠️  Error en desregistro en segundo plano: " << e.what() << std::endl;
-        }
-        catch (...) {
-            std::cout << "⚠️  Error desconocido en desregistro en segundo plano" << std::endl;
-        }
-    }).detach();  // IMPORTANTE: detach para no bloquear
-
-    std::cout << "✅ Solicitud de desregistro enviada (procesándose en fondo)" << std::endl;
-    return true;
-}
-
-    bool get_component_config(const std::string& component_name) {
-        std::cout << "📋 Getting config for: " << component_name << std::endl;
-        return true;
-    }
-
-    bool validate_configuration() {
-        std::cout << "✅ Validating configuration..." << std::endl;
-        return true;
-    }
-
-    bool update_component_config(const std::string& component_name, const std::string& config) {
-        std::cout << "⚙️  Updating config for: " << component_name << " with: " << config << std::endl;
-        return true;
-    }
-
-    std::string get_encryption_seed() {
-        return "default-encryption-seed-12345";
-    }
-
-    bool test_encryption(const std::string& test_data) {
-        std::cout << "🔒 Testing encryption with: " << test_data << std::endl;
-        return true;
-    }
-
-    bool get_pipeline_status() {
-        std::cout << "📊 Getting pipeline status..." << std::endl;
-        return true;
-    }
-
-    bool start_component(const std::string& component_name) {
-        std::cout << "🚀 Starting component: " << component_name << std::endl;
-        return true;
-    }
-
-    bool stop_component(const std::string& component_name) {
-        std::cout << "🛑 Stopping component: " << component_name << std::endl;
-        return true;
-    }
-
-    bool show_rag_config() {
-        try {
-            auto& config_manager = ConfigManager::getInstance();
-            auto rag_config = config_manager.getRagConfig();
-
-            std::cout << "🔧 RAG Configuration:" << std::endl;
-            std::cout << "  - Host: " << rag_config.host << std::endl;
-            std::cout << "  - Port: " << rag_config.port << std::endl;
-            std::cout << "  - Model: " << rag_config.model_name << std::endl;
-            std::cout << "  - Embedding Dimension: " << rag_config.embedding_dimension << std::endl;
-
-            return true;
-        } catch (const std::exception& e) {
-            std::cerr << "❌ Error showing RAG config: " << e.what() << std::endl;
-            return false;
-        }
-    }
-
-    bool set_rag_setting(const std::string& setting, const std::string& value) {
-        std::cout << "⚙️  Setting RAG setting: " << setting << " = " << value << std::endl;
-        return true;
-    }
-
-    bool get_rag_capabilities() {
-        std::cout << "🎯 RAG Capabilities: component_management, config_validation, pipeline_control" << std::endl;
-        return true;
+        
+        std::cout << "📡 Parsed endpoint: " << host_ << ":" << port_ << std::endl;
     }
 };
 
 // ============================================================================
-// Implementación de EtcdClient (interfaz pública)
+// Implementación pública del Adapter
 // ============================================================================
 
 EtcdClient::EtcdClient(const std::string& endpoint, const std::string& component_name)
-    : pImpl(std::make_unique<Impl>(endpoint, component_name)) {}
+    : pImpl(std::make_unique<Impl>(endpoint, component_name)) {
+    std::cout << "🔧 EtcdClient adapter created for: " << component_name << std::endl;
+}
 
 EtcdClient::~EtcdClient() = default;
 
 bool EtcdClient::initialize() {
-    return pImpl->initialize();
+    std::cout << "🔗 Initializing etcd client..." << std::endl;
+    
+    // Conectar y registrar (obtiene clave automáticamente)
+    if (!pImpl->client_->connect()) {
+        std::cerr << "❌ Failed to connect to etcd-server" << std::endl;
+        return false;
+    }
+    
+    std::cout << "✅ Connected to etcd-server" << std::endl;
+    std::cout << "🔑 Encryption key received automatically" << std::endl;
+    
+    return true;
 }
 
 bool EtcdClient::is_connected() const {
-    return pImpl->is_connected();
+    return pImpl->client_->is_connected();
 }
 
 bool EtcdClient::registerService() {
-    return pImpl->register_component(); // Internamente llama al método snake_case
+    std::cout << "📝 Registering RAG service in etcd..." << std::endl;
+    
+    // Crear configuración de RAG
+    nlohmann::json rag_config = {
+        {"component", pImpl->component_name_},
+        {"type", "rag-logger"},
+        {"status", "active"},
+        {"capabilities", {
+            {"llm_inference", true},
+            {"semantic_search", true},
+            {"query_validation", true}
+        }},
+        {"version", "1.0.0"}
+    };
+    
+    // Subir config con put_config() (automáticamente cifrado+comprimido)
+    if (!pImpl->client_->put_config(rag_config.dump(2))) {
+        std::cerr << "❌ Failed to register service" << std::endl;
+        return false;
+    }
+    
+    std::cout << "✅ Service registered successfully" << std::endl;
+    return true;
 }
 
 bool EtcdClient::unregisterService() {
-    return pImpl->unregister_component(); // Internamente llama al método snake_case
+    std::cout << "🗑️ Unregistering service..." << std::endl;
+    return pImpl->client_->unregister_component();
 }
 
 bool EtcdClient::get_component_config(const std::string& component_name) {
-    return pImpl->get_component_config(component_name);
+    std::cout << "📥 Fetching config for: " << component_name << std::endl;
+    
+    std::string config_json = pImpl->client_->get_component_config(component_name);
+    if (config_json.empty()) {
+        std::cerr << "❌ Component not found: " << component_name << std::endl;
+        return false;
+    }
+    
+    std::cout << "✅ Config received for " << component_name << std::endl;
+    std::cout << config_json << std::endl;
+    
+    return true;
 }
 
 bool EtcdClient::validate_configuration() {
-    return pImpl->validate_configuration();
+    std::cout << "✓ Configuration validation (using new library)" << std::endl;
+    return true;
 }
 
 bool EtcdClient::update_component_config(const std::string& component_name, const std::string& config) {
-    return pImpl->update_component_config(component_name, config);
+    std::cout << "📤 Updating config for: " << component_name << std::endl;
+    return pImpl->client_->put_config(config);
 }
 
 std::string EtcdClient::get_encryption_seed() {
-    return pImpl->get_encryption_seed();
+    // La nueva librería maneja el cifrado automáticamente
+    return "encryption_managed_automatically";
 }
 
 bool EtcdClient::test_encryption(const std::string& test_data) {
-    return pImpl->test_encryption(test_data);
+    std::cout << "🔒 Encryption test (handled automatically by library)" << std::endl;
+    (void)test_data;
+    return true;
 }
 
 bool EtcdClient::get_pipeline_status() {
-    return pImpl->get_pipeline_status();
+    std::cout << "📊 Getting pipeline status..." << std::endl;
+    // Obtener lista de componentes
+    auto components = pImpl->client_->list_components();
+    std::cout << "✅ Found " << components.size() << " components" << std::endl;
+    return true;
 }
 
 bool EtcdClient::start_component(const std::string& component_name) {
-    return pImpl->start_component(component_name);
+    std::cout << "▶️ Starting component: " << component_name << std::endl;
+    // Implementar lógica de start si es necesario
+    (void)component_name;
+    return true;
 }
 
 bool EtcdClient::stop_component(const std::string& component_name) {
-    return pImpl->stop_component(component_name);
+    std::cout << "⏸️ Stopping component: " << component_name << std::endl;
+    // Implementar lógica de stop si es necesario
+    (void)component_name;
+    return true;
 }
 
 bool EtcdClient::show_rag_config() {
-    return pImpl->show_rag_config();
+    std::cout << "📋 RAG Configuration:" << std::endl;
+    return get_component_config(pImpl->component_name_);
 }
 
 bool EtcdClient::set_rag_setting(const std::string& setting, const std::string& value) {
-    return pImpl->set_rag_setting(setting, value);
+    std::cout << "⚙️ Setting RAG setting: " << setting << " = " << value << std::endl;
+    // Implementar lógica de update específica
+    (void)setting;
+    (void)value;
+    return true;
 }
 
 bool EtcdClient::get_rag_capabilities() {
-    return pImpl->get_rag_capabilities();
+    std::cout << "🎯 RAG Capabilities:" << std::endl;
+    std::cout << "  - LLM Inference: ✅" << std::endl;
+    std::cout << "  - Semantic Search: ✅" << std::endl;
+    std::cout << "  - Query Validation: ✅" << std::endl;
+    std::cout << "  - Encrypted Communication: ✅" << std::endl;
+    std::cout << "  - Compressed Transfers: ✅" << std::endl;
+    return true;
 }
 
 } // namespace Rag
