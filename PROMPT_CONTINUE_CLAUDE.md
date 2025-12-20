@@ -1,280 +1,214 @@
-# Day 20-22 Continuity Prompt - Component Integration + Heartbeat + Quorum
+# Day 21 Context - ML Defender Encrypted Component Integration
 
-**Date:** December 20-22, 2025
-**Status:** RAG integrated, ready for full pipeline encryption
-**Progress:** 82% → 92% (target)
+## What We Completed Yesterday (Day 20)
 
----
+Successfully integrated the **sniffer** component with the etcd-client library using a PIMPL adapter pattern:
 
-## ✅ What We Completed (Days 18-19)
+### Achievements
+1. **Zero Breaking Changes** - Maintained main.cpp compatibility through adapter
+2. **Complete Config Upload** - Full 17,391-byte sniffer.json uploaded (no filtering)
+3. **End-to-End Encryption** - ChaCha20-Poly1305 working: 17391 → 8569 → 8609 bytes
+4. **Bug Fixes**:
+   - Fixed `config_types.cpp` missing `etcd.enabled` mapping
+   - Fixed `config_types.h` endpoint vs endpoints[] discrepancy
+   - Fixed etcd-server validation to accept JSON objects (not just strings)
 
-### Day 18: Bidirectional Config Management
-- ✅ PUT endpoint with encryption + compression
-- ✅ Server migrated from AES-CBC to ChaCha20-Poly1305
-- ✅ LZ4 decompression on server
-- ✅ Automatic encryption key exchange
-- ✅ X-Original-Size header protocol
-- ✅ Intelligent compression detection
+### Files Modified (Day 20)
+- `/vagrant/sniffer/include/etcd_client.hpp` - PIMPL adapter header
+- `/vagrant/sniffer/src/userspace/etcd_client.cpp` - Adapter implementation
+- `/vagrant/sniffer/src/userspace/main.cpp` - Integration code (lines ~305-330)
+- `/vagrant/sniffer/CMakeLists.txt` - etcd-client library linkage
+- `/vagrant/sniffer/include/config_types.h` - Changed `endpoint` to `endpoints[]`
+- `/vagrant/sniffer/src/userspace/config_types.cpp` - Added etcd mapping
+- `/vagrant/etcd-server/src/component_registry.cpp` - Fixed validation
 
-### Day 19: RAG Integration
-- ✅ RAG uses etcd-client library via adapter pattern
-- ✅ Zero changes to main.cpp (backward compatible)
-- ✅ Automatic encryption key exchange working
-- ✅ Config upload/retrieval encrypted
-- ✅ Connection time: <100ms
-- ✅ Smart compression (only when beneficial)
-
----
-
-## 🎯 Goals for Days 20-22
-
-### Day 20: Component Integration (~6-8 hours)
-**Integrate etcd-client in remaining components:**
-
-1. **ml-detector integration** (~2-3 hours)
-   - Link etcd-client library
-   - Register on startup
-   - Upload detector config
-   - Fetch global config
-   - Test encrypted communication
-
-2. **sniffer integration** (~2 hours)
-   - Link etcd-client library
-   - Register on startup
-   - Upload sniffer config
-   - Test eBPF + encryption
-
-3. **firewall integration** (~2 hours)
-   - Link etcd-client library
-   - Register on startup
-   - Fetch blocking rules from etcd
-   - Test end-to-end encrypted pipeline
-
-**Success Criteria:**
-- [ ] All components register with etcd-server
-- [ ] All communication encrypted with ChaCha20
-- [ ] Config distribution working
-- [ ] End-to-end test passing
-
----
-
-### Day 21: Heartbeat Implementation (~3-4 hours)
-
-1. **Server-side heartbeat endpoint** (~1 hour)
-   - POST /heartbeat endpoint in etcd-server
-   - Store component health status
-   - Timestamp tracking
-
-2. **Client-side heartbeat** (~1 hour)
-   - Already implemented in etcd-client library
-   - Just enable in configs
-
-3. **Health monitoring** (~1-2 hours)
-   - GET /health endpoint improvements
-   - Component status tracking
-   - Dead component detection
-
-**Success Criteria:**
-- [ ] POST /heartbeat endpoint working
-- [ ] All components sending heartbeats
-- [ ] Health status visible via GET /health
-- [ ] Stale component detection (>60s)
-
----
-
-### Day 22: Basic Quorum (~4-6 hours)
-
-**Simple quorum implementation:**
-
-1. **Multi-instance support** (~2 hours)
-   - etcd-server can start on different ports
-   - Instance discovery via config
-   - Peer-to-peer communication
-
-2. **Leader election** (~2 hours)
-   - Simple Raft-lite algorithm
-   - Lowest port = leader (simple)
-   - Or most recent timestamp
-
-3. **Data replication** (~2 hours)
-   - Leader broadcasts config changes
-   - Followers sync on startup
-   - Basic conflict resolution (last-write-wins)
-
-**Success Criteria:**
-- [ ] 3 etcd-server instances running
-- [ ] Leader elected automatically
-- [ ] Config replicated across instances
-- [ ] Client connects to any instance
-- [ ] Failover working (leader dies → new leader)
-
----
-
-## 📁 Key Files to Modify
-
-### Day 20 - Component Integration
-
-**ml-detector:**
+### Current Pipeline Status
 ```
-/vagrant/ml-detector/CMakeLists.txt       ← Add etcd-client
-/vagrant/ml-detector/src/main.cpp         ← Register with etcd
-/vagrant/ml-detector/config/*.json        ← Update config format
+✅ RAG → etcd-client → etcd-server (Day 19)
+✅ Sniffer → etcd-client → etcd-server (Day 20)
+⏳ ml-detector → etcd-client → etcd-server (Day 21)
+⏳ firewall → etcd-client → etcd-server (Day 21)
+⏳ Heartbeat endpoint (Day 21)
 ```
 
-**sniffer:**
-```
-/vagrant/sniffer/CMakeLists.txt           ← Add etcd-client
-/vagrant/sniffer/src/main.cpp             ← Register with etcd
-/vagrant/sniffer/config/*.json            ← Update config format
+## Today's Goals (Day 21)
+
+### Priority 1: ml-detector Integration (3-4 hours)
+**Goal:** Same PIMPL adapter pattern as sniffer
+
+**Files to Create:**
+1. `/vagrant/ml-detector/include/etcd_client.hpp`
+2. `/vagrant/ml-detector/src/etcd_client.cpp`
+
+**Files to Modify:**
+1. `/vagrant/ml-detector/src/main.cpp` - Add integration after config load
+2. `/vagrant/ml-detector/CMakeLists.txt` - Link etcd-client library
+
+**Integration Pattern (copy from sniffer):**
+```cpp
+// In main.cpp, after config loading:
+std::unique_ptr<mldetector::EtcdClient> etcd_client;
+
+if (config.etcd.enabled) {
+    std::string etcd_endpoint = config.etcd.endpoints[0];
+    etcd_client = std::make_unique<mldetector::EtcdClient>(etcd_endpoint, "ml-detector");
+    
+    if (!etcd_client->initialize()) {
+        std::cerr << "⚠️  [etcd] Failed to initialize" << std::endl;
+        etcd_client.reset();
+    } else if (!etcd_client->registerService()) {
+        std::cerr << "⚠️  [etcd] Failed to register" << std::endl;
+        etcd_client.reset();
+    } else {
+        std::cout << "✅ [etcd] ml-detector registered" << std::endl;
+    }
+}
 ```
 
-**firewall:**
+**Config File:** `/vagrant/ml-detector/config/ml-detector.json`
+- Add `"etcd": {"enabled": true, "endpoints": ["localhost:2379"]}`
+
+### Priority 2: firewall Integration (2-3 hours)
+Same pattern as ml-detector, different component name.
+
+**Files to Create:**
+1. `/vagrant/firewall/include/etcd_client.hpp`
+2. `/vagrant/firewall/src/etcd_client.cpp`
+
+**Files to Modify:**
+1. `/vagrant/firewall/src/main.cpp`
+2. `/vagrant/firewall/CMakeLists.txt`
+
+### Priority 3: Heartbeat Endpoint (2-3 hours)
+**Current Issue:** Sniffer shows `⚠️ HTTP POST failed: 404` on heartbeat
+
+**Implementation:**
+1. Add `POST /v1/heartbeat/:component_name` endpoint to etcd-server
+2. Update component's `last_heartbeat` timestamp
+3. Mark component as `status: active` or `inactive` based on timeout
+4. Return component status in `/components` endpoint
+
+**Files to Modify:**
+- `/vagrant/etcd-server/src/etcd_server.cpp` - Add heartbeat endpoint
+- `/vagrant/etcd-server/src/component_registry.cpp` - Add heartbeat() method
+
+**Endpoint Behavior:**
+```cpp
+// POST /v1/heartbeat/sniffer
+{
+  "timestamp": 1766225024,
+  "status": "active"
+}
+
+// Response:
+{
+  "status": "ok",
+  "last_heartbeat": 1766225024,
+  "next_heartbeat_expected": 1766225054  // +30s
+}
 ```
-/vagrant/firewall/CMakeLists.txt          ← Add etcd-client
-/vagrant/firewall/src/main.cpp            ← Register with etcd
+
+## Key Technical Details
+
+### PIMPL Adapter Pattern
+```cpp
+// Header (include/etcd_client.hpp)
+namespace component {
+    class EtcdClient {
+    public:
+        EtcdClient(const std::string& endpoint, const std::string& component_name);
+        ~EtcdClient();
+        bool initialize();
+        bool registerService();
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> pImpl;
+    };
+}
+
+// Implementation (src/etcd_client.cpp)
+struct EtcdClient::Impl {
+    std::unique_ptr<etcd_client::EtcdClient> client_;
+    std::string component_name_;
+    // Impl details...
+};
 ```
 
-### Day 21 - Heartbeat
+### CMakeLists.txt Pattern
+```cmake
+# Find etcd-client library
+set(ETCD_CLIENT_LIB /vagrant/etcd-client/build/libetcd_client.so)
+set(ETCD_CLIENT_INCLUDE_DIR /vagrant/etcd-client/include)
 
-**etcd-server:**
-```
-/vagrant/etcd-server/src/etcd_server.cpp  ← Add POST /heartbeat
-/vagrant/etcd-server/src/component_registry.cpp ← Track heartbeats
-```
-
-### Day 22 - Quorum
-
-**etcd-server:**
-```
-/vagrant/etcd-server/src/etcd_server.cpp     ← Multi-instance support
-/vagrant/etcd-server/src/quorum_manager.cpp  ← New file (leader election)
-/vagrant/etcd-server/src/replication.cpp     ← New file (data sync)
-/vagrant/etcd-server/config/cluster.json     ← New file (peer config)
+if(EXISTS ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Found etcd-client library")
+    include_directories(${ETCD_CLIENT_INCLUDE_DIR})
+    list(APPEND COMPONENT_LIBRARIES ${ETCD_CLIENT_LIB})
+endif()
 ```
 
----
+## Testing Strategy
 
-## 🧪 Testing Strategy
-
-### Day 20 Tests
+### Test 1: ml-detector Registration
 ```bash
 # Terminal 1: etcd-server
 cd /vagrant/etcd-server/build && ./etcd-server --port 2379
 
 # Terminal 2: ml-detector
-cd /vagrant/ml-detector/build && ./ml-detector
+cd /vagrant/ml-detector/build && ./ml-detector -c ../config/ml-detector.json
 
-# Terminal 3: sniffer
-cd /vagrant/sniffer/build && sudo ./sniffer
+# Expected:
+# ✅ [etcd] ml-detector registered and config uploaded
+# 🔐 [etcd] Config encrypted with ChaCha20-Poly1305
 
-# Terminal 4: firewall
-cd /vagrant/firewall/build && ./firewall
-
-# Verify: All components registered
-curl http://localhost:2379/components | jq '.components[]'
+# Verify:
+curl http://localhost:2379/components | jq
 ```
 
-### Day 21 Tests
+### Test 2: firewall Registration
+Same as ml-detector, different component.
+
+### Test 3: Heartbeat
 ```bash
-# Verify heartbeats
-watch -n 5 'curl -s http://localhost:2379/health | jq ".components"'
-
-# Should show: last_heartbeat timestamps updating
+# Should see periodic heartbeats in etcd-server logs
+# No more 404 errors in component logs
 ```
 
-### Day 22 Tests
+### Test 4: Full Pipeline
 ```bash
-# Start 3 instances
-./etcd-server --port 2379 --peers "localhost:2380,localhost:2381" &
-./etcd-server --port 2380 --peers "localhost:2379,localhost:2381" &
-./etcd-server --port 2381 --peers "localhost:2379,localhost:2380" &
-
-# Check leader
-curl http://localhost:2379/status | jq '.leader'
-
-# Kill leader, verify failover
-kill $(pgrep -f "port 2379")
-sleep 2
-curl http://localhost:2380/status | jq '.leader'
+# All components registered:
+curl http://localhost:2379/components | jq
+# Expected: sniffer, ml-detector, firewall, rag all listed
 ```
 
----
+## Known Issues to Watch
 
-## 💡 Implementation Tips
+1. **Config Structure Differences** - Each component has different JSON schemas
+2. **Namespace Conflicts** - Use `component::EtcdClient` not `sniffer::EtcdClient`
+3. **Library Path** - May need `LD_LIBRARY_PATH=/vagrant/etcd-client/build`
+4. **Heartbeat Thread** - Already running in sniffer, just needs endpoint
 
-### Adapter Pattern (Like RAG Day 19)
-For ml-detector/sniffer/firewall, use same pattern as RAG:
-1. Keep existing code structure
-2. Create thin adapter layer
-3. Use etcd-client library internally
-4. Zero breaking changes
+## Success Criteria
 
-### Heartbeat Simple Implementation
-```cpp
-// etcd-server: POST /heartbeat
-server.Post("/heartbeat", [this](const Request& req, Response& res) {
-    auto json_body = json::parse(req.body);
-    std::string component = json_body["component"];
-    component_registry_->update_heartbeat(component, time(nullptr));
-    res.set_content(R"({"status":"ok"})", "application/json");
-});
-```
+✅ ml-detector compiles and links with etcd-client  
+✅ ml-detector registers with etcd-server  
+✅ ml-detector uploads config encrypted  
+✅ firewall compiles and links with etcd-client  
+✅ firewall registers with etcd-server  
+✅ firewall uploads config encrypted  
+✅ Heartbeat endpoint implemented  
+✅ No more 404 errors in logs  
+✅ All 4 components show in `/components` endpoint
 
-### Quorum Minimum Viable
-- Use file-based sync initially (simple)
-- Leader writes to `/tmp/etcd-data.json`
-- Followers read every 5 seconds
-- Upgrade to HTTP replication later
+## Progress Target
+- **Start:** 92%
+- **End:** 98% (if all 3 priorities complete)
 
----
-
-## 🎯 Success Metrics
-
-**Day 20:**
-- 4/4 components registered ✅
-- 100% encrypted communication ✅
-- Config distribution working ✅
-
-**Day 21:**
-- POST /heartbeat implemented ✅
-- Heartbeats visible in logs ✅
-- Health monitoring working ✅
-
-**Day 22:**
-- 3 instances running ✅
-- Leader election working ✅
-- Config replicated ✅
-- Failover tested ✅
-
-**Progress:** 82% → 92% 🚀
+## Via Appia Quality Reminder
+- **Funciona > Perfecto** - Get it working, then refine
+- **Scientific Honesty** - Document what works and what doesn't
+- **KISS** - Copy the sniffer pattern, don't reinvent
 
 ---
 
-## 📝 Notes
-
-**From Day 19:**
-- Compression only happens when beneficial (smart!)
-- Small configs (<100 bytes) → no compression
-- Large configs (>100 bytes) → LZ4 compression
-- Server detects based on size comparison
-
-**Heartbeat Warning:**
-- RAG shows "⚠️ HTTP POST failed: 404" for heartbeat
-- This is expected - endpoint doesn't exist yet
-- Non-critical, system works fine without it
-- Will fix on Day 21
-
-**Vagrantfile:**
-- Probably doesn't need updates
-- etcd-server can run multiple instances via CLI args
-- No network changes needed
-
-**Makefile:**
-- May need targets for multi-instance etcd
-- Update `make run-lab-dev` to start all with encryption
-
----
-
-**Via Appia Quality** - Functional > Perfect 🛡️
-
-*Ready for Days 20-22!*
+Good luck with Day 21! The pattern is proven from Day 20, so this should be smoother. Focus on ml-detector first (highest priority for the pipeline), then firewall, then heartbeat.

@@ -375,7 +375,7 @@
   },
 
   "etcd": {
-    "enabled": false,
+    "enabled": true,
     "endpoints": ["localhost:2379"],
     "connection_timeout_ms": 5000,
     "retry_attempts": 3,

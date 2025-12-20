@@ -197,15 +197,20 @@ std::vector<std::string> ComponentRegistry::get_registered_components() const {
 }
 
 bool ComponentRegistry::validate_component_config(const json& config) const {
-    // Validación básica - puede expandirse según necesidades
     if (!config.is_object()) {
         return false;
     }
 
-    // Verificar campos requeridos
-    if (!config.contains("component") || !config["component"].is_string()) {
-        return false;
+    // Aceptar tanto "component" como string o como objeto con "name"
+    if (config.contains("component")) {
+        if (config["component"].is_string()) {
+            return true;  // Formato simple: {"component": "sniffer"}
+        }
+        if (config["component"].is_object() && config["component"].contains("name")) {
+            return true;  // Formato completo: {"component": {"name": "sniffer", ...}}
+        }
+        return false;  // component existe pero formato incorrecto
     }
 
-    return true;
+    return false;  // No tiene "component"
 }

@@ -232,8 +232,7 @@ struct StrictSnifferConfig {
     // etcd - TODOS REQUERIDOS
     struct {
         bool enabled;
-        std::string endpoint;
-        int port;
+        std::vector<std::string> endpoints;  // HA-ready (usa primer elemento por ahora)
         std::string service_name;
         int lease_ttl_seconds;
         int heartbeat_interval_seconds;

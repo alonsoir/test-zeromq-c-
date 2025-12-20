@@ -2303,7 +2303,8 @@ CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o: /vagrant/sniffer/src/use
 CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/userspace/etcd_client.cpp \
   /usr/include/stdc-predef.h \
   /vagrant/sniffer/include/etcd_client.hpp \
-  /usr/include/c++/12/string \
+  /usr/include/c++/12/memory \
+  /usr/include/c++/12/bits/stl_algobase.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/c++config.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/os_defines.h \
   /usr/include/features.h \
@@ -2316,32 +2317,17 @@ CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/use
   /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/cpu_defines.h \
   /usr/include/c++/12/pstl/pstl_config.h \
-  /usr/include/c++/12/bits/stringfwd.h \
-  /usr/include/c++/12/bits/memoryfwd.h \
-  /usr/include/c++/12/bits/char_traits.h \
-  /usr/include/c++/12/bits/postypes.h \
-  /usr/include/c++/12/cwchar \
-  /usr/include/wchar.h \
-  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
-  /usr/include/x86_64-linux-gnu/bits/floatn.h \
-  /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/include/stddef.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdarg.h \
-  /usr/include/x86_64-linux-gnu/bits/wchar.h \
-  /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
-  /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
-  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+  /usr/include/c++/12/bits/functexcept.h \
+  /usr/include/c++/12/bits/exception_defines.h \
+  /usr/include/c++/12/bits/cpp_type_traits.h \
+  /usr/include/c++/12/ext/type_traits.h \
+  /usr/include/c++/12/ext/numeric_traits.h \
+  /usr/include/c++/12/bits/stl_pair.h \
   /usr/include/c++/12/type_traits \
+  /usr/include/c++/12/bits/move.h \
+  /usr/include/c++/12/bits/utility.h \
   /usr/include/c++/12/compare \
   /usr/include/c++/12/concepts \
-  /usr/include/c++/12/bits/stl_construct.h \
-  /usr/include/c++/12/new \
-  /usr/include/c++/12/bits/exception.h \
-  /usr/include/c++/12/bits/move.h \
   /usr/include/c++/12/bits/stl_iterator_base_types.h \
   /usr/include/c++/12/bits/iterator_concepts.h \
   /usr/include/c++/12/bits/ptr_traits.h \
@@ -2349,52 +2335,115 @@ CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/use
   /usr/include/c++/12/bits/stl_iterator_base_funcs.h \
   /usr/include/c++/12/bits/concept_check.h \
   /usr/include/c++/12/debug/assertions.h \
-  /usr/include/c++/12/cstdint \
-  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdint.h \
-  /usr/include/stdint.h \
-  /usr/include/x86_64-linux-gnu/bits/types.h \
-  /usr/include/x86_64-linux-gnu/bits/typesizes.h \
-  /usr/include/x86_64-linux-gnu/bits/time64.h \
-  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
-  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/c++/12/bits/stl_iterator.h \
+  /usr/include/c++/12/new \
+  /usr/include/c++/12/bits/exception.h \
+  /usr/include/c++/12/bits/stl_construct.h \
+  /usr/include/c++/12/debug/debug.h \
+  /usr/include/c++/12/bits/predefined_ops.h \
   /usr/include/c++/12/bits/allocator.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/c++allocator.h \
   /usr/include/c++/12/bits/new_allocator.h \
-  /usr/include/c++/12/bits/functexcept.h \
-  /usr/include/c++/12/bits/exception_defines.h \
-  /usr/include/c++/12/bits/cpp_type_traits.h \
+  /usr/include/c++/12/bits/memoryfwd.h \
+  /usr/include/c++/12/bits/stl_uninitialized.h \
+  /usr/include/c++/12/ext/alloc_traits.h \
+  /usr/include/c++/12/bits/alloc_traits.h \
+  /usr/include/c++/12/bits/stl_tempbuf.h \
+  /usr/include/c++/12/bits/stl_raw_storage_iter.h \
+  /usr/include/c++/12/bits/align.h \
+  /usr/include/c++/12/bit \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdint.h \
+  /usr/include/stdint.h \
+  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+  /usr/include/x86_64-linux-gnu/bits/types.h \
+  /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+  /usr/include/x86_64-linux-gnu/bits/time64.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/c++/12/bits/uses_allocator.h \
+  /usr/include/c++/12/bits/unique_ptr.h \
+  /usr/include/c++/12/tuple \
+  /usr/include/c++/12/bits/invoke.h \
+  /usr/include/c++/12/bits/stl_function.h \
+  /usr/include/c++/12/backward/binders.h \
+  /usr/include/c++/12/bits/functional_hash.h \
+  /usr/include/c++/12/bits/hash_bytes.h \
+  /usr/include/c++/12/ostream \
+  /usr/include/c++/12/ios \
+  /usr/include/c++/12/iosfwd \
+  /usr/include/c++/12/bits/stringfwd.h \
+  /usr/include/c++/12/bits/postypes.h \
+  /usr/include/c++/12/cwchar \
+  /usr/include/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/floatn.h \
+  /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/stddef.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/include/stdarg.h \
+  /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
+  /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
+  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+  /usr/include/c++/12/exception \
+  /usr/include/c++/12/bits/exception_ptr.h \
+  /usr/include/c++/12/bits/cxxabi_init_exception.h \
+  /usr/include/c++/12/typeinfo \
+  /usr/include/c++/12/bits/nested_exception.h \
+  /usr/include/c++/12/bits/char_traits.h \
+  /usr/include/c++/12/cstdint \
   /usr/include/c++/12/bits/localefwd.h \
   /usr/include/x86_64-linux-gnu/c++/12/bits/c++locale.h \
   /usr/include/c++/12/clocale \
   /usr/include/locale.h \
   /usr/include/x86_64-linux-gnu/bits/locale.h \
-  /usr/include/c++/12/iosfwd \
   /usr/include/c++/12/cctype \
   /usr/include/ctype.h \
   /usr/include/x86_64-linux-gnu/bits/endian.h \
   /usr/include/x86_64-linux-gnu/bits/endianness.h \
+  /usr/include/c++/12/bits/ios_base.h \
+  /usr/include/c++/12/ext/atomicity.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/gthr.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/gthr-default.h \
+  /usr/include/pthread.h \
+  /usr/include/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
+  /usr/include/x86_64-linux-gnu/bits/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
+  /usr/include/x86_64-linux-gnu/bits/cpu-set.h \
+  /usr/include/time.h \
+  /usr/include/x86_64-linux-gnu/bits/time.h \
+  /usr/include/x86_64-linux-gnu/bits/timex.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
+  /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
+  /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/timer_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
+  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
+  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
+  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
+  /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
+  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
+  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
+  /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+  /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
+  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/atomic_word.h \
+  /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
+  /usr/include/c++/12/bits/locale_classes.h \
+  /usr/include/c++/12/string \
   /usr/include/c++/12/bits/ostream_insert.h \
   /usr/include/c++/12/bits/cxxabi_forced.h \
-  /usr/include/c++/12/bits/stl_iterator.h \
-  /usr/include/c++/12/ext/type_traits.h \
-  /usr/include/c++/12/bits/stl_function.h \
-  /usr/include/c++/12/backward/binders.h \
-  /usr/include/c++/12/ext/numeric_traits.h \
-  /usr/include/c++/12/bits/stl_algobase.h \
-  /usr/include/c++/12/bits/stl_pair.h \
-  /usr/include/c++/12/bits/utility.h \
-  /usr/include/c++/12/debug/debug.h \
-  /usr/include/c++/12/bits/predefined_ops.h \
   /usr/include/c++/12/bits/refwrap.h \
-  /usr/include/c++/12/bits/invoke.h \
   /usr/include/c++/12/bits/range_access.h \
   /usr/include/c++/12/initializer_list \
   /usr/include/c++/12/bits/basic_string.h \
-  /usr/include/c++/12/ext/alloc_traits.h \
-  /usr/include/c++/12/bits/alloc_traits.h \
   /usr/include/c++/12/string_view \
-  /usr/include/c++/12/bits/functional_hash.h \
-  /usr/include/c++/12/bits/hash_bytes.h \
   /usr/include/c++/12/bits/ranges_base.h \
   /usr/include/c++/12/bits/max_size_type.h \
   /usr/include/c++/12/numbers \
@@ -2405,25 +2454,12 @@ CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/use
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/sys/types.h \
-  /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/timer_t.h \
   /usr/include/endian.h \
   /usr/include/x86_64-linux-gnu/bits/byteswap.h \
   /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
   /usr/include/x86_64-linux-gnu/sys/select.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
   /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
-  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
-  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
-  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
-  /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
-  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
-  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/alloca.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
@@ -2446,53 +2482,6 @@ CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/use
   /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
   /usr/include/c++/12/bits/charconv.h \
   /usr/include/c++/12/bits/basic_string.tcc \
-  /usr/include/c++/12/vector \
-  /usr/include/c++/12/bits/stl_uninitialized.h \
-  /usr/include/c++/12/bits/stl_vector.h \
-  /usr/include/c++/12/bits/stl_bvector.h \
-  /usr/include/c++/12/bits/vector.tcc \
-  /usr/include/c++/12/map \
-  /usr/include/c++/12/bits/stl_tree.h \
-  /usr/include/c++/12/ext/aligned_buffer.h \
-  /usr/include/c++/12/bits/node_handle.h \
-  /usr/include/c++/12/bits/stl_map.h \
-  /usr/include/c++/12/tuple \
-  /usr/include/c++/12/bits/uses_allocator.h \
-  /usr/include/c++/12/bits/stl_multimap.h \
-  /usr/include/c++/12/bits/erase_if.h \
-  /usr/include/c++/12/memory \
-  /usr/include/c++/12/bits/stl_tempbuf.h \
-  /usr/include/c++/12/bits/stl_raw_storage_iter.h \
-  /usr/include/c++/12/bits/align.h \
-  /usr/include/c++/12/bit \
-  /usr/include/c++/12/bits/unique_ptr.h \
-  /usr/include/c++/12/ostream \
-  /usr/include/c++/12/ios \
-  /usr/include/c++/12/exception \
-  /usr/include/c++/12/bits/exception_ptr.h \
-  /usr/include/c++/12/bits/cxxabi_init_exception.h \
-  /usr/include/c++/12/typeinfo \
-  /usr/include/c++/12/bits/nested_exception.h \
-  /usr/include/c++/12/bits/ios_base.h \
-  /usr/include/c++/12/ext/atomicity.h \
-  /usr/include/x86_64-linux-gnu/c++/12/bits/gthr.h \
-  /usr/include/x86_64-linux-gnu/c++/12/bits/gthr-default.h \
-  /usr/include/pthread.h \
-  /usr/include/sched.h \
-  /usr/include/x86_64-linux-gnu/bits/sched.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
-  /usr/include/x86_64-linux-gnu/bits/cpu-set.h \
-  /usr/include/time.h \
-  /usr/include/x86_64-linux-gnu/bits/time.h \
-  /usr/include/x86_64-linux-gnu/bits/timex.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
-  /usr/include/x86_64-linux-gnu/bits/setjmp.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
-  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
-  /usr/include/x86_64-linux-gnu/c++/12/bits/atomic_word.h \
-  /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
-  /usr/include/c++/12/bits/locale_classes.h \
   /usr/include/c++/12/bits/locale_classes.tcc \
   /usr/include/c++/12/system_error \
   /usr/include/x86_64-linux-gnu/c++/12/bits/error_constants.h \
@@ -2513,6 +2502,7 @@ CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/use
   /usr/include/c++/12/bits/shared_ptr.h \
   /usr/include/c++/12/bits/shared_ptr_base.h \
   /usr/include/c++/12/bits/allocated_ptr.h \
+  /usr/include/c++/12/ext/aligned_buffer.h \
   /usr/include/c++/12/ext/concurrence.h \
   /usr/include/c++/12/bits/shared_ptr_atomic.h \
   /usr/include/c++/12/bits/atomic_base.h \
@@ -2548,91 +2538,162 @@ CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o: /vagrant/sniffer/src/use
   /usr/include/c++/12/bits/uses_allocator_args.h \
   /usr/include/c++/12/pstl/glue_memory_defs.h \
   /usr/include/c++/12/pstl/execution_defs.h \
+  /vagrant/etcd-client/include/etcd_client/etcd_client.hpp \
+  /usr/include/c++/12/vector \
+  /usr/include/c++/12/bits/stl_vector.h \
+  /usr/include/c++/12/bits/stl_bvector.h \
+  /usr/include/c++/12/bits/vector.tcc \
   /usr/include/c++/12/functional \
   /usr/include/c++/12/bits/std_function.h \
   /usr/include/c++/12/unordered_map \
   /usr/include/c++/12/bits/hashtable.h \
   /usr/include/c++/12/bits/hashtable_policy.h \
   /usr/include/c++/12/bits/enable_special_members.h \
+  /usr/include/c++/12/bits/node_handle.h \
   /usr/include/c++/12/bits/unordered_map.h \
+  /usr/include/c++/12/bits/erase_if.h \
   /usr/include/c++/12/array \
   /usr/include/c++/12/bits/stl_algo.h \
   /usr/include/c++/12/bits/algorithmfwd.h \
   /usr/include/c++/12/bits/stl_heap.h \
   /usr/include/c++/12/bits/uniform_int_dist.h \
-  /usr/include/c++/12/atomic \
-  /usr/include/c++/12/thread \
-  /usr/include/c++/12/stop_token \
-  /usr/include/c++/12/bits/std_thread.h \
-  /usr/include/c++/12/semaphore \
-  /usr/include/c++/12/bits/semaphore_base.h \
-  /usr/include/c++/12/bits/chrono.h \
-  /usr/include/c++/12/ratio \
-  /usr/include/c++/12/limits \
-  /usr/include/c++/12/ctime \
-  /usr/include/c++/12/bits/parse_numbers.h \
-  /usr/include/c++/12/bits/atomic_timed_wait.h \
-  /usr/include/c++/12/bits/this_thread_sleep.h \
-  /usr/include/x86_64-linux-gnu/sys/time.h \
-  /usr/include/semaphore.h \
-  /usr/include/x86_64-linux-gnu/bits/semaphore.h \
-  /usr/include/c++/12/mutex \
-  /usr/include/c++/12/bits/unique_lock.h \
-  /usr/include/x86_64-linux-gnu/curl/curl.h \
-  /usr/include/x86_64-linux-gnu/curl/curlver.h \
-  /usr/include/x86_64-linux-gnu/curl/system.h \
-  /usr/include/x86_64-linux-gnu/sys/socket.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
-  /usr/include/x86_64-linux-gnu/bits/socket.h \
-  /usr/include/x86_64-linux-gnu/bits/socket_type.h \
-  /usr/include/x86_64-linux-gnu/bits/sockaddr.h \
-  /usr/include/x86_64-linux-gnu/asm/socket.h \
-  /usr/include/asm-generic/socket.h \
-  /usr/include/linux/posix_types.h \
-  /usr/include/linux/stddef.h \
-  /usr/include/x86_64-linux-gnu/asm/posix_types.h \
-  /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
-  /usr/include/asm-generic/posix_types.h \
-  /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
-  /usr/include/asm-generic/bitsperlong.h \
-  /usr/include/x86_64-linux-gnu/asm/sockios.h \
-  /usr/include/asm-generic/sockios.h \
-  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
-  /usr/include/x86_64-linux-gnu/curl/easy.h \
-  /usr/include/x86_64-linux-gnu/curl/multi.h \
-  /usr/include/x86_64-linux-gnu/curl/curl.h \
-  /usr/include/x86_64-linux-gnu/curl/urlapi.h \
-  /usr/include/x86_64-linux-gnu/curl/options.h \
-  /usr/include/x86_64-linux-gnu/curl/header.h \
-  /usr/include/x86_64-linux-gnu/curl/websockets.h \
-  /usr/include/jsoncpp/json/json.h \
-  /usr/include/jsoncpp/json/config.h \
-  /usr/include/c++/12/cstddef \
-  /usr/include/c++/12/istream \
-  /usr/include/c++/12/bits/istream.tcc \
-  /usr/include/c++/12/sstream \
-  /usr/include/c++/12/bits/sstream.tcc \
-  /usr/include/jsoncpp/json/allocator.h \
-  /usr/include/c++/12/cstring \
-  /usr/include/string.h \
-  /usr/include/strings.h \
-  /usr/include/jsoncpp/json/version.h \
-  /usr/include/jsoncpp/json/json_features.h \
-  /usr/include/jsoncpp/json/forwards.h \
-  /usr/include/jsoncpp/json/reader.h \
-  /usr/include/jsoncpp/json/value.h \
-  /usr/include/c++/12/deque \
-  /usr/include/c++/12/bits/stl_deque.h \
-  /usr/include/c++/12/bits/deque.tcc \
-  /usr/include/c++/12/stack \
-  /usr/include/c++/12/bits/stl_stack.h \
-  /usr/include/jsoncpp/json/writer.h \
-  /usr/include/c++/12/iostream \
-  /usr/include/c++/12/chrono \
+  /usr/include/nlohmann/json.hpp \
   /usr/include/c++/12/algorithm \
   /usr/include/c++/12/bits/ranges_algo.h \
   /usr/include/c++/12/bits/ranges_util.h \
-  /usr/include/c++/12/pstl/glue_algorithm_defs.h
+  /usr/include/c++/12/pstl/glue_algorithm_defs.h \
+  /usr/include/c++/12/cstddef \
+  /usr/include/c++/12/iterator \
+  /usr/include/c++/12/bits/stream_iterator.h \
+  /usr/include/c++/12/numeric \
+  /usr/include/c++/12/bits/stl_numeric.h \
+  /usr/include/c++/12/limits \
+  /usr/include/c++/12/pstl/glue_numeric_defs.h \
+  /usr/include/c++/12/utility \
+  /usr/include/c++/12/bits/stl_relops.h \
+  /usr/include/nlohmann/adl_serializer.hpp \
+  /usr/include/nlohmann/detail/abi_macros.hpp \
+  /usr/include/nlohmann/detail/conversions/from_json.hpp \
+  /usr/include/c++/12/forward_list \
+  /usr/include/c++/12/bits/forward_list.h \
+  /usr/include/c++/12/bits/forward_list.tcc \
+  /usr/include/c++/12/map \
+  /usr/include/c++/12/bits/stl_tree.h \
+  /usr/include/c++/12/bits/stl_map.h \
+  /usr/include/c++/12/bits/stl_multimap.h \
+  /usr/include/c++/12/valarray \
+  /usr/include/c++/12/cmath \
+  /usr/include/math.h \
+  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
+  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
+  /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-logb.h \
+  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
+  /usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h \
+  /usr/include/x86_64-linux-gnu/bits/iscanonical.h \
+  /usr/include/c++/12/bits/specfun.h \
+  /usr/include/c++/12/tr1/gamma.tcc \
+  /usr/include/c++/12/tr1/special_function_util.h \
+  /usr/include/c++/12/tr1/bessel_function.tcc \
+  /usr/include/c++/12/tr1/beta_function.tcc \
+  /usr/include/c++/12/tr1/ell_integral.tcc \
+  /usr/include/c++/12/tr1/exp_integral.tcc \
+  /usr/include/c++/12/tr1/hypergeometric.tcc \
+  /usr/include/c++/12/tr1/legendre_function.tcc \
+  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
+  /usr/include/c++/12/tr1/poly_hermite.tcc \
+  /usr/include/c++/12/tr1/poly_laguerre.tcc \
+  /usr/include/c++/12/tr1/riemann_zeta.tcc \
+  /usr/include/c++/12/bits/valarray_array.h \
+  /usr/include/c++/12/bits/valarray_array.tcc \
+  /usr/include/c++/12/bits/valarray_before.h \
+  /usr/include/c++/12/bits/slice_array.h \
+  /usr/include/c++/12/bits/valarray_after.h \
+  /usr/include/c++/12/bits/gslice.h \
+  /usr/include/c++/12/bits/gslice_array.h \
+  /usr/include/c++/12/bits/mask_array.h \
+  /usr/include/c++/12/bits/indirect_array.h \
+  /usr/include/nlohmann/detail/exceptions.hpp \
+  /usr/include/nlohmann/detail/value_t.hpp \
+  /usr/include/nlohmann/detail/macro_scope.hpp \
+  /usr/include/nlohmann/detail/meta/detected.hpp \
+  /usr/include/nlohmann/detail/meta/void_t.hpp \
+  /usr/include/nlohmann/thirdparty/hedley/hedley.hpp \
+  /usr/include/c++/12/version \
+  /usr/include/c++/12/cassert \
+  /usr/include/assert.h \
+  /usr/include/nlohmann/detail/string_escape.hpp \
+  /usr/include/nlohmann/detail/input/position_t.hpp \
+  /usr/include/nlohmann/detail/meta/cpp_future.hpp \
+  /usr/include/nlohmann/detail/meta/type_traits.hpp \
+  /usr/include/nlohmann/detail/iterators/iterator_traits.hpp \
+  /usr/include/nlohmann/detail/meta/call_std/begin.hpp \
+  /usr/include/nlohmann/detail/meta/call_std/end.hpp \
+  /usr/include/nlohmann/json_fwd.hpp \
+  /usr/include/nlohmann/detail/string_concat.hpp \
+  /usr/include/c++/12/cstring \
+  /usr/include/string.h \
+  /usr/include/strings.h \
+  /usr/include/nlohmann/detail/meta/identity_tag.hpp \
+  /usr/include/nlohmann/detail/meta/std_fs.hpp \
+  /usr/include/c++/12/filesystem \
+  /usr/include/c++/12/bits/fs_fwd.h \
+  /usr/include/c++/12/bits/chrono.h \
+  /usr/include/c++/12/ratio \
+  /usr/include/c++/12/ctime \
+  /usr/include/c++/12/bits/parse_numbers.h \
+  /usr/include/c++/12/bits/fs_path.h \
+  /usr/include/c++/12/locale \
+  /usr/include/c++/12/bits/locale_facets_nonio.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/time_members.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/messages_members.h \
+  /usr/include/libintl.h \
+  /usr/include/c++/12/bits/codecvt.h \
+  /usr/include/c++/12/bits/locale_facets_nonio.tcc \
+  /usr/include/c++/12/bits/locale_conv.h \
+  /usr/include/c++/12/iomanip \
+  /usr/include/c++/12/bits/quoted_string.h \
+  /usr/include/c++/12/sstream \
+  /usr/include/c++/12/istream \
+  /usr/include/c++/12/bits/istream.tcc \
+  /usr/include/c++/12/bits/sstream.tcc \
+  /usr/include/c++/12/codecvt \
+  /usr/include/c++/12/bits/fs_dir.h \
+  /usr/include/c++/12/bits/fs_ops.h \
+  /usr/include/nlohmann/detail/conversions/to_json.hpp \
+  /usr/include/nlohmann/detail/iterators/iteration_proxy.hpp \
+  /usr/include/c++/12/ranges \
+  /usr/include/c++/12/optional \
+  /usr/include/c++/12/span \
+  /usr/include/nlohmann/byte_container_with_subtype.hpp \
+  /usr/include/nlohmann/detail/hash.hpp \
+  /usr/include/nlohmann/detail/input/binary_reader.hpp \
+  /usr/include/nlohmann/detail/input/input_adapters.hpp \
+  /usr/include/nlohmann/detail/input/json_sax.hpp \
+  /usr/include/nlohmann/detail/input/lexer.hpp \
+  /usr/include/nlohmann/detail/meta/is_sax.hpp \
+  /usr/include/nlohmann/detail/input/parser.hpp \
+  /usr/include/nlohmann/detail/iterators/internal_iterator.hpp \
+  /usr/include/nlohmann/detail/iterators/primitive_iterator.hpp \
+  /usr/include/nlohmann/detail/iterators/iter_impl.hpp \
+  /usr/include/nlohmann/detail/iterators/json_reverse_iterator.hpp \
+  /usr/include/nlohmann/detail/json_pointer.hpp \
+  /usr/include/nlohmann/detail/json_ref.hpp \
+  /usr/include/nlohmann/detail/output/binary_writer.hpp \
+  /usr/include/nlohmann/detail/output/output_adapters.hpp \
+  /usr/include/nlohmann/detail/output/serializer.hpp \
+  /usr/include/nlohmann/detail/conversions/to_chars.hpp \
+  /usr/include/nlohmann/ordered_map.hpp \
+  /usr/include/c++/12/any \
+  /usr/include/nlohmann/detail/macro_unscope.hpp \
+  /usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
+  /usr/include/c++/12/iostream \
+  /usr/include/c++/12/fstream \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/basic_file.h \
+  /usr/include/x86_64-linux-gnu/c++/12/bits/c++io.h \
+  /usr/include/c++/12/bits/fstream.tcc
 
 CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o: /vagrant/sniffer/src/userspace/fast_detector.cpp \
   /usr/include/stdc-predef.h \
@@ -4871,6 +4932,9 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/zmq.h \
   /usr/include/c++/12/optional \
   /vagrant/sniffer/include/bpf_map_manager.h \
+  /vagrant/sniffer/include/feature_logger.hpp \
+  /vagrant/sniffer/include/dual_nic_manager.hpp \
+  /vagrant/sniffer/include/etcd_client.hpp \
   /usr/include/x86_64-linux-gnu/sys/socket.h \
   /usr/include/x86_64-linux-gnu/bits/types/struct_iovec.h \
   /usr/include/x86_64-linux-gnu/bits/socket.h \
@@ -4944,9 +5008,7 @@ CMakeFiles/sniffer.dir/src/userspace/main.cpp.o: /vagrant/sniffer/src/userspace/
   /usr/include/c++/12/bits/random.tcc \
   /usr/include/c++/12/numeric \
   /usr/include/c++/12/bits/stl_numeric.h \
-  /usr/include/c++/12/pstl/glue_numeric_defs.h \
-  /vagrant/sniffer/include/feature_logger.hpp \
-  /vagrant/sniffer/include/dual_nic_manager.hpp
+  /usr/include/c++/12/pstl/glue_numeric_defs.h
 
 CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o: /vagrant/sniffer/src/userspace/ml_defender_features.cpp \
   /usr/include/stdc-predef.h \
@@ -8340,8 +8402,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /vagrant/ml-detector/include/ml_defender/traffic_trees_inline.hpp:
 
-/vagrant/ml-detector/src/forest_trees_inline.hpp:
-
 /vagrant/ml-detector/include/ml_defender/ddos_trees_inline.hpp:
 
 /vagrant/ml-detector/src/ddos_detector.cpp:
@@ -8351,8 +8411,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 /vagrant/sniffer/src/userspace/time_window_aggregator.cpp:
 
 /usr/include/linux/sched.h:
-
-/usr/include/x86_64-linux-gnu/bits/resource.h:
 
 /usr/include/x86_64-linux-gnu/sys/resource.h:
 
@@ -8381,8 +8439,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 /usr/include/x86_64-linux-gnu/bits/sigstksz.h:
 
 /usr/include/x86_64-linux-gnu/bits/sigstack.h:
-
-/usr/include/x86_64-linux-gnu/bits/sigevent-consts.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h:
 
@@ -8420,17 +8476,69 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/netinet/ip.h:
 
+/usr/include/zmq.h:
+
+/usr/include/zmq.hpp:
+
+/vagrant/ml-detector/include/ml_defender/traffic_detector.hpp:
+
+/vagrant/ml-detector/include/ml_defender/ddos_detector.hpp:
+
+/vagrant/sniffer/include/payload_analyzer.hpp:
+
+/usr/include/numa.h:
+
+/usr/include/c++/12/queue:
+
+/usr/include/c++/12/condition_variable:
+
+/vagrant/sniffer/include/thread_manager.hpp:
+
+/usr/include/c++/12/bits/list.tcc:
+
+/usr/include/c++/12/bits/stl_list.h:
+
+/usr/include/c++/12/list:
+
+/vagrant/sniffer/src/userspace/flow_tracker.cpp:
+
+/usr/include/x86_64-linux-gnu/bits/in.h:
+
+/usr/include/netinet/in.h:
+
+/vagrant/sniffer/src/userspace/flow_manager.cpp:
+
+/vagrant/sniffer/include/feature_logger.hpp:
+
+/vagrant/sniffer/include/flow_manager.hpp:
+
+/vagrant/sniffer/include/feature_extractor.hpp:
+
+/vagrant/sniffer/include/time_window_aggregator.hpp:
+
+/vagrant/sniffer/include/protocol_numbers.hpp:
+
+/vagrant/sniffer/include/main.h:
+
+/usr/include/nlohmann/detail/macro_unscope.hpp:
+
+/vagrant/sniffer/include/ml_defender_features.hpp:
+
+/usr/include/nlohmann/ordered_map.hpp:
+
+/usr/include/nlohmann/detail/output/serializer.hpp:
+
+/usr/include/nlohmann/detail/output/output_adapters.hpp:
+
+/usr/include/nlohmann/detail/output/binary_writer.hpp:
+
+/usr/include/nlohmann/detail/json_pointer.hpp:
+
 /usr/include/c++/12/bits/align.h:
 
 /usr/include/c++/12/bits/stl_raw_storage_iter.h:
 
 /usr/include/c++/12/bits/stl_multimap.h:
-
-/usr/include/c++/12/condition_variable:
-
-/usr/lib/gcc/x86_64-linux-gnu/12/include/emmintrin.h:
-
-/usr/include/linux/bpf.h:
 
 /vagrant/sniffer/src/userspace/thread_manager.cpp:
 
@@ -8442,11 +8550,11 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/streambuf_iterator.h:
 
+/usr/include/c++/12/forward_list:
+
 /usr/include/c++/12/bits/functional_hash.h:
 
 /usr/include/google/protobuf/map.h:
-
-/usr/include/x86_64-linux-gnu/curl/options.h:
 
 /usr/include/c++/12/bits/locale_facets.h:
 
@@ -8464,8 +8572,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/ostream:
 
-/usr/include/c++/12/sstream:
-
 /usr/include/c++/12/pstl/execution_defs.h:
 
 /usr/include/c++/12/bits/stl_heap.h:
@@ -8476,13 +8582,17 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/algorithmfwd.h:
 
+/usr/include/nlohmann/detail/string_concat.hpp:
+
 /usr/include/c++/12/bits/locale_classes.h:
 
 /usr/include/google/protobuf/stubs/common.h:
 
 /usr/include/locale.h:
 
-/vagrant/sniffer/src/userspace/feature_extractor.cpp:
+/vagrant/sniffer/include/flow_tracker.hpp:
+
+/usr/include/c++/12/bits/fs_path.h:
 
 /usr/include/c++/12/typeinfo:
 
@@ -8494,7 +8604,11 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/system_error:
 
+/usr/include/nlohmann/detail/meta/detected.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/syscall.h:
+
+/usr/include/nlohmann/detail/meta/is_sax.hpp:
 
 /usr/include/c++/12/cerrno:
 
@@ -8518,9 +8632,9 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/x86_64-linux-gnu/bits/posix_opt.h:
 
-/usr/include/lz4hc.h:
+/usr/include/nlohmann/detail/abi_macros.hpp:
 
-/usr/include/c++/12/climits:
+/usr/include/lz4hc.h:
 
 /usr/include/x86_64-linux-gnu/bits/timex.h:
 
@@ -8550,7 +8664,13 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/linux/types.h:
 
+/usr/include/nlohmann/detail/value_t.hpp:
+
 /usr/include/x86_64-linux-gnu/c++/12/bits/gthr.h:
+
+/vagrant/sniffer/include/time_window_manager.hpp:
+
+/usr/include/c++/12/bits/stl_algo.h:
 
 /usr/include/c++/12/atomic:
 
@@ -8558,17 +8678,29 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/erase_if.h:
 
+/usr/include/c++/12/bits/valarray_array.h:
+
 /usr/include/assert.h:
+
+/usr/include/c++/12/span:
 
 /usr/include/c++/12/pstl/glue_algorithm_defs.h:
 
 /usr/include/c++/12/bits/localefwd.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/emmintrin.h:
+
+/usr/include/linux/bpf.h:
+
+/usr/include/c++/12/bits/gslice.h:
 
 /usr/include/google/protobuf/io/coded_stream.h:
 
 /usr/include/x86_64-linux-gnu/bits/timesize.h:
 
 /usr/include/google/protobuf/port_undef.inc:
+
+/usr/include/c++/12/bits/ranges_base.h:
 
 /usr/include/google/protobuf/message.h:
 
@@ -8584,15 +8716,11 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/google/protobuf/wire_format_lite.h:
 
-/usr/include/x86_64-linux-gnu/curl/curl.h:
-
 /usr/include/syscall.h:
 
 /usr/include/asm-generic/posix_types.h:
 
 /usr/include/x86_64-linux-gnu/sys/ioctl.h:
-
-/usr/include/c++/12/queue:
 
 /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h:
 
@@ -8602,6 +8730,8 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/x86_64-linux-gnu/bits/errno.h:
 
+/usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp:
+
 /usr/include/errno.h:
 
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
@@ -8610,10 +8740,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/stl_uninitialized.h:
 
-/usr/include/x86_64-linux-gnu/asm/unistd.h:
-
-/usr/include/x86_64-linux-gnu/bits/stdio.h:
-
 /usr/include/google/protobuf/port_def.inc:
 
 /usr/include/x86_64-linux-gnu/bits/fp-fast.h:
@@ -8621,6 +8747,8 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/error_constants.h:
+
+/usr/include/nlohmann/detail/conversions/to_chars.hpp:
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/gthr-default.h:
 
@@ -8644,7 +8772,11 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/x86_64-linux-gnu/bits/socket_type.h:
 
+/usr/include/c++/12/bits/gslice_array.h:
+
 /usr/include/x86_64-linux-gnu/bits/time64.h:
+
+/usr/include/nlohmann/json_fwd.hpp:
 
 /usr/include/c++/12/bits/hash_bytes.h:
 
@@ -8660,6 +8792,8 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /vagrant/sniffer/src/userspace/ebpf_loader.cpp:
 
+/usr/include/nlohmann/detail/json_ref.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/typesizes.h:
 
 /usr/include/c++/12/bits/stl_pair.h:
@@ -8668,7 +8802,19 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/memoryfwd.h:
 
+/usr/include/x86_64-linux-gnu/bits/sigaction.h:
+
+/usr/include/arpa/inet.h:
+
+/usr/include/c++/12/concepts:
+
 /usr/include/c++/12/bits/unique_lock.h:
+
+/vagrant/sniffer/src/userspace/fast_detector.cpp:
+
+/usr/include/x86_64-linux-gnu/bits/wctype-wchar.h:
+
+/usr/include/nlohmann/detail/iterators/iteration_proxy.hpp:
 
 /usr/include/c++/12/ratio:
 
@@ -8678,11 +8824,7 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/atomic_base.h:
 
-/usr/include/x86_64-linux-gnu/bits/sigaction.h:
-
-/usr/include/c++/12/concepts:
-
-/usr/include/arpa/inet.h:
+/usr/include/nlohmann/detail/meta/std_fs.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/uio_lim.h:
 
@@ -8690,17 +8832,13 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/c++/12/bits/stl_iterator_base_types.h:
 
+/usr/include/c++/12/bits/valarray_before.h:
+
 /usr/include/c++/12/bits/stl_construct.h:
-
-/usr/include/c++/12/bits/fs_ops.h:
-
-/usr/include/c++/12/debug/debug.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/syslimits.h:
 
 /usr/include/c++/12/iomanip:
-
-/usr/include/x86_64-linux-gnu/curl/curlver.h:
 
 /usr/include/c++/12/compare:
 
@@ -8764,6 +8902,8 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/include/zstd.h:
 
+/usr/include/nlohmann/detail/iterators/primitive_iterator.hpp:
+
 /usr/include/c++/12/limits:
 
 /usr/include/c++/12/bits/locale_classes.tcc:
@@ -8775,6 +8915,8 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 /usr/lib/gcc/x86_64-linux-gnu/12/include/limits.h:
 
 /usr/include/c++/12/bits/std_thread.h:
+
+/usr/include/nlohmann/detail/input/position_t.hpp:
 
 /usr/include/c++/12/bits/exception.h:
 
@@ -8790,8 +8932,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/stddef.h:
 
-/vagrant/sniffer/include/feature_logger.hpp:
-
 /usr/include/c++/12/bits/cpp_type_traits.h:
 
 /usr/include/c++/12/bits/codecvt.h:
@@ -8801,12 +8941,6 @@ CMakeFiles/sniffer.dir/vagrant/ml-detector/src/traffic_detector.cpp.o: /vagrant/
 /usr/include/x86_64-linux-gnu/c++/12/bits/messages_members.h:
 
 /usr/include/c++/12/bits/concept_check.h:
-
-/vagrant/sniffer/include/payload_analyzer.hpp:
-
-/usr/include/x86_64-linux-gnu/bits/getopt_ext.h:
-
-/usr/include/x86_64-linux-gnu/c++/12/bits/os_defines.h:
 
 /usr/include/c++/12/cstdlib:
 
@@ -8851,10 +8985,6 @@ proto/network_security.pb.cc:
 /usr/include/x86_64-linux-gnu/sys/syscall.h:
 
 /usr/include/c++/12/bits/refwrap.h:
-
-/vagrant/sniffer/src/userspace/flow_tracker.cpp:
-
-/usr/include/zmq.h:
 
 /usr/include/features.h:
 
@@ -8926,6 +9056,8 @@ proto/network_security.pb.cc:
 
 /usr/include/lz4.h:
 
+/usr/include/nlohmann/adl_serializer.hpp:
+
 /usr/include/c++/12/thread:
 
 /usr/include/c++/12/debug/assertions.h:
@@ -8944,9 +9076,11 @@ proto/network_security.pb.cc:
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/atomic_word.h:
 
-/usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
+/usr/include/x86_64-linux-gnu/bits/resource.h:
 
-/vagrant/ml-detector/include/ml_defender/ddos_detector.hpp:
+/usr/include/nlohmann/detail/meta/type_traits.hpp:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
 
 proto/network_security.pb.h:
 
@@ -8976,11 +9110,11 @@ proto/network_security.pb.h:
 
 /usr/include/x86_64-linux-gnu/bits/confname.h:
 
-/vagrant/sniffer/include/ml_defender_features.hpp:
-
 /usr/include/x86_64-linux-gnu/c++/12/bits/c++locale.h:
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
+
+/usr/include/nlohmann/detail/macro_scope.hpp:
 
 /usr/include/google/protobuf/arenastring.h:
 
@@ -9004,12 +9138,6 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/bits/stl_algobase.h:
 
-/usr/include/google/protobuf/stubs/strutil.h:
-
-/usr/include/wchar.h:
-
-/usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
-
 /usr/include/x86_64-linux-gnu/bits/uintn-identity.h:
 
 /usr/include/google/protobuf/stubs/port.h:
@@ -9017,6 +9145,8 @@ proto/network_security.pb.h:
 /vagrant/sniffer/include/fast_detector.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/endianness.h:
+
+/usr/include/c++/12/bits/forward_list.h:
 
 /usr/include/x86_64-linux-gnu/gnu/stubs.h:
 
@@ -9034,7 +9164,15 @@ proto/network_security.pb.h:
 
 /usr/include/google/protobuf/reflection_ops.h:
 
+/usr/include/x86_64-linux-gnu/asm/unistd.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio.h:
+
+/usr/include/nlohmann/detail/input/binary_reader.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/setjmp.h:
+
+/usr/include/nlohmann/detail/iterators/iter_impl.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
 
@@ -9084,8 +9222,6 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/chrono:
 
-/vagrant/sniffer/include/flow_manager.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/types/timer_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h:
@@ -9094,7 +9230,15 @@ proto/network_security.pb.h:
 
 /usr/include/strings.h:
 
+/vagrant/ml-detector/src/forest_trees_inline.hpp:
+
+/usr/include/c++/12/any:
+
+/usr/include/c++/12/bits/forward_list.tcc:
+
 /usr/include/c++/12/string:
+
+/usr/include/c++/12/bits/indirect_array.h:
 
 /usr/include/c++/12/bits/exception_defines.h:
 
@@ -9120,17 +9264,19 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/backward/auto_ptr.h:
 
+/usr/include/nlohmann/detail/iterators/json_reverse_iterator.hpp:
+
 /usr/include/c++/12/bit:
 
 /usr/include/jsoncpp/json/reader.h:
+
+/usr/include/nlohmann/detail/conversions/to_json.hpp:
 
 /usr/include/c++/12/bits/ranges_uninitialized.h:
 
 /usr/include/c++/12/bits/cxxabi_forced.h:
 
 /usr/include/c++/12/bits/stl_stack.h:
-
-/vagrant/sniffer/include/protocol_numbers.hpp:
 
 /usr/include/c++/12/bits/uses_allocator_args.h:
 
@@ -9144,19 +9290,25 @@ proto/network_security.pb.h:
 
 /vagrant/sniffer/include/config_manager.hpp:
 
+/vagrant/sniffer/include/zmq_pool_manager.hpp:
+
+/usr/include/sched.h:
+
+/usr/include/c++/12/bits/stl_multiset.h:
+
 /usr/include/c++/12/bits/stl_vector.h:
 
 /usr/include/c++/12/bits/streambuf.tcc:
 
 /usr/include/c++/12/bits/stl_bvector.h:
 
+/vagrant/sniffer/src/userspace/feature_extractor.cpp:
+
+/usr/include/nlohmann/detail/meta/identity_tag.hpp:
+
 /usr/include/google/protobuf/stubs/platform_macros.h:
 
 /usr/include/c++/12/stdlib.h:
-
-/usr/include/c++/12/optional:
-
-/usr/include/google/protobuf/stubs/stringpiece.h:
 
 /usr/include/google/protobuf/stubs/hash.h:
 
@@ -9174,8 +9326,6 @@ proto/network_security.pb.h:
 
 /usr/include/google/protobuf/stubs/logging.h:
 
-/usr/include/google/protobuf/stubs/status.h:
-
 /usr/include/c++/12/bits/ranges_algo.h:
 
 /usr/include/google/protobuf/arena.h:
@@ -9186,13 +9336,13 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/filesystem:
 
-/usr/include/c++/12/list:
-
 /usr/include/google/protobuf/arenaz_sampler.h:
 
 /usr/include/google/protobuf/stubs/once.h:
 
 /vagrant/ml-detector/include/ml_defender/internal_detector.hpp:
+
+/usr/include/nlohmann/detail/iterators/iterator_traits.hpp:
 
 /usr/include/c++/12/mutex:
 
@@ -9220,21 +9370,23 @@ proto/network_security.pb.h:
 
 /usr/include/google/protobuf/stubs/casts.h:
 
-/usr/include/c++/12/bits/stl_algo.h:
-
-/vagrant/sniffer/include/time_window_manager.hpp:
-
 /usr/include/google/protobuf/generated_enum_reflection.h:
-
-/usr/include/x86_64-linux-gnu/curl/websockets.h:
 
 /usr/include/google/protobuf/generated_enum_util.h:
 
 /usr/include/google/protobuf/unknown_field_set.h:
 
-/vagrant/sniffer/src/userspace/flow_manager.cpp:
+/usr/include/x86_64-linux-gnu/bits/types/stack_t.h:
+
+/usr/include/c++/12/fstream:
+
+/usr/include/nlohmann/detail/input/parser.hpp:
 
 /usr/include/google/protobuf/io/zero_copy_stream_impl_lite.h:
+
+/usr/include/c++/12/istream:
+
+/usr/include/google/protobuf/stubs/callback.h:
 
 /usr/include/c++/12/locale:
 
@@ -9248,13 +9400,15 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/stack:
 
+/vagrant/sniffer/src/userspace/ransomware_feature_processor.cpp:
+
+/usr/include/c++/12/bits/stl_queue.h:
+
+/vagrant/sniffer/include/ip_whitelist.hpp:
+
+/usr/include/google/protobuf/parse_context.h:
+
 /usr/include/c++/12/bits/std_function.h:
-
-/usr/include/sched.h:
-
-/usr/include/c++/12/bits/stl_multiset.h:
-
-/vagrant/sniffer/include/zmq_pool_manager.hpp:
 
 /usr/include/c++/12/array:
 
@@ -9278,6 +9432,12 @@ proto/network_security.pb.h:
 
 /usr/include/x86_64-linux-gnu/sys/time.h:
 
+/usr/include/x86_64-linux-gnu/bits/getopt_ext.h:
+
+/usr/include/x86_64-linux-gnu/c++/12/bits/os_defines.h:
+
+/usr/include/nlohmann/detail/meta/call_std/begin.hpp:
+
 /usr/include/google/protobuf/timestamp.pb.h:
 
 /usr/include/x86_64-linux-gnu/c++/12/bits/c++io.h:
@@ -9288,10 +9448,6 @@ proto/network_security.pb.h:
 
 /vagrant/sniffer/include/bpf_map_manager.h:
 
-/usr/include/x86_64-linux-gnu/bits/wctype-wchar.h:
-
-/vagrant/sniffer/src/userspace/fast_detector.cpp:
-
 /usr/include/x86_64-linux-gnu/asm/types.h:
 
 /usr/include/google/protobuf/implicit_weak_message.h:
@@ -9299,6 +9455,10 @@ proto/network_security.pb.h:
 /usr/include/c++/12/bits/locale_facets_nonio.tcc:
 
 /usr/include/asm-generic/int-ll64.h:
+
+/vagrant/sniffer/src/userspace/feature_logger.cpp:
+
+/usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
 
 /usr/include/linux/posix_types.h:
 
@@ -9312,6 +9472,8 @@ proto/network_security.pb.h:
 
 /vagrant/sniffer/include/compression_handler.hpp:
 
+/usr/include/nlohmann/detail/input/input_adapters.hpp:
+
 /vagrant/sniffer/src/userspace/config_manager.cpp:
 
 /usr/include/jsoncpp/json/json.h:
@@ -9319,8 +9481,6 @@ proto/network_security.pb.h:
 /usr/include/x86_64-linux-gnu/c++/12/bits/c++allocator.h:
 
 /usr/include/x86_64-linux-gnu/bits/math-vector.h:
-
-/usr/include/zmq.hpp:
 
 /usr/include/ctype.h:
 
@@ -9348,8 +9508,6 @@ proto/network_security.pb.h:
 
 /usr/include/jsoncpp/json/writer.h:
 
-/usr/include/c++/12/bits/fstream.tcc:
-
 /usr/include/c++/12/bits/fs_fwd.h:
 
 /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h:
@@ -9366,7 +9524,19 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/bits/fs_dir.h:
 
-/usr/include/c++/12/bits/semaphore_base.h:
+/usr/include/c++/12/bits/atomic_futex.h:
+
+/vagrant/sniffer/src/userspace/config_types.cpp:
+
+/vagrant/sniffer/src/userspace/ip_whitelist.cpp:
+
+/usr/include/x86_64-linux-gnu/asm/unistd_64.h:
+
+/usr/include/x86_64-linux-gnu/bits/sockaddr.h:
+
+/usr/include/bpf/bpf.h:
+
+/usr/include/c++/12/semaphore:
 
 /usr/include/c++/12/bits/this_thread_sleep.h:
 
@@ -9396,15 +9566,13 @@ proto/network_security.pb.h:
 
 /usr/include/linux/falloc.h:
 
-/usr/include/x86_64-linux-gnu/bits/in.h:
-
 /usr/include/c++/12/bits/locale_conv.h:
 
 /usr/include/x86_64-linux-gnu/bits/iscanonical.h:
 
-/usr/include/c++/12/bits/ranges_algobase.h:
-
 /vagrant/sniffer/src/userspace/main.cpp:
+
+/usr/include/c++/12/bits/ranges_algobase.h:
 
 /usr/include/c++/12/bits/specfun.h:
 
@@ -9426,9 +9594,17 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/tr1/poly_laguerre.tcc:
 
+/usr/include/c++/12/bits/fs_ops.h:
+
+/usr/include/c++/12/debug/debug.h:
+
+/vagrant/etcd-client/include/etcd_client/etcd_client.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/long-double.h:
 
 /usr/include/x86_64-linux-gnu/bits/socket.h:
+
+/usr/include/nlohmann/detail/hash.hpp:
 
 /usr/include/x86_64-linux-gnu/sys/types.h:
 
@@ -9444,15 +9620,13 @@ proto/network_security.pb.h:
 
 /usr/include/asm-generic/ioctls.h:
 
-/usr/include/c++/12/map:
-
 /usr/include/c++/12/future:
 
+/usr/include/c++/12/map:
+
+/usr/include/nlohmann/thirdparty/hedley/hedley.hpp:
+
 /usr/include/asm-generic/ioctl.h:
-
-/vagrant/sniffer/include/ransomware_feature_extractor.hpp:
-
-/vagrant/sniffer/include/fast_detector_config.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/ioctl-types.h:
 
@@ -9472,10 +9646,6 @@ proto/network_security.pb.h:
 
 /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h:
 
-/usr/include/c++/12/bits/fs_path.h:
-
-/vagrant/sniffer/include/flow_tracker.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/waitstatus.h:
 
 /usr/include/x86_64-linux-gnu/bits/stat.h:
@@ -9488,31 +9658,7 @@ proto/network_security.pb.h:
 
 /vagrant/sniffer/include/etcd_client.hpp:
 
-/usr/include/x86_64-linux-gnu/curl/system.h:
-
-/usr/include/x86_64-linux-gnu/curl/easy.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/stack_t.h:
-
-/usr/include/c++/12/fstream:
-
-/usr/include/x86_64-linux-gnu/curl/multi.h:
-
-/usr/include/c++/12/istream:
-
-/usr/include/google/protobuf/stubs/callback.h:
-
-/usr/include/x86_64-linux-gnu/curl/urlapi.h:
-
-/usr/include/c++/12/bits/ranges_base.h:
-
-/usr/include/x86_64-linux-gnu/curl/header.h:
-
-/vagrant/sniffer/include/main.h:
-
-/vagrant/sniffer/include/time_window_aggregator.hpp:
-
-/vagrant/sniffer/include/feature_extractor.hpp:
+/usr/include/nlohmann/json.hpp:
 
 /usr/include/c++/12/numeric:
 
@@ -9522,40 +9668,62 @@ proto/network_security.pb.h:
 
 /usr/include/c++/12/pstl/glue_numeric_defs.h:
 
-/usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
+/usr/include/c++/12/sstream:
 
-/vagrant/sniffer/src/userspace/feature_logger.cpp:
+/usr/include/nlohmann/detail/conversions/from_json.hpp:
 
-/usr/include/netinet/in.h:
+/vagrant/sniffer/include/ransomware_feature_extractor.hpp:
 
-/usr/include/x86_64-linux-gnu/asm/unistd_64.h:
+/vagrant/sniffer/include/fast_detector_config.hpp:
 
-/usr/include/x86_64-linux-gnu/bits/sockaddr.h:
+/usr/include/c++/12/valarray:
 
-/usr/include/bpf/bpf.h:
+/usr/include/nlohmann/detail/meta/call_std/end.hpp:
 
-/usr/include/c++/12/semaphore:
+/usr/include/nlohmann/detail/input/json_sax.hpp:
 
-/vagrant/sniffer/src/userspace/ip_whitelist.cpp:
+/usr/include/x86_64-linux-gnu/bits/sigevent-consts.h:
 
-/vagrant/sniffer/src/userspace/ransomware_feature_processor.cpp:
+/usr/include/c++/12/bits/valarray_array.tcc:
 
-/usr/include/c++/12/bits/stl_queue.h:
+/usr/include/c++/12/bits/slice_array.h:
 
-/usr/include/google/protobuf/parse_context.h:
+/usr/include/c++/12/climits:
 
-/vagrant/sniffer/include/ip_whitelist.hpp:
+/usr/include/c++/12/bits/valarray_after.h:
 
-/usr/include/c++/12/bits/stl_list.h:
+/usr/include/c++/12/bits/fstream.tcc:
 
-/usr/include/c++/12/bits/list.tcc:
+/usr/include/c++/12/bits/mask_array.h:
 
-/vagrant/sniffer/include/thread_manager.hpp:
+/usr/include/google/protobuf/stubs/strutil.h:
 
-/vagrant/sniffer/src/userspace/config_types.cpp:
+/usr/include/wchar.h:
 
-/usr/include/c++/12/bits/atomic_futex.h:
+/usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
 
-/usr/include/numa.h:
+/usr/include/nlohmann/detail/exceptions.hpp:
 
-/vagrant/ml-detector/include/ml_defender/traffic_detector.hpp:
+/usr/include/nlohmann/detail/meta/void_t.hpp:
+
+/usr/include/c++/12/bits/semaphore_base.h:
+
+/usr/include/c++/12/version:
+
+/usr/include/nlohmann/detail/string_escape.hpp:
+
+/usr/include/google/protobuf/stubs/status.h:
+
+/usr/include/nlohmann/detail/meta/cpp_future.hpp:
+
+/usr/include/c++/12/ranges:
+
+/usr/include/google/protobuf/stubs/stringpiece.h:
+
+/usr/include/c++/12/optional:
+
+/usr/include/nlohmann/byte_container_with_subtype.hpp:
+
+/usr/include/nlohmann/detail/input/lexer.hpp:
+
+/usr/include/nlohmann/detail/iterators/internal_iterator.hpp:

@@ -55,6 +55,17 @@ pkg_check_modules(SNAPPY libsnappy)
 find_library(CURL_LIBRARY curl)
 find_library(NUMA_LIBRARY numa)
 
+# etcd-client library (for encrypted config management)
+message(STATUS "🔍 Buscando etcd-client library...")
+set(ETCD_CLIENT_LIB /vagrant/etcd-client/build/libetcd_client.so)
+set(ETCD_CLIENT_INCLUDE_DIR /vagrant/etcd-client/include)
+
+if(EXISTS ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Found etcd-client library: ${ETCD_CLIENT_LIB}")
+else()
+    message(FATAL_ERROR "❌ etcd-client library not found at ${ETCD_CLIENT_LIB}")
+endif()
+
 # ============================================================================
 # CONFIGURATION VALIDATION
 # ============================================================================
@@ -91,6 +102,11 @@ include_directories(${ZSTD_INCLUDE_DIRS})
 
 if(SNAPPY_FOUND)
     include_directories(${SNAPPY_INCLUDE_DIRS})
+endif()
+
+# etcd-client includes
+if(ETCD_CLIENT_LIB)
+    include_directories(${ETCD_CLIENT_INCLUDE_DIR})
 endif()
 
 # ============================================================================
@@ -234,6 +250,10 @@ endif()
 
 if(NUMA_LIBRARY)
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${NUMA_LIBRARY})
+endif()
+
+if(ETCD_CLIENT_LIB)
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${ETCD_CLIENT_LIB})
 endif()
 
 # Link all libraries
@@ -422,6 +442,11 @@ message(STATUS "   ✅ eBPF/XDP high-performance packet capture")
 message(STATUS "   ✅ Mandatory LZ4/Zstd compression")
 message(STATUS "   ✅ Protobuf serialization")
 message(STATUS "   ✅ ZeroMQ communication")
+if(ETCD_CLIENT_LIB)
+    message(STATUS "   ✅ etcd-client library: enabled")
+else()
+    message(STATUS "   ⚪ etcd-client library: disabled")
+endif()
 message(STATUS "   🔐 Encryption ready (via etcd tokens)")
 message(STATUS "========================================")
 message(STATUS "")
