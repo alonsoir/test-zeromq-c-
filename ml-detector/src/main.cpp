@@ -8,6 +8,7 @@
 #include "onnx_model.hpp"
 #include "feature_extractor.hpp"
 #include "zmq_handler.hpp"
+#include "etcd_client.hpp"
 #include "ml_defender/ransomware_detector.hpp"
 #include "ml_defender/ddos_detector.hpp"        // ✅ Ya existe
 #include "ml_defender/traffic_detector.hpp"     // ✅ Ya existe
@@ -108,6 +109,31 @@ int main(int argc, char* argv[]) {
         DetectorConfig config = loader.load();
 
         std::cout << "✅ Configuration loaded successfully\n\n" << std::endl;
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ETCD INTEGRATION - Register component and upload config
+        // ═══════════════════════════════════════════════════════════════════════
+        std::unique_ptr<ml_detector::EtcdClient> etcd_client;
+
+        if (config.etcd.enabled) {
+            std::string etcd_endpoint = config.etcd.endpoints[0];
+
+            std::cout << "🔗 [etcd] Initializing connection to " << etcd_endpoint << std::endl;
+
+            etcd_client = std::make_unique<ml_detector::EtcdClient>(etcd_endpoint, "ml-detector");
+
+            if (!etcd_client->initialize()) {
+                std::cerr << "⚠️  [etcd] Failed to initialize - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else if (!etcd_client->registerService()) {
+                std::cerr << "⚠️  [etcd] Failed to register service - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else {
+                std::cout << "✅ [etcd] ml-detector registered and config uploaded" << std::endl;
+            }
+        } else {
+            std::cout << "⏭️  [etcd] etcd integration disabled in config" << std::endl;
+        }
 
         // Print configuration summary
         std::cout << "╔═══════════════════════════════════════════════════════════════╗\n";

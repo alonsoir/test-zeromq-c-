@@ -132,7 +132,15 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
     if (root.isMember("logging")) {
         config.logging = parse_logging(root["logging"]);
     }
-    
+
+    if (root.isMember("logging")) {
+        config.logging = parse_logging(root["logging"]);
+    }
+
+    if (root.isMember("etcd")) {  // ← AÑADIR ESTAS 3 LÍNEAS
+        config.etcd = parse_etcd(root["etcd"]);
+    }
+
     // Validate configuration
     validate_config(config);
     
@@ -333,6 +341,28 @@ void ConfigLoader::log_config_summary(const FirewallAgentConfig& config) {
               << "  Batching:        " << (config.batch_processor.enable_batching ? "ON" : "OFF") << "\n";
     
     std::cout << std::endl;
+}
+
+//===----------------------------------------------------------------------===//
+// Etcd Parser
+//===----------------------------------------------------------------------===//
+
+EtcdConfig ConfigLoader::parse_etcd(const Json::Value& json) {
+    EtcdConfig config;
+
+    config.enabled = get_optional<bool>(json, "enabled", false);
+
+    if (json.isMember("endpoints") && json["endpoints"].isArray()) {
+        config.endpoints = parse_string_array(json["endpoints"]);
+    }
+
+    config.connection_timeout_ms = get_optional<int>(json, "connection_timeout_ms", 5000);
+    config.retry_attempts = get_optional<int>(json, "retry_attempts", 3);
+    config.retry_interval_ms = get_optional<int>(json, "retry_interval_ms", 1000);
+    config.heartbeat_interval_seconds = get_optional<int>(json, "heartbeat_interval_seconds", 30);
+    config.lease_ttl_seconds = get_optional<int>(json, "lease_ttl_seconds", 60);
+
+    return config;
 }
 
 } // namespace mldefender::firewall

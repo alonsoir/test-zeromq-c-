@@ -1,8 +1,16 @@
 {
-  "_comment": "ML Defender - Firewall ACL Agent Configuration - UPDATED FOR DRY-RUN & DEBUGGING",
+  "_comment": "ML Defender - Firewall ACL Agent Configuration - UPDATED FOR ETCD INTEGRATION",
   "_version": "1.1.0",
-  "_updated": "2025-11-22 - Added dry-run, debug logging, and ZMQ topic support",
-  "_phase": "Beta Testing - Protobuf Fix Validation",
+  "_updated": "2025-12-21 - Added etcd integration and component metadata",
+  "_phase": "Day 21 - etcd Integration",
+
+  "component": {
+    "name": "firewall-acl-agent",
+    "version": "1.1.0",
+    "mode": "packet_filtering",
+    "type": "firewall"
+  },
+
   "operation": {
     "dry_run": false,
     "log_directory": "/vagrant/logs/lab",
@@ -11,6 +19,17 @@
     "validation_strictness": "high",
     "max_processing_delay_ms": 10
   },
+
+  "etcd": {
+    "enabled": true,
+    "endpoints": ["localhost:2379"],
+    "connection_timeout_ms": 5000,
+    "retry_attempts": 3,
+    "retry_interval_ms": 1000,
+    "heartbeat_interval_seconds": 30,
+    "lease_ttl_seconds": 60
+  },
+
   "zmq": {
     "endpoint": "tcp://localhost:5572",
     "topic": "",
@@ -22,6 +41,7 @@
     "high_water_mark": 1000,
     "monitor_interval_sec": 30
   },
+
   "ipset": {
     "set_name": "ml_defender_blacklist_test",
     "set_type": "hash:ip",
@@ -33,6 +53,7 @@
     "create_if_missing": true,
     "flush_on_startup": false
   },
+
   "iptables": {
     "chain_name": "ML_DEFENDER_TEST",
     "default_policy": "ACCEPT",
@@ -43,6 +64,7 @@
     "create_chain": true,
     "insert_rule_position": 1
   },
+
   "batch_processor": {
     "batch_size_threshold": 10,
     "batch_time_threshold_ms": 1000,
@@ -51,6 +73,7 @@
     "enable_batching": true,
     "flush_on_shutdown": true
   },
+
   "validation": {
     "validate_ip_addresses": true,
     "validate_confidence_scores": true,
@@ -64,6 +87,7 @@
     "block_localhost": false,
     "block_gateway": false
   },
+
   "logging": {
     "level": "info",
     "console": true,
@@ -76,6 +100,7 @@
     "log_block_decisions": true,
     "log_performance_metrics": true
   },
+
   "metrics": {
     "enable_export": true,
     "export_interval_sec": 30,
@@ -85,6 +110,7 @@
     "track_processing_times": true,
     "track_memory_usage": true
   },
+
   "health_check": {
     "enable": true,
     "check_interval_sec": 30,
@@ -94,6 +120,7 @@
     "max_failures_before_restart": 5,
     "restart_delay_sec": 10
   },
+
   "performance": {
     "max_processing_threads": 2,
     "queue_size": 100,
@@ -101,6 +128,7 @@
     "enable_memory_pools": true,
     "memory_pool_size": 100
   },
+
   "security": {
     "require_zmq_topic": true,
     "validate_message_signature": false,
@@ -109,6 +137,7 @@
     "enable_rate_limiting": true,
     "max_messages_per_second": 1000
   },
+
   "debug": {
     "log_raw_protobuf": true,
     "log_deserialization_errors": true,
@@ -117,6 +146,7 @@
     "log_memory_allocations": false,
     "enable_core_dumps": false
   },
+
   "testing": {
     "simulate_messages": false,
     "test_message_interval_ms": 5000,
@@ -127,6 +157,7 @@
     ],
     "auto_start_test_mode": false
   },
+
   "ipsets": {
     "blacklist": {
       "set_name": "ml_defender_blacklist_test",

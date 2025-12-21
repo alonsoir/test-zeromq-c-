@@ -15,6 +15,7 @@
 #include "firewall/iptables_wrapper.hpp"
 #include "firewall/batch_processor.hpp"
 #include "firewall/zmq_subscriber.hpp"
+#include "firewall/etcd_client.hpp"
 
 #include <json/json.h>
 #include <unistd.h>
@@ -183,6 +184,34 @@ int main(int argc, char** argv) {
         }
         
         ConfigLoader::log_config_summary(config);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ETCD INTEGRATION - Register component and upload config
+        // ═══════════════════════════════════════════════════════════════════════
+        std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
+
+        if (config.etcd.enabled) {
+            std::string etcd_endpoint = config.etcd.endpoints[0];
+
+            std::cout << "🔗 [etcd] Initializing connection to " << etcd_endpoint << std::endl;
+
+            etcd_client = std::make_unique<mldefender::firewall::EtcdClient>(
+                etcd_endpoint,
+                "firewall-acl-agent"
+            );
+
+            if (!etcd_client->initialize()) {
+                std::cerr << "⚠️  [etcd] Failed to initialize - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else if (!etcd_client->registerService()) {
+                std::cerr << "⚠️  [etcd] Failed to register service - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else {
+                std::cout << "✅ [etcd] firewall-acl-agent registered and config uploaded" << std::endl;
+            }
+        } else {
+            std::cout << "⏭️  [etcd] etcd integration disabled in config" << std::endl;
+        }
         
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Failed to load configuration: " << e.what() << std::endl;

@@ -125,6 +125,32 @@ else()
     set(HAVE_ETCD_CPP_API FALSE)
 endif()
 
+
+# etcd-cpp-api (optional)
+find_package(etcd-cpp-api QUIET)
+if(etcd-cpp-api_FOUND)
+    message(STATUS "Found etcd-cpp-api: ${etcd-cpp-api_VERSION}")
+    set(HAVE_ETCD_CPP_API TRUE)
+else()
+    message(STATUS "etcd-cpp-api not found - ETCD integration will be disabled")
+    set(HAVE_ETCD_CPP_API FALSE)
+endif()
+
+# ============================================================================
+# ETCD-CLIENT LIBRARY (Custom)
+# ============================================================================
+set(ETCD_CLIENT_LIB /vagrant/etcd-client/build/libetcd_client.so)
+set(ETCD_CLIENT_INCLUDE_DIR /vagrant/etcd-client/include)
+
+if(EXISTS ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Found etcd-client library: ${ETCD_CLIENT_LIB}")
+    include_directories(${ETCD_CLIENT_INCLUDE_DIR})
+    set(HAVE_ETCD_CLIENT TRUE)
+else()
+    message(STATUS "⚠️  etcd-client library not found - will build without etcd integration")
+    set(HAVE_ETCD_CLIENT FALSE)
+endif()
+
 # Threads
 find_package(Threads REQUIRED)
 
@@ -161,6 +187,7 @@ set(SOURCES
         src/ddos_detector.cpp
         src/traffic_detector.cpp
         src/internal_detector.cpp
+        src/etcd_client.cpp
         ${PROTO_SOURCES}
 )
 
@@ -207,6 +234,7 @@ set(HEADERS
         include/logger.hpp
         include/stats_collector.hpp
         include/concurrent_queue.hpp
+        include/etcd_client.hpp
         ${PROTO_HEADERS}
 )
 
@@ -320,6 +348,12 @@ endif()
 if(HAVE_ETCD_CPP_API)
     target_link_libraries(ml-detector PRIVATE etcd-cpp-api)
     target_compile_definitions(ml-detector PRIVATE HAVE_ETCD_CPP_API)
+endif()
+
+# etcd-client (custom library)
+if(HAVE_ETCD_CLIENT)
+    target_link_libraries(ml-detector PRIVATE ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Linking etcd-client library")
 endif()
 
 # ============================================================================

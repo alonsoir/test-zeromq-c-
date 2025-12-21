@@ -377,6 +377,30 @@ src/ddos_detector.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_detectors_unit.dir/build.make CMakeFiles/test_detectors_unit.dir/src/ddos_detector.cpp.s
 .PHONY : src/ddos_detector.cpp.s
 
+src/etcd_client.o: src/etcd_client.cpp.o
+.PHONY : src/etcd_client.o
+
+# target to build an object file
+src/etcd_client.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/etcd_client.cpp.o
+.PHONY : src/etcd_client.cpp.o
+
+src/etcd_client.i: src/etcd_client.cpp.i
+.PHONY : src/etcd_client.i
+
+# target to preprocess a source file
+src/etcd_client.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/etcd_client.cpp.i
+.PHONY : src/etcd_client.cpp.i
+
+src/etcd_client.s: src/etcd_client.cpp.s
+.PHONY : src/etcd_client.s
+
+# target to generate assembly for a file
+src/etcd_client.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/etcd_client.cpp.s
+.PHONY : src/etcd_client.cpp.s
+
 src/feature_extractor.o: src/feature_extractor.cpp.o
 .PHONY : src/feature_extractor.o
 
@@ -836,6 +860,9 @@ help:
 	@echo "... src/ddos_detector.o"
 	@echo "... src/ddos_detector.i"
 	@echo "... src/ddos_detector.s"
+	@echo "... src/etcd_client.o"
+	@echo "... src/etcd_client.i"
+	@echo "... src/etcd_client.s"
 	@echo "... src/feature_extractor.o"
 	@echo "... src/feature_extractor.i"
 	@echo "... src/feature_extractor.s"
