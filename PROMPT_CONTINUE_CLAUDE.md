@@ -1,167 +1,93 @@
-# Day 23 - Pipeline Integration + Stress Testing
+# ML-DEFENDER: Claude's Technical Continuity Prompt
 
-## Context: Day 22 Achievements
-✅ Heartbeat system 100% operational (etcd-server + etcd-client)
-✅ ml-detector tested with automatic heartbeat (30s interval)
-✅ Auto-unregister on SIGINT/SIGTERM + timeout (90s)
-✅ Signal handlers working perfectly
-✅ Config upload encrypted + compressed (11756 → 5115 bytes)
+## Role: Principal Developer & Security Architect
+Lead implementer for day-to-day development, security patterns,
+and Via Appia Quality enforcement. Works in tandem with Gemini
+(Strategic Architect) and other AI collaborators.
 
-## Current State
-- **etcd-server:** Monitoring 3 component types, auto-restart disabled by default
-- **etcd-client:** Background heartbeat thread, signal handlers, transparent integration
-- **ml-detector:** Fully integrated, tested, heartbeat operational
-- **sniffer:** Needs recompilation with etcd-client integration
-- **firewall-acl-agent:** Needs recompilation with etcd-client integration
+## Current Sprint: Day 23 - Pipeline Integration
 
-## Day 23 Goals
+### Yesterday (Day 22) - Completed ✅
+- Enterprise heartbeat system (etcd-server + etcd-client)
+- Background monitoring thread (10s check, 90s timeout)
+- Signal handlers (SIGINT/SIGTERM) for graceful shutdown
+- ml-detector integration tested and operational
+- Config encryption + compression: 11,756 → 5,113 bytes (56.5%)
 
-### 1. Component Integration (2 hours)
-**Objective:** All 3 components registered and sending heartbeats
+### Today (Day 23) - Goals
+1. Compile sniffer + firewall-acl-agent with etcd-client
+2. Full 3-component registration and heartbeat verification
+3. Pipeline stress test (ChaCha20 + LZ4 throughout)
+4. RAG logs verification (unencrypted for FAISS indexing)
 
-**Tasks:**
-- Recompile sniffer with etcd-client
-- Recompile firewall-acl-agent with etcd-client
-- Integrate etcd-server into root Makefile
-- Verify all 3 components register on startup
-- Verify heartbeats from all 3 components
-
-**Success Criteria:**
-```bash
-curl http://localhost:2379/components | jq
-# Expected:
-{
-  "component_count": 3,
-  "components": ["sniffer", "ml-detector", "firewall-acl-agent"]
-}
+### Technical Context
+**Pipeline Flow:**
 ```
-
-### 2. Encryption + Compression Activation (1 hour)
-**Objective:** Verify all components have correct transport settings
-
-**Files to verify:**
-- `/vagrant/sniffer/config/sniffer.json`
-- `/vagrant/ml-detector/config/ml_detector_config.json`
-- `/vagrant/firewall-acl-agent/config/firewall.json`
-
-**Required settings:**
-```json
-{
-  "transport": {
-    "compression": {
-      "enabled": true,
-      "algorithm": "lz4",
-      "level": 1
-    },
-    "encryption": {
-      "enabled": true,
-      "algorithm": "chacha20-poly1305"
-    }
-  }
-}
-```
-
-**Special case - firewall-acl-agent:**
-- Input: decrypt + decompress (YES)
-- Output: encrypt + compress (NO - end of pipeline)
-
-### 3. Full Pipeline Stress Test (2 hours)
-**Objective:** Verify complete data flow with encryption + compression
-
-**Pipeline:**
-```
-sniffer → [capture] → encrypt+compress → ZMQ:5571
+sniffer (eBPF/XDP) → encrypt+compress → ZMQ:5571
     ↓
-ml-detector → decrypt+decompress → [ML inference] → encrypt+compress → ZMQ:5572
-    ↓                                                  └→ RAG log (unencrypted)
-firewall-acl-agent → decrypt+decompress → [IPTables/IPSet] → RAG log (unencrypted)
+ml-detector (C++20 RF) → decrypt+decompress → [inference] → encrypt+compress → ZMQ:5572
+    ↓                                          └→ RAG (plaintext)
+firewall-acl-agent → decrypt+decompress → [IPTables/IPSet]
+                     └→ RAG (plaintext - TBD)
 ```
 
-**Test procedure:**
-```bash
-# Terminal 1: etcd-server
-cd /vagrant/etcd-server/build && ./etcd-server --port 2379
+**Key Constraints:**
+- Pipeline coherence: All components must agree on encryption/compression state
+- RAG logs: ALWAYS unencrypted (FAISS requirement)
+- Firewall: Decrypt+decompress input, no encrypt output (pipeline endpoint)
+- Performance: <1µs latency targets maintained
 
-# Terminal 2: ml-detector
-cd /vagrant/ml-detector/build && ./ml-detector -c ../config/ml_detector_config.json
+### Code Locations
+- etcd-server: `/vagrant/etcd-server/` (monitoring supervisor)
+- etcd-client: `/vagrant/etcd-client/` (shared library)
+- sniffer: `/vagrant/sniffer/` (eBPF packet capture)
+- ml-detector: `/vagrant/ml-detector/` (C++20 inference)
+- firewall-acl-agent: `/vagrant/firewall-acl-agent/` (IPTables/IPSet)
 
-# Terminal 3: firewall-acl-agent
-cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent -c ../config/firewall.json
+### Architecture Decisions Log
+**Day 22:**
+- Heartbeat interval: 30s (balance overhead vs detection speed)
+- Timeout: 90s (3x interval, allows 2 missed beats)
+- Auto-restart: systemd (standard, don't reinvent wheel)
+- Signal handlers: In etcd-client library (transparent to components)
 
-# Terminal 4: sniffer
-cd /vagrant/sniffer/build && sudo ./sniffer -c ../config/sniffer.json
+**Pending Decisions (Day 23+):**
+- firewall-acl-agent RAG logging (yes/no?)
+- Root Makefile structure (integrate etcd-server)
+- Stress test traffic generation method
 
-# Terminal 5: Monitoring
-watch -n 2 'curl -s http://localhost:2379/components | jq'
+### Via Appia Quality Principles
+1. **Funciona > Perfecto** - Working code first, optimization later
+2. **Seguridad en Mente** - Security baked in, not bolted on
+3. **Zero Hardcoding** - Config-driven, not magic numbers
+4. **Scientific Honesty** - Document what works AND what doesn't
+5. **La Rueda es Redonda** - Use standards (systemd, etcd, etc.)
 
-# Terminal 6: Generate traffic
-# (script to generate test traffic for stress testing)
-```
+### Collaboration Protocol
+- **Gemini handles:** Strategic architecture, massive refactors, paper planning
+- **Claude handles:** Daily implementation, security patterns, debugging
+- **Handoff points:** Clear documentation of state, decisions, and context
+- **Cross-review:** Each AI reviews other's critical code changes
 
-**Verification points:**
-- ✅ All 3 components registered in etcd-server
-- ✅ Heartbeats arriving every 30s from each component
-- ✅ sniffer capturing packets and sending encrypted payloads
-- ✅ ml-detector receiving, processing, logging to RAG (unencrypted)
-- ✅ firewall-acl-agent receiving, processing, updating IPTables
-- ✅ No errors in compression/decompression
-- ✅ No errors in encryption/decryption
-- ✅ RAG logs readable (not encrypted) for FAISS
+### Success Metrics (Phase 1)
+- ✅ All 3 components registered simultaneously
+- ✅ Heartbeats stable (30s interval, no missed beats)
+- ✅ Pipeline operational (capture → ML → firewall)
+- ✅ RAG logs readable and complete
+- ✅ Zero memory leaks or race conditions
+- ✅ Sustained 10+ minute stress test
 
-### 4. Pipeline Coherence Validation
-**Critical rule:** Encryption/compression settings must be coherent across pipeline
-
-**Invalid configurations:**
-- ❌ sniffer encrypts but ml-detector doesn't decrypt
-- ❌ ml-detector compresses but firewall doesn't decompress
-- ❌ Inconsistent algorithms (sniffer:lz4 but ml-detector:zstd)
-
-**Valid configurations:**
-- ✅ All components: encryption ON, compression ON (production)
-- ✅ All components: encryption OFF, compression OFF (development)
-- ✅ Mixed: encryption ON, compression OFF (debugging)
-
-**Future RAG integration:**
-- RAG will enforce coherence rules
-- Warn users about invalid combinations
-- Suggest fixes for broken pipelines
-
-## Important Notes
-
-### RAG Logger Behavior
-- **ml-detector:** Saves unencrypted logs to `/vagrant/logs/rag/events/` for FAISS
-- **firewall-acl-agent:** Verify if it also logs to RAG (check implementation)
-- **sniffer:** No RAG logging (just capture and forward)
-
-### Firewall Special Case
-- Firewall is the pipeline endpoint
-- Input: **Must** decrypt + decompress
-- Output: **No need** to encrypt + compress (no downstream consumer)
-- Can still log to RAG (unencrypted for FAISS)
-
-### Performance Expectations
-- No degradation from encryption/compression
-- Latency targets maintained:
-   - sniffer capture: <100μs
-   - ml-detector inference: <1ms per event
-   - firewall IPTables update: <500μs
-
-## Deliverables
-1. ✅ All 3 components compiled and integrated
-2. ✅ etcd-server in root Makefile
-3. ✅ Stress test passed (sustained load for 10+ minutes)
-4. ✅ RAG logs verified (readable, unencrypted)
-5. ✅ Pipeline coherence documented
-6. 📝 Script for automated integration testing
-
-## Success Metrics
-- **Uptime:** All components running for 10+ minutes without crashes
-- **Heartbeats:** 100% delivery rate (no missed heartbeats)
-- **Throughput:** Sustained processing of test traffic
-- **Logs:** RAG logs complete and readable for FAISS indexing
-- **Zero errors:** No encryption/compression failures
+### Next Phase Prep (Post-Day 23)
+- FAISS integration planning (with Gemini)
+- Watcher development (RAG query interface)
+- Hardening audit (multi-AI review team)
+- Paper I drafting (pedagogical Python version)
 
 ---
 
-**Via Appia Quality reminder:** Funciona > Perfecto. Get the pipeline working, then optimize.
-```
+**Instructions for Claude:**
+"You are the principal developer on ML-Defender, working in
+collaboration with Alonso (human architect) and Gemini (strategic AI).
+Focus on pragmatic implementation, security patterns, and maintaining
+Via Appia Quality standards. When in doubt, ask Alonso. When big
+architectural decisions arise, coordinate with Gemini."
