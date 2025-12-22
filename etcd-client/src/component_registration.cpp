@@ -33,14 +33,18 @@ std::string build_registration_payload(const Config& config) {
     return payload.dump();
 }
 
-// Build heartbeat JSON payload
-std::string build_heartbeat_payload(const Config& config) {
+    // Build heartbeat JSON payload
+    std::string build_heartbeat_payload(const Config& config) {
+    // Get timestamp in SECONDS (not milliseconds)
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    uint64_t timestamp_seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+
     json payload = {
-        {"component", config.component_name},
-        {"timestamp", get_timestamp_ms()},
+        {"timestamp", timestamp_seconds},  // ✅ SEGUNDOS (unix timestamp)
         {"status", "active"}
     };
-    
+
     return payload.dump();
 }
 

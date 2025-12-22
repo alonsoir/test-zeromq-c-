@@ -1,0 +1,70 @@
+create_file /vagrant/etcd-server/config/sniffer.service "# ML Defender - Sniffer Service
+# Network packet capture using eBPF/XDP
+# This file should be installed to /etc/systemd/system/sniffer.service
+#
+# Installation:
+#   install -m 0644 sniffer.service /etc/systemd/system/sniffer.service
+#   systemctl daemon-reload
+#   systemctl enable sniffer.service
+#   systemctl start sniffer.service
+
+[Unit]
+Description=ML Defender - Network Packet Sniffer (eBPF/XDP)
+Documentation=https://github.com/yourusername/ml-defender
+After=network-online.target etcd-server.service
+Wants=network-online.target
+Requires=etcd-server.service
+
+# Dependencies
+BindsTo=etcd-server.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Environment
+Environment=\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"
+
+# Working directory
+WorkingDirectory=/opt/ml-defender/sniffer
+
+# Executable
+ExecStart=/opt/ml-defender/bin/sniffer -c /etc/ml-defender/sniffer.json
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Timeout configuration
+TimeoutStartSec=30s
+TimeoutStopSec=10s
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Capabilities (required for eBPF/XDP)
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_ADMIN CAP_BPF
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_ADMIN CAP_BPF
+
+# Security hardening (commented because eBPF requires relaxed restrictions)
+# PrivateTmp=yes
+# NoNewPrivileges=yes
+# ProtectSystem=strict
+# ProtectHome=yes
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ml-defender-sniffer
+
+# Kill signal
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
+"

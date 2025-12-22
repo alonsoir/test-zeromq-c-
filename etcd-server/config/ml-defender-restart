@@ -1,0 +1,25 @@
+create_file /vagrant/etcd-server/config/ml-defender-restart "# ML Defender - Sudoers configuration for etcd-server auto-restart
+# This file should be installed to /etc/sudoers.d/ml-defender-restart
+# 
+# Installation (during debian package postinst):
+#   install -m 0440 ml-defender-restart /etc/sudoers.d/ml-defender-restart
+#   visudo -c -f /etc/sudoers.d/ml-defender-restart
+#
+# Allows etcd-server user to restart ML Defender services without password
+
+# Allow etcd-server to restart services
+etcd-server ALL=(ALL) NOPASSWD: /bin/systemctl restart sniffer.service
+etcd-server ALL=(ALL) NOPASSWD: /bin/systemctl restart ml-detector.service
+etcd-server ALL=(ALL) NOPASSWD: /bin/systemctl restart firewall-acl-agent.service
+
+# Allow etcd-server to check service status (useful for monitoring)
+etcd-server ALL=(ALL) NOPASSWD: /bin/systemctl status sniffer.service
+etcd-server ALL=(ALL) NOPASSWD: /bin/systemctl status ml-detector.service
+etcd-server ALL=(ALL) NOPASSWD: /bin/systemctl status firewall-acl-agent.service
+
+# Security notes:
+# - Only specific services can be restarted
+# - No wildcard permissions
+# - Full path to systemctl binary to prevent PATH hijacking
+# - File permissions must be 0440 (root:root, read-only)
+"

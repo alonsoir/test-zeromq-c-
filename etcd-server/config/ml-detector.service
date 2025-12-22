@@ -1,0 +1,69 @@
+create_file /vagrant/etcd-server/config/ml-detector.service "# ML Defender - ML Detector Service
+# Machine Learning based threat detection
+# This file should be installed to /etc/systemd/system/ml-detector.service
+#
+# Installation:
+#   install -m 0644 ml-detector.service /etc/systemd/system/ml-detector.service
+#   systemctl daemon-reload
+#   systemctl enable ml-detector.service
+#   systemctl start ml-detector.service
+
+[Unit]
+Description=ML Defender - ML Threat Detector
+Documentation=https://github.com/yourusername/ml-defender
+After=network.target etcd-server.service
+Requires=etcd-server.service
+
+# Dependencies
+BindsTo=etcd-server.service
+
+[Service]
+Type=simple
+User=ml-defender
+Group=ml-defender
+
+# Environment
+Environment=\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"
+Environment=\"LD_LIBRARY_PATH=/opt/ml-defender/lib\"
+
+# Working directory
+WorkingDirectory=/opt/ml-defender/ml-detector
+
+# Executable
+ExecStart=/opt/ml-defender/bin/ml-detector -c /etc/ml-defender/ml_detector_config.json
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Timeout configuration
+TimeoutStartSec=60s
+TimeoutStopSec=15s
+
+# Resource limits
+LimitNOFILE=32768
+LimitNPROC=2048
+MemoryMax=2G
+CPUQuota=200%
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/ml-defender /var/log/ml-defender /tmp
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ml-defender-detector
+
+# Kill signal
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
+"

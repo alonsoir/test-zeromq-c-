@@ -238,7 +238,7 @@ void EtcdServer::run_server() {
             res.set_content(error.dump(), "application/json");
         }
     });
-    
+
     // Endpoint v1 para subir configuración completa (cifrada/comprimida)
 server.Put("/v1/config/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
     std::string component = req.matches[1];
@@ -309,6 +309,70 @@ server.Put("/v1/config/(.*)", [this](const httplib::Request& req, httplib::Respo
         json error = {
             {"status", "error"},
             {"error", "Internal error"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+    }
+});
+
+    // Endpoint de heartbeat - Añadir después del endpoint /v1/config
+server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component_name = req.matches[1];
+    std::cout << "[ETCD-SERVER] 💓 POST /v1/heartbeat/" << component_name << std::endl;
+
+    try {
+        auto json_body = json::parse(req.body);
+
+        if (!json_body.contains("timestamp") || !json_body["timestamp"].is_number()) {
+            res.status = 400;
+            json error = {
+                {"status", "error"},
+                {"message", "Campo 'timestamp' requerido y debe ser numérico"}
+            };
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+
+        std::time_t client_timestamp = json_body["timestamp"];
+
+        // Actualizar heartbeat
+        if (component_registry_->update_heartbeat(component_name)) {
+            std::time_t server_time = std::time(nullptr);
+            std::time_t last_hb = component_registry_->get_last_heartbeat(component_name);
+
+            json response = {
+                {"status", "ok"},
+                {"component", component_name},
+                {"last_heartbeat", last_hb},
+                {"server_time", server_time},
+                {"client_timestamp", client_timestamp},
+                {"next_heartbeat_expected", server_time + 30}  // Hardcoded por ahora
+            };
+            res.set_content(response.dump(), "application/json");
+            std::cout << "[ETCD-SERVER] ✅ Heartbeat registrado para: " << component_name << std::endl;
+        } else {
+            res.status = 404;
+            json error = {
+                {"status", "error"},
+                {"message", "Componente no registrado: " + component_name}
+            };
+            res.set_content(error.dump(), "application/json");
+            std::cout << "[ETCD-SERVER] ❌ Componente no encontrado: " << component_name << std::endl;
+        }
+
+    } catch (const json::parse_error& e) {
+        res.status = 400;
+        json error = {
+            {"status", "error"},
+            {"message", "JSON inválido"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"message", "Error interno"},
             {"details", e.what()}
         };
         res.set_content(error.dump(), "application/json");

@@ -1,0 +1,71 @@
+create_file /vagrant/etcd-server/config/firewall-acl-agent.service "# ML Defender - Firewall ACL Agent Service
+# Dynamic firewall rule management (iptables/ipset)
+# This file should be installed to /etc/systemd/system/firewall-acl-agent.service
+#
+# Installation:
+#   install -m 0644 firewall-acl-agent.service /etc/systemd/system/firewall-acl-agent.service
+#   systemctl daemon-reload
+#   systemctl enable firewall-acl-agent.service
+#   systemctl start firewall-acl-agent.service
+
+[Unit]
+Description=ML Defender - Firewall ACL Agent
+Documentation=https://github.com/yourusername/ml-defender
+After=network.target etcd-server.service iptables.service
+Requires=etcd-server.service
+
+# Dependencies
+BindsTo=etcd-server.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Environment
+Environment=\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"
+
+# Working directory
+WorkingDirectory=/opt/ml-defender/firewall-acl-agent
+
+# Executable
+ExecStart=/opt/ml-defender/bin/firewall-acl-agent -c /etc/ml-defender/firewall.json
+
+# Cleanup on stop (optional - remove temporary rules)
+# ExecStopPost=/opt/ml-defender/scripts/firewall-cleanup.sh
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Timeout configuration
+TimeoutStartSec=30s
+TimeoutStopSec=15s
+
+# Resource limits
+LimitNOFILE=16384
+LimitNPROC=1024
+
+# Capabilities (required for iptables/ipset manipulation)
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+
+# Security hardening (commented because firewall manipulation requires elevated privileges)
+# PrivateTmp=yes
+# NoNewPrivileges=yes
+# ProtectSystem=strict
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ml-defender-firewall
+
+# Kill signal
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
+"
