@@ -1,14 +1,15 @@
 {
-  "_comment": "ML Defender - Firewall ACL Agent Configuration - UPDATED FOR ETCD INTEGRATION",
-  "_version": "1.1.0",
-  "_updated": "2025-12-21 - Added etcd integration and component metadata",
-  "_phase": "Day 21 - etcd Integration",
+  "_comment": "ML Defender - Firewall ACL Agent Configuration - DAY 23 INTEGRATED",
+  "_version": "1.2.0",
+  "_updated": "2025-12-23 - Added transport (encryption/compression) for Day 23",
+  "_phase": "Day 23 - Pipeline Encryption & Compression Integration",
 
   "component": {
     "name": "firewall-acl-agent",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "mode": "packet_filtering",
-    "type": "firewall"
+    "type": "firewall",
+    "role": "pipeline_endpoint"
   },
 
   "operation": {
@@ -20,14 +21,42 @@
     "max_processing_delay_ms": 10
   },
 
+  "_comment_transport": "NEW FOR DAY 23: Decryption + Decompression of incoming data from ml-detector",
+  "transport": {
+    "compression": {
+      "enabled": true,
+      "decompression_only": true,
+      "algorithm": "lz4",
+      "verify_checksum": true,
+      "adaptive_compression": false,
+      "_comment": "Firewall only DECOMPRESSES input, does not compress output (no downstream)"
+    },
+    "encryption": {
+      "enabled": true,
+      "decryption_only": true,
+      "etcd_token_required": true,
+      "algorithm": "chacha20-poly1305",
+      "key_size": 256,
+      "fallback_mode": "compressed_only",
+      "_comment": "Firewall only DECRYPTS input, does not encrypt output (pipeline endpoint)"
+    }
+  },
+
+  "_comment_etcd": "UPDATED FOR DAY 23: Added crypto_token_path for decryption keys",
   "etcd": {
     "enabled": true,
     "endpoints": ["localhost:2379"],
     "connection_timeout_ms": 5000,
     "retry_attempts": 3,
     "retry_interval_ms": 1000,
+    "crypto_token_path": "/crypto/firewall/tokens",
+    "config_sync_path": "/config/firewall",
+    "service_registration_path": "/services/firewall",
+    "required_for_encryption": true,
+    "fallback_mode": "standalone_compressed_only",
     "heartbeat_interval_seconds": 30,
-    "lease_ttl_seconds": 60
+    "lease_ttl_seconds": 60,
+    "_comment": "crypto_token_path: where firewall reads decryption keys shared by ml-detector"
   },
 
   "zmq": {
@@ -39,7 +68,8 @@
     "max_reconnect_interval_ms": 30000,
     "enable_reconnect": true,
     "high_water_mark": 1000,
-    "monitor_interval_sec": 30
+    "monitor_interval_sec": 30,
+    "_comment": "Receives ENCRYPTED + COMPRESSED data from ml-detector on port 5572"
   },
 
   "ipset": {
@@ -98,7 +128,12 @@
     "log_protobuf_messages": true,
     "log_zmq_events": true,
     "log_block_decisions": true,
-    "log_performance_metrics": true
+    "log_performance_metrics": true,
+    "_new_day23": {
+      "log_decryption_events": true,
+      "log_decompression_events": true,
+      "log_crypto_token_retrieval": true
+    }
   },
 
   "metrics": {
@@ -108,7 +143,12 @@
     "export_file": "/vagrant/logs/lab/firewall-metrics.json",
     "track_zmq_messages": true,
     "track_processing_times": true,
-    "track_memory_usage": true
+    "track_memory_usage": true,
+    "_new_day23": {
+      "track_decryption_times": true,
+      "track_decompression_times": true,
+      "track_decryption_failures": true
+    }
   },
 
   "health_check": {
@@ -118,7 +158,11 @@
     "iptables_health_check": true,
     "zmq_connection_check": true,
     "max_failures_before_restart": 5,
-    "restart_delay_sec": 10
+    "restart_delay_sec": 10,
+    "_new_day23": {
+      "etcd_connection_check": true,
+      "crypto_token_availability_check": true
+    }
   },
 
   "performance": {
@@ -135,7 +179,12 @@
     "max_message_size_bytes": 65536,
     "allowed_senders": [],
     "enable_rate_limiting": true,
-    "max_messages_per_second": 1000
+    "max_messages_per_second": 1000,
+    "_new_day23": {
+      "verify_decryption_integrity": true,
+      "verify_decompression_checksum": true,
+      "max_decryption_failures_per_minute": 10
+    }
   },
 
   "debug": {
@@ -144,7 +193,12 @@
     "log_zmq_connection_events": true,
     "log_batch_processing": true,
     "log_memory_allocations": false,
-    "enable_core_dumps": false
+    "enable_core_dumps": false,
+    "_new_day23": {
+      "log_encrypted_data_hex": false,
+      "log_decompressed_data_size": true,
+      "log_crypto_operations": true
+    }
   },
 
   "testing": {
@@ -181,5 +235,27 @@
       "create_if_missing": true,
       "flush_on_startup": false
     }
+  },
+
+  "_integration_notes": {
+    "day23_changes": [
+      "Added 'transport' section with decryption_only + decompression_only",
+      "Updated 'etcd' section with crypto_token_path for decryption keys",
+      "Added Day 23 specific logging/metrics/security flags",
+      "Maintained ALL existing working configuration (zmq, ipset, iptables, etc.)"
+    ],
+    "processing_flow": [
+      "1. Receive ZMQ message from ml-detector (encrypted + compressed)",
+      "2. Decrypt with ChaCha20-Poly1305 using token from etcd",
+      "3. Decompress with LZ4",
+      "4. Parse protobuf (PacketEvent)",
+      "5. Apply IPTables/IPSet rules"
+    ],
+    "dependencies": [
+      "Requires: etcd-client library integration",
+      "Requires: OpenSSL for ChaCha20-Poly1305",
+      "Requires: LZ4 library",
+      "Requires: Code modifications in main.cpp"
+    ]
   }
 }
