@@ -123,6 +123,28 @@ struct LoggingConfigNew {
         int lease_ttl_seconds = 60;
     };
 
+    //===----------------------------------------------------------------------===//
+    // Transport Configuration (Day 23)
+    //===----------------------------------------------------------------------===//
+    struct CompressionConfig {
+        bool enabled = false;
+        bool decompression_only = true;
+        std::string algorithm = "lz4";
+    };
+
+    struct EncryptionConfig {
+        bool enabled = false;
+        bool decryption_only = true;
+        bool etcd_token_required = true;
+        std::string algorithm = "chacha20-poly1305";
+        std::string fallback_mode = "compressed_only";
+    };
+
+    struct TransportConfig {
+        CompressionConfig compression;
+        EncryptionConfig encryption;
+    };
+
 //===----------------------------------------------------------------------===//
 // MAIN CONFIGURATION STRUCTURE
 //===----------------------------------------------------------------------===//
@@ -136,6 +158,7 @@ struct FirewallAgentConfig {
     ValidationConfig validation;
     LoggingConfigNew logging;
     EtcdConfig etcd;
+    TransportConfig transport;  // ✅ Day 23: AÑADIR ESTA LÍNEA
 
     bool is_valid() const { return true; }
     std::vector<std::string> validate() const { return {}; }
@@ -165,6 +188,8 @@ private:
     static ValidationConfig parse_validation(const Json::Value& json);
     static LoggingConfigNew parse_logging(const Json::Value& json);
     static EtcdConfig parse_etcd(const Json::Value& json);
+    static TransportConfig parse_transport(const Json::Value& json);  // ✅ Day 23: AÑADIR
+
     // Utility helpers
     template<typename T>
     static T get_required(const Json::Value& json, const std::string& key, 

@@ -9,6 +9,9 @@
 #include <thread>
 #include <stdexcept>
 #include <cstring>
+#include <lz4.h>           // Day 23
+#include <openssl/evp.h>   // Day 23
+#include <vector>          // Day 23
 
 namespace mldefender {
 namespace firewall {
@@ -271,18 +274,52 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
             data_size -= topic_len;
 
             std::cerr << "[ZMQSubscriber] DEBUG: Skipped topic prefix ("
-                      << topic_len << " bytes), protobuf data: "
+                      << topic_len << " bytes), data: "
                       << data_size << " bytes" << std::endl;
         }
     }
 
-    // Parse NetworkSecurityEvent protobuf
+    // ✅ Day 23: Copy to vector for decrypt/decompress
+    std::vector<uint8_t> data(data_ptr, data_ptr + data_size);
+
+    try {
+        // ✅ Day 23: STEP 1 - Decrypt if enabled
+        if (config_.encryption_enabled) {
+            auto start = std::chrono::high_resolution_clock::now();
+
+            data = decrypt_chacha20_poly1305(data, config_.crypto_token);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            std::cerr << "[ZMQSubscriber] 🔓 Decrypted: " << duration.count() << " µs" << std::endl;
+        }
+
+        // ✅ Day 23: STEP 2 - Decompress if enabled
+        if (config_.compression_enabled) {
+            auto start = std::chrono::high_resolution_clock::now();
+
+            data = decompress_lz4(data);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            std::cerr << "[ZMQSubscriber] 📦 Decompressed: " << duration.count() << " µs" << std::endl;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "[ZMQSubscriber] ❌ Decrypt/decompress failed: " << e.what() << std::endl;
+        stats_.parse_errors++;
+        return;
+    }
+
+    // Parse NetworkSecurityEvent protobuf (now data is plaintext)
     protobuf::NetworkSecurityEvent event;
 
     try {
-        if (!event.ParseFromArray(data_ptr, static_cast<int>(data_size))) {
+        if (!event.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::cerr << "[ZMQSubscriber] Failed to parse NetworkSecurityEvent protobuf ("
-                      << data_size << " bytes)" << std::endl;
+                      << data.size() << " bytes)" << std::endl;
             stats_.parse_errors++;
             return;
         }
@@ -437,6 +474,116 @@ void ZMQSubscriber::handle_reconnect() {
 
 void ZMQSubscriber::reset_reconnect_backoff() {
     current_reconnect_interval_ms_ = config_.reconnect_interval_ms;
+}
+
+//==============================================================================
+// Day 23: CRYPTO HELPER METHODS
+//==============================================================================
+
+std::vector<uint8_t> ZMQSubscriber::decrypt_chacha20_poly1305(
+    const std::vector<uint8_t>& encrypted_data,
+    const std::string& key_hex
+) {
+    // Validate input
+    if (encrypted_data.size() < 12 + 16) {  // nonce(12) + tag(16)
+        throw std::runtime_error("Encrypted data too small");
+    }
+
+    // Extract nonce (first 12 bytes)
+    std::vector<uint8_t> nonce(encrypted_data.begin(), encrypted_data.begin() + 12);
+
+    // Extract ciphertext + tag
+    std::vector<uint8_t> ciphertext_and_tag(encrypted_data.begin() + 12, encrypted_data.end());
+
+    // Convert hex key to bytes
+    std::vector<uint8_t> key;
+    key.reserve(key_hex.length() / 2);
+    for (size_t i = 0; i < key_hex.length(); i += 2) {
+        std::string byte_str = key_hex.substr(i, 2);
+        key.push_back(static_cast<uint8_t>(std::stoi(byte_str, nullptr, 16)));
+    }
+
+    // Prepare output
+    std::vector<uint8_t> plaintext(ciphertext_and_tag.size() - 16);
+
+    // Create EVP context
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        throw std::runtime_error("Failed to create EVP context");
+    }
+
+    try {
+        // Initialize decryption
+        if (EVP_DecryptInit_ex(ctx, EVP_chacha20_poly1305(), nullptr,
+                              key.data(), nonce.data()) != 1) {
+            throw std::runtime_error("EVP_DecryptInit_ex failed");
+        }
+
+        // Decrypt
+        int len = 0;
+        if (EVP_DecryptUpdate(ctx, plaintext.data(), &len,
+                             ciphertext_and_tag.data(),
+                             ciphertext_and_tag.size() - 16) != 1) {
+            throw std::runtime_error("EVP_DecryptUpdate failed");
+        }
+
+        // Set expected tag
+        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, 16,
+                               const_cast<uint8_t*>(ciphertext_and_tag.data() +
+                               ciphertext_and_tag.size() - 16)) != 1) {
+            throw std::runtime_error("Failed to set auth tag");
+        }
+
+        // Finalize (verifies tag)
+        int final_len = 0;
+        if (EVP_DecryptFinal_ex(ctx, plaintext.data() + len, &final_len) != 1) {
+            throw std::runtime_error("Decryption failed - auth tag mismatch");
+        }
+
+        plaintext.resize(len + final_len);
+        EVP_CIPHER_CTX_free(ctx);
+
+        return plaintext;
+
+    } catch (...) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw;
+    }
+}
+
+std::vector<uint8_t> ZMQSubscriber::decompress_lz4(
+    const std::vector<uint8_t>& compressed_data
+) {
+    // Validate input
+    if (compressed_data.size() < 4) {
+        throw std::runtime_error("Compressed data too small");
+    }
+
+    // Extract decompressed size (first 4 bytes, little-endian)
+    uint32_t decompressed_size;
+    std::memcpy(&decompressed_size, compressed_data.data(), sizeof(uint32_t));
+
+    // Validate size (max 10MB)
+    if (decompressed_size == 0 || decompressed_size > 10 * 1024 * 1024) {
+        throw std::runtime_error("Invalid decompressed size");
+    }
+
+    // Prepare output
+    std::vector<uint8_t> decompressed(decompressed_size);
+
+    // Decompress (skip first 4 bytes)
+    int result = LZ4_decompress_safe(
+        reinterpret_cast<const char*>(compressed_data.data() + 4),
+        reinterpret_cast<char*>(decompressed.data()),
+        compressed_data.size() - 4,
+        decompressed_size
+    );
+
+    if (result < 0) {
+        throw std::runtime_error("LZ4 decompression failed");
+    }
+
+    return decompressed;
 }
 
 } // namespace firewall

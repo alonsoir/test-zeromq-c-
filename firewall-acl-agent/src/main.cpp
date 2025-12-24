@@ -335,6 +335,29 @@ int main(int argc, char** argv) {
         zmq_config.reconnect_interval_ms = config.zmq.reconnect_interval_ms;
         zmq_config.max_reconnect_interval_ms = config.zmq.max_reconnect_interval_ms;
         zmq_config.enable_reconnect = config.zmq.enable_reconnect;
+
+        // ✅ Day 23: Transport configuration (encryption + compression)
+        if (config.transport.compression.enabled) {
+            zmq_config.compression_enabled = true;
+            std::cout << "[INIT] 📦 LZ4 decompression ENABLED" << std::endl;
+        } else {
+            zmq_config.compression_enabled = false;
+            std::cout << "[INIT] ⏭️  LZ4 decompression DISABLED" << std::endl;
+        }
+
+        if (config.transport.encryption.enabled) {
+            zmq_config.encryption_enabled = true;
+
+            // TODO: Get crypto token from etcd in production
+            // For now, use hardcoded test token (MUST MATCH ml-detector)
+            zmq_config.crypto_token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+            std::cout << "[INIT] 🔐 ChaCha20-Poly1305 decryption ENABLED" << std::endl;
+            std::cout << "[INIT] ⚠️  Using HARDCODED crypto token (TODO: fetch from etcd)" << std::endl;
+        } else {
+            zmq_config.encryption_enabled = false;
+            std::cout << "[INIT] ⏭️  Decryption DISABLED" << std::endl;
+        }
         
         std::cout << "[INIT] Initializing ZMQ subscriber..." << std::endl;
         ZMQSubscriber subscriber(processor, zmq_config);

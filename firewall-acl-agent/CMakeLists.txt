@@ -63,6 +63,23 @@ endif()
 find_package(Threads REQUIRED)
 
 # ============================================================================
+# DAY 23: Crypto & Compression Libraries
+# ============================================================================
+find_library(LZ4_LIB lz4 REQUIRED)
+if(LZ4_LIB)
+    message(STATUS "✅ Found LZ4: ${LZ4_LIB}")
+else()
+    message(FATAL_ERROR "❌ LZ4 not found. Install: sudo apt-get install liblz4-dev")
+endif()
+
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+    message(STATUS "✅ Found OpenSSL: ${OPENSSL_LIBRARIES}")
+else()
+    message(FATAL_ERROR "❌ OpenSSL not found. Install: sudo apt-get install libssl-dev")
+endif()
+
+# ============================================================================
 # ETCD-CLIENT LIBRARY (Custom)
 # ============================================================================
 set(ETCD_CLIENT_LIB /vagrant/etcd-client/build/libetcd_client.so)
@@ -102,6 +119,7 @@ include_directories(
         ${Protobuf_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}            # Day 23
 )
 
 #===----------------------------------------------------------------------===//
@@ -149,6 +167,8 @@ target_link_libraries(firewall_core
         ${Boost_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         Threads::Threads
+        ${LZ4_LIB}                        # Day 23: LZ4 decompression
+        ${OPENSSL_LIBRARIES}              # Day 23: ChaCha20-Poly1305 decryption
 )
 
 # etcd-client (custom library)
@@ -161,9 +181,9 @@ target_include_directories(firewall_core
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/proto
-
         ${ZMQ_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}            # Day 23: OpenSSL headers
 )
 
 #===----------------------------------------------------------------------===//

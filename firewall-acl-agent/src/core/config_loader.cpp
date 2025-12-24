@@ -141,6 +141,11 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
         config.etcd = parse_etcd(root["etcd"]);
     }
 
+    // ✅ Day 23: Transport configuration
+    if (root.isMember("transport")) {
+        config.transport = parse_transport(root["transport"]);
+    }
+
     // Validate configuration
     validate_config(config);
     
@@ -361,6 +366,33 @@ EtcdConfig ConfigLoader::parse_etcd(const Json::Value& json) {
     config.retry_interval_ms = get_optional<int>(json, "retry_interval_ms", 1000);
     config.heartbeat_interval_seconds = get_optional<int>(json, "heartbeat_interval_seconds", 30);
     config.lease_ttl_seconds = get_optional<int>(json, "lease_ttl_seconds", 60);
+
+    return config;
+}
+    //===----------------------------------------------------------------------===//
+    // Transport Parser (Day 23)
+    //===----------------------------------------------------------------------===//
+
+    TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
+    TransportConfig config;
+
+    // Parse compression section
+    if (json.isMember("compression")) {
+        const auto& comp = json["compression"];
+        config.compression.enabled = get_optional<bool>(comp, "enabled", false);
+        config.compression.decompression_only = get_optional<bool>(comp, "decompression_only", true);
+        config.compression.algorithm = get_optional<std::string>(comp, "algorithm", "lz4");
+    }
+
+    // Parse encryption section
+    if (json.isMember("encryption")) {
+        const auto& enc = json["encryption"];
+        config.encryption.enabled = get_optional<bool>(enc, "enabled", false);
+        config.encryption.decryption_only = get_optional<bool>(enc, "decryption_only", true);
+        config.encryption.etcd_token_required = get_optional<bool>(enc, "etcd_token_required", true);
+        config.encryption.algorithm = get_optional<std::string>(enc, "algorithm", "chacha20-poly1305");
+        config.encryption.fallback_mode = get_optional<std::string>(enc, "fallback_mode", "compressed_only");
+    }
 
     return config;
 }

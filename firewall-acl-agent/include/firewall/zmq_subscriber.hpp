@@ -46,6 +46,8 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
+#include <lz4.h>           // Day 23: LZ4 decompression
+#include <openssl/evp.h>   // Day 23: ChaCha20-Poly1305 decryption
 
 namespace mldefender {
 namespace firewall {
@@ -104,6 +106,10 @@ public:
         // ✅ AÑADIDO: Logger configuration
         std::string log_directory;      ///< Directory for blocked event logs
         size_t log_queue_size;          ///< Max events in logger queue
+        // ✅ Day 23: Transport layer config
+        bool compression_enabled;        ///< Enable LZ4 decompression
+        bool encryption_enabled;         ///< Enable ChaCha20 decryption
+        std::string crypto_token;        ///< Decryption key (hex)
 
         /**
          * @brief Default configuration
@@ -118,6 +124,9 @@ public:
             , enable_reconnect(true)
             , log_directory("/vagrant/logs/blocked")  // ✅ AÑADIDO
             , log_queue_size(10000)                   // ✅ AÑADIDO
+            , compression_enabled(false)              // ✅ Day 23
+            , encryption_enabled(false)               // ✅ Day 23
+            , crypto_token("")                        // ✅ Day 23
         {}
     };
 
@@ -306,6 +315,16 @@ private:
      * Called after successful connection.
      */
     void reset_reconnect_backoff();
+
+    // ✅ Day 23: Crypto helper methods
+    std::vector<uint8_t> decrypt_chacha20_poly1305(
+        const std::vector<uint8_t>& encrypted_data,
+        const std::string& key_hex
+    );
+
+    std::vector<uint8_t> decompress_lz4(
+        const std::vector<uint8_t>& compressed_data
+    );
 
     //==========================================================================
     // MEMBER VARIABLES
