@@ -369,29 +369,38 @@ EtcdConfig ConfigLoader::parse_etcd(const Json::Value& json) {
 
     return config;
 }
-    //===----------------------------------------------------------------------===//
-    // Transport Parser (Day 23)
-    //===----------------------------------------------------------------------===//
-
-    TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
+ TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
     TransportConfig config;
+
+    std::cout << "[DEBUG] parse_transport() called" << std::endl;
+    std::cout << "[DEBUG] JSON received: " << json << std::endl;
 
     // Parse compression section
     if (json.isMember("compression")) {
+        std::cout << "[DEBUG] compression section found" << std::endl;
         const auto& comp = json["compression"];
+        std::cout << "[DEBUG] comp has 'enabled': " << comp.isMember("enabled") << std::endl;
         config.compression.enabled = get_optional<bool>(comp, "enabled", false);
+        std::cout << "[DEBUG] compression.enabled = " << config.compression.enabled << std::endl;
         config.compression.decompression_only = get_optional<bool>(comp, "decompression_only", true);
         config.compression.algorithm = get_optional<std::string>(comp, "algorithm", "lz4");
+    } else {
+        std::cout << "[DEBUG] NO compression section" << std::endl;
     }
 
     // Parse encryption section
     if (json.isMember("encryption")) {
+        std::cout << "[DEBUG] encryption section found" << std::endl;
         const auto& enc = json["encryption"];
+        std::cout << "[DEBUG] enc has 'enabled': " << enc.isMember("enabled") << std::endl;
         config.encryption.enabled = get_optional<bool>(enc, "enabled", false);
+        std::cout << "[DEBUG] encryption.enabled = " << config.encryption.enabled << std::endl;
         config.encryption.decryption_only = get_optional<bool>(enc, "decryption_only", true);
         config.encryption.etcd_token_required = get_optional<bool>(enc, "etcd_token_required", true);
         config.encryption.algorithm = get_optional<std::string>(enc, "algorithm", "chacha20-poly1305");
         config.encryption.fallback_mode = get_optional<std::string>(enc, "fallback_mode", "compressed_only");
+    } else {
+        std::cout << "[DEBUG] NO encryption section" << std::endl;
     }
 
     return config;

@@ -167,7 +167,8 @@ int main(int argc, char** argv) {
               << "║  Target: 1M+ packets/sec                               ║\n"
               << "╚════════════════════════════════════════════════════════╝\n"
               << std::endl;
-    
+    // ✅ Day 23: Declarar etcd_client FUERA del try para evitar bloqueo en destructor
+    std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
     // Load configuration using new ConfigLoader
     FirewallAgentConfig config;
     try {
@@ -188,7 +189,7 @@ int main(int argc, char** argv) {
         // ═══════════════════════════════════════════════════════════════════════
         // ETCD INTEGRATION - Register component and upload config
         // ═══════════════════════════════════════════════════════════════════════
-        std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
+        // std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
 
         if (config.etcd.enabled) {
             std::string etcd_endpoint = config.etcd.endpoints[0];
@@ -217,17 +218,21 @@ int main(int argc, char** argv) {
         std::cerr << "[ERROR] Failed to load configuration: " << e.what() << std::endl;
         return 1;
     }
-    
+
+	std::cout << "[DEBUG] ✅ First try-catch block completed" << std::endl;  // ← AÑADIR
+
     if (test_config) {
         std::cout << "[INFO] Configuration test passed ✓" << std::endl;
         return 0;
     }
-    
+        std::cout << "[DEBUG] ✅ test_config check passed" << std::endl;  // ← AÑADIR
+
     if (getuid() != 0 && !config.operation.dry_run) {
         std::cerr << "[ERROR] This program must be run as root (or use dry_run mode)" << std::endl;
         return 1;
     }
-    
+    std::cout << "[DEBUG] ✅ Permission check passed" << std::endl;  // ← AÑADIR
+    std::cout << "[DEBUG] 🚀 Starting second try block..." << std::endl;  // ← AÑADIR
     try {
         // Convert new config structs to old wrapper configs
         // TODO: Eventually refactor wrappers to use new config directly
