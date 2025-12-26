@@ -573,6 +573,79 @@ Phase 4 (Future): Enterprise Grade
 
 ---
 
+---
+
+## 🔬 Future Enhancements (Post Day 27)
+
+### Shadow Authority & Decision Outcome
+
+**Status:** DOCUMENTED (Day 26) - Implementation Days 35-40
+
+ML Defender includes forward-looking concepts validated by ChatGPT-5 for paper-quality research. These are **documented now, implemented later** to avoid breaking changes during critical integrations.
+
+#### Shadow Authority (Non-Destructive Model Lifecycle)
+```
+Authoritative Model → DECIDES (blocks/allows)
+Shadow Models → OBSERVE (log only, no block)
+```
+
+**Use Cases:**
+- **A/B Testing:** Deploy new model versions in shadow mode
+- **Legacy Detection:** Keep old models for historical attack techniques
+- **Regression Prevention:** Compare new vs old before promoting
+
+**Example:**
+```json
+{
+  "authoritative_model": "ddos_v2",
+  "shadow_models": ["ddos_v1", "ddos_v3_beta"],
+  "decision": "blocked",
+  "shadow_detections": {
+    "ddos_v1": "detected (legacy technique)",
+    "ddos_v3_beta": "missed (regression!)"
+  }
+}
+```
+
+**See:** [docs/SHADOW_AUTHORITY.md](docs/SHADOW_AUTHORITY.md)
+
+#### Decision Outcome (Ground Truth for Retraining)
+```
+Field: decision_outcome
+Values: blocked, allowed, false_positive, false_negative, unknown, shadow
+```
+
+**Closed-Loop Learning:**
+```
+Detect → unknown
+Firewall → blocked/allowed
+Manual Review → false_positive/false_negative
+Retrain with validated ground truth
+```
+
+**Scientific Value:**
+- Honest accuracy metrics (not inflated)
+- Self-improving system
+- Via Appia Quality: document errors
+
+**See:** [docs/DECISION_OUTCOME.md](docs/DECISION_OUTCOME.md)
+
+#### Implementation Roadmap
+
+| Milestone | Feature | Status | Estimated |
+|-----------|---------|--------|-----------|
+| Day 27-28 | Crypto Integration | 🔄 In Progress | 1-2 days |
+| Day 28 | Model Authority (Basic) | 📋 Planned | 2 hours |
+| Day 35 | Shadow Authority | 📋 Documented | 1 day |
+| Day 40 | Decision Outcome | 📋 Documented | 1 day |
+| Week 6 | LLM Fine-Tuning | 📋 Documented | 3-4 days |
+
+**Discipline:** One protobuf change per milestone. No mid-integration modifications.
+
+**Full Details:** [docs/FUTURE_ENHANCEMENTS.md](docs/FUTURE_ENHANCEMENTS.md)
+
+---
+
 ## 🤝 Multi-Agent Collaboration
 
 This project represents multi-agent AI collaboration:

@@ -507,6 +507,46 @@ cd /vagrant/tests
 
 ---
 
+---
+
+## 📝 DOCUMENTACIÓN CREADA (Día 26 - Solo Docs)
+
+### Conceptos ChatGPT-5 Documentados
+
+**IMPORTANTE: NO tocar protobuf hasta Día 35+**
+
+**3 Documentos Creados:**
+1. `/vagrant/docs/SHADOW_AUTHORITY.md` - Non-destructive model retirement
+2. `/vagrant/docs/DECISION_OUTCOME.md` - Ground truth for retraining
+3. `/vagrant/docs/FUTURE_ENHANCEMENTS.md` - Roadmap completo
+
+**Por Qué Documentar Ahora:**
+- ✅ Capturar ideas antes de olvidar
+- ✅ Guiar desarrollo futuro
+- ✅ Cero riesgo (no afecta compilación)
+- ✅ Reviewers aprecian claridad
+
+**Por Qué Implementar Después:**
+- ✅ Estamos mid-integration (ml-detector, sniffer)
+- ✅ Cambio protobuf = recompilar TODO
+- ✅ Disciplina: un cambio proto por milestone
+- ✅ Via Appia Quality: despacio pero bien
+
+**Implementación Futura:**
+```
+Día 28: Model Authority básico (campos 84-89) - Sin shadow mode aún
+Día 35: Shadow Authority (campo 91 + bool shadow_mode)
+Día 40: Decision Outcome (campo 90)
+```
+
+**Valor:**
+- Paper-quality concepts ya documentados
+- Roadmap claro para semanas 5-6
+- No rompe nada ahora
+- Fundación para LLM fine-tuning
+
+---
+
 ## 🏛️ VIA APPIA QUALITY
 
 **Filosofía Mantenida:**
