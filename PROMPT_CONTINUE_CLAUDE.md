@@ -1,133 +1,245 @@
-# Día 24 - Crear librería crypto-transport
+**PROMPT DE CONTINUIDAD - DÍA 27 (27 Diciembre 2025)**
 
-## CONTEXTO DEL DÍA 23 (25 dic)
-Durante la certificación de componentes descubrimos un problema arquitectónico:
-- ❌ Código de cifrado/compresión está ACOPLADO a etcd-client
-- ❌ etcd-client NO debe conocer ZMQ (viola SRP)
-- ❌ Componentes necesitan crypto para ZMQ pero no tienen acceso limpio
+---
 
-## DECISIÓN ARQUITECTÓNICA - DÍA 23
-Crear librería independiente `crypto-transport`:
-- Responsabilidad única: encrypt, decrypt, compress, decompress
-- Usada por: etcd-client (HTTP) + componentes (ZMQ)
-- Semilla obtenida de etcd-server vía etcd-client
-- Sin dependencia de transporte (HTTP/ZMQ/otro)
+## 📋 CONTEXTO DÍA 26 (26 Diciembre 2025)
 
-## ARQUITECTURA OBJETIVO
+### ✅ COMPLETADO HOY
+
+**Problema Identificado (Día 23):**
+- etcd-client tenía código de crypto/compression acoplado
+- Violaba Single Responsibility Principle
+- Dependencias de LZ4 + OpenSSL embebidas
+
+**Solución Implementada (Día 26):**
+1. ✅ Creada librería independiente `crypto-transport`
+2. ✅ API binaria segura (`std::vector<uint8_t>`)
+3. ✅ ChaCha20-Poly1305 + LZ4 en un solo paquete
+4. ✅ 16 tests unitarios (100% passing)
+5. ✅ Refactorizado `etcd-client` para usarla
+6. ✅ Añadido `get_encryption_key()` público a etcd-client
+7. ✅ Integrado `firewall-acl-agent` (primer componente)
+8. ✅ Eliminado hardcoding de crypto seeds
+9. ✅ Actualizado Makefile maestro con orden correcto
+10. ✅ Test de producción: firewall funcionando con etcd
+
+**Arquitectura Final:**
 ```
-crypto-transport (nueva librería independiente)
-    ├── ChaCha20-Poly1305 encryption
-    ├── LZ4 compression
-    └── API limpia: 4 funciones principales
-
-etcd-client
-    └── Depende de: crypto-transport
-    └── Usa: encrypt/compress para JSON → etcd-server
-
-Componentes (sniffer, detector, firewall, rag)
-    └── Dependen de: crypto-transport
-    └── Usan: encrypt/compress para payloads ZMQ
-    └── Obtienen seed de: etcd-server vía etcd-client
-```
-
-## PLAN DE IMPLEMENTACIÓN - 3 FASES
-
-### FASE 1: Crear crypto-transport (Día 24)
-1. Crear estructura:
-```
-   /vagrant/crypto-transport/
-   ├── CMakeLists.txt
-   ├── README.md
-   ├── include/crypto_transport/
-   │   ├── crypto.hpp
-   │   └── transport.hpp
-   ├── src/
-   │   ├── crypto.cpp
-   │   └── transport.cpp
-   └── tests/
-       └── test_crypto_transport.cpp
+crypto-transport (librería base independiente)
+    ↓ (ChaCha20-Poly1305 + LZ4)
+etcd-client (usa crypto-transport)
+    ↓ (HTTP transport cifrado)
+firewall-acl-agent ✅ (usa crypto-transport + etcd-client)
+    ↓ (decrypt/decompress ZMQ payloads)
+ml-detector ⏳ (pendiente integración)
+sniffer ⏳ (pendiente integración)
 ```
 
-2. Extraer código de etcd-client:
-    - `/vagrant/etcd-client/src/crypto.cpp` → crypto-transport
-    - Funciones: encrypt/decrypt (ChaCha20-Poly1305)
-    - Funciones: compress/decompress (LZ4)
+**Evidencia de Éxito:**
+- firewall se conecta a etcd-server ✅
+- Recibe encryption key automáticamente ✅
+- Sube config cifrado: 7532 → 3815 bytes (49.3%) ✅
+- Obtiene crypto seed (no hardcoded) ✅
+- Heartbeat cada 30s ✅
+- Shutdown limpio ✅
 
-3. API limpia (4 funciones core):
-```cpp
-   namespace crypto_transport {
-       std::vector<uint8_t> encrypt(const std::vector<uint8_t>& data, 
-                                     const std::string& key);
-       std::vector<uint8_t> decrypt(const std::vector<uint8_t>& data, 
-                                     const std::string& key);
-       std::vector<uint8_t> compress(const std::vector<uint8_t>& data);
-       std::vector<uint8_t> decompress(const std::vector<uint8_t>& data);
-   }
+**Tiempo Invertido:** 3 horas metodológicas, despacio pero bien
+
+---
+
+## 🎯 ESTADO ACTUAL (90% COMPLETO)
+
+### ✅ Componentes Certificados
+1. **crypto-transport** - Librería base ✅
+2. **etcd-client** - Refactorizado ✅
+3. **firewall-acl-agent** - Integrado y probado ✅
+4. **etcd-server** - Funcionando ✅
+
+### ⏳ Pendiente Integración
+1. **ml-detector** - Más complejo (send + receive)
+2. **sniffer** - Más simple (solo send)
+
+### 🔮 Visión Enterprise (RAG Ecosystem)
+```
+┌─────────────────────────────────────────────────────────┐
+│  VISION: RAG-Master + Federation (Enterprise)          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  RAG-Master (coordinador central)                      │
+│      ↓ (descubrimiento vía etcd-server-master)        │
+│  ┌──────────┬──────────┬──────────┐                   │
+│  │          │          │          │                    │
+│  Site A    Site B    Site C    Site N                  │
+│  │          │          │          │                    │
+│  etcd-     etcd-     etcd-     etcd-                   │
+│  server    server    server    server                  │
+│  local     local     local     local                   │
+│  │          │          │          │                    │
+│  RAG-      RAG-      RAG-      RAG-                    │
+│  Client    Client    Client    Client                  │
+│  │          │          │          │                    │
+│  ML        ML        ML        ML                       │
+│  Pipeline  Pipeline  Pipeline  Pipeline                │
+│                                                         │
+│  Características:                                       │
+│  • Descubrimiento automático de sitios                 │
+│  • Agregación de eventos enterprise-wide               │
+│  • Query distribuido ("show me attacks last hour")     │
+│  • Cifrado heredado de crypto-transport                │
+│  • Implementación naive inicial (básica)               │
+│  • Escalable para tráfico INMENSO (futuro)            │
+└─────────────────────────────────────────────────────────┘
 ```
 
-4. Tests unitarios
-5. Compilar y verificar
+---
 
-### FASE 2: Refactorizar etcd-client (Día 24-25)
-1. Añadir crypto-transport como dependencia en CMakeLists.txt
-2. Eliminar código duplicado
-3. Usar crypto-transport en lugar de código local
-4. Recompilar y verificar tests existentes
+## 🚀 PRIORIDADES DÍA 27
 
-### FASE 3: Integrar en componentes (Día 25-26)
-**Por cada componente (sniffer, detector, firewall, rag):**
+### PRIORIDAD 1: ml-detector Integration (2-3 horas)
+**Objetivo:** Refactorizar ml-detector para usar crypto-transport
 
-1. **Obtener seed**:
-    - Via etcd-client al hacer connect/register
-    - Almacenar en componente
+**Archivos a Modificar:**
+1. `/vagrant/ml-detector/CMakeLists.txt`
+   - Eliminar dependencias LZ4 + OpenSSL
+   - Añadir crypto-transport
 
-2. **Añadir crypto-transport**:
-    - Dependencia en CMakeLists.txt
-    - Instanciar con seed
+2. `/vagrant/ml-detector/src/zmq_publisher.cpp` (o similar)
+   - Reemplazar código de encrypt/compress con crypto-transport
+   - Usar `crypto_transport::compress()` antes de `encrypt()`
 
-3. **Integrar en ZMQ**:
-    - Sniffer: encrypt(compress(payload)) antes de send
-    - Detector: decrypt(decompress(payload)) al recv
-    - Detector: encrypt(compress(payload)) antes de send
-    - Firewall: decrypt(decompress(payload)) al recv ✅ (ya hecho)
+3. `/vagrant/ml-detector/src/zmq_subscriber.cpp` (si existe)
+   - Reemplazar código de decrypt/decompress
+   - Usar `crypto_transport::decrypt()` antes de `decompress()`
 
-## ESTADO ACTUAL COMPONENTES
+**Patrón a Seguir:**
+- Ver `/vagrant/firewall-acl-agent/src/api/zmq_subscriber.cpp` como referencia
+- Helpers: `string_to_bytes()`, `bytes_to_string()`
+- Orden correcto: compress → encrypt (send)
+- Orden correcto: decrypt → decompress (receive)
 
-### Sniffer
-- ✅ Config transport parseado
-- ✅ Compresión LZ4 implementada (local, CompressionHandler)
-- ❌ Encriptación NO implementada
-- ❌ No usa etcd-client para crypto
+### PRIORIDAD 2: sniffer Integration (1-2 horas)
+**Objetivo:** Refactorizar sniffer para usar crypto-transport
 
-### ML-Detector
-- ✅ Config transport parseado
-- ❌ NO implementado en ZMQ
-- ❌ Solo serializa protobuf
+**Más Simple que ml-detector:**
+- Solo necesita encrypt/compress (send)
+- No tiene receive path
 
-### Firewall
-- ✅ Config transport parseado
-- ✅ Decrypt/decompress implementado (ayer)
-- ⚠️ Token HARDCODED (debe obtener de etcd)
+**Archivos:**
+1. `/vagrant/sniffer/CMakeLists.txt`
+2. Código de envío ZMQ (buscar donde se hace `zmq_send`)
 
-### RAG
-- ❓ Pendiente certificación
+### PRIORIDAD 3: End-to-End Test (1 hora)
+**Pipeline Completo:**
+```
+etcd-server (genera seed)
+    ↓
+sniffer (encrypt/compress) → ZMQ 5571
+    ↓
+ml-detector (decrypt/decompress + encrypt/compress) → ZMQ 5572
+    ↓
+firewall (decrypt/decompress) → Block/Allow
+```
 
-## ARCHIVOS CLAVE DE REFERENCIA
-- `/vagrant/etcd-client/src/crypto.cpp` - Código a extraer
-- `/vagrant/sniffer/src/userspace/compression_handler.cpp` - Ref LZ4
-- `/vagrant/firewall-acl-agent/src/api/zmq_subscriber.cpp` - Decrypt/decompress
-- `/vagrant/ml-detector/config/ml_detector_config.json` - Config transport
+**Verificar:**
+- Todos obtienen seed de etcd
+- Cifrado E2E funciona
+- Compresión reduce tamaño
+- Performance aceptable
 
-## OBJETIVO DÍA 24
-✅ FASE 1 completa: crypto-transport compilando con tests pasando
-🎯 Empezar FASE 2: Refactorizar etcd-client
+---
 
-## PRINCIPIOS GUÍA
-- "Despacio y bien" - Sin prisas
-- Single Responsibility Principle
-- Composición sobre acoplamiento
-- Via Appia Quality - construir para durar décadas
-- JSON is law
-- Fail fast
+## 📝 METODOLOGÍA APLICADA HOY (Para Mantener)
 
-¿Listo para empezar con FASE 1?
+**Troubleshooting de Calidad:**
+1. ✅ Identificar problema (coupling)
+2. ✅ Diseñar solución limpia (SRP)
+3. ✅ Implementar paso a paso
+4. ✅ Tests al 100% siempre
+5. ✅ Validar en producción antes de commit
+6. ✅ Documentar honestamente
+
+**Despacio pero Bien:**
+- 3 horas para hacer bien > 1 hora chapuza
+- Tests como red de seguridad
+- Via Appia Quality mantenida
+
+---
+
+## 🎯 VISIÓN RAG-Master (Para Día 28+)
+
+**Implementación Naive Inicial:**
+1. RAG-Master como proceso Python simple
+2. Descubre etcd-server instances vía DNS/config
+3. Query básico: "GET /sites" → lista de RAG-Clients
+4. Agregación básica: "GET /events/last-hour"
+5. Hereda cifrado de crypto-transport automáticamente
+6. Sin optimizaciones (KISS)
+
+**Escalabilidad Futura:**
+- Streaming en lugar de batch
+- Cache distribuido
+- Particionado por sitio
+- Compresión adaptativa para WAN
+
+**Pero Hoy NO:**
+- Enfoque: terminar integración básica
+- RAG-Master es visión, no urgente
+- Primero: pipeline local funcionando 100%
+
+---
+
+## 💡 RECORDATORIOS IMPORTANTES
+
+1. **crypto-transport está instalado:**
+   - `/usr/local/lib/libcrypto_transport.so`
+   - Tests: `cd /vagrant/crypto-transport/build && ctest`
+
+2. **etcd-client refactorizado:**
+   - `/usr/local/lib/libetcd_client.so`
+   - Método público: `get_encryption_key()`
+   - Tests: `cd /vagrant/etcd-client/build && ctest`
+
+3. **firewall es referencia:**
+   - Ver `/vagrant/firewall-acl-agent/src/api/zmq_subscriber.cpp`
+   - Patrón PIMPL en etcd_client wrapper
+   - Crypto seed desde etcd (NO hardcoded)
+
+4. **Orden de compilación (Makefile):**
+   ```
+   proto-unified
+       ↓
+   crypto-transport-build
+       ↓
+   etcd-client-build
+       ↓
+   componentes (sniffer, detector, firewall)
+   ```
+
+5. **Progreso realista: 90%**
+   - Faltan 2 componentes (detector, sniffer)
+   - RAG ecosystem por implementar
+   - Enterprise vision (RAG-Master) es bonus
+
+---
+
+## 🔑 COMANDOS ÚTILES
+
+```bash
+# Verificar instalación
+ldconfig -p | grep crypto_transport
+ldconfig -p | grep etcd_client
+
+# Test rápido firewall
+cd /vagrant/etcd-server/build && nohup ./etcd-server &
+cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent -c ../config/firewall.json
+
+# Ver logs etcd
+tail -f /vagrant/logs/etcd-server.log
+
+# Limpiar todo para rebuild
+cd /vagrant && make clean-all
+```
+
+---
+
+**Resumen:** Día 26 fue troubleshooting de calidad. Día 27 es integración. Día 28+ es visión enterprise. Despacio pero bien. 🏛️

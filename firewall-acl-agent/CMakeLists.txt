@@ -63,20 +63,14 @@ endif()
 find_package(Threads REQUIRED)
 
 # ============================================================================
-# DAY 23: Crypto & Compression Libraries
+# DAY 26: crypto-transport Library (replaces LZ4 + OpenSSL)
 # ============================================================================
-find_library(LZ4_LIB lz4 REQUIRED)
-if(LZ4_LIB)
-    message(STATUS "✅ Found LZ4: ${LZ4_LIB}")
+find_library(CRYPTO_TRANSPORT_LIB crypto_transport PATHS /usr/local/lib REQUIRED)
+if(CRYPTO_TRANSPORT_LIB)
+    message(STATUS "✅ Found crypto-transport: ${CRYPTO_TRANSPORT_LIB}")
+    include_directories(/usr/local/include)
 else()
-    message(FATAL_ERROR "❌ LZ4 not found. Install: sudo apt-get install liblz4-dev")
-endif()
-
-find_package(OpenSSL REQUIRED)
-if(OPENSSL_FOUND)
-    message(STATUS "✅ Found OpenSSL: ${OPENSSL_LIBRARIES}")
-else()
-    message(FATAL_ERROR "❌ OpenSSL not found. Install: sudo apt-get install libssl-dev")
+    message(FATAL_ERROR "❌ crypto-transport not found. Install: cd /vagrant/crypto-transport/build && sudo make install")
 endif()
 
 # ============================================================================
@@ -156,7 +150,7 @@ set(FIREWALL_MAIN_SOURCE
 add_library(firewall_core STATIC
         ${FIREWALL_CORE_SOURCES}
         ${FIREWALL_API_SOURCES}
-        ${FIREWALL_UTIL_SOURCES}          # ✅ AÑADIDO
+        ${FIREWALL_UTIL_SOURCES}
         ${PROTO_SOURCES}
 )
 
@@ -167,8 +161,7 @@ target_link_libraries(firewall_core
         ${Boost_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         Threads::Threads
-        ${LZ4_LIB}                        # Day 23: LZ4 decompression
-        ${OPENSSL_LIBRARIES}              # Day 23: ChaCha20-Poly1305 decryption
+        ${CRYPTO_TRANSPORT_LIB}       # Day 26: crypto-transport (replaces LZ4 + OpenSSL)
 )
 
 # etcd-client (custom library)
@@ -183,7 +176,7 @@ target_include_directories(firewall_core
         ${CMAKE_BINARY_DIR}/proto
         ${ZMQ_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
-        ${OPENSSL_INCLUDE_DIR}            # Day 23: OpenSSL headers
+        # /usr/local/include ya está arriba en include_directories()
 )
 
 #===----------------------------------------------------------------------===//

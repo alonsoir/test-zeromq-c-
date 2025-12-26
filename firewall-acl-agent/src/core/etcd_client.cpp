@@ -139,4 +139,21 @@ bool EtcdClient::registerService() {
     return true;
 }
 
+std::string EtcdClient::get_crypto_seed() const {
+    if (!pImpl->client_) {
+        std::cerr << "❌ [firewall-acl-agent] get_crypto_seed() called before initialize()" << std::endl;
+        return "";
+    }
+
+    std::string seed = pImpl->client_->get_encryption_key();
+
+    if (seed.empty()) {
+        std::cerr << "❌ [firewall-acl-agent] Failed to get crypto seed from etcd" << std::endl;
+    } else {
+        std::cout << "🔑 [firewall-acl-agent] Retrieved crypto seed: "
+                  << seed.substr(0, 16) << "..." << std::endl;
+    }
+
+    return seed;
+}
 } // namespace mldefender::firewall

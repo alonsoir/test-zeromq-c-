@@ -149,6 +149,9 @@ public:
     // Check if encryption key is available
     bool has_encryption_key() const;
 
+    // Get current encryption key (hex format)
+    std::string get_encryption_key() const;
+
 private:
     // PIMPL idiom - implementation hidden
     struct Impl;

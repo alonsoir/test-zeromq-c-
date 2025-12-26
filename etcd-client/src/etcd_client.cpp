@@ -1,5 +1,8 @@
 // etcd-client/src/etcd_client.cpp
 #include "etcd_client/etcd_client.hpp"
+#include <crypto_transport/crypto.hpp>
+#include <crypto_transport/compression.hpp>
+#include <crypto_transport/utils.hpp>
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <mutex>
@@ -9,6 +12,17 @@
 #include <csignal>
 
 using json = nlohmann::json;
+
+// Helper functions for string <-> vector<uint8_t> conversion
+namespace {
+    inline std::vector<uint8_t> string_to_bytes(const std::string& str) {
+        return std::vector<uint8_t>(str.begin(), str.end());
+    }
+
+    inline std::string bytes_to_string(const std::vector<uint8_t>& bytes) {
+        return std::string(bytes.begin(), bytes.end());
+    }
+}
 
 // Forward declarations of helper functions
 namespace etcd_client {
@@ -29,33 +43,6 @@ namespace http {
              const std::string& body, const std::string& content_type,
              int timeout_seconds, int max_retries, int backoff_seconds,
              size_t original_size = 0);
-}
-
-namespace compression {
-    std::string compress_lz4(const std::string& data);
-    std::string decompress_lz4(const std::string& compressed_data, size_t original_size);
-    bool should_compress(size_t data_size, size_t min_size_threshold);
-}
-
-namespace crypto {
-    std::string encrypt_chacha20(const std::string& plaintext, const std::string& key);
-    std::string decrypt_chacha20(const std::string& encrypted_data, const std::string& key);
-    std::string generate_key();
-    size_t get_key_size();
-    // Helper: Convert hex string to bytes
-    std::string hex_to_bytes(const std::string& hex) {
-        if (hex.length() % 2 != 0) {
-            throw std::runtime_error("Hex string must have even length");
-        }
-        std::string bytes;
-        bytes.reserve(hex.length() / 2);
-        for (size_t i = 0; i < hex.length(); i += 2) {
-            std::string byte_str = hex.substr(i, 2);
-            char byte = static_cast<char>(std::stoi(byte_str, nullptr, 16));
-            bytes.push_back(byte);
-        }
-        return bytes;
-    }
 }
 
 namespace component {
@@ -90,7 +77,7 @@ namespace etcd_client {
 
 struct EtcdClient::Impl {
     Config config_;
-    std::string encryption_key_;
+    std::vector<uint8_t> encryption_key_;
     bool connected_ = false;
     mutable std::mutex mutex_;
 
@@ -158,7 +145,7 @@ struct EtcdClient::Impl {
         auto response = http::post(
             config_.host,
             config_.port,
-            "/v1/heartbeat/" + config_.component_name,  // ✅ CORRECTO
+            "/v1/heartbeat/" + config_.component_name,
             payload,
             config_.timeout_seconds,
             1, // Single attempt for heartbeat
@@ -170,46 +157,46 @@ struct EtcdClient::Impl {
 
     // Apply encryption and compression to data
     std::string process_outgoing_data(const std::string& data) {
-        std::string processed = data;
+        auto data_bytes = string_to_bytes(data);
         size_t original_size = data.size();
 
         // Step 1: Compress (if enabled and data size > threshold)
         if (config_.compression_enabled &&
-            compression::should_compress(original_size, config_.compression_min_size)) {
+            crypto_transport::should_compress(original_size, config_.compression_min_size)) {
             try {
-                processed = compression::compress_lz4(processed);
+                data_bytes = crypto_transport::compress(data_bytes);
                 std::cout << "📦 Compressed: " << original_size << " → "
-                          << processed.size() << " bytes" << std::endl;
+                          << data_bytes.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Compression failed: " << e.what() << std::endl;
                 // Continue without compression
-                processed = data;
+                data_bytes = string_to_bytes(data);
             }
         }
 
         // Step 2: Encrypt (if enabled and key available)
         if (config_.encryption_enabled && !encryption_key_.empty()) {
             try {
-                processed = crypto::encrypt_chacha20(processed, encryption_key_);
-                std::cout << "🔒 Encrypted: " << processed.size() << " bytes" << std::endl;
+                data_bytes = crypto_transport::encrypt(data_bytes, encryption_key_);
+                std::cout << "🔒 Encrypted: " << data_bytes.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Encryption failed: " << e.what() << std::endl;
                 throw; // Encryption failure is critical
             }
         }
 
-        return processed;
+        return bytes_to_string(data_bytes);
     }
 
     // Remove encryption and decompression from data
     std::string process_incoming_data(const std::string& data, size_t original_size = 0) {
-        std::string processed = data;
+        auto data_bytes = string_to_bytes(data);
 
         // Step 1: Decrypt (if enabled and key available)
         if (config_.encryption_enabled && !encryption_key_.empty()) {
             try {
-                processed = crypto::decrypt_chacha20(processed, encryption_key_);
-                std::cout << "🔓 Decrypted: " << processed.size() << " bytes" << std::endl;
+                data_bytes = crypto_transport::decrypt(data_bytes, encryption_key_);
+                std::cout << "🔓 Decrypted: " << data_bytes.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Decryption failed: " << e.what() << std::endl;
                 throw; // Decryption failure is critical
@@ -219,16 +206,16 @@ struct EtcdClient::Impl {
         // Step 2: Decompress (if compression was used)
         if (config_.compression_enabled && original_size > 0) {
             try {
-                processed = compression::decompress_lz4(processed, original_size);
+                data_bytes = crypto_transport::decompress(data_bytes, original_size);
                 std::cout << "📦 Decompressed: " << data.size() << " → "
-                          << processed.size() << " bytes" << std::endl;
+                          << data_bytes.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Decompression failed: " << e.what() << std::endl;
                 throw;
             }
         }
 
-        return processed;
+        return bytes_to_string(data_bytes);
     }
 };
 
@@ -518,7 +505,7 @@ bool EtcdClient::register_component() {
             json j = json::parse(response.body);
             if (j.contains("encryption_key")) {
                 std::string hex_key = j["encryption_key"].get<std::string>();
-                pImpl->encryption_key_ = crypto::hex_to_bytes(hex_key);
+                pImpl->encryption_key_ = crypto_transport::hex_to_bytes(hex_key);
                 std::cout << "🔑 Encryption key received from server ("
                           << pImpl->encryption_key_.size() << " bytes)" << std::endl;
             }
@@ -763,18 +750,25 @@ bool EtcdClient::rollback_config() {
 void EtcdClient::set_encryption_key(const std::string& key) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
 
-    if (key.size() != crypto::get_key_size()) {
+    if (key.size() != crypto_transport::get_key_size()) {
         throw std::runtime_error("Invalid key size (expected " +
-                                 std::to_string(crypto::get_key_size()) + " bytes)");
+                                 std::to_string(crypto_transport::get_key_size()) + " bytes)");
     }
 
-    pImpl->encryption_key_ = key;
+    pImpl->encryption_key_ = string_to_bytes(key);
     std::cout << "🔑 Encryption key set" << std::endl;
 }
 
 bool EtcdClient::has_encryption_key() const {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
     return !pImpl->encryption_key_.empty();
+}
+
+std::string EtcdClient::get_encryption_key() const {
+    if (!pImpl->encryption_key_.empty()) {
+        return crypto_transport::bytes_to_hex(pImpl->encryption_key_);
+    }
+    return "";
 }
 
 } // namespace etcd_client

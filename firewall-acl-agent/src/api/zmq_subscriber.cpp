@@ -1,20 +1,31 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
-// zmq_subscriber.cpp - ZMQ Subscriber Implementation
+// zmq_subscriber.cpp - ZMQ Subscriber Implementation (Day 26 - crypto-transport)
 // firewall-acl-agent/src/api/zmq_subscriber.cpp
 //===----------------------------------------------------------------------===//
 
 #include "firewall/zmq_subscriber.hpp"
+#include <crypto_transport/crypto.hpp>
+#include <crypto_transport/compression.hpp>
+#include <crypto_transport/utils.hpp>
 #include <iostream>
 #include <thread>
 #include <stdexcept>
 #include <cstring>
-#include <lz4.h>           // Day 23
-#include <openssl/evp.h>   // Day 23
-#include <vector>          // Day 23
 
 namespace mldefender {
 namespace firewall {
+
+// Helper functions for string <-> vector<uint8_t> conversion
+namespace {
+    inline std::vector<uint8_t> string_to_bytes(const std::string& str) {
+        return std::vector<uint8_t>(str.begin(), str.end());
+    }
+
+    inline std::string bytes_to_string(const std::vector<uint8_t>& bytes) {
+        return std::string(bytes.begin(), bytes.end());
+    }
+}
 
 //==============================================================================
 // LIFECYCLE
@@ -35,7 +46,7 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
         );
     }
 
-    // ✅ AÑADIDO: Initialize logger
+    // Initialize logger
     try {
         logger_ = std::make_unique<FirewallLogger>(
             config_.log_directory,
@@ -56,6 +67,11 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
 
     std::cerr << "[ZMQSubscriber] Initialized with endpoint: "
               << config_.endpoint << std::endl;
+    std::cerr << "[ZMQSubscriber] Crypto: "
+              << (config_.encryption_enabled ? "ENABLED" : "disabled")
+              << " | Compression: "
+              << (config_.compression_enabled ? "ENABLED" : "disabled")
+              << std::endl;
 }
 
 ZMQSubscriber::~ZMQSubscriber() {
@@ -71,7 +87,7 @@ ZMQSubscriber::~ZMQSubscriber() {
         }
     }
 
-    // ✅ AÑADIDO: Stop logger and print statistics
+    // Stop logger and print statistics
     if (logger_) {
         std::cerr << "[ZMQSubscriber] Stopping logger..." << std::endl;
         logger_->stop(5000);  // 5 second timeout
@@ -279,32 +295,51 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
         }
     }
 
-    // ✅ Day 23: Copy to vector for decrypt/decompress
+    // Copy to vector for decrypt/decompress
     std::vector<uint8_t> data(data_ptr, data_ptr + data_size);
+    size_t original_size = data_size;  // Store for decompress
 
     try {
-        // ✅ Day 23: STEP 1 - Decrypt if enabled
+        // STEP 1 - Decrypt if enabled (using crypto-transport)
         if (config_.encryption_enabled) {
             auto start = std::chrono::high_resolution_clock::now();
 
-            data = decrypt_chacha20_poly1305(data, config_.crypto_token);
+            // Convert hex key to bytes
+            auto key = crypto_transport::hex_to_bytes(config_.crypto_token);
+
+            // Decrypt
+            data = crypto_transport::decrypt(data, key);
 
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-            std::cerr << "[ZMQSubscriber] 🔓 Decrypted: " << duration.count() << " µs" << std::endl;
+            std::cerr << "[ZMQSubscriber] 🔓 Decrypted: " << duration.count() << " µs "
+                      << "(" << original_size << " → " << data.size() << " bytes)" << std::endl;
+
+            original_size = data.size();  // Update for decompress
         }
 
-        // ✅ Day 23: STEP 2 - Decompress if enabled
+        // STEP 2 - Decompress if enabled (using crypto-transport)
         if (config_.compression_enabled) {
             auto start = std::chrono::high_resolution_clock::now();
 
-            data = decompress_lz4(data);
+            // Extract original size from first 4 bytes (little-endian)
+            if (data.size() < 4) {
+                throw std::runtime_error("Compressed data too small");
+            }
+
+            uint32_t decompressed_size;
+            std::memcpy(&decompressed_size, data.data(), sizeof(uint32_t));
+
+            // Remove size header and decompress
+            std::vector<uint8_t> compressed_only(data.begin() + 4, data.end());
+            data = crypto_transport::decompress(compressed_only, decompressed_size);
 
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-            std::cerr << "[ZMQSubscriber] 📦 Decompressed: " << duration.count() << " µs" << std::endl;
+            std::cerr << "[ZMQSubscriber] 📦 Decompressed: " << duration.count() << " µs "
+                      << "(" << compressed_only.size() << " → " << data.size() << " bytes)" << std::endl;
         }
 
     } catch (const std::exception& e) {
@@ -421,7 +456,7 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
         return;  // Don't log if we didn't actually block
     }
 
-    // ✅ AÑADIDO: Log the blocked event
+    // Log the blocked event
     try {
         BlockedEvent log_event = create_blocked_event_from_proto(
             event,
@@ -474,116 +509,6 @@ void ZMQSubscriber::handle_reconnect() {
 
 void ZMQSubscriber::reset_reconnect_backoff() {
     current_reconnect_interval_ms_ = config_.reconnect_interval_ms;
-}
-
-//==============================================================================
-// Day 23: CRYPTO HELPER METHODS
-//==============================================================================
-
-std::vector<uint8_t> ZMQSubscriber::decrypt_chacha20_poly1305(
-    const std::vector<uint8_t>& encrypted_data,
-    const std::string& key_hex
-) {
-    // Validate input
-    if (encrypted_data.size() < 12 + 16) {  // nonce(12) + tag(16)
-        throw std::runtime_error("Encrypted data too small");
-    }
-
-    // Extract nonce (first 12 bytes)
-    std::vector<uint8_t> nonce(encrypted_data.begin(), encrypted_data.begin() + 12);
-
-    // Extract ciphertext + tag
-    std::vector<uint8_t> ciphertext_and_tag(encrypted_data.begin() + 12, encrypted_data.end());
-
-    // Convert hex key to bytes
-    std::vector<uint8_t> key;
-    key.reserve(key_hex.length() / 2);
-    for (size_t i = 0; i < key_hex.length(); i += 2) {
-        std::string byte_str = key_hex.substr(i, 2);
-        key.push_back(static_cast<uint8_t>(std::stoi(byte_str, nullptr, 16)));
-    }
-
-    // Prepare output
-    std::vector<uint8_t> plaintext(ciphertext_and_tag.size() - 16);
-
-    // Create EVP context
-    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
-    if (!ctx) {
-        throw std::runtime_error("Failed to create EVP context");
-    }
-
-    try {
-        // Initialize decryption
-        if (EVP_DecryptInit_ex(ctx, EVP_chacha20_poly1305(), nullptr,
-                              key.data(), nonce.data()) != 1) {
-            throw std::runtime_error("EVP_DecryptInit_ex failed");
-        }
-
-        // Decrypt
-        int len = 0;
-        if (EVP_DecryptUpdate(ctx, plaintext.data(), &len,
-                             ciphertext_and_tag.data(),
-                             ciphertext_and_tag.size() - 16) != 1) {
-            throw std::runtime_error("EVP_DecryptUpdate failed");
-        }
-
-        // Set expected tag
-        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, 16,
-                               const_cast<uint8_t*>(ciphertext_and_tag.data() +
-                               ciphertext_and_tag.size() - 16)) != 1) {
-            throw std::runtime_error("Failed to set auth tag");
-        }
-
-        // Finalize (verifies tag)
-        int final_len = 0;
-        if (EVP_DecryptFinal_ex(ctx, plaintext.data() + len, &final_len) != 1) {
-            throw std::runtime_error("Decryption failed - auth tag mismatch");
-        }
-
-        plaintext.resize(len + final_len);
-        EVP_CIPHER_CTX_free(ctx);
-
-        return plaintext;
-
-    } catch (...) {
-        EVP_CIPHER_CTX_free(ctx);
-        throw;
-    }
-}
-
-std::vector<uint8_t> ZMQSubscriber::decompress_lz4(
-    const std::vector<uint8_t>& compressed_data
-) {
-    // Validate input
-    if (compressed_data.size() < 4) {
-        throw std::runtime_error("Compressed data too small");
-    }
-
-    // Extract decompressed size (first 4 bytes, little-endian)
-    uint32_t decompressed_size;
-    std::memcpy(&decompressed_size, compressed_data.data(), sizeof(uint32_t));
-
-    // Validate size (max 10MB)
-    if (decompressed_size == 0 || decompressed_size > 10 * 1024 * 1024) {
-        throw std::runtime_error("Invalid decompressed size");
-    }
-
-    // Prepare output
-    std::vector<uint8_t> decompressed(decompressed_size);
-
-    // Decompress (skip first 4 bytes)
-    int result = LZ4_decompress_safe(
-        reinterpret_cast<const char*>(compressed_data.data() + 4),
-        reinterpret_cast<char*>(decompressed.data()),
-        compressed_data.size() - 4,
-        decompressed_size
-    );
-
-    if (result < 0) {
-        throw std::runtime_error("LZ4 decompression failed");
-    }
-
-    return decompressed;
 }
 
 } // namespace firewall

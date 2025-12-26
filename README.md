@@ -29,6 +29,103 @@ This is my vision of how to design a modern IDS:
 
 ## 🎯 Current Status
 ```
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  DAY 26 COMPLETE: crypto-transport Library & Architecture 🎉   │
+│  (December 26, 2025)                                           │
+│  Progress: 98% → 99% 🚀                                         │
+├─────────────────────────────────────────────────────────────────┤
+│  🎉 DAY 26: Foundation Architecture Refactoring Complete        │
+│     Extracted transport layer into independent library         │
+│                                                                 │
+│  ✅ crypto-transport Library Created:                           │
+│     • ChaCha20-Poly1305 + LZ4 in single package                │
+│     • Binary-safe API (std::vector<uint8_t>)                   │
+│     • 16 unit tests passing (100%)                             │
+│     • RAII pattern for libsodium initialization                │
+│     • Zero external config dependencies                        │
+│     • Installed: /usr/local/lib/libcrypto_transport.so         │
+│                                                                 │
+│  ✅ etcd-client Refactored:                                     │
+│     • Removed LZ4 + OpenSSL dependencies                       │
+│     • Uses crypto-transport exclusively                        │
+│     • Added get_encryption_key() public API                    │
+│     • 3 tests updated and passing (100%)                       │
+│     • Cleaner architecture (SRP respected)                     │
+│                                                                 │
+│  ✅ firewall-acl-agent Integration:                             │
+│     • zmq_subscriber.cpp refactored (crypto-transport)         │
+│     • etcd_client wrapper with get_crypto_seed()               │
+│     • Crypto seed from etcd (NO hardcoding!)                   │
+│     • Decrypt/decompress ZMQ payloads ready                    │
+│     • Component registration: ✅                                │
+│     • Config upload: 7532 → 3815 bytes (49.3% reduction)       │
+│     • Heartbeat: ✅ (30s interval)                              │
+│     • Clean shutdown: ✅                                         │
+│                                                                 │
+│  🏗️ Architecture Improvements:                                  │
+│     • Single Responsibility Principle enforced                 │
+│     • Transport logic extracted from business logic            │
+│     • Dependency hierarchy clarified:                          │
+│       1. crypto-transport (base)                               │
+│       2. etcd-client (uses crypto-transport)                   │
+│       3. components (use both)                                 │
+│     • Makefile maestro updated with correct order              │
+│                                                                 │
+│  📊 Test Results:                                               │
+│     crypto-transport: 16/16 tests passed ✅                    │
+│     etcd-client: 3/3 tests passed ✅                           │
+│     firewall-acl-agent: Compiled + linked ✅                   │
+│                                                                 │
+│  🔐 Security Verified (Production Test):                        │
+│     • etcd-server → crypto seed generation ✅                  │
+│     • firewall → crypto seed retrieval ✅                      │
+│     • ChaCha20-Poly1305 encryption enabled ✅                  │
+│     • LZ4 compression enabled ✅                               │
+│     • Component registration successful ✅                      │
+│     • Heartbeat mechanism operational ✅                        │
+│     • Config upload encrypted: 7532 → 3815 bytes ✅            │
+│                                                                 │
+│  ✅ Via Appia Quality:                                          │
+│     • Troubleshooting methodology documented                   │
+│     • Scientific honesty: admitted coupling issue              │
+│     • Methodical refactoring (3 hours, zero shortcuts)         │
+│     • Test-driven: 100% pass rate maintained                   │
+│     • Production validation before commit                      │
+│                                                                 │
+│  📊 PROGRESS: 99% Complete 🚀                                   │
+│                                                                 │
+│  🎯 NEXT PRIORITIES (Day 27):                                   │
+│     🔥 ml-detector Integration (Most Complex)                   │
+│        → Refactor for crypto-transport                         │
+│        → Both encrypt/compress (send) + decrypt/decompress     │
+│        → Update CMakeLists.txt                                 │
+│        → Crypto seed from etcd                                 │
+│        → Estimated: 2-3 hours                                  │
+│                                                                 │
+│     🔥 sniffer Integration (Simpler)                            │
+│        → Refactor for crypto-transport                         │
+│        → Only encrypt/compress (send)                          │
+│        → Update CMakeLists.txt                                 │
+│        → Estimated: 1-2 hours                                  │
+│                                                                 │
+│     🔥 End-to-End Pipeline Test                                 │
+│        → Full pipeline with encryption                         │
+│        → etcd-server → sniffer → detector → firewall          │
+│        → Verify decrypt/decompress chain                       │
+│        → Performance metrics                                   │
+│        → Estimated: 1 hour                                     │
+│                                                                 │
+│  COMPLETED (Phase 0 + Phase 1 Days 1-26):                      │
+│     ✅ 4 embedded C++20 detectors (<1.06μs)                    │
+│     ✅ eBPF/XDP dual-NIC metadata extraction                   │
+│     ✅ crypto-transport library (independent) 🆕               │
+│     ✅ etcd-client refactored (cleaner) 🆕                     │
+│     ✅ firewall-acl-agent integrated 🆕                        │
+│     ✅ Makefile maestro updated 🆕                             │
+│     ✅ Architecture follows SRP 🆕                             │
+│     ✅ Zero hardcoded crypto seeds 🆕                          │
+└─────────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────────┐
 │  DAY 21 COMPLETE: ml-detector + firewall Integration 🎉        │
 │  (December 21, 2025)                                           │
@@ -559,7 +656,16 @@ Like the ancient Roman road that still stands 2,300 years later:
 *Via Appia Quality - Designed to last decades*
 
 ---
+**Day 26 Troubleshooting Truth:**
+> "Discovered coupling between etcd-client and crypto/compression code.
+> Violated SRP. Extracted independent crypto-transport library.
+> Refactored etcd-client to use it. Updated firewall-acl-agent.
+> Added get_encryption_key() to etcd-client. Removed all hardcoding.
+> 3 hours methodical work. 100% tests passing. Production validated.
+> Via Appia Quality: When wrong, fix it right."
 
-**Latest Update:** December 20, 2025 - Day 20 Complete - Sniffer Integration 🎉  
-**Progress:** 92% Complete  
-**Next:** Day 21 - ml-detector + firewall + heartbeat
+---
+
+**Latest Update:** December 26, 2025 - Day 26 Complete - crypto-transport Library 🎉  
+**Progress:** 90% Complete  
+**Next:** Day 27 - ml-detector + sniffer integration

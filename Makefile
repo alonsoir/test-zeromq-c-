@@ -210,6 +210,40 @@ sniffer: proto etcd-client-build
 	@echo "   Dependencies: proto ✅  etcd-client ✅"
 	@vagrant ssh -c "cd /vagrant/sniffer && make"
 
+# ----------------------------------------------------------------------------
+# 2a. crypto-transport (librería base - NUEVA)
+# ----------------------------------------------------------------------------
+
+crypto-transport-build:
+	@echo "🔨 Building crypto-transport library..."
+	@vagrant ssh -c "cd /vagrant/crypto-transport && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake .. && \
+		make -j4"
+	@echo "✅ crypto-transport library built"
+	@echo "Installing system-wide..."
+	@vagrant ssh -c "cd /vagrant/crypto-transport/build && sudo make install && sudo ldconfig"
+	@echo "✅ crypto-transport installed to /usr/local/lib"
+	@echo "Verifying library..."
+	@vagrant ssh -c "ldconfig -p | grep crypto_transport"
+
+crypto-transport-clean:
+	@echo "🧹 Cleaning crypto-transport..."
+	@vagrant ssh -c "rm -rf /vagrant/crypto-transport/build"
+	@vagrant ssh -c "sudo rm -f /usr/local/lib/libcrypto_transport.so*"
+	@vagrant ssh -c "sudo rm -rf /usr/local/include/crypto_transport"
+	@echo "✅ crypto-transport cleaned"
+
+crypto-transport-test:
+	@echo "🧪 Testing crypto-transport..."
+	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+
+# ----------------------------------------------------------------------------
+# 2b. etcd-client (depende de crypto-transport)
+# ----------------------------------------------------------------------------
+
 sniffer-build: sniffer
 
 sniffer-clean:
@@ -224,6 +258,7 @@ sniffer-package:
 sniffer-install: sniffer-package
 	@echo "📥 Installing Sniffer .deb..."
 	@vagrant ssh -c "cd /vagrant/sniffer && sudo dpkg -i *.deb || sudo apt-get install -f -y"
+
 detector: proto etcd-client-build
 	@echo "🔨 Building ML Detector..."
 	@echo "   Dependencies: proto ✅  etcd-client ✅"
@@ -310,8 +345,8 @@ rebuild-unified: clean build-unified
 rebuild: rebuild-unified etcd-server-build
 	@echo "✅ Full rebuild complete (all components)"
 
-clean: sniffer-clean detector-clean firewall-clean etcd-client-clean etcd-server-clean
-	@echo "✅ Clean complete (including etcd ecosystem)"
+clean: sniffer-clean detector-clean firewall-clean crypto-transport-clean etcd-client-clean etcd-server-clean
+	@echo "✅ Clean complete (including crypto ecosystem)"
 
 distclean: clean
 	@vagrant ssh -c "rm -f /vagrant/protobuf/network_security.pb.* /vagrant/protobuf/network_security_pb2.py"
@@ -1184,8 +1219,9 @@ help-day13:
 # ----------------------------------------------------------------------------
 # 2. etcd-client (librería compartida - ANTES de componentes)
 # ----------------------------------------------------------------------------
-etcd-client-build: proto-unified
+etcd-client-build: proto-unified crypto-transport-build
 	@echo "🔨 Building etcd-client library..."
+	@echo "   Dependencies: proto ✅  crypto-transport ✅"
 	@vagrant ssh -c "cd /vagrant/etcd-client && \
 		rm -rf build && \
 		mkdir -p build && \
@@ -1193,13 +1229,22 @@ etcd-client-build: proto-unified
 		cmake .. && \
 		make -j4"
 	@echo "✅ etcd-client library built"
-	@echo "Verifying library exists..."
+	@echo "Installing system-wide..."
+	@vagrant ssh -c "cd /vagrant/etcd-client/build && sudo make install && sudo ldconfig"
+	@echo "✅ etcd-client installed to /usr/local/lib"
+	@echo "Verifying library..."
 	@vagrant ssh -c "ls -lh /vagrant/etcd-client/build/libetcd_client.so"
 
 etcd-client-clean:
 	@echo "🧹 Cleaning etcd-client..."
 	@vagrant ssh -c "rm -rf /vagrant/etcd-client/build"
+	@vagrant ssh -c "sudo rm -f /usr/local/lib/libetcd_client.so*"
+	@vagrant ssh -c "sudo rm -rf /usr/local/include/etcd_client"
 	@echo "✅ etcd-client cleaned"
+
+etcd-client-test:
+	@echo "🧪 Testing etcd-client..."
+	@vagrant ssh -c "cd /vagrant/etcd-client/build && ctest --output-on-failure"
 
 # Verify that components are linked with etcd-client
 # ============================================================================

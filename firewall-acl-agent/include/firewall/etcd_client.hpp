@@ -38,6 +38,12 @@ namespace mldefender::firewall {
          */
         bool registerService();
 
+        /**
+        * @brief Get crypto seed from etcd-server
+        * @return Crypto seed in hex format (64 chars)
+        */
+        std::string get_crypto_seed() const;
+
     private:
         struct Impl;
         std::unique_ptr<Impl> pImpl;

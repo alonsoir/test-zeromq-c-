@@ -1,0 +1,4 @@
+test_crypto 1 0.0223561
+test_compression 1 0.0193958
+test_integration 1 0.0147374
+---

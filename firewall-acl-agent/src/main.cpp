@@ -353,12 +353,22 @@ int main(int argc, char** argv) {
         if (config.transport.encryption.enabled) {
             zmq_config.encryption_enabled = true;
 
-            // TODO: Get crypto token from etcd in production
-            // For now, use hardcoded test token (MUST MATCH ml-detector)
-            zmq_config.crypto_token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+            // Get crypto seed from etcd-server
+            if (!etcd_client) {
+                std::cerr << "[ERROR] Encryption enabled but etcd not initialized" << std::endl;
+                std::cerr << "[ERROR] Set etcd.enabled = true in firewall.json" << std::endl;
+                return 1;
+            }
+
+            zmq_config.crypto_token = etcd_client->get_crypto_seed();
+
+            if (zmq_config.crypto_token.empty()) {
+                std::cerr << "[ERROR] Failed to get crypto seed from etcd-server" << std::endl;
+                return 1;
+            }
 
             std::cout << "[INIT] 🔐 ChaCha20-Poly1305 decryption ENABLED" << std::endl;
-            std::cout << "[INIT] ⚠️  Using HARDCODED crypto token (TODO: fetch from etcd)" << std::endl;
+            std::cout << "[INIT] 🔑 Crypto seed obtained from etcd-server" << std::endl;
         } else {
             zmq_config.encryption_enabled = false;
             std::cout << "[INIT] ⏭️  Decryption DISABLED" << std::endl;
