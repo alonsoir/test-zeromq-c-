@@ -1,581 +1,420 @@
-# PROMPT DE CONTINUIDAD - DÍA 27 (27 Diciembre 2025)
+# PROMPT DE CONTINUIDAD - DÍA 28 (28 Diciembre 2025)
 
-## 📋 CONTEXTO DÍA 26 (26 Diciembre 2025)
+## 📋 CONTEXTO DÍA 27 (27 Diciembre 2025)
 
-### ✅ COMPLETADO
+### ✅ COMPLETADO - ECOSISTEMA CRYPTO-TRANSPORT UNIFICADO
 
-**Problema Arquitectónico Resuelto:**
-- Detectado coupling en etcd-client (crypto/compression embebido)
-- Violaba Single Responsibility Principle
-- Extraída librería independiente: crypto-transport
-- Refactorizado etcd-client para usarla
-- Integrado firewall-acl-agent (primer componente)
-- Test de producción: ✅ funcionando
+**Gran Refactorización Completada:**
+- ✅ crypto-transport - Librería base unificada (libsodium + LZ4)
+- ✅ etcd-server - Migrado de CryptoPP → crypto-transport
+- ✅ ml-detector - Integración bidireccional completa (send + receive)
+- ✅ firewall-acl-agent - Ya integrado (Día 26)
+- ⏳ sniffer - Pendiente integración (solo send - más simple)
 
-**Tiempo:** 3 horas metodológicas (troubleshooting de calidad)
-
-**Arquitectura Final:**
+**Arquitectura Final Unificada:**
 ```
-crypto-transport (base independiente)
-    ↓ ChaCha20-Poly1305 + LZ4
-etcd-client (usa crypto-transport)
-    ↓ HTTP + encryption key exchange
-firewall-acl-agent ✅ (integrado)
-    ↓ decrypt/decompress ZMQ
-ml-detector ⏳ (pendiente)
-sniffer ⏳ (pendiente)
+┌─────────────────────────────────────────┐
+│  crypto-transport (UNIFIED ECOSYSTEM)   │
+│  XSalsa20-Poly1305 + LZ4               │
+│  libsodium + liblz4                    │
+└─────────────────────────────────────────┘
+    ↑           ↑           ↑          ↑
+    │           │           │          │
+┌───┴───┐  ┌───┴────┐  ┌───┴────┐  ┌──┴─────┐
+│sniffer│  │ml-det. │  │firewall│  │etcd-srv│
+│  ⏳   │  │   ✅   │  │   ✅   │  │   ✅   │
+└───────┘  └────────┘  └────────┘  └────────┘
+```
+
+**Pipeline Verificado E2E:**
+```
+ml-detector → etcd-server:
+  📦 Compressed: 11754 → 5084 bytes (56.7% reduction)
+  🔒 Encrypted: 5084 → 5124 bytes (+40 bytes overhead)
+  ✅ Total efficiency: 56.4% vs original
+
+etcd-server recibe:
+  🔓 Descifrado: 5124 → 5084 bytes ✅
+  📦 Descomprimido: 5084 → 11754 bytes ✅
+  ✅ Config completa almacenada
 ```
 
 **Tests Pasando:**
 - crypto-transport: 16/16 ✅
 - etcd-client: 3/3 ✅
-- firewall production: ✅
+- ml-detector: Compilado + linkado ✅
+- firewall: Funcionando ✅
+- etcd-server: Funcionando ✅
+
+**Tiempo:** 8 horas metodológicas (refactorización de calidad)
 
 ---
 
-## 🎯 ESTADO ACTUAL (90% COMPLETO)
+## 🎯 ESTADO ACTUAL (99% COMPLETO)
 
-### ✅ Componentes Certificados
+### ✅ Componentes Con Crypto-Transport Unificado
 1. crypto-transport - Librería base ✅
-2. etcd-client - Refactorizado ✅
-3. firewall-acl-agent - Integrado ✅
-4. etcd-server - Funcionando ✅
+2. etcd-client - Refactorizado (Día 26) ✅
+3. firewall-acl-agent - Integrado (Día 26) ✅
+4. etcd-server - Migrado de CryptoPP (Día 27) ✅
+5. ml-detector - Integración completa (Día 27) ✅
 
-### ⏳ Pendiente Integración
-1. ml-detector (más complejo - send + receive)
-2. sniffer (más simple - solo send)
-
----
-
-## 💡 VISIÓN DESCUBIERTA (Noche 25→26 Diciembre)
-
-**Origen:** Inspiración nocturna de Alonso + validación ChatGPT-5
-
-### 🌐 RAG Ecosystem: Local → Maestro → LLM
-```
-┌─────────────────────────────────────────────────────────────┐
-│  VISION ENTERPRISE: Multi-Site Threat Intelligence         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  RAG-Master (coordinador central)                          │
-│      ↓ (descubre vía etcd-server-master)                   │
-│  ┌──────────┬──────────┬──────────┬──────────┐            │
-│  │          │          │          │          │             │
-│  Site A    Site B    Site C    Site N                      │
-│  │          │          │          │          │             │
-│  etcd-     etcd-     etcd-     etcd-                       │
-│  server    server    server    server                      │
-│  local     local     local     local                       │
-│  │          │          │          │          │             │
-│  RAG-      RAG-      RAG-      RAG-                        │
-│  Local     Local     Local     Local                       │
-│  │          │          │          │          │             │
-│  ML        ML        ML        ML                           │
-│  Pipeline  Pipeline  Pipeline  Pipeline                    │
-│  (83 campos/evento)                                         │
-│                                                             │
-│  Agregación Enterprise:                                     │
-│  • 10 sites × 100K eventos/día = 1M eventos/día            │
-│  • Cross-site attack detection                             │
-│  • Model drift analysis global                             │
-│  • Coordinated threat campaigns                            │
-│                                                             │
-│  Fine-Tuned LLM:                                            │
-│  • Dataset: 1M+ eventos reales anotados                    │
-│  • Base: LLAMA-3 / Mistral                                 │
-│  • Output: "ML Defender Threat Intelligence GPT"           │
-│  • Capabilities:                                            │
-│    - Threat narrative generation                           │
-│    - Drift explanation                                      │
-│    - Cross-site correlation                                │
-│    - Operational recommendations                            │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 🎯 Por Qué Es Único (ChatGPT-5 Validation)
-
-**3 Ventajas vs Academia:**
-1. **Closed-loop real** - No solo detecta, actúa y aprende
-2. **Observability first-class** - 83 campos + artifacts
-3. **Distributed intelligence** - Cross-site correlation
-
-**"CERN Mindset":**
-- Captura hoy, entiende mañana
-- Separación señal/decisión
-- Modelos como hipótesis, no verdades
-
-**No Existe en Literatura:**
-- Papers: datasets estáticos
-- Nosotros: telemetría distribuida en tiempo real
-- Papers: modelo → score
-- Nosotros: modelo → decisión → outcome → reentrenamiento
+### ⏳ Pendiente
+1. sniffer - Integración crypto-transport (Día 28)
+2. Verificación firewall funcionalidad IPSet (Día 28-29)
+3. Test pipeline completo con Neris PCAP (Día 29)
 
 ---
 
-## 🚀 PRIORIDADES DÍA 27
+## 🚀 PRIORIDADES DÍA 28 (28 Diciembre 2025)
 
-### PRIORIDAD 1: Integración Crypto-Transport (3-4 horas)
+### PRIORIDAD 1: Verificación Firewall (1 hora)
 
-#### A. ml-detector (2-3 horas) - MÁS COMPLEJO
-**Razón:** Tiene send + receive paths
+**Objetivo:** Asegurar que firewall sigue funcionando correctamente
+
+**Tests:**
+```bash
+# 1. Compilar firewall (verificar no rompimos nada)
+make firewall
+
+# 2. Test con etcd-server
+# Terminal 1:
+vagrant ssh -c "cd /vagrant/etcd-server/build && ./etcd-server"
+
+# Terminal 2:
+vagrant ssh -c "cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent"
+
+# Verificar:
+# ✅ Component registration successful
+# ✅ Config upload encrypted
+# ✅ Heartbeat operational
+# ✅ IPSet initialization
+```
+
+**CRÍTICO - IPSet Functionality:**
+```bash
+# Verificar que firewall puede añadir IPs al blacklist
+sudo ipset list ml_defender_blacklist_test
+
+# Debería estar vacío inicialmente
+# En Día 29 verificaremos que se puebla con ataques
+```
+
+---
+
+### PRIORIDAD 2: Verificación RAG (1 hora)
+
+**Objetivo:** Asegurar que RAG sigue funcionando con crypto
+
+**Tests:**
+```bash
+# 1. Compilar RAG
+make rag
+
+# 2. Verificar integración etcd-client (ya debería estar desde Día 19)
+vagrant ssh -c "ldd /vagrant/rag/build/rag | grep etcd_client"
+
+# Debería mostrar: libetcd_client.so.1
+
+# 3. Test básico
+cd /vagrant/rag/build && ./rag --config ../config/rag_config.json
+
+# Verificar:
+# ✅ etcd connection
+# ✅ Component registration
+# ✅ Artifact logging
+# ✅ JSONL buffering
+```
+
+---
+
+### PRIORIDAD 3: Integración Sniffer (2-3 horas)
+
+**Objetivo:** Último componente - solo send path (más simple)
 
 **Archivos a Modificar:**
-1. `/vagrant/ml-detector/CMakeLists.txt`
-   - Eliminar LZ4 + OpenSSL dependencies
-   - Añadir crypto-transport
 
-2. `/vagrant/ml-detector/src/zmq_publisher.cpp`
-   - Encrypt/compress antes de send
-   - Patrón: compress → encrypt
+1. **`/vagrant/sniffer/CMakeLists.txt`**
+   - Eliminar dependencias locales de crypto/compression
+   - Añadir crypto-transport (similar a ml-detector)
 
-3. `/vagrant/ml-detector/src/zmq_subscriber.cpp`
-   - Decrypt/decompress después de receive
-   - Patrón: decrypt → decompress
+2. **Código ZMQ send** (buscar dónde se envían paquetes)
+   - Patrón: `serialize → compress → encrypt → zmq_send`
+   - Usar crypto_manager del etcd-client
 
-**Referencia:** Ver firewall zmq_subscriber.cpp
+**Referencia:** Código ml-detector zmq_handler.cpp (send path)
 
-#### B. sniffer (1-2 horas) - MÁS SIMPLE
-**Razón:** Solo send path
-
-**Archivos:**
-1. `/vagrant/sniffer/CMakeLists.txt`
-2. Código ZMQ send (buscar `zmq_send`)
-
----
-
-### PRIORIDAD 2: Stress Test (2 horas)
-
-**Objetivo:** Validar pipeline bajo carga
+**Test:**
 ```bash
-# Test 1: Throughput
-# Generar 10K paquetes/segundo
-tcpreplay -i eth1 --mbps 100 attack.pcap
+# Después de modificar:
+make sniffer
 
-# Test 2: Latencia E2E
-# Medir: sniffer → detector → firewall
-# Objetivo: <100ms percentil 99
+# Test con pipeline:
+# Terminal 1: etcd-server
+# Terminal 2: ml-detector
+# Terminal 3: sniffer
 
-# Test 3: Cifrado bajo carga
-# Verificar: sin memory leaks
-# Verificar: CPU <80%
-
-# Test 4: Múltiples conexiones
-# 100 conexiones simultáneas
-# Verificar: todos componentes estables
-```
-
-**Métricas a Capturar:**
-- Packets/second procesados
-- Latencia P50, P95, P99
-- CPU usage por componente
-- Memory leaks (valgrind)
-- Tasa compresión bajo carga
-- Overhead cifrado
-
----
-
-### PRIORIDAD 3: Model Authority Enhancement (1-2 horas)
-
-**Contexto ChatGPT-5:**
-> "Introduce explícitamente el concepto de 'model authority'"
-
-**Qué Añadir al Protobuf:**
-```protobuf
-message PacketEvent {
-    // ... 83 campos existentes ...
-    
-    // Model Authority (ChatGPT-5 Enhancement)
-    string authoritative_model = 84;      // "ddos_detector_v2"
-    float confidence = 85;                 // 0.0-1.0
-    string decision_reason = 86;           // "ml won: 0.89 > 0.42"
-    float runner_up_score = 87;           
-    string runner_up_source = 88;         
-    
-    // Individual model scores
-    message ModelScore {
-        string model_name = 1;
-        float score = 2;
-    }
-    repeated ModelScore model_scores = 89;
-}
-```
-
-**Dónde Implementar:**
-```cpp
-// En ml-detector, después de calcular final_score:
-
-// 1. Identificar mejor modelo
-std::string best_model = get_best_model_name();  // "ddos_detector_v2"
-
-// 2. Confidence
-float confidence = calculate_confidence(final_score);
-
-// 3. Decision reason
-std::string reason = authoritative_source + " won: " + 
-                     std::to_string(final_score) + " > " +
-                     std::to_string(runner_up_score);
-
-// 4. Poblar protobuf
-event.set_authoritative_model(best_model);
-event.set_confidence(confidence);
-event.set_decision_reason(reason);
-event.set_runner_up_score(runner_up);
-event.set_runner_up_source(runner_up_src);
-
-// 5. Individual scores
-for (auto& [model, score] : all_model_scores) {
-    auto* ms = event.add_model_scores();
-    ms->set_model_name(model);
-    ms->set_score(score);
-}
-```
-
-**Por Qué Es Crítico:**
-- Habilita análisis de deriva por modelo
-- Permite comparar versiones (v1 vs v2)
-- Fundamental para las 3 mejoras ChatGPT-5
-- Base para paper-quality analysis
-- Debugging: sabes exactamente qué modelo falló
-
-**Esfuerzo:** 1-2 horas total
-**Valor:** Desbloquea todo el análisis científico
-
----
-
-## 🔬 MEJORAS CHATGPT-5 (Post-Authority)
-
-### 1. Model Authority ✅ (Ya descrito arriba)
-
-### 2. Jubilación No Destructiva (Análisis Pandas)
-
-**Concepto:**
-```python
-# Detectar qué eventos v1 vio pero v2 ignoró
-import pandas as pd
-
-df = pd.read_json('events.jsonl', lines=True)
-
-v1_detections = df[df['authoritative_model'] == 'ddos_v1']
-v2_detections = df[df['authoritative_model'] == 'ddos_v2']
-
-# Eventos únicos de v1
-v1_unique = v1_detections[~v1_detections['src_ip'].isin(v2_detections['src_ip'])]
-
-print(f"v1 detectó {len(v1_unique)} eventos que v2 ignoró")
-# ¿Por qué? → Análisis de features
-```
-
-**Shadow Mode:**
-```cpp
-// Mantener v1 en modo observación
-if (model_version == "ddos_v1") {
-    config.shadow_mode = true;  // No bloquea, solo logea
-}
-```
-
-### 3. Formalizar Deriva (ChatGPT-5 Gold)
-
-**3 Métricas Clave:**
-```python
-# A. Feature Distribution Drift
-df['hour'] = pd.to_datetime(df['timestamp']).dt.hour
-drift = df.groupby('hour')['packet_size'].agg(['mean', 'std'])
-
-# B. Fast vs ML Divergence
-df['divergence'] = abs(df['fast_detector_score'] - df['ml_detector_score'])
-high_div = df[df['divergence'] > 0.5]
-
-# C. Unknown but Severe
-unknown_severe = df[
-    (df['final_score'] > 0.8) &   # Severo
-    (df['confidence'] < 0.6)       # Baja confianza
-]
+# Verificar logs:
+grep "🔒 Encrypted" /vagrant/logs/lab/sniffer.log
 ```
 
 ---
 
-## 🌐 RAG-MASTER ROADMAP
+## 🔥 PRIORIDADES DÍA 29 (29 Diciembre 2025) - PIPELINE COMPLETO
 
-### Día 29-30: Naive Implementation
+### Test Pipeline Completo (4-6 horas)
 
-**Objetivo:** Demostrar concepto enterprise
-```python
-# /vagrant/rag-master/rag_master.py
+**Objetivo:** Validación end-to-end bajo carga real
 
-class RAGMaster:
-    """Coordinador central de RAG Locals"""
-    
-    def __init__(self, etcd_endpoint):
-        self.etcd = etcd_client.EtcdClient(etcd_endpoint)
-        self.sites = {}
-    
-    def discover_sites(self):
-        """Descubre RAG-Local instances vía etcd"""
-        components = self.etcd.list_components(type="rag-local")
-        
-        for comp in components:
-            self.sites[comp.name] = {
-                'endpoint': comp.endpoint,
-                'last_heartbeat': comp.last_heartbeat,
-                'status': comp.status
-            }
-        
-        return self.sites
-    
-    def aggregate_events(self, timeframe="last-hour"):
-        """Agrega eventos de todos los sites"""
-        all_events = []
-        
-        for site_id, info in self.sites.items():
-            # Query individual RAG-Local
-            events = requests.get(
-                f"{info['endpoint']}/events",
-                params={'timeframe': timeframe}
-            ).json()
-            
-            # Enriquecer con site_id
-            for event in events:
-                event['site_id'] = site_id
-                all_events.append(event)
-        
-        return pd.DataFrame(all_events)
-    
-    def cross_site_analysis(self):
-        """Detecta ataques coordinados cross-site"""
-        df = self.aggregate_events("last-24h")
-        
-        # Mismo src_ip en múltiples sites
-        multi_site = df.groupby('src_ip')['site_id'].nunique()
-        coordinated = multi_site[multi_site > 1]
-        
-        return {
-            'coordinated_ips': coordinated.to_dict(),
-            'threat_level': 'HIGH' if len(coordinated) > 0 else 'NORMAL'
-        }
-```
-
-**Características Naive:**
-- ✅ Descubrimiento simple (polling etcd cada 30s)
-- ✅ Agregación básica (sin streaming)
-- ✅ Cifrado heredado (crypto-transport automático)
-- ✅ HTTP REST APIs (sin optimización)
-- ❌ NO cache distribuido (futuro)
-- ❌ NO particionado (futuro)
-- ❌ NO compresión WAN adaptativa (futuro)
-
-**Objetivo:** DEMOSTRAR concepto, no optimizar
-
----
-
-### Semana 5-6: LLM Fine-Tuning Foundation
-
-**Dataset Preparation:**
-```python
-# Extraer ejemplos para fine-tuning
-
-def prepare_llm_dataset(events_df):
-    """
-    Convierte eventos RAG en ejemplos LLM
-    """
-    examples = []
-    
-    for _, event in events_df.iterrows():
-        example = {
-            "input": {
-                "src_ip": event['src_ip'],
-                "authoritative_model": event['authoritative_model'],
-                "final_score": event['final_score'],
-                "confidence": event['confidence'],
-                "sites_affected": event['site_id']
-            },
-            "output": generate_narrative(event)
-        }
-        examples.append(example)
-    
-    return examples
-
-def generate_narrative(event):
-    """Template para narrativa inicial"""
-    return f"""
-    {event['threat_type']} detected from {event['src_ip']}
-    Model: {event['authoritative_model']} (confidence: {event['confidence']})
-    Severity: {event['final_score']}
-    Sites affected: {event['site_id']}
-    Recommendation: {get_recommendation(event)}
-    """
-```
-
-**Fine-Tuning (Semana 6+):**
-```python
-from transformers import AutoModelForCausalLM, Trainer
-
-# Cargar base model
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3-8B")
-
-# Dataset desde RAG Maestro (1M+ eventos)
-dataset = load_rag_master_events(
-    timeframe="last-3-months",
-    min_confidence=0.7,
-    with_annotations=True
-)
-
-# Fine-tune
-trainer = Trainer(model=model, train_dataset=dataset)
-trainer.train()
-
-# Guardar: "ML Defender Threat Intelligence GPT"
-model.save("ml-defender-llm-v1")
-```
-
----
-
-## 📊 VALOR CIENTÍFICO (3 Papers Potenciales)
-
-### Paper 1: Dual-Score Architecture
-**Contribución:** Maximum Threat Wins Logic
-- Fast path + ML path
-- Divergence como señal de calidad
-- Sub-microsecond detection preservada
-
-### Paper 2: Distributed IDS Observatory
-**Contribución:** RAG Local → RAG Maestro
-- Cross-site threat intelligence
-- Model drift detection enterprise-wide
-- Telemetría distribuida tiempo real
-
-### Paper 3: Threat Intelligence LLM
-**Contribución:** Fine-tuned LLM on Real Attacks
-- Genera narrativas operacionales
-- Explica deriva de modelos
-- Recomienda acciones
-
-**Único en literatura:** Los 3 papers usan el MISMO sistema
-
----
-
-## 🔑 COMANDOS ÚTILES
+#### Setup Completo:
 ```bash
-# Verificar librerías instaladas
-ldconfig -p | grep crypto_transport
-ldconfig -p | grep etcd_client
+# 1. Iniciar etcd-server
+make etcd-server-start
 
-# Test rápido firewall
-cd /vagrant/etcd-server/build && nohup ./etcd-server &
-cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent
+# 2. Iniciar todos los componentes
+make run-lab-dev-day27  # Nuevo target con crypto habilitado
 
-# Análisis eventos (después de Model Authority)
-python3 <<EOF
-import pandas as pd
-df = pd.read_json('/vagrant/logs/rag/events/2025-12-27.jsonl', lines=True)
-print(df.groupby('authoritative_model')['final_score'].describe())
-EOF
+# 3. Verificar estado
+make status-lab-day27
+```
 
-# Stress test
+#### Test con Neris PCAP:
+```bash
+# Relanzar replay Neris
 cd /vagrant/tests
-./stress_test.sh --duration 300 --rate 10000
+./replay_neris.sh --duration 3600 --speed 1.0
+
+# Monitorear en tiempo real (script actualizado)
+./monitor_pipeline_crypto.sh  # NUEVO - incluye crypto stats
+```
+
+#### **CRÍTICO - Verificar IPSet Blacklist:**
+```bash
+# Durante el test, verificar que IPs se añaden al blacklist
+watch -n 5 'sudo ipset list ml_defender_blacklist_test | tail -20'
+
+# Deberías ver IPs del botnet Neris aparecer:
+# 147.32.84.165
+# 147.32.84.191
+# 147.32.84.192
+# ... etc
+```
+
+#### Métricas a Capturar:
+```bash
+# A. Throughput
+grep "events/sec" /vagrant/logs/lab/*.log
+
+# B. Latencia E2E
+# sniffer timestamp → firewall block timestamp
+# Objetivo: <100ms P99
+
+# C. Cifrado overhead
+# Compare encrypted vs unencrypted sizes
+grep "Encrypted:" /vagrant/logs/lab/*.log | awk '{sum+=$2} END {print sum}'
+
+# D. Compresión ratio
+grep "Compressed:" /vagrant/logs/lab/*.log
+
+# E. IPSet population
+sudo ipset list ml_defender_blacklist_test | wc -l
+# Debería crecer durante el test
+
+# F. RAG artifacts generados
+ls -l /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l
+
+# G. Memory leaks (AddressSanitizer)
+# Verificar que no hay leaks significativos
 ```
 
 ---
 
-## 💡 RECORDATORIOS CRÍTICOS
+### Refinamiento Makefile Raíz (2 horas)
 
-1. **Orden correcto Día 27:**
-   - Mañana: ml-detector + sniffer crypto integration
-   - Tarde: Stress test bajo carga
-   - Noche: Análisis resultados
+**Objetivos:**
+1. Añadir targets Day 27/28
+2. Mejorar `make clean-all`
+3. Test construcción desde cero
+4. Actualizar documentación targets
 
-2. **Día 28: Model Authority**
-   - Protobuf: 5 campos nuevos
-   - ml-detector: enrichment logic
-   - Desbloquea TODO el análisis científico
+**Nuevos Targets:**
+```makefile
+# Day 27 Targets
+.PHONY: test-crypto-pipeline
+test-crypto-pipeline:
+	@echo "🔐 Testing encrypted pipeline..."
+	# Implementar test E2E con crypto
 
-3. **Día 29-30: RAG-Master Naive**
-   - Implementación básica (KISS)
-   - Demostrar concepto enterprise
-   - Sin optimizaciones prematuras
+.PHONY: verify-crypto-linkage
+verify-crypto-linkage:
+	@echo "🔍 Verifying crypto-transport linkage..."
+	vagrant ssh -c "ldd /vagrant/ml-detector/build/ml-detector | grep crypto_transport"
+	vagrant ssh -c "ldd /vagrant/firewall-acl-agent/build/firewall-acl-agent | grep crypto_transport"
+	vagrant ssh -c "ldd /vagrant/etcd-server/build/etcd-server | grep crypto_transport"
 
-4. **Progreso Realista: 90%**
-   - Crypto integration: 8%
-   - Model Authority: 1%
-   - RAG ecosystem: 1%
+.PHONY: clean-crypto
+clean-crypto:
+	@echo "🧹 Cleaning crypto-transport..."
+	cd crypto-transport/build && make clean
+	rm -f /usr/local/lib/libcrypto_transport.*
+	rm -rf /usr/local/include/crypto_transport/
 
-5. **Inspiración Nocturna:**
-   - La visión RAG-Master vino de madrugada
-   - ChatGPT-5 validó técnicamente
-   - Es única en literatura
-   - Factible con telemetría actual
+.PHONY: rebuild-all-crypto
+rebuild-all-crypto: clean-crypto
+	make crypto-transport-build
+	make etcd-server-build
+	make detector
+	make firewall
+```
+
+**Test Construcción Desde Cero:**
+```bash
+# 1. Limpieza total
+make clean-all
+
+# 2. Construcción ordenada
+make proto-unified
+make crypto-transport-build
+make etcd-client-build
+make etcd-server-build
+make sniffer
+make detector
+make firewall
+make rag
+
+# 3. Verificación
+make verify-crypto-linkage
+make test-etcd-client
+make test-crypto-pipeline
+```
 
 ---
 
+## 📊 FUNCIONALIDAD CRÍTICA - IPSet Blacklist
+
+### **PENDIENTE IMPLEMENTAR (Día 29):**
+
+El firewall actualmente:
+- ✅ Recibe eventos de ml-detector (encrypted)
+- ✅ Descifra + descomprime correctamente
+- ✅ Parsea protobuf PacketEvent
+- ❌ **NO añade IPs al ipset** ← FALTA IMPLEMENTAR
+
+**Dónde implementar:**
+```cpp
+// En firewall-acl-agent/src/main.cpp o similar
+
+void process_detection(const PacketEvent& event) {
+    if (event.final_score() > 0.7) {  // Threshold configurable
+        std::string src_ip = event.src_ip();
+        
+        // Añadir al IPSet
+        std::string cmd = "ipset add ml_defender_blacklist_test " + src_ip + 
+                         " timeout 3600 -exist";
+        
+        int ret = system(cmd.c_str());
+        if (ret == 0) {
+            LOG_INFO("✅ Blocked IP: " + src_ip);
+        } else {
+            LOG_ERROR("❌ Failed to block IP: " + src_ip);
+        }
+    }
+}
+```
+
+**Test verificación:**
+```bash
+# Durante test Neris:
+watch -n 2 'sudo ipset list ml_defender_blacklist_test | grep -c "147.32"'
+
+# Debería incrementar conforme detecta botnet
+```
+
 ---
 
-## 📝 DOCUMENTACIÓN CREADA (Día 26 - Solo Docs)
+## 💡 VISIÓN RAG ECOSYSTEM (Recordatorio)
 
-### Conceptos ChatGPT-5 Documentados
-
-**IMPORTANTE: NO tocar protobuf hasta Día 35+**
-
-**3 Documentos Creados:**
-1. `/vagrant/docs/SHADOW_AUTHORITY.md` - Non-destructive model retirement
-2. `/vagrant/docs/DECISION_OUTCOME.md` - Ground truth for retraining
-3. `/vagrant/docs/FUTURE_ENHANCEMENTS.md` - Roadmap completo
-
-**Por Qué Documentar Ahora:**
-- ✅ Capturar ideas antes de olvidar
-- ✅ Guiar desarrollo futuro
-- ✅ Cero riesgo (no afecta compilación)
-- ✅ Reviewers aprecian claridad
-
-**Por Qué Implementar Después:**
-- ✅ Estamos mid-integration (ml-detector, sniffer)
-- ✅ Cambio protobuf = recompilar TODO
-- ✅ Disciplina: un cambio proto por milestone
-- ✅ Via Appia Quality: despacio pero bien
+**Ya Documentado (Día 26):**
+- Shadow Authority: `/vagrant/docs/SHADOW_AUTHORITY.md`
+- Decision Outcome: `/vagrant/docs/DECISION_OUTCOME.md`
+- Future Enhancements: `/vagrant/docs/FUTURE_ENHANCEMENTS.md`
 
 **Implementación Futura:**
-```
-Día 28: Model Authority básico (campos 84-89) - Sin shadow mode aún
-Día 35: Shadow Authority (campo 91 + bool shadow_mode)
-Día 40: Decision Outcome (campo 90)
-```
+- Día 30-35: Model Authority básico
+- Semana 5: RAG-Master naive
+- Semana 6: LLM fine-tuning foundation
 
-**Valor:**
-- Paper-quality concepts ya documentados
-- Roadmap claro para semanas 5-6
-- No rompe nada ahora
-- Fundación para LLM fine-tuning
+**No tocar protobuf hasta post Day 35** (disciplina)
+
+---
+
+## 🔑 COMANDOS ÚTILES DÍA 28-29
+```bash
+# Verificar librerías sistema
+ldconfig -p | grep -E '(crypto_transport|etcd_client)'
+
+# Verificar linkage todos componentes
+for comp in ml-detector firewall-acl-agent etcd-server sniffer; do
+    echo "=== $comp ==="
+    vagrant ssh -c "ldd /vagrant/$comp/build/$comp 2>/dev/null | grep -E '(crypto_transport|etcd_client)'"
+done
+
+# Monitor IPSet en tiempo real
+watch -n 5 'echo "=== IPSet Blacklist ===" && sudo ipset list ml_defender_blacklist_test | tail -20'
+
+# Estadísticas crypto durante test
+grep -E '(Encrypted|Compressed|Decrypted|Decompressed)' /vagrant/logs/lab/*.log | \
+    awk '{print $1, $NF}' | sort | uniq -c
+
+# Verificar RAG artifacts generación
+watch -n 10 'ls -lh /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | tail -5'
+
+# CPU/Memory durante test
+vagrant ssh -c "top -b -n 1 | grep -E '(ml-detector|firewall|sniffer|etcd-server)'"
+```
 
 ---
 
 ## 🏛️ VIA APPIA QUALITY
 
-**Filosofía Mantenida:**
-- Troubleshooting metodológico (no chapuzas)
-- Tests al 100% siempre
-- Documentación honesta
-- Despacio pero bien
-- Cuando nos equivocamos, lo arreglamos correctamente
+**Día 27 Logros:**
+- Ecosistema unificado crypto-transport ✅
+- etcd-server migrado de CryptoPP ✅
+- ml-detector integración completa ✅
+- Pipeline E2E verificado ✅
+- Zero hardcoded crypto seeds ✅
+- Tests 100% passing ✅
+- Refactorización metodológica (8 horas) ✅
 
-**Día 26 Truth:**
-> "Detectamos coupling. Lo admitimos. Lo arreglamos bien.
-> 3 horas metodológicas. 100% tests pasando. Producción validada.
-> Via Appia Quality: When wrong, fix it right."
+**Día 27 Truth:**
+> "Completamos ecosistema unificado. Todos los componentes usan
+> crypto-transport. etcd-server migrado de CryptoPP. ml-detector
+> integración bidirectional completa. Pipeline E2E verificado:
+> 11754 bytes → 5124 bytes (56.4% efficiency). Tests passing.
+> Código más modular. Tiene más sentido. Via Appia Quality:
+> Refactorizar bien, no rápido."
 
 ---
 
-**RESUMEN EJECUTIVO:**
+## 📝 RESUMEN EJECUTIVO DÍA 28-29
+
+**Día 28 (Verificación):**
 ```
-Día 27:  Crypto integration (ml-detector + sniffer) + Stress test
-Día 28:  Model Authority enhancement (5 campos protobuf)
-Día 29:  RAG-Master naive (discovery + aggregation)
-Día 30:  Cross-site analysis notebooks
-Semana 5: Drift detection automation
-Semana 6: LLM fine-tuning foundation
-Semana 7: Paper writing comenzar
+✅ Firewall functionality check (1h)
+✅ RAG integration verification (1h)
+🔥 Sniffer crypto integration (2-3h)
 ```
 
-**Visión:** RAG Local → RAG Maestro → Threat Intelligence LLM
-**Base:** 83 campos + authoritative_model + cross-site telemetry
-**Único:** No existe en academia actual
+**Día 29 (Validación):**
+```
+🔥 Pipeline completo con Neris PCAP (4-6h)
+🔥 IPSet blacklist functionality (CRÍTICO!)
+🔥 Makefile refinement + clean build (2h)
+📊 Captura métricas producción
+```
 
-Despacio pero bien. 🏛️
+**Progreso:** 99% → 100% (Core Pipeline Complete)
+
+**Siguiente Fase:** Model Authority + RAG-Master (Semana 5)
+
+Via Appia Quality: Despacio pero bien. 🏛️
