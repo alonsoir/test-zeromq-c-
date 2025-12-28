@@ -143,4 +143,22 @@ bool EtcdClient::registerService() {
     return true;
 }
 
+std::string EtcdClient::get_encryption_seed() const {
+    if (!pImpl || !pImpl->client_) {
+        std::cerr << "❌ [ml-detector] EtcdClient not initialized" << std::endl;
+        return "";
+    }
+
+    std::string seed = pImpl->client_->get_encryption_key();
+
+    if (seed.empty()) {
+        std::cerr << "❌ [ml-detector] Failed to get encryption seed" << std::endl;
+    } else {
+        std::cout << "🔑 [ml-detector] Retrieved encryption seed ("
+                  << seed.size() << " bytes)" << std::endl;
+    }
+
+    return seed;
+}
+
 } // namespace ml_detector

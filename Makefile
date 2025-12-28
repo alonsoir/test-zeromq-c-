@@ -227,7 +227,7 @@ crypto-transport-build:
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && sudo make install && sudo ldconfig"
 	@echo "✅ crypto-transport installed to /usr/local/lib"
 	@echo "Verifying library..."
-	@vagrant ssh -c "ldconfig -p | grep crypto_transport"
+	@vagrant ssh -c "sudo ldconfig -p | grep crypto_transport || ls -lh /usr/local/lib/libcrypto_transport.so*"
 
 crypto-transport-clean:
 	@echo "🧹 Cleaning crypto-transport..."
@@ -819,7 +819,7 @@ etcd-server-stop:
 
 etcd-server-status:
 	@echo "🔍 etcd-server Status:"
-	@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi""
+	@vagrant ssh -c "pid=\$$(pgrep -f etcd-server); if [ -n \"\$$pid\" ]; then echo \"✅ etcd-server running (PID: \$$pid)\"; else echo \"❌ etcd-server stopped\"; fi"
 
 etcd-server-logs:
 	@echo "📋 etcd-server Logs:"

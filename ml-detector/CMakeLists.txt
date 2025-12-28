@@ -40,8 +40,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -fsanitize=undefined -fno-o
 # PkgConfig for system libraries
 find_package(PkgConfig REQUIRED)
 
-find_package(OpenSSL REQUIRED)
-message(STATUS "Found OpenSSL")
+# nlohmann_json
 find_package(nlohmann_json REQUIRED)
 message(STATUS "Found nlohmann_json")
 
@@ -111,22 +110,7 @@ else()
     message(STATUS "Found spdlog: ${spdlog_VERSION}")
 endif()
 
-# LZ4 (compression)
-pkg_check_modules(LZ4 REQUIRED IMPORTED_TARGET liblz4)
-message(STATUS "Found LZ4: ${LZ4_VERSION}")
-
 # etcd-cpp-apiv3 (optional)
-find_package(etcd-cpp-api QUIET)
-if(etcd-cpp-api_FOUND)
-    message(STATUS "Found etcd-cpp-api: ${etcd-cpp-api_VERSION}")
-    set(HAVE_ETCD_CPP_API TRUE)
-else()
-    message(STATUS "etcd-cpp-api not found - ETCD integration will be disabled")
-    set(HAVE_ETCD_CPP_API FALSE)
-endif()
-
-
-# etcd-cpp-api (optional)
 find_package(etcd-cpp-api QUIET)
 if(etcd-cpp-api_FOUND)
     message(STATUS "Found etcd-cpp-api: ${etcd-cpp-api_VERSION}")
@@ -147,8 +131,40 @@ if(EXISTS ${ETCD_CLIENT_LIB})
     include_directories(${ETCD_CLIENT_INCLUDE_DIR})
     set(HAVE_ETCD_CLIENT TRUE)
 else()
-    message(STATUS "⚠️  etcd-client library not found - will build without etcd integration")
-    set(HAVE_ETCD_CLIENT FALSE)
+    message(FATAL_ERROR "❌ etcd-client library not found - required for ml-detector")
+endif()
+
+# ============================================================================
+# CRYPTO-TRANSPORT LIBRARY (Custom) - DAY 27 FIX
+# ============================================================================
+# Busca primero en /usr/local (instalación system-wide), luego en build local
+find_library(CRYPTO_TRANSPORT_LIB
+        NAMES crypto_transport
+        PATHS
+        /usr/local/lib
+        /vagrant/crypto-transport/build
+        NO_DEFAULT_PATH
+)
+
+find_path(CRYPTO_TRANSPORT_INCLUDE_DIR
+        NAMES crypto_transport/crypto_manager.hpp
+        PATHS
+        /usr/local/include
+        /vagrant/crypto-transport/include
+        NO_DEFAULT_PATH
+)
+
+if(CRYPTO_TRANSPORT_LIB AND CRYPTO_TRANSPORT_INCLUDE_DIR)
+    message(STATUS "✅ Found crypto-transport library: ${CRYPTO_TRANSPORT_LIB}")
+    message(STATUS "✅ Found crypto-transport headers: ${CRYPTO_TRANSPORT_INCLUDE_DIR}")
+    include_directories(${CRYPTO_TRANSPORT_INCLUDE_DIR})
+    set(HAVE_CRYPTO_TRANSPORT TRUE)
+else()
+    message(FATAL_ERROR "❌ crypto-transport not found - required for ml-detector
+    Library: ${CRYPTO_TRANSPORT_LIB}
+    Headers: ${CRYPTO_TRANSPORT_INCLUDE_DIR}
+
+    Fix: Run 'make crypto-transport-build' from project root")
 endif()
 
 # Threads
@@ -322,12 +338,11 @@ target_link_libraries(ml-detector PRIVATE
         PkgConfig::ZMQ
         ${Protobuf_LIBRARIES}
         onnxruntime
-        PkgConfig::LZ4
         Threads::Threads
         ransomware_detector
-        OpenSSL::SSL
-        OpenSSL::Crypto
         nlohmann_json::nlohmann_json
+        ${ETCD_CLIENT_LIB}
+        ${CRYPTO_TRANSPORT_LIB}
 )
 
 # nlohmann/json
@@ -348,12 +363,6 @@ endif()
 if(HAVE_ETCD_CPP_API)
     target_link_libraries(ml-detector PRIVATE etcd-cpp-api)
     target_compile_definitions(ml-detector PRIVATE HAVE_ETCD_CPP_API)
-endif()
-
-# etcd-client (custom library)
-if(HAVE_ETCD_CLIENT)
-    target_link_libraries(ml-detector PRIVATE ${ETCD_CLIENT_LIB})
-    message(STATUS "✅ Linking etcd-client library")
 endif()
 
 # ============================================================================
@@ -447,11 +456,9 @@ if(BUILD_TESTS)
             target_link_libraries(${test_name} PRIVATE
                     GTest::GTest
                     GTest::Main
-                    # Mismas dependencias que el ejecutable principal
                     PkgConfig::ZMQ
                     ${Protobuf_LIBRARIES}
                     onnxruntime
-                    PkgConfig::LZ4
                     Threads::Threads
             )
 
@@ -479,7 +486,6 @@ if(BUILD_TESTS)
                 PkgConfig::ZMQ
                 ${Protobuf_LIBRARIES}
                 onnxruntime
-                PkgConfig::LZ4
                 Threads::Threads
         )
 
@@ -572,7 +578,8 @@ message(STATUS "  Protobuf:        ${Protobuf_VERSION}")
 message(STATUS "  ONNX Runtime:    Found")
 message(STATUS "  nlohmann/json:   Found")
 message(STATUS "  spdlog:          Found")
-message(STATUS "  LZ4:             ${LZ4_VERSION}")
+message(STATUS "  etcd-client:     ${HAVE_ETCD_CLIENT}")
+message(STATUS "  crypto-transport: ${HAVE_CRYPTO_TRANSPORT}")
 message(STATUS "  etcd-cpp-api:    ${HAVE_ETCD_CPP_API}")
 message(STATUS "")
 message(STATUS "Options:")

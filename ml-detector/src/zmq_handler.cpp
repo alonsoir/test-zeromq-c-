@@ -18,7 +18,8 @@ ZMQHandler::ZMQHandler(
     std::shared_ptr<ml_defender::DDoSDetector> ddos_detector,
     std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
     std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
-    std::shared_ptr<ml_defender::InternalDetector> internal_detector
+    std::shared_ptr<ml_defender::InternalDetector> internal_detector,
+    std::shared_ptr<crypto::CryptoManager> crypto_manager  // 🎯 DAY 27: NEW
 )
     : config_(config)
     , context_(1)  // 1 IO thread
@@ -28,6 +29,7 @@ ZMQHandler::ZMQHandler(
     , traffic_detector_(traffic_detector)
     , internal_detector_(internal_detector)
     , extractor_(extractor)
+    , crypto_manager_(crypto_manager)  // 🎯 DAY 27: NEW
     , running_(false)
     , logger_(spdlog::get("ml-detector"))
     , last_stats_report_(std::chrono::steady_clock::now())
@@ -38,6 +40,14 @@ ZMQHandler::ZMQHandler(
     }
 
     logger_->info("🔌 Initializing ZMQ Handler");
+
+    // 🎯 DAY 27: Log crypto status
+    if (crypto_manager_) {
+        logger_->info("🔐 Crypto-Transport enabled (ChaCha20-Poly1305 + LZ4)");
+    } else {
+        logger_->error("❌ Crypto-Transport NOT initialized");
+        throw std::runtime_error("CryptoManager required for ZMQHandler");
+    }
 
     // Log detector status
     logger_->info("📊 ML Detectors loaded:");
@@ -167,18 +177,40 @@ void ZMQHandler::run() {
 
     while (running_.load()) {
         try {
-            zmq::message_t message;
-            auto result = input_socket_->recv(message, zmq::recv_flags::dontwait);
+            // ================================================================
+            // 🎯 DAY 27: RECEIVE ENCRYPTED MESSAGE
+            // ================================================================
+            zmq::message_t encrypted_message;
+            auto result = input_socket_->recv(encrypted_message, zmq::recv_flags::dontwait);
 
             if (result) {
-                std::string msg_data(static_cast<char*>(message.data()), message.size());
+                // Extract encrypted data
+                std::string encrypted_data(
+                    static_cast<char*>(encrypted_message.data()),
+                    encrypted_message.size()
+                );
 
                 {
                     std::lock_guard<std::mutex> lock(stats_mutex_);
                     stats_.events_received++;
                 }
 
-                process_event(msg_data);
+                // Decrypt → Decompress (pattern from firewall-acl-agent)
+                try {
+                    auto decrypted = crypto_manager_->decrypt(encrypted_data);
+                    auto decompressed = crypto_manager_->decompress(decrypted);
+
+                    logger_->trace("🔓 Decrypted: {} bytes → {} bytes (decompressed)",
+                                  encrypted_data.size(), decompressed.size());
+
+                    // Process the decrypted/decompressed message
+                    process_event(decompressed);
+
+                } catch (const std::exception& e) {
+                    logger_->error("❌ Decryption/decompression failed: {}", e.what());
+                    std::lock_guard<std::mutex> lock(stats_mutex_);
+                    stats_.deserialization_errors++;
+                }
 
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -214,7 +246,7 @@ void ZMQHandler::process_event(const std::string& message) {
 
     try {
         // ====================================================================
-        // DESERIALIZATION
+        // DESERIALIZATION (message already decrypted/decompressed)
         // ====================================================================
         protobuf::NetworkSecurityEvent event;
         if (!event.ParseFromString(message)) {
@@ -742,14 +774,27 @@ void ZMQHandler::process_event(const std::string& message) {
 
 void ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent& event) {
     try {
+        // ================================================================
+        // 🎯 DAY 27: ENCRYPT & SEND
+        // ================================================================
+
+        // Serialize protobuf
         std::string serialized;
         if (!event.SerializeToString(&serialized)) {
             logger_->error("Failed to serialize enriched event {}", event.event_id());
             return;
         }
 
-        zmq::message_t message(serialized.size());
-        memcpy(message.data(), serialized.data(), serialized.size());
+        // Compress → Encrypt (pattern from firewall-acl-agent)
+        auto compressed = crypto_manager_->compress(serialized);
+        auto encrypted = crypto_manager_->encrypt(compressed);
+
+        logger_->trace("🔒 Encrypted: {} bytes → {} bytes (compressed+encrypted)",
+                      serialized.size(), encrypted.size());
+
+        // Send encrypted message
+        zmq::message_t message(encrypted.size());
+        memcpy(message.data(), encrypted.data(), encrypted.size());
 
         auto result = output_socket_->send(message, zmq::send_flags::dontwait);
 
@@ -757,14 +802,16 @@ void ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent& event
             std::lock_guard<std::mutex> lock(stats_mutex_);
             stats_.events_sent++;
 
-            logger_->debug("📤 Event sent: id={}, size={} bytes",
-                          event.event_id(), serialized.size());
+            logger_->debug("📤 Event sent: id={}, encrypted_size={} bytes",
+                          event.event_id(), encrypted.size());
         } else {
             logger_->warn("Failed to send event {} (queue full?)", event.event_id());
         }
 
     } catch (const zmq::error_t& e) {
         logger_->error("ZMQ send error: {}", e.what());
+    } catch (const std::exception& e) {
+        logger_->error("Encryption/send error: {}", e.what());
     }
 }
 

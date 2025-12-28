@@ -1,46 +1,49 @@
 #pragma once
 
 #include <string>
-#include <vector>
-#include <array>
+#include <memory>
 #include <chrono>
-#include <cryptopp/osrng.h>
-#include <cryptopp/hex.h>
-#include <cryptopp/filters.h>
-#include <cryptopp/secblock.h>
-#include <cryptopp/sha.h>
+#include <crypto_transport/crypto_manager.hpp>
 
+/**
+ * @brief Wrapper around crypto::CryptoManager for etcd-server
+ * Compatible with existing component_registry interface
+ */
 class CryptoManager {
 private:
-    CryptoPP::SecByteBlock encryption_key_;
-    std::string seed_;
+    std::unique_ptr<crypto::CryptoManager> crypto_;
+    std::string seed_;  // Binary seed (32 bytes)
     std::chrono::system_clock::time_point key_generation_time_;
 
-    // Constantes para ChaCha20-Poly1305
-    static constexpr size_t KEY_SIZE = 32;    // 256 bits (crypto_secretbox_KEYBYTES)
-    static constexpr size_t IV_SIZE = 12;     // ← ELIMINAR esta línea (no se usa)
-    static constexpr size_t TAG_SIZE = 16;    // ← ELIMINAR esta línea (no se usa)
+    static constexpr size_t KEY_SIZE = 32;  // 256 bits
 
 public:
+    /**
+     * @brief Default constructor - generates random seed
+     */
     CryptoManager();
 
-    // Gestión de claves
-    bool generate_key_from_seed(const std::string& seed);
-    std::string get_current_seed() const;
-    std::string get_encryption_key() const;
+    // Seed management - returns HEX for JSON compatibility
+    std::string get_current_seed() const {
+        return bytes_to_hex(seed_);
+    }
+
+    std::string get_encryption_key() const {
+        return bytes_to_hex(seed_);
+    }
+
     bool should_rotate_key() const;
     void rotate_key();
 
-    // Cifrado/Descifrado
+    // Encryption/Decryption (binary format, NOT hex)
     std::string encrypt(const std::string& plaintext);
     std::string decrypt(const std::string& ciphertext);
 
-    // Utilidades
-    std::string generate_random_seed();
+    // Validation
     bool validate_ciphertext(const std::string& ciphertext);
 
 private:
-    void generate_random_bytes(CryptoPP::SecByteBlock& buffer, size_t size);
-    std::string bytes_to_hex(const CryptoPP::SecByteBlock& bytes) const;
-    CryptoPP::SecByteBlock hex_to_bytes(const std::string& hex);
+    std::string generate_random_seed();
+    std::string bytes_to_hex(const std::string& bytes) const;
+    std::string hex_to_bytes(const std::string& hex) const;
 };

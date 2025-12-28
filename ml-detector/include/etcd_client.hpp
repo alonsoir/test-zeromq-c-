@@ -1,10 +1,8 @@
 #pragma once
-
 #include <memory>
 #include <string>
 
 namespace ml_detector {
-
     /**
      * @brief PIMPL Adapter for etcd-client library
      *
@@ -19,7 +17,6 @@ namespace ml_detector {
          * @param component_name Component identifier (e.g., "ml-detector")
          */
         EtcdClient(const std::string& endpoint, const std::string& component_name);
-
         ~EtcdClient();
 
         // Disable copy/move to simplify PIMPL
@@ -38,9 +35,14 @@ namespace ml_detector {
          */
         bool registerService();
 
+        /**
+         * @brief Get encryption seed from etcd-server
+         * @return Encryption seed obtained during initialize() (32 bytes base64)
+         */
+        std::string get_encryption_seed() const;
+
     private:
         struct Impl;
         std::unique_ptr<Impl> pImpl;
     };
-
 } // namespace ml_detector

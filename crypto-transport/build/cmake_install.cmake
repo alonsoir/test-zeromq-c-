@@ -92,6 +92,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     "/vagrant/crypto-transport/include/crypto_transport/crypto.hpp"
     "/vagrant/crypto-transport/include/crypto_transport/compression.hpp"
     "/vagrant/crypto-transport/include/crypto_transport/utils.hpp"
+    "/vagrant/crypto-transport/include/crypto_transport/crypto_manager.hpp"
     )
 endif()
 
