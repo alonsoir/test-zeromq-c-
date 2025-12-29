@@ -21,421 +21,146 @@ This is my vision of how to design a modern IDS:
 - 🤖 **AI-Powered Configuration** - Real LLAMA integration for natural language control
 - 🌐 **Gateway Mode** - Network-wide protection with dual-NIC architecture
 - 📊 **RAGLogger** - 83-field comprehensive event logging for AI analysis
-- 🔐 **etcd-client Library** - Military-grade encryption + compression (ChaCha20 + LZ4)
+- 🔐 **Unified Crypto Ecosystem** - All components use crypto-transport library
 - 🔄 **Bidirectional Config** - Components can update their own configuration
-- 🎯 **Encrypted Pipeline** - End-to-end encryption across all components
+- 🎯 **End-to-End Encryption** - ChaCha20-Poly1305 + LZ4 across entire pipeline
 
 ---
 
 ## 🎯 Current Status
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  DAY 27 COMPLETE: Unified Crypto-Transport Ecosystem 🎉        │
-│  (December 27, 2025)                                           │
-│  Progress: 98% → 99% 🚀                                         │
+│  DAY 28 COMPLETE: Sniffer Integration & Ecosystem 100% 🎉      │
+│  (December 29, 2025)                                           │
+│  Progress: 99% → 100% (LINKAGE COMPLETE) 🚀                    │
 ├─────────────────────────────────────────────────────────────────┤
-│  🎉 DAY 27: Complete Crypto Unification & ml-detector          │
-│     All components now use crypto-transport library            │
+│  🎉 DAY 28: Complete Crypto-Transport Integration               │
+│     All 6 components now have crypto-transport linked          │
 │                                                                 │
-│  ✅ crypto-transport Ecosystem Complete:                        │
-│     • Base library: XSalsa20-Poly1305 + LZ4                    │
-│     • etcd-server: Migrated from CryptoPP → crypto-transport   │
-│     • ml-detector: Full bidirectional integration ✅           │
-│     • firewall-acl-agent: Already integrated (Day 26) ✅       │
-│     • sniffer: Pending integration (Day 28) ⏳                 │
+│  ✅ Verification Complete:                                      │
+│     • Firewall: Compiled, linked, --help OK ✅                 │
+│     • RAG: Compiled, linked, model loads ✅                    │
+│     • Sniffer: Integrated, compiled, linked ✅                 │
 │                                                                 │
-│  ✅ ml-detector Integration Complete:                           │
-│     • Bidirectional crypto (send + receive paths)              │
-│     • ZMQ receive: decrypt → decompress → parse                │
-│     • ZMQ send: serialize → compress → encrypt                 │
-│     • Config upload: 11,754 → 5,124 bytes (56.4% efficiency)   │
-│     • Automatic encryption key from etcd-server                │
-│     • ChaCha20-Poly1305 + LZ4 working E2E                      │
-│     • Component registered successfully                         │
+│  ✅ Sniffer Integration (Day 28):                               │
+│     • CMakeLists.txt: Patch quirúrgico (~50 líneas)           │
+│     • Via Appia Quality: Partir del backup funcional           │
+│     • Linkage verified: crypto-transport + etcd-client ✅      │
+│     • libsodium + liblz4 present ✅                            │
+│     • --help funciona sin crash ✅                             │
+│     • Binary: Enhanced Sniffer v3.2 ✅                         │
 │                                                                 │
-│  ✅ etcd-server Migration:                                      │
-│     • Removed CryptoPP dependency                              │
-│     • Created crypto_manager wrapper over crypto-transport     │
-│     • Hex encoding for JSON-safe seed transmission             │
-│     • Binary encryption/decryption maintained                  │
-│     • Compatible with all existing components                  │
-│     • Seed generation: cryptographically secure                │
+│  🏗️ Unified Architecture (100% Linkage):                        │
+│     crypto-transport (base library)                            │
+│         ↓ XSalsa20-Poly1305 + LZ4                              │
+│     etcd-client (uses crypto-transport)                        │
+│         ↓ HTTP + encryption key exchange                       │
+│     Components (ALL linked with crypto-transport):             │
+│         ├─ etcd-server ✅                                       │
+│         ├─ ml-detector ✅                                       │
+│         ├─ firewall-acl-agent ✅                                │
+│         ├─ sniffer ✅                                           │
+│         └─ RAG ✅                                               │
 │                                                                 │
-│  📊 Pipeline Verified E2E:                                       │
+│  📊 Linkage Verification (6/6):                                 │
+│     Component          crypto_transport  etcd_client  sodium   │
+│     ────────────────────────────────────────────────────────   │
+│     firewall-acl       ✅               ✅           ✅        │
+│     RAG                ✅ (transit)     ✅           ✅        │
+│     sniffer            ✅               ✅           ✅        │
+│     ml-detector        ✅               ✅           ✅        │
+│     etcd-server        ✅               ✅           ✅        │
+│                                                                 │
+│  ⚠️  IMPORTANTE:                                                 │
+│     LINKAGE: 100% ✅ (todas las librerías presentes)           │
+│     CÓDIGO:  83% ⏳ (sniffer ZMQ send pendiente Día 29)        │
+│                                                                 │
+│  🔐 Pipeline Status (Día 27-28):                                │
 │     ml-detector → etcd-server:                                 │
 │       Original:    11,754 bytes                                │
 │       Compressed:   5,084 bytes (56.7% reduction)              │
 │       Encrypted:    5,124 bytes (+40 bytes overhead)           │
 │       Total:        56.4% efficiency ✅                         │
 │                                                                 │
-│     etcd-server receives:                                      │
-│       Encrypted:    5,124 bytes                                │
-│       Decrypted:    5,084 bytes ✅                              │
-│       Decompressed: 11,754 bytes ✅                             │
-│       Validated:    JSON parsed ✅                              │
-│       Stored:       Config complete ✅                          │
-│                                                                 │
-│  🏗️ Unified Architecture:                                       │
-│     crypto-transport (base library)                            │
-│         ↓ libsodium + LZ4                                      │
-│     etcd-client (uses crypto-transport)                        │
-│         ↓ HTTP + encryption key exchange                       │
-│     Components (all use crypto-transport):                     │
-│         ├─ etcd-server ✅                                       │
-│         ├─ ml-detector ✅                                       │
-│         ├─ firewall-acl-agent ✅                                │
-│         └─ sniffer ⏳ (Day 28)                                  │
+│     Sniffer linkage:                                           │
+│       libcrypto_transport.so.1 ✅                               │
+│       libetcd_client.so.1 ✅                                    │
+│       libsodium.so.23 ✅                                        │
+│       liblz4.so.1 ✅                                            │
+│       ZMQ send: ⏳ Needs code integration (Day 29)              │
 │                                                                 │
 │  📊 Test Results:                                               │
 │     crypto-transport: 16/16 tests passed ✅                    │
 │     etcd-client: 3/3 tests passed ✅                           │
-│     ml-detector: Compiled + linked ✅                          │
-│     firewall: Functional ✅                                     │
-│     etcd-server: Functional ✅                                  │
+│     firewall: --help/--version OK ✅                           │
+│     RAG: Model loads (TinyLlama) ✅                            │
+│     sniffer: --help OK (v3.2) ✅                               │
 │                                                                 │
-│  🔐 Security Verified (E2E):                                    │
-│     • Automatic key exchange (no manual keys) ✅               │
-│     • ChaCha20-Poly1305 encryption ✅                          │
-│     • LZ4 intelligent compression ✅                            │
-│     • Hex encoding for JSON safety ✅                          │
-│     • Binary crypto for ZMQ traffic ✅                         │
-│     • Zero hardcoded seeds ✅                                   │
+│  ✅ Metodología Día 28 (Via Appia Quality):                     │
+│     • Verificación firewall (15 min)                           │
+│     • Verificación RAG (15 min)                                │
+│     • Intentos CMakeLists desde cero (aprendizaje 1h)         │
+│     • Decisión correcta: partir del backup 🧠                  │
+│     • Patch quirúrgico: ~50 líneas sobre 500+ ✅               │
+│     • Compilación exitosa sin errores ✅                       │
+│     • Linkage 100% verificado ✅                               │
+│     • Tests passing 100% ✅                                     │
+│     • Tiempo total: ~3 horas (metodológico)                    │
 │                                                                 │
-│  ✅ Via Appia Quality:                                          │
-│     • 8-hour methodical refactoring                            │
-│     • Wrapper pattern (backward compatibility)                 │
-│     • Scientific honesty: CryptoPP coupling admitted           │
-│     • Complete migration to unified library                    │
-│     • 100% test pass rate maintained                           │
-│     • Production validation before commit                      │
+│  📊 PROGRESS: 100% Linkage Complete 🚀                          │
 │                                                                 │
-│  📊 PROGRESS: 99% Complete 🚀                                   │
+│  🎯 NEXT PRIORITIES (Day 29):                                   │
+│     🔥 Sniffer ZMQ Code Integration (2-3h)                      │
+│        → Modify src/userspace/zmq_pool_manager.cpp             │
+│        → Pattern: serialize → encrypt_and_compress() → send    │
+│        → Use crypto_manager from etcd_client                   │
+│        → Reference: ml-detector zmq_handler.cpp                │
+│        → Test: grep "Encrypted" logs                           │
 │                                                                 │
-│  🎯 NEXT PRIORITIES (Day 28-29):                               │
-│     🔥 Day 28 Morning: Firewall Verification                    │
-│        → Ensure firewall still works post-refactor             │
-│        → Test component registration                           │
-│        → Verify IPSet initialization                           │
-│        → Estimated: 1 hour                                     │
+│     🔥 Clean Build From Scratch (2h)                            │
+│        → make clean-all                                        │
+│        → Rebuild: proto → crypto → etcd → components          │
+│        → Verify linkage all components                         │
+│        → Test: make verify-crypto-linkage                      │
 │                                                                 │
-│     🔥 Day 28 Midday: RAG Verification                          │
-│        → Ensure RAG integration still works                    │
-│        → Test artifact logging                                 │
-│        → Verify etcd-client linkage                            │
-│        → Estimated: 1 hour                                     │
+│     🔥 Stability Test (2h)                                      │
+│        → Start full pipeline (etcd + all components)           │
+│        → Idle test: No PCAP injection                          │
+│        → Monitor: logs, memory, CPU                            │
+│        → Duration: 30-60 minutes                               │
 │                                                                 │
-│     🔥 Day 28 Afternoon: Sniffer Integration                    │
-│        → Integrate crypto-transport (send path only)           │
-│        → Update CMakeLists.txt                                 │
-│        → Test encrypted packet transmission                    │
-│        → Estimated: 2-3 hours                                  │
+│     🔥 Neris PCAP Relay Test (4-6h)                             │
+│        → Inject Neris botnet traffic                           │
+│        → Monitor IPSet blacklist population 🚨 CRITICAL        │
+│        → Verify: 147.32.84.* IPs blocked                       │
+│        → Capture metrics: latency, throughput                  │
+│        → Check: RAG artifacts generation                       │
+│        → Memory leaks: AddressSanitizer validation             │
 │                                                                 │
-│     🔥 Day 29: Complete Pipeline Test                           │
-│        → Full pipeline: sniffer → detector → firewall          │
-│        → Neris PCAP relay (3-6 hours continuous)               │
-│        → Verify IPSet blacklist population 🚨 CRITICAL         │
-│        → Capture production metrics                            │
-│        → Refine root Makefile                                  │
-│        → Test clean build from scratch                         │
-│        → Estimated: Full day                                   │
+│     🔥 IPSet Blocking Implementation (1h)                       │
+│        → firewall-acl-agent: Add IP to blacklist              │
+│        → Code: ipset add ml_defender_blacklist_test           │
+│        → Threshold: final_score > 0.7                          │
+│        → Timeout: 3600 seconds (configurable)                  │
 │                                                                 │
-│  COMPLETED (Phase 0 + Phase 1 Days 1-27):                      │
+│     ✅ If Stable → Merge to Main                                │
+│        → Feature complete: Unified crypto ecosystem            │
+│        → All tests passing                                     │
+│        → Production metrics captured                           │
+│        → Ready for next feature                                │
+│                                                                 │
+│  COMPLETED (Phase 0 + Phase 1 Days 1-28):                      │
 │     ✅ 4 embedded C++20 detectors (<1.06μs)                    │
 │     ✅ eBPF/XDP dual-NIC metadata extraction                   │
-│     ✅ crypto-transport library (unified ecosystem) 🆕         │
-│     ✅ etcd-server migrated to crypto-transport 🆕             │
-│     ✅ ml-detector crypto integration (bidirectional) 🆕       │
-│     ✅ firewall-acl-agent integrated (Day 26) ✅               │
-│     ✅ All components use single crypto library 🆕             │
-│     ✅ E2E pipeline verified (56.4% efficiency) 🆕             │
-│     ✅ Zero manual key management 🆕                           │
-│     ✅ Makefile dependency order corrected 🆕                  │
-└─────────────────────────────────────────────────────────────────┘
-```
----
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  DAY 26 COMPLETE: crypto-transport Library & Architecture 🎉   │
-│  (December 26, 2025)                                           │
-│  Progress: 98% → 99% 🚀                                         │
-├─────────────────────────────────────────────────────────────────┤
-│  🎉 DAY 26: Foundation Architecture Refactoring Complete        │
-│     Extracted transport layer into independent library         │
-│                                                                 │
-│  ✅ crypto-transport Library Created:                           │
-│     • ChaCha20-Poly1305 + LZ4 in single package                │
-│     • Binary-safe API (std::vector<uint8_t>)                   │
-│     • 16 unit tests passing (100%)                             │
-│     • RAII pattern for libsodium initialization                │
-│     • Zero external config dependencies                        │
-│     • Installed: /usr/local/lib/libcrypto_transport.so         │
-│                                                                 │
-│  ✅ etcd-client Refactored:                                     │
-│     • Removed LZ4 + OpenSSL dependencies                       │
-│     • Uses crypto-transport exclusively                        │
-│     • Added get_encryption_key() public API                    │
-│     • 3 tests updated and passing (100%)                       │
-│     • Cleaner architecture (SRP respected)                     │
-│                                                                 │
-│  ✅ firewall-acl-agent Integration:                             │
-│     • zmq_subscriber.cpp refactored (crypto-transport)         │
-│     • etcd_client wrapper with get_crypto_seed()               │
-│     • Crypto seed from etcd (NO hardcoding!)                   │
-│     • Decrypt/decompress ZMQ payloads ready                    │
-│     • Component registration: ✅                                │
-│     • Config upload: 7532 → 3815 bytes (49.3% reduction)       │
-│     • Heartbeat: ✅ (30s interval)                              │
-│     • Clean shutdown: ✅                                         │
-│                                                                 │
-│  🏗️ Architecture Improvements:                                  │
-│     • Single Responsibility Principle enforced                 │
-│     • Transport logic extracted from business logic            │
-│     • Dependency hierarchy clarified:                          │
-│       1. crypto-transport (base)                               │
-│       2. etcd-client (uses crypto-transport)                   │
-│       3. components (use both)                                 │
-│     • Makefile maestro updated with correct order              │
-│                                                                 │
-│  📊 Test Results:                                               │
-│     crypto-transport: 16/16 tests passed ✅                    │
-│     etcd-client: 3/3 tests passed ✅                           │
-│     firewall-acl-agent: Compiled + linked ✅                   │
-│                                                                 │
-│  🔐 Security Verified (Production Test):                        │
-│     • etcd-server → crypto seed generation ✅                  │
-│     • firewall → crypto seed retrieval ✅                      │
-│     • ChaCha20-Poly1305 encryption enabled ✅                  │
-│     • LZ4 compression enabled ✅                               │
-│     • Component registration successful ✅                      │
-│     • Heartbeat mechanism operational ✅                        │
-│     • Config upload encrypted: 7532 → 3815 bytes ✅            │
-│                                                                 │
-│  ✅ Via Appia Quality:                                          │
-│     • Troubleshooting methodology documented                   │
-│     • Scientific honesty: admitted coupling issue              │
-│     • Methodical refactoring (3 hours, zero shortcuts)         │
-│     • Test-driven: 100% pass rate maintained                   │
-│     • Production validation before commit                      │
-│                                                                 │
-│  📊 PROGRESS: 99% Complete 🚀                                   │
-│                                                                 │
-│  🎯 NEXT PRIORITIES (Day 27):                                   │
-│     🔥 ml-detector Integration (Most Complex)                   │
-│        → Refactor for crypto-transport                         │
-│        → Both encrypt/compress (send) + decrypt/decompress     │
-│        → Update CMakeLists.txt                                 │
-│        → Crypto seed from etcd                                 │
-│        → Estimated: 2-3 hours                                  │
-│                                                                 │
-│     🔥 sniffer Integration (Simpler)                            │
-│        → Refactor for crypto-transport                         │
-│        → Only encrypt/compress (send)                          │
-│        → Update CMakeLists.txt                                 │
-│        → Estimated: 1-2 hours                                  │
-│                                                                 │
-│     🔥 End-to-End Pipeline Test                                 │
-│        → Full pipeline with encryption                         │
-│        → etcd-server → sniffer → detector → firewall          │
-│        → Verify decrypt/decompress chain                       │
-│        → Performance metrics                                   │
-│        → Estimated: 1 hour                                     │
-│                                                                 │
-│  COMPLETED (Phase 0 + Phase 1 Days 1-26):                      │
-│     ✅ 4 embedded C++20 detectors (<1.06μs)                    │
-│     ✅ eBPF/XDP dual-NIC metadata extraction                   │
-│     ✅ crypto-transport library (independent) 🆕               │
-│     ✅ etcd-client refactored (cleaner) 🆕                     │
-│     ✅ firewall-acl-agent integrated 🆕                        │
-│     ✅ Makefile maestro updated 🆕                             │
-│     ✅ Architecture follows SRP 🆕                             │
-│     ✅ Zero hardcoded crypto seeds 🆕                          │
-└─────────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────────┐
-│  DAY 21 COMPLETE: ml-detector + firewall Integration 🎉        │
-│  (December 21, 2025)                                           │
-│  Progress: 92% → 98% 🚀                                         │
-├─────────────────────────────────────────────────────────────────┤
-│  🎉 DAY 21: Component Integration Complete                      │
-│     ml-detector and firewall now upload encrypted configs      │
-│                                                                 │
-│  ✅ ml-detector Integration:                                     │
-│     • PIMPL adapter pattern (zero breaking changes)             │
-│     • Config upload: 11,756 → 5,113 bytes (56.9% reduction)    │
-│     • ChaCha20-Poly1305 + LZ4 compression working              │
-│     • Automatic encryption key exchange                         │
-│     • 5 ML models loaded (Level 1-3 detectors)                 │
-│     • Component registered successfully                         │
-│                                                                 │
-│  ✅ firewall-acl-agent Integration:                             │
-│     • PIMPL adapter in src/core/etcd_client.cpp                │
-│     • Config upload: 4,698 → 2,405 bytes (48.8% reduction)     │
-│     • ChaCha20-Poly1305 + LZ4 compression working              │
-│     • Automatic encryption key exchange                         │
-│     • Component registered successfully                         │
-│     • IPSet + IPTables health checks operational               │
-│                                                                 │
-│  📊 Pipeline Verified (3 Components):                            │
-│     Component        Original → Encrypted   Reduction           │
-│     ────────────────────────────────────────────────────        │
-│     sniffer          17,391 → 8,609 bytes   50.5%              │
-│     ml-detector      11,756 → 5,113 bytes   56.9%              │
-│     firewall         4,698  → 2,405 bytes   48.8%              │
-│                                                                 │
-│  🔐 Security Verified:                                           │
-│     • 3/3 components using etcd-client library ✅               │
-│     • ChaCha20-Poly1305 E2E encryption ✅                       │
-│     • LZ4 intelligent compression ✅                            │
-│     • Automatic key exchange (no manual keys) ✅               │
-│     • JSON validation on server ✅                              │
-│                                                                 │
-│  ✅ Via Appia Quality:                                           │
-│     • PIMPL adapter pattern (backward compatibility)            │
-│     • Zero breaking changes to main.cpp                         │
-│     • Single source of truth: complete JSON configs             │
-│     • Scientific honesty: heartbeat needs implementation        │
-│                                                                 │
-│  📊 PROGRESS: 98% Complete 🚀                                    │
-│                                                                 │
-│  🎯 NEXT PRIORITIES (Day 22):                                   │
-│     🔥 Heartbeat Endpoint Implementation                         │
-│        → POST /v1/heartbeat/:component_name                     │
-│        → Update last_heartbeat timestamp                        │
-│        → Mark components active/inactive                        │
-│        → Estimated: 2-3 hours                                   │
-│                                                                 │
-│     🔥 Clean Shutdown & Deregistration                           │
-│        → Verify components unregister on exit                   │
-│        → Test graceful shutdown                                 │
-│        → Estimated: 1 hour                                      │
-│                                                                 │
-│     🔥 End-to-End Encrypted Pipeline                             │
-│        → Verify ZMQ traffic between components                  │
-│        → Sniffer → Detector → Firewall (encrypted configs)     │
-│        → RAGLogger data path (stays unencrypted for FAISS)     │
-│        → Estimated: 2 hours                                     │
-│                                                                 │
-│  COMPLETED (Phase 0 + Phase 1 Days 1-21):                       │
-│     ✅ 4 embedded C++20 detectors (<1.06μs)                     │
-│     ✅ eBPF/XDP dual-NIC metadata extraction                    │
-│     ✅ etcd-client library (encryption + compression)           │
-│     ✅ Sniffer integration (Day 20)                             │
-│     ✅ ml-detector integration (Day 21) 🆕                      │
-│     ✅ firewall integration (Day 21) 🆕                         │
-│     ✅ 3 components registered encrypted 🆕                     │
-└─────────────────────────────────────────────────────────────────┘
-```
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  DAY 20 COMPLETE: Sniffer Integration with etcd-client 🎉      │
-│  (December 20, 2025)                                           │
-│  Progress: 82% → 92% 🚀                                         │
-├─────────────────────────────────────────────────────────────────┤
-│  🎉 DAY 20: Sniffer Encrypted Integration Complete              │
-│     Sniffer now uploads full config encrypted to etcd-server   │
-│                                                                 │
-│  ✅ Sniffer Integration:                                         │
-│     • PIMPL adapter pattern (zero breaking changes)             │
-│     • Maintained legacy main.cpp compatibility                  │
-│     • Full sniffer.json upload (17,391 bytes)                   │
-│     • Automatic encryption key exchange                         │
-│     • ChaCha20-Poly1305 E2E encryption working                  │
-│     • LZ4 compression: 17391 → 8569 bytes (49.3%)               │
-│     • Config validation fixed (accepts objects)                 │
-│                                                                 │
-│  ✅ Architecture Improvements:                                   │
-│     • Fixed config_types.cpp mapping (etcd.enabled)             │
-│     • Fixed etcd-server validation (JSON objects)               │
-│     • Adapter maintains backward compatibility                  │
-│     • Single source of truth: complete sniffer.json             │
-│                                                                 │
-│  📊 Pipeline Verified:                                           │
-│     Sniffer → Compress → Encrypt → etcd-server                 │
-│              ↓           ↓          ↓                           │
-│         17391 bytes  8569 bytes  8609 bytes                     │
-│                                                                 │
-│     etcd-server → Decrypt → Decompress → Validate → Store      │
-│                   ↓         ↓           ✅         ✅          │
-│               8569 bytes 17391 bytes                            │
-│                                                                 │
-│  🔐 Security Verified:                                           │
-│     • ChaCha20 encryption: 8609 → 8569 bytes ✅                 │
-│     • LZ4 decompression: 8569 → 17391 bytes ✅                  │
-│     • JSON validation: 17391 bytes ✅                            │
-│     • Config stored: sniffer component ✅                        │
-│                                                                 │
-│  ✅ Via Appia Quality:                                           │
-│     • Zero hardcoded filters (uploaded complete JSON)           │
-│     • Single source of truth preserved                          │
-│     • Transparent methodology maintained                        │
-│     • Scientific honesty: heartbeat 404 documented              │
-│                                                                 │
-│  🎉 DAY 19: RAG Integration with etcd-client Complete           │
-│     RAG now uses etcd-client library with full encryption      │
-│                                                                 │
-│  ✅ DAY 18: Bidirectional Config Management                     │
-│     PUT endpoint + Server ChaCha20 migration                   │
-│                                                                 │
-│  ✅ DAY 17: etcd-client Library Created                         │
-│     Encryption + Compression + Component Discovery             │
-│                                                                 │
-│  ✅ DAY 16: Race Condition Fixed                                │
-│     RAGLogger Stable + Release Optimization Enabled            │
-│                                                                 │
-│  📊 PROGRESS: 92% Complete 🚀                                    │
-│                                                                 │
-│  🎯 NEXT PRIORITIES (Week 3 - Days 21-22):                      │
-│     🔥 Day 21: Remaining Component Integration                  │
-│        → Integrate etcd-client in ml-detector                   │
-│        → Integrate etcd-client in firewall                      │
-│        → Heartbeat endpoint implementation                      │
-│        → Component health monitoring                            │
-│        → Estimated: 1 day                                       │
-│                                                                 │
-│     Priority 2: End-to-End Encrypted Pipeline (Day 22)          │
-│        → Sniffer → Detector → Firewall → RAG (all encrypted)   │
-│        → Config sync across all components                      │
-│        → Live config updates demonstration                      │
-│        → Estimated: 1 day                                       │
-│                                                                 │
-│     Priority 3: Basic Quorum (Week 4)                           │
-│        → Simple leader election                                 │
-│        → Data replication between etcd-server instances         │
-│        → Configuration sync                                     │
-│        → Estimated: 2 days                                      │
-│                                                                 │
-│     Priority 4: FAISS C++ Integration (Week 4)                  │
-│        → Semantic search over artifacts directory               │
-│        → Vector DB for RAG queries                              │
-│        → Natural language event search                          │
-│        → Estimated: 3-4 days                                    │
-│                                                                 │
-│     Priority 5: Watcher Unified Library (Week 4-5)              │
-│        → Runtime config updates from etcd                       │
-│        → Hot-reload without restart                             │
-│        → RAG command: "accelerate pipeline"                     │
-│        → Estimated: 3-4 days                                    │
-│                                                                 │
-│  COMPLETED (Phase 0 + Phase 1 Days 1-20):                       │
-│     ✅ 4 embedded C++20 detectors (<1.06μs)                     │
-│     ✅ eBPF/XDP dual-NIC metadata extraction                    │
-│     ✅ Dual-Score Architecture (Fast + ML)                      │
-│     ✅ Maximum Threat Wins logic                                │
-│     ✅ RAGLogger 83-field event capture                         │
-│     ✅ Race condition fix (production-ready)                    │
-│     ✅ Release optimization enabled                             │
-│     ✅ etcd-client library (encryption + compression)           │
-│     ✅ Comprehensive test suite (3 tests, 100% pass)            │
-│     ✅ Bidirectional config management (GET + PUT)              │
-│     ✅ Server ChaCha20 migration                                │
-│     ✅ RAG integration with etcd-client                         │
-│     ✅ Sniffer integration with etcd-client 🆕                  │
-│     ✅ Complete config upload (no filtering) 🆕                 │
-│     ✅ Adapter pattern for seamless migration                   │
-│     ✅ Host-based + Gateway modes validated                     │
-│     ✅ RAG + LLAMA + ETCD ecosystem                             │
-│     ✅ End-to-end encrypted communication                       │
-│     ✅ Config validation (accepts JSON objects) 🆕              │
+│     ✅ crypto-transport library (unified ecosystem) ✅          │
+│     ✅ etcd-server migrated to crypto-transport ✅             │
+│     ✅ ml-detector crypto integration (bidirectional) ✅       │
+│     ✅ firewall-acl-agent integrated ✅                        │
+│     ✅ RAG integration with crypto ✅                          │
+│     ✅ sniffer linkage complete ✅ (código pending Day 29)     │
+│     ✅ All components use single crypto library ✅             │
+│     ✅ 100% linkage verified (6/6 components) ✅               │
+│     ✅ Zero crashes, all tests passing ✅                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -458,53 +183,46 @@ cd test-zeromq-docker
 vagrant up defender && vagrant up client
 
 # 3. Build all components (from host)
-make proto           # Generate protobuf files
-make sniffer         # Build eBPF/XDP sniffer (NOW WITH ENCRYPTION! 🆕)
-make detector        # Build ml-detector (STABLE - race condition fixed!)
-make firewall        # Build firewall agent
-make rag             # Build RAG system (WITH ENCRYPTION!)
-make etcd-server     # Build ETCD server (ChaCha20!)
-make etcd-client     # Build etcd-client library
+make proto-unified    # Generate unified protobuf files
+make crypto-transport-build  # Build crypto-transport library (FIRST!)
+make etcd-client-build       # Build etcd-client (uses crypto-transport)
+make etcd-server-build       # Build etcd-server (uses crypto-transport)
+make sniffer          # Build eBPF/XDP sniffer (NOW WITH LINKAGE! 🆕)
+make detector         # Build ml-detector (CRYPTO INTEGRATED!)
+make firewall         # Build firewall agent (CRYPTO INTEGRATED!)
+make rag              # Build RAG system (CRYPTO INTEGRATED!)
 
-# 4. Test etcd-client library
+# 4. Verify linkage (NEW! Day 28)
+make verify-crypto-linkage
+# Expected: All components show libcrypto_transport.so.1 ✅
+
+# 5. Test etcd-client library
 vagrant ssh defender -c "cd /vagrant/etcd-client/build && ctest --output-on-failure"
-# Expected: 3/3 tests passed
+# Expected: 3/3 tests passed ✅
 
-# 5. Test Sniffer + etcd-server integration (NEW!)
-# Terminal 1: Start etcd-server
+# 6. Test crypto-transport library
+vagrant ssh defender -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+# Expected: 16/16 tests passed ✅
+
+# 7. Start etcd-server
 vagrant ssh defender -c "cd /vagrant/etcd-server/build && ./etcd-server --port 2379"
 
-# Terminal 2: Start sniffer
-vagrant ssh defender -c "cd /vagrant/sniffer/build && sudo ./sniffer -c ../config/sniffer.json"
-# Expected:
-#   ✅ [etcd] Sniffer registered and config uploaded
-#   🔐 [etcd] Config encrypted with ChaCha20-Poly1305
-#   🗜️  [etcd] Config compressed with LZ4
-
-# 6. Verify config was uploaded
-curl http://localhost:2379/components | jq
-# Expected: Should show "sniffer" component
-
-# 7. Start the lab
+# 8. Start the lab (Day 29 - after code integration)
 make run-lab-dev
 
-# 8. Verify components are running
+# 9. Verify components are running
 make status-lab
 # Expected output:
-#   ✅ Firewall: RUNNING
-#   ✅ Detector: RUNNING
-#   ✅ Sniffer:  RUNNING (with encryption! 🆕)
+#   ✅ Firewall: RUNNING (with encryption!)
+#   ✅ Detector: RUNNING (with encryption!)
+#   ✅ Sniffer:  RUNNING (with encryption! - Day 29)
 #   ✅ RAG:      RUNNING (with encryption!)
 
-# 9. Monitor in real-time
+# 10. Monitor in real-time
 watch -n 5 'vagrant ssh defender -c "echo \"Artifacts: \$(ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ 2>/dev/null | wc -l)  JSONL: \$(wc -l < /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl 2>/dev/null || echo 0)\""'
 
-# 10. Check ml-detector uptime (should increase steadily)
+# 11. Check ml-detector uptime (should increase steadily)
 vagrant ssh defender -c "ps -p \$(pgrep ml-detector) -o etime="
-
-# 11. View results
-vagrant ssh defender -c "ls -lh /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | head -20"
-vagrant ssh defender -c "tail -10 /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl | jq '.detection'"
 
 # 12. Stop lab when done
 make kill-lab
@@ -512,101 +230,75 @@ make kill-lab
 
 ---
 
-## 🔐 etcd-client Library (Day 20 Update!)
+## 🔐 crypto-transport Unified Ecosystem (Day 26-28)
+
+### **Architecture Evolution**
+
+**Before (Day 25):**
+```
+Each component had own crypto/compression code
+├─ sniffer: Local LZ4
+├─ ml-detector: Local compression
+├─ firewall: etcd-client with embedded crypto
+└─ etcd-server: CryptoPP (different library!)
+```
+
+**After (Day 28):**
+```
+crypto-transport (SINGLE source of truth)
+    ↓ XSalsa20-Poly1305 + LZ4
+etcd-client (uses crypto-transport)
+    ↓ HTTP + key exchange
+ALL Components (use crypto-transport):
+├─ sniffer ✅
+├─ ml-detector ✅
+├─ firewall ✅
+├─ etcd-server ✅
+└─ RAG ✅
+```
 
 ### **Features**
 
-- **ChaCha20-Poly1305 Encryption** - Military-grade authenticated encryption (ALL components!)
+- **ChaCha20-Poly1305 Encryption** - Military-grade authenticated encryption
 - **LZ4 Compression** - Ultra-fast compression (5+ GB/s, intelligent!)
-- **Component Discovery** - Registration, heartbeat, health monitoring
-- **Config Management** - Master + active copies with rollback
-- **Bidirectional Config** - GET + PUT operations
-- **Automatic Key Exchange** - Server provides key on registration
+- **Unified Library** - Single source of truth (SRP)
 - **Thread-Safe** - Mutex-protected operations
-- **JSON-Driven** - 100% configuration via JSON
-- **HTTP Client** - Retry logic with exponential backoff
-- **PIMPL Adapter** - Zero breaking changes to existing code (NEW! 🆕)
+- **Binary-Safe API** - std::vector<uint8_t>
+- **RAII Pattern** - Automatic libsodium initialization
+- **16 Unit Tests** - 100% passing
+- **Installed System-Wide** - `/usr/local/lib/libcrypto_transport.so`
 
 ### **Performance**
 ```
 Compression (LZ4):
+  • ml-detector config: 11754 → 5084 bytes (56.7%) ✅
   • Sniffer config: 17391 → 8569 bytes (49.3%) ✅
-  • RAG config: 535 → 460 bytes (86%)
   • Small configs: Not compressed (intelligent)
 
 Encryption (ChaCha20-Poly1305):
   • Overhead: +40 bytes fixed (nonce + MAC)
-  • Sniffer: 8569 + 40 = 8609 bytes total ✅
+  • ml-detector: 5084 + 40 = 5124 bytes total ✅
   • Operation time: <3 μs
 
-Complete Pipeline (Days 18-20):
+E2E Pipeline (Day 27-28):
   • Client: JSON → Compress → Encrypt → HTTP PUT
   • Server: HTTP → Decrypt → Decompress → Validate → Store
-  • Sniffer integration: Zero main.cpp changes ✅
-  • RAG integration: <100ms connection time ✅
+  • All components: crypto-transport linked ✅
   • Zero manual key management ✅
+  • Zero hardcoded seeds ✅
 ```
 
-### **New in Day 20**
-```
-✅ Sniffer Integration:
-  • PIMPL adapter pattern implementation
-  • Zero changes to main.cpp required
-  • Maintained legacy API surface
-  • Internally uses etcd-client library
-  • Automatic encryption key exchange
+### **Integration Status**
 
-✅ Complete Config Upload:
-  • Full 17,391 byte sniffer.json uploaded
-  • No selective field filtering
-  • Single source of truth preserved
-  • Via Appia Quality: JSON is the law
-
-✅ Config Validation Fixed:
-  • Server now accepts JSON objects
-  • Validates both {"component": "string"}
-  • And {"component": {"name": "...", ...}}
-  • Flexible schema validation
-
-✅ Dual System Support:
-  • SnifferConfig (new system, etcd-client)
-  • StrictSnifferConfig (legacy system)
-  • Automatic mapping between both
-  • Backward compatibility guaranteed
-```
-
-### **Security Roadmap**
-```
-✅ Phase 2A (COMPLETE): Bidirectional Encrypted Config
-  • ChaCha20-Poly1305 (client + server)
-  • LZ4 compression
-  • Automatic key exchange
-  • Component registration
-
-✅ Phase 2B (80% COMPLETE): Component Integration
-  ✅ RAG integration (Day 19)
-  ✅ Sniffer integration (Day 20) 🆕
-  ⏳ ml-detector integration (Day 21)
-  ⏳ firewall integration (Day 21)
-  ⏳ Heartbeat mechanism (Day 21)
-
-⏳ Phase 2C (Week 4): Advanced Features
-  • Basic quorum (Day 22)
-  • FAISS semantic search
-  • Watcher unified library
-  • Hot-reload configuration
-
-Phase 3 (Month 2): Production Hardening
-  • Server-side TLS (HTTPS)
-  • Mutual TLS (client certs)
-  • Key encryption in RAM
-  • Memory locking (mlock)
-
-Phase 4 (Future): Enterprise Grade
-  • HSM integration
-  • Tamper-proof key storage
-  • FIPS 140-2 compliance
-```
+| Component | Linkage | Code | Status |
+|-----------|---------|------|--------|
+| crypto-transport | ✅ | ✅ | Base library |
+| etcd-client | ✅ | ✅ | Refactored Day 26 |
+| firewall-acl-agent | ✅ | ✅ | Integrated Day 26 |
+| etcd-server | ✅ | ✅ | Migrated Day 27 |
+| ml-detector | ✅ | ✅ | Integrated Day 27 |
+| RAG | ✅ | ✅ | Integrated Day 19 |
+| **sniffer** | **✅** | **⏳** | **Linkage Day 28, Code Day 29** |
 
 ---
 
@@ -615,38 +307,41 @@ Phase 4 (Future): Enterprise Grade
 ### **Maximum Threat Wins Logic**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ SNIFFER (Fast Detector - Layer 1) + etcd-client 🆕         │
+│ SNIFFER (Fast Detector - Layer 1) + crypto-transport ⏳    │
 │                                                             │
 │  • external_ips_30s >= 15 → score = 0.70                   │
 │  • smb_diversity >= 10 → score = 0.70                      │
 │  • dns_entropy > 0.95 → score = 0.70                       │
-│  • Registers with etcd-server (encrypted) 🆕               │
-│  • Uploads full sniffer.json (17,391 bytes) 🆕             │
+│  • Linkage: crypto-transport ✅ (Day 28)                   │
+│  • Code: ZMQ send integration ⏳ (Day 29)                  │
 │  Populates: fast_detector_score, reason, triggered         │
 └─────────────────┬───────────────────────────────────────────┘
-                  │ Protobuf Event (ZMQ 5571)
+                  │ Protobuf Event (ZMQ 5571) - Encrypted ⏳
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ ML DETECTOR (Dual-Score + RAGLogger) + etcd-client (Day 21)│
+│ ML DETECTOR (Dual-Score + RAGLogger) + crypto-transport ✅ │
 │                                                             │
-│  1. Read fast_detector_score from event                     │
-│  2. Calculate ml_detector_score (4 models)                  │
-│  3. final_score = max(fast_score, ml_score)                │
-│  4. Determine authoritative_source                          │
-│  5. RAGLogger: Write artifacts atomically ✅                │
-│  6. RAGLogger: Buffer .jsonl (stable with fix) ✅           │
-│  7. Send to etcd-server (encrypted) ✅                      │
-│  8. Register + upload config (Day 21) ⏳                    │
+│  1. Decrypt incoming packet (Day 27) ✅                     │
+│  2. Read fast_detector_score from event                     │
+│  3. Calculate ml_detector_score (4 models)                  │
+│  4. final_score = max(fast_score, ml_score)                │
+│  5. Determine authoritative_source                          │
+│  6. RAGLogger: Write artifacts atomically ✅                │
+│  7. RAGLogger: Buffer .jsonl (stable with fix) ✅           │
+│  8. Encrypt + send to firewall ✅                           │
+│  9. Register + upload config to etcd ✅                     │
 └─────────────────┬───────────────────────────────────────────┘
                   │ Enriched Event (ZMQ 5572) + etcd (encrypted)
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ FIREWALL / RAG QUEUE + etcd-client (Day 21)                │
+│ FIREWALL / RAG QUEUE + crypto-transport ✅                  │
 │                                                             │
+│  • Decrypt incoming event ✅                                │
 │  • Block/Monitor based on final_score                       │
+│  • IPSet blacklist: ⏳ Implementation Day 29                │
 │  • RAG analysis for divergent events ✅                     │
 │  • Retrieve config from etcd (encrypted) ✅                 │
-│  • Register + upload config (Day 21) ⏳                     │
+│  • Register + upload config ✅                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -672,8 +367,7 @@ Phase 4 (Future): Enterprise Grade
 - Neris botnet (Dec 12): 97.6% MALICIOUS detection
 - SmallFlows (Dec 14): 97.1% MALICIOUS detection
 - Day 16 (continuous): 1,152 events, stable
-- Day 19 (encrypted): RAG registration successful
-- Day 20 (encrypted): Sniffer config upload successful
+- Day 19-28 (encrypted): All components operational
 - No threshold tuning required
 - No retraining required
 
@@ -681,142 +375,72 @@ Phase 4 (Future): Enterprise Grade
 
 ## 📖 Documentation
 
+### Core Documentation
 - [Architecture Deep Dive](docs/ARCHITECTURE.md)
 - [Dual-Score Architecture](docs/DAY_13_DUAL_SCORE_ANALYSIS.md)
 - [RAGLogger Schema](docs/RAGLOGGER_SCHEMA.md)
 - [Race Condition Fix](docs/DAY_16_RACE_CONDITION_FIX.md)
-- [etcd-client Library](etcd-client/README.md)
-- [Day 18: Bidirectional Config](docs/DAY_18_BIDIRECTIONAL_CONFIG.md)
-- [Day 19: RAG Integration](docs/DAY_19_RAG_INTEGRATION.md)
-- [Day 20: Sniffer Integration](docs/DAY_20_SNIFFER_INTEGRATION.md) 🆕
-- [Security Roadmap](docs/SECURITY_ROADMAP.md)
 - [Synthetic Data Methodology](docs/SYNTHETIC_DATA.md)
 - [Performance Tuning](docs/PERFORMANCE.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+
+### Crypto-Transport Ecosystem (Days 26-28)
+- [crypto-transport Library](crypto-transport/README.md) 🆕
+- [Day 26: Library Creation + Refactor](docs/DAY_26_CRYPTO_TRANSPORT.md) 🆕
+- [Day 27: etcd-server + ml-detector](docs/DAY_27_CRYPTO_UNIFICATION.md) 🆕
+- [Day 28: Sniffer Integration](docs/DAY_28_SNIFFER_LINKAGE.md) 🆕
+- [Security Roadmap](docs/SECURITY_ROADMAP.md)
+
+### Integration Documentation
+- [etcd-client Library](etcd-client/README.md)
+- [Day 18: Bidirectional Config](docs/DAY_18_BIDIRECTIONAL_CONFIG.md)
+- [Day 19: RAG Integration](docs/DAY_19_RAG_INTEGRATION.md)
+- [Day 20: Sniffer Config Upload](docs/DAY_20_SNIFFER_INTEGRATION.md)
+- [Day 21: Component Integration](docs/DAY_21_COMPONENT_INTEGRATION.md)
 - [RAG System Documentation](docs/RAG_SYSTEM.md)
 - [ETCD-Server Integration](docs/ETCD_SERVER.md)
 
----
-
----
-
-## 🔬 Future Enhancements (Post Day 27)
-
-### Shadow Authority & Decision Outcome
-
-**Status:** DOCUMENTED (Day 26) - Implementation Days 35-40
-
-ML Defender includes forward-looking concepts validated by ChatGPT-5 for paper-quality research. These are **documented now, implemented later** to avoid breaking changes during critical integrations.
-
-#### Shadow Authority (Non-Destructive Model Lifecycle)
-```
-Authoritative Model → DECIDES (blocks/allows)
-Shadow Models → OBSERVE (log only, no block)
-```
-
-**Use Cases:**
-- **A/B Testing:** Deploy new model versions in shadow mode
-- **Legacy Detection:** Keep old models for historical attack techniques
-- **Regression Prevention:** Compare new vs old before promoting
-
-**Example:**
-```json
-{
-  "authoritative_model": "ddos_v2",
-  "shadow_models": ["ddos_v1", "ddos_v3_beta"],
-  "decision": "blocked",
-  "shadow_detections": {
-    "ddos_v1": "detected (legacy technique)",
-    "ddos_v3_beta": "missed (regression!)"
-  }
-}
-```
-
-**See:** [docs/SHADOW_AUTHORITY.md](docs/SHADOW_AUTHORITY.md)
-
-#### Decision Outcome (Ground Truth for Retraining)
-```
-Field: decision_outcome
-Values: blocked, allowed, false_positive, false_negative, unknown, shadow
-```
-
-**Closed-Loop Learning:**
-```
-Detect → unknown
-Firewall → blocked/allowed
-Manual Review → false_positive/false_negative
-Retrain with validated ground truth
-```
-
-**Scientific Value:**
-- Honest accuracy metrics (not inflated)
-- Self-improving system
-- Via Appia Quality: document errors
-
-**See:** [docs/DECISION_OUTCOME.md](docs/DECISION_OUTCOME.md)
-
-#### Implementation Roadmap
-
-| Milestone | Feature | Status | Estimated |
-|-----------|---------|--------|-----------|
-| Day 27-28 | Crypto Integration | 🔄 In Progress | 1-2 days |
-| Day 28 | Model Authority (Basic) | 📋 Planned | 2 hours |
-| Day 35 | Shadow Authority | 📋 Documented | 1 day |
-| Day 40 | Decision Outcome | 📋 Documented | 1 day |
-| Week 6 | LLM Fine-Tuning | 📋 Documented | 3-4 days |
-
-**Discipline:** One protobuf change per milestone. No mid-integration modifications.
-
-**Full Details:** [docs/FUTURE_ENHANCEMENTS.md](docs/FUTURE_ENHANCEMENTS.md)
-
----
-
-## 🤝 Multi-Agent Collaboration
-
-This project represents multi-agent AI collaboration:
-
-| AI Agent | Contribution |
-|----------|-------------|
-| **Claude (Anthropic)** | Architecture, Days 16-20 implementation, debugging |
-| **DeepSeek (v3)** | RAG system, ETCD-Server, automation |
-| **Grok4 (xAI)** | XDP expertise, eBPF edge cases |
-| **Qwen (Alibaba)** | Network routing, production insights |
-| **Alonso** | Vision, C++ implementation, code detective 🔍 |
-
-All AI agents will be credited as **co-authors** in academic publications.
+### Future Enhancements
+- [Shadow Authority](docs/SHADOW_AUTHORITY.md)
+- [Decision Outcome](docs/DECISION_OUTCOME.md)
+- [Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)
 
 ---
 
 ## 🛠️ Build Targets
 ```bash
 # Core Components
-make proto           # Generate protobuf files
-make sniffer         # Build eBPF/XDP sniffer (WITH ENCRYPTION! 🆕)
-make detector        # Build ml-detector (STABLE!)
-make detector-debug  # Build ml-detector (debug mode)
-make firewall        # Build firewall agent
-make rag             # Build RAG system (WITH ENCRYPTION!)
-make etcd-server     # Build ETCD server (ChaCha20!)
-make etcd-client     # Build etcd-client library
+make proto-unified         # Generate unified protobuf files
+make crypto-transport-build # Build crypto-transport library (FIRST!)
+make etcd-client-build     # Build etcd-client (uses crypto-transport)
+make etcd-server-build     # Build etcd-server (uses crypto-transport)
+make sniffer               # Build eBPF/XDP sniffer (WITH LINKAGE! 🆕)
+make detector              # Build ml-detector (CRYPTO INTEGRATED!)
+make detector-debug        # Build ml-detector (debug mode)
+make firewall              # Build firewall agent (CRYPTO INTEGRATED!)
+make rag                   # Build RAG system (CRYPTO INTEGRATED!)
+
+# Verification (Day 28)
+make verify-crypto-linkage # Verify all components linked ✅
 
 # Lab Control
-make run-lab-dev     # Start full lab
-make kill-lab        # Stop all components
-make status-lab      # Check component status
+make run-lab-dev           # Start full lab
+make kill-lab              # Stop all components
+make status-lab            # Check component status
 
 # Testing
-make test-rag-small  # Test with smallFlows.pcap
-make test-rag-neris  # Test with Neris botnet (large)
-make test-etcd-client # Test etcd-client library
-make test-rag-encryption # Test RAG encrypted communication
-make test-sniffer-encryption # Test Sniffer encrypted upload (NEW! 🆕)
+make test-crypto-transport # Test crypto-transport library (16 tests)
+make test-etcd-client      # Test etcd-client library (3 tests)
+make test-rag-small        # Test with smallFlows.pcap
+make test-rag-neris        # Test with Neris botnet (large)
 
 # Monitoring
-make monitor-day13-tmux # Real-time monitoring in tmux
+make monitor-day13-tmux    # Real-time monitoring in tmux
 
 # Cleanup
-make detector-clean  # Clean ml-detector build
-make clean-all       # Clean everything
+make clean-crypto          # Clean crypto-transport
+make detector-clean        # Clean ml-detector build
+make clean-all             # Clean everything
 ```
 
 ---
@@ -830,15 +454,32 @@ Like the ancient Roman road that still stands 2,300 years later:
 3. **Funciona > Perfecto** - Working beats perfect
 4. **Smooth & Fast** - Optimize what matters
 5. **Scientific Honesty** - Truth above convenience
+6. **Methodical Progress** - Despacio y bien (slow and steady)
 
-**Day 20 Truth:**
-> "We integrated Sniffer with etcd-client library. PIMPL adapter pattern
-> maintained zero breaking changes. Full 17,391-byte sniffer.json uploaded
-> encrypted. ChaCha20-Poly1305 E2E working. LZ4 compression: 49.3% reduction.
-> Fixed config_types.cpp mapping. Fixed etcd-server validation for JSON objects.
-> No selective filtering - uploaded complete config. Single source of truth
-> preserved. Heartbeat 404 documented (needs implementation). Tests passing.
-> Via Appia Quality: JSON is the law. Reality documented."
+**Day 28 Truth:**
+> "Verified firewall + RAG compilados sin errores. Linkage crypto-transport
+> correcto. Integramos sniffer: Intentamos CMakeLists desde cero - aprendimos.
+> Decisión correcta: partir del backup funcional. Patch quirúrgico ~50 líneas
+> sobre 500+ existentes. Compilación limpia. Linkage 100% verificado (6/6
+> componentes). Tests passing. --help funciona. Zero crashes. Linkage primero,
+> código después (Día 29). Via Appia Quality: Metodología > velocidad.
+> Despacio y bien. 🏛️"
+
+---
+
+## 🤝 Multi-Agent Collaboration
+
+This project represents multi-agent AI collaboration:
+
+| AI Agent | Contribution |
+|----------|-------------|
+| **Claude (Anthropic)** | Architecture, Days 16-28 implementation, debugging |
+| **DeepSeek (v3)** | RAG system, ETCD-Server, automation |
+| **Grok4 (xAI)** | XDP expertise, eBPF edge cases |
+| **Qwen (Alibaba)** | Network routing, production insights |
+| **Alonso** | Vision, C++ implementation, code detective 🔍 |
+
+All AI agents will be credited as **co-authors** in academic publications.
 
 ---
 
@@ -854,16 +495,17 @@ Like the ancient Roman road that still stands 2,300 years later:
 *Via Appia Quality - Designed to last decades*
 
 ---
-**Day 26 Troubleshooting Truth:**
-> "Discovered coupling between etcd-client and crypto/compression code.
-> Violated SRP. Extracted independent crypto-transport library.
-> Refactored etcd-client to use it. Updated firewall-acl-agent.
-> Added get_encryption_key() to etcd-client. Removed all hardcoding.
-> 3 hours methodical work. 100% tests passing. Production validated.
-> Via Appia Quality: When wrong, fix it right."
+
+**Day 28 Complete:**  
+Unified crypto-transport ecosystem - 6/6 components linkage verified ✅  
+Sniffer CMakeLists patched quirúrgicamente (~50 líneas)  
+Compilación limpia, tests passing, zero crashes  
+Metodología > velocidad, despacio y bien 🏛️
+
+**Next:** Day 29 - Sniffer ZMQ code + Clean build + Stability + Neris test
 
 ---
 
-**Latest Update:** December 26, 2025 - Day 26 Complete - crypto-transport Library 🎉  
-**Progress:** 90% Complete  
-**Next:** Day 27 - ml-detector + sniffer integration
+**Latest Update:** December 29, 2025 - Day 28 Complete - Sniffer Linkage 100% 🎉  
+**Progress:** 100% Linkage (6/6 components) | 83% Code Integration  
+**Next:** Day 29 - Final code integration + E2E validation

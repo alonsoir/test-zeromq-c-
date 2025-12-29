@@ -67,6 +67,36 @@ else()
 endif()
 
 # ============================================================================
+# CRYPTO-TRANSPORT ECOSYSTEM - Día 28
+# ============================================================================
+# crypto-transport library (unified crypto ecosystem)
+message(STATUS "🔍 Buscando crypto-transport library...")
+find_library(CRYPTO_TRANSPORT_LIB
+        NAMES crypto_transport
+        PATHS /usr/local/lib /usr/lib
+)
+find_path(CRYPTO_TRANSPORT_INCLUDE
+        NAMES crypto_transport/crypto_manager.hpp
+        PATHS /usr/local/include /usr/include
+)
+
+if(CRYPTO_TRANSPORT_LIB)
+    message(STATUS "✅ Found crypto-transport library: ${CRYPTO_TRANSPORT_LIB}")
+    message(STATUS "✅ Found crypto-transport includes: ${CRYPTO_TRANSPORT_INCLUDE}")
+else()
+    message(FATAL_ERROR "❌ crypto-transport library not found - install from /vagrant/crypto-transport")
+endif()
+
+# libsodium (base crypto library)
+find_library(SODIUM_LIB sodium REQUIRED)
+if(SODIUM_LIB)
+    message(STATUS "✅ Found libsodium: ${SODIUM_LIB}")
+else()
+    message(FATAL_ERROR "❌ libsodium not found - install: sudo apt install libsodium-dev")
+endif()
+# ============================================================================
+
+# ============================================================================
 # CONFIGURATION VALIDATION
 # ============================================================================
 
@@ -107,6 +137,11 @@ endif()
 # etcd-client includes
 if(ETCD_CLIENT_LIB)
     include_directories(${ETCD_CLIENT_INCLUDE_DIR})
+endif()
+
+# crypto-transport includes - Día 28
+if(CRYPTO_TRANSPORT_LIB)
+    include_directories(${CRYPTO_TRANSPORT_INCLUDE})
 endif()
 
 # ============================================================================
@@ -254,6 +289,12 @@ endif()
 
 if(ETCD_CLIENT_LIB)
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${ETCD_CLIENT_LIB})
+endif()
+
+# crypto-transport + libsodium - Día 28
+if(CRYPTO_TRANSPORT_LIB)
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${CRYPTO_TRANSPORT_LIB})
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${SODIUM_LIB})
 endif()
 
 # Link all libraries
@@ -446,6 +487,13 @@ if(ETCD_CLIENT_LIB)
     message(STATUS "   ✅ etcd-client library: enabled")
 else()
     message(STATUS "   ⚪ etcd-client library: disabled")
+endif()
+# crypto-transport status - Día 28
+if(CRYPTO_TRANSPORT_LIB)
+    message(STATUS "   ✅ crypto-transport library: enabled")
+    message(STATUS "   ✅ libsodium: enabled")
+else()
+    message(STATUS "   ⚪ crypto-transport library: disabled")
 endif()
 message(STATUS "   🔐 Encryption ready (via etcd tokens)")
 message(STATUS "========================================")

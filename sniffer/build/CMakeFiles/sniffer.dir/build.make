@@ -544,6 +544,8 @@ sniffer: /usr/lib/x86_64-linux-gnu/libprotobuf.so
 sniffer: /usr/lib/x86_64-linux-gnu/libcurl.so
 sniffer: /usr/lib/x86_64-linux-gnu/libnuma.so
 sniffer: /vagrant/etcd-client/build/libetcd_client.so
+sniffer: /usr/local/lib/libcrypto_transport.so
+sniffer: /usr/lib/x86_64-linux-gnu/libsodium.so
 sniffer: CMakeFiles/sniffer.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Linking CXX executable sniffer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sniffer.dir/link.txt --verbose=$(VERBOSE)
