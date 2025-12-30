@@ -1,5 +1,10 @@
 # PROMPT DE CONTINUIDAD - DÍA 30 (30 Diciembre 2025)
 
+# Memory Leak Investigation
+cd /vagrant/ml-detector/config && jq '.rag_logging.enabled = false' detector.json > detector_norag.json
+cd /vagrant/ml-detector/build && rm -rf * && cmake -DCMAKE_CXX_FLAGS="-fsanitize=address -g -O1" .. && make -j4
+./ml-detector --config ../config/detector.json  # ASAN auto-detect leaks
+
 ## 📋 CONTEXTO DÍA 29 (29 Diciembre 2025)
 
 ### ✅ COMPLETADO - PIPELINE END-TO-END FUNCIONANDO
@@ -111,6 +116,301 @@ ENCRIPTACIÓN:
 ---
 
 ## 🔥 PLAN DÍA 30 - STRESS TESTING & AUTOMATION
+
+### 🔬 FASE 0: Memory Leak Investigation (2 horas) ⚠️ PRIORITARIO
+
+**Contexto del Issue:**
+````
+Day 29 Idle Test (6 horas):
+  • firewall:     9.54 MB (flat) ✅
+  • sniffer:     16.40 MB (flat) ✅
+  • etcd-server:  6.84 MB (flat) ✅
+  • ml-detector: 465 → 476 MB (+6 MB/hora) ⚠️
+
+Rate: 6 MB/hora = 144 MB/día (manejable <12h)
+Probable causa: RAG logger buffering
+Estado: NO crítico, NO bloquea testing
+````
+
+**Por Qué Investigar:**
+- ✅ Honestidad científica (Via Appia Quality)
+- ✅ Production readiness (24h+ workloads)
+- ✅ Logs críticos para FAISS (no deshabilitar)
+- ✅ Optimización continua
+
+---
+
+#### **Step 1: Confirmar Fuente (30 min)**
+````bash
+# A. Test sin RAG logger (control experiment)
+cd /vagrant/ml-detector/config
+cp detector.json detector.json.backup
+jq '.rag_logging.enabled = false' detector.json > detector_norag.json
+
+# B. Run con RAG deshabilitado
+cd /vagrant/ml-detector/build
+./ml-detector --config ../config/detector_norag.json &
+
+# C. Monitor memory 1 hora
+for i in {1..12}; do
+    MEM=$(ps -p $(pgrep ml-detector) -o rss= | awk '{print $1/1024}')
+    echo "$(date +%H:%M) - Memory: ${MEM} MB" | tee -a /tmp/norag_memory.log
+    sleep 300  # Cada 5 min
+done
+
+# D. Análisis
+echo "=== MEMORY COMPARISON ==="
+echo "Con RAG (Day 29): 465 → 476 MB (+11 MB en 100 min)"
+echo "Sin RAG (Day 30):"
+cat /tmp/norag_memory.log
+
+# Si leak desaparece → Confirmado: RAG logger
+# Si leak persiste → Buscar en otro componente
+````
+
+---
+
+#### **Step 2: AddressSanitizer (30 min)**
+````bash
+# A. Recompilar con ASAN
+cd /vagrant/ml-detector/build
+rm -rf *
+cmake -DCMAKE_CXX_FLAGS="-fsanitize=address -g -O1" \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+make -j4
+
+# B. Run con ASAN (detecta leaks automáticamente)
+./ml-detector --config ../config/detector.json
+
+# C. Dejar corriendo 30 minutos
+# D. Ctrl+C → ASAN imprime leak report
+
+# E. Analizar output
+grep -A 20 "LeakSanitizer" asan_output.log
+
+# Esperado:
+# Direct leak of XXXX byte(s) in X object(s) allocated from:
+#     #0 operator new
+#     #1 RAGLogger::log_event() rag_logger.cpp:XXX
+#     #2 ZMQHandler::process_event() zmq_handler.cpp:XXX
+````
+
+---
+
+#### **Step 3: Aplicar Fix (1 hora)**
+
+**Opción A: Flush Agresivo (Rápido, conservador)**
+````cpp
+// File: ml-detector/src/zmq_handler.cpp
+// Location: process_event() → RAG logging section
+
+if (rag_logger_) {
+    bool logged = rag_logger_->log_event(event, ml_context);
+    if (logged) {
+        logger_->debug("📝 Event logged to RAG: {}", event.event_id());
+    }
+    
+    // 🆕 DAY 30: Flush periódico para liberar buffers
+    if (stats_.events_processed % 100 == 0) {
+        logger_->debug("🔄 Flushing RAG logger (every 100 events)");
+        rag_logger_->flush();
+    }
+}
+````
+
+**Opción B: Timer-Based Flush (Mejor long-term)**
+````cpp
+// File: ml-detector/include/zmq_handler.hpp
+class ZMQHandler {
+private:
+    std::thread rag_flush_timer_;  // 🆕 Nuevo miembro
+    
+    // ... resto de miembros
+};
+
+// File: ml-detector/src/zmq_handler.cpp
+// Location: Constructor, después de inicializar rag_logger_
+
+// 🆕 DAY 30: RAG flush timer (cada 60 segundos)
+if (rag_logger_) {
+    logger_->info("🔄 Starting RAG flush timer (60s interval)");
+    rag_flush_timer_ = std::thread([this]() {
+        while (running_.load()) {
+            std::this_thread::sleep_for(std::chrono::seconds(60));
+            if (rag_logger_) {
+                try {
+                    logger_->debug("🔄 Timer-based RAG flush");
+                    rag_logger_->flush();
+                } catch (const std::exception& e) {
+                    logger_->error("RAG flush error: {}", e.what());
+                }
+            }
+        }
+    });
+}
+
+// Location: Destructor, antes de stop()
+if (rag_flush_timer_.joinable()) {
+    rag_flush_timer_.join();
+}
+````
+
+**Opción C: Ring Buffer (Avanzado, si ASAN confirma acumulación)**
+````cpp
+// File: rag/include/rag_logger.hpp
+class RAGLogger {
+private:
+    static constexpr size_t MAX_BUFFER_SIZE = 1000;  // 🆕
+    std::deque<std::string> event_buffer_;           // 🆕 Ring buffer
+    
+public:
+    bool log_event(const Event& event, const MLContext& ctx) {
+        // Serialize to JSON
+        std::string json_line = serialize_to_jsonl(event, ctx);
+        
+        // 🆕 DAY 30: Add to ring buffer
+        event_buffer_.push_back(json_line);
+        
+        // 🆕 Auto-flush if buffer full
+        if (event_buffer_.size() >= MAX_BUFFER_SIZE) {
+            flush();
+        }
+        
+        return true;
+    }
+    
+    void flush() {
+        // Write all buffered events
+        for (const auto& line : event_buffer_) {
+            jsonl_stream_ << line << "\n";
+        }
+        jsonl_stream_.flush();
+        
+        // 🆕 Clear buffer to free memory
+        event_buffer_.clear();
+        event_buffer_.shrink_to_fit();  // Force deallocation
+    }
+};
+````
+
+---
+
+#### **Step 4: Validar Fix (30 min)**
+````bash
+# A. Recompilar (si aplicaste fix)
+cd /vagrant/ml-detector/build
+make -j4
+
+# B. Run y monitorear 2 horas
+./ml-detector --config ../config/detector.json &
+
+# C. Memory tracking
+for i in {1..24}; do
+    MEM=$(ps -p $(pgrep ml-detector) -o rss= | awk '{print $1/1024}')
+    echo "$(date +%H:%M) - Memory: ${MEM} MB" | tee -a /tmp/postfix_memory.log
+    sleep 300  # Cada 5 min
+done
+
+# D. Análisis comparativo
+echo "=== MEMORY FIX VALIDATION ==="
+echo "Before fix (Day 29): 465 → 476 MB (+11 MB/100 min)"
+echo "After fix (Day 30):"
+cat /tmp/postfix_memory.log | head -20
+
+# Criterio éxito: ±5 MB fluctuation, NO crecimiento lineal
+````
+
+---
+
+#### **Step 5: Documentar Resultados**
+````bash
+# Crear reporte
+cat > /vagrant/docs/DAY_30_MEMORY_LEAK_FIX.md << 'EOF'
+# Day 30: Memory Leak Investigation & Fix
+
+## Issue Description
+ml-detector showed minor memory growth during Day 29 idle test:
+- Rate: ~6 MB/hour
+- Projection: 144 MB/day
+- Other components: Flat line (stable)
+
+## Root Cause Analysis
+
+### Hypothesis
+RAG logger internal buffering for FAISS ingestion pipeline.
+
+### Validation Method
+[AddressSanitizer / Control experiment / etc]
+
+### Findings
+[Resultado de ASAN o test sin RAG]
+
+## Fix Applied
+[Opción A/B/C implementada]
+```cpp
+[Código del fix]
+```
+
+## Validation Results
+
+**Before Fix (Day 29):**
+- Start: 465 MB
+- End: 476 MB (+11 MB/100 min)
+- Rate: 6.6 MB/hour
+
+**After Fix (Day 30):**
+- Start: XXX MB
+- End: XXX MB (±X MB/2 hours)
+- Rate: <1 MB/hour ✅
+
+## Performance Impact
+- Flush overhead: <XXX µs
+- FAISS pipeline: Unaffected ✅
+- Log completeness: 100% ✅
+
+## Conclusion
+Memory leak resolved while preserving critical FAISS
+ingestion functionality. System now production-ready
+for 24h+ continuous operation.
+
+Via Appia Quality: Investigado, documentado, resuelto. 🏛️
+EOF
+
+cat /vagrant/docs/DAY_30_MEMORY_LEAK_FIX.md
+````
+
+---
+
+#### **Criterios de Éxito - Fase 0:**
+````
+✅ Leak source confirmed (RAG logger vs other)
+✅ Fix applied and compiled without errors
+✅ Memory stable post-fix (±5 MB over 2 hours)
+✅ FAISS logs still generated correctly
+✅ Zero performance degradation
+✅ Documented in DAY_30_MEMORY_LEAK_FIX.md
+````
+
+**Si falla algún criterio:** Documentar findings y continuar con Fase 1 (stress testing tiene prioridad).
+
+---
+
+### ⚠️ IMPORTANTE - Orden de Prioridades Day 30:
+````
+1. 🔬 Memory leak investigation (Fase 0) - 2 horas
+   → Si se resuelve rápido: Continuar
+   → Si toma >3 horas: Documentar estado y pasar a Fase 1
+
+2. 🔥 Stress testing (Fase 1-4) - Crítico para Phase 1 completion
+   → NO bloquear por leak investigation
+   → Sistema funcional con leak menor
+
+3. 📊 FAISS validation + IPSet automation - Production readiness
+````
+
+**Filosofía:** Leak investigation es importante, NO crítica. Si toma mucho tiempo, documentamos estado actual y continuamos con testing. Podemos volver al leak en Day 31 si es necesario.
+
+---
 
 ### FASE 1: Makefile Automation (2 horas)
 
@@ -453,6 +753,18 @@ make stop-pipeline
 > Despacio y bien. 🏛️"
 
 ---
+
+
+
+---
+
+## 🏛️ VIA APPIA QUALITY - PERSPECTIVA
+```
+"6 MB/hora es ruido comparado con 6 horas uptime sin crashes.
+Logs son el corazón del sistema (FAISS ingestion).
+Investigamos, documentamos, arreglamos - pero NO bloqueamos.
+Funciona > Perfecto. Despacio y bien."
+
 
 ## 🎯 SIGUIENTE FEATURE (SEMANA 5)
 
