@@ -775,3 +775,35 @@ Funciona > Perfecto. Despacio y bien."
 - Día 40-42: Ground truth collection system
 
 **NO TOCAR PROTOBUF HOY (Día 30)** - Focus en stress testing!
+
+## FASE FUTURA: FAISS Ingestion (Week 5-6)
+
+### Contexto Previo (Sesión 2025-12-30)
+Discusión completa arquitectura FAISS ingestion. Ver:
+  • FAISS_INGESTION_DESIGN.md (document full design)
+  • Esta sesión transcript
+
+### Decisiones Arquitectónicas Clave:
+1. **Multi-embedder coherente**: Mismo chunk → 3 índices
+2. **Best-effort commit**: Resilience > atomicidad estricta
+3. **C++20 implementation**: Coherencia con stack
+4. **ONNX Runtime**: Chronos + SBERT + Custom models
+5. **Chunk = día completo**: NUNCA truncar time series
+
+### Cuando Empezar Implementación:
+- ✅ Phase 1 completo (Day 30 stress test done)
+- ✅ ml-detector stable (memory leak fixed)
+- ✅ RAG logs validados (83 fields complete)
+
+### First Steps:
+1. Export models to ONNX (Python script, one-time)
+2. ChunkCoordinator skeleton (C++20)
+3. FAISS C++ integration test
+4. ONNX Runtime C++ hello-world
+5. Feature extraction (83 fields → embeddings)
+
+### Timeline Estimado:
+- Week 5: ONNX setup + FAISS integration
+- Week 6: ChunkCoordinator + IndexTracker
+- Week 7: HealthMonitor + Alerting
+- Week 8: Testing + Reconciliation
