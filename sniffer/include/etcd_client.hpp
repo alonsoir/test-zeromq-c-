@@ -32,6 +32,9 @@ namespace sniffer {
         bool get_pipeline_status();
         std::string get_encryption_status();
 
+        // 🎯 DAY 29: Get encryption seed for crypto-transport
+        std::string get_encryption_seed() const;
+
     private:
         struct Impl;
         std::unique_ptr<Impl> pImpl;

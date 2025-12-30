@@ -646,7 +646,52 @@ int main(int argc, char* argv[]) {
         sniffer_config.transport.compression.compression_ratio_threshold = g_config.compression.compression_ratio_threshold;
         sniffer_config.transport.compression.adaptive_compression = g_config.compression.adaptive_compression;
 
-        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config, fast_detector_config);
+        // ═══════════════════════════════════════════════════════════════════════
+// 🎯 DAY 29: Get encryption seed from etcd (REQUIRED, with retry)
+// ═══════════════════════════════════════════════════════════════════════
+std::string encryption_seed;
+
+if (!etcd_client) {
+    std::cerr << "\n❌ FATAL: etcd integration is REQUIRED for sniffer" << std::endl;
+    std::cerr << "   Reason: Encryption seed must be obtained from etcd-server" << std::endl;
+    std::cerr << "   Action: Enable etcd in config and ensure etcd-server is running" << std::endl;
+    std::cerr << "   Security: Hardcoded encryption keys are NOT acceptable" << std::endl;
+    return 1;
+}
+
+// Retry mechanism (3 attempts, like firewall-acl-agent)
+const int max_retries = 3;
+const int retry_delay_seconds = 2;
+
+for (int attempt = 1; attempt <= max_retries; ++attempt) {
+    std::cout << "🔑 [etcd] Attempt " << attempt << "/" << max_retries
+              << ": Getting encryption seed..." << std::endl;
+
+    encryption_seed = etcd_client->get_encryption_seed();
+
+    if (!encryption_seed.empty()) {
+        std::cout << "✅ Encryption seed obtained from etcd-server" << std::endl;
+        break;
+    }
+
+    if (attempt < max_retries) {
+        std::cerr << "⚠️  [etcd] Failed to get seed, retrying in "
+                  << retry_delay_seconds << "s..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(retry_delay_seconds));
+    }
+}
+
+if (encryption_seed.empty()) {
+    std::cerr << "\n❌ FATAL: Failed to get encryption seed after "
+              << max_retries << " attempts" << std::endl;
+    std::cerr << "   Reason: etcd-server did not provide encryption key" << std::endl;
+    std::cerr << "   Action: Verify etcd-server is running and accessible" << std::endl;
+    std::cerr << "   Network: Check connectivity to " << g_config.etcd.endpoints[0] << std::endl;
+    std::cerr << "   HA Setup: Consider deploying etcd-server in HA configuration" << std::endl;
+    return 1;
+}
+
+ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config, fast_detector_config, encryption_seed);
         auto& ring_consumer = *ring_consumer_ptr;
 
         // Configure stats interval from monitoring config

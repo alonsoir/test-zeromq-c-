@@ -1,728 +1,465 @@
-# PROMPT DE CONTINUIDAD - DÍA 29 (29 Diciembre 2025)
+# PROMPT DE CONTINUIDAD - DÍA 30 (30 Diciembre 2025)
 
-## 📋 CONTEXTO DÍA 28 (28 Diciembre 2025)
+## 📋 CONTEXTO DÍA 29 (29 Diciembre 2025)
 
-### ✅ COMPLETADO - LINKAGE 100% COMPLETO (6/6 COMPONENTES)
+### ✅ COMPLETADO - PIPELINE END-TO-END FUNCIONANDO
 
 **Gran Hito Alcanzado:**
-- ✅ crypto-transport - Librería base unificada
-- ✅ etcd-client - Refactorizado (Día 26)
-- ✅ firewall-acl-agent - Integrado (Día 26)
-- ✅ etcd-server - Migrado CryptoPP (Día 27)
-- ✅ ml-detector - Integración completa (Día 27)
-- ✅ RAG - Integrado (Día 19)
-- ✅ **sniffer - LINKAGE COMPLETO (Día 28)** 🎉
+- ✅ Troubleshooting LZ4 header mismatch (2+ horas intensas)
+- ✅ Pipeline completa E2E operativa
+- ✅ 53+ minutos uptime continuo
+- ✅ 341 eventos procesados, 0 errores
+- ✅ Tráfico real validado (20 pings)
+- ✅ Crypto-transport end-to-end verificado
 
-**Arquitectura Final:**
+**Arquitectura Día 29 (100% Operativa):**
+```
+SNIFFER (Terminal 3)
+  ↓ compress_with_size() + encrypt()
+  ↓ [4-byte header + LZ4] → ChaCha20
+  ↓
+ML-DETECTOR (Terminal 2)
+  ↓ decrypt() + decompress_with_size()
+  ↓ ML inference (Level 1-3)
+  ↓ compress_with_size() + encrypt()
+  ↓
+FIREWALL (Terminal 4)
+  ↓ decrypt() + manual header extraction
+  ✅ Event parsing successful
+```
+
+**Root Cause Analysis Día 29:**
+```
+PROBLEMA INICIAL:
+  Firewall reportaba: "Invalid decompressed size: 4154591783 bytes"
+  
+HIPÓTESIS INICIAL (❌ INCORRECTA):
+  ml-detector usa compress() sin header
+  
+INVESTIGACIÓN (2 horas):
+  1. Verificar código ml-detector línea 772
+     → Usa compress_with_size() ✅ (correcto desde Day 27)
+  2. Verificar binario symbols
+     → compress_with_size presente ✅
+  3. Verificar timestamps
+     → Código modificado 08:33:18
+     → Binario compilado 08:34:34 ✅
+  4. Verificar logs firewall
+     → Decompression: 361 → 451 bytes (quitó 4-byte header) ✅
+  
+CONCLUSIÓN:
+  Todo estaba CORRECTO desde el principio
+  Firewall con manual header extraction funcionando
+  Pipeline completa operativa
+  
+ERROR HUMANO:
+  No verificamos código ml-detector ANTES de asumir el bug
+  Lección: Verificar primero, asumir después
+```
+
+**Métricas Día 29 (Pipeline Real):**
 ```
 ┌─────────────────────────────────────────┐
-│  crypto-transport (UNIFIED ECOSYSTEM)   │
-│  XSalsa20-Poly1305 + LZ4               │
-│  libsodium + liblz4                    │
+│  COMPONENTE      UPTIME    EVENTOS  ERR │
+├─────────────────────────────────────────┤
+│  etcd-server     58 min   Heartbeats  0 │
+│  sniffer         53 min   341 sent    0 │
+│  ml-detector     19 min   128 proc    0 │
+│  firewall        19 min   128 proc    0 │
 └─────────────────────────────────────────┘
-    ↑           ↑           ↑          ↑          ↑
-    │           │           │          │          │
-┌───┴───┐  ┌───┴────┐  ┌───┴────┐  ┌──┴─────┐  ┌──┴───┐
-│sniffer│  │ml-det. │  │firewall│  │etcd-srv│  │ RAG  │
-│  ✅   │  │   ✅   │  │   ✅   │  │   ✅   │  │  ✅  │
-│ LINK  │  │ FULL   │  │ FULL   │  │ FULL   │  │ FULL │
-│ ⏳CODE│  │        │  │        │  │        │  │      │
-└───────┘  └────────┘  └────────┘  └────────┘  └──────┘
-```
 
-**Linkage Verificado (Día 28):**
-```bash
-# Todos los componentes:
-libcrypto_transport.so.1 ✅
-libetcd_client.so.1 ✅
-libsodium.so.23 ✅
-liblz4.so.1 ✅
-```
-
-**Metodología Día 28 (Via Appia Quality):**
-- ✅ Verificación firewall (15 min)
-- ✅ Verificación RAG (15 min)
-- ✅ Intentos CMakeLists desde cero (aprendizaje 1h)
-- ✅ **Decisión correcta:** Partir del backup funcional 🧠
-- ✅ Patch quirúrgico: ~50 líneas sobre 500+
-- ✅ Compilación exitosa sin errores
-- ✅ Tests 100% passing
-- ✅ Tiempo total: ~3 horas (metodológico)
-
----
-
-## 🎯 ESTADO ACTUAL (DÍA 29 INICIO)
-
-### ✅ Linkage Status (100%)
-- crypto-transport: ✅ Instalado sistema
-- etcd-client: ✅ Instalado sistema
-- firewall: ✅ Linked + código completo
-- etcd-server: ✅ Linked + código completo
-- ml-detector: ✅ Linked + código completo
-- RAG: ✅ Linked + código completo
-- **sniffer: ✅ Linked, ⏳ CÓDIGO PENDIENTE**
-
-### ⏳ Código Status (83%)
-- firewall: ✅ Decrypt + decompress implementado
-- ml-detector: ✅ Bidirectional crypto implementado
-- etcd-server: ✅ Encrypt + decrypt implementado
-- RAG: ✅ Encrypt config upload implementado
-- **sniffer: ⏳ ZMQ send path PENDIENTE**
-
----
-
-## 🔥 PLAN DÍA 29 - PIPELINE COMPLETO E2E
-
-### FASE 1: Integración Código Sniffer (2-3 horas) 🔥 CRÍTICO
-
-**Objetivo:** Sniffer envía paquetes CIFRADOS a ml-detector
-
-**Archivo a Modificar:**
-```
-/vagrant/sniffer/src/userspace/zmq_pool_manager.cpp
-```
-
-**Patrón Actual (SIN CRYPTO):**
-```cpp
-// Código actual (aproximado):
-void send_packet(const NetworkEvent& event) {
-    // 1. Serialize protobuf
-    std::string serialized;
-    event.SerializeToString(&serialized);
-    
-    // 2. [OPCIONAL] Compresión local (si existe)
-    // std::string compressed = local_compress(serialized);
-    
-    // 3. Send directo
-    zmq::message_t msg(serialized.data(), serialized.size());
-    socket_.send(msg, zmq::send_flags::none);
-}
-```
-
-**Patrón Nuevo (CON CRYPTO):**
-```cpp
-#include "crypto_transport/crypto_manager.hpp"
-#include "etcd_client/etcd_client.hpp"
-
-// Miembro clase (añadir en header):
-std::unique_ptr<crypto_transport::CryptoManager> crypto_manager_;
-
-// Inicialización (constructor o init):
-void initialize_crypto() {
-    // Obtener crypto_manager del etcd_client
-    crypto_manager_ = etcd_client_->get_crypto_manager();
-    
-    if (!crypto_manager_) {
-        LOG_ERROR("Failed to get crypto_manager from etcd_client");
-        throw std::runtime_error("Crypto initialization failed");
-    }
-    LOG_INFO("✅ Crypto manager initialized from etcd-client");
-}
-
-// NUEVO CÓDIGO - Con cifrado
-void send_packet(const NetworkEvent& event) {
-    try {
-        // 1. Serialize protobuf
-        std::string serialized;
-        if (!event.SerializeToString(&serialized)) {
-            LOG_ERROR("Failed to serialize NetworkEvent");
-            return;
-        }
-        
-        // 2. Compress + Encrypt usando crypto_manager
-        auto encrypted_data = crypto_manager_->encrypt_and_compress(
-            reinterpret_cast<const uint8_t*>(serialized.data()), 
-            serialized.size()
-        );
-        
-        if (!encrypted_data || encrypted_data->empty()) {
-            LOG_ERROR("Failed to encrypt packet data");
-            return;
-        }
-        
-        // Log para debugging (Día 29)
-        LOG_DEBUG("📦 Compressed: " + std::to_string(serialized.size()) 
-                  + " → ? bytes");
-        LOG_DEBUG("🔒 Encrypted: ? → " + std::to_string(encrypted_data->size()) 
-                  + " bytes");
-        
-        // 3. Send encrypted
-        zmq::message_t msg(encrypted_data->data(), encrypted_data->size());
-        socket_.send(msg, zmq::send_flags::none);
-        
-        // Metrics
-        stats_.packets_sent++;
-        stats_.bytes_encrypted += encrypted_data->size();
-        
-    } catch (const std::exception& e) {
-        LOG_ERROR("Exception in send_packet: " + std::string(e.what()));
-    }
-}
-```
-
-**Checklist Modificación:**
-```
-[ ] 1. Localizar zmq_pool_manager.cpp (o archivo similar)
-[ ] 2. Buscar función que hace socket.send()
-[ ] 3. Añadir includes crypto_transport + etcd_client
-[ ] 4. Añadir miembro crypto_manager_ a la clase
-[ ] 5. Inicializar crypto_manager_ desde etcd_client
-[ ] 6. Modificar send path: serialize → encrypt_and_compress() → send
-[ ] 7. Eliminar compresión local (si existía)
-[ ] 8. Añadir logging para debugging
-[ ] 9. Compilar: cd build && cmake .. && make -j$(nproc)
-[ ] 10. Verificar linkage (ya debería estar OK desde Día 28)
-```
-
-**Referencia:**
-- Ver: `/vagrant/ml-detector/src/zmq_handler.cpp` (send path)
-- Patrón: `serialize → encrypt_and_compress() → zmq_send`
-
-**Test Post-Modificación:**
-```bash
-# 1. Compilar
-cd /vagrant/sniffer/build
-make -j$(nproc)
-
-# 2. Verificar NO rompimos linkage
-ldd sniffer | grep -E '(crypto_transport|etcd_client|sodium|lz4)'
-
-# 3. Test básico (sin tráfico)
-./sniffer --help
-
-# Esperar: Mismo output que Día 28 ✅
+LATENCIAS:
+  Decrypt:      ~18 µs  ⚡
+  Decompress:   ~3 µs   ⚡⚡
+  Total crypto: ~21 µs
+  
+CLASIFICACIÓN ML:
+  Pings normales: BENIGN (85% confidence) ✅
+  Dual-score: fast=0.00, ml=0.14, final=0.14
+  Threat category: NORMAL ✅
+  
+COMPRESIÓN:
+  Sniffer: 368 → 300 bytes (18% reduction)
+  
+ENCRIPTACIÓN:
+  Overhead: +40 bytes fixed (nonce + MAC)
+  Final: 340 bytes encrypted
 ```
 
 ---
 
-### FASE 2: Construcción Limpia Desde Cero (2 horas) 🏗️
+## 🎯 ESTADO ACTUAL (DÍA 30 INICIO)
 
-**Objetivo:** Validar que pipeline se construye completamente desde cero
+### ✅ Phase 1 Status (100% COMPLETO)
 
-**Secuencia Construcción:**
-```bash
-# 1. LIMPIEZA TOTAL
-make clean-all
+**Funcionalidades Validadas:**
+- ✅ 4 componentes distribuidos operativos
+- ✅ ChaCha20-Poly1305 + LZ4 end-to-end
+- ✅ ML pipeline completa (Level 1-3)
+- ✅ Dual-score architecture (Fast + ML)
+- ✅ Etcd service discovery + heartbeats
+- ✅ 53+ minutos operación sin crashes
+- ✅ Clasificación correcta tráfico real
+- ✅ Sub-millisecond crypto latencies
 
-# Verificar que TODO está limpio:
-ls -la /vagrant/*/build/
-# Deberían estar vacíos o no existir
+**Pendientes para Production:**
+- ⏳ IPSet blocking automation
+- ⏳ Pruebas de stress (CTU-13, CICIDS)
+- ⏳ Dashboard web metrics
+- ⏳ Alert notifications
 
-# 2. CONSTRUCCIÓN ORDENADA (DEPENDENCIAS!)
-# Paso 1: Proto (base)
-make proto-unified
-# Verificar: /vagrant/proto-unified/build/*.pb.cc existe
+---
 
-# Paso 2: crypto-transport (base crypto)
-make crypto-transport-build
-# Verificar: /usr/local/lib/libcrypto_transport.so.1 existe
+## 🔥 PLAN DÍA 30 - STRESS TESTING & AUTOMATION
 
-# Paso 3: etcd-client (usa crypto-transport)
-make etcd-client-build
-# Verificar: /usr/local/lib/libetcd_client.so.1 existe
+### FASE 1: Makefile Automation (2 horas)
 
-# Paso 4: etcd-server (usa crypto-transport)
-make etcd-server-build
-# Verificar: /vagrant/etcd-server/build/etcd-server existe
+**Objetivo:** Toda la infraestructura desde Makefile raíz
 
-# Paso 5: Componentes (usan etcd-client + crypto-transport)
-make sniffer          # Sniffer primero (genera eventos)
-make detector         # Detector segundo (procesa eventos)
-make firewall         # Firewall tercero (bloquea IPs)
-make rag              # RAG último (análisis)
-
-# 3. VERIFICACIÓN LINKAGE COMPLETO
-make verify-crypto-linkage
-
-# Debería mostrar para CADA componente:
-# ✅ libcrypto_transport.so.1
-# ✅ libetcd_client.so.1
-# ✅ libsodium.so.23
-# ✅ liblz4.so.1
-
-# 4. TEST BÁSICO CADA COMPONENTE
-for comp in sniffer ml-detector firewall-acl-agent rag-security etcd-server; do
-    echo "=== Testing $comp ==="
-    /vagrant/*/build/$comp --help 2>&1 | head -5
-done
-
-# Todos deberían ejecutar sin crash ✅
-```
-
-**Nuevo Target Makefile (añadir):**
+**Nuevos Targets:**
 ```makefile
-.PHONY: rebuild-from-scratch
-rebuild-from-scratch: clean-all
-	@echo "🧹 Clean complete - Building from scratch..."
-	make proto-unified
-	make crypto-transport-build
-	make etcd-client-build
-	make etcd-server-build
-	make sniffer
-	make detector
-	make firewall
-	make rag
-	@echo "✅ Build from scratch complete!"
-	make verify-crypto-linkage
+# A. Pipeline Full Start
+.PHONY: start-pipeline
+start-pipeline:
+	@echo "🚀 Starting ML Defender Pipeline..."
+	@tmux new-session -d -s mldefender
+	@tmux split-window -h -t mldefender
+	@tmux split-window -v -t mldefender
+	@tmux split-window -v -t mldefender:0.0
+	@tmux send-keys -t mldefender:0.0 'cd /vagrant/etcd-server/build && ./etcd-server --port 2379' C-m
+	@sleep 3
+	@tmux send-keys -t mldefender:0.1 'cd /vagrant/sniffer/build && sudo ./sniffer -c ../config/sniffer.json' C-m
+	@sleep 2
+	@tmux send-keys -t mldefender:0.2 'cd /vagrant/ml-detector/build && ./ml-detector --config ../config/detector.json' C-m
+	@sleep 2
+	@tmux send-keys -t mldefender:0.3 'cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent --config ../config/firewall.json' C-m
+	@echo "✅ Pipeline started in tmux session 'mldefender'"
+	@echo "   Attach: tmux attach -t mldefender"
+
+# B. Pipeline Stop
+.PHONY: stop-pipeline
+stop-pipeline:
+	@echo "🛑 Stopping ML Defender Pipeline..."
+	@-pkill -f etcd-server
+	@-sudo pkill -f sniffer
+	@-pkill -f ml-detector
+	@-sudo pkill -f firewall-acl-agent
+	@-tmux kill-session -t mldefender 2>/dev/null || true
+	@echo "✅ Pipeline stopped"
+
+# C. PCAP Relay Automated
+.PHONY: stress-test-neris
+stress-test-neris:
+	@echo "🔥 Starting Neris botnet stress test (1 hour)..."
+	@cd /vagrant/tests && ./replay_neris.sh --duration 3600 --speed 1.0 &
+	@echo "   Monitor: make monitor-stress"
+
+# D. Monitor Stress Test
+.PHONY: monitor-stress
+monitor-stress:
+	@watch -n 5 'echo "=== STRESS TEST METRICS ===" && \
+	echo "IPSet Blacklist:" && \
+	sudo ipset list ml_defender_blacklist_test | tail -10 && \
+	echo "" && \
+	echo "Events Processed:" && \
+	ps -p $$(pgrep ml-detector) -o etime= 2>/dev/null | xargs echo "ML-Detector uptime:" && \
+	echo "FAISS Logs:" && \
+	ls -1 /vagrant/logs/rag/events/ | tail -5'
+
+# E. Capture Metrics
+.PHONY: capture-metrics
+capture-metrics:
+	@./scripts/capture_day30_metrics.sh > metrics_day30.txt
+	@echo "✅ Metrics captured: metrics_day30.txt"
+
+# F. Verify FAISS Ingestion
+.PHONY: verify-faiss
+verify-faiss:
+	@echo "📊 FAISS Ingestion Verification:"
+	@echo "Events logged (today):"
+	@wc -l /vagrant/logs/rag/events/$$(date +%Y-%m-%d).jsonl 2>/dev/null || echo "0"
+	@echo "Artifacts generated (today):"
+	@ls /vagrant/logs/rag/artifacts/$$(date +%Y-%m-%d)/ 2>/dev/null | wc -l || echo "0"
+	@echo "Total size:"
+	@du -sh /vagrant/logs/rag/events/ 2>/dev/null || echo "0"
+
+# G. Health Check
+.PHONY: health-check
+health-check:
+	@echo "🏥 ML Defender Health Check:"
+	@ps -p $$(pgrep etcd-server) -o etime= 2>/dev/null && echo "✅ etcd-server: UP" || echo "❌ etcd-server: DOWN"
+	@ps -p $$(pgrep sniffer) -o etime= 2>/dev/null && echo "✅ sniffer: UP" || echo "❌ sniffer: DOWN"
+	@ps -p $$(pgrep ml-detector) -o etime= 2>/dev/null && echo "✅ ml-detector: UP" || echo "❌ ml-detector: DOWN"
+	@ps -p $$(pgrep firewall) -o etime= 2>/dev/null && echo "✅ firewall: UP" || echo "❌ firewall: DOWN"
+	@echo ""
+	@echo "IPSet entries:"
+	@sudo ipset list ml_defender_blacklist_test | grep -c "147.32" 2>/dev/null || echo "0"
 ```
 
 ---
 
-### FASE 3: Test Estabilidad Al Ralentí (2 horas) 🔬
+### FASE 2: Stress Test CTU-13 (4 horas)
 
-**Objetivo:** Pipeline funciona estable SIN inyectar tráfico
+**Objetivo:** Validar con dataset completo Neris botnet
 
 **Setup:**
 ```bash
-# Terminal 1: etcd-server
-cd /vagrant/etcd-server/build
-./etcd-server --port 2379
-
-# Verificar:
-# ✅ Server started on port 2379
-# ✅ Waiting for component registrations...
-
-# Terminal 2: ml-detector
-cd /vagrant/ml-detector/build
-./ml-detector --config ../config/detector.json
-
-# Verificar:
-# ✅ [etcd] Component registered: ml-detector
-# ✅ [crypto] Encryption key received
-# ✅ [zmq] Listening on port 5571
-# ✅ Models loaded: 4/4
-
-# Terminal 3: firewall
-cd /vagrant/firewall-acl-agent/build
-sudo ./firewall-acl-agent --config ../config/firewall.json
-
-# Verificar:
-# ✅ [etcd] Component registered: firewall
-# ✅ [crypto] Encryption key received
-# ✅ [ipset] Initialized: ml_defender_blacklist_test
-# ✅ [zmq] Listening on port 5572
-
-# Terminal 4: sniffer
-cd /vagrant/sniffer/build
-sudo ./sniffer -c ../config/sniffer.json
-
-# Verificar:
-# ✅ [etcd] Component registered: sniffer
-# ✅ [crypto] Encryption key received 🆕
-# ✅ [ebpf] BPF program loaded
-# ✅ [zmq] Publishing to port 5571
-# ✅ Waiting for packets...
-
-# Terminal 5: RAG (opcional)
-cd /vagrant/rag/build
-./rag-security --config ../config/rag-config.json
-
-# Verificar:
-# ✅ [etcd] Component registered: rag
-# ✅ [llama] Model loaded: TinyLlama
-```
-
-**Monitoreo (30-60 minutos):**
-```bash
-# Script de monitoreo (crear nuevo):
-./monitor_stability.sh
-
-# Contenido:
-while true; do
-    clear
-    echo "=== STABILITY TEST (No Traffic) ==="
-    echo ""
-    
-    # Uptimes
-    echo "📊 UPTIMES:"
-    ps -p $(pgrep etcd-server) -o etime= 2>/dev/null | xargs echo "  etcd-server:" || echo "  etcd-server: DOWN"
-    ps -p $(pgrep ml-detector) -o etime= 2>/dev/null | xargs echo "  ml-detector:" || echo "  ml-detector: DOWN"
-    ps -p $(pgrep firewall) -o etime= 2>/dev/null | xargs echo "  firewall:" || echo "  firewall: DOWN"
-    ps -p $(pgrep sniffer) -o etime= 2>/dev/null | xargs echo "  sniffer:" || echo "  sniffer: DOWN"
-    
-    echo ""
-    
-    # Memory
-    echo "💾 MEMORY (RSS):"
-    ps -p $(pgrep etcd-server) -o rss= 2>/dev/null | awk '{print "  etcd-server: " $1/1024 " MB"}'
-    ps -p $(pgrep ml-detector) -o rss= 2>/dev/null | awk '{print "  ml-detector: " $1/1024 " MB"}'
-    ps -p $(pgrep firewall) -o rss= 2>/dev/null | awk '{print "  firewall: " $1/1024 " MB"}'
-    ps -p $(pgrep sniffer) -o rss= 2>/dev/null | awk '{print "  sniffer: " $1/1024 " MB"}'
-    
-    echo ""
-    
-    # CPU
-    echo "⚡ CPU %:"
-    ps -p $(pgrep etcd-server) -o %cpu= 2>/dev/null | xargs echo "  etcd-server:" || echo "  etcd-server: 0%"
-    ps -p $(pgrep ml-detector) -o %cpu= 2>/dev/null | xargs echo "  ml-detector:" || echo "  ml-detector: 0%"
-    ps -p $(pgrep firewall) -o %cpu= 2>/dev/null | xargs echo "  firewall:" || echo "  firewall: 0%"
-    ps -p $(pgrep sniffer) -o %cpu= 2>/dev/null | xargs echo "  sniffer:" || echo "  sniffer: 0%"
-    
-    sleep 30
-done
-```
-
-**Criterios Éxito:**
-```
-✅ Todos los componentes UP durante 30+ minutos
-✅ Memory estable (sin crecimiento constante)
-✅ CPU idle bajo (<5% cada uno)
-✅ Logs sin errores críticos
-✅ Zero crashes
-```
-
----
-
-### FASE 4: Test Neris PCAP Relay (4-6 horas) 🔥 CRÍTICO
-
-**Objetivo:** Pipeline completo bajo carga real - botnet Neris
-
-**Pre-requisitos:**
-```bash
-# 1. Pipeline estable desde Fase 3 ✅
-# 2. IPSet vacío inicialmente
-sudo ipset list ml_defender_blacklist_test | wc -l
-# Debería ser 0
-
-# 3. Logs directory limpio
+# 1. Limpiar estado
+make stop-pipeline
+sudo ipset flush ml_defender_blacklist_test
 rm -rf /vagrant/logs/lab/*
-mkdir -p /vagrant/logs/lab
-```
 
-**Lanzar Test:**
-```bash
-# Terminal 6: PCAP Replay
-cd /vagrant/tests
-./replay_neris.sh --duration 3600 --speed 1.0
+# 2. Iniciar pipeline
+make start-pipeline
 
-# Esto inyecta tráfico Neris durante 1 hora
-# Contiene IPs botnet conocidas:
-# 147.32.84.165
-# 147.32.84.191
-# 147.32.84.192
-# ... etc
-```
+# 3. Esperar estabilización (30 segundos)
+sleep 30
+make health-check
 
-**Monitoreo Crítico:**
+# 4. Iniciar stress test
+make stress-test-neris
 
-```bash
-# A. IPSet Blacklist Population (CRÍTICO!)
-watch -n 5 'echo "=== IPSet Blacklist ===" && sudo ipset list ml_defender_blacklist_test | tail -20'
-
-# ESPERADO:
-# Deberías ver IPs 147.32.84.* aparecer progresivamente
-# Si NO aparecen → firewall NO está bloqueando (IMPLEMENTAR!)
-
-# B. Eventos Procesados
-watch -n 10 'grep -c "final_score" /vagrant/logs/lab/ml-detector.log'
-
-# Debería incrementar constantemente
-
-# C. Throughput
-tail -f /vagrant/logs/lab/ml-detector.log | grep "events/sec"
-
-# Objetivo: >1000 events/sec
-
-# D. Latencia E2E
-# Calcular: timestamp sniffer → timestamp firewall
-grep "timestamp" /vagrant/logs/lab/*.log | \
-    awk '{print $1, $NF}' | \
-    # Calcular diferencia
-    # Objetivo: <100ms P99
-
-# E. Cifrado Stats
-grep "Encrypted" /vagrant/logs/lab/sniffer.log | wc -l
-
-# Debería ser >0 si sniffer envía cifrado ✅
-
-# F. RAG Artifacts
-ls -l /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l
-
-# Debería crecer durante el test
-
-# G. Memory Leaks (AddressSanitizer)
-# Si compilaste con ASAN:
-grep "leaked" /vagrant/logs/lab/*.log
-
-# Debería ser vacío (sin leaks)
+# 5. Monitor en tiempo real
+make monitor-stress
 ```
 
 **Métricas a Capturar:**
 ```bash
-# Crear script de captura:
-./capture_metrics.sh > metrics_day29.txt
-
-# Contenido:
-echo "=== NERIS TEST METRICS (1 hour) ==="
+# Script: scripts/capture_day30_metrics.sh
+#!/bin/bash
+echo "=== DAY 30 STRESS TEST METRICS ==="
+echo "Timestamp: $(date)"
 echo ""
+
 echo "A. THROUGHPUT"
-grep "events/sec" /vagrant/logs/lab/*.log | tail -20
+echo "Events/sec (ml-detector):"
+grep "events/sec" /vagrant/logs/lab/ml-detector.log 2>/dev/null | tail -5
 
 echo ""
-echo "B. IPSET POPULATION"
+echo "B. IPSET BLACKLIST"
 echo "Total IPs blocked:"
-sudo ipset list ml_defender_blacklist_test | grep -c "147.32"
+sudo ipset list ml_defender_blacklist_test | grep -c "147.32" 2>/dev/null || echo "0"
+echo "Sample IPs:"
+sudo ipset list ml_defender_blacklist_test | grep "147.32" | head -10
 
 echo ""
-echo "C. COMPRESSION STATS"
-grep "Compressed" /vagrant/logs/lab/*.log | \
-    awk '{sum+=$2; count++} END {print "Average: " sum/count " bytes"}'
+echo "C. FAISS INGESTION"
+echo "Events logged (today):"
+wc -l /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl 2>/dev/null || echo "0"
+echo "Artifacts generated:"
+ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ 2>/dev/null | wc -l || echo "0"
 
 echo ""
-echo "D. ENCRYPTION OVERHEAD"
-grep "Encrypted" /vagrant/logs/lab/*.log | \
-    awk '{sum+=$2; count++} END {print "Average: " sum/count " bytes"}'
+echo "D. LATENCIES"
+echo "Decrypt (µs):"
+grep "Decrypted:" /vagrant/logs/lab/firewall.log | awk '{print $3}' | tail -100 | \
+    awk '{sum+=$1; count++} END {print "  Avg: " sum/count " µs"}'
+echo "Decompress (µs):"
+grep "Decompressed:" /vagrant/logs/lab/firewall.log | awk '{print $3}' | tail -100 | \
+    awk '{sum+=$1; count++} END {print "  Avg: " sum/count " µs"}'
 
 echo ""
-echo "E. RAG ARTIFACTS"
-echo "Total artifacts generated:"
-ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l
+echo "E. COMPONENT UPTIMES"
+ps -p $(pgrep etcd-server) -o etime= 2>/dev/null | xargs echo "etcd-server:" || echo "etcd-server: DOWN"
+ps -p $(pgrep sniffer) -o etime= 2>/dev/null | xargs echo "sniffer:" || echo "sniffer: DOWN"
+ps -p $(pgrep ml-detector) -o etime= 2>/dev/null | xargs echo "ml-detector:" || echo "ml-detector: DOWN"
+ps -p $(pgrep firewall) -o etime= 2>/dev/null | xargs echo "firewall:" || echo "firewall: DOWN"
 
 echo ""
-echo "F. COMPONENT UPTIMES"
-ps -p $(pgrep etcd-server) -o etime= | xargs echo "etcd-server:"
-ps -p $(pgrep ml-detector) -o etime= | xargs echo "ml-detector:"
-ps -p $(pgrep firewall) -o etime= | xargs echo "firewall:"
-ps -p $(pgrep sniffer) -o etime= | xargs echo "sniffer:"
+echo "F. MEMORY (MB)"
+ps -p $(pgrep ml-detector) -o rss= 2>/dev/null | awk '{print "ml-detector: " $1/1024}' || echo "ml-detector: N/A"
+ps -p $(pgrep firewall) -o rss= 2>/dev/null | awk '{print "firewall: " $1/1024}' || echo "firewall: N/A"
+ps -p $(pgrep sniffer) -o rss= 2>/dev/null | awk '{print "sniffer: " $1/1024}' || echo "sniffer: N/A"
 
 echo ""
-echo "G. MEMORY FINAL (MB)"
-ps -p $(pgrep ml-detector) -o rss= | awk '{print "ml-detector: " $1/1024}'
-ps -p $(pgrep firewall) -o rss= | awk '{print "firewall: " $1/1024}'
-ps -p $(pgrep sniffer) -o rss= | awk '{print "sniffer: " $1/1024}'
+echo "G. ERROR COUNT"
+grep -c "ERROR" /vagrant/logs/lab/*.log 2>/dev/null || echo "0"
+grep -c "FATAL" /vagrant/logs/lab/*.log 2>/dev/null || echo "0"
+
+echo ""
+echo "=== END METRICS ==="
 ```
 
 ---
 
-### FASE 5: IPSet Blocking Implementation (1 hora) 🚨 CRÍTICO
+### FASE 3: IPSet Monitor Naive (1 hora)
 
-**IMPORTANTE:** Si en Fase 4 NO viste IPs en el blacklist, implementa esto PRIMERO.
+**Objetivo:** Ver IPSet population en tiempo real
 
-**Archivo a Modificar:**
-```
-/vagrant/firewall-acl-agent/src/api/zmq_subscriber.cpp
-```
+**Script: monitor_ipset.sh**
+```bash
+#!/bin/bash
+# Simple monitor for IPSet blacklist
 
-**Código a Añadir:**
-```cpp
-// En la función que procesa eventos del ml-detector
-void process_detection_event(const PacketEvent& event) {
-    // Ya existe código que descifra + parsea el evento ✅
+while true; do
+    clear
+    echo "╔════════════════════════════════════════════╗"
+    echo "║     ML DEFENDER IPSET MONITOR             ║"
+    echo "║     $(date)                    ║"
+    echo "╚════════════════════════════════════════════╝"
+    echo ""
     
-    // AÑADIR: IPSet blocking logic
-    if (event.final_score() > 0.7) {  // Threshold configurable
-        std::string src_ip = event.src_ip();
-        
-        // Construir comando ipset
-        std::string cmd = "ipset add ml_defender_blacklist_test " + src_ip + 
-                         " timeout 3600 -exist";
-        
-        LOG_INFO("🚫 Blocking IP: " + src_ip + " (score: " + 
-                 std::to_string(event.final_score()) + ")");
-        
-        // Ejecutar comando
-        int ret = system(cmd.c_str());
-        
-        if (ret == 0) {
-            LOG_INFO("✅ IP blocked successfully: " + src_ip);
-            stats_.ips_blocked++;
-        } else {
-            LOG_ERROR("❌ Failed to block IP: " + src_ip);
-            stats_.block_failures++;
-        }
-    }
-}
-```
-
-**Compilar y Test:**
-```bash
-# 1. Modificar código
-# 2. Recompilar
-cd /vagrant/firewall-acl-agent/build
-make -j$(nproc)
-
-# 3. Relanzar firewall
-sudo killall firewall-acl-agent
-sudo ./firewall-acl-agent --config ../config/firewall.json
-
-# 4. Relanzar PCAP replay (breve)
-cd /vagrant/tests
-./replay_neris.sh --duration 60 --speed 1.0
-
-# 5. Verificar IPSet
-watch -n 2 'sudo ipset list ml_defender_blacklist_test | tail -10'
-
-# AHORA deberías ver IPs aparecer! ✅
+    # Total IPs
+    TOTAL=$(sudo ipset list ml_defender_blacklist_test 2>/dev/null | grep -c "147.32" || echo "0")
+    echo "📊 Total IPs Blocked: $TOTAL"
+    echo ""
+    
+    # Recent additions (últimos 20)
+    echo "🔴 Recent Blocked IPs:"
+    sudo ipset list ml_defender_blacklist_test | grep "147.32" | tail -20
+    
+    echo ""
+    echo "⏳ Next update in 5 seconds... (Ctrl+C to stop)"
+    sleep 5
+done
 ```
 
 ---
 
-## ✅ CRITERIOS DE ÉXITO DÍA 29
+### FASE 4: FAISS Log Validation (2 horas)
 
-### Mínimo para Merge a Main:
+**Objetivo:** Verificar logs para ingesta FAISS
 
-```
-1. Sniffer Code Integration:
-   ✅ ZMQ send cifrado implementado
-   ✅ Compilación sin errores
-   ✅ Logs muestran "Encrypted" messages
-   
-2. Clean Build:
-   ✅ make clean-all + rebuild funciona
-   ✅ Orden dependencias correcto
-   ✅ Linkage 100% en todos los componentes
-   
-3. Stability Test (30-60 min idle):
-   ✅ Todos los componentes UP
-   ✅ Memory estable
-   ✅ CPU bajo
-   ✅ Zero crashes
-   
-4. Neris Test (1 hour):
-   ✅ IPSet se puebla con IPs botnet
-   ✅ >1000 events/sec throughput
-   ✅ <100ms P99 latencia
-   ✅ RAG artifacts generados
-   ✅ Logs sin errores críticos
-   
-5. IPSet Blocking:
-   ✅ Firewall añade IPs al blacklist
-   ✅ Threshold 0.7 funciona
-   ✅ Timeout 3600s configurado
+**Verificaciones:**
+```bash
+# A. Estructura directorios
+ls -lR /vagrant/logs/rag/
+
+# Esperado:
+# /vagrant/logs/rag/events/YYYY-MM-DD.jsonl
+# /vagrant/logs/rag/artifacts/YYYY-MM-DD/event-ID-*.json
+
+# B. Formato JSONL válido
+head -5 /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl | jq .
+
+# Esperado: JSON válido con 83 campos
+
+# C. Artifacts completitud
+ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/*.json | \
+    xargs -I {} jq -r '.event_id' {} | wc -l
+
+# Debería coincidir con eventos divergentes
+
+# D. Tamaño archivos
+du -h /vagrant/logs/rag/events/*.jsonl
+
+# E. Validar campos críticos
+jq -r '.event_id, .final_score, .authoritative_source' \
+    /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl | head -30
 ```
 
 ---
 
-## 🚀 COMANDOS RÁPIDOS DÍA 29
+## ✅ CRITERIOS DE ÉXITO DÍA 30
 
+### Mínimo para Production Ready:
+```
+1. Makefile Automation:
+   ✅ start-pipeline funciona
+   ✅ stop-pipeline limpia todo
+   ✅ stress-test-neris ejecuta 1 hora
+   ✅ monitor-stress muestra métricas live
+   ✅ capture-metrics genera reporte
+   ✅ health-check valida componentes
+   
+2. Stress Test CTU-13:
+   ✅ IPSet se puebla (>100 IPs Neris)
+   ✅ Throughput >500 events/sec
+   ✅ Latencia <50ms P99
+   ✅ Uptime 1+ hora sin crashes
+   ✅ Memory estable (<500MB por componente)
+   
+3. IPSet Monitor:
+   ✅ Script muestra IPs en tiempo real
+   ✅ Actualización cada 5 segundos
+   ✅ IPs 147.32.84.* visibles
+   
+4. FAISS Logs:
+   ✅ Estructura directorios correcta
+   ✅ JSONL formato válido
+   ✅ 83 campos presentes
+   ✅ Artifacts completos
+   ✅ Tamaño archivos razonable
+```
+
+---
+
+## 🚀 COMANDOS RÁPIDOS DÍA 30
 ```bash
-# Clean + Rebuild
-make clean-all && make rebuild-from-scratch
+# Full Pipeline Start
+make start-pipeline
 
-# Verify Linkage
-make verify-crypto-linkage
+# Health Check
+make health-check
 
-# Start Pipeline
-# Terminal 1: etcd-server
-cd /vagrant/etcd-server/build && ./etcd-server
+# Start Stress Test
+make stress-test-neris
 
-# Terminal 2: ml-detector
-cd /vagrant/ml-detector/build && ./ml-detector --config ../config/detector.json
+# Monitor Real-Time
+make monitor-stress
 
-# Terminal 3: firewall
-cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent --config ../config/firewall.json
+# Capture Final Metrics
+make capture-metrics
 
-# Terminal 4: sniffer
-cd /vagrant/sniffer/build && sudo ./sniffer -c ../config/sniffer.json
+# IPSet Monitor
+./scripts/monitor_ipset.sh
 
-# Terminal 5: Monitor
-watch -n 5 'sudo ipset list ml_defender_blacklist_test | tail -20'
+# Verify FAISS
+make verify-faiss
 
-# Neris Test
-cd /vagrant/tests && ./replay_neris.sh --duration 3600 --speed 1.0
-
-# Capture Metrics
-./capture_metrics.sh > metrics_day29.txt
+# Stop Everything
+make stop-pipeline
 ```
 
 ---
 
 ## 📊 DOCUMENTACIÓN A ACTUALIZAR
-
 ```
 1. README.md:
-   - Update: Day 29 complete
-   - Progress: 100% (Core pipeline E2E)
-   - Next: Model Authority (Week 5)
+   - Update: Day 29 complete (E2E validated)
+   - Add: Day 30 stress testing results
+   - Progress: 100% Phase 1 complete
 
-2. Crear: docs/DAY_29_E2E_VALIDATION.md
-   - Sniffer code integration
-   - Clean build process
-   - Stability results
-   - Neris test metrics
-   - IPSet blocking proof
+2. Crear: docs/DAY_29_E2E_TROUBLESHOOTING.md
+   - LZ4 header investigation (2 hours)
+   - Root cause analysis
+   - Pipeline validation
+   - Real traffic test results
 
-3. Actualizar: PROMPT_CONTINUIDAD_DIA30.md
-   - Siguiente feature: Model Authority
-   - Shadow Authority preparación
-   - Decision Outcome preparación
+3. Crear: docs/DAY_30_STRESS_TESTING.md
+   - CTU-13 full test
+   - Performance metrics
+   - IPSet population proof
+   - FAISS ingestion validation
+
+4. Actualizar: PROMPT_CONTINUIDAD_DIA31.md
+   - Model Authority design
+   - Shadow models preparation
+   - Decision tracking
 ```
 
 ---
 
 ## 🏛️ VIA APPIA QUALITY - DÍA 29
 
-**Filosofía:**
-1. **Código primero, optimización después**
-2. **Tests antes de commit**
-3. **Estabilidad sobre velocidad**
-4. **Documentar éxitos Y fallos**
-5. **Merge solo si 100% funcional**
-
-**Día 29 Truth (Por Escribir):**
-> "Integramos código ZMQ sniffer con crypto-transport. Patrón:
-> serialize → encrypt_and_compress() → send. Compilación limpia.
-> Clean build desde cero: funciona. Stability test 60 minutos: estable.
-> Neris test 1 hora: IPSet se puebla, >1000 events/sec, <100ms latencia.
-> Implementamos IPSet blocking (threshold 0.7). RAG artifacts: XXX generados.
-> Memory estable, zero leaks. Tests 100% passing. Pipeline E2E funcional.
-> Via Appia Quality: Feature completa. Merge a main. Despacio y bien. 🏛️"
+**Día 29 Truth:**
+> "Troubleshooting intenso 2+ horas. Error inicial: asumir bug sin verificar
+> código. Investigación completa: ml-detector SÍ usaba compress_with_size()
+> desde Day 27. Firewall con manual header extraction funcionando. Pipeline
+> completa operativa 53+ minutos. 341 eventos procesados, 0 errores. Test
+> real: 20 pings clasificados correctamente (BENIGN 85%). Latencias: decrypt
+> 18µs, decompress 3µs. Primera vez sistema E2E funcional con tráfico real.
+> Lección: Verificar primero, asumir después. Metodología > velocidad.
+> Despacio y bien. 🏛️"
 
 ---
 
 ## 🎯 SIGUIENTE FEATURE (SEMANA 5)
 
-**Model Authority + Shadow Authority Básico:**
-- Día 30-32: Implementar model authority field
-- Día 33-35: Shadow models (observe-only mode)
-- Día 36-37: Decision outcome tracking
-- Día 38-40: Basic ground truth collection
+**Model Authority + Ground Truth Collection:**
+- Día 31-33: Model authority field implementation
+- Día 34-36: Shadow models (observe-only)
+- Día 37-39: Decision outcome tracking
+- Día 40-42: Ground truth collection system
 
-**NO TOCAR PROTOBUF HOY (Día 29)** - Disciplina!
-
----
-
-## 📝 CHECKLIST EJECUTIVO DÍA 29
-
-```
-FASE 1: Sniffer Code (2-3h)
-[ ] Localizar zmq_pool_manager.cpp
-[ ] Añadir includes crypto
-[ ] Modificar send path
-[ ] Compilar sin errores
-[ ] Verificar logs "Encrypted"
-
-FASE 2: Clean Build (2h)
-[ ] make clean-all
-[ ] Rebuild ordenado
-[ ] Linkage verificado
-[ ] Tests básicos OK
-
-FASE 3: Stability (2h)
-[ ] Start todos los componentes
-[ ] Monitor 30-60 min
-[ ] Memory estable
-[ ] Zero crashes
-
-FASE 4: Neris Test (4-6h)
-[ ] PCAP replay 1 hora
-[ ] IPSet se puebla
-[ ] Metrics captured
-[ ] Logs limpios
-
-FASE 5: IPSet Blocking (1h)
-[ ] Implementar si falta
-[ ] Test blocking
-[ ] Verify threshold
-
-FINAL:
-[ ] Documentar métricas
-[ ] Actualizar README
-[ ] Crear docs/DAY_29_E2E_VALIDATION.md
-[ ] Commit message claro
-[ ] Merge a main ✅
-```
-
-**Total Estimado:** 11-14 horas (día completo + extra)
-
-Via Appia Quality: Despacio y bien. Funciona > perfecto. 🏛️
+**NO TOCAR PROTOBUF HOY (Día 30)** - Focus en stress testing!

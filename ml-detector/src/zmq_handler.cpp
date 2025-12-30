@@ -198,7 +198,7 @@ void ZMQHandler::run() {
                 // Decrypt → Decompress (pattern from firewall-acl-agent)
                 try {
                     auto decrypted = crypto_manager_->decrypt(encrypted_data);
-                    auto decompressed = crypto_manager_->decompress(decrypted);
+                    auto decompressed = crypto_manager_->decompress_with_size(decrypted);
 
                     logger_->trace("🔓 Decrypted: {} bytes → {} bytes (decompressed)",
                                   encrypted_data.size(), decompressed.size());
@@ -786,7 +786,7 @@ void ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent& event
         }
 
         // Compress → Encrypt (pattern from firewall-acl-agent)
-        auto compressed = crypto_manager_->compress(serialized);
+        auto compressed = crypto_manager_->compress_with_size(serialized);
         auto encrypted = crypto_manager_->encrypt(compressed);
 
         logger_->trace("🔒 Encrypted: {} bytes → {} bytes (compressed+encrypted)",

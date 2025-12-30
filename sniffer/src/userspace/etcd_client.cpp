@@ -180,4 +180,20 @@ std::string EtcdClient::get_encryption_status() {
     return "🔐 Encryption: ChaCha20-Poly1305 (managed by etcd-client library)";
 }
 
+std::string EtcdClient::get_encryption_seed() const {
+    if (!pImpl || !pImpl->client_) {
+        std::cerr << "❌ [Sniffer] EtcdClient not initialized" << std::endl;
+        return "";
+    }
+
+    std::string seed = pImpl->client_->get_encryption_key();
+
+    if (seed.empty()) {
+        std::cerr << "❌ [Sniffer] Failed to get encryption seed" << std::endl;
+    } else {
+        std::cout << "🔑 [Sniffer] Encryption seed obtained (" << seed.size() << " bytes)" << std::endl;
+    }
+
+    return seed;
+}
 } // namespace sniffer

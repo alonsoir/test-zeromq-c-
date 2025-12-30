@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
-// zmq_subscriber.cpp - ZMQ Subscriber Implementation (Day 26 - crypto-transport)
+// zmq_subscriber.cpp - ZMQ Subscriber Implementation (Day 29 - size-preserving LZ4)
 // firewall-acl-agent/src/api/zmq_subscriber.cpp
 //===----------------------------------------------------------------------===//
 
@@ -319,27 +319,40 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
             original_size = data.size();  // Update for decompress
         }
 
-        // STEP 2 - Decompress if enabled (using crypto-transport)
+        // STEP 2 - Decompress if enabled (DAY 29: manual 4-byte header extraction)
         if (config_.compression_enabled) {
             auto start = std::chrono::high_resolution_clock::now();
 
-            // Extract original size from first 4 bytes (little-endian)
-            if (data.size() < 4) {
-                throw std::runtime_error("Compressed data too small");
+            // Validate minimum size (4-byte header + at least 1 byte data)
+            if (data.size() < 5) {
+                throw std::runtime_error("Compressed data too small (need 4-byte header + data)");
             }
 
-            uint32_t decompressed_size;
-            std::memcpy(&decompressed_size, data.data(), sizeof(uint32_t));
+            // Extract original size from 4-byte big-endian header
+            uint32_t decompressed_size = 
+                (static_cast<uint32_t>(data[0]) << 24) |
+                (static_cast<uint32_t>(data[1]) << 16) |
+                (static_cast<uint32_t>(data[2]) << 8) |
+                static_cast<uint32_t>(data[3]);
 
-            // Remove size header and decompress
+            // Sanity check: original size should be reasonable (< 100MB)
+            if (decompressed_size > 100 * 1024 * 1024) {
+                throw std::runtime_error("Invalid decompressed size in header: " +
+                                       std::to_string(decompressed_size) + " bytes (>100MB)");
+            }
+
+            // Remove 4-byte header and prepare compressed data
             std::vector<uint8_t> compressed_only(data.begin() + 4, data.end());
+            size_t compressed_size = compressed_only.size();
+
+            // Decompress using static function with EXACT size
             data = crypto_transport::decompress(compressed_only, decompressed_size);
 
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
             std::cerr << "[ZMQSubscriber] 📦 Decompressed: " << duration.count() << " µs "
-                      << "(" << compressed_only.size() << " → " << data.size() << " bytes)" << std::endl;
+                      << "(" << compressed_size << " → " << data.size() << " bytes)" << std::endl;
         }
 
     } catch (const std::exception& e) {

@@ -16,6 +16,7 @@
 
 // 🎯 DAY 27: Crypto-Transport Integration
 #include <crypto_transport/crypto_manager.hpp>
+#include <crypto_transport/utils.hpp>  // 🎯 DAY 29: For hex_to_bytes
 
 //ml-detector/src/main.cpp
 using namespace ml_detector;
@@ -144,19 +145,36 @@ int main(int argc, char* argv[]) {
         }
 
         // ═══════════════════════════════════════════════════════════════════════
-        // 🎯 DAY 27: CRYPTO-TRANSPORT INITIALIZATION
+        // 🎯 DAY 29: CRYPTO-TRANSPORT INITIALIZATION WITH HEX→BINARY CONVERSION
         // ═══════════════════════════════════════════════════════════════════════
         std::cout << "\n🔐 [crypto] Initializing Crypto-Transport..." << std::endl;
 
-        // Get encryption seed from etcd
-        std::string encryption_seed = etcd_client->get_encryption_seed();
+        // Get encryption seed from etcd (HEX format)
+        std::string encryption_seed_hex = etcd_client->get_encryption_seed();
 
-        if (encryption_seed.empty()) {
+        if (encryption_seed_hex.empty()) {
             std::cerr << "❌ [crypto] Failed to get encryption seed from etcd" << std::endl;
             return 1;
         }
 
-        std::cout << "🔑 [crypto] Encryption seed obtained (" << encryption_seed.size() << " bytes)" << std::endl;
+        std::cout << "🔑 [ml-detector] Retrieved encryption seed (" << encryption_seed_hex.size() << " hex chars)" << std::endl;
+
+        // Convert HEX to binary (64 hex chars → 32 bytes)
+        std::string encryption_seed;
+        try {
+            auto key_bytes = crypto_transport::hex_to_bytes(encryption_seed_hex);
+            encryption_seed = std::string(key_bytes.begin(), key_bytes.end());
+        } catch (const std::exception& e) {
+            std::cerr << "❌ [crypto] Failed to convert hex seed: " << e.what() << std::endl;
+            return 1;
+        }
+
+        if (encryption_seed.size() != 32) {
+            std::cerr << "❌ [crypto] Invalid key size: " << encryption_seed.size() << " bytes (expected 32)" << std::endl;
+            return 1;
+        }
+
+        std::cout << "✅ [crypto] Encryption key converted: 32 bytes" << std::endl;
 
         // Create CryptoManager
         auto crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
