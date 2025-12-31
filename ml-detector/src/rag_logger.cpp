@@ -350,14 +350,12 @@ bool RAGLogger::write_jsonl(const nlohmann::json& record) {
     }
 
     try {
-        current_log_ << record.dump() << "\n";
+        // Escribir directo (nlohmann::json tiene operator<< optimizado)
+        current_log_ << record << "\n";
+        current_log_.flush();  // ← MANTENER, es crítico
+
         events_in_current_file_++;
-
-        // FIX: Check rotation INSIDE the critical section
-        // This ensures current_date_, current_log_, and events_in_current_file_
-        // are all accessed atomically
         check_rotation_locked();
-
         return true;
     } catch (const std::exception& e) {
         logger_->error("Failed to write JSON record: {}", e.what());

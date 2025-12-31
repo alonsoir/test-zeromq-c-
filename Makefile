@@ -49,6 +49,138 @@ test-tsan: detector-tsan
 	@echo "✅ Test complete. Check tsan_*.txt for race reports."
 
 # ============================================================================
+# AddressSanitizer Build (Memory Leak Detection) - Day 30
+# ============================================================================
+ASAN_CXXFLAGS = -fsanitize=address -g -O1 -fno-omit-frame-pointer
+ASAN_LDFLAGS = -fsanitize=address
+
+.PHONY: detector-asan
+detector-asan: proto etcd-client-build
+	@echo "Building ml-detector with AddressSanitizer..."
+	@echo "   Dependencies: proto + etcd-client"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build-asan/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build-asan/proto/ && \
+		cd /vagrant/ml-detector/build-asan && \
+		cmake -DCMAKE_CXX_FLAGS='-fsanitize=address -g -O1 -fno-omit-frame-pointer' \
+		      -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address' \
+		      -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
+		make -j4"
+	@echo "ml-detector (ASAN) built successfully"
+	@echo "   Binary: /vagrant/ml-detector/build-asan/ml-detector"
+
+.PHONY: run-detector-asan
+run-detector-asan: detector-asan
+	@echo "🔬 Running ml-detector with ASAN (leak detection enabled)..."
+	@echo "⚠️  Requires: etcd-server + sniffer running"
+	@echo ""
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		cd /vagrant/ml-detector/build-asan && \
+		ASAN_OPTIONS='log_path=/tmp/asan-logs/asan_ml_detector.log:detect_leaks=1:leak_check_at_exit=1' \
+		./ml-detector --config ../config/detector.json 2>&1 | tee /tmp/asan-logs/ml_detector_asan_output.txt"
+
+.PHONY: monitor-asan-memory
+monitor-asan-memory:
+	@echo "📊 Monitoring ml-detector memory (ASAN build)..."
+	@echo "   Sampling every 5 minutes for 1 hour (12 samples)"
+	@echo "   Press Ctrl+C to stop early"
+	@echo ""
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		for i in \$$(seq 1 12); do \
+			if pgrep -f 'ml-detector.*config/detector.json' > /dev/null; then \
+				MEM=\$$(ps -p \$$(pgrep -f 'ml-detector.*config/detector.json') -o rss= 2>/dev/null | awk '{print \$$1/1024}'); \
+				echo \"\$$(date +%H:%M:%S) - Memory: \$${MEM} MB\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+			else \
+				echo \"\$$(date +%H:%M:%S) - ml-detector not running\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+			fi; \
+			sleep 300; \
+		done"
+
+.PHONY: analyze-asan-results
+analyze-asan-results:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔍 ASAN LEAK REPORT ANALYSIS"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "=== LEAK SUMMARY ==="
+	@vagrant ssh -c "if [ -f /tmp/asan-logs/ml_detector_asan_output.txt ]; then \
+		grep -A 30 'LeakSanitizer' /tmp/asan-logs/ml_detector_asan_output.txt 2>/dev/null || echo 'No LeakSanitizer report found (process may still be running)'; \
+	else \
+		echo '❌ No ASAN output file found at /tmp/asan-logs/ml_detector_asan_output.txt'; \
+	fi"
+	@echo ""
+	@echo "=== DIRECT LEAKS ==="
+	@vagrant ssh -c "if [ -f /tmp/asan-logs/ml_detector_asan_output.txt ]; then \
+		grep -A 30 'Direct leak' /tmp/asan-logs/ml_detector_asan_output.txt 2>/dev/null || echo 'No direct leaks found ✅'; \
+	fi"
+	@echo ""
+	@echo "=== MEMORY GROWTH TRACKING ==="
+	@vagrant ssh -c "if [ -f /tmp/asan-logs/asan_memory_track.log ]; then \
+		cat /tmp/asan-logs/asan_memory_track.log; \
+		echo ''; \
+		echo 'Memory analysis:'; \
+		FIRST=\$$(head -1 /tmp/asan-logs/asan_memory_track.log | awk '{print \$$4}'); \
+		LAST=\$$(tail -1 /tmp/asan-logs/asan_memory_track.log | awk '{print \$$4}'); \
+		if [ -n \"\$$FIRST\" ] && [ -n \"\$$LAST\" ]; then \
+			GROWTH=\$$(echo \"\$$LAST - \$$FIRST\" | bc 2>/dev/null); \
+			echo \"  Start: \$$FIRST MB\"; \
+			echo \"  End: \$$LAST MB\"; \
+			echo \"  Growth: \$$GROWTH MB\"; \
+		fi; \
+	else \
+		echo '⚠️  No memory tracking data yet - run: make monitor-asan-memory'; \
+	fi"
+	@echo ""
+	@echo "=== ASAN LOG FILES ==="
+	@vagrant ssh -c "ls -lh /tmp/asan-logs/asan_ml_detector.log* 2>/dev/null || echo 'No ASAN log files generated yet'"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+
+.PHONY: clean-asan
+clean-asan:
+	@echo "🧹 Cleaning ASAN build and logs..."
+	@vagrant ssh -c "rm -rf /vagrant/ml-detector/build-asan"
+	@vagrant ssh -c "rm -rf /tmp/asan-logs"
+	@echo "✅ ASAN artifacts cleaned"
+
+# Quick ASAN test (30 min run)
+.PHONY: test-asan-quick
+test-asan-quick: detector-asan
+	@echo "🔬 Running quick ASAN test (30 minutes)..."
+	@echo ""
+	@echo "Step 1: Ensure other components are running..."
+	@vagrant ssh -c "pgrep -f etcd-server > /dev/null || (echo '❌ etcd-server not running. Start with: make etcd-server-start' && exit 1)"
+	@vagrant ssh -c "pgrep -f sniffer > /dev/null || (echo '⚠️  Warning: sniffer not running' && sleep 2)"
+	@echo ""
+	@echo "Step 2: Starting ml-detector with ASAN (background)..."
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		cd /vagrant/ml-detector/build-asan && \
+		ASAN_OPTIONS='log_path=/tmp/asan-logs/asan_ml_detector.log:detect_leaks=1:leak_check_at_exit=1' \
+		nohup ./ml-detector --config ../config/detector.json > /tmp/asan-logs/ml_detector_asan_output.txt 2>&1 &"
+	@sleep 3
+	@vagrant ssh -c "pgrep -f 'ml-detector.*detector.json' && echo '✅ ml-detector started' || echo '❌ Failed to start'"
+	@echo ""
+	@echo "Step 3: Monitoring memory for 30 minutes (6 samples, 5 min each)..."
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		for i in 1 2 3 4 5 6; do \
+			if pgrep -f 'ml-detector.*detector.json' > /dev/null; then \
+				MEM=\$$(ps -p \$$(pgrep -f 'ml-detector.*detector.json') -o rss= 2>/dev/null | awk '{print \$$1/1024}'); \
+				echo \"\$$(date +%H:%M:%S) - Sample \$$i/6 - Memory: \$${MEM} MB\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+			else \
+				echo \"\$$(date +%H:%M:%S) - Sample \$$i/6 - ml-detector crashed!\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+				break; \
+			fi; \
+			sleep 300; \
+		done"
+	@echo ""
+	@echo "Step 4: Stopping ml-detector..."
+	@vagrant ssh -c "pkill -f 'ml-detector.*detector.json' && sleep 2"
+	@echo ""
+	@echo "Step 5: Analyzing results..."
+	@$(MAKE) analyze-asan-results
+	@echo ""
+	@echo "✅ Quick ASAN test complete"
+
+# ============================================================================
 # ML Defender Pipeline - Host Makefile
 # Run from macOS - Commands execute in VM via vagrant ssh -c
 # ============================================================================
@@ -120,6 +252,8 @@ help:
 	@echo "  make diagnose-bpf    - 🔧 Full BPF diagnostics"
 	@echo "  make clean           - Clean build artifacts"
 	@echo ""
+	@echo "Memory Debugging:"
+	@echo "  make detector-asan       - Build ml-detector with AddressSanitizer"
 
 # ============================================================================
 # VM Management
