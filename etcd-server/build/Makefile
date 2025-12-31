@@ -67,8 +67,8 @@ CMAKE_BINARY_DIR = /vagrant/etcd-server/build
 
 # Special rule for the target edit_cache
 edit_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
+	/usr/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -152,6 +152,30 @@ src/component_registry.s: src/component_registry.cpp.s
 src/component_registry.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/component_registry.cpp.s
 .PHONY : src/component_registry.cpp.s
+
+src/compression_lz4.o: src/compression_lz4.cpp.o
+.PHONY : src/compression_lz4.o
+
+# target to build an object file
+src/compression_lz4.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/compression_lz4.cpp.o
+.PHONY : src/compression_lz4.cpp.o
+
+src/compression_lz4.i: src/compression_lz4.cpp.i
+.PHONY : src/compression_lz4.i
+
+# target to preprocess a source file
+src/compression_lz4.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/compression_lz4.cpp.i
+.PHONY : src/compression_lz4.cpp.i
+
+src/compression_lz4.s: src/compression_lz4.cpp.s
+.PHONY : src/compression_lz4.s
+
+# target to generate assembly for a file
+src/compression_lz4.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/compression_lz4.cpp.s
+.PHONY : src/compression_lz4.cpp.s
 
 src/crypto_manager.o: src/crypto_manager.cpp.o
 .PHONY : src/crypto_manager.o
@@ -237,6 +261,9 @@ help:
 	@echo "... src/component_registry.o"
 	@echo "... src/component_registry.i"
 	@echo "... src/component_registry.s"
+	@echo "... src/compression_lz4.o"
+	@echo "... src/compression_lz4.i"
+	@echo "... src/compression_lz4.s"
 	@echo "... src/crypto_manager.o"
 	@echo "... src/crypto_manager.i"
 	@echo "... src/crypto_manager.s"

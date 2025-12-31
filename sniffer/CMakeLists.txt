@@ -55,6 +55,47 @@ pkg_check_modules(SNAPPY libsnappy)
 find_library(CURL_LIBRARY curl)
 find_library(NUMA_LIBRARY numa)
 
+# etcd-client library (for encrypted config management)
+message(STATUS "🔍 Buscando etcd-client library...")
+set(ETCD_CLIENT_LIB /vagrant/etcd-client/build/libetcd_client.so)
+set(ETCD_CLIENT_INCLUDE_DIR /vagrant/etcd-client/include)
+
+if(EXISTS ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Found etcd-client library: ${ETCD_CLIENT_LIB}")
+else()
+    message(FATAL_ERROR "❌ etcd-client library not found at ${ETCD_CLIENT_LIB}")
+endif()
+
+# ============================================================================
+# CRYPTO-TRANSPORT ECOSYSTEM - Día 28
+# ============================================================================
+# crypto-transport library (unified crypto ecosystem)
+message(STATUS "🔍 Buscando crypto-transport library...")
+find_library(CRYPTO_TRANSPORT_LIB
+        NAMES crypto_transport
+        PATHS /usr/local/lib /usr/lib
+)
+find_path(CRYPTO_TRANSPORT_INCLUDE
+        NAMES crypto_transport/crypto_manager.hpp
+        PATHS /usr/local/include /usr/include
+)
+
+if(CRYPTO_TRANSPORT_LIB)
+    message(STATUS "✅ Found crypto-transport library: ${CRYPTO_TRANSPORT_LIB}")
+    message(STATUS "✅ Found crypto-transport includes: ${CRYPTO_TRANSPORT_INCLUDE}")
+else()
+    message(FATAL_ERROR "❌ crypto-transport library not found - install from /vagrant/crypto-transport")
+endif()
+
+# libsodium (base crypto library)
+find_library(SODIUM_LIB sodium REQUIRED)
+if(SODIUM_LIB)
+    message(STATUS "✅ Found libsodium: ${SODIUM_LIB}")
+else()
+    message(FATAL_ERROR "❌ libsodium not found - install: sudo apt install libsodium-dev")
+endif()
+# ============================================================================
+
 # ============================================================================
 # CONFIGURATION VALIDATION
 # ============================================================================
@@ -91,6 +132,16 @@ include_directories(${ZSTD_INCLUDE_DIRS})
 
 if(SNAPPY_FOUND)
     include_directories(${SNAPPY_INCLUDE_DIRS})
+endif()
+
+# etcd-client includes
+if(ETCD_CLIENT_LIB)
+    include_directories(${ETCD_CLIENT_INCLUDE_DIR})
+endif()
+
+# crypto-transport includes - Día 28
+if(CRYPTO_TRANSPORT_LIB)
+    include_directories(${CRYPTO_TRANSPORT_INCLUDE})
 endif()
 
 # ============================================================================
@@ -234,6 +285,16 @@ endif()
 
 if(NUMA_LIBRARY)
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${NUMA_LIBRARY})
+endif()
+
+if(ETCD_CLIENT_LIB)
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${ETCD_CLIENT_LIB})
+endif()
+
+# crypto-transport + libsodium - Día 28
+if(CRYPTO_TRANSPORT_LIB)
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${CRYPTO_TRANSPORT_LIB})
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${SODIUM_LIB})
 endif()
 
 # Link all libraries
@@ -422,6 +483,18 @@ message(STATUS "   ✅ eBPF/XDP high-performance packet capture")
 message(STATUS "   ✅ Mandatory LZ4/Zstd compression")
 message(STATUS "   ✅ Protobuf serialization")
 message(STATUS "   ✅ ZeroMQ communication")
+if(ETCD_CLIENT_LIB)
+    message(STATUS "   ✅ etcd-client library: enabled")
+else()
+    message(STATUS "   ⚪ etcd-client library: disabled")
+endif()
+# crypto-transport status - Día 28
+if(CRYPTO_TRANSPORT_LIB)
+    message(STATUS "   ✅ crypto-transport library: enabled")
+    message(STATUS "   ✅ libsodium: enabled")
+else()
+    message(STATUS "   ⚪ crypto-transport library: disabled")
+endif()
 message(STATUS "   🔐 Encryption ready (via etcd tokens)")
 message(STATUS "========================================")
 message(STATUS "")

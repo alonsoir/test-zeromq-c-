@@ -1,0 +1,26 @@
+# Build artifacts
+build/
+*.so
+*.so.*
+*.a
+*.o
+
+# CMake cache
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Test executables
+tests/test_compression
+tests/test_encryption
+tests/test_pipeline
+
+# Editor artifacts
+.vscode/
+.idea/
+*.swp
+*~
+
+# Backup files
+*.bak

@@ -1,1049 +1,865 @@
-# 🚀 ML Defender - Day 17 Continuity Prompt
-**Date:** December 17, 2025  
-**Status:** Starting Day 17 - etcd-client Unified Library  
-**Team:** Alonso + Claude + DeepSeek + Grok4 + Qwen
+# PROMPT DE CONTINUIDAD - DÍA 31 (01 Enero 2026)
+
+## 📋 CONTEXTO DÍA 30 (31 Diciembre 2025)
+
+### ✅ COMPLETADO - MEMORY LEAK INVESTIGATION & RESOLUTION
+
+**Gran Hito Alcanzado:**
+- ✅ Memory leak investigado sistemáticamente (5+ horas)
+- ✅ 70% reducción lograda (102 → 31 MB/h)
+- ✅ Configuración óptima identificada (artifacts + flush)
+- ✅ Cron restart configurado (cada 72h)
+- ✅ Sistema production-ready para 24×7×365
+- ✅ Documentación completa generada
+
+**Arquitectura Día 30 (Production-Ready):**
+```
+ML-DETECTOR + RAG LOGGER
+  ↓ 83-field JSONL events
+  ↓ Protobuf + JSON artifacts
+  ↓ Memory: 31 MB/h (acceptable)
+  ↓ Restart: Every 72h (cron)
+  ✅ Logs ready for FAISS ingestion
+```
+
+**Investigación Científica (Via Appia Quality):**
+```
+METODOLOGÍA:
+1. AddressSanitizer analysis (ASAN)
+2. Configuration matrix testing (5 configs)
+3. Systematic measurement (90+ min tests)
+4. Root cause analysis (stream buffering)
+5. Fix validation (70% improvement)
+
+CONFIGURACIONES TESTEADAS:
+┌─────────────────────────────────────────────┐
+│ Config              Leak/h   Leak/event     │
+├─────────────────────────────────────────────┤
+│ PRE-FIX (baseline)  102 MB   246 KB    ❌   │
+│ POST-FIX (optimal)   31 MB    63 KB    ✅   │
+│ SIN-ARTIFACTS        50 MB   118 KB    ⚠️    │
+│ SHRINK-FIX           53 MB    99 KB    ⚠️    │
+│ QUICKFIX             53 MB    97 KB    ⚠️    │
+└─────────────────────────────────────────────┘
+
+ROOT CAUSE:
+  std::ofstream buffer never flushed
+  → Accumulation of 1-2KB JSON strings
+  → 102 MB/h without flush()
+  
+THE FIX:
+  current_log_.flush() after each write
+  → 31 MB/h with flush() ✅
+  → Artifacts enabled (helps fragmentation)
+  → Cron restart every 72h
+  
+SURPRISING DISCOVERY:
+  WITH artifacts: 31 MB/h ✅
+  WITHOUT artifacts: 50 MB/h ⚠️
+  Artifacts help by distributing allocations!
+```
+
+**Métricas Día 30 (Final Configuration):**
+```
+┌─────────────────────────────────────────────┐
+│  CONFIGURATION: POST-FIX (OPTIMAL)          │
+├─────────────────────────────────────────────┤
+│  Memory leak:         31 MB/hour            │
+│  Per-event leak:      63 KB/event           │
+│  Test duration:       90 minutes            │
+│  Events processed:    747 events            │
+│  Improvement:         70% vs baseline       │
+│  Production ready:    ✅ YES                │
+│  Restart schedule:    Every 72h (cron)      │
+│  Max memory growth:   2.2 GB/72h            │
+│  VM allocation:       8 GB (safe margin)    │
+└─────────────────────────────────────────────┘
+
+ARTIFACTS STATUS:
+  Protobuf: ✅ Enabled (optimal)
+  JSON:     ✅ Enabled (optimal)
+  Location: /vagrant/logs/rag/artifacts/
+  Format:   event_ID.pb + event_ID.json
+  
+CRON CONFIGURATION:
+  Entry: 0 3 */3 * * /vagrant/scripts/restart_ml_defender.sh
+  User: vagrant
+  Status: ✅ Configured in Vagrantfile
+  Logs: /vagrant/logs/lab/restart_ml_defender.log
+```
 
 ---
 
-## 📊 Current State (End of Day 16)
+## 🎯 ESTADO ACTUAL (DÍA 31 INICIO)
 
-### **✅ Day 16 Achievement: Race Condition Fixed**
+### ✅ Phase 1 Status (100% COMPLETO)
 
-**RAGLogger Production-Ready:**
-- ✅ Race conditions eliminated (current_date_, current_log_, counters)
-- ✅ Release optimization flags working (-O3 -march=native)
-- ✅ 20+ minutes continuous uptime validated
-- ✅ 1,152 artifacts generated, 575 JSONL lines
-- ✅ Zero crashes, zero memory leaks
-- ✅ Full lab test passed (sniffer + ml-detector + firewall)
+**Funcionalidades Validadas:**
+- ✅ 4 componentes distribuidos operativos
+- ✅ ChaCha20-Poly1305 + LZ4 end-to-end
+- ✅ ML pipeline completa (Level 1-3)
+- ✅ Dual-score architecture (Fast + ML)
+- ✅ Etcd service discovery + heartbeats
+- ✅ RAG logger 83-field events
+- ✅ Memory leak resolved (70% reduction)
+- ✅ Production-ready (24×7×365)
+- ✅ Real traffic validated
+- ✅ Sub-millisecond crypto latencies
 
-**Current System Status:**
+**Logs Disponibles para FAISS:**
+```bash
+/vagrant/logs/rag/events/YYYY-MM-DD.jsonl
+/vagrant/logs/rag/artifacts/YYYY-MM-DD/event_*.pb
+/vagrant/logs/rag/artifacts/YYYY-MM-DD/event_*.json
+
+# Verificar
+wc -l /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl
+ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l
 ```
-Phase 1: ✅ COMPLETE (100%)
-  - 4 embedded C++20 detectors (<1.06μs)
-  - eBPF/XDP dual-NIC capture
-  - Dual-Score Architecture
-  - RAGLogger 83-field logging
-  - Production-ready stability
-
-Phase 2A: 🔄 IN PROGRESS (15%)
-  - ✅ Epic 2A.1: RAGLogger stability (COMPLETED Day 16)
-  - 🔥 Epic 2A.2: FAISS integration (DEFERRED - after etcd)
-  - 🎯 Epic 2A.3: etcd-client library (STARTING Day 17)
-```
-
-**Lab Currently Running:**
-- Started: Night of Dec 16
-- Goal: Generate large JSONL file overnight
-- Components: sniffer + ml-detector + firewall
-- Expected: 10K+ artifacts by morning
 
 ---
 
-## 🎯 Day 17 Objective: etcd-client Unified Library
+## 🚀 PLAN DÍA 31 - FAISS INGESTION IMPLEMENTATION (Week 5 Start)
 
-### **Goal**
-Extract etcd-client code from RAG component and create a shared library that ALL components can use for distributed configuration.
+### 📚 CONTEXTO PREVIO - FAISS INGESTION DESIGN
 
-### **Why This Matters**
-Currently, only RAG has etcd integration. We need:
-- ✅ **Sniffer** to discover itself and register config
-- ✅ **ml-detector** to discover itself and register thresholds
-- ✅ **firewall** to discover itself and register ACL rules
-- ✅ **RAG** to continue using etcd (refactored to library)
+**Documentos de Referencia:**
+1. `docs/FAISS_INGESTION_DESIGN.md` - Arquitectura completa
+2. Sesión 2025-12-30 - Discusión multi-embedder coherente
+3. Memory leak transcript (Day 30)
 
-All components should:
-1. Auto-discover themselves to etcd-server
-2. Upload their JSON config file
-3. Use encryption + compression transparently
-4. Watch for config changes (Phase 2A.4 - Watcher)
+**Decisiones Arquitectónicas (Ya Tomadas):**
+```
+✅ Multi-embedder coherente: Mismo chunk → 3 índices
+✅ Best-effort commit: Resilience > atomicidad estricta
+✅ C++20 implementation: Coherencia con stack
+✅ ONNX Runtime: Chronos + SBERT + Custom models
+✅ Chunk = día completo: NUNCA truncar time series
+✅ 3 embedders fundacionales:
+   1. Chronos (time series, 512-d)
+   2. SBERT (semantic, 384-d)
+   3. Custom DNN (attack patterns, 256-d)
+```
+
+**Arquitectura FAISS (Diseñada):**
+```
+ChunkCoordinator (orquestador)
+    ↓
+    ├─ TimeSeriesEmbedder (Chronos ONNX)
+    ├─ SemanticEmbedder (SBERT ONNX)
+    └─ AttackEmbedder (Custom ONNX)
+    ↓
+IndexManager (3 FAISS indices)
+    ↓
+HealthMonitor + IndexTracker
+```
 
 ---
 
-## 📂 Current etcd-client Implementation
+### FASE 1: ONNX Model Export (Día 31 - 2-3 horas)
 
-### **Location of Existing Code**
-```
-/vagrant/rag/
-├── src/
-│   ├── etcd_client.cpp          ← REVIEW THIS
-│   ├── etcd_client.hpp          ← AND THIS
-│   └── rag_command_manager.cpp  ← Uses etcd_client
-├── include/
-│   └── etcd_client.hpp          ← Header
-└── CMakeLists.txt               ← Build config
+**Objetivo:** Exportar los 3 modelos a ONNX para C++ inference
+
+#### Step 1: Setup Python Environment
+```bash
+cd /vagrant/ml-training
+python3 -m venv venv-onnx
+source venv-onnx/bin/activate
+pip install torch onnx onnxruntime sentence-transformers chronos-forecasting
 ```
 
-### **Known Features (From Previous Discussions)**
-- ✅ Encryption (config values encrypted before storage)
-- ✅ Compression (config values compressed)
-- ✅ Validation (schema validation for configs)
-- ✅ Key-value storage interface
-- ⚠️ **VERIFY:** Is encryption in etcd_client or elsewhere?
-- ⚠️ **VERIFY:** Is compression in etcd_client or elsewhere?
+#### Step 2: Export Chronos (Time Series Embedder)
+```python
+# File: ml-training/export_chronos_onnx.py
+import torch
+import onnx
+from chronos import ChronosPipeline
 
-### **Suspected API (To Confirm)**
-```cpp
-class EtcdClient {
-public:
-    void set(key, value, encrypt=true, compress=true);
-    std::string get(key);
-    void watch(key, callback);
-    void validate_schema(key, schema);
+# Load Chronos model
+pipeline = ChronosPipeline.from_pretrained(
+    "amazon/chronos-t5-tiny",
+    device_map="cpu",
+    torch_dtype=torch.float32,
+)
+
+# Create dummy input (24-hour time series)
+dummy_input = torch.randn(1, 1440, 1)  # 1440 minutes in 24h
+
+# Export to ONNX
+torch.onnx.export(
+    pipeline.model,
+    dummy_input,
+    "models/chronos_embedder.onnx",
+    input_names=['time_series'],
+    output_names=['embeddings'],
+    dynamic_axes={
+        'time_series': {0: 'batch_size', 1: 'sequence_length'},
+        'embeddings': {0: 'batch_size'}
+    },
+    opset_version=14
+)
+
+print("✅ Chronos exported: models/chronos_embedder.onnx")
+```
+
+#### Step 3: Export SBERT (Semantic Embedder)
+```python
+# File: ml-training/export_sbert_onnx.py
+import torch
+import onnx
+from sentence_transformers import SentenceTransformer
+
+# Load SBERT model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Create dummy input (tokenized text)
+dummy_input = {
+    'input_ids': torch.randint(0, 30522, (1, 128)),
+    'attention_mask': torch.ones(1, 128, dtype=torch.long)
+}
+
+# Export to ONNX
+torch.onnx.export(
+    model,
+    (dummy_input['input_ids'], dummy_input['attention_mask']),
+    "models/sbert_embedder.onnx",
+    input_names=['input_ids', 'attention_mask'],
+    output_names=['sentence_embedding'],
+    dynamic_axes={
+        'input_ids': {0: 'batch_size', 1: 'sequence'},
+        'attention_mask': {0: 'batch_size', 1: 'sequence'},
+        'sentence_embedding': {0: 'batch_size'}
+    },
+    opset_version=14
+)
+
+print("✅ SBERT exported: models/sbert_embedder.onnx")
+```
+
+#### Step 4: Create Custom Attack Embedder
+```python
+# File: ml-training/train_and_export_attack_embedder.py
+import torch
+import torch.nn as nn
+
+class AttackEmbedder(nn.Module):
+    def __init__(self, input_dim=83, hidden_dim=512, embed_dim=256):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim, embed_dim),
+            nn.Tanh()  # Normalize to [-1, 1]
+        )
     
-    // Component discovery (may need to add)
-    void register_component(name, config_path);
-    void heartbeat(component_name);
-};
+    def forward(self, x):
+        return self.encoder(x)
+
+# Train on RAG logs (simplified)
+model = AttackEmbedder()
+# TODO: Training loop with RAG JSONL data
+
+# Export to ONNX
+dummy_input = torch.randn(1, 83)  # 83 fields from RAG logs
+
+torch.onnx.export(
+    model,
+    dummy_input,
+    "models/attack_embedder.onnx",
+    input_names=['features'],
+    output_names=['attack_embedding'],
+    dynamic_axes={
+        'features': {0: 'batch_size'},
+        'attack_embedding': {0: 'batch_size'}
+    },
+    opset_version=14
+)
+
+print("✅ Attack embedder exported: models/attack_embedder.onnx")
+```
+
+#### Step 5: Verify ONNX Models
+```bash
+# Install ONNX tools
+pip install onnx onnxruntime
+
+# Verify models
+python -c "import onnx; model = onnx.load('models/chronos_embedder.onnx'); onnx.checker.check_model(model); print('✅ Chronos OK')"
+python -c "import onnx; model = onnx.load('models/sbert_embedder.onnx'); onnx.checker.check_model(model); print('✅ SBERT OK')"
+python -c "import onnx; model = onnx.load('models/attack_embedder.onnx'); onnx.checker.check_model(model); print('✅ Attack OK')"
+
+# Test inference with ONNX Runtime
+python -c "
+import onnxruntime as ort
+import numpy as np
+
+# Test Chronos
+session = ort.InferenceSession('models/chronos_embedder.onnx')
+input_data = np.random.randn(1, 1440, 1).astype(np.float32)
+output = session.run(None, {'time_series': input_data})
+print(f'✅ Chronos output shape: {output[0].shape}')
+
+# Test SBERT
+session = ort.InferenceSession('models/sbert_embedder.onnx')
+input_ids = np.random.randint(0, 30522, (1, 128)).astype(np.int64)
+attention_mask = np.ones((1, 128), dtype=np.int64)
+output = session.run(None, {'input_ids': input_ids, 'attention_mask': attention_mask})
+print(f'✅ SBERT output shape: {output[0].shape}')
+
+# Test Attack
+session = ort.InferenceSession('models/attack_embedder.onnx')
+features = np.random.randn(1, 83).astype(np.float32)
+output = session.run(None, {'features': features})
+print(f'✅ Attack output shape: {output[0].shape}')
+"
 ```
 
 ---
 
-## 🔐 CRITICAL TECHNICAL DETAILS (From Alonso - Dec 16)
+### FASE 2: FAISS Integration (Día 31 - 2 horas)
 
-### **Encryption Implementation**
-- ✅ **Algorithm:** SHA256 (NOT ChaCha20 - had C++ issues)
-- ✅ **Key Management:** etcd-server GENERATES and PROVIDES the key
-- ✅ **Key Distribution:** Single shared key for ALL components (avoid "galimatías")
-- ✅ **Key Rotation (Phase 2B - Nice to Have):**
-   - Time-windowed key rotation
-   - Buffer/set of keys for smooth transition
-   - Allow components to operate with old key while receiving new one
-   - Avoid downtime during key changes
+**Objetivo:** Integrar FAISS library en C++20
 
-### **Compression Implementation**
-- ⚠️ **Algorithm:** TBD - review RAG code (zlib? lz4? snappy?)
-- ✅ **Configurable:** Via JSON config (all compression settings)
+#### Step 1: Install FAISS
+```bash
+# Install FAISS dependencies
+sudo apt-get update
+sudo apt-get install -y libblas-dev liblapack-dev
 
-### **CRITICAL OPERATION ORDER**
-```
-SENDING:
-  Data → Compress → Encrypt → Send
+# Build FAISS from source (CPU version)
+cd /tmp
+git clone https://github.com/facebookresearch/faiss.git
+cd faiss
+mkdir build && cd build
+cmake .. -DFAISS_ENABLE_GPU=OFF \
+         -DFAISS_ENABLE_PYTHON=OFF \
+         -DBUILD_TESTING=OFF \
+         -DCMAKE_BUILD_TYPE=Release \
+         -DCMAKE_INSTALL_PREFIX=/usr/local
+make -j4
+sudo make install
+sudo ldconfig
 
-RECEIVING:
-  Receive → Decrypt → Decompress → Read
-
-⚠️ WARNING: Encryption INCREASES payload size significantly!
-           Always compress BEFORE encrypting.
-```
-
-### **etcd-server Configuration Versioning**
-```
-For each component, etcd-server maintains:
-
-1. MASTER COPY (Immutable)
-   - Original config uploaded by component at registration
-   - NEVER modified
-   - Used for rollback
-
-2. ACTIVE COPY (Mutable)
-   - Current working config
-   - All commits go here
-   - RAG can modify this
-   - Watcher pulls from this
-
-3. Rollback Strategy:
-   - On error → revert to MASTER
-   - On validation failure → revert to MASTER
-   - Manual rollback command available
+# Verify installation
+pkg-config --modversion faiss
 ```
 
-### **etcd-server High Availability**
-- ✅ **Domestic Mode:** 3-node quorum (even for home deployments)
-- ✅ **Resource Usage:** ~1MB per node (very lightweight)
-- ✅ **Rationale:** Process is so light we can afford HA even domestically
-- ✅ **Benefit:** Automatic failover, no single point of failure
-
-### **Misconfiguration Detection**
-etcd-server MUST detect and alert via RAG when:
-- ❌ Component sends encrypted data with wrong key
-- ❌ Component sends compressed data with wrong algorithm
-- ❌ Payload size anomalies (encryption/compression mismatch)
-- ❌ Decode failures (bad key, bad compression)
-
-**Alert Mechanism:**
-- Log to RAG system
-- Notify operators
-- Prevent mass deployment with bad config
-- Allow etcd-server to push corrected config
-
-### **Thread Safety Requirements**
-- ✅ All etcd-client operations must be thread-safe
-- ✅ Encryption/decryption thread-safe
-- ✅ Compression/decompression thread-safe
-- ✅ Config updates atomic (no partial writes)
-
----
-
-## 🔍 Day 17 Tasks - Detailed Breakdown
-
-### **Task 1: Code Review & Analysis (Morning - 2 hours)**
-
-**Goal:** Understand current implementation completely
-
-**KNOWN FROM ALONSO:**
-- Encryption: SHA256 (verify implementation details)
-- Key source: etcd-server generates and distributes
-- Compression: Unknown algorithm - FIND IN CODE
-- Order: Compress → Encrypt → Send (VERIFY THIS)
-- Configurable: Everything via JSON
-
-**Steps:**
-1. **Review etcd_client.cpp/hpp in RAG**
-   ```bash
-   cd /vagrant/rag
-   cat src/etcd_client.cpp | less
-   cat include/etcd_client.hpp | less
-   ```
-
-2. **Identify Key Functionality:**
-   - [ ] Connection to etcd-server (host:port)
-   - [ ] Key-value get/set operations
-   - [x] Encryption mechanism: SHA256 (confirm in code)
-   - [ ] Compression mechanism: FIND ALGORITHM (zlib? lz4? snappy?)
-   - [ ] Verify operation order: Compress → Encrypt → Send
-   - [ ] Key distribution: How does component receive key from etcd-server?
-   - [ ] Error handling
-   - [ ] Thread safety (mutexes?)
-
-3. **Check Dependencies:**
-   ```bash
-   grep -r "etcd" /vagrant/rag/CMakeLists.txt
-   grep -r "crypto\|ssl\|SHA256" /vagrant/rag/CMakeLists.txt
-   grep -r "compress\|zlib\|lz4\|snappy" /vagrant/rag/CMakeLists.txt
-   ```
-
-4. **Trace Usage in RAG:**
-   ```bash
-   grep -r "EtcdClient\|etcd_client" /vagrant/rag/src/
-   grep -r "encrypt\|decrypt" /vagrant/rag/src/
-   grep -r "compress\|decompress" /vagrant/rag/src/
-   ```
-   - How does RAG initialize it?
-   - How does RAG receive encryption key from etcd-server?
-   - What configs does RAG store?
-   - How often does RAG read/write?
-
-5. **Document Findings:**
-   - Create `/vagrant/docs/ETCD_CLIENT_ANALYSIS.md`
-   - Document SHA256 encryption details
-   - Document compression algorithm found
-   - Document key distribution mechanism
-   - Document operation order verification
-   - Note any RAG-specific code that needs abstraction
-
-**Deliverables:**
-- ✅ Complete understanding of current code
-- ✅ Compression algorithm identified
-- ✅ Key distribution mechanism documented
-- ✅ Operation order verified (Compress → Encrypt → Send)
-- ✅ Thread safety status documented
-- ✅ Dependencies identified
-- ✅ Documentation of encryption/compression
-
----
-
-### **Task 2: Library Design (Afternoon - 2 hours)**
-
-**Goal:** Design clean, reusable API for all components
-
-**Architecture:**
-```
-etcd-client (shared library)
-├── Core Functions:
-│   ├── connect(host, port)
-│   ├── set(key, value, encrypt, compress)
-│   ├── get(key, decrypt, decompress)
-│   ├── delete(key)
-│   ├── watch(key, callback)
-│   └── list(prefix)
-│
-├── Component Discovery:
-│   ├── register_component(name, config_json)
-│   ├── heartbeat(component_name)
-│   ├── get_component_status(name)
-│   └── list_components()
-│
-├── Utilities:
-│   ├── encrypt(data, key)
-│   ├── decrypt(data, key)
-│   ├── compress(data)
-│   ├── decompress(data)
-│   └── validate_json(json, schema)
-│
-└── Thread Safety:
-    ├── std::mutex for all operations
-    └── Connection pool (optional)
-```
-
-**Design Decisions (Based on Alonso's Architecture):**
-
-1. **Encryption Strategy (CONFIRMED):**
-   - [x] Algorithm: SHA256 (confirmed - ChaCha20 had C++ issues)
-   - [x] Key management: etcd-server GENERATES and DISTRIBUTES key
-   - [x] Key scope: SINGLE shared key for ALL components
-   - [x] Default: encrypt=true (configurable via JSON)
-   - [ ] Implementation details to verify in RAG code
-   - [ ] Key distribution protocol to design
-
-2. **Compression Strategy (TO IDENTIFY):**
-   - [ ] Find algorithm in RAG code (zlib? lz4? snappy?)
-   - [x] Order: MUST compress BEFORE encrypting
-   - [x] Configurable via JSON
-   - [ ] Threshold: Compress if size > X bytes? (TBD from code review)
-   - [x] Default: compress=true (configurable via JSON)
-
-3. **CRITICAL Operation Order (CONFIRMED):**
-   ```
-   WRITE: Data → Compress → Encrypt → etcd.set()
-   READ:  etcd.get() → Decrypt → Decompress → Data
-   
-   ⚠️ NEVER encrypt before compressing (size explosion!)
-   ```
-
-4. **etcd-server Config Versioning (NEW REQUIREMENT):**
-   ```
-   /components/<name>/
-   ├── master_config      ← IMMUTABLE (original)
-   ├── active_config      ← MUTABLE (current, accepts commits)
-   ├── metadata
-   │   ├── version
-   │   ├── last_modified
-   │   └── modified_by
-   └── status
-   ```
-   - Master config: Never modified, rollback target
-   - Active config: Working copy, RAG can modify
-   - Rollback: Copy master → active
-
-5. **Key Distribution Protocol (TO DESIGN):**
-   ```
-   Component Registration:
-   1. Component → etcd-server: "Register: ml-detector"
-   2. etcd-server → Component: "Encryption key: <key>"
-   3. Component stores key in memory (NOT disk)
-   4. Component uses key for all etcd operations
-   
-   Key Rotation (Phase 2B - Nice to Have):
-   1. etcd-server generates new key
-   2. etcd-server broadcasts to all components
-   3. Components maintain buffer: [old_key, new_key]
-   4. Transition period: Accept both keys
-   5. After timeout: Remove old key
-   ```
-
-3. **API Style:**
-   ```cpp
-   // Option A: Explicit flags
-   client.set("key", "value", /*encrypt=*/true, /*compress=*/true);
-   
-   // Option B: Builder pattern
-   client.set("key", "value")
-         .with_encryption()
-         .with_compression()
-         .execute();
-   
-   // Option C: Config object
-   EtcdSetOptions opts;
-   opts.encrypt = true;
-   opts.compress = true;
-   client.set("key", "value", opts);
-   ```
-
-4. **Component Config Format:**
-   ```json
-   {
-     "component": "ml-detector",
-     "node_id": "detector-01",
-     "version": "1.0.0",
-     "config_path": "/vagrant/ml-detector/config/ml_detector_config.json",
-     "status": "RUNNING",
-     "last_heartbeat": "2025-12-17T10:30:00Z",
-     "capabilities": ["ddos", "ransomware", "traffic", "internal"]
-   }
-   ```
-
-**Deliverables:**
-- ✅ API specification document
-- ✅ Class diagram
-- ✅ Component discovery protocol
-- ✅ Encryption/compression decisions
-
----
-
-### **Task 3: Library Extraction (Next Day - 3-4 hours)**
-
-**Goal:** Create `/vagrant/etcd-client/` as standalone library
-
-**Directory Structure:**
-```
-/vagrant/etcd-client/
-├── CMakeLists.txt              ← Build configuration
-├── include/
-│   └── etcd_client.hpp         ← Public API
-├── src/
-│   ├── etcd_client.cpp         ← Core implementation
-│   ├── encryption.cpp          ← Encryption utilities
-│   └── compression.cpp         ← Compression utilities
-├── tests/
-│   ├── test_basic.cpp          ← Basic get/set tests
-│   ├── test_encryption.cpp     ← Encryption tests
-│   └── test_discovery.cpp      ← Component discovery tests
-└── README.md                   ← Usage documentation
-```
-
-**Steps:**
-
-1. **Create Directory Structure:**
-   ```bash
-   mkdir -p /vagrant/etcd-client/{include,src,tests}
-   ```
-
-2. **Extract Code from RAG:**
-   ```bash
-   # Copy existing code as starting point
-   cp /vagrant/rag/src/etcd_client.cpp /vagrant/etcd-client/src/
-   cp /vagrant/rag/include/etcd_client.hpp /vagrant/etcd-client/include/
-   ```
-
-3. **Remove RAG-Specific Code:**
-   - Strip out RAG command handling
-   - Keep only generic etcd operations
-   - Abstract away hardcoded RAG paths
-
-4. **Add Component Discovery:**
-   ```cpp
-   bool EtcdClient::register_component(
-       const std::string& component_name,
-       const std::string& config_json_path
-   ) {
-       // Read JSON config
-       // Store in etcd: /components/<name>/config
-       // Store metadata: /components/<name>/metadata
-       // Set initial status: STARTING
-   }
-   
-   void EtcdClient::heartbeat(const std::string& component_name) {
-       // Update: /components/<name>/last_heartbeat
-       // Update: /components/<name>/status = RUNNING
-   }
-   ```
-
-5. **Create CMakeLists.txt:**
-   ```cmake
-   project(etcd-client)
-   
-   add_library(etcd_client SHARED
-       src/etcd_client.cpp
-       src/encryption.cpp
-       src/compression.cpp
-   )
-   
-   target_include_directories(etcd_client PUBLIC include)
-   target_link_libraries(etcd_client
-       etcd-cpp-api
-       crypto
-       ssl
-       z  # zlib for compression
-   )
-   ```
-
-6. **Write Tests:**
-   ```cpp
-   // test_basic.cpp
-   TEST(EtcdClient, BasicSetGet) {
-       EtcdClient client("127.0.0.1", 2379);
-       client.set("test_key", "test_value");
-       auto result = client.get("test_key");
-       ASSERT_EQ(result, "test_value");
-   }
-   ```
-
-**Deliverables:**
-- ✅ `/vagrant/etcd-client/` library created
-- ✅ Builds successfully: `libetcd_client.so`
-- ✅ Tests pass
-- ✅ No RAG-specific code remains
-
----
-
-### **Task 4: Component Integration (Next Day - 3-4 hours)**
-
-**Goal:** Update all components to use shared library
-
-**Components to Update:**
-1. ✅ RAG (refactor existing usage)
-2. 🆕 Sniffer (add etcd support)
-3. 🆕 ml-detector (add etcd support)
-4. 🆕 Firewall (add etcd support)
-
-**Integration Pattern (same for all):**
-
+#### Step 2: Create FAISS Test (C++20)
 ```cpp
-// In component initialization
-#include <etcd_client.hpp>
+// File: rag/tests/test_faiss_integration.cpp
+#include <faiss/IndexFlat.h>
+#include <faiss/IndexIVFFlat.h>
+#include <iostream>
+#include <vector>
 
 int main() {
-    // Connect to etcd
-    EtcdClient etcd("127.0.0.1", 2379);
+    // Test 1: Simple flat index
+    int d = 512;  // Chronos embedding dimension
+    faiss::IndexFlatL2 index(d);
     
-    // Register component
-    etcd.register_component("sniffer", "/vagrant/sniffer/config/config.json");
+    std::cout << "✅ Index created, dimension: " << index.d << std::endl;
     
-    // Start heartbeat thread
-    std::thread heartbeat_thread([&etcd]() {
-        while (running) {
-            etcd.heartbeat("sniffer");
-            std::this_thread::sleep_for(std::chrono::seconds(30));
-        }
-    });
+    // Add some random vectors
+    std::vector<float> data(10 * d);
+    for (auto& val : data) {
+        val = static_cast<float>(rand()) / RAND_MAX;
+    }
     
-    // Main loop...
+    index.add(10, data.data());
+    std::cout << "✅ Added 10 vectors, total: " << index.ntotal << std::endl;
     
-    // On shutdown
-    etcd.set("/components/sniffer/status", "STOPPED");
+    // Search
+    std::vector<float> query(d);
+    for (auto& val : query) {
+        val = static_cast<float>(rand()) / RAND_MAX;
+    }
+    
+    int k = 5;
+    std::vector<faiss::idx_t> labels(k);
+    std::vector<float> distances(k);
+    
+    index.search(1, query.data(), k, distances.data(), labels.data());
+    
+    std::cout << "✅ Search complete, nearest neighbors:";
+    for (int i = 0; i < k; ++i) {
+        std::cout << " " << labels[i] << " (dist: " << distances[i] << ")";
+    }
+    std::cout << std::endl;
+    
+    return 0;
 }
 ```
 
-**CMakeLists.txt Updates:**
+#### Step 3: CMake Integration
 ```cmake
-# Each component's CMakeLists.txt
-target_link_libraries(sniffer
-    etcd_client  # ← NEW
-    # ... other libs
+# File: rag/CMakeLists.txt (add FAISS)
+find_package(faiss REQUIRED)
+
+add_executable(test_faiss_integration
+    tests/test_faiss_integration.cpp
+)
+
+target_link_libraries(test_faiss_integration
+    PRIVATE
+    faiss
 )
 ```
 
-**Deliverables:**
-- ✅ RAG refactored to use library
-- ✅ Sniffer discovers itself to etcd
-- ✅ ml-detector discovers itself to etcd
-- ✅ Firewall discovers itself to etcd
-- ✅ All components build successfully
-
----
-
-### **Task 5: Makefile & Monitoring Updates (Evening - 1-2 hours)**
-
-**Goal:** Integrate etcd-server into standard workflow
-
-**Makefile Changes:**
-
-```makefile
-# Add etcd-client library build
-.PHONY: etcd-client
-etcd-client:
-	@echo "🔨 Building etcd-client library..."
-	cd etcd-client && mkdir -p build && cd build && \
-	cmake .. && make
-	@echo "✅ libetcd_client.so built"
-
-# Update run-lab-dev to start etcd-server first
-.PHONY: run-lab-dev
-run-lab-dev: etcd-server etcd-client
-	@echo "🚀 Starting Full Lab (with etcd-server)..."
-	@echo "Step 1: Starting etcd-server..."
-	vagrant ssh defender -c "cd /vagrant/etcd-server && ./etcd-server &"
-	@sleep 5
-	@echo "Step 2: Starting sniffer..."
-	vagrant ssh defender -c "cd /vagrant/sniffer && sudo ./cpp_sniffer config/config.json &"
-	@sleep 3
-	@echo "Step 3: Starting ml-detector..."
-	vagrant ssh defender -c "cd /vagrant/ml-detector && ./build/ml-detector config/ml_detector_config.json &"
-	@sleep 3
-	@echo "Step 4: Starting firewall..."
-	vagrant ssh defender -c "cd /vagrant/firewall && ./firewall-agent &"
-	@echo "✅ Lab running with etcd coordination"
-
-# Add etcd status check
-.PHONY: status-etcd
-status-etcd:
-	@echo "📊 etcd-server Status:"
-	@vagrant ssh defender -c "curl -s http://127.0.0.1:2379/v2/keys/components | jq '.'"
-```
-
-**Monitor Script Updates:**
-
+#### Step 4: Build and Test
 ```bash
-# scripts/monitor_day17.sh
+cd /vagrant/rag/build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make test_faiss_integration
 
-echo "╔════════════════════════════════════════════════════════╗"
-echo "║  ML Defender - Day 17 Monitor (with etcd)             ║"
-echo "╚════════════════════════════════════════════════════════╝"
+# Run test
+./test_faiss_integration
 
-# Check etcd-server
-echo "🔍 etcd-server:"
-curl -s http://127.0.0.1:2379/health || echo "❌ DOWN"
-
-# Check registered components
-echo ""
-echo "📋 Registered Components:"
-curl -s http://127.0.0.1:2379/v2/keys/components?recursive=true | \
-  jq -r '.node.nodes[]? | .key + " = " + .value' || echo "None"
-
-# Check component heartbeats
-echo ""
-echo "💓 Component Heartbeats:"
-for component in sniffer ml-detector firewall rag; do
-    last_hb=$(curl -s "http://127.0.0.1:2379/v2/keys/components/$component/last_heartbeat" | jq -r '.node.value' 2>/dev/null)
-    if [ -n "$last_hb" ]; then
-        echo "  ✅ $component: $last_hb"
-    else
-        echo "  ❌ $component: Not registered"
-    fi
-done
-
-# Standard monitoring continues...
-echo ""
-echo "📊 Artifacts: $(ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ 2>/dev/null | wc -l)"
-# ... rest of monitoring
+# Expected output:
+# ✅ Index created, dimension: 512
+# ✅ Added 10 vectors, total: 10
+# ✅ Search complete, nearest neighbors: 3 (dist: 0.234) 7 (dist: 0.456) ...
 ```
-
-**Deliverables:**
-- ✅ Makefile targets updated
-- ✅ Monitor script shows etcd status
-- ✅ `make run-lab-dev` starts etcd first
-- ✅ `make status-etcd` shows components
 
 ---
 
-## 🏢 etcd-server High Availability Architecture
+### FASE 3: ONNX Runtime Integration (Día 31 - 2 horas)
 
-### **Why 3-Node Quorum Even for Domestic?**
+**Objetivo:** Load ONNX models in C++ and run inference
 
-**Alonso's Rationale:**
-- Process is VERY lightweight (~1MB per node)
-- Can afford HA even on Raspberry Pi
-- Eliminates single point of failure
-- No excuse NOT to do it
+#### Step 1: ONNX Runtime Test
+```cpp
+// File: rag/tests/test_onnx_inference.cpp
+#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+#include <iostream>
+#include <vector>
 
-### **Architecture:**
+int main() {
+    // Initialize ONNX Runtime
+    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
+    Ort::SessionOptions session_options;
+    session_options.SetIntraOpNumThreads(1);
+    
+    // Load model
+    Ort::Session session(env, "models/attack_embedder.onnx", session_options);
+    
+    // Get input/output info
+    Ort::AllocatorWithDefaultOptions allocator;
+    size_t num_input_nodes = session.GetInputCount();
+    size_t num_output_nodes = session.GetOutputCount();
+    
+    std::cout << "✅ Model loaded" << std::endl;
+    std::cout << "   Input nodes: " << num_input_nodes << std::endl;
+    std::cout << "   Output nodes: " << num_output_nodes << std::endl;
+    
+    // Get input name
+    auto input_name = session.GetInputNameAllocated(0, allocator);
+    std::cout << "   Input name: " << input_name.get() << std::endl;
+    
+    // Get output name
+    auto output_name = session.GetOutputNameAllocated(0, allocator);
+    std::cout << "   Output name: " << output_name.get() << std::endl;
+    
+    // Create dummy input (83 features)
+    std::vector<float> input_data(83, 0.5f);
+    std::vector<int64_t> input_shape = {1, 83};
+    
+    // Create input tensor
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
+        memory_info, input_data.data(), input_data.size(),
+        input_shape.data(), input_shape.size()
+    );
+    
+    // Run inference
+    const char* input_names[] = {input_name.get()};
+    const char* output_names[] = {output_name.get()};
+    
+    auto output_tensors = session.Run(
+        Ort::RunOptions{nullptr},
+        input_names, &input_tensor, 1,
+        output_names, 1
+    );
+    
+    // Get output
+    float* output_data = output_tensors.front().GetTensorMutableData<float>();
+    auto output_shape = output_tensors.front().GetTensorTypeAndShapeInfo().GetShape();
+    
+    std::cout << "✅ Inference complete" << std::endl;
+    std::cout << "   Output shape: [" << output_shape[0] << ", " << output_shape[1] << "]" << std::endl;
+    std::cout << "   First 5 values: ";
+    for (int i = 0; i < 5; ++i) {
+        std::cout << output_data[i] << " ";
+    }
+    std::cout << std::endl;
+    
+    return 0;
+}
 ```
-┌──────────────────────────────────────────────────┐
-│  etcd-server Cluster (3 nodes, quorum-based)     │
-│                                                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│  │ etcd-01  │  │ etcd-02  │  │ etcd-03  │       │
-│  │ (Leader) │  │(Follower)│  │(Follower)│       │
-│  │ ~1MB RAM │  │ ~1MB RAM │  │ ~1MB RAM │       │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
-│       └────────┬────┴──────────────┘             │
-│                │ Raft Consensus                   │
-│                ▼                                  │
-│  ┌─────────────────────────────────────────┐     │
-│  │  Shared State:                          │     │
-│  │  • Component configs (master + active)  │     │
-│  │  • Encryption keys                      │     │
-│  │  • Heartbeat status                     │     │
-│  │  • Metadata                             │     │
-│  └─────────────────────────────────────────┘     │
-└──────────────────────────────────────────────────┘
-                     │
-                     ▼
-    ┌────────────────┴────────────────┐
-    │                                  │
-    ▼                                  ▼
-┌─────────┐  ┌──────────┐  ┌─────────┐  ┌─────┐
-│ Sniffer │  │ml-detector│  │Firewall │  │ RAG │
-│(client) │  │ (client)  │  │(client) │  │(cli)│
-└─────────┘  └──────────┘  └─────────┘  └─────┘
+
+#### Step 2: CMake for ONNX Test
+```cmake
+# File: rag/CMakeLists.txt (add ONNX Runtime)
+find_package(onnxruntime REQUIRED)
+
+add_executable(test_onnx_inference
+    tests/test_onnx_inference.cpp
+)
+
+target_link_libraries(test_onnx_inference
+    PRIVATE
+    onnxruntime::onnxruntime
+)
 ```
 
-### **Benefits:**
-- ✅ **Automatic failover:** If leader dies, election in <1s
-- ✅ **No data loss:** Quorum ensures consistency
-- ✅ **Zero-downtime updates:** Rolling restart
-- ✅ **Read scaling:** Followers can serve reads
-
-### **Resource Cost:**
-- 3 nodes × 1MB RAM = 3MB total
-- Negligible CPU (<1% per node)
-- Tiny network overhead (heartbeats)
-
-### **Implementation (Phase 2A):**
+#### Step 3: Build and Test
 ```bash
-# Start 3-node cluster
-./etcd-server --name=etcd-01 --initial-cluster=etcd-01=...,etcd-02=...,etcd-03=...
-./etcd-server --name=etcd-02 --initial-cluster=...
-./etcd-server --name=etcd-03 --initial-cluster=...
+cd /vagrant/rag/build
+cmake ..
+make test_onnx_inference
 
-# Components connect to any node (automatic failover)
-EtcdClient client({"127.0.0.1:2379", "127.0.0.1:2380", "127.0.0.1:2381"});
+# Run test
+./test_onnx_inference
+
+# Expected output:
+# ✅ Model loaded
+#    Input nodes: 1
+#    Output nodes: 1
+#    Input name: features
+#    Output name: attack_embedding
+# ✅ Inference complete
+#    Output shape: [1, 256]
+#    First 5 values: 0.123 -0.456 0.789 ...
 ```
-
-### **Deployment Modes:**
-
-**Domestic (Home Lab):**
-- 3 nodes on same Raspberry Pi (different ports)
-- Ports: 2379, 2380, 2381
-
-**Enterprise:**
-- 3 physical nodes for true HA
-- Each on separate hardware
-- Can scale to 5 or 7 nodes for geo-distribution
 
 ---
 
-## 🔬 Verification & Validation
+### FASE 4: ChunkCoordinator Skeleton (Día 31 - 2 horas)
 
-### **Smoke Tests (End of Day 17)**
+**Objetivo:** Crear estructura base del coordinador
 
+#### Step 1: Header File
+```cpp
+// File: rag/include/faiss_ingester/chunk_coordinator.hpp
+#pragma once
+
+#include <string>
+#include <memory>
+#include <chrono>
+#include <vector>
+
+namespace ml_defender {
+namespace faiss_ingester {
+
+// Forward declarations
+class TimeSeriesEmbedder;
+class SemanticEmbedder;
+class AttackEmbedder;
+class IndexManager;
+
+struct ChunkMetadata {
+    std::string chunk_id;
+    std::chrono::system_clock::time_point start_time;
+    std::chrono::system_clock::time_point end_time;
+    size_t event_count;
+    std::string jsonl_path;
+};
+
+class ChunkCoordinator {
+public:
+    ChunkCoordinator(const std::string& config_path);
+    ~ChunkCoordinator();
+
+    // Main orchestration
+    bool process_daily_chunk(const std::string& date_str);
+    
+    // Status
+    bool is_healthy() const;
+    nlohmann::json get_statistics() const;
+
+private:
+    // Configuration
+    std::string config_path_;
+    std::string base_logs_path_;
+    
+    // Embedders (ONNX models)
+    std::unique_ptr<TimeSeriesEmbedder> time_series_embedder_;
+    std::unique_ptr<SemanticEmbedder> semantic_embedder_;
+    std::unique_ptr<AttackEmbedder> attack_embedder_;
+    
+    // Index management
+    std::unique_ptr<IndexManager> index_manager_;
+    
+    // Statistics
+    std::atomic<uint64_t> chunks_processed_{0};
+    std::atomic<uint64_t> events_ingested_{0};
+    std::atomic<uint64_t> errors_{0};
+    
+    // Helper methods
+    ChunkMetadata load_chunk_metadata(const std::string& date_str);
+    std::vector<nlohmann::json> load_jsonl_events(const std::string& jsonl_path);
+    
+    bool commit_to_indices(
+        const std::vector<float>& ts_embedding,
+        const std::vector<float>& semantic_embedding,
+        const std::vector<float>& attack_embedding,
+        const ChunkMetadata& metadata
+    );
+};
+
+} // namespace faiss_ingester
+} // namespace ml_defender
+```
+
+#### Step 2: Implementation Skeleton
+```cpp
+// File: rag/src/faiss_ingester/chunk_coordinator.cpp
+#include "faiss_ingester/chunk_coordinator.hpp"
+#include <fstream>
+#include <spdlog/spdlog.h>
+
+namespace ml_defender {
+namespace faiss_ingester {
+
+ChunkCoordinator::ChunkCoordinator(const std::string& config_path)
+    : config_path_(config_path)
+{
+    spdlog::info("🚀 ChunkCoordinator initializing...");
+    
+    // TODO: Load config
+    // TODO: Initialize embedders
+    // TODO: Initialize index manager
+    
+    spdlog::info("✅ ChunkCoordinator ready");
+}
+
+ChunkCoordinator::~ChunkCoordinator() {
+    spdlog::info("📊 ChunkCoordinator statistics:");
+    spdlog::info("   Chunks processed: {}", chunks_processed_.load());
+    spdlog::info("   Events ingested: {}", events_ingested_.load());
+    spdlog::info("   Errors: {}", errors_.load());
+}
+
+bool ChunkCoordinator::process_daily_chunk(const std::string& date_str) {
+    spdlog::info("📥 Processing chunk: {}", date_str);
+    
+    try {
+        // Step 1: Load metadata
+        auto metadata = load_chunk_metadata(date_str);
+        spdlog::info("   Events in chunk: {}", metadata.event_count);
+        
+        // Step 2: Load JSONL events
+        auto events = load_jsonl_events(metadata.jsonl_path);
+        spdlog::info("   Loaded {} events from JSONL", events.size());
+        
+        // Step 3: Generate embeddings (TODO)
+        // auto ts_emb = time_series_embedder_->embed(events);
+        // auto sem_emb = semantic_embedder_->embed(events);
+        // auto att_emb = attack_embedder_->embed(events);
+        
+        // Step 4: Commit to indices (TODO)
+        // bool success = commit_to_indices(ts_emb, sem_emb, att_emb, metadata);
+        
+        chunks_processed_++;
+        events_ingested_ += events.size();
+        
+        spdlog::info("✅ Chunk {} processed successfully", date_str);
+        return true;
+        
+    } catch (const std::exception& e) {
+        spdlog::error("❌ Failed to process chunk {}: {}", date_str, e.what());
+        errors_++;
+        return false;
+    }
+}
+
+ChunkMetadata ChunkCoordinator::load_chunk_metadata(const std::string& date_str) {
+    ChunkMetadata metadata;
+    metadata.chunk_id = date_str;
+    metadata.jsonl_path = base_logs_path_ + "/events/" + date_str + ".jsonl";
+    
+    // Count events in JSONL
+    std::ifstream file(metadata.jsonl_path);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open JSONL: " + metadata.jsonl_path);
+    }
+    
+    std::string line;
+    size_t count = 0;
+    while (std::getline(file, line)) {
+        count++;
+    }
+    
+    metadata.event_count = count;
+    return metadata;
+}
+
+std::vector<nlohmann::json> ChunkCoordinator::load_jsonl_events(const std::string& jsonl_path) {
+    std::vector<nlohmann::json> events;
+    std::ifstream file(jsonl_path);
+    
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open JSONL: " + jsonl_path);
+    }
+    
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        
+        try {
+            auto event = nlohmann::json::parse(line);
+            events.push_back(event);
+        } catch (const std::exception& e) {
+            spdlog::warn("Failed to parse JSONL line: {}", e.what());
+        }
+    }
+    
+    return events;
+}
+
+bool ChunkCoordinator::is_healthy() const {
+    // TODO: Check embedders and indices
+    return true;
+}
+
+nlohmann::json ChunkCoordinator::get_statistics() const {
+    return {
+        {"chunks_processed", chunks_processed_.load()},
+        {"events_ingested", events_ingested_.load()},
+        {"errors", errors_.load()}
+    };
+}
+
+} // namespace faiss_ingester
+} // namespace ml_defender
+```
+
+---
+
+## ✅ CRITERIOS DE ÉXITO DÍA 31
+
+### Mínimo para Progress:
+```
+1. ONNX Models Exported:
+   ✅ chronos_embedder.onnx created
+   ✅ sbert_embedder.onnx created
+   ✅ attack_embedder.onnx created
+   ✅ All models verified with onnx.checker
+   ✅ ONNX Runtime inference tested
+   
+2. FAISS Integration:
+   ✅ FAISS library installed (CPU version)
+   ✅ test_faiss_integration compiles
+   ✅ test_faiss_integration runs successfully
+   ✅ Can create index, add vectors, search
+   
+3. ONNX Runtime Integration:
+   ✅ test_onnx_inference compiles
+   ✅ Can load ONNX models in C++
+   ✅ Can run inference on dummy data
+   ✅ Output shapes correct
+   
+4. ChunkCoordinator Skeleton:
+   ✅ Header file created
+   ✅ Implementation skeleton created
+   ✅ Can load JSONL chunks
+   ✅ Can count events per chunk
+   ✅ Statistics tracking working
+```
+
+---
+
+## 🚀 COMANDOS RÁPIDOS DÍA 31
 ```bash
-# 1. Library builds
-cd /vagrant/etcd-client
-make
-ls -lh build/libetcd_client.so  # Should exist
+# Phase 1: Export ONNX models
+cd /vagrant/ml-training
+python3 export_chronos_onnx.py
+python3 export_sbert_onnx.py
+python3 train_and_export_attack_embedder.py
 
-# 2. Components link against it
-cd /vagrant/ml-detector
-make clean && make
-ldd build/ml-detector | grep etcd_client  # Should show library
+# Verify models
+python3 -c "import onnx; onnx.checker.check_model(onnx.load('models/chronos_embedder.onnx'))"
 
-# 3. etcd-server running
-curl http://127.0.0.1:2379/health
-# Expected: {"health":"true"}
+# Phase 2: Install FAISS
+cd /tmp
+git clone https://github.com/facebookresearch/faiss.git
+cd faiss && mkdir build && cd build
+cmake .. -DFAISS_ENABLE_GPU=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
+make -j4 && sudo make install
 
-# 4. Components register
-make run-lab-dev
-sleep 30
-curl -s http://127.0.0.1:2379/v2/keys/components | jq '.node.nodes | length'
-# Expected: 4 (sniffer, ml-detector, firewall, rag)
+# Phase 3: Test FAISS integration
+cd /vagrant/rag/build
+cmake .. && make test_faiss_integration
+./test_faiss_integration
 
-# 5. Heartbeats working
-sleep 60
-curl -s http://127.0.0.1:2379/v2/keys/components/ml-detector/last_heartbeat | jq -r '.node.value'
-# Expected: Recent timestamp
+# Phase 4: Test ONNX Runtime integration
+make test_onnx_inference
+./test_onnx_inference
 
-# 6. Config uploaded
-curl -s http://127.0.0.1:2379/v2/keys/components/ml-detector/config | jq '.'
-# Expected: JSON config visible (encrypted if configured)
-```
-
-### **Success Criteria**
-
-- ✅ `libetcd_client.so` builds without errors
-- ✅ All components build with library
-- ✅ etcd-server starts in pipeline
-- ✅ 4 components register themselves
-- ✅ Heartbeats every 30 seconds
-- ✅ Configs uploaded and retrievable
-- ✅ Encryption/compression working (if enabled)
-- ✅ Monitor script shows etcd status
-- ✅ Zero runtime errors
-
----
-
-## 📚 Key Files to Review
-
-### **Existing Code (RAG):**
-```
-/vagrant/rag/src/etcd_client.cpp         ← Main implementation
-/vagrant/rag/include/etcd_client.hpp     ← API definition
-/vagrant/rag/src/rag_command_manager.cpp ← Usage example
-/vagrant/rag/CMakeLists.txt              ← Build dependencies
-```
-
-### **New Files to Create:**
-```
-/vagrant/etcd-client/CMakeLists.txt      ← Library build
-/vagrant/etcd-client/include/etcd_client.hpp
-/vagrant/etcd-client/src/etcd_client.cpp
-/vagrant/etcd-client/src/encryption.cpp  ← If separate
-/vagrant/etcd-client/src/compression.cpp ← If separate
-/vagrant/etcd-client/tests/test_basic.cpp
-/vagrant/docs/ETCD_CLIENT_ANALYSIS.md    ← Analysis doc
-/vagrant/docs/ETCD_CLIENT_API.md         ← API reference
-```
-
-### **Files to Modify:**
-```
-/vagrant/Makefile                        ← Add etcd targets
-/vagrant/scripts/monitor_day17.sh        ← New monitoring
-/vagrant/sniffer/CMakeLists.txt          ← Link etcd_client
-/vagrant/ml-detector/CMakeLists.txt      ← Link etcd_client
-/vagrant/firewall/CMakeLists.txt         ← Link etcd_client
-/vagrant/rag/CMakeLists.txt              ← Use shared lib
+# Phase 5: Test ChunkCoordinator
+make test_chunk_coordinator
+./test_chunk_coordinator
 ```
 
 ---
 
-## 🎯 Critical Questions to Answer
-
-### **About Current Implementation:**
-1. [x] Does RAG's etcd_client use SHA256 for encryption? (CONFIRMED by Alonso)
-2. ❓ What compression algorithm? (zlib? lz4? snappy?) - FIND IN CODE
-3. [x] Is encryption/compression configurable? (YES - via JSON)
-4. [x] Where is the encryption key stored? (Generated by etcd-server, sent to components)
-5. ❓ Is the code thread-safe? - VERIFY IN CODE
-6. ❓ What etcd C++ library is used? (etcd-cpp-apiv3?) - VERIFY
-7. [x] Operation order? (Compress → Encrypt → Send) - CONFIRMED
-
-### **About New Design:**
-1. [x] Should encryption be enabled by default? (YES - configurable via JSON)
-2. [x] Should we use the same encryption key for all components? (YES - single shared key)
-3. [x] Should component configs be encrypted in etcd? (YES - always)
-4. ❓ How to handle etcd-server failures? (retry? local cache?) - TO DESIGN
-5. [x] Should we add config versioning? (YES - master + active copies)
-6. ❓ Key rotation mechanism? (Phase 2B - buffer strategy designed, but optional)
-
-### **About Integration:**
-1. ❓ Do all components need heartbeats? (YES - but define interval)
-2. ❓ What happens if a component misses heartbeat? (Alert? Auto-restart?)
-3. ❓ Should we implement leader election? (For multiple ml-detectors in HA)
-4. ❓ Should we add config change notifications? (YES - watcher library Phase 2A.4)
-
-### **About etcd-server Architecture:**
-1. [x] Should we support HA mode? (YES - 3-node quorum even domestically)
-2. [x] Config versioning strategy? (Master immutable + Active mutable)
-3. ❓ How does etcd-server detect misconfiguration? (Design validation logic)
-4. ❓ How does etcd-server alert via RAG? (Define alert protocol)
-
----
-
-## 💡 Design Considerations
-
-### **Security:**
-- 🔐 Encryption for sensitive configs (API keys, credentials)
-- 🔓 Plain text for non-sensitive (thresholds, timeouts)
-- 🔑 Key rotation strategy (future Phase 2B)
-- 🔒 TLS for etcd communication (optional Phase 3)
-
-### **Performance:**
-- ⚡ Minimize etcd calls (cache configs locally)
-- ⚡ Async heartbeats (don't block main thread)
-- ⚡ Batch updates when possible
-- ⚡ Connection pooling (if needed)
-
-### **Reliability:**
-- 🔄 Retry on connection failure (exponential backoff)
-- 💾 Local config cache (work offline if etcd down)
-- 🚨 Health checks before critical operations
-- 📝 Log all etcd errors
-
-### **Maintainability:**
-- 📖 Clear API documentation
-- 🧪 Comprehensive tests
-- 🔍 Debugging utilities (dump all keys)
-- 📊 Metrics (calls/sec, errors, latency)
-
----
-
-## 🤝 Collaboration Protocol
-
-### **For AI Assistants:**
-1. **Read this entire prompt** before starting
-2. **Check existing RAG code** first (don't reinvent)
-3. **Ask Alonso** before major design decisions
-4. **Document findings** as you go
-5. **Test incrementally** (don't code everything then test)
-
-### **Communication with Alonso:**
-
-**He values:**
-- ✅ Reuse existing code (RAG already has encryption/compression)
-- ✅ Simple design > Complex design
-- ✅ Working > Perfect
-- ✅ Incremental progress (commit often)
-- ✅ Clear explanations (English + Spanish OK)
-
-**He dislikes:**
-- ❌ Rewriting working code unnecessarily
-- ❌ Over-engineering (KISS principle)
-- ❌ Breaking existing functionality
-- ❌ Vague "might" language (be direct)
-
----
-
-## 🌙 Overnight Lab Status
-
-**Lab Started:** Night of Dec 16  
-**Expected State (Morning Dec 17):**
-- ✅ ml-detector running for 8+ hours
-- ✅ Large JSONL file generated (5K-10K+ lines)
-- ✅ Artifacts directory with thousands of events
-- ✅ Memory stable, no leaks
-- ✅ Zero crashes (race condition fixed)
-
-**Morning Check Commands:**
-```bash
-# Check uptime
-vagrant ssh defender -c "ps -p \$(pgrep ml-detector) -o etime="
-
-# Check artifacts
-vagrant ssh defender -c "ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l"
-
-# Check JSONL
-vagrant ssh defender -c "wc -l /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl"
-
-# Verify no crashes
-vagrant ssh defender -c "tail -50 /vagrant/ml-detector/logs/ml_detector.log | grep -i crash"
+## 📊 DOCUMENTACIÓN A ACTUALIZAR
 ```
+1. docs/FAISS_INGESTION_IMPLEMENTATION.md (NEW)
+   - ONNX export process
+   - FAISS integration guide
+   - ChunkCoordinator design
+   - Testing results
 
-**If lab crashed overnight:**
-- Check logs for root cause
-- Document in Day 17 report
-- Fix if needed before starting etcd work
+2. README.md:
+   - Update: Day 30 complete (memory leak resolved)
+   - Add: Day 31 FAISS ingestion started
+   - Progress: Phase 2 (FAISS) 20% complete
 
----
-
-## 📋 Day 17 Deliverables Checklist
-
-### **MUST HAVE (Priority P0):**
-- [ ] RAG etcd_client code reviewed
-- [ ] Compression algorithm identified (zlib/lz4/snappy)
-- [ ] SHA256 encryption verified in code
-- [ ] Operation order verified (Compress → Encrypt → Send)
-- [ ] ETCD_CLIENT_ANALYSIS.md created
-- [ ] API specification written
-- [ ] Class diagram created
-- [ ] Key distribution protocol designed
-
-### **SHOULD HAVE (Priority P1):**
-- [ ] `/vagrant/etcd-client/` library structure created
-- [ ] Encryption/compression decisions documented
-- [ ] Component discovery protocol designed
-- [ ] Thread-safety strategy defined
-- [ ] Config versioning (master + active) designed
-
-### **NICE TO HAVE (Can defer to Day 18):**
-- [ ] Library extracted from RAG
-- [ ] Tests written
-- [ ] One component integrated
-- [ ] Makefile updated
-
-### **DEFERRED TO PHASE 2B (Acknowledged as overkill for now):**
-- [ ] Key rotation with time windows
-- [ ] Buffer-based key transition
-- [ ] 3-node etcd-server HA (can start with single node)
-- [ ] Misconfiguration auto-detection
-- [ ] Automatic config push from etcd-server
-
-**Alonso's Guidance:**
-> "Es un nice to have y probablemente overkill para el momento en el que estamos."
-
-**Translation:** Some features (like time-windowed key rotation) are nice but overkill for current phase. Focus on solid foundation first.
-
----
-
-## 🎯 Success Definition
-
-**Day 17 is successful if:**
-1. ✅ We understand RAG's etcd_client completely
-2. ✅ We have a clear design for shared library
-3. ✅ We've started extraction (even if not complete)
-4. ✅ We have a plan for Day 18 implementation
-5. ✅ Overnight lab data is validated
-
-**Bonus success:**
-- ✅ Library extracted and building
-- ✅ One component integrated (e.g., RAG refactored)
-- ✅ Tests written and passing
-
----
-
-## 🚀 After Day 17
-
-**Day 18-19: Complete Integration**
-- Finish library implementation
-- Integrate all components
-- Update monitoring
-- Full system test
-
-**Day 20-23: FAISS Integration**
-- Semantic search over artifacts
-- Natural language queries
-- Vector DB implementation
-
-**Day 24+: Watcher + Academic Paper**
-- Hot-reload config changes
-- Documentation for publication
-- Multi-agent attribution
-
----
-
-## 💬 Quick Reference
-
-**etcd-server endpoints:**
-```bash
-# Health check
-curl http://127.0.0.1:2379/health
-
-# List all keys
-curl http://127.0.0.1:2379/v2/keys/?recursive=true
-
-# Get specific key
-curl http://127.0.0.1:2379/v2/keys/components/ml-detector/config
-
-# Set key
-curl -X PUT http://127.0.0.1:2379/v2/keys/test -d value="hello"
-
-# Delete key
-curl -X DELETE http://127.0.0.1:2379/v2/keys/test
-```
-
-**Component config paths:**
-```
-/vagrant/sniffer/config/config.json
-/vagrant/ml-detector/config/ml_detector_config.json
-/vagrant/firewall/config/firewall_config.json
-/vagrant/rag/config/rag_config.json
+3. PROMPT_CONTINUE_CLAUDE_DAY32.md:
+   - Continue embedder implementation
+   - IndexManager creation
+   - Feature extraction from 83 fields
 ```
 
 ---
 
-## 🏛️ Via Appia Quality Reminder
+## 🏛️ VIA APPIA QUALITY - DÍA 30
 
-> "Smooth is fast. Base sólida primero, optimizaciones después.  
-> Código reutilizable > Código duplicado.  
-> Una librería compartida bien hecha > Cuatro implementaciones mediocres."
-
----
-
-## 💬 Alonso's Vision (Dec 16, 2025)
-
-> "Estamos construyendo un pedazo de beta con muchísimas características que  
-> jamás he visto en una beta. Pero reconozco que nos estamos quedando a gusto  
-> y estamos desarrollando lo que siempre he tenido en mente."
-
-**Translation:** We're building an amazing beta with features rarely seen in betas.
-We're enjoying the process and building what I've always envisioned.
-
-**Key Insights:**
-- ✅ This is MORE than a typical beta
-- ✅ Features are ambitious but intentional
-- ✅ We're building the vision, not just a prototype
-- ✅ Team (Alonso + AI collaborators) working well together
-
-**Scope Acknowledgment:**
-- Some features are "nice to have" (key rotation with time windows)
-- Some features are "overkill for now" (but aligned with vision)
-- We're allowed to dream big AND execute smart
-- Priority is: Solid foundation → Then optimization
-
-**Development Philosophy:**
-- Build what's needed for production
-- Don't cut corners on architecture
-- But don't over-engineer Phase 1
-- Some features deferred to Phase 2B/3 (OK!)
-
-**This prompt's goal:**
-- Extract etcd-client (essential for distributed system)
-- Keep it simple (KISS)
-- But design it right (Via Appia Quality)
-- No rush - get it working, then get it perfect
+**Día 30 Truth:**
+> "Memory leak investigado sistemáticamente durante 5+ horas. Testeamos
+> 5 configuraciones diferentes. ASAN analysis confirmó: leak no era 'direct
+> leak' sino stream buffer accumulation. Fix simple: current_log_.flush()
+> después de cada write. Resultado: 70% reducción (102 → 31 MB/h). Descubrimiento
+> sorprendente: CON artifacts (31 MB/h) mejor que SIN artifacts (50 MB/h).
+> Configuramos cron restart cada 72h. Sistema production-ready para 24×7×365.
+> Despacio y bien. Metodología científica. Transparencia total. 🏛️"
 
 ---
 
-**Ready to start Day 17!** 🔷✨
+## 🎯 SIGUIENTE FEATURE (SEMANA 5)
 
-**First command:**
-```bash
-cd /vagrant/rag
-cat src/etcd_client.cpp | less
-# Let's see what we have to work with
+**FAISS Ingestion Timeline:**
+- ✅ Día 30: Memory leak resolved, logs ready
+- 🔥 Día 31-32: ONNX export + FAISS integration
+- Día 33-34: Embedder implementation (3 models)
+- Día 35-36: IndexManager + HealthMonitor
+- Día 37-38: Feature extraction (83 fields → embeddings)
+- Día 39-40: Testing + End-to-end validation
+
+**Key Milestones:**
+```
+Week 5: Foundation (ONNX + FAISS + Skeleton)
+Week 6: Implementation (Embedders + Indices)
+Week 7: Testing (E2E pipeline validation)
+Week 8: Production (Monitoring + Reconciliation)
 ```
 
 ---
 
-**End of Continuity Prompt**  
-**Next Update:** After Day 17 etcd-client analysis + design complete
+**Via Appia Quality:** Despacio y bien. Foundation primero, optimización después. 🏛️
+
+**Next:** Day 31 - ONNX models + FAISS integration + ChunkCoordinator skeleton

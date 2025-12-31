@@ -1,10 +1,13 @@
 //===----------------------------------------------------------------------===//
 // ML Defender - Firewall ACL Agent
-// zmq_subscriber.cpp - ZMQ Subscriber Implementation
+// zmq_subscriber.cpp - ZMQ Subscriber Implementation (Day 29 - size-preserving LZ4)
 // firewall-acl-agent/src/api/zmq_subscriber.cpp
 //===----------------------------------------------------------------------===//
 
 #include "firewall/zmq_subscriber.hpp"
+#include <crypto_transport/crypto.hpp>
+#include <crypto_transport/compression.hpp>
+#include <crypto_transport/utils.hpp>
 #include <iostream>
 #include <thread>
 #include <stdexcept>
@@ -12,6 +15,17 @@
 
 namespace mldefender {
 namespace firewall {
+
+// Helper functions for string <-> vector<uint8_t> conversion
+namespace {
+    inline std::vector<uint8_t> string_to_bytes(const std::string& str) {
+        return std::vector<uint8_t>(str.begin(), str.end());
+    }
+
+    inline std::string bytes_to_string(const std::vector<uint8_t>& bytes) {
+        return std::string(bytes.begin(), bytes.end());
+    }
+}
 
 //==============================================================================
 // LIFECYCLE
@@ -32,7 +46,7 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
         );
     }
 
-    // ✅ AÑADIDO: Initialize logger
+    // Initialize logger
     try {
         logger_ = std::make_unique<FirewallLogger>(
             config_.log_directory,
@@ -53,6 +67,11 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
 
     std::cerr << "[ZMQSubscriber] Initialized with endpoint: "
               << config_.endpoint << std::endl;
+    std::cerr << "[ZMQSubscriber] Crypto: "
+              << (config_.encryption_enabled ? "ENABLED" : "disabled")
+              << " | Compression: "
+              << (config_.compression_enabled ? "ENABLED" : "disabled")
+              << std::endl;
 }
 
 ZMQSubscriber::~ZMQSubscriber() {
@@ -68,7 +87,7 @@ ZMQSubscriber::~ZMQSubscriber() {
         }
     }
 
-    // ✅ AÑADIDO: Stop logger and print statistics
+    // Stop logger and print statistics
     if (logger_) {
         std::cerr << "[ZMQSubscriber] Stopping logger..." << std::endl;
         logger_->stop(5000);  // 5 second timeout
@@ -271,18 +290,84 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
             data_size -= topic_len;
 
             std::cerr << "[ZMQSubscriber] DEBUG: Skipped topic prefix ("
-                      << topic_len << " bytes), protobuf data: "
+                      << topic_len << " bytes), data: "
                       << data_size << " bytes" << std::endl;
         }
     }
 
-    // Parse NetworkSecurityEvent protobuf
+    // Copy to vector for decrypt/decompress
+    std::vector<uint8_t> data(data_ptr, data_ptr + data_size);
+    size_t original_size = data_size;  // Store for decompress
+
+    try {
+        // STEP 1 - Decrypt if enabled (using crypto-transport)
+        if (config_.encryption_enabled) {
+            auto start = std::chrono::high_resolution_clock::now();
+
+            // Convert hex key to bytes
+            auto key = crypto_transport::hex_to_bytes(config_.crypto_token);
+
+            // Decrypt
+            data = crypto_transport::decrypt(data, key);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            std::cerr << "[ZMQSubscriber] 🔓 Decrypted: " << duration.count() << " µs "
+                      << "(" << original_size << " → " << data.size() << " bytes)" << std::endl;
+
+            original_size = data.size();  // Update for decompress
+        }
+
+        // STEP 2 - Decompress if enabled (DAY 29: manual 4-byte header extraction)
+        if (config_.compression_enabled) {
+            auto start = std::chrono::high_resolution_clock::now();
+
+            // Validate minimum size (4-byte header + at least 1 byte data)
+            if (data.size() < 5) {
+                throw std::runtime_error("Compressed data too small (need 4-byte header + data)");
+            }
+
+            // Extract original size from 4-byte big-endian header
+            uint32_t decompressed_size = 
+                (static_cast<uint32_t>(data[0]) << 24) |
+                (static_cast<uint32_t>(data[1]) << 16) |
+                (static_cast<uint32_t>(data[2]) << 8) |
+                static_cast<uint32_t>(data[3]);
+
+            // Sanity check: original size should be reasonable (< 100MB)
+            if (decompressed_size > 100 * 1024 * 1024) {
+                throw std::runtime_error("Invalid decompressed size in header: " +
+                                       std::to_string(decompressed_size) + " bytes (>100MB)");
+            }
+
+            // Remove 4-byte header and prepare compressed data
+            std::vector<uint8_t> compressed_only(data.begin() + 4, data.end());
+            size_t compressed_size = compressed_only.size();
+
+            // Decompress using static function with EXACT size
+            data = crypto_transport::decompress(compressed_only, decompressed_size);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            std::cerr << "[ZMQSubscriber] 📦 Decompressed: " << duration.count() << " µs "
+                      << "(" << compressed_size << " → " << data.size() << " bytes)" << std::endl;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "[ZMQSubscriber] ❌ Decrypt/decompress failed: " << e.what() << std::endl;
+        stats_.parse_errors++;
+        return;
+    }
+
+    // Parse NetworkSecurityEvent protobuf (now data is plaintext)
     protobuf::NetworkSecurityEvent event;
 
     try {
-        if (!event.ParseFromArray(data_ptr, static_cast<int>(data_size))) {
+        if (!event.ParseFromArray(data.data(), static_cast<int>(data.size()))) {
             std::cerr << "[ZMQSubscriber] Failed to parse NetworkSecurityEvent protobuf ("
-                      << data_size << " bytes)" << std::endl;
+                      << data.size() << " bytes)" << std::endl;
             stats_.parse_errors++;
             return;
         }
@@ -384,7 +469,7 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
         return;  // Don't log if we didn't actually block
     }
 
-    // ✅ AÑADIDO: Log the blocked event
+    // Log the blocked event
     try {
         BlockedEvent log_event = create_blocked_event_from_proto(
             event,

@@ -233,6 +233,12 @@ CMAKE_STRIP:FILEPATH=/usr/bin/strip
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
+//Path to a file.
+CRYPTO_TRANSPORT_INCLUDE:PATH=/usr/local/include
+
+//Path to a library.
+CRYPTO_TRANSPORT_LIB:FILEPATH=/usr/local/lib/libcrypto_transport.so
+
 //Path to a library.
 CURL_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libcurl.so
 
@@ -271,6 +277,9 @@ Protobuf_PROTOC_LIBRARY_DEBUG:FILEPATH=Protobuf_PROTOC_LIBRARY_DEBUG-NOTFOUND
 
 //Path to a library.
 Protobuf_PROTOC_LIBRARY_RELEASE:FILEPATH=Protobuf_PROTOC_LIBRARY_RELEASE-NOTFOUND
+
+//Path to a library.
+SODIUM_LIB:FILEPATH=/usr/lib/x86_64-linux-gnu/libsodium.so
 
 //Value Computed by CMake
 cpp_evolutionary_sniffer_BINARY_DIR:STATIC=/vagrant/sniffer/build

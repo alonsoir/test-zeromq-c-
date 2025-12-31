@@ -1,0 +1,2 @@
+etcd-client/build/CMakeFiles/3.25.1/CompilerIdCXX/CMakeCXXCompilerId.cpp:758:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+etcd-client/build/CMakeFiles/3.25.1/CompilerIdCXX/CMakeCXXCompilerId.cpp:730:28: error: syntax error [syntaxError]

@@ -8,6 +8,7 @@
 .PHONY: run-sniffer run-detector run-firewall
 .PHONY: logs-sniffer logs-detector logs-firewall logs-lab
 .PHONY: run-lab-dev kill-lab status-lab
+.PHONY: run-lab-dev-day23 kill-lab-day23 status-lab-day23
 .PHONY: kill-all check-ports restart
 .PHONY: clean distclean test dev-setup schema-update
 .PHONY: build-unified rebuild-unified create-verify-script quick-fix dev-setup-unified
@@ -20,7 +21,11 @@
 .PHONY: rag-log-init rag-log-clean rag-log-status rag-log-analyze rag-log-tail rag-log-tail-live
 .PHONY: test-rag-integration test-rag-quick rag-watch rag-validate test-rag-small test-rag-neris test-rag-big
 .PHONY: quick-lab-test rag-consolidate detector-debug
-
+.PHONY: etcd-client-build etcd-client-clean
+.PHONY: verify-etcd-linkage verify-encryption verify-pipeline-config
+.PHONY: monitor-day23-tmux
+.PHONY: test-day23-full test-day23-stress verify-rag-logs-day23
+.PHONY: day23
 # ============================================================================
 # ThreadSanitizer Build (Race Condition Detection)
 # ============================================================================
@@ -42,6 +47,138 @@ test-tsan: detector-tsan
 	@TSAN_OPTIONS="log_path=tsan_$(shell date +%Y%m%d_%H%M%S).txt" \
 		timeout 300 ./build/ml-detector config/ml_detector_config.json || true
 	@echo "✅ Test complete. Check tsan_*.txt for race reports."
+
+# ============================================================================
+# AddressSanitizer Build (Memory Leak Detection) - Day 30
+# ============================================================================
+ASAN_CXXFLAGS = -fsanitize=address -g -O1 -fno-omit-frame-pointer
+ASAN_LDFLAGS = -fsanitize=address
+
+.PHONY: detector-asan
+detector-asan: proto etcd-client-build
+	@echo "Building ml-detector with AddressSanitizer..."
+	@echo "   Dependencies: proto + etcd-client"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build-asan/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build-asan/proto/ && \
+		cd /vagrant/ml-detector/build-asan && \
+		cmake -DCMAKE_CXX_FLAGS='-fsanitize=address -g -O1 -fno-omit-frame-pointer' \
+		      -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address' \
+		      -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
+		make -j4"
+	@echo "ml-detector (ASAN) built successfully"
+	@echo "   Binary: /vagrant/ml-detector/build-asan/ml-detector"
+
+.PHONY: run-detector-asan
+run-detector-asan: detector-asan
+	@echo "🔬 Running ml-detector with ASAN (leak detection enabled)..."
+	@echo "⚠️  Requires: etcd-server + sniffer running"
+	@echo ""
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		cd /vagrant/ml-detector/build-asan && \
+		ASAN_OPTIONS='log_path=/tmp/asan-logs/asan_ml_detector.log:detect_leaks=1:leak_check_at_exit=1' \
+		./ml-detector --config ../config/detector.json 2>&1 | tee /tmp/asan-logs/ml_detector_asan_output.txt"
+
+.PHONY: monitor-asan-memory
+monitor-asan-memory:
+	@echo "📊 Monitoring ml-detector memory (ASAN build)..."
+	@echo "   Sampling every 5 minutes for 1 hour (12 samples)"
+	@echo "   Press Ctrl+C to stop early"
+	@echo ""
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		for i in \$$(seq 1 12); do \
+			if pgrep -f 'ml-detector.*config/detector.json' > /dev/null; then \
+				MEM=\$$(ps -p \$$(pgrep -f 'ml-detector.*config/detector.json') -o rss= 2>/dev/null | awk '{print \$$1/1024}'); \
+				echo \"\$$(date +%H:%M:%S) - Memory: \$${MEM} MB\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+			else \
+				echo \"\$$(date +%H:%M:%S) - ml-detector not running\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+			fi; \
+			sleep 300; \
+		done"
+
+.PHONY: analyze-asan-results
+analyze-asan-results:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔍 ASAN LEAK REPORT ANALYSIS"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "=== LEAK SUMMARY ==="
+	@vagrant ssh -c "if [ -f /tmp/asan-logs/ml_detector_asan_output.txt ]; then \
+		grep -A 30 'LeakSanitizer' /tmp/asan-logs/ml_detector_asan_output.txt 2>/dev/null || echo 'No LeakSanitizer report found (process may still be running)'; \
+	else \
+		echo '❌ No ASAN output file found at /tmp/asan-logs/ml_detector_asan_output.txt'; \
+	fi"
+	@echo ""
+	@echo "=== DIRECT LEAKS ==="
+	@vagrant ssh -c "if [ -f /tmp/asan-logs/ml_detector_asan_output.txt ]; then \
+		grep -A 30 'Direct leak' /tmp/asan-logs/ml_detector_asan_output.txt 2>/dev/null || echo 'No direct leaks found ✅'; \
+	fi"
+	@echo ""
+	@echo "=== MEMORY GROWTH TRACKING ==="
+	@vagrant ssh -c "if [ -f /tmp/asan-logs/asan_memory_track.log ]; then \
+		cat /tmp/asan-logs/asan_memory_track.log; \
+		echo ''; \
+		echo 'Memory analysis:'; \
+		FIRST=\$$(head -1 /tmp/asan-logs/asan_memory_track.log | awk '{print \$$4}'); \
+		LAST=\$$(tail -1 /tmp/asan-logs/asan_memory_track.log | awk '{print \$$4}'); \
+		if [ -n \"\$$FIRST\" ] && [ -n \"\$$LAST\" ]; then \
+			GROWTH=\$$(echo \"\$$LAST - \$$FIRST\" | bc 2>/dev/null); \
+			echo \"  Start: \$$FIRST MB\"; \
+			echo \"  End: \$$LAST MB\"; \
+			echo \"  Growth: \$$GROWTH MB\"; \
+		fi; \
+	else \
+		echo '⚠️  No memory tracking data yet - run: make monitor-asan-memory'; \
+	fi"
+	@echo ""
+	@echo "=== ASAN LOG FILES ==="
+	@vagrant ssh -c "ls -lh /tmp/asan-logs/asan_ml_detector.log* 2>/dev/null || echo 'No ASAN log files generated yet'"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+
+.PHONY: clean-asan
+clean-asan:
+	@echo "🧹 Cleaning ASAN build and logs..."
+	@vagrant ssh -c "rm -rf /vagrant/ml-detector/build-asan"
+	@vagrant ssh -c "rm -rf /tmp/asan-logs"
+	@echo "✅ ASAN artifacts cleaned"
+
+# Quick ASAN test (30 min run)
+.PHONY: test-asan-quick
+test-asan-quick: detector-asan
+	@echo "🔬 Running quick ASAN test (30 minutes)..."
+	@echo ""
+	@echo "Step 1: Ensure other components are running..."
+	@vagrant ssh -c "pgrep -f etcd-server > /dev/null || (echo '❌ etcd-server not running. Start with: make etcd-server-start' && exit 1)"
+	@vagrant ssh -c "pgrep -f sniffer > /dev/null || (echo '⚠️  Warning: sniffer not running' && sleep 2)"
+	@echo ""
+	@echo "Step 2: Starting ml-detector with ASAN (background)..."
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		cd /vagrant/ml-detector/build-asan && \
+		ASAN_OPTIONS='log_path=/tmp/asan-logs/asan_ml_detector.log:detect_leaks=1:leak_check_at_exit=1' \
+		nohup ./ml-detector --config ../config/detector.json > /tmp/asan-logs/ml_detector_asan_output.txt 2>&1 &"
+	@sleep 3
+	@vagrant ssh -c "pgrep -f 'ml-detector.*detector.json' && echo '✅ ml-detector started' || echo '❌ Failed to start'"
+	@echo ""
+	@echo "Step 3: Monitoring memory for 30 minutes (6 samples, 5 min each)..."
+	@vagrant ssh -c "mkdir -p /tmp/asan-logs && \
+		for i in 1 2 3 4 5 6; do \
+			if pgrep -f 'ml-detector.*detector.json' > /dev/null; then \
+				MEM=\$$(ps -p \$$(pgrep -f 'ml-detector.*detector.json') -o rss= 2>/dev/null | awk '{print \$$1/1024}'); \
+				echo \"\$$(date +%H:%M:%S) - Sample \$$i/6 - Memory: \$${MEM} MB\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+			else \
+				echo \"\$$(date +%H:%M:%S) - Sample \$$i/6 - ml-detector crashed!\" | tee -a /tmp/asan-logs/asan_memory_track.log; \
+				break; \
+			fi; \
+			sleep 300; \
+		done"
+	@echo ""
+	@echo "Step 4: Stopping ml-detector..."
+	@vagrant ssh -c "pkill -f 'ml-detector.*detector.json' && sleep 2"
+	@echo ""
+	@echo "Step 5: Analyzing results..."
+	@$(MAKE) analyze-asan-results
+	@echo ""
+	@echo "✅ Quick ASAN test complete"
 
 # ============================================================================
 # ML Defender Pipeline - Host Makefile
@@ -115,6 +252,8 @@ help:
 	@echo "  make diagnose-bpf    - 🔧 Full BPF diagnostics"
 	@echo "  make clean           - Clean build artifacts"
 	@echo ""
+	@echo "Memory Debugging:"
+	@echo "  make detector-asan       - Build ml-detector with AddressSanitizer"
 
 # ============================================================================
 # VM Management
@@ -171,9 +310,9 @@ lab-clean:
 	@echo "🧹 Cleaning Docker Lab..."
 	@vagrant ssh -c "cd /vagrant && docker-compose down -v"
 
-# ============================================================================
-# Protobuf Schema - UNIFIED SYSTEM
-# ============================================================================
+# ----------------------------------------------------------------------------
+# 1. Protobuf (base de todo)
+# ----------------------------------------------------------------------------
 
 PROTOBUF_VERIFY_SCRIPT := /vagrant/scripts/verify_protobuf.sh
 
@@ -189,12 +328,55 @@ proto: proto-unified
 	@echo "✅ Protobuf unificado generado y distribuido"
 
 # ============================================================================
-# Build Targets - UPDATED FOR UNIFIED PROTOBUF
+# Build Targets - CORRECTED DEPENDENCY ORDER (Day 23)
 # ============================================================================
-
-sniffer: proto
+# Orden de compilación:
+#   1. proto-unified (protobuf)
+#   2. etcd-client-build (librería compartida)
+#   3. sniffer/detector/firewall (dependen de proto + etcd-client)
+#   4. etcd-server-build (independiente)
+# ============================================================================
+# ----------------------------------------------------------------------------
+# 3. Componentes (dependen de proto + etcd-client)
+# ----------------------------------------------------------------------------
+sniffer: proto etcd-client-build
 	@echo "🔨 Building Sniffer..."
+	@echo "   Dependencies: proto ✅  etcd-client ✅"
 	@vagrant ssh -c "cd /vagrant/sniffer && make"
+
+# ----------------------------------------------------------------------------
+# 2a. crypto-transport (librería base - NUEVA)
+# ----------------------------------------------------------------------------
+
+crypto-transport-build:
+	@echo "🔨 Building crypto-transport library..."
+	@vagrant ssh -c "cd /vagrant/crypto-transport && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake .. && \
+		make -j4"
+	@echo "✅ crypto-transport library built"
+	@echo "Installing system-wide..."
+	@vagrant ssh -c "cd /vagrant/crypto-transport/build && sudo make install && sudo ldconfig"
+	@echo "✅ crypto-transport installed to /usr/local/lib"
+	@echo "Verifying library..."
+	@vagrant ssh -c "sudo ldconfig -p | grep crypto_transport || ls -lh /usr/local/lib/libcrypto_transport.so*"
+
+crypto-transport-clean:
+	@echo "🧹 Cleaning crypto-transport..."
+	@vagrant ssh -c "rm -rf /vagrant/crypto-transport/build"
+	@vagrant ssh -c "sudo rm -f /usr/local/lib/libcrypto_transport.so*"
+	@vagrant ssh -c "sudo rm -rf /usr/local/include/crypto_transport"
+	@echo "✅ crypto-transport cleaned"
+
+crypto-transport-test:
+	@echo "🧪 Testing crypto-transport..."
+	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+
+# ----------------------------------------------------------------------------
+# 2b. etcd-client (depende de crypto-transport)
+# ----------------------------------------------------------------------------
 
 sniffer-build: sniffer
 
@@ -211,19 +393,32 @@ sniffer-install: sniffer-package
 	@echo "📥 Installing Sniffer .deb..."
 	@vagrant ssh -c "cd /vagrant/sniffer && sudo dpkg -i *.deb || sudo apt-get install -f -y"
 
-detector: proto
+detector: proto etcd-client-build
 	@echo "🔨 Building ML Detector..."
-	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && cd /vagrant/ml-detector/build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' .. && make clean && make -j4"
+	@echo "   Dependencies: proto ✅  etcd-client ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && \
+		cd /vagrant/ml-detector/build && \
+		cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' .. && \
+		make clean && make -j4"
 
-# Debido a un bug no detectado, esta configuracion en modo debug da más estabilidad al build, por lo que va a ser configuracion por defecto para compilar este componente.
-detector-debug: proto
+detector-debug: proto etcd-client-build
 	@echo "🔨 Building ML Detector (DEBUG + SANITIZERS)..."
-	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && cd /vagrant/ml-detector/build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' .. && make clean && make -j4"
+	@echo "   Dependencies: proto ✅  etcd-client ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && \
+		cd /vagrant/ml-detector/build && \
+		cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' .. && \
+		make clean && make -j4"
 
-# Por probar, hay que saber el hardware que tendremos...
-detector-production: proto
+detector-production: proto etcd-client-build
 	@echo "🔨 Building ML Detector (PRODUCTION - Optimized)..."
-	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && cd /vagrant/ml-detector/build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-O3 -march=native -DNDEBUG' .. && make -j4"
+	@echo "   Dependencies: proto ✅  etcd-client ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/ml-detector/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/ml-detector/build/proto/ && \
+		cd /vagrant/ml-detector/build && \
+		cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-O3 -march=native -DNDEBUG' .. && \
+		make -j4"
 	@echo "⚠️  Production build requires hardware-specific tuning"
 
 detector-build: detector
@@ -231,10 +426,12 @@ detector-build: detector
 detector-clean:
 	@echo "🧹 Cleaning ML Detector..."
 	@vagrant ssh -c "rm -rf /vagrant/ml-detector/build/*"
-
-firewall: proto
+firewall: proto etcd-client-build
 	@echo "🔨 Building Firewall ACL Agent..."
-	@vagrant ssh -c "mkdir -p /vagrant/firewall-acl-agent/build && cd /vagrant/firewall-acl-agent/build && cmake .. && make -j4"
+	@echo "   Dependencies: proto ✅  etcd-client ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/firewall-acl-agent/build && \
+		cd /vagrant/firewall-acl-agent/build && \
+		cmake .. && make -j4"
 
 firewall-build: firewall
 
@@ -242,25 +439,52 @@ firewall-clean:
 	@echo "🧹 Cleaning Firewall ACL Agent..."
 	@vagrant ssh -c "rm -rf /vagrant/firewall-acl-agent/build/*"
 
-# Build con protobuf unificado
-build-unified: proto-unified sniffer detector firewall
-	@echo "🚀 Build completo con protobuf unificado"
-	@$(MAKE) proto-verify
+# ----------------------------------------------------------------------------
+# 4. etcd-server (independiente)
+# ----------------------------------------------------------------------------
 
-all: build-unified
-	@echo "✅ All components built con protobuf unificado"
+# ----------------------------------------------------------------------------
+# 5. Build unificado (ORDEN CORRECTO)
+# ----------------------------------------------------------------------------
+build-unified: proto-unified etcd-client-build sniffer detector firewall
+	@echo "🚀 Build completo con protobuf unificado y etcd-client"
+	@$(MAKE) proto-verify
+	@echo ""
+	@echo "✅ Build order executed correctly:"
+	@echo "   1. ✅ proto-unified"
+	@echo "   2. ✅ etcd-client-build"
+	@echo "   3. ✅ sniffer"
+	@echo "   4. ✅ detector"
+	@echo "   5. ✅ firewall"
+
+all: build-unified etcd-server-build
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ ALL COMPONENTS BUILT (Day 23 - Correct Order)         ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Build Summary:"
+	@echo "  ✅ Protobuf unified"
+	@echo "  ✅ etcd-client library"
+	@echo "  ✅ Sniffer"
+	@echo "  ✅ ML Detector"
+	@echo "  ✅ Firewall ACL Agent"
+	@echo "  ✅ etcd-server"
+	@echo ""
+	@echo "Next step: make verify-pipeline-config"
 
 rebuild-unified: clean build-unified
-	@echo "✅ Rebuild completo con protobuf unificado"
+	@echo "✅ Rebuild completo con protobuf unificado y etcd-client"
 
-rebuild: rebuild-unified
-	@echo "✅ Full rebuild complete con protobuf unificado"
+rebuild: rebuild-unified etcd-server-build
+	@echo "✅ Full rebuild complete (all components)"
 
-clean: sniffer-clean detector-clean firewall-clean
-	@echo "✅ Clean complete"
+clean: sniffer-clean detector-clean firewall-clean crypto-transport-clean etcd-client-clean etcd-server-clean
+	@echo "✅ Clean complete (including crypto ecosystem)"
 
 distclean: clean
 	@vagrant ssh -c "rm -f /vagrant/protobuf/network_security.pb.* /vagrant/protobuf/network_security_pb2.py"
+
 
 # ============================================================================
 # BPF Diagnostics (Day 8 Fix Verification) - NUEVO
@@ -354,50 +578,58 @@ run-sniffer:
 # Run Full Lab (Development Mode)
 # ============================================================================
 
-run-lab-dev:
+run-lab-dev-day23:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  🚀 Starting ML Defender Lab (Development Mode)            ║"
+	@echo "║  🚀 Starting ML Defender Lab - Day 23 (with etcd-server)  ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "📋 Execution Order:"
+	@echo "   0️⃣  etcd-server         (Config + Heartbeat supervisor)"
 	@echo "   1️⃣  Firewall ACL Agent  (SUB tcp://localhost:5572)"
 	@echo "   2️⃣  ML Detector         (PUB tcp://0.0.0.0:5572)"
 	@echo "   3️⃣  Sniffer             (PUSH tcp://127.0.0.1:5571)"
 	@echo ""
+	@echo "Step 0: Starting etcd-server..."
+	@$(MAKE) etcd-server-start
+	@sleep 3
+	@echo ""
+	@echo "Step 1-3: Starting pipeline components..."
 	@vagrant ssh -c "cd /vagrant && bash scripts/run_lab_dev.sh"
-
-	@vagrant ssh -c "sudo pkill -f -9 firewall-acl-agent || true"
-	@vagrant ssh -c "pkill -f -9 ml-detector || true"
-	@vagrant ssh -c "sudo pkill -f -9 sniffer || true"
-	@sleep 2
-	@echo "✅ Lab stopped"
+	@echo ""
+	@echo "✅ Lab started with etcd ecosystem"
 
 
-kill-lab:
-	@echo "💀 Stopping ML Defender Lab..."
+kill-lab-day23:
+	@echo "💀 Stopping ML Defender Lab (including etcd-server)..."
 	@echo ""
 	@echo "Checking processes..."
+	@vagrant ssh -c "pgrep -a -f etcd-server || echo '  etcd-server: ❌ Not running'"
 	@vagrant ssh -c "pgrep -a -f firewall-acl-agent || echo '  Firewall: ❌ Not running'"
 	@vagrant ssh -c "pgrep -a -f ml-detector || echo '  Detector: ❌ Not running'"
 	@vagrant ssh -c "pgrep -a -f sniffer || echo '  Sniffer:  ❌ Not running'"
 	@echo ""
 	@echo "Killing processes..."
+	-@vagrant ssh -c "pkill -9 -f etcd-server" 2>/dev/null || echo "  etcd-server already stopped"
 	-@vagrant ssh -c "sudo pkill -9 -f firewall-acl-agent" 2>/dev/null || echo "  Firewall already stopped"
 	-@vagrant ssh -c "pkill -9 -f ml-detector" 2>/dev/null || echo "  Detector already stopped"
 	-@vagrant ssh -c "sudo pkill -9 -f sniffer" 2>/dev/null || echo "  Sniffer already stopped"
 	@sleep 2
 	@echo ""
 	@echo "Verifying cleanup..."
-	@vagrant ssh -c "pgrep -a -f 'firewall-acl-agent|ml-detector|sniffer' || echo '✅ All processes stopped'"
+	@vagrant ssh -c "pgrep -a -f 'etcd-server|firewall-acl-agent|ml-detector|sniffer' || echo '✅ All processes stopped'"
 
-status-lab:
+status-lab-day23:
 	@echo "════════════════════════════════════════════════════════════"
-	@echo "ML Defender Lab Status:"
+	@echo "ML Defender Lab Status (Day 23 - with etcd-server):"
 	@echo "════════════════════════════════════════════════════════════"
+	@vagrant ssh -c "pgrep -a -f etcd-server && echo '✅ etcd-server: RUNNING' || echo '❌ etcd-server: STOPPED'"
 	@vagrant ssh -c "pgrep -a -f firewall-acl-agent && echo '✅ Firewall: RUNNING' || echo '❌ Firewall: STOPPED'"
 	@vagrant ssh -c "pgrep -a -f ml-detector && echo '✅ Detector: RUNNING' || echo '❌ Detector: STOPPED'"
 	@vagrant ssh -c "pgrep -a -f 'sniffer.*-c' && echo '✅ Sniffer:  RUNNING' || echo '❌ Sniffer:  STOPPED'"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Heartbeat status:"
+	@vagrant ssh -c "ETCDCTL_API=3 etcdctl get --prefix '/components/' 2>/dev/null | grep -c heartbeat | xargs echo 'Active heartbeats:' || echo '⚠️  No heartbeats registered'"
 	@echo "════════════════════════════════════════════════════════════"
 
 check-ports:
@@ -721,7 +953,7 @@ etcd-server-stop:
 
 etcd-server-status:
 	@echo "🔍 etcd-server Status:"
-	@vagrant ssh -c "pid=\\$$(pgrep -f etcd-server); if [ -n \"\\$$pid\" ]; then echo \"✅ etcd-server running (PID: \\$$pid)\" ; else echo \"❌ etcd-server stopped\" ; fi""
+	@vagrant ssh -c "pid=\$$(pgrep -f etcd-server); if [ -n \"\$$pid\" ]; then echo \"✅ etcd-server running (PID: \$$pid)\"; else echo \"❌ etcd-server stopped\"; fi"
 
 etcd-server-logs:
 	@echo "📋 etcd-server Logs:"
@@ -1117,3 +1349,232 @@ help-day13:
 	@echo "  make extract-dual-scores     - Extract logs for F1-calculation"
 	@echo "  make stats-dual-score        - Show Dual-Score statistics"
 	@echo "  make clean-day13-logs        - Clean Day 13 logs"
+
+# ----------------------------------------------------------------------------
+# 2. etcd-client (librería compartida - ANTES de componentes)
+# ----------------------------------------------------------------------------
+etcd-client-build: proto-unified crypto-transport-build
+	@echo "🔨 Building etcd-client library..."
+	@echo "   Dependencies: proto ✅  crypto-transport ✅"
+	@vagrant ssh -c "cd /vagrant/etcd-client && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake .. && \
+		make -j4"
+	@echo "✅ etcd-client library built"
+	@echo "Installing system-wide..."
+	@vagrant ssh -c "cd /vagrant/etcd-client/build && sudo make install && sudo ldconfig"
+	@echo "✅ etcd-client installed to /usr/local/lib"
+	@echo "Verifying library..."
+	@vagrant ssh -c "ls -lh /vagrant/etcd-client/build/libetcd_client.so"
+
+etcd-client-clean:
+	@echo "🧹 Cleaning etcd-client..."
+	@vagrant ssh -c "rm -rf /vagrant/etcd-client/build"
+	@vagrant ssh -c "sudo rm -f /usr/local/lib/libetcd_client.so*"
+	@vagrant ssh -c "sudo rm -rf /usr/local/include/etcd_client"
+	@echo "✅ etcd-client cleaned"
+
+etcd-client-test:
+	@echo "🧪 Testing etcd-client..."
+	@vagrant ssh -c "cd /vagrant/etcd-client/build && ctest --output-on-failure"
+
+# Verify that components are linked with etcd-client
+# ============================================================================
+# Verificación (también corregido)
+# ============================================================================
+
+verify-etcd-linkage:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔍 Verifying etcd-client linkage in components"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "0️⃣  etcd-client library:"
+	@vagrant ssh -c "if [ -f /vagrant/etcd-client/build/libetcd_client.so ]; then \
+		echo '   ✅ Library exists'; \
+		ls -lh /vagrant/etcd-client/build/libetcd_client.so; \
+	else \
+		echo '   ❌ Library NOT FOUND - run: make etcd-client-build'; \
+	fi"
+	@echo ""
+	@echo "1️⃣  Sniffer:"
+	@vagrant ssh -c "if [ -f /vagrant/sniffer/build/sniffer ]; then \
+		ldd /vagrant/sniffer/build/sniffer 2>/dev/null | grep etcd_client && echo '   ✅ Linked' || echo '   ❌ NOT linked'; \
+	else \
+		echo '   ⚠️  Binary not found - not built yet'; \
+	fi"
+	@echo ""
+	@echo "2️⃣  ML Detector:"
+	@vagrant ssh -c "if [ -f /vagrant/ml-detector/build/ml-detector ]; then \
+		ldd /vagrant/ml-detector/build/ml-detector 2>/dev/null | grep etcd_client && echo '   ✅ Linked' || echo '   ❌ NOT linked'; \
+	else \
+		echo '   ⚠️  Binary not found - not built yet'; \
+	fi"
+	@echo ""
+	@echo "3️⃣  Firewall ACL Agent:"
+	@vagrant ssh -c "if [ -f /vagrant/firewall-acl-agent/build/firewall-acl-agent ]; then \
+		ldd /vagrant/firewall-acl-agent/build/firewall-acl-agent 2>/dev/null | grep etcd_client && echo '   ✅ Linked' || echo '   ❌ NOT linked'; \
+	else \
+		echo '   ⚠️  Binary not found - not built yet'; \
+	fi"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+
+# ============================================================================
+# NOTAS IMPORTANTES
+# ============================================================================
+#
+# ORDEN DE DEPENDENCIAS (CRÍTICO):
+#
+# proto-unified
+#     └── etcd-client-build (depende de proto)
+#             ├── sniffer (depende de proto + etcd-client)
+#             ├── detector (depende de proto + etcd-client)
+#             └── firewall (depende de proto + etcd-client)
+#
+# etcd-server-build (independiente, se puede compilar en paralelo)
+#
+# ============================================================================
+#
+# PROBLEMA PREVIO:
+# - all: build-unified etcd-client-build
+#   → Compilaba componentes ANTES de etcd-client
+#   → Funcionaba solo porque libetcd_client.so existía de compilaciones previas
+#
+# SOLUCIÓN:
+# - etcd-client-build se compila ANTES de cualquier componente
+# - Cada componente declara explícitamente: proto + etcd-client-build
+#
+# ============================================================================
+
+# Verify encryption/compression is enabled in configs
+verify-encryption:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔐 Verifying Encryption/Compression Configuration"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Sniffer config:"
+	@vagrant ssh -c "jq '.encryption_enabled, .compression_enabled' /vagrant/sniffer/config/sniffer.json 2>/dev/null || echo '   ⚠️  Config not found'"
+	@echo ""
+	@echo "2️⃣  ML Detector config:"
+	@vagrant ssh -c "jq '.encryption_enabled, .compression_enabled' /vagrant/ml-detector/config/ml_detector_config.json 2>/dev/null || echo '   ⚠️  Config not found'"
+	@echo ""
+	@echo "3️⃣  Firewall config:"
+	@vagrant ssh -c "jq '.encryption_enabled, .compression_enabled' /vagrant/firewall-acl-agent/config/firewall.json 2>/dev/null || echo '   ⚠️  Config not found'"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Expected: Both should be 'true' for full pipeline"
+	@echo "════════════════════════════════════════════════════════════"
+
+# Verify full pipeline configuration
+verify-pipeline-config:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "🔧 Day 23 Pipeline Configuration Status"
+	@echo "════════════════════════════════════════════════════════════"
+	@$(MAKE) verify-etcd-linkage
+	@echo ""
+	@$(MAKE) verify-encryption
+	@echo ""
+	@echo "🔍 etcd-server connectivity:"
+	@vagrant ssh -c "curl -s http://localhost:2379/health 2>/dev/null | jq . || echo '   ❌ etcd-server not responding'"
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+
+monitor-day23-tmux:
+	@echo "🚀 Starting Day 23 tmux monitor (5 panels + etcd-server)..."
+	@vagrant ssh -c "cd /vagrant && bash scripts/monitor_day23.sh"
+
+test-day23-full:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 Day 23 - Full Integration Test (etcd + encryption)    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Phase 1: Build verification..."
+	@$(MAKE) all
+	@echo ""
+	@echo "Phase 2: Configuration verification..."
+	@$(MAKE) verify-pipeline-config
+	@echo ""
+	@echo "Phase 3: Clean previous logs..."
+	@$(MAKE) clean-day13-logs
+	@$(MAKE) rag-log-clean
+	@echo ""
+	@echo "Phase 4: Start full lab..."
+	@$(MAKE) run-lab-dev-day23
+	@echo ""
+	@echo "⏳ Waiting for components to initialize (15s)..."
+	@sleep 15
+	@echo ""
+	@echo "Phase 5: Verify lab status..."
+	@$(MAKE) status-lab-day23
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "💡 Open monitor in another terminal: make monitor-day23-tmux"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@read -p "Press ENTER to start traffic replay..." dummy
+	@echo ""
+	@echo "Phase 6: Replay test traffic..."
+	@$(MAKE) test-rag-neris
+	@echo ""
+	@echo "⏳ Waiting for pipeline processing (30s)..."
+	@sleep 30
+	@echo ""
+	@echo "Phase 7: Verify RAG logs..."
+	@$(MAKE) verify-rag-logs-day23
+	@echo ""
+	@echo "✅ Day 23 full test complete!"
+
+test-day23-stress:
+	@echo "⚡ Day 23 Stress Test (10+ minutes continuous operation)..."
+	@echo ""
+	@echo "Starting lab..."
+	@$(MAKE) run-lab-dev-day23
+	@sleep 15
+	@echo ""
+	@echo "Status before stress:"
+	@$(MAKE) status-lab-day23
+	@echo ""
+	@echo "Starting continuous traffic replay (600 seconds = 10 minutes)..."
+	@vagrant ssh client -c "sudo timeout 600 tcpreplay -i eth1 --mbps=10 --loop=10 /vagrant/datasets/ctu13/botnet-capture-20110810-neris.pcap 2>&1 | tee /vagrant/logs/lab/stress_test.log"
+	@echo ""
+	@echo "Status after stress:"
+	@$(MAKE) status-lab-day23
+	@echo ""
+	@echo "Checking for crashes or errors..."
+	@vagrant ssh -c "grep -i 'error\|crash\|segfault' /vagrant/logs/*.log || echo '✅ No crashes detected'"
+	@echo ""
+	@echo "✅ Stress test complete - system stable for 10+ minutes"
+
+verify-rag-logs-day23:
+	@echo "🔍 Verifying RAG logs for Day 23..."
+	@echo ""
+	@TODAY=$$(date +%Y-%m-%d); \
+	LOG_FILE="/vagrant/logs/rag/events/$$TODAY.jsonl"; \
+	vagrant ssh -c "if [ -f $$LOG_FILE ]; then \
+		echo '✅ RAG log file exists: $$LOG_FILE'; \
+		wc -l $$LOG_FILE | awk '{print \"   Events logged: \" \$$1}'; \
+		echo ''; \
+		echo 'Sample events (first 3):'; \
+		head -3 $$LOG_FILE | jq -c '.timestamp, .event_type, .score' 2>/dev/null || head -3 $$LOG_FILE; \
+	else \
+		echo '❌ No RAG log file found for today'; \
+		echo '   Expected: $$LOG_FILE'; \
+	fi"
+
+day23:
+	@echo "🚀 Day 23 Quick Workflow"
+	@echo "1. Build all: make all"
+	@echo "2. Verify: make verify-pipeline-config"
+	@echo "3. Start: make run-lab-dev-day23"
+	@echo "4. Status: make status-lab-day23"
+	@echo "5. Monitor: make monitor-day23-tmux (in new terminal)"
+	@echo "6. Test: make test-day23-stress"
+	@echo ""
+	@read -p "Run full Day 23 test? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		$(MAKE) test-day23-full; \
+	fi

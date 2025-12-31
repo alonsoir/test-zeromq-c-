@@ -137,6 +137,10 @@ bool strict_load_json_config(const std::string& config_path, StrictSnifferConfig
         config.compression.compression_ratio_threshold = sniffer_config->transport.compression.compression_ratio_threshold;
         config.compression.adaptive_compression = sniffer_config->transport.compression.adaptive_compression;
 
+        // etcd - Day 20 mapping
+        config.etcd.enabled = sniffer_config->etcd.enabled;
+        config.etcd.endpoints = sniffer_config->etcd.endpoints;
+
         // Monitoring
         config.monitoring.stats_interval_seconds = sniffer_config->monitoring.stats_interval_seconds;
 

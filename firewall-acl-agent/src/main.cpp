@@ -15,6 +15,7 @@
 #include "firewall/iptables_wrapper.hpp"
 #include "firewall/batch_processor.hpp"
 #include "firewall/zmq_subscriber.hpp"
+#include "firewall/etcd_client.hpp"
 
 #include <json/json.h>
 #include <unistd.h>
@@ -166,7 +167,8 @@ int main(int argc, char** argv) {
               << "║  Target: 1M+ packets/sec                               ║\n"
               << "╚════════════════════════════════════════════════════════╝\n"
               << std::endl;
-    
+    // ✅ Day 23: Declarar etcd_client FUERA del try para evitar bloqueo en destructor
+    std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
     // Load configuration using new ConfigLoader
     FirewallAgentConfig config;
     try {
@@ -183,22 +185,54 @@ int main(int argc, char** argv) {
         }
         
         ConfigLoader::log_config_summary(config);
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ETCD INTEGRATION - Register component and upload config
+        // ═══════════════════════════════════════════════════════════════════════
+        // std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
+
+        if (config.etcd.enabled) {
+            std::string etcd_endpoint = config.etcd.endpoints[0];
+
+            std::cout << "🔗 [etcd] Initializing connection to " << etcd_endpoint << std::endl;
+
+            etcd_client = std::make_unique<mldefender::firewall::EtcdClient>(
+                etcd_endpoint,
+                "firewall-acl-agent"
+            );
+
+            if (!etcd_client->initialize()) {
+                std::cerr << "⚠️  [etcd] Failed to initialize - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else if (!etcd_client->registerService()) {
+                std::cerr << "⚠️  [etcd] Failed to register service - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else {
+                std::cout << "✅ [etcd] firewall-acl-agent registered and config uploaded" << std::endl;
+            }
+        } else {
+            std::cout << "⏭️  [etcd] etcd integration disabled in config" << std::endl;
+        }
         
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Failed to load configuration: " << e.what() << std::endl;
         return 1;
     }
-    
+
+	std::cout << "[DEBUG] ✅ First try-catch block completed" << std::endl;  // ← AÑADIR
+
     if (test_config) {
         std::cout << "[INFO] Configuration test passed ✓" << std::endl;
         return 0;
     }
-    
+        std::cout << "[DEBUG] ✅ test_config check passed" << std::endl;  // ← AÑADIR
+
     if (getuid() != 0 && !config.operation.dry_run) {
         std::cerr << "[ERROR] This program must be run as root (or use dry_run mode)" << std::endl;
         return 1;
     }
-    
+    std::cout << "[DEBUG] ✅ Permission check passed" << std::endl;  // ← AÑADIR
+    std::cout << "[DEBUG] 🚀 Starting second try block..." << std::endl;  // ← AÑADIR
     try {
         // Convert new config structs to old wrapper configs
         // TODO: Eventually refactor wrappers to use new config directly
@@ -306,6 +340,39 @@ int main(int argc, char** argv) {
         zmq_config.reconnect_interval_ms = config.zmq.reconnect_interval_ms;
         zmq_config.max_reconnect_interval_ms = config.zmq.max_reconnect_interval_ms;
         zmq_config.enable_reconnect = config.zmq.enable_reconnect;
+
+        // ✅ Day 23: Transport configuration (encryption + compression)
+        if (config.transport.compression.enabled) {
+            zmq_config.compression_enabled = true;
+            std::cout << "[INIT] 📦 LZ4 decompression ENABLED" << std::endl;
+        } else {
+            zmq_config.compression_enabled = false;
+            std::cout << "[INIT] ⏭️  LZ4 decompression DISABLED" << std::endl;
+        }
+
+        if (config.transport.encryption.enabled) {
+            zmq_config.encryption_enabled = true;
+
+            // Get crypto seed from etcd-server
+            if (!etcd_client) {
+                std::cerr << "[ERROR] Encryption enabled but etcd not initialized" << std::endl;
+                std::cerr << "[ERROR] Set etcd.enabled = true in firewall.json" << std::endl;
+                return 1;
+            }
+
+            zmq_config.crypto_token = etcd_client->get_crypto_seed();
+
+            if (zmq_config.crypto_token.empty()) {
+                std::cerr << "[ERROR] Failed to get crypto seed from etcd-server" << std::endl;
+                return 1;
+            }
+
+            std::cout << "[INIT] 🔐 ChaCha20-Poly1305 decryption ENABLED" << std::endl;
+            std::cout << "[INIT] 🔑 Crypto seed obtained from etcd-server" << std::endl;
+        } else {
+            zmq_config.encryption_enabled = false;
+            std::cout << "[INIT] ⏭️  Decryption DISABLED" << std::endl;
+        }
         
         std::cout << "[INIT] Initializing ZMQ subscriber..." << std::endl;
         ZMQSubscriber subscriber(processor, zmq_config);

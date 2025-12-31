@@ -1,0 +1,1856 @@
+ml-detector/build_detector_test/CMakeFiles/4.0.2/CompilerIdCXX/CMakeCXXCompilerId.cpp:780:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
+                                                                            ^
+ml-detector/build_detector_test/CMakeFiles/4.0.2/CompilerIdCXX/CMakeCXXCompilerId.cpp:752:28: error: syntax error [syntaxError]
+char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
+                           ^
+ml-detector/build_detector_test/CMakeFiles/4.0.2/CompilerIdCXX/apple-sdk.cpp:1:0: information: Include file: <AvailabilityMacros.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <AvailabilityMacros.h>
+^
+ml-detector/src/config_loader.cpp:1:0: information: Include file: "config_loader.hpp" not found. [missingInclude]
+#include "config_loader.hpp"
+^
+ml-detector/src/config_loader.cpp:2:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+ml-detector/src/config_loader.cpp:3:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+ml-detector/src/config_loader.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+ml-detector/src/config_loader.cpp:5:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+ml-detector/src/config_loader.cpp:73:15: style: Variable 'comp' can be declared as reference to const [constVariableReference]
+        auto& comp = json_["component"];
+              ^
+ml-detector/src/config_loader.cpp:114:15: style: Variable 'in_sock' can be declared as reference to const [constVariableReference]
+        auto& in_sock = net["input_socket"];
+              ^
+ml-detector/src/config_loader.cpp:120:15: style: Variable 'out_sock' can be declared as reference to const [constVariableReference]
+        auto& out_sock = net["output_socket"];
+              ^
+ml-detector/src/config_loader.cpp:135:15: style: Variable 'conn' can be declared as reference to const [constVariableReference]
+        auto& conn = zmq["connection_settings"];
+              ^
+ml-detector/src/config_loader.cpp:145:15: style: Variable 'queue' can be declared as reference to const [constVariableReference]
+        auto& queue = zmq["queue_management"];
+              ^
+ml-detector/src/config_loader.cpp:158:15: style: Variable 'comp' can be declared as reference to const [constVariableReference]
+        auto& comp = transport["compression"];
+              ^
+ml-detector/src/config_loader.cpp:166:15: style: Variable 'enc' can be declared as reference to const [constVariableReference]
+        auto& enc = transport["encryption"];
+              ^
+ml-detector/src/config_loader.cpp:179:15: style: Variable 'etcd' can be declared as reference to const [constVariableReference]
+        auto& etcd = json_["etcd"];
+              ^
+ml-detector/src/config_loader.cpp:206:15: style: Variable 'affinity' can be declared as reference to const [constVariableReference]
+        auto& affinity = thread["cpu_affinity"];
+              ^
+ml-detector/src/config_loader.cpp:213:15: style: Variable 'priorities' can be declared as reference to const [constVariableReference]
+        auto& priorities = thread["thread_priorities"];
+              ^
+ml-detector/src/config_loader.cpp:228:15: style: Variable 'thresh' can be declared as reference to const [constVariableReference]
+        auto& thresh = ml["thresholds"];
+              ^
+ml-detector/src/config_loader.cpp:235:15: style: Variable 'l1' can be declared as reference to const [constVariableReference]
+        auto& l1 = ml["level1"];
+              ^
+ml-detector/src/config_loader.cpp:249:15: style: Variable 'l2ddos' can be declared as reference to const [constVariableReference]
+        auto& l2ddos = l2["ddos"];
+              ^
+ml-detector/src/config_loader.cpp:260:15: style: Variable 'l2ransom' can be declared as reference to const [constVariableReference]
+        auto& l2ransom = l2["ransomware"];
+              ^
+ml-detector/src/config_loader.cpp:274:15: style: Variable 'l3int' can be declared as reference to const [constVariableReference]
+        auto& l3int = l3["internal"];
+              ^
+ml-detector/src/config_loader.cpp:285:15: style: Variable 'l3web' can be declared as reference to const [constVariableReference]
+        auto& l3web = l3["web"];
+              ^
+ml-detector/src/config_loader.cpp:297:15: style: Variable 'inf' can be declared as reference to const [constVariableReference]
+        auto& inf = ml["inference"];
+              ^
+ml-detector/src/config_loader.cpp:308:15: style: Variable 'feat' can be declared as reference to const [constVariableReference]
+        auto& feat = ml["feature_extraction"];
+              ^
+ml-detector/src/config_loader.cpp:317:15: style: Variable 'degraded' can be declared as reference to const [constVariableReference]
+        auto& degraded = ml["degraded_mode"];
+              ^
+ml-detector/src/config_loader.cpp:333:15: style: Variable 'batch' can be declared as reference to const [constVariableReference]
+        auto& batch = proc["batch_processing"];
+              ^
+ml-detector/src/config_loader.cpp:353:15: style: Variable 'breaker' can be declared as reference to const [constVariableReference]
+        auto& breaker = back["circuit_breaker"];
+              ^
+ml-detector/src/config_loader.cpp:367:15: style: Variable 'ml_met' can be declared as reference to const [constVariableReference]
+        auto& ml_met = mon["ml_metrics"];
+              ^
+ml-detector/src/config_loader.cpp:374:15: style: Variable 'sys_met' can be declared as reference to const [constVariableReference]
+        auto& sys_met = mon["system_metrics"];
+              ^
+ml-detector/src/config_loader.cpp:381:15: style: Variable 'alerts' can be declared as reference to const [constVariableReference]
+        auto& alerts = mon["alerts"];
+              ^
+ml-detector/src/config_loader.cpp:394:15: style: Variable 'log' can be declared as reference to const [constVariableReference]
+        auto& log = json_["logging"];
+              ^
+ml-detector/src/config_loader.cpp:411:15: style: Variable 'pb' can be declared as reference to const [constVariableReference]
+        auto& pb = json_["protobuf"];
+              ^
+ml-detector/src/config_loader.cpp:427:15: style: Variable 'val' can be declared as reference to const [constVariableReference]
+        auto& val = sec["input_validation"];
+              ^
+ml-detector/src/config_loader.cpp:440:15: style: Variable 'perf' can be declared as reference to const [constVariableReference]
+        auto& perf = json_["performance"];
+              ^
+ml-detector/src/ddos_detector.cpp:2:0: information: Include file: "ml_defender/ddos_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ddos_detector.hpp"
+^
+ml-detector/src/ddos_detector.cpp:3:0: information: Include file: "ml_defender/ddos_trees_inline.hpp" not found. [missingInclude]
+#include "ml_defender/ddos_trees_inline.hpp"
+^
+ml-detector/src/feature_extractor.cpp:1:0: information: Include file: "feature_extractor.hpp" not found. [missingInclude]
+#include "feature_extractor.hpp"
+^
+ml-detector/src/feature_extractor.cpp:2:0: information: Include file: <spdlog/sinks/stdout_color_sinks.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <spdlog/sinks/stdout_color_sinks.h>
+^
+ml-detector/src/feature_extractor.cpp:3:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+ml-detector/src/feature_extractor.cpp:4:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+ml-detector/src/feature_extractor.cpp:5:0: information: Include file: <numeric> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <numeric>
+^
+ml-detector/src/feature_extractor.cpp:6:0: information: Include file: <limits> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits>
+^
+ml-detector/src/internal_detector.cpp:2:0: information: Include file: "ml_defender/internal_detector.hpp" not found. [missingInclude]
+#include "ml_defender/internal_detector.hpp"
+^
+ml-detector/src/internal_detector.cpp:3:0: information: Include file: "ml_defender/internal_trees_inline.hpp" not found. [missingInclude]
+#include "ml_defender/internal_trees_inline.hpp"
+^
+ml-detector/src/logger.cpp:1:0: information: Include file: "logger.hpp" not found. [missingInclude]
+#include "logger.hpp"
+^
+ml-detector/src/logger.cpp:2:0: information: Include file: <spdlog/sinks/stdout_color_sinks.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <spdlog/sinks/stdout_color_sinks.h>
+^
+ml-detector/src/logger.cpp:3:0: information: Include file: <spdlog/sinks/basic_file_sink.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <spdlog/sinks/basic_file_sink.h>
+^
+ml-detector/src/logger.cpp:4:0: information: Include file: <spdlog/sinks/rotating_file_sink.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <spdlog/sinks/rotating_file_sink.h>
+^
+ml-detector/src/logger.cpp:5:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+ml-detector/src/main.cpp:1:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+ml-detector/src/main.cpp:2:0: information: Include file: <csignal> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <csignal>
+^
+ml-detector/src/main.cpp:3:0: information: Include file: <atomic> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <atomic>
+^
+ml-detector/src/main.cpp:4:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+ml-detector/src/main.cpp:5:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+ml-detector/src/main.cpp:6:0: information: Include file: "config_loader.hpp" not found. [missingInclude]
+#include "config_loader.hpp"
+^
+ml-detector/src/main.cpp:7:0: information: Include file: "logger.hpp" not found. [missingInclude]
+#include "logger.hpp"
+^
+ml-detector/src/main.cpp:8:0: information: Include file: "onnx_model.hpp" not found. [missingInclude]
+#include "onnx_model.hpp"
+^
+ml-detector/src/main.cpp:9:0: information: Include file: "feature_extractor.hpp" not found. [missingInclude]
+#include "feature_extractor.hpp"
+^
+ml-detector/src/main.cpp:10:0: information: Include file: "zmq_handler.hpp" not found. [missingInclude]
+#include "zmq_handler.hpp"
+^
+ml-detector/src/main.cpp:11:0: information: Include file: "ml_defender/ransomware_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ransomware_detector.hpp"
+^
+ml-detector/src/main.cpp:12:0: information: Include file: "ml_defender/ddos_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ddos_detector.hpp"        // ✅ Ya existe
+^
+ml-detector/src/main.cpp:13:0: information: Include file: "ml_defender/traffic_detector.hpp" not found. [missingInclude]
+#include "ml_defender/traffic_detector.hpp"     // ✅ Ya existe
+^
+ml-detector/src/main.cpp:14:0: information: Include file: "ml_defender/internal_detector.hpp" not found. [missingInclude]
+#include "ml_defender/internal_detector.hpp"    // ✅ Ya existe
+^
+ml-detector/src/main.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+ml-detector/src/onnx_model.cpp:1:0: information: Include file: "onnx_model.hpp" not found. [missingInclude]
+#include "onnx_model.hpp"
+^
+ml-detector/src/onnx_model.cpp:2:0: information: Include file: <spdlog/sinks/stdout_color_sinks.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <spdlog/sinks/stdout_color_sinks.h>
+^
+ml-detector/src/onnx_model.cpp:3:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+ml-detector/src/onnx_model.cpp:4:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+ml-detector/src/protobuf/network_security.pb.h:7:0: information: Include file: <limits> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits>
+^
+ml-detector/src/protobuf/network_security.pb.h:8:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+ml-detector/src/protobuf/network_security.pb.h:10:0: information: Include file: <google/protobuf/port_def.inc> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <google/protobuf/port_def.inc>
+^
+ml-detector/src/protobuf/network_security.pb.h:12:2: error: #error This file was generated by a newer version of protoc which is [preprocessorErrorDirective]
+#error This file was generated by a newer version of protoc which is
+ ^
+ml-detector/src/protobuf/network_security.pb.cc:0:0: information: This file is not analyzed. Cppcheck failed to extract a valid configuration. Use -v for more details. [noValidConfiguration]
+
+^
+ml-detector/src/rag_logger.cpp:10:0: information: Include file: "rag_logger.hpp" not found. [missingInclude]
+#include "rag_logger.hpp"
+^
+ml-detector/src/rag_logger.cpp:11:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+ml-detector/src/rag_logger.cpp:12:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+ml-detector/src/rag_logger.cpp:13:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+ml-detector/src/rag_logger.cpp:14:0: information: Include file: <filesystem> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <filesystem>
+^
+ml-detector/src/rag_logger.cpp:15:0: information: Include file: <openssl/sha.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <openssl/sha.h>
+^
+ml-detector/src/ransomware_detector.cpp:4:0: information: Include file: "ml_defender/ransomware_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ransomware_detector.hpp"
+^
+ml-detector/src/forest_trees_inline.hpp:9:0: information: Include file: <cstdint> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstdint>
+^
+ml-detector/src/forest_trees_inline.hpp:10:0: information: Include file: <cstddef> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstddef>
+^
+ml-detector/src/ransomware_detector.cpp:7:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+ml-detector/src/ransomware_detector.cpp:8:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+ml-detector/src/traffic_detector.cpp:2:0: information: Include file: "ml_defender/traffic_detector.hpp" not found. [missingInclude]
+#include "ml_defender/traffic_detector.hpp"
+^
+ml-detector/src/traffic_detector.cpp:3:0: information: Include file: "ml_defender/traffic_trees_inline.hpp" not found. [missingInclude]
+#include "ml_defender/traffic_trees_inline.hpp"
+^
+ml-detector/src/zmq_handler.cpp:1:0: information: Include file: "zmq_handler.hpp" not found. [missingInclude]
+#include "zmq_handler.hpp"
+^
+ml-detector/src/zmq_handler.cpp:2:0: information: Include file: "rag_logger.hpp" not found. [missingInclude]
+#include "rag_logger.hpp"
+^
+ml-detector/src/zmq_handler.cpp:3:0: information: Include file: <spdlog/sinks/stdout_color_sinks.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <spdlog/sinks/stdout_color_sinks.h>
+^
+ml-detector/src/zmq_handler.cpp:4:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+ml-detector/src/zmq_handler.cpp:5:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+ml-detector/src/zmq_handler.cpp:6:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>  // Para sysconf()
+^
+ml-detector/src/zmq_handler.cpp:7:0: information: Include file: <cstdio> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstdio>    // Para FILE, fopen, etc.
+^
+ml-detector/src/zmq_handler.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+ml-detector/tests/integration/test_ransomware_detector_integration.cpp:2:0: information: Include file: "ml_defender/ransomware_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ransomware_detector.hpp"
+^
+ml-detector/tests/integration/test_ransomware_detector_integration.cpp:3:0: information: Include file: "classifier_tricapa.hpp" not found. [missingInclude]
+#include "classifier_tricapa.hpp"
+^
+ml-detector/tests/integration/test_ransomware_detector_integration.cpp:4:0: information: Include file: "feature_extractor.hpp" not found. [missingInclude]
+#include "feature_extractor.hpp"
+^
+ml-detector/tests/integration/test_ransomware_detector_integration.cpp:5:0: information: Include file: "config_loader.hpp" not found. [missingInclude]
+#include "config_loader.hpp"
+^
+ml-detector/tests/integration/test_ransomware_detector_integration.cpp:46:54: error: syntax error [syntaxError]
+    RansomwareDetector::Features borderline_features = /* ... */;
+                                                     ^
+ml-detector/tests/unit/test_detectors.cpp:4:0: information: Include file: "ml_defender/ddos_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ddos_detector.hpp"
+^
+ml-detector/tests/unit/test_detectors.cpp:5:0: information: Include file: "ml_defender/traffic_detector.hpp" not found. [missingInclude]
+#include "ml_defender/traffic_detector.hpp"
+^
+ml-detector/tests/unit/test_detectors.cpp:6:0: information: Include file: "ml_defender/internal_detector.hpp" not found. [missingInclude]
+#include "ml_defender/internal_detector.hpp"
+^
+ml-detector/tests/unit/test_detectors.cpp:7:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+ml-detector/tests/unit/test_detectors.cpp:8:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+ml-detector/tests/unit/test_detectors.cpp:9:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+ml-detector/tests/unit/test_detectors.cpp:10:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+ml-detector/tests/unit/test_detectors.cpp:259:18: style: Consider using std::fill or std::generate algorithm instead of a raw loop. [useStlAlgorithm]
+        features = {
+                 ^
+ml-detector/tests/unit/test_ransomware_detector.cpp:4:0: information: Include file: "ml_defender/ransomware_detector.hpp" not found. [missingInclude]
+#include "ml_defender/ransomware_detector.hpp"
+^
+ml-detector/tests/unit/test_ransomware_detector.cpp:6:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+ml-detector/tests/unit/test_ransomware_detector.cpp:7:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+ml-detector/tests/unit/test_ransomware_detector.cpp:8:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+ml-detector/tests/unit/test_ransomware_detector.cpp:9:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/cmake-build-debug/CMakeFiles/4.0.2/CompilerIdC/CMakeCCompilerId.c:801:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
+                                                                            ^
+sniffer/cmake-build-debug/CMakeFiles/4.0.2/CompilerIdC/CMakeCCompilerId.c:773:28: error: syntax error [syntaxError]
+char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
+                           ^
+sniffer/cmake-build-debug/CMakeFiles/4.0.2/CompilerIdC/apple-sdk.c:1:0: information: Include file: <AvailabilityMacros.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <AvailabilityMacros.h>
+^
+sniffer/cmake-build-debug/CMakeFiles/4.0.2/CompilerIdCXX/CMakeCXXCompilerId.cpp:780:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
+                                                                            ^
+sniffer/cmake-build-debug/CMakeFiles/4.0.2/CompilerIdCXX/CMakeCXXCompilerId.cpp:752:28: error: syntax error [syntaxError]
+char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
+                           ^
+sniffer/cmake-build-debug/CMakeFiles/4.0.2/CompilerIdCXX/apple-sdk.cpp:1:0: information: Include file: <AvailabilityMacros.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <AvailabilityMacros.h>
+^
+sniffer/cmake-build-debug/CMakeFiles/4.1.2/CompilerIdC/CMakeCCompilerId.c:830:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
+                                                                            ^
+sniffer/cmake-build-debug/CMakeFiles/4.1.2/CompilerIdC/CMakeCCompilerId.c:802:28: error: syntax error [syntaxError]
+char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
+                           ^
+sniffer/cmake-build-debug/CMakeFiles/4.1.2/CompilerIdC/apple-sdk.c:1:0: information: Include file: <AvailabilityMacros.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <AvailabilityMacros.h>
+^
+sniffer/cmake-build-debug/CMakeFiles/4.1.2/CompilerIdCXX/CMakeCXXCompilerId.cpp:809:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
+                                                                            ^
+sniffer/cmake-build-debug/CMakeFiles/4.1.2/CompilerIdCXX/CMakeCXXCompilerId.cpp:781:28: error: syntax error [syntaxError]
+char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
+                           ^
+sniffer/cmake-build-debug/CMakeFiles/4.1.2/CompilerIdCXX/apple-sdk.cpp:1:0: information: Include file: <AvailabilityMacros.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <AvailabilityMacros.h>
+^
+sniffer/src/kernel/sniffer.bpf.c:26:0: information: Include file: <bpf/bpf_helpers.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <bpf/bpf_helpers.h>
+^
+sniffer/src/kernel/sniffer.bpf.c:373:17: error: There is an unknown macro here somewhere. Configuration is required. If SEC is a macro then please configure it. [unknownMacro]
+char _license[] SEC("license") = "GPL";
+                ^
+sniffer/src/userspace/bpf_map_manager.cpp:4:0: information: Include file: "bpf_map_manager.h" not found. [missingInclude]
+#include "bpf_map_manager.h"
+^
+sniffer/src/userspace/bpf_map_manager.cpp:5:0: information: Include file: <bpf/libbpf.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <bpf/libbpf.h>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:6:0: information: Include file: <bpf/bpf.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <bpf/bpf.h>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:7:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:8:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:9:0: information: Include file: <cerrno> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cerrno>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:10:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:11:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/bpf_map_manager.cpp:258:5: style: Consider using std::all_of or std::none_of algorithm instead of a raw loop. [useStlAlgorithm]
+    for (uint16_t port : excluded) {
+    ^
+sniffer/src/userspace/bpf_map_manager.cpp:265:5: style: Consider using std::all_of or std::none_of algorithm instead of a raw loop. [useStlAlgorithm]
+    for (uint16_t port : included) {
+    ^
+sniffer/src/userspace/compression_handler.cpp:4:0: information: Include file: "compression_handler.hpp" not found. [missingInclude]
+#include "compression_handler.hpp"
+^
+sniffer/src/userspace/compression_handler.cpp:5:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+sniffer/src/userspace/compression_handler.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/compression_handler.cpp:9:0: information: Include file: <lz4.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <lz4.h>
+^
+sniffer/src/userspace/compression_handler.cpp:10:0: information: Include file: <lz4hc.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <lz4hc.h>
+^
+sniffer/src/userspace/compression_handler.cpp:18:0: information: Include file: <snappy.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <snappy.h>
+^
+sniffer/src/userspace/compression_handler.cpp:14:0: information: Include file: <zstd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <zstd.h>
+^
+sniffer/src/userspace/config_manager.cpp:1:0: information: Include file: "config_manager.hpp" not found. [missingInclude]
+#include "config_manager.hpp"
+^
+sniffer/src/userspace/config_manager.cpp:2:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+sniffer/src/userspace/config_manager.cpp:3:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/config_manager.cpp:4:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+sniffer/src/userspace/config_manager.cpp:5:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/config_manager.cpp:6:0: information: Include file: <cstdlib> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstdlib>
+^
+sniffer/src/userspace/config_manager.cpp:7:0: information: Include file: <filesystem> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <filesystem>
+^
+sniffer/src/userspace/config_types.cpp:3:0: information: Include file: "config_types.h" not found. [missingInclude]
+#include "config_types.h"
+^
+sniffer/src/userspace/config_types.cpp:4:0: information: Include file: "config_manager.hpp" not found. [missingInclude]
+#include "config_manager.hpp"
+^
+sniffer/src/userspace/config_types.cpp:5:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+sniffer/src/userspace/config_types.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/config_types.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+sniffer/src/userspace/config_types.cpp:30:19: style: Variable 'profile' can be declared as reference to const [constVariableReference]
+            auto& profile = sniffer_config->profiles[config.active_profile];
+                  ^
+sniffer/src/userspace/dns_analyzer.cpp:4:0: information: Include file: "dns_analyzer.hpp" not found. [missingInclude]
+#include "dns_analyzer.hpp"
+^
+sniffer/src/userspace/dns_analyzer.cpp:5:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+sniffer/src/userspace/dns_analyzer.cpp:6:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/dns_analyzer.cpp:7:0: information: Include file: <unordered_set> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unordered_set>
+^
+sniffer/src/userspace/dns_analyzer.cpp:8:0: information: Include file: <unordered_map> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unordered_map>
+^
+sniffer/src/userspace/dns_analyzer.cpp:9:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/dns_analyzer.cpp:98:13: style: Consider using std::count_if algorithm instead of a raw loop. [useStlAlgorithm]
+            count++;
+            ^
+sniffer/src/userspace/dns_analyzer.cpp:117:13: style: Consider using std::count_if algorithm instead of a raw loop. [useStlAlgorithm]
+            failed_count++;
+            ^
+sniffer/src/userspace/dns_analyzer.cpp:134:13: style: Consider using std::count_if algorithm instead of a raw loop. [useStlAlgorithm]
+            count++;
+            ^
+sniffer/src/userspace/dual_nic_manager.cpp:2:0: information: Include file: "dual_nic_manager.hpp" not found. [missingInclude]
+#include "dual_nic_manager.hpp"
+^
+sniffer/src/userspace/dual_nic_manager.cpp:3:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:4:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:5:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:6:0: information: Include file: <net/if.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <net/if.h>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:7:0: information: Include file: <sys/ioctl.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sys/ioctl.h>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:8:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:9:0: information: Include file: <bpf/bpf.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <bpf/bpf.h>
+^
+sniffer/src/userspace/dual_nic_manager.cpp:176:33: style: Consider using std::find_if algorithm instead of a raw loop. [useStlAlgorithm]
+        if (iface.name == name) {
+                                ^
+sniffer/src/userspace/ebpf_loader.cpp:1:0: information: Include file: "ebpf_loader.hpp" not found. [missingInclude]
+#include "ebpf_loader.hpp"
+^
+sniffer/src/userspace/ebpf_loader.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/ebpf_loader.cpp:3:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/src/userspace/ebpf_loader.cpp:4:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+sniffer/src/userspace/ebpf_loader.cpp:5:0: information: Include file: <net/if.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <net/if.h>
+^
+sniffer/src/userspace/ebpf_loader.cpp:6:0: information: Include file: <linux/if_link.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <linux/if_link.h>
+^
+sniffer/src/userspace/ebpf_loader.cpp:7:0: information: Include file: <fcntl.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fcntl.h>
+^
+sniffer/src/userspace/ebpf_loader.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+sniffer/src/userspace/etcd_client.cpp:4:0: information: Include file: "etcd_client.hpp" not found. [missingInclude]
+#include "etcd_client.hpp"
+^
+sniffer/src/userspace/etcd_client.cpp:5:0: information: Include file: <curl/curl.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <curl/curl.h>
+^
+sniffer/src/userspace/etcd_client.cpp:6:0: information: Include file: <json/json.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <json/json.h>
+^
+sniffer/src/userspace/etcd_client.cpp:7:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/etcd_client.cpp:8:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+sniffer/src/userspace/etcd_client.cpp:9:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/etcd_client.cpp:10:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/fast_detector.cpp:2:0: information: Include file: "fast_detector.hpp" not found. [missingInclude]
+#include "fast_detector.hpp"
+^
+sniffer/src/userspace/fast_detector.cpp:3:0: information: Include file: "protocol_numbers.hpp" not found. [missingInclude]
+#include "protocol_numbers.hpp"
+^
+sniffer/src/userspace/fast_detector.cpp:4:0: information: Include file: "time_window_aggregator.hpp" not found. [missingInclude]
+#include "time_window_aggregator.hpp"  // For is_external_ip()
+^
+sniffer/src/userspace/fast_detector.cpp:5:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/src/userspace/feature_extractor.cpp:3:0: information: Include file: "feature_extractor.hpp" not found. [missingInclude]
+#include "feature_extractor.hpp"
+^
+sniffer/src/userspace/feature_extractor.cpp:4:0: information: Include file: <numeric> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <numeric>
+^
+sniffer/src/userspace/feature_extractor.cpp:5:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+sniffer/src/userspace/feature_extractor.cpp:6:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/feature_extractor.cpp:7:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/feature_logger.cpp:1:0: information: Include file: "protocol_numbers.hpp" not found. [missingInclude]
+#include "protocol_numbers.hpp"
+^
+sniffer/src/userspace/feature_logger.cpp:2:0: information: Include file: "feature_logger.hpp" not found. [missingInclude]
+#include "feature_logger.hpp"
+^
+sniffer/src/userspace/feature_logger.cpp:3:0: information: Include file: "network_security.pb.h" not found. [missingInclude]
+#include "network_security.pb.h"
+^
+sniffer/src/userspace/feature_logger.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/feature_logger.cpp:5:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/src/userspace/feature_logger.cpp:6:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+sniffer/src/userspace/feature_logger.cpp:7:0: information: Include file: <ctime> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctime>
+^
+sniffer/src/userspace/feature_logger.cpp:100:44: style: Operator '|' with one operand equal to zero is redundant. [badBitmaskCheck]
+            nf.syn_flag_count() ? 0x02 : 0 |
+                                           ^
+sniffer/src/userspace/feature_logger.cpp:101:44: style: Operator '|' with one operand equal to zero is redundant. [badBitmaskCheck]
+            nf.ack_flag_count() ? 0x10 : 0 |
+                                           ^
+sniffer/src/userspace/feature_logger.cpp:101:33: style: Clarify calculation precedence for '|' and '?'. [clarifyCalculation]
+            nf.ack_flag_count() ? 0x10 : 0 |
+                                ^
+sniffer/src/userspace/feature_logger.cpp:102:33: style: Clarify calculation precedence for '|' and '?'. [clarifyCalculation]
+            nf.fin_flag_count() ? 0x01 : 0
+                                ^
+sniffer/src/userspace/feature_logger.cpp:37:16: style: Variable 'tm_info' can be declared as pointer to const [constVariablePointer]
+    struct tm* tm_info = localtime(&time_sec);
+               ^
+sniffer/src/userspace/flow_manager.cpp:2:0: information: Include file: "flow_manager.hpp" not found. [missingInclude]
+#include "flow_manager.hpp"
+^
+sniffer/src/userspace/flow_manager.cpp:3:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/flow_manager.cpp:4:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/src/userspace/flow_manager.cpp:5:0: information: Include file: <arpa/inet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <arpa/inet.h>
+^
+sniffer/src/userspace/flow_tracker.cpp:4:0: information: Include file: "flow_tracker.hpp" not found. [missingInclude]
+#include "flow_tracker.hpp"
+^
+sniffer/src/userspace/flow_tracker.cpp:5:0: information: Include file: "protocol_numbers.hpp" not found. [missingInclude]
+#include "protocol_numbers.hpp"
+^
+sniffer/src/userspace/flow_tracker.cpp:6:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/flow_tracker.cpp:7:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/ip_whitelist.cpp:2:0: information: Include file: "ip_whitelist.hpp" not found. [missingInclude]
+#include "ip_whitelist.hpp"
+^
+sniffer/src/userspace/ip_whitelist.cpp:3:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/ip_whitelist.cpp:4:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/main.cpp:7:0: information: Include file: "config_types.h" not found. [missingInclude]
+#include "config_types.h"
+^
+sniffer/src/userspace/main.cpp:8:0: information: Include file: "main.h" not found. [missingInclude]
+#include "main.h"
+^
+sniffer/src/userspace/main.cpp:9:0: information: Include file: "network_security.pb.h" not found. [missingInclude]
+#include "network_security.pb.h"
+^
+sniffer/src/userspace/main.cpp:10:0: information: Include file: "config_manager.hpp" not found. [missingInclude]
+#include "config_manager.hpp"
+^
+sniffer/src/userspace/main.cpp:11:0: information: Include file: "fast_detector_config.hpp" not found. [missingInclude]
+#include "fast_detector_config.hpp"  // Day 12 - Externalized thresholds
+^
+sniffer/src/userspace/main.cpp:12:0: information: Include file: "zmq_pool_manager.hpp" not found. [missingInclude]
+#include "zmq_pool_manager.hpp"
+^
+sniffer/src/userspace/main.cpp:13:0: information: Include file: "ebpf_loader.hpp" not found. [missingInclude]
+#include "ebpf_loader.hpp"
+^
+sniffer/src/userspace/main.cpp:14:0: information: Include file: "ring_consumer.hpp" not found. [missingInclude]
+#include "ring_consumer.hpp"
+^
+sniffer/src/userspace/main.cpp:15:0: information: Include file: "thread_manager.hpp" not found. [missingInclude]
+#include "thread_manager.hpp"
+^
+sniffer/src/userspace/main.cpp:16:0: information: Include file: "bpf_map_manager.h" not found. [missingInclude]
+#include "bpf_map_manager.h"
+^
+sniffer/src/userspace/main.cpp:19:0: information: Include file: <json/json.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <json/json.h>
+^
+sniffer/src/userspace/main.cpp:20:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+sniffer/src/userspace/main.cpp:21:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/main.cpp:22:0: information: Include file: <sys/socket.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sys/socket.h>
+^
+sniffer/src/userspace/main.cpp:23:0: information: Include file: <netinet/in.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <netinet/in.h>
+^
+sniffer/src/userspace/main.cpp:24:0: information: Include file: <arpa/inet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <arpa/inet.h>
+^
+sniffer/src/userspace/main.cpp:25:0: information: Include file: <netinet/ip.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <netinet/ip.h>
+^
+sniffer/src/userspace/main.cpp:26:0: information: Include file: <netinet/tcp.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <netinet/tcp.h>
+^
+sniffer/src/userspace/main.cpp:27:0: information: Include file: <netinet/udp.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <netinet/udp.h>
+^
+sniffer/src/userspace/main.cpp:28:0: information: Include file: <netinet/ether.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <netinet/ether.h>
+^
+sniffer/src/userspace/main.cpp:29:0: information: Include file: <linux/if_packet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <linux/if_packet.h>
+^
+sniffer/src/userspace/main.cpp:30:0: information: Include file: <net/if.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <net/if.h>
+^
+sniffer/src/userspace/main.cpp:31:0: information: Include file: <sys/ioctl.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sys/ioctl.h>
+^
+sniffer/src/userspace/main.cpp:32:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+sniffer/src/userspace/main.cpp:33:0: information: Include file: <errno.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <errno.h>
+^
+sniffer/src/userspace/main.cpp:34:0: information: Include file: <csignal> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <csignal>
+^
+sniffer/src/userspace/main.cpp:35:0: information: Include file: <getopt.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <getopt.h>
+^
+sniffer/src/userspace/main.cpp:36:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/src/userspace/main.cpp:37:0: information: Include file: <random> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <random>
+^
+sniffer/src/userspace/main.cpp:38:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+sniffer/src/userspace/main.cpp:39:0: information: Include file: "feature_logger.hpp" not found. [missingInclude]
+#include "feature_logger.hpp"
+^
+sniffer/src/userspace/main.cpp:40:0: information: Include file: "dual_nic_manager.hpp" not found. [missingInclude]
+#include "dual_nic_manager.hpp"
+^
+sniffer/src/userspace/main.cpp:41:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/main.cpp:42:0: information: Include file: <memory> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <memory>
+^
+sniffer/src/userspace/main.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+sniffer/src/userspace/main.cpp:217:17: style: The scope of the variable 'override_interface' can be reduced. [variableScope]
+    std::string override_interface;
+                ^
+sniffer/src/userspace/main.cpp:218:17: style: The scope of the variable 'override_profile' can be reduced. [variableScope]
+    std::string override_profile;
+                ^
+sniffer/src/userspace/ml_defender_features.cpp:8:0: information: Include file: "ml_defender_features.hpp" not found. [missingInclude]
+#include "ml_defender_features.hpp"
+^
+sniffer/src/userspace/ml_defender_features.cpp:9:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+sniffer/src/userspace/ml_defender_features.cpp:10:0: information: Include file: <map> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <map>
+^
+sniffer/src/userspace/ml_defender_features.cpp:11:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/ml_defender_features.cpp:12:0: information: Include file: <numeric> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <numeric>
+^
+sniffer/src/userspace/ml_defender_features.cpp:15:0: information: Include file: "proto/network_security.pb.h" not found. [missingInclude]
+#include "proto/network_security.pb.h"
+^
+sniffer/src/userspace/ml_defender_features.cpp:680:35: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+    for (uint64_t iat : iats) sum += iat;
+                                  ^
+sniffer/src/userspace/payload_analyzer.cpp:1:0: information: Include file: "payload_analyzer.hpp" not found. [missingInclude]
+#include "payload_analyzer.hpp"
+^
+sniffer/src/userspace/payload_analyzer.cpp:2:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/payload_analyzer.cpp:3:0: information: Include file: <cctype> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cctype>
+^
+sniffer/src/userspace/ransomware_feature_extractor.cpp:4:0: information: Include file: "ransomware_feature_extractor.hpp" not found. [missingInclude]
+#include "ransomware_feature_extractor.hpp"
+^
+sniffer/src/userspace/ransomware_feature_processor.cpp:2:0: information: Include file: "ransomware_feature_processor.hpp" not found. [missingInclude]
+#include "ransomware_feature_processor.hpp"
+^
+sniffer/src/userspace/ransomware_feature_processor.cpp:3:0: information: Include file: "protocol_numbers.hpp" not found. [missingInclude]
+#include "protocol_numbers.hpp"
+^
+sniffer/src/userspace/ransomware_feature_processor.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/ransomware_feature_processor.cpp:5:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/ransomware_feature_processor.cpp:6:0: information: Include file: <arpa/inet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <arpa/inet.h>
+^
+sniffer/src/userspace/ring_consumer.cpp:2:0: information: Include file: "compression_handler.hpp" not found. [missingInclude]
+#include "compression_handler.hpp"
+^
+sniffer/src/userspace/ring_consumer.cpp:3:0: information: Include file: "ring_consumer.hpp" not found. [missingInclude]
+#include "ring_consumer.hpp"
+^
+sniffer/src/userspace/ring_consumer.cpp:4:0: information: Include file: "fast_detector.hpp" not found. [missingInclude]
+#include "fast_detector.hpp"
+^
+sniffer/src/userspace/ring_consumer.cpp:5:0: information: Include file: "feature_logger.hpp" not found. [missingInclude]
+#include "feature_logger.hpp"
+^
+sniffer/src/userspace/ring_consumer.cpp:6:0: information: Include file: "flow_manager.hpp" not found. [missingInclude]
+#include "flow_manager.hpp"
+^
+sniffer/src/userspace/ring_consumer.cpp:7:0: information: Include file: "ml_defender_features.hpp" not found. [missingInclude]
+#include "ml_defender_features.hpp"
+^
+sniffer/src/userspace/ring_consumer.cpp:8:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/ring_consumer.cpp:9:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/src/userspace/ring_consumer.cpp:10:0: information: Include file: <arpa/inet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <arpa/inet.h>
+^
+sniffer/src/userspace/ring_consumer.cpp:11:0: information: Include file: <google/protobuf/timestamp.pb.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <google/protobuf/timestamp.pb.h>
+^
+sniffer/src/userspace/ring_consumer.cpp:12:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/ring_consumer.cpp:13:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/src/userspace/thread_manager.cpp:1:0: information: Include file: "thread_manager.hpp" not found. [missingInclude]
+#include "thread_manager.hpp"
+^
+sniffer/src/userspace/thread_manager.cpp:2:0: information: Include file: "ring_consumer.hpp" not found. [missingInclude]
+#include "ring_consumer.hpp"
+^
+sniffer/src/userspace/thread_manager.cpp:3:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/src/userspace/thread_manager.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/thread_manager.cpp:5:0: information: Include file: <sched.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sched.h>
+^
+sniffer/src/userspace/thread_manager.cpp:6:0: information: Include file: <sys/resource.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sys/resource.h>
+^
+sniffer/src/userspace/thread_manager.cpp:7:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+sniffer/src/userspace/thread_manager.cpp:8:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/src/userspace/thread_manager.cpp:237:16: style: Variable 'stats' can be declared as reference to const [constVariableReference]
+    for (auto& stats : thread_stats_) {
+               ^
+sniffer/src/userspace/thread_manager.cpp:11:0: information: Include file: <sys/syscall.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sys/syscall.h>
+^
+sniffer/src/userspace/thread_manager.cpp:12:0: information: Include file: <linux/sched.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <linux/sched.h>
+^
+sniffer/src/userspace/time_window_aggregator.cpp:4:0: information: Include file: "time_window_aggregator.hpp" not found. [missingInclude]
+#include "time_window_aggregator.hpp"
+^
+sniffer/src/userspace/time_window_aggregator.cpp:5:0: information: Include file: "flow_tracker.hpp" not found. [missingInclude]
+#include "flow_tracker.hpp"
+^
+sniffer/src/userspace/time_window_aggregator.cpp:6:0: information: Include file: "ip_whitelist.hpp" not found. [missingInclude]
+#include "ip_whitelist.hpp"
+^
+sniffer/src/userspace/time_window_aggregator.cpp:7:0: information: Include file: "dns_analyzer.hpp" not found. [missingInclude]
+#include "dns_analyzer.hpp"
+^
+sniffer/src/userspace/time_window_aggregator.cpp:8:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+sniffer/src/userspace/time_window_aggregator.cpp:9:0: information: Include file: <unordered_set> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unordered_set>
+^
+sniffer/src/userspace/time_window_aggregator.cpp:10:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+sniffer/src/userspace/time_window_aggregator.cpp:11:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/time_window_aggregator.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+sniffer/src/userspace/time_window_aggregator.cpp:230:24: style: The comparison 'download_bytes > 0' is always false. [knownConditionTrueFalse]
+    if (download_bytes > 0) {
+                       ^
+sniffer/src/userspace/time_window_aggregator.cpp:219:31: note: 'download_bytes' is assigned value '0' here.
+    uint64_t download_bytes = 0;
+                              ^
+sniffer/src/userspace/time_window_aggregator.cpp:230:24: note: The comparison 'download_bytes > 0' is always false.
+    if (download_bytes > 0) {
+                       ^
+sniffer/src/userspace/time_window_aggregator.cpp:85:13: style: Consider using std::count_if algorithm instead of a raw loop. [useStlAlgorithm]
+            count++;
+            ^
+sniffer/src/userspace/time_window_aggregator.cpp:225:26: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+            upload_bytes += event.bytes;
+                         ^
+sniffer/src/userspace/time_window_aggregator.cpp:438:19: style: Consider using std::copy_if algorithm instead of a raw loop. [useStlAlgorithm]
+            result.push_back(event);
+                  ^
+sniffer/src/userspace/time_window_manager.cpp:2:0: information: Include file: "time_window_manager.hpp" not found. [missingInclude]
+#include "time_window_manager.hpp"
+^
+sniffer/src/userspace/time_window_manager.cpp:3:0: information: Include file: <numeric> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <numeric>
+^
+sniffer/src/userspace/time_window_manager.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/time_window_manager.cpp:72:11: style: The scope of the variable 'rates' can be reduced. [variableScope]
+    auto& rates = is_forward ? fwd_bulk_rates_ : bwd_bulk_rates_;
+          ^
+sniffer/src/userspace/time_window_manager.cpp:73:11: style: The scope of the variable 'sizes' can be reduced. [variableScope]
+    auto& sizes = is_forward ? fwd_bulk_sizes_ : bwd_bulk_sizes_;
+          ^
+sniffer/src/userspace/time_window_manager.cpp:74:11: style: The scope of the variable 'durations' can be reduced. [variableScope]
+    auto& durations = is_forward ? fwd_bulk_durations_ : bwd_bulk_durations_;
+          ^
+sniffer/src/userspace/time_window_manager.cpp:75:11: style: The scope of the variable 'packet_counts' can be reduced. [variableScope]
+    auto& packet_counts = is_forward ? fwd_bulk_packet_counts_ : bwd_bulk_packet_counts_;
+          ^
+sniffer/src/userspace/time_window_manager.cpp:150:15: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+        total += window.subflow_fwd_packets;
+              ^
+sniffer/src/userspace/time_window_manager.cpp:161:15: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+        total += window.subflow_fwd_bytes;
+              ^
+sniffer/src/userspace/time_window_manager.cpp:172:15: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+        total += window.subflow_bwd_packets;
+              ^
+sniffer/src/userspace/time_window_manager.cpp:183:15: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+        total += window.subflow_bwd_bytes;
+              ^
+sniffer/src/userspace/zmq_pool_manager.cpp:4:0: information: Include file: "zmq_pool_manager.hpp" not found. [missingInclude]
+#include "zmq_pool_manager.hpp"
+^
+sniffer/src/userspace/zmq_pool_manager.cpp:5:0: information: Include file: <zmq.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <zmq.h>
+^
+sniffer/src/userspace/zmq_pool_manager.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/src/userspace/zmq_pool_manager.cpp:7:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+sniffer/src/userspace/zmq_pool_manager.cpp:8:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/src/userspace/zmq_pool_manager.cpp:9:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/tests/test_fast_detector.cpp:4:0: information: Include file: "fast_detector.hpp" not found. [missingInclude]
+#include "fast_detector.hpp"
+^
+sniffer/tests/test_fast_detector.cpp:5:0: information: Include file: "main.h" not found. [missingInclude]
+#include "main.h"
+^
+sniffer/tests/test_fast_detector.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/tests/test_fast_detector.cpp:7:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+sniffer/tests/test_fast_detector.cpp:8:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/tests/test_fast_detector.cpp:9:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/tests/test_integration_simple_event.cpp:8:0: information: Include file: "ransomware_feature_processor.hpp" not found. [missingInclude]
+#include "ransomware_feature_processor.hpp"
+^
+sniffer/tests/test_integration_simple_event.cpp:9:0: information: Include file: "fast_detector.hpp" not found. [missingInclude]
+#include "fast_detector.hpp"
+^
+sniffer/tests/test_integration_simple_event.cpp:10:0: information: Include file: "main.h" not found. [missingInclude]
+#include "main.h"
+^
+sniffer/tests/test_integration_simple_event.cpp:11:0: information: Include file: "network_security.pb.h" not found. [missingInclude]
+#include "network_security.pb.h"
+^
+sniffer/tests/test_integration_simple_event.cpp:12:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/tests/test_integration_simple_event.cpp:13:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+sniffer/tests/test_integration_simple_event.cpp:14:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/tests/test_integration_simple_event.cpp:15:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/tests/test_integration_simple_event.cpp:16:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+sniffer/tests/test_integration_simple_event.cpp:17:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+sniffer/tests/test_integration_simple_event.cpp:27:5: style: Class 'IntegrationTestRunner' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    IntegrationTestRunner(const std::string& name) : test_name_(name), passed_(0), failed_(0) {
+    ^
+sniffer/tests/test_payload_analyzer.cpp:5:0: information: Include file: "payload_analyzer.hpp" not found. [missingInclude]
+#include "payload_analyzer.hpp"
+^
+sniffer/tests/test_payload_analyzer.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/tests/test_payload_analyzer.cpp:7:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+sniffer/tests/test_payload_analyzer.cpp:8:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/tests/test_payload_analyzer.cpp:9:0: information: Include file: <random> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <random>
+^
+sniffer/tests/test_payload_analyzer.cpp:10:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/tests/test_payload_analyzer.cpp:11:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:5:0: information: Include file: "payload_analyzer.hpp" not found. [missingInclude]
+#include "payload_analyzer.hpp"
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:7:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:8:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:9:0: information: Include file: <random> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <random>
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:10:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+sniffer/tests/test_payload_analyzer_no_gtest.cpp:11:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:4:0: information: Include file: "ransomware_feature_extractor.hpp" not found. [missingInclude]
+#include "ransomware_feature_extractor.hpp"
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:5:0: information: Include file: "flow_tracker.hpp" not found. [missingInclude]
+#include "flow_tracker.hpp"
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:6:0: information: Include file: "dns_analyzer.hpp" not found. [missingInclude]
+#include "dns_analyzer.hpp"
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:7:0: information: Include file: "ip_whitelist.hpp" not found. [missingInclude]
+#include "ip_whitelist.hpp"
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:8:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:9:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:10:0: information: Include file: <cmath> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cmath>
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:11:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:12:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+sniffer/tests/test_ransomware_feature_extractor.cpp:22:5: style: Class 'TestRunner' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    TestRunner(const std::string& name) : test_name_(name), passed_(0), failed_(0) {
+    ^
+sniffer/tests/test_ransomware_feature_extractor.cpp:468:24: style: The comparison 'total_failures == 0' is always true. [knownConditionTrueFalse]
+    if (total_failures == 0) {
+                       ^
+sniffer/tests/test_ransomware_feature_extractor.cpp:450:26: note: 'total_failures' is assigned value '0' here.
+    int total_failures = 0;
+                         ^
+sniffer/tests/test_ransomware_feature_extractor.cpp:468:24: note: The comparison 'total_failures == 0' is always true.
+    if (total_failures == 0) {
+                       ^
+etcd-client/src/component_registration.cpp:2:0: information: Include file: "etcd_client/etcd_client.hpp" not found. [missingInclude]
+#include "etcd_client/etcd_client.hpp"
+^
+etcd-client/src/component_registration.cpp:3:0: information: Include file: <nlohmann/json.hpp> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <nlohmann/json.hpp>
+^
+etcd-client/src/component_registration.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/src/component_registration.cpp:5:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+etcd-client/src/compression_lz4.cpp:2:0: information: Include file: <lz4.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <lz4.h>
+^
+etcd-client/src/compression_lz4.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-client/src/compression_lz4.cpp:4:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+etcd-client/src/compression_lz4.cpp:5:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+etcd-client/src/compression_lz4.cpp:6:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+etcd-client/src/config_loader.cpp:2:0: information: Include file: "etcd_client/etcd_client.hpp" not found. [missingInclude]
+#include "etcd_client/etcd_client.hpp"
+^
+etcd-client/src/config_loader.cpp:3:0: information: Include file: <nlohmann/json.hpp> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <nlohmann/json.hpp>
+^
+etcd-client/src/config_loader.cpp:4:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+etcd-client/src/config_loader.cpp:5:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+etcd-client/src/config_loader.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/src/crypto_chacha20.cpp:4:0: information: Include file: <sodium.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sodium.h>
+^
+etcd-client/src/crypto_chacha20.cpp:5:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-client/src/crypto_chacha20.cpp:6:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+etcd-client/src/crypto_chacha20.cpp:7:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+etcd-client/src/crypto_chacha20.cpp:8:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+etcd-client/src/etcd_client.cpp:2:0: information: Include file: "etcd_client/etcd_client.hpp" not found. [missingInclude]
+#include "etcd_client/etcd_client.hpp"
+^
+etcd-client/src/etcd_client.cpp:3:0: information: Include file: <nlohmann/json.hpp> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <nlohmann/json.hpp>
+^
+etcd-client/src/etcd_client.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/src/etcd_client.cpp:5:0: information: Include file: <mutex> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <mutex>
+^
+etcd-client/src/etcd_client.cpp:6:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+etcd-client/src/etcd_client.cpp:7:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+etcd-client/src/etcd_client.cpp:8:0: information: Include file: <atomic> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <atomic>
+^
+etcd-client/src/etcd_client.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+etcd-client/src/etcd_client.cpp:139:10: style: inconclusive: Technically the member function 'etcd_client::Impl::send_heartbeat' can be const. [functionConst]
+    bool send_heartbeat() {
+         ^
+etcd-client/src/etcd_client.cpp:156:17: style: inconclusive: Technically the member function 'etcd_client::Impl::process_outgoing_data' can be const. [functionConst]
+    std::string process_outgoing_data(const std::string& data) {
+                ^
+etcd-client/src/etcd_client.cpp:189:17: style: inconclusive: Technically the member function 'etcd_client::Impl::process_incoming_data' can be const. [functionConst]
+    std::string process_incoming_data(const std::string& data, size_t original_size = 0) {
+                ^
+etcd-client/src/http_client.cpp:2:0: information: Include file: <httplib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <httplib.h>
+^
+etcd-client/src/http_client.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-client/src/http_client.cpp:4:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+etcd-client/src/http_client.cpp:5:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/src/http_client.cpp:6:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+etcd-client/src/http_client.cpp:7:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+etcd-client/src/http_client.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+etcd-client/tests/test_compression.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/tests/test_compression.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-client/tests/test_compression.cpp:4:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+etcd-client/tests/test_compression.cpp:5:0: information: Include file: <lz4.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <lz4.h>
+^
+etcd-client/tests/test_encryption.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/tests/test_encryption.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-client/tests/test_encryption.cpp:4:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+etcd-client/tests/test_encryption.cpp:7:0: information: Include file: <sodium.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sodium.h>
+^
+etcd-client/tests/test_encryption.cpp:87:21: style: Variable 'decrypted' is assigned a value that is never used. [unreadVariable]
+        std::string decrypted = decrypt_chacha20(encrypted, key2);
+                    ^
+etcd-client/tests/test_encryption.cpp:115:21: style: Variable 'decrypted' is assigned a value that is never used. [unreadVariable]
+        std::string decrypted = decrypt_chacha20(encrypted, key);
+                    ^
+etcd-client/tests/test_pipeline.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-client/tests/test_pipeline.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-client/tests/test_pipeline.cpp:4:0: information: Include file: <cassert> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cassert>
+^
+etcd-client/tests/test_pipeline.cpp:7:0: information: Include file: <sodium.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sodium.h>
+^
+etcd-client/tests/test_pipeline.cpp:8:0: information: Include file: <lz4.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <lz4.h>
+^
+etcd-client/tests/test_put_config_integration.cpp:1:0: information: Include file: "etcd_client/etcd_client.hpp" not found. [missingInclude]
+#include "etcd_client/etcd_client.hpp"
+^
+etcd-client/tests/test_put_config_integration.cpp:2:0: information: Include file: <nlohmann/json.hpp> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <nlohmann/json.hpp>
+^
+etcd-client/tests/test_put_config_integration.cpp:3:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-server/src/component_registry.cpp:1:0: information: Include file: "etcd_server/component_registry.hpp" not found. [missingInclude]
+#include "etcd_server/component_registry.hpp"
+^
+etcd-server/src/component_registry.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-server/src/component_registry.cpp:3:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+etcd-server/src/compression_lz4.cpp:2:0: information: Include file: <lz4.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <lz4.h>
+^
+etcd-server/src/compression_lz4.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+etcd-server/src/compression_lz4.cpp:4:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+etcd-server/src/compression_lz4.cpp:5:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+etcd-server/src/compression_lz4.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-server/src/crypto_manager.cpp:1:0: information: Include file: "etcd_server/crypto_manager.hpp" not found. [missingInclude]
+#include "etcd_server/crypto_manager.hpp"
+^
+etcd-server/src/crypto_manager.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-server/src/crypto_manager.cpp:3:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+etcd-server/src/crypto_manager.cpp:4:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+etcd-server/src/crypto_manager.cpp:5:0: information: Include file: <sodium.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sodium.h>
+^
+etcd-server/src/crypto_manager.cpp:8:0: information: Include file: <cryptopp/hkdf.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cryptopp/hkdf.h>
+^
+etcd-server/src/crypto_manager.cpp:9:0: information: Include file: <cryptopp/sha.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cryptopp/sha.h>
+^
+etcd-server/src/crypto_manager.cpp:33:13: style: C-style pointer casting [cstyleCast]
+            (const CryptoPP::byte*)seed.data(), seed.size(),
+            ^
+etcd-server/src/crypto_manager.cpp:34:13: warning: Potentially invalid type conversion in old-style C cast, clarify/fix with C++ cast [dangerousTypeCast]
+            (const CryptoPP::byte*)"etcd-server-salt", 16,  // salt
+            ^
+etcd-server/src/crypto_manager.cpp:35:13: warning: Potentially invalid type conversion in old-style C cast, clarify/fix with C++ cast [dangerousTypeCast]
+            (const CryptoPP::byte*)"ChaCha20-Poly1305", 17); // info
+            ^
+etcd-server/src/etcd_server.cpp:1:0: information: Include file: "etcd_server/etcd_server.hpp" not found. [missingInclude]
+#include "etcd_server/etcd_server.hpp"
+^
+etcd-server/src/etcd_server.cpp:2:0: information: Include file: "etcd_server/component_registry.hpp" not found. [missingInclude]
+#include "etcd_server/component_registry.hpp"
+^
+etcd-server/src/etcd_server.cpp:3:0: information: Include file: "etcd_server/compression_lz4.hpp" not found. [missingInclude]
+#include "etcd_server/compression_lz4.hpp"
+^
+etcd-server/src/etcd_server.cpp:4:0: information: Include file: "httplib.h" not found. [missingInclude]
+#include "httplib.h"
+^
+etcd-server/src/etcd_server.cpp:5:0: information: Include file: <nlohmann/json.hpp> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <nlohmann/json.hpp>
+^
+etcd-server/src/etcd_server.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-server/src/etcd_server.cpp:7:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+etcd-server/src/main.cpp:1:0: information: Include file: "etcd_server/etcd_server.hpp" not found. [missingInclude]
+#include "etcd_server/etcd_server.hpp"
+^
+etcd-server/src/main.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+etcd-server/src/main.cpp:3:0: information: Include file: <csignal> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <csignal>
+^
+firewall-acl-agent/src/api/zmq_subscriber.cpp:7:0: information: Include file: "firewall/zmq_subscriber.hpp" not found. [missingInclude]
+#include "firewall/zmq_subscriber.hpp"
+^
+firewall-acl-agent/src/api/zmq_subscriber.cpp:8:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+firewall-acl-agent/src/api/zmq_subscriber.cpp:9:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+firewall-acl-agent/src/api/zmq_subscriber.cpp:10:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+firewall-acl-agent/src/api/zmq_subscriber.cpp:11:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+firewall-acl-agent/src/api/zmq_subscriber.cpp:339:17: style: The scope of the variable 'ipset_name' can be reduced. [variableScope]
+    std::string ipset_name = "ml_defender_blacklist_test";
+                ^
+firewall-acl-agent/src/core/batch_processor.cpp:14:0: information: Include file: "firewall/batch_processor.hpp" not found. [missingInclude]
+#include "firewall/batch_processor.hpp"
+^
+firewall-acl-agent/src/core/batch_processor.cpp:16:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+firewall-acl-agent/src/core/batch_processor.cpp:17:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+firewall-acl-agent/src/core/config_loader.cpp:6:0: information: Include file: "firewall/config_loader.hpp" not found. [missingInclude]
+#include "firewall/config_loader.hpp"
+^
+firewall-acl-agent/src/core/config_loader.cpp:7:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+firewall-acl-agent/src/core/config_loader.cpp:8:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+firewall-acl-agent/src/core/config_loader.cpp:9:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+firewall-acl-agent/src/core/config_loader.cpp:10:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+firewall-acl-agent/src/core/config_loader.cpp:11:0: information: Include file: <map> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <map>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:16:0: information: Include file: "firewall/ipset_wrapper.hpp" not found. [missingInclude]
+#include "firewall/ipset_wrapper.hpp"
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:18:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:19:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:20:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:21:0: information: Include file: <regex> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <regex>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:22:0: information: Include file: <arpa/inet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <arpa/inet.h>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:23:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:24:0: information: Include file: <sys/socket.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sys/socket.h>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:25:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+firewall-acl-agent/src/core/ipset_wrapper.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:16:0: information: Include file: "firewall/iptables_wrapper.hpp" not found. [missingInclude]
+#include "firewall/iptables_wrapper.hpp"
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:18:0: information: Include file: <cstring> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstring>
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:19:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:20:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:21:0: information: Include file: <regex> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <regex>
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:22:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:23:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+firewall-acl-agent/src/core/iptables_wrapper.cpp:441:13: performance: Inefficient usage of string::find() in condition; string::starts_with() could be faster. [stlIfStrFind]
+        if (line.find("-P ") != 0 && !line.empty()) {
+            ^
+firewall-acl-agent/src/core/logger.cpp:8:0: information: Include file: "firewall/logger.hpp" not found. [missingInclude]
+#include "firewall/logger.hpp"
+^
+firewall-acl-agent/src/core/logger.cpp:10:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+firewall-acl-agent/src/core/logger.cpp:11:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+firewall-acl-agent/src/core/logger.cpp:12:0: information: Include file: <iomanip> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iomanip>
+^
+firewall-acl-agent/src/core/logger.cpp:13:0: information: Include file: <filesystem> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <filesystem>
+^
+firewall-acl-agent/src/core/logger.cpp:14:0: information: Include file: <ctime> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctime>
+^
+firewall-acl-agent/src/core/logger.cpp:16:0: information: Include file: <json/json.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <json/json.h>
+^
+firewall-acl-agent/src/core/logger.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+firewall-acl-agent/src/main.cpp:6:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+firewall-acl-agent/src/main.cpp:7:0: information: Include file: <csignal> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <csignal>
+^
+firewall-acl-agent/src/main.cpp:8:0: information: Include file: <atomic> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <atomic>
+^
+firewall-acl-agent/src/main.cpp:9:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+firewall-acl-agent/src/main.cpp:10:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+firewall-acl-agent/src/main.cpp:11:0: information: Include file: <ctime> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctime>
+^
+firewall-acl-agent/src/main.cpp:13:0: information: Include file: "firewall/config_loader.hpp" not found. [missingInclude]
+#include "firewall/config_loader.hpp"
+^
+firewall-acl-agent/src/main.cpp:14:0: information: Include file: "firewall/ipset_wrapper.hpp" not found. [missingInclude]
+#include "firewall/ipset_wrapper.hpp"
+^
+firewall-acl-agent/src/main.cpp:15:0: information: Include file: "firewall/iptables_wrapper.hpp" not found. [missingInclude]
+#include "firewall/iptables_wrapper.hpp"
+^
+firewall-acl-agent/src/main.cpp:16:0: information: Include file: "firewall/batch_processor.hpp" not found. [missingInclude]
+#include "firewall/batch_processor.hpp"
+^
+firewall-acl-agent/src/main.cpp:17:0: information: Include file: "firewall/zmq_subscriber.hpp" not found. [missingInclude]
+#include "firewall/zmq_subscriber.hpp"
+^
+firewall-acl-agent/src/main.cpp:19:0: information: Include file: <json/json.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <json/json.h>
+^
+firewall-acl-agent/src/main.cpp:20:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+firewall-acl-agent/src/main.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+firewall-acl-agent/src/main.cpp:85:68: style: Consider using std::any_of algorithm instead of a raw loop. [useStlAlgorithm]
+        if (rule.find(config.ipset.set_name) != std::string::npos) {
+                                                                   ^
+firewall-acl-agent/test_simple.cpp:1:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+firewall-acl-agent/test_simple.cpp:2:0: information: Include file: <cstdlib> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <cstdlib>
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:21:0: information: Include file: "firewall/ipset_wrapper.hpp" not found. [missingInclude]
+#include "firewall/ipset_wrapper.hpp"
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:23:0: information: Include file: <gtest/gtest.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <gtest/gtest.h>
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:24:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:25:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:26:0: information: Include file: <random> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <random>
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:27:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:92:34: style: class member 'IPSetWrapperTest::TEST_SET_NAME' is never used. [unusedStructMember]
+    static constexpr const char* TEST_SET_NAME = "test_ipset";
+                                 ^
+firewall-acl-agent/tests/unit/test_ipset_wrapper.cpp:93:34: style: class member 'IPSetWrapperTest::TEST_SET_NAME_2' is never used. [unusedStructMember]
+    static constexpr const char* TEST_SET_NAME_2 = "test_ipset_2";
+                                 ^
+firewall-acl-agent/tests/unit/test_logger.cpp:13:0: information: Include file: <gtest/gtest.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <gtest/gtest.h>
+^
+firewall-acl-agent/tests/unit/test_logger.cpp:14:0: information: Include file: <json/json.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <json/json.h>
+^
+firewall-acl-agent/tests/unit/test_logger.cpp:15:0: information: Include file: <filesystem> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <filesystem>
+^
+firewall-acl-agent/tests/unit/test_logger.cpp:16:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+firewall-acl-agent/tests/unit/test_logger.cpp:17:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+firewall-acl-agent/tests/unit/test_logger.cpp:18:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+firewall-acl-agent/tests/unit/test_logger.cpp:20:0: information: Include file: "firewall/logger.hpp" not found. [missingInclude]
+#include "firewall/logger.hpp"
+^
+rag/src/base_validator.cpp:1:0: information: Include file: "rag/base_validator.hpp" not found. [missingInclude]
+#include "rag/base_validator.hpp"
+^
+rag/src/base_validator.cpp:2:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+rag/src/base_validator.cpp:3:0: information: Include file: <regex> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <regex>
+^
+rag/src/base_validator.cpp:257:14: warning: Return value of function std::stoi() is not used. [ignoredReturnValue]
+        std::stoi(value, &pos);
+             ^
+rag/src/base_validator.cpp:267:14: warning: Return value of function std::stod() is not used. [ignoredReturnValue]
+        std::stod(value, &pos);
+             ^
+rag/src/config_manager.cpp:1:0: information: Include file: "rag/config_manager.hpp" not found. [missingInclude]
+#include "rag/config_manager.hpp"
+^
+rag/src/config_manager.cpp:2:0: information: Include file: <fstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <fstream>
+^
+rag/src/config_manager.cpp:3:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/config_manager.cpp:4:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+rag/src/config_manager.cpp:5:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+rag/src/config_manager.cpp:6:0: information: Include file: <stdexcept> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdexcept>
+^
+rag/src/etcd_client.cpp:2:0: information: Include file: "rag/etcd_client.hpp" not found. [missingInclude]
+#include "rag/etcd_client.hpp"
+^
+rag/src/etcd_client.cpp:3:0: information: Include file: "etcd_client/etcd_client.hpp" not found. [missingInclude]
+#include "etcd_client/etcd_client.hpp"
+^
+rag/src/etcd_client.cpp:4:0: information: Include file: <nlohmann/json.hpp> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <nlohmann/json.hpp>
+^
+rag/src/etcd_client.cpp:5:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/etcd_client.cpp:40:13: performance: Inefficient usage of string::find() in condition; string::starts_with() could be faster. [stlIfStrFind]
+        if (endpoint.find("http://") == 0) {
+            ^
+rag/src/llama_integration.cpp:1:0: information: Include file: "rag/llama_integration.hpp" not found. [missingInclude]
+#include "rag/llama_integration.hpp"
+^
+rag/src/llama_integration.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/llama_integration.cpp:3:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+rag/src/llama_integration.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+rag/src/llama_integration.cpp:20:17: style: inconclusive: Technically the member function 'Impl::generateResponse' can be const. [functionConst]
+    std::string generateResponse(const std::string& prompt) {
+                ^
+rag/src/llama_integration.cpp:30:15: style: Consider using std::transform algorithm instead of a raw loop. [useStlAlgorithm]
+            c = std::tolower(c);
+              ^
+rag/src/llama_integration_real.cpp:1:0: information: Include file: "rag/llama_integration.hpp" not found. [missingInclude]
+#include "rag/llama_integration.hpp"
+^
+rag/src/llama_integration_real.cpp:2:0: information: Include file: <llama.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <llama.h>
+^
+rag/src/llama_integration_real.cpp:3:0: information: Include file: <vector> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <vector>
+^
+rag/src/llama_integration_real.cpp:4:0: information: Include file: <string> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string>
+^
+rag/src/llama_integration_real.cpp:5:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/llama_integration_real.cpp:6:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+rag/src/llama_integration_real.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+rag/src/llama_integration_real.cpp:132:24: style: Variable 'logits' can be declared as pointer to const [constVariablePointer]
+                float* logits = llama_get_logits_ith(ctx, -1);
+                       ^
+rag/src/main.cpp:1:0: information: Include file: "rag/whitelist_manager.hpp" not found. [missingInclude]
+#include "rag/whitelist_manager.hpp"
+^
+rag/src/main.cpp:2:0: information: Include file: "rag/rag_command_manager.hpp" not found. [missingInclude]
+#include "rag/rag_command_manager.hpp"
+^
+rag/src/main.cpp:3:0: information: Include file: "rag/config_manager.hpp" not found. [missingInclude]
+#include "rag/config_manager.hpp"
+^
+rag/src/main.cpp:4:0: information: Include file: "rag/llama_integration.hpp" not found. [missingInclude]
+#include "rag/llama_integration.hpp"
+^
+rag/src/main.cpp:5:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/main.cpp:6:0: information: Include file: <csignal> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <csignal>
+^
+rag/src/main.cpp:7:0: information: Include file: <memory> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <memory>
+^
+rag/src/query_validator.cpp:1:0: information: Include file: "rag/query_validator.hpp" not found. [missingInclude]
+#include "rag/query_validator.hpp"
+^
+rag/src/query_validator.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/rag_command_manager.cpp:1:0: information: Include file: "rag/rag_command_manager.hpp" not found. [missingInclude]
+#include "rag/rag_command_manager.hpp"
+^
+rag/src/rag_command_manager.cpp:2:0: information: Include file: "rag/config_manager.hpp" not found. [missingInclude]
+#include "rag/config_manager.hpp"
+^
+rag/src/rag_command_manager.cpp:3:0: information: Include file: "rag/llama_integration.hpp" not found. [missingInclude]
+#include "rag/llama_integration.hpp"
+^
+rag/src/rag_command_manager.cpp:4:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/rag_command_manager.cpp:5:0: information: Include file: <algorithm> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <algorithm>
+^
+rag/src/rag_command_system.cpp:1:0: information: Include file: "rag/rag_command_system.hpp" not found. [missingInclude]
+#include "rag/rag_command_system.hpp"
+^
+rag/src/rag_command_system.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/rag_validator.cpp:1:0: information: Include file: "rag/rag_validator.hpp" not found. [missingInclude]
+#include "rag/rag_validator.hpp"
+^
+rag/src/response_generator.cpp:1:0: information: Include file: "rag/response_generator.hpp" not found. [missingInclude]
+#include "rag/response_generator.hpp"
+^
+rag/src/response_generator.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/security_context.cpp:2:0: information: Include file: "rag/security_context.hpp" not found. [missingInclude]
+#include "rag/security_context.hpp"
+^
+rag/src/whitelist_manager.cpp:1:0: information: Include file: "rag/whitelist_manager.hpp" not found. [missingInclude]
+#include "rag/whitelist_manager.hpp"
+^
+rag/src/whitelist_manager.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/src/whitelist_manager.cpp:3:0: information: Include file: <sstream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <sstream>
+^
+rag/src/whitelist_parser.cpp:1:0: information: Include file: "rag/whitelist_parser.hpp" not found. [missingInclude]
+#include "rag/whitelist_parser.hpp"
+^
+rag/src/whitelist_parser.cpp:2:0: information: Include file: <iostream> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <iostream>
+^
+rag/tests/unit/test_config_manager.cpp:1:0: information: Include file: <gtest/gtest.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <gtest/gtest.h>
+^
+rag/tests/unit/test_etcd_client.cpp:1:0: information: Include file: <gtest/gtest.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <gtest/gtest.h>
+^
+rag/tests/unit/test_etcd_client.cpp:2:0: information: Include file: "rag/etcd_client.hpp" not found. [missingInclude]
+#include "rag/etcd_client.hpp"
+^
+rag/tests/unit/test_etcd_client.cpp:3:0: information: Include file: <thread> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <thread>
+^
+rag/tests/unit/test_etcd_client.cpp:4:0: information: Include file: <chrono> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <chrono>
+^
+rag/tests/unit/test_whitelist_manager.cpp:1:0: information: Include file: <gtest/gtest.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <gtest/gtest.h>
+^
+rag/tests/unit/test_config_manager.cpp:4:1: style: The function 'TEST' is never used. [unusedFunction]
+TEST(BasicTest, Configuration) {
+^
+sniffer/src/userspace/config_types.cpp:229:6: style: The function 'validate_component_section' is never used. [unusedFunction]
+void validate_component_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:230:6: style: The function 'validate_profiles_section' is never used. [unusedFunction]
+void validate_profiles_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:231:6: style: The function 'validate_capture_section' is never used. [unusedFunction]
+void validate_capture_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:232:6: style: The function 'validate_buffers_section' is never used. [unusedFunction]
+void validate_buffers_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:233:6: style: The function 'validate_threading_section' is never used. [unusedFunction]
+void validate_threading_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:234:6: style: The function 'validate_kernel_space_section' is never used. [unusedFunction]
+void validate_kernel_space_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:235:6: style: The function 'validate_user_space_section' is never used. [unusedFunction]
+void validate_user_space_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:236:6: style: The function 'validate_feature_groups_section' is never used. [unusedFunction]
+void validate_feature_groups_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:237:6: style: The function 'validate_time_windows_section' is never used. [unusedFunction]
+void validate_time_windows_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:238:6: style: The function 'validate_network_section' is never used. [unusedFunction]
+void validate_network_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:239:6: style: The function 'validate_zmq_section' is never used. [unusedFunction]
+void validate_zmq_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:240:6: style: The function 'validate_transport_section' is never used. [unusedFunction]
+void validate_transport_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:241:6: style: The function 'validate_etcd_section' is never used. [unusedFunction]
+void validate_etcd_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:242:6: style: The function 'validate_processing_section' is never used. [unusedFunction]
+void validate_processing_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:243:6: style: The function 'validate_auto_tuner_section' is never used. [unusedFunction]
+void validate_auto_tuner_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:244:6: style: The function 'validate_monitoring_section' is never used. [unusedFunction]
+void validate_monitoring_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:245:6: style: The function 'validate_logging_section' is never used. [unusedFunction]
+void validate_logging_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:246:6: style: The function 'validate_protobuf_section' is never used. [unusedFunction]
+void validate_protobuf_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:247:6: style: The function 'validate_security_section' is never used. [unusedFunction]
+void validate_security_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:248:6: style: The function 'validate_backpressure_section' is never used. [unusedFunction]
+void validate_backpressure_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/config_types.cpp:249:6: style: The function 'validate_fast_detector_section' is never used. [unusedFunction]
+void validate_fast_detector_section(const Json::Value&, StrictSnifferConfig&, bool) {}
+     ^
+sniffer/src/userspace/thread_manager.cpp:616:8: style: The function 'get_thread_cpu_usage' is never used. [unusedFunction]
+double get_thread_cpu_usage([[maybe_unused]] std::thread::native_handle_type handle) {
+       ^
+sniffer/tests/test_integration_simple_event.cpp:67:9: style: The function 'get_failed_count' is never used. [unusedFunction]
+    int get_failed_count() const { return failed_; }
+        ^
+sniffer/tests/test_ransomware_feature_extractor.cpp:49:10: style: The function 'assert_near' is never used. [unusedFunction]
+    void assert_near(double actual, double expected, double tolerance, const std::string& message) {
+         ^
+nofile:0:0: information: Active checkers: There was critical errors (use --checkers-report=<filename> to see details) [checkersReport]
+

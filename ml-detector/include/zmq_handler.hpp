@@ -17,12 +17,14 @@
 #include "ml_defender/ddos_detector.hpp"
 #include "ml_defender/traffic_detector.hpp"
 #include "ml_defender/internal_detector.hpp"
-#include "config_loader.hpp"
 
 #include "network_security.pb.h"
 
 // 🎯 DAY 14: RAG Logger
 #include "rag_logger.hpp"
+
+// 🎯 DAY 27: Crypto-Transport Integration
+#include <crypto_transport/crypto_manager.hpp>
 
 namespace ml_detector {
 
@@ -46,7 +48,8 @@ public:
         std::shared_ptr<ml_defender::DDoSDetector> ddos_detector,
         std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
         std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
-        std::shared_ptr<ml_defender::InternalDetector> internal_detector
+        std::shared_ptr<ml_defender::InternalDetector> internal_detector,
+        std::shared_ptr<crypto::CryptoManager> crypto_manager  // 🎯 DAY 27: NEW
     );
 
     ~ZMQHandler();
@@ -81,6 +84,9 @@ private:
     std::shared_ptr<ml_defender::TrafficDetector> traffic_detector_;
     std::shared_ptr<ml_defender::InternalDetector> internal_detector_;
     std::shared_ptr<FeatureExtractor> extractor_;
+
+    // 🎯 DAY 27: Crypto-Transport
+    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
 
     // ZMQ
     zmq::context_t context_;

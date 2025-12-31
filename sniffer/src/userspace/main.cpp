@@ -8,13 +8,15 @@
 #include "main.h"
 #include "network_security.pb.h"
 #include "config_manager.hpp"
-#include "fast_detector_config.hpp"  // Day 12 - Externalized thresholds
+#include "fast_detector_config.hpp"
 #include "zmq_pool_manager.hpp"
 #include "ebpf_loader.hpp"
 #include "ring_consumer.hpp"
 #include "thread_manager.hpp"
 #include "bpf_map_manager.h"
-
+#include "feature_logger.hpp"
+#include "dual_nic_manager.hpp"
+#include "etcd_client.hpp"
 // Sistema y captura de red
 #include <json/json.h>
 #include <fstream>
@@ -36,8 +38,6 @@
 #include <iomanip>
 #include <random>
 #include <fstream>
-#include "feature_logger.hpp"
-#include "dual_nic_manager.hpp"
 #include <algorithm>
 #include <memory>
 
@@ -292,6 +292,39 @@ int main(int argc, char* argv[]) {
         }
 
         std::cout << "✅ Configuration loaded successfully" << std::endl;
+
+        // ============================================================================
+        // ETCD INTEGRATION - DAY 20 (Encrypted Config Upload)
+        // ============================================================================
+
+        std::unique_ptr<sniffer::EtcdClient> etcd_client;
+
+        if (g_config.etcd.enabled) {
+            std::cout << "\n[etcd] Initializing etcd client integration..." << std::endl;
+
+            // Crear cliente etcd
+            // todo cuando tengamos HA en etcd-server, esto tendrá que cambiar.
+            std::string etcd_endpoint = g_config.etcd.endpoints[0];  // ← Ahora SÍ existe
+            etcd_client = std::make_unique<sniffer::EtcdClient>(etcd_endpoint, "sniffer");
+
+            // Conectar y obtener clave de cifrado
+            if (!etcd_client->initialize()) {
+                std::cerr << "⚠️  [etcd] Failed to initialize - continuing without etcd" << std::endl;
+                etcd_client.reset();
+            } else {
+                // Registrar servicio y subir configuración completa
+                if (!etcd_client->registerService()) {
+                    std::cerr << "⚠️  [etcd] Failed to register service - continuing without etcd" << std::endl;
+                    etcd_client.reset();
+                } else {
+                    std::cout << "✅ [etcd] Sniffer registered and config uploaded" << std::endl;
+                    std::cout << "🔐 [etcd] Config encrypted with ChaCha20-Poly1305" << std::endl;
+                    std::cout << "🗜️  [etcd] Config compressed with LZ4" << std::endl;
+                }
+            }
+        } else {
+            std::cout << "\n[etcd] etcd integration disabled in config" << std::endl;
+        }
 
         // ============================================================================
         // EXTRACT FAST DETECTOR CONFIGURATION (Day 12)
@@ -613,7 +646,52 @@ int main(int argc, char* argv[]) {
         sniffer_config.transport.compression.compression_ratio_threshold = g_config.compression.compression_ratio_threshold;
         sniffer_config.transport.compression.adaptive_compression = g_config.compression.adaptive_compression;
 
-        ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config, fast_detector_config);
+        // ═══════════════════════════════════════════════════════════════════════
+// 🎯 DAY 29: Get encryption seed from etcd (REQUIRED, with retry)
+// ═══════════════════════════════════════════════════════════════════════
+std::string encryption_seed;
+
+if (!etcd_client) {
+    std::cerr << "\n❌ FATAL: etcd integration is REQUIRED for sniffer" << std::endl;
+    std::cerr << "   Reason: Encryption seed must be obtained from etcd-server" << std::endl;
+    std::cerr << "   Action: Enable etcd in config and ensure etcd-server is running" << std::endl;
+    std::cerr << "   Security: Hardcoded encryption keys are NOT acceptable" << std::endl;
+    return 1;
+}
+
+// Retry mechanism (3 attempts, like firewall-acl-agent)
+const int max_retries = 3;
+const int retry_delay_seconds = 2;
+
+for (int attempt = 1; attempt <= max_retries; ++attempt) {
+    std::cout << "🔑 [etcd] Attempt " << attempt << "/" << max_retries
+              << ": Getting encryption seed..." << std::endl;
+
+    encryption_seed = etcd_client->get_encryption_seed();
+
+    if (!encryption_seed.empty()) {
+        std::cout << "✅ Encryption seed obtained from etcd-server" << std::endl;
+        break;
+    }
+
+    if (attempt < max_retries) {
+        std::cerr << "⚠️  [etcd] Failed to get seed, retrying in "
+                  << retry_delay_seconds << "s..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(retry_delay_seconds));
+    }
+}
+
+if (encryption_seed.empty()) {
+    std::cerr << "\n❌ FATAL: Failed to get encryption seed after "
+              << max_retries << " attempts" << std::endl;
+    std::cerr << "   Reason: etcd-server did not provide encryption key" << std::endl;
+    std::cerr << "   Action: Verify etcd-server is running and accessible" << std::endl;
+    std::cerr << "   Network: Check connectivity to " << g_config.etcd.endpoints[0] << std::endl;
+    std::cerr << "   HA Setup: Consider deploying etcd-server in HA configuration" << std::endl;
+    return 1;
+}
+
+ring_consumer_ptr = new sniffer::RingBufferConsumer(sniffer_config, fast_detector_config, encryption_seed);
         auto& ring_consumer = *ring_consumer_ptr;
 
         // Configure stats interval from monitoring config

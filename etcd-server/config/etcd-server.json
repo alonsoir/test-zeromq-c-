@@ -1,0 +1,27 @@
+{
+  "server": {
+    "port": 2379,
+    "host": "0.0.0.0",
+    "worker_threads": 4
+  },
+  "heartbeat": {
+    "enabled": true,
+    "interval_seconds": 30,
+    "timeout_multiplier": 3,
+    "check_interval_seconds": 10
+  },
+  "auto_restart": {
+    "enabled": true,
+    "max_attempts": 3,
+    "delay_seconds": 5,
+    "commands": {
+      "sniffer": "cd /vagrant/sniffer/build && sudo ./sniffer -c ../config/sniffer.json",
+      "ml-detector": "cd /vagrant/ml-detector/build && ./ml-detector -c ../config/ml_detector_config.json",
+      "firewall-acl-agent": "cd /vagrant/firewall-acl-agent/build && sudo ./firewall-acl-agent -c ../config/firewall.json"
+    }
+  },
+  "security": {
+    "encryption_enabled": true,
+    "compression_enabled": true
+  }
+}

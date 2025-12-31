@@ -2,6 +2,8 @@
 #include "compression_handler.hpp"
 #include "ring_consumer.hpp"
 #include "fast_detector.hpp"
+// 🎯 DAY 29: Crypto-transport utilities
+#include <crypto_transport/utils.hpp>
 #include "feature_logger.hpp"
 #include "flow_manager.hpp"
 #include "ml_defender_features.hpp"
@@ -46,11 +48,13 @@ namespace sniffer {
     // ============================================================================
 
     RingBufferConsumer::RingBufferConsumer(
-        const SnifferConfig& config,
-        const FastDetectorConfig& fast_detector_config)
-        : config_(config)
-        , fast_detector_config_(fast_detector_config)  // ⭐ NUEVO - Day 12
-        , ring_buf_(nullptr)
+    const SnifferConfig& config,
+    const FastDetectorConfig& fast_detector_config,
+    const std::string& encryption_seed)
+    : config_(config)
+    , fast_detector_config_(fast_detector_config)
+    , encryption_seed_(encryption_seed)  // 🎯 DAY 29
+    , ring_buf_(nullptr)
         , ring_fd_(-1)
         , initialized_(false)
         , running_(false)
@@ -269,11 +273,43 @@ bool RingBufferConsumer::initialize_zmq() {
             }
 
             zmq_sockets_.push_back(std::move(socket));
-		    socket_mutexes_.push_back(std::make_unique<std::mutex>());
+            socket_mutexes_.push_back(std::make_unique<std::mutex>());
         }
 
         std::cout << "[INFO] ZeroMQ initialized with " << socket_count
                   << " sockets to " << endpoint << std::endl;
+
+        // 🎯 DAY 29: Initialize Crypto-Transport with seed from etcd
+        if (encryption_seed_.empty()) {
+            std::cerr << "[ERROR] No encryption seed provided!" << std::endl;
+            return false;
+        }
+
+        // Convert HEX seed to binary (64 hex chars → 32 bytes)
+        std::string binary_key;
+        try {
+            // Use crypto_transport utility for hex conversion
+            auto key_bytes = crypto_transport::hex_to_bytes(encryption_seed_);
+            binary_key = std::string(key_bytes.begin(), key_bytes.end());
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] Failed to convert hex seed to binary: " << e.what() << std::endl;
+            return false;
+        }
+
+        if (binary_key.size() != 32) {
+            std::cerr << "[ERROR] Invalid key size after conversion: " << binary_key.size() << " bytes" << std::endl;
+            return false;
+        }
+
+        crypto_manager_ = std::make_shared<crypto::CryptoManager>(binary_key);
+
+        if (!crypto_manager_) {
+            std::cerr << "[ERROR] Failed to initialize CryptoManager" << std::endl;
+            return false;
+        }
+
+        std::cout << "[INFO] ✅ Crypto-Transport initialized (XSalsa20-Poly1305 + LZ4)" << std::endl;
+
         return true;
 
     } catch (const zmq::error_t& e) {
@@ -544,38 +580,41 @@ void RingBufferConsumer::send_event_batch(const std::vector<SimpleEvent>& events
 
 bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& serialized_data) {
     try {
-        std::vector<uint8_t> data_to_send;
+        // ====================================================================
+        // 🎯 DAY 29: COMPRESS + ENCRYPT using crypto-transport
+        // Pattern: serialize → compress → encrypt → zmq_send
+        // ====================================================================
 
-        // Compress if enabled and size exceeds minimum
-        if (config_.transport.compression.enabled &&
-            serialized_data.size() >= config_.transport.compression.min_compress_size) {
-
-            try {
-                CompressionHandler compressor;
-                auto compressed = compressor.compress_lz4(
-                    serialized_data.data(),
-                    serialized_data.size()
-                );
-                data_to_send = std::move(compressed);
-
-            } catch (const std::exception& e) {
-                std::cerr << "[WARNING] LZ4 compression failed: " << e.what()
-                          << ", sending uncompressed" << std::endl;
-                data_to_send = serialized_data;
-            }
-        } else {
-            data_to_send = serialized_data;
+        if (!crypto_manager_) {
+            std::cerr << "[ERROR] CryptoManager not initialized!" << std::endl;
+            stats_.zmq_send_failures++;
+            return false;
         }
 
-        zmq::message_t message(data_to_send.size());
-        memcpy(message.data(), data_to_send.data(), data_to_send.size());
+        // Step 1: Compress
+        auto compressed = crypto_manager_->compress_with_size(
+    std::string(serialized_data.begin(), serialized_data.end())
+);
+
+        // Step 2: Encrypt
+        auto encrypted = crypto_manager_->encrypt(compressed);
+
+        // Log sizes (optional, for debugging Day 29)
+        std::cout << "[CRYPTO] 📦 Compressed: " << serialized_data.size()
+                  << " → " << compressed.size() << " bytes" << std::endl;
+        std::cout << "[CRYPTO] 🔒 Encrypted: " << compressed.size()
+                  << " → " << encrypted.size() << " bytes" << std::endl;
+
+        // Step 3: Send encrypted
+        zmq::message_t message(encrypted.size());
+        memcpy(message.data(), encrypted.data(), encrypted.size());
 
         // Get next socket using round-robin with proper locking
-		size_t idx = socket_round_robin_.fetch_add(1, std::memory_order_relaxed) % zmq_sockets_.size();
-		std::lock_guard<std::mutex> lock(*socket_mutexes_[idx]);
-		zmq::socket_t* socket = zmq_sockets_[idx].get();
+        size_t idx = socket_round_robin_.fetch_add(1, std::memory_order_relaxed) % zmq_sockets_.size();
+        std::lock_guard<std::mutex> lock(*socket_mutexes_[idx]);
+        zmq::socket_t* socket = zmq_sockets_[idx].get();
 
-		auto result = socket->send(message, zmq::send_flags::dontwait);
+        auto result = socket->send(message, zmq::send_flags::dontwait);
 
         if (result.has_value()) {
             stats_.events_sent++;
@@ -589,6 +628,10 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
     } catch (const zmq::error_t& e) {
         std::cerr << "[ERROR] ZMQ exception: " << e.what() << std::endl;
         handle_zmq_error(e);
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Crypto exception: " << e.what() << std::endl;
+        stats_.zmq_send_failures++;
         return false;
     }
 }

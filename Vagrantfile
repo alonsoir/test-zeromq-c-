@@ -474,6 +474,26 @@ BASHRC_EOF
       echo "═══════════════════════════════════════════════════════════"
     SNIFFER_CONFIG
 
+    # En Vagrantfile, dentro de config.vm.define "defender":
+    defender.vm.provision "shell", name: "configure-cron-restart", run: "once", inline: <<-CRON
+      echo "⏰ Configurando cron para restart automático cada 72h..."
+
+      # Crear entrada cron para vagrant user
+      CRON_ENTRY="0 3 */3 * * /vagrant/scripts/restart_ml_defender.sh"
+
+      # Verificar si ya existe
+      if ! crontab -u vagrant -l 2>/dev/null | grep -q "restart_ml_defender"; then
+        (crontab -u vagrant -l 2>/dev/null; echo "# ML Defender restart every 72h (memory leak mitigation)") | crontab -u vagrant -
+        (crontab -u vagrant -l 2>/dev/null; echo "$CRON_ENTRY") | crontab -u vagrant -
+        echo "✅ Cron configurado: Restart cada 3 días a las 3:00 AM"
+      else
+        echo "✅ Cron ya configurado"
+      fi
+
+      # Mostrar crontab
+      crontab -u vagrant -l
+    CRON
+
   end  # End defender VM
 
   # ════════════════════════════════════════════════════════════════════════════

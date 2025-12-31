@@ -1,18 +1,28 @@
 #pragma once
 #include <memory>
 #include <string>
-//rag/include/rag/etcd_client.hpp
+
+// Forward declaration de la librería nueva
+namespace etcd_client {
+    class EtcdClient;
+}
+
 namespace Rag {
 
+/**
+ * Adapter para etcd_client library
+ * Mantiene la API legacy de RAG pero usa la implementación nueva
+ */
 class EtcdClient {
 public:
     EtcdClient(const std::string& endpoint, const std::string& component_name);
     ~EtcdClient();
 
+    // API legacy (mantenida para compatibilidad)
     bool initialize();
     bool is_connected() const;
     bool registerService();
-	bool unregisterService();
+    bool unregisterService();
     bool get_component_config(const std::string& component_name);
     bool validate_configuration();
     bool update_component_config(const std::string& component_name, const std::string& config);

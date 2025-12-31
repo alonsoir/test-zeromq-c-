@@ -16,6 +16,8 @@
 #include "ml_defender/ransomware_detector.hpp"
 #include "ml_defender/traffic_detector.hpp"
 #include "ml_defender/internal_detector.hpp"
+// 🎯 DAY 29: Crypto-Transport for encrypted ZMQ send
+#include <crypto_transport/crypto_manager.hpp>
 #include <bpf/libbpf.h>
 #include <zmq.hpp>
 #include <memory>
@@ -47,11 +49,11 @@ struct RingConsumerStats {
     std::atomic<uint64_t> ransomware_confirmed_threats{0};  // High-confidence detections
     std::atomic<uint64_t> ransomware_processing_time_us{0}; // Time spent on ransomware
 
-	std::atomic<uint64_t> ddos_attacks_detected{0};
-	std::atomic<uint64_t> ransomware_attacks_detected{0};
-	std::atomic<uint64_t> suspicious_traffic_detected{0};
-	std::atomic<uint64_t> internal_anomalies_detected{0};
-	std::atomic<uint64_t> ml_detection_time_us{0};
+    std::atomic<uint64_t> ddos_attacks_detected{0};
+    std::atomic<uint64_t> ransomware_attacks_detected{0};
+    std::atomic<uint64_t> suspicious_traffic_detected{0};
+    std::atomic<uint64_t> internal_anomalies_detected{0};
+    std::atomic<uint64_t> ml_detection_time_us{0};
 };
 
 // Snapshot for reading stats (non-atomic copy)
@@ -71,12 +73,12 @@ struct RingConsumerStatsSnapshot {
     uint64_t ransomware_feature_extractions;
     uint64_t ransomware_confirmed_threats;
     uint64_t ransomware_processing_time_us;
-	// embebbed models
-	uint64_t ddos_attacks_detected;
-	uint64_t ransomware_attacks_detected;
-	uint64_t suspicious_traffic_detected;
-	uint64_t internal_anomalies_detected;
-	uint64_t ml_detection_time_us;
+    // embebbed models
+    uint64_t ddos_attacks_detected;
+    uint64_t ransomware_attacks_detected;
+    uint64_t suspicious_traffic_detected;
+    uint64_t internal_anomalies_detected;
+    uint64_t ml_detection_time_us;
 };
 
 struct EventBatch {
@@ -94,9 +96,14 @@ class RingBufferConsumer {
 public:
     using EventCallback = std::function<void(const SimpleEvent&)>;
 
-	explicit RingBufferConsumer(const SnifferConfig& config,const FastDetectorConfig& fast_detector_config = FastDetectorConfig{});
+    // 🎯 DAY 29: Constructor with encryption seed
+    explicit RingBufferConsumer(
+        const SnifferConfig& config,
+        const FastDetectorConfig& fast_detector_config = FastDetectorConfig{},
+        const std::string& encryption_seed = ""
+    );
 
-	~RingBufferConsumer();
+    ~RingBufferConsumer();
 
     bool initialize(int ring_fd, std::shared_ptr<ThreadManager> thread_manager);
     bool start();
@@ -167,7 +174,7 @@ private:
 
     // Configuration
     SnifferConfig config_;
-	FastDetectorConfig fast_detector_config_;  // Day 12 - Externalized thresholds
+    FastDetectorConfig fast_detector_config_;  // Day 12 - Externalized thresholds
     int stats_interval_seconds_{30};  // Default 30 seconds todo esto hay que cambiarlo, quitar números mágicos
 
     // Ring buffer
@@ -182,11 +189,11 @@ private:
     std::atomic<bool> should_stop_{false};
     std::atomic<bool> initialized_{false};
 
-	// Layer 3 - ML Defender Embedded Detectors (thread-local, zero-lock)
-	thread_local static ml_defender::DDoSDetector ddos_detector_;
-	thread_local static ml_defender::RansomwareDetector ransomware_detector_;
-	thread_local static ml_defender::TrafficDetector traffic_detector_;
-	thread_local static ml_defender::InternalDetector internal_detector_;
+    // Layer 3 - ML Defender Embedded Detectors (thread-local, zero-lock)
+    thread_local static ml_defender::DDoSDetector ddos_detector_;
+    thread_local static ml_defender::RansomwareDetector ransomware_detector_;
+    thread_local static ml_defender::TrafficDetector traffic_detector_;
+    thread_local static ml_defender::InternalDetector internal_detector_;
 
     // Queues
     std::queue<SimpleEvent> processing_queue_;
@@ -215,6 +222,10 @@ private:
     RingConsumerStats stats_;
     EventCallback external_callback_;
 
+    // 🎯 DAY 29: Crypto-Transport for encrypted ZMQ send
+    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
+    std::string encryption_seed_;  // Store seed for initialization
+
     // Layer 1 - Fast Detection (thread-local)
     thread_local static FastDetector fast_detector_;
     thread_local static PayloadAnalyzer payload_analyzer_;
@@ -233,14 +244,14 @@ private:
     bool initialize_ransomware_detection();
     void shutdown_ransomware_detection();
 
-	// ML Defender feature extraction
-	ml_defender::DDoSDetector::Features extract_ddos_features(const protobuf::NetworkSecurityEvent& proto_event) const;
-	ml_defender::RansomwareDetector::Features extract_ransomware_features(const protobuf::NetworkSecurityEvent& proto_event) const;
-	ml_defender::TrafficDetector::Features extract_traffic_features(const protobuf::NetworkSecurityEvent& proto_event) const;
-	ml_defender::InternalDetector::Features extract_internal_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+    // ML Defender feature extraction
+    ml_defender::DDoSDetector::Features extract_ddos_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+    ml_defender::RansomwareDetector::Features extract_ransomware_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+    ml_defender::TrafficDetector::Features extract_traffic_features(const protobuf::NetworkSecurityEvent& proto_event) const;
+    ml_defender::InternalDetector::Features extract_internal_features(const protobuf::NetworkSecurityEvent& proto_event) const;
 
-	// ML Defender inference
-	void run_ml_detection(protobuf::NetworkSecurityEvent& proto_event);
+    // ML Defender inference
+    void run_ml_detection(protobuf::NetworkSecurityEvent& proto_event);
 };
 
 } // namespace sniffer

@@ -354,7 +354,7 @@
 
   "transport": {
     "compression": {
-      "enabled": false,
+      "enabled": true,
       "algorithm": "lz4",
       "level": 1,
       "min_compress_size": 0,
@@ -362,7 +362,7 @@
       "adaptive_compression": false
     },
     "encryption": {
-      "enabled": false,
+      "enabled": true,
       "etcd_token_required": true,
       "algorithm": "chacha20-poly1305",
       "key_size": 256,
@@ -375,7 +375,7 @@
   },
 
   "etcd": {
-    "enabled": false,
+    "enabled": true,
     "endpoints": ["localhost:2379"],
     "connection_timeout_ms": 5000,
     "retry_attempts": 3,

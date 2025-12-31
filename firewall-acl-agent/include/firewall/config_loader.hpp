@@ -110,6 +110,41 @@ struct LoggingConfigNew {
     bool log_performance_metrics = true;
 };
 
+    //===----------------------------------------------------------------------===//
+    // Etcd Configuration
+    //===----------------------------------------------------------------------===//
+    struct EtcdConfig {
+        bool enabled = false;
+        std::vector<std::string> endpoints;
+        int connection_timeout_ms = 5000;
+        int retry_attempts = 3;
+        int retry_interval_ms = 1000;
+        int heartbeat_interval_seconds = 30;
+        int lease_ttl_seconds = 60;
+    };
+
+    //===----------------------------------------------------------------------===//
+    // Transport Configuration (Day 23)
+    //===----------------------------------------------------------------------===//
+    struct CompressionConfig {
+        bool enabled = false;
+        bool decompression_only = true;
+        std::string algorithm = "lz4";
+    };
+
+    struct EncryptionConfig {
+        bool enabled = false;
+        bool decryption_only = true;
+        bool etcd_token_required = true;
+        std::string algorithm = "chacha20-poly1305";
+        std::string fallback_mode = "compressed_only";
+    };
+
+    struct TransportConfig {
+        CompressionConfig compression;
+        EncryptionConfig encryption;
+    };
+
 //===----------------------------------------------------------------------===//
 // MAIN CONFIGURATION STRUCTURE
 //===----------------------------------------------------------------------===//
@@ -122,7 +157,9 @@ struct FirewallAgentConfig {
     BatchProcessorConfigNew batch_processor;
     ValidationConfig validation;
     LoggingConfigNew logging;
-    
+    EtcdConfig etcd;
+    TransportConfig transport;  // ✅ Day 23: AÑADIR ESTA LÍNEA
+
     bool is_valid() const { return true; }
     std::vector<std::string> validate() const { return {}; }
 };
@@ -150,7 +187,9 @@ private:
     static BatchProcessorConfigNew parse_batch_processor(const Json::Value& json);
     static ValidationConfig parse_validation(const Json::Value& json);
     static LoggingConfigNew parse_logging(const Json::Value& json);
-    
+    static EtcdConfig parse_etcd(const Json::Value& json);
+    static TransportConfig parse_transport(const Json::Value& json);  // ✅ Day 23: AÑADIR
+
     // Utility helpers
     template<typename T>
     static T get_required(const Json::Value& json, const std::string& key, 

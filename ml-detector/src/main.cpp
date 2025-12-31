@@ -8,10 +8,15 @@
 #include "onnx_model.hpp"
 #include "feature_extractor.hpp"
 #include "zmq_handler.hpp"
+#include "etcd_client.hpp"
 #include "ml_defender/ransomware_detector.hpp"
-#include "ml_defender/ddos_detector.hpp"        // ✅ Ya existe
-#include "ml_defender/traffic_detector.hpp"     // ✅ Ya existe
-#include "ml_defender/internal_detector.hpp"    // ✅ Ya existe
+#include "ml_defender/ddos_detector.hpp"
+#include "ml_defender/traffic_detector.hpp"
+#include "ml_defender/internal_detector.hpp"
+
+// 🎯 DAY 27: Crypto-Transport Integration
+#include <crypto_transport/crypto_manager.hpp>
+#include <crypto_transport/utils.hpp>  // 🎯 DAY 29: For hex_to_bytes
 
 //ml-detector/src/main.cpp
 using namespace ml_detector;
@@ -109,6 +114,74 @@ int main(int argc, char* argv[]) {
 
         std::cout << "✅ Configuration loaded successfully\n\n" << std::endl;
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // ETCD INTEGRATION - Register component and upload config
+        // ═══════════════════════════════════════════════════════════════════════
+        std::unique_ptr<ml_detector::EtcdClient> etcd_client;
+
+        if (config.etcd.enabled) {
+            std::string etcd_endpoint = config.etcd.endpoints[0];
+
+            std::cout << "🔗 [etcd] Initializing connection to " << etcd_endpoint << std::endl;
+
+            etcd_client = std::make_unique<ml_detector::EtcdClient>(etcd_endpoint, "ml-detector");
+
+            if (!etcd_client->initialize()) {
+                std::cerr << "❌ [etcd] Failed to initialize - REQUIRED for ml-detector" << std::endl;
+                return 1;
+            }
+
+            if (!etcd_client->registerService()) {
+                std::cerr << "❌ [etcd] Failed to register service - REQUIRED for ml-detector" << std::endl;
+                return 1;
+            }
+
+            std::cout << "✅ [etcd] ml-detector registered and config uploaded" << std::endl;
+
+        } else {
+            std::cerr << "❌ [etcd] etcd integration is REQUIRED for ml-detector" << std::endl;
+            std::cerr << "   Enable etcd in config: ml_detector_config.json" << std::endl;
+            return 1;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 🎯 DAY 29: CRYPTO-TRANSPORT INITIALIZATION WITH HEX→BINARY CONVERSION
+        // ═══════════════════════════════════════════════════════════════════════
+        std::cout << "\n🔐 [crypto] Initializing Crypto-Transport..." << std::endl;
+
+        // Get encryption seed from etcd (HEX format)
+        std::string encryption_seed_hex = etcd_client->get_encryption_seed();
+
+        if (encryption_seed_hex.empty()) {
+            std::cerr << "❌ [crypto] Failed to get encryption seed from etcd" << std::endl;
+            return 1;
+        }
+
+        std::cout << "🔑 [ml-detector] Retrieved encryption seed (" << encryption_seed_hex.size() << " hex chars)" << std::endl;
+
+        // Convert HEX to binary (64 hex chars → 32 bytes)
+        std::string encryption_seed;
+        try {
+            auto key_bytes = crypto_transport::hex_to_bytes(encryption_seed_hex);
+            encryption_seed = std::string(key_bytes.begin(), key_bytes.end());
+        } catch (const std::exception& e) {
+            std::cerr << "❌ [crypto] Failed to convert hex seed: " << e.what() << std::endl;
+            return 1;
+        }
+
+        if (encryption_seed.size() != 32) {
+            std::cerr << "❌ [crypto] Invalid key size: " << encryption_seed.size() << " bytes (expected 32)" << std::endl;
+            return 1;
+        }
+
+        std::cout << "✅ [crypto] Encryption key converted: 32 bytes" << std::endl;
+
+        // Create CryptoManager
+        auto crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
+
+        std::cout << "✅ [crypto] CryptoManager initialized (ChaCha20-Poly1305 + LZ4)" << std::endl;
+        std::cout << std::endl;
+
         // Print configuration summary
         std::cout << "╔═══════════════════════════════════════════════════════════════╗\n";
         std::cout << "║  ML DETECTOR TRICAPA - CONFIGURATION                          ║\n";
@@ -177,6 +250,7 @@ int main(int argc, char* argv[]) {
         log->info("   Threads: {} workers, {} ML inference",
                     config.threading.worker_threads,
                     config.threading.ml_inference_threads);
+        log->info("   Crypto: ChaCha20-Poly1305 + LZ4 enabled");
 
         // 3. Load ML Model (Level 1)
         std::shared_ptr<ONNXModel> model;
@@ -215,7 +289,7 @@ int main(int argc, char* argv[]) {
         // ═══════════════════════════════════════════════════════════════════════
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ✨ LEVEL 2: DDoS Detector (C++20 Embedded) - NUEVO
+        // ✨ LEVEL 2: DDoS Detector (C++20 Embedded)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         std::shared_ptr<ml_defender::DDoSDetector> ddos_detector;
 
@@ -252,7 +326,7 @@ int main(int argc, char* argv[]) {
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // Level 2 Ransomware - Embedded C++20 Detector (YA EXISTÍA)
+        // Level 2 Ransomware - Embedded C++20 Detector
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector;
 
@@ -293,7 +367,7 @@ int main(int argc, char* argv[]) {
         // ═══════════════════════════════════════════════════════════════════════
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ✨ LEVEL 3: Traffic Detector (C++20 Embedded) - NUEVO
+        // ✨ LEVEL 3: Traffic Detector (C++20 Embedded)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         std::shared_ptr<ml_defender::TrafficDetector> traffic_detector;
 
@@ -330,7 +404,7 @@ int main(int argc, char* argv[]) {
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ✨ LEVEL 3: Internal Detector (C++20 Embedded) - NUEVO
+        // ✨ LEVEL 3: Internal Detector (C++20 Embedded)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         std::shared_ptr<ml_defender::InternalDetector> internal_detector;
 
@@ -374,7 +448,7 @@ int main(int argc, char* argv[]) {
         log->info("✅ Feature Extractor initialized");
 
         // ═══════════════════════════════════════════════════════════════════════
-        // 7. Create and start ZMQ Handler
+        // 7. Create and start ZMQ Handler (with crypto_manager)
         // ═══════════════════════════════════════════════════════════════════════
         log->info("🔌 Initializing ZMQ Handler...");
         log->info("   Detectors loaded:");
@@ -392,15 +466,16 @@ int main(int argc, char* argv[]) {
             log->info("     Level 3: Internal (C++20 - {} trees)", internal_detector->num_trees());
         }
 
-        // ✨ PASAR LOS 4 DETECTORES AL ZMQHANDLER
+        // ✨ DAY 27: PASAR crypto_manager AL ZMQHANDLER
         ZMQHandler zmq_handler(
             config,
             model,
             feature_extractor,
-            ddos_detector,          // ✨ NUEVO
+            ddos_detector,
             ransomware_detector,
-            traffic_detector,       // ✨ NUEVO
-            internal_detector       // ✨ NUEVO
+            traffic_detector,
+            internal_detector,
+            crypto_manager  // 🎯 DAY 27: NEW PARAMETER
         );
 
         zmq_handler.start();

@@ -62,6 +62,32 @@ endif()
 
 find_package(Threads REQUIRED)
 
+# ============================================================================
+# DAY 26: crypto-transport Library (replaces LZ4 + OpenSSL)
+# ============================================================================
+find_library(CRYPTO_TRANSPORT_LIB crypto_transport PATHS /usr/local/lib REQUIRED)
+if(CRYPTO_TRANSPORT_LIB)
+    message(STATUS "✅ Found crypto-transport: ${CRYPTO_TRANSPORT_LIB}")
+    include_directories(/usr/local/include)
+else()
+    message(FATAL_ERROR "❌ crypto-transport not found. Install: cd /vagrant/crypto-transport/build && sudo make install")
+endif()
+
+# ============================================================================
+# ETCD-CLIENT LIBRARY (Custom)
+# ============================================================================
+set(ETCD_CLIENT_LIB /vagrant/etcd-client/build/libetcd_client.so)
+set(ETCD_CLIENT_INCLUDE_DIR /vagrant/etcd-client/include)
+
+if(EXISTS ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Found etcd-client library: ${ETCD_CLIENT_LIB}")
+    include_directories(${ETCD_CLIENT_INCLUDE_DIR})
+    set(HAVE_ETCD_CLIENT TRUE)
+else()
+    message(STATUS "⚠️  etcd-client library not found - will build without etcd integration")
+    set(HAVE_ETCD_CLIENT FALSE)
+endif()
+
 #===----------------------------------------------------------------------===//
 # Protobuf Unificado
 #===----------------------------------------------------------------------===//
@@ -87,6 +113,7 @@ include_directories(
         ${Protobuf_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}            # Day 23
 )
 
 #===----------------------------------------------------------------------===//
@@ -98,6 +125,7 @@ set(FIREWALL_CORE_SOURCES
         src/core/iptables_wrapper.cpp
         src/core/batch_processor.cpp
         src/core/config_loader.cpp
+        src/core/etcd_client.cpp
         # src/core/acl_intelligence.cpp     # TODO: Phase 2+
 )
 
@@ -122,7 +150,7 @@ set(FIREWALL_MAIN_SOURCE
 add_library(firewall_core STATIC
         ${FIREWALL_CORE_SOURCES}
         ${FIREWALL_API_SOURCES}
-        ${FIREWALL_UTIL_SOURCES}          # ✅ AÑADIDO
+        ${FIREWALL_UTIL_SOURCES}
         ${PROTO_SOURCES}
 )
 
@@ -133,15 +161,22 @@ target_link_libraries(firewall_core
         ${Boost_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         Threads::Threads
+        ${CRYPTO_TRANSPORT_LIB}       # Day 26: crypto-transport (replaces LZ4 + OpenSSL)
 )
+
+# etcd-client (custom library)
+if(HAVE_ETCD_CLIENT)
+    target_link_libraries(firewall_core PUBLIC ${ETCD_CLIENT_LIB})
+    message(STATUS "✅ Linking etcd-client library to firewall_core")
+endif()
 
 target_include_directories(firewall_core
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/proto
-
         ${ZMQ_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
+        # /usr/local/include ya está arriba en include_directories()
 )
 
 #===----------------------------------------------------------------------===//

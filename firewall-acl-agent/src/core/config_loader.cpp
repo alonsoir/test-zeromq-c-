@@ -132,7 +132,20 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
     if (root.isMember("logging")) {
         config.logging = parse_logging(root["logging"]);
     }
-    
+
+    if (root.isMember("logging")) {
+        config.logging = parse_logging(root["logging"]);
+    }
+
+    if (root.isMember("etcd")) {  // ← AÑADIR ESTAS 3 LÍNEAS
+        config.etcd = parse_etcd(root["etcd"]);
+    }
+
+    // ✅ Day 23: Transport configuration
+    if (root.isMember("transport")) {
+        config.transport = parse_transport(root["transport"]);
+    }
+
     // Validate configuration
     validate_config(config);
     
@@ -333,6 +346,64 @@ void ConfigLoader::log_config_summary(const FirewallAgentConfig& config) {
               << "  Batching:        " << (config.batch_processor.enable_batching ? "ON" : "OFF") << "\n";
     
     std::cout << std::endl;
+}
+
+//===----------------------------------------------------------------------===//
+// Etcd Parser
+//===----------------------------------------------------------------------===//
+
+EtcdConfig ConfigLoader::parse_etcd(const Json::Value& json) {
+    EtcdConfig config;
+
+    config.enabled = get_optional<bool>(json, "enabled", false);
+
+    if (json.isMember("endpoints") && json["endpoints"].isArray()) {
+        config.endpoints = parse_string_array(json["endpoints"]);
+    }
+
+    config.connection_timeout_ms = get_optional<int>(json, "connection_timeout_ms", 5000);
+    config.retry_attempts = get_optional<int>(json, "retry_attempts", 3);
+    config.retry_interval_ms = get_optional<int>(json, "retry_interval_ms", 1000);
+    config.heartbeat_interval_seconds = get_optional<int>(json, "heartbeat_interval_seconds", 30);
+    config.lease_ttl_seconds = get_optional<int>(json, "lease_ttl_seconds", 60);
+
+    return config;
+}
+ TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
+    TransportConfig config;
+
+    std::cout << "[DEBUG] parse_transport() called" << std::endl;
+    std::cout << "[DEBUG] JSON received: " << json << std::endl;
+
+    // Parse compression section
+    if (json.isMember("compression")) {
+        std::cout << "[DEBUG] compression section found" << std::endl;
+        const auto& comp = json["compression"];
+        std::cout << "[DEBUG] comp has 'enabled': " << comp.isMember("enabled") << std::endl;
+        config.compression.enabled = get_optional<bool>(comp, "enabled", false);
+        std::cout << "[DEBUG] compression.enabled = " << config.compression.enabled << std::endl;
+        config.compression.decompression_only = get_optional<bool>(comp, "decompression_only", true);
+        config.compression.algorithm = get_optional<std::string>(comp, "algorithm", "lz4");
+    } else {
+        std::cout << "[DEBUG] NO compression section" << std::endl;
+    }
+
+    // Parse encryption section
+    if (json.isMember("encryption")) {
+        std::cout << "[DEBUG] encryption section found" << std::endl;
+        const auto& enc = json["encryption"];
+        std::cout << "[DEBUG] enc has 'enabled': " << enc.isMember("enabled") << std::endl;
+        config.encryption.enabled = get_optional<bool>(enc, "enabled", false);
+        std::cout << "[DEBUG] encryption.enabled = " << config.encryption.enabled << std::endl;
+        config.encryption.decryption_only = get_optional<bool>(enc, "decryption_only", true);
+        config.encryption.etcd_token_required = get_optional<bool>(enc, "etcd_token_required", true);
+        config.encryption.algorithm = get_optional<std::string>(enc, "algorithm", "chacha20-poly1305");
+        config.encryption.fallback_mode = get_optional<std::string>(enc, "fallback_mode", "compressed_only");
+    } else {
+        std::cout << "[DEBUG] NO encryption section" << std::endl;
+    }
+
+    return config;
 }
 
 } // namespace mldefender::firewall
