@@ -1,858 +1,637 @@
-# PROMPT DE CONTINUIDAD - DÍA 31 (01 Enero 2026)
+# PROMPT DE CONTINUIDAD - DÍA 32 (02 Enero 2026)
 
-## 📋 CONTEXTO DÍA 30 (31 Diciembre 2025)
+## 📋 CONTEXTO DÍA 31 (01 Enero 2026)
 
-### ✅ COMPLETADO - MEMORY LEAK INVESTIGATION & RESOLUTION
+### ✅ COMPLETADO - FAISS INSTALLATION & INFRASTRUCTURE
 
 **Gran Hito Alcanzado:**
-- ✅ Memory leak investigado sistemáticamente (5+ horas)
-- ✅ 70% reducción lograda (102 → 31 MB/h)
-- ✅ Configuración óptima identificada (artifacts + flush)
-- ✅ Cron restart configurado (cada 72h)
-- ✅ Sistema production-ready para 24×7×365
-- ✅ Documentación completa generada
+- ✅ FAISS v1.8.0 instalado (shared library, 7.0M)
+- ✅ ONNX Runtime v1.17.1 verificado y funcionando
+- ✅ Vagrantfile actualizado con FAISS provisioning
+- ✅ Docker/docker-compose eliminado del Vagrantfile
+- ✅ Scripts de verificación creados y testeados
+- ✅ 32,957 eventos RAG listos para ingestion
+- ✅ Rama git `feature/faiss-ingestion-phase2a` creada
 
-**Arquitectura Día 30 (Production-Ready):**
+**Arquitectura Día 31 (Infrastructure Ready):**
 ```
-ML-DETECTOR + RAG LOGGER
-  ↓ 83-field JSONL events
-  ↓ Protobuf + JSON artifacts
-  ↓ Memory: 31 MB/h (acceptable)
-  ↓ Restart: Every 72h (cron)
-  ✅ Logs ready for FAISS ingestion
+FAISS v1.8.0 (CPU-only)
+  ↓ Shared library: libfaiss.so (7.0M)
+  ↓ Headers: 123 files
+  ↓ Status: ✅ Compilación test OK
+  
+ONNX Runtime v1.17.1
+  ↓ Library: libonnxruntime.so (24M)
+  ↓ Headers: 9 files
+  ↓ Status: ✅ Verificado OK
+
+RAG Logs Disponibles
+  ↓ 32,957 eventos (6 archivos JSONL)
+  ↓ 43,526 artifacts Protobuf
+  ↓ 43,526 artifacts JSON
+  ✅ Ready for FAISS ingestion
 ```
 
-**Investigación Científica (Via Appia Quality):**
+**Instalación FAISS (Reproducible):**
 ```
-METODOLOGÍA:
-1. AddressSanitizer analysis (ASAN)
-2. Configuration matrix testing (5 configs)
-3. Systematic measurement (90+ min tests)
-4. Root cause analysis (stream buffering)
-5. Fix validation (70% improvement)
+MÉTODO:
+1. Build from source (git clone v1.8.0)
+2. CMake con BUILD_SHARED_LIBS=ON
+3. CPU-only (sin GPU support)
+4. Installation en /usr/local
+5. ldconfig para library cache
 
-CONFIGURACIONES TESTEADAS:
+RESULTADO:
+  Location: /usr/local/lib/libfaiss.so
+  Headers: /usr/local/include/faiss/ (123 files)
+  CMake config: /usr/local/share/faiss/
+  Test compilation: ✅ PASSED
+  
+VERIFICACIÓN:
+  verify-faiss → Shows lib + headers
+  verify-onnx  → Shows ONNX Runtime
+  explore-logs → Shows 32,957 events
+```
+
+**Scripts Creados (Día 31):**
+```bash
+/vagrant/scripts/install_faiss_shared.sh
+  → Instala FAISS con shared library
+  → Limpia builds anteriores
+  → Test automático de compilación
+
+/vagrant/scripts/verify_libraries.sh
+  → Verifica FAISS + ONNX Runtime
+  → Tests de compilación C++
+  → Reporte completo de status
+
+/vagrant/scripts/explore_rag_logs.sh
+  → Explora logs RAG disponibles
+  → Cuenta eventos y artifacts
+  → Readiness check para ingestion
+```
+
+**Vagrantfile Actualizado:**
+```ruby
+CAMBIOS:
+- ✅ FAISS v1.8.0 añadido (líneas 264-289)
+- ✅ BUILD_SHARED_LIBS=ON (genera .so)
+- ✅ Docker/docker-compose ELIMINADOS
+- ✅ Aliases FAISS añadidos
+- ✅ Provisioning reproducible
+- ✅ ~500MB más ligero
+
+ESTADO:
+- Integrado en provisioning automático
+- Futuras VMs tendrán FAISS pre-instalado
+- No requiere instalación manual
+```
+
+**Métricas Día 31:**
+```
 ┌─────────────────────────────────────────────┐
-│ Config              Leak/h   Leak/event     │
+│  FAISS INSTALLATION METRICS                 │
 ├─────────────────────────────────────────────┤
-│ PRE-FIX (baseline)  102 MB   246 KB    ❌   │
-│ POST-FIX (optimal)   31 MB    63 KB    ✅   │
-│ SIN-ARTIFACTS        50 MB   118 KB    ⚠️    │
-│ SHRINK-FIX           53 MB    99 KB    ⚠️    │
-│ QUICKFIX             53 MB    97 KB    ⚠️    │
+│  FAISS library size:     7.0 MB             │
+│  FAISS headers:          123 files          │
+│  Compilation time:       ~10 minutes        │
+│  Installation:           ✅ SUCCESS         │
+│  Test execution:         ✅ PASSED          │
+│                                              │
+│  ONNX Runtime:           v1.17.1            │
+│  Library size:           24 MB              │
+│  Headers:                9 files            │
+│  Status:                 ✅ VERIFIED        │
+│                                              │
+│  RAG Logs:               32,957 events      │
+│  Artifacts Protobuf:     43,526 files       │
+│  Artifacts JSON:         43,526 files       │
+│  Total data:             ~48 MB JSONL       │
+│  Readiness:              ✅ READY           │
+│                                              │
+│  Vagrantfile:            Updated            │
+│  Docker removed:         ~500 MB saved      │
+│  Provisioning:           Reproducible       │
 └─────────────────────────────────────────────┘
-
-ROOT CAUSE:
-  std::ofstream buffer never flushed
-  → Accumulation of 1-2KB JSON strings
-  → 102 MB/h without flush()
-  
-THE FIX:
-  current_log_.flush() after each write
-  → 31 MB/h with flush() ✅
-  → Artifacts enabled (helps fragmentation)
-  → Cron restart every 72h
-  
-SURPRISING DISCOVERY:
-  WITH artifacts: 31 MB/h ✅
-  WITHOUT artifacts: 50 MB/h ⚠️
-  Artifacts help by distributing allocations!
-```
-
-**Métricas Día 30 (Final Configuration):**
-```
-┌─────────────────────────────────────────────┐
-│  CONFIGURATION: POST-FIX (OPTIMAL)          │
-├─────────────────────────────────────────────┤
-│  Memory leak:         31 MB/hour            │
-│  Per-event leak:      63 KB/event           │
-│  Test duration:       90 minutes            │
-│  Events processed:    747 events            │
-│  Improvement:         70% vs baseline       │
-│  Production ready:    ✅ YES                │
-│  Restart schedule:    Every 72h (cron)      │
-│  Max memory growth:   2.2 GB/72h            │
-│  VM allocation:       8 GB (safe margin)    │
-└─────────────────────────────────────────────┘
-
-ARTIFACTS STATUS:
-  Protobuf: ✅ Enabled (optimal)
-  JSON:     ✅ Enabled (optimal)
-  Location: /vagrant/logs/rag/artifacts/
-  Format:   event_ID.pb + event_ID.json
-  
-CRON CONFIGURATION:
-  Entry: 0 3 */3 * * /vagrant/scripts/restart_ml_defender.sh
-  User: vagrant
-  Status: ✅ Configured in Vagrantfile
-  Logs: /vagrant/logs/lab/restart_ml_defender.log
 ```
 
 ---
 
-## 🎯 ESTADO ACTUAL (DÍA 31 INICIO)
+## 🎯 ESTADO ACTUAL (DÍA 32 INICIO)
 
-### ✅ Phase 1 Status (100% COMPLETO)
+### ✅ Infrastructure Complete (100%)
 
-**Funcionalidades Validadas:**
-- ✅ 4 componentes distribuidos operativos
-- ✅ ChaCha20-Poly1305 + LZ4 end-to-end
-- ✅ ML pipeline completa (Level 1-3)
-- ✅ Dual-score architecture (Fast + ML)
-- ✅ Etcd service discovery + heartbeats
-- ✅ RAG logger 83-field events
-- ✅ Memory leak resolved (70% reduction)
-- ✅ Production-ready (24×7×365)
-- ✅ Real traffic validated
-- ✅ Sub-millisecond crypto latencies
+**Libraries Instaladas:**
+- ✅ FAISS v1.8.0 (shared library)
+- ✅ ONNX Runtime v1.17.1
+- ✅ BLAS/LAPACK (dependencies)
+- ✅ CMake 3.25+
+- ✅ All C++20 toolchain
 
-**Logs Disponibles para FAISS:**
-```bash
-/vagrant/logs/rag/events/YYYY-MM-DD.jsonl
-/vagrant/logs/rag/artifacts/YYYY-MM-DD/event_*.pb
-/vagrant/logs/rag/artifacts/YYYY-MM-DD/event_*.json
+**Logs RAG Verificados:**
+- ✅ 32,957 eventos across 6 JSONL files
+- ✅ 43,526 Protobuf artifacts
+- ✅ 43,526 JSON artifacts
+- ✅ Estructura verificada (83 campos por evento)
+- ✅ Timestamps válidos
+- ✅ Ready for embeddings
 
-# Verificar
-wc -l /vagrant/logs/rag/events/$(date +%Y-%m-%d).jsonl
-ls /vagrant/logs/rag/artifacts/$(date +%Y-%m-%d)/ | wc -l
-```
-
----
-
-## 🚀 PLAN DÍA 31 - FAISS INGESTION IMPLEMENTATION (Week 5 Start)
-
-### 📚 CONTEXTO PREVIO - FAISS INGESTION DESIGN
-
-**Documentos de Referencia:**
-1. `docs/FAISS_INGESTION_DESIGN.md` - Arquitectura completa
-2. Sesión 2025-12-30 - Discusión multi-embedder coherente
-3. Memory leak transcript (Day 30)
-
-**Decisiones Arquitectónicas (Ya Tomadas):**
-```
-✅ Multi-embedder coherente: Mismo chunk → 3 índices
-✅ Best-effort commit: Resilience > atomicidad estricta
-✅ C++20 implementation: Coherencia con stack
-✅ ONNX Runtime: Chronos + SBERT + Custom models
-✅ Chunk = día completo: NUNCA truncar time series
-✅ 3 embedders fundacionales:
-   1. Chronos (time series, 512-d)
-   2. SBERT (semantic, 384-d)
-   3. Custom DNN (attack patterns, 256-d)
-```
-
-**Arquitectura FAISS (Diseñada):**
-```
-ChunkCoordinator (orquestador)
-    ↓
-    ├─ TimeSeriesEmbedder (Chronos ONNX)
-    ├─ SemanticEmbedder (SBERT ONNX)
-    └─ AttackEmbedder (Custom ONNX)
-    ↓
-IndexManager (3 FAISS indices)
-    ↓
-HealthMonitor + IndexTracker
-```
+**Pendiente (No realizado Día 31):**
+- ❌ Export ONNX models (Chronos, SBERT, Custom)
+- ❌ Test FAISS integration en C++
+- ❌ Test ONNX Runtime inference en C++
+- ❌ CMakeLists.txt actualización
+- ❌ ChunkCoordinator skeleton
 
 ---
 
-### FASE 1: ONNX Model Export (Día 31 - 2-3 horas)
+## 🚀 PLAN DÍA 32 - BASIC TESTS & CMAKE INTEGRATION
 
-**Objetivo:** Exportar los 3 modelos a ONNX para C++ inference
+### 🎯 Objetivo del Día
 
-#### Step 1: Setup Python Environment
-```bash
-cd /vagrant/ml-training
-python3 -m venv venv-onnx
-source venv-onnx/bin/activate
-pip install torch onnx onnxruntime sentence-transformers chronos-forecasting
-```
+**Focus**: Crear tests básicos de FAISS y ONNX Runtime en C++20 para verificar que ambas libraries funcionan correctamente antes de empezar con embedders complejos.
 
-#### Step 2: Export Chronos (Time Series Embedder)
-```python
-# File: ml-training/export_chronos_onnx.py
-import torch
-import onnx
-from chronos import ChronosPipeline
+**Timeline**: 2-3 horas total
 
-# Load Chronos model
-pipeline = ChronosPipeline.from_pretrained(
-    "amazon/chronos-t5-tiny",
-    device_map="cpu",
-    torch_dtype=torch.float32,
-)
-
-# Create dummy input (24-hour time series)
-dummy_input = torch.randn(1, 1440, 1)  # 1440 minutes in 24h
-
-# Export to ONNX
-torch.onnx.export(
-    pipeline.model,
-    dummy_input,
-    "models/chronos_embedder.onnx",
-    input_names=['time_series'],
-    output_names=['embeddings'],
-    dynamic_axes={
-        'time_series': {0: 'batch_size', 1: 'sequence_length'},
-        'embeddings': {0: 'batch_size'}
-    },
-    opset_version=14
-)
-
-print("✅ Chronos exported: models/chronos_embedder.onnx")
-```
-
-#### Step 3: Export SBERT (Semantic Embedder)
-```python
-# File: ml-training/export_sbert_onnx.py
-import torch
-import onnx
-from sentence_transformers import SentenceTransformer
-
-# Load SBERT model
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-# Create dummy input (tokenized text)
-dummy_input = {
-    'input_ids': torch.randint(0, 30522, (1, 128)),
-    'attention_mask': torch.ones(1, 128, dtype=torch.long)
-}
-
-# Export to ONNX
-torch.onnx.export(
-    model,
-    (dummy_input['input_ids'], dummy_input['attention_mask']),
-    "models/sbert_embedder.onnx",
-    input_names=['input_ids', 'attention_mask'],
-    output_names=['sentence_embedding'],
-    dynamic_axes={
-        'input_ids': {0: 'batch_size', 1: 'sequence'},
-        'attention_mask': {0: 'batch_size', 1: 'sequence'},
-        'sentence_embedding': {0: 'batch_size'}
-    },
-    opset_version=14
-)
-
-print("✅ SBERT exported: models/sbert_embedder.onnx")
-```
-
-#### Step 4: Create Custom Attack Embedder
-```python
-# File: ml-training/train_and_export_attack_embedder.py
-import torch
-import torch.nn as nn
-
-class AttackEmbedder(nn.Module):
-    def __init__(self, input_dim=83, hidden_dim=512, embed_dim=256):
-        super().__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim, embed_dim),
-            nn.Tanh()  # Normalize to [-1, 1]
-        )
-    
-    def forward(self, x):
-        return self.encoder(x)
-
-# Train on RAG logs (simplified)
-model = AttackEmbedder()
-# TODO: Training loop with RAG JSONL data
-
-# Export to ONNX
-dummy_input = torch.randn(1, 83)  # 83 fields from RAG logs
-
-torch.onnx.export(
-    model,
-    dummy_input,
-    "models/attack_embedder.onnx",
-    input_names=['features'],
-    output_names=['attack_embedding'],
-    dynamic_axes={
-        'features': {0: 'batch_size'},
-        'attack_embedding': {0: 'batch_size'}
-    },
-    opset_version=14
-)
-
-print("✅ Attack embedder exported: models/attack_embedder.onnx")
-```
-
-#### Step 5: Verify ONNX Models
-```bash
-# Install ONNX tools
-pip install onnx onnxruntime
-
-# Verify models
-python -c "import onnx; model = onnx.load('models/chronos_embedder.onnx'); onnx.checker.check_model(model); print('✅ Chronos OK')"
-python -c "import onnx; model = onnx.load('models/sbert_embedder.onnx'); onnx.checker.check_model(model); print('✅ SBERT OK')"
-python -c "import onnx; model = onnx.load('models/attack_embedder.onnx'); onnx.checker.check_model(model); print('✅ Attack OK')"
-
-# Test inference with ONNX Runtime
-python -c "
-import onnxruntime as ort
-import numpy as np
-
-# Test Chronos
-session = ort.InferenceSession('models/chronos_embedder.onnx')
-input_data = np.random.randn(1, 1440, 1).astype(np.float32)
-output = session.run(None, {'time_series': input_data})
-print(f'✅ Chronos output shape: {output[0].shape}')
-
-# Test SBERT
-session = ort.InferenceSession('models/sbert_embedder.onnx')
-input_ids = np.random.randint(0, 30522, (1, 128)).astype(np.int64)
-attention_mask = np.ones((1, 128), dtype=np.int64)
-output = session.run(None, {'input_ids': input_ids, 'attention_mask': attention_mask})
-print(f'✅ SBERT output shape: {output[0].shape}')
-
-# Test Attack
-session = ort.InferenceSession('models/attack_embedder.onnx')
-features = np.random.randn(1, 83).astype(np.float32)
-output = session.run(None, {'features': features})
-print(f'✅ Attack output shape: {output[0].shape}')
-"
-```
+**Filosofía Via Appia**: Test simple → Verify → Build incrementally
 
 ---
 
-### FASE 2: FAISS Integration (Día 31 - 2 horas)
+### FASE 1: Test FAISS Básico (45 minutos)
 
-**Objetivo:** Integrar FAISS library en C++20
+**Objetivo**: Verificar que FAISS funciona en C++20 con operaciones básicas
 
-#### Step 1: Install FAISS
-```bash
-# Install FAISS dependencies
-sudo apt-get update
-sudo apt-get install -y libblas-dev liblapack-dev
+#### Step 1: Crear Test File
 
-# Build FAISS from source (CPU version)
-cd /tmp
-git clone https://github.com/facebookresearch/faiss.git
-cd faiss
-mkdir build && cd build
-cmake .. -DFAISS_ENABLE_GPU=OFF \
-         -DFAISS_ENABLE_PYTHON=OFF \
-         -DBUILD_TESTING=OFF \
-         -DCMAKE_BUILD_TYPE=Release \
-         -DCMAKE_INSTALL_PREFIX=/usr/local
-make -j4
-sudo make install
-sudo ldconfig
-
-# Verify installation
-pkg-config --modversion faiss
-```
-
-#### Step 2: Create FAISS Test (C++20)
 ```cpp
-// File: rag/tests/test_faiss_integration.cpp
+// File: rag/tests/test_faiss_basic.cpp
 #include <faiss/IndexFlat.h>
-#include <faiss/IndexIVFFlat.h>
 #include <iostream>
 #include <vector>
+#include <random>
 
 int main() {
-    // Test 1: Simple flat index
-    int d = 512;  // Chronos embedding dimension
-    faiss::IndexFlatL2 index(d);
+    std::cout << "╔════════════════════════════════════════╗\n";
+    std::cout << "║  FAISS Basic Integration Test         ║\n";
+    std::cout << "╚════════════════════════════════════════╝\n\n";
     
-    std::cout << "✅ Index created, dimension: " << index.d << std::endl;
+    // Test 1: Create index
+    std::cout << "Test 1: Creating FAISS index...\n";
+    constexpr int dimension = 128;  // Embedding dimension
+    faiss::IndexFlatL2 index(dimension);
+    std::cout << "  ✅ Index created, dimension: " << index.d << "\n";
+    std::cout << "  ✅ Metric type: L2\n\n";
     
-    // Add some random vectors
-    std::vector<float> data(10 * d);
+    // Test 2: Add vectors
+    std::cout << "Test 2: Adding vectors to index...\n";
+    constexpr int num_vectors = 100;
+    std::vector<float> data(num_vectors * dimension);
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+    
     for (auto& val : data) {
-        val = static_cast<float>(rand()) / RAND_MAX;
+        val = dis(gen);
     }
     
-    index.add(10, data.data());
-    std::cout << "✅ Added 10 vectors, total: " << index.ntotal << std::endl;
+    index.add(num_vectors, data.data());
+    std::cout << "  ✅ Added " << num_vectors << " vectors\n";
+    std::cout << "  ✅ Total vectors in index: " << index.ntotal << "\n\n";
     
-    // Search
-    std::vector<float> query(d);
+    // Test 3: Search k-nearest neighbors
+    std::cout << "Test 3: Searching k-nearest neighbors...\n";
+    std::vector<float> query(dimension);
     for (auto& val : query) {
-        val = static_cast<float>(rand()) / RAND_MAX;
+        val = dis(gen);
     }
     
-    int k = 5;
+    constexpr int k = 5;
     std::vector<faiss::idx_t> labels(k);
     std::vector<float> distances(k);
     
     index.search(1, query.data(), k, distances.data(), labels.data());
     
-    std::cout << "✅ Search complete, nearest neighbors:";
+    std::cout << "  ✅ Search completed\n";
+    std::cout << "  ✅ Top-" << k << " nearest neighbors:\n";
     for (int i = 0; i < k; ++i) {
-        std::cout << " " << labels[i] << " (dist: " << distances[i] << ")";
+        std::cout << "     " << (i+1) << ". Index " << labels[i] 
+                  << " (distance: " << distances[i] << ")\n";
     }
-    std::cout << std::endl;
+    
+    std::cout << "\n╔════════════════════════════════════════╗\n";
+    std::cout << "║  ALL TESTS PASSED ✅                   ║\n";
+    std::cout << "╚════════════════════════════════════════╝\n";
     
     return 0;
 }
 ```
 
-#### Step 3: CMake Integration
+#### Step 2: Crear CMakeLists.txt para RAG
+
 ```cmake
-# File: rag/CMakeLists.txt (add FAISS)
-find_package(faiss REQUIRED)
+# File: rag/tests/CMakeLists.txt
+cmake_minimum_required(VERSION 3.20)
+project(rag_tests CXX)
 
-add_executable(test_faiss_integration
-    tests/test_faiss_integration.cpp
-)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-target_link_libraries(test_faiss_integration
-    PRIVATE
-    faiss
-)
+# Find FAISS
+find_library(FAISS_LIB faiss PATHS /usr/local/lib REQUIRED)
+find_path(FAISS_INCLUDE faiss/IndexFlat.h PATHS /usr/local/include REQUIRED)
+
+# Find BLAS (required by FAISS)
+find_package(BLAS REQUIRED)
+
+# Test FAISS Basic
+add_executable(test_faiss_basic test_faiss_basic.cpp)
+target_include_directories(test_faiss_basic PRIVATE ${FAISS_INCLUDE})
+target_link_libraries(test_faiss_basic PRIVATE ${FAISS_LIB} ${BLAS_LIBRARIES})
+target_compile_options(test_faiss_basic PRIVATE -Wall -Wextra)
+
+message(STATUS "FAISS library: ${FAISS_LIB}")
+message(STATUS "FAISS include: ${FAISS_INCLUDE}")
+message(STATUS "BLAS libraries: ${BLAS_LIBRARIES}")
 ```
 
-#### Step 4: Build and Test
+#### Step 3: Build y Test
+
 ```bash
-cd /vagrant/rag/build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make test_faiss_integration
+# Crear estructura de directorios
+cd /vagrant/rag
+mkdir -p tests
+mkdir -p build
 
-# Run test
-./test_faiss_integration
+# Copiar archivos
+# (Crear test_faiss_basic.cpp y CMakeLists.txt según arriba)
 
-# Expected output:
-# ✅ Index created, dimension: 512
-# ✅ Added 10 vectors, total: 10
-# ✅ Search complete, nearest neighbors: 3 (dist: 0.234) 7 (dist: 0.456) ...
+# Build
+cd build
+cmake ../tests
+make test_faiss_basic
+
+# Run
+./test_faiss_basic
+```
+
+**Expected Output:**
+```
+╔════════════════════════════════════════╗
+║  FAISS Basic Integration Test         ║
+╚════════════════════════════════════════╝
+
+Test 1: Creating FAISS index...
+  ✅ Index created, dimension: 128
+  ✅ Metric type: L2
+
+Test 2: Adding vectors to index...
+  ✅ Added 100 vectors
+  ✅ Total vectors in index: 100
+
+Test 3: Searching k-nearest neighbors...
+  ✅ Search completed
+  ✅ Top-5 nearest neighbors:
+     1. Index 42 (distance: 12.345)
+     2. Index 17 (distance: 15.678)
+     ...
+
+╔════════════════════════════════════════╗
+║  ALL TESTS PASSED ✅                   ║
+╚════════════════════════════════════════╝
 ```
 
 ---
 
-### FASE 3: ONNX Runtime Integration (Día 31 - 2 horas)
+### FASE 2: Test ONNX Runtime Básico (45 minutos)
 
-**Objetivo:** Load ONNX models in C++ and run inference
+**Objetivo**: Verificar que ONNX Runtime carga modelos y ejecuta inferencia
 
-#### Step 1: ONNX Runtime Test
+#### Step 1: Crear Modelo ONNX Dummy (Python)
+
+```python
+# File: rag/tests/create_dummy_model.py
+import torch
+import torch.nn as nn
+
+class DummyEmbedder(nn.Module):
+    def __init__(self, input_dim=10, output_dim=32):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, output_dim),
+            nn.Tanh()
+        )
+    
+    def forward(self, x):
+        return self.net(x)
+
+# Create model
+model = DummyEmbedder()
+model.eval()
+
+# Export to ONNX
+dummy_input = torch.randn(1, 10)
+torch.onnx.export(
+    model,
+    dummy_input,
+    "dummy_embedder.onnx",
+    input_names=['input'],
+    output_names=['embedding'],
+    dynamic_axes={'input': {0: 'batch_size'}, 'embedding': {0: 'batch_size'}},
+    opset_version=14
+)
+
+print("✅ Dummy model exported: dummy_embedder.onnx")
+
+# Verify
+import onnx
+onnx_model = onnx.load("dummy_embedder.onnx")
+onnx.checker.check_model(onnx_model)
+print("✅ Model verified")
+```
+
+```bash
+# Run script
+cd /vagrant/rag/tests
+python3 create_dummy_model.py
+```
+
+#### Step 2: Crear Test ONNX C++
+
 ```cpp
-// File: rag/tests/test_onnx_inference.cpp
-#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+// File: rag/tests/test_onnx_basic.cpp
+#include <onnxruntime_cxx_api.h>
 #include <iostream>
 #include <vector>
+#include <random>
 
 int main() {
-    // Initialize ONNX Runtime
-    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
-    Ort::SessionOptions session_options;
-    session_options.SetIntraOpNumThreads(1);
-    
-    // Load model
-    Ort::Session session(env, "models/attack_embedder.onnx", session_options);
-    
-    // Get input/output info
-    Ort::AllocatorWithDefaultOptions allocator;
-    size_t num_input_nodes = session.GetInputCount();
-    size_t num_output_nodes = session.GetOutputCount();
-    
-    std::cout << "✅ Model loaded" << std::endl;
-    std::cout << "   Input nodes: " << num_input_nodes << std::endl;
-    std::cout << "   Output nodes: " << num_output_nodes << std::endl;
-    
-    // Get input name
-    auto input_name = session.GetInputNameAllocated(0, allocator);
-    std::cout << "   Input name: " << input_name.get() << std::endl;
-    
-    // Get output name
-    auto output_name = session.GetOutputNameAllocated(0, allocator);
-    std::cout << "   Output name: " << output_name.get() << std::endl;
-    
-    // Create dummy input (83 features)
-    std::vector<float> input_data(83, 0.5f);
-    std::vector<int64_t> input_shape = {1, 83};
-    
-    // Create input tensor
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
-        memory_info, input_data.data(), input_data.size(),
-        input_shape.data(), input_shape.size()
-    );
-    
-    // Run inference
-    const char* input_names[] = {input_name.get()};
-    const char* output_names[] = {output_name.get()};
-    
-    auto output_tensors = session.Run(
-        Ort::RunOptions{nullptr},
-        input_names, &input_tensor, 1,
-        output_names, 1
-    );
-    
-    // Get output
-    float* output_data = output_tensors.front().GetTensorMutableData<float>();
-    auto output_shape = output_tensors.front().GetTensorTypeAndShapeInfo().GetShape();
-    
-    std::cout << "✅ Inference complete" << std::endl;
-    std::cout << "   Output shape: [" << output_shape[0] << ", " << output_shape[1] << "]" << std::endl;
-    std::cout << "   First 5 values: ";
-    for (int i = 0; i < 5; ++i) {
-        std::cout << output_data[i] << " ";
-    }
-    std::cout << std::endl;
-    
-    return 0;
-}
-```
-
-#### Step 2: CMake for ONNX Test
-```cmake
-# File: rag/CMakeLists.txt (add ONNX Runtime)
-find_package(onnxruntime REQUIRED)
-
-add_executable(test_onnx_inference
-    tests/test_onnx_inference.cpp
-)
-
-target_link_libraries(test_onnx_inference
-    PRIVATE
-    onnxruntime::onnxruntime
-)
-```
-
-#### Step 3: Build and Test
-```bash
-cd /vagrant/rag/build
-cmake ..
-make test_onnx_inference
-
-# Run test
-./test_onnx_inference
-
-# Expected output:
-# ✅ Model loaded
-#    Input nodes: 1
-#    Output nodes: 1
-#    Input name: features
-#    Output name: attack_embedding
-# ✅ Inference complete
-#    Output shape: [1, 256]
-#    First 5 values: 0.123 -0.456 0.789 ...
-```
-
----
-
-### FASE 4: ChunkCoordinator Skeleton (Día 31 - 2 horas)
-
-**Objetivo:** Crear estructura base del coordinador
-
-#### Step 1: Header File
-```cpp
-// File: rag/include/faiss_ingester/chunk_coordinator.hpp
-#pragma once
-
-#include <string>
-#include <memory>
-#include <chrono>
-#include <vector>
-
-namespace ml_defender {
-namespace faiss_ingester {
-
-// Forward declarations
-class TimeSeriesEmbedder;
-class SemanticEmbedder;
-class AttackEmbedder;
-class IndexManager;
-
-struct ChunkMetadata {
-    std::string chunk_id;
-    std::chrono::system_clock::time_point start_time;
-    std::chrono::system_clock::time_point end_time;
-    size_t event_count;
-    std::string jsonl_path;
-};
-
-class ChunkCoordinator {
-public:
-    ChunkCoordinator(const std::string& config_path);
-    ~ChunkCoordinator();
-
-    // Main orchestration
-    bool process_daily_chunk(const std::string& date_str);
-    
-    // Status
-    bool is_healthy() const;
-    nlohmann::json get_statistics() const;
-
-private:
-    // Configuration
-    std::string config_path_;
-    std::string base_logs_path_;
-    
-    // Embedders (ONNX models)
-    std::unique_ptr<TimeSeriesEmbedder> time_series_embedder_;
-    std::unique_ptr<SemanticEmbedder> semantic_embedder_;
-    std::unique_ptr<AttackEmbedder> attack_embedder_;
-    
-    // Index management
-    std::unique_ptr<IndexManager> index_manager_;
-    
-    // Statistics
-    std::atomic<uint64_t> chunks_processed_{0};
-    std::atomic<uint64_t> events_ingested_{0};
-    std::atomic<uint64_t> errors_{0};
-    
-    // Helper methods
-    ChunkMetadata load_chunk_metadata(const std::string& date_str);
-    std::vector<nlohmann::json> load_jsonl_events(const std::string& jsonl_path);
-    
-    bool commit_to_indices(
-        const std::vector<float>& ts_embedding,
-        const std::vector<float>& semantic_embedding,
-        const std::vector<float>& attack_embedding,
-        const ChunkMetadata& metadata
-    );
-};
-
-} // namespace faiss_ingester
-} // namespace ml_defender
-```
-
-#### Step 2: Implementation Skeleton
-```cpp
-// File: rag/src/faiss_ingester/chunk_coordinator.cpp
-#include "faiss_ingester/chunk_coordinator.hpp"
-#include <fstream>
-#include <spdlog/spdlog.h>
-
-namespace ml_defender {
-namespace faiss_ingester {
-
-ChunkCoordinator::ChunkCoordinator(const std::string& config_path)
-    : config_path_(config_path)
-{
-    spdlog::info("🚀 ChunkCoordinator initializing...");
-    
-    // TODO: Load config
-    // TODO: Initialize embedders
-    // TODO: Initialize index manager
-    
-    spdlog::info("✅ ChunkCoordinator ready");
-}
-
-ChunkCoordinator::~ChunkCoordinator() {
-    spdlog::info("📊 ChunkCoordinator statistics:");
-    spdlog::info("   Chunks processed: {}", chunks_processed_.load());
-    spdlog::info("   Events ingested: {}", events_ingested_.load());
-    spdlog::info("   Errors: {}", errors_.load());
-}
-
-bool ChunkCoordinator::process_daily_chunk(const std::string& date_str) {
-    spdlog::info("📥 Processing chunk: {}", date_str);
+    std::cout << "╔════════════════════════════════════════╗\n";
+    std::cout << "║  ONNX Runtime Basic Test              ║\n";
+    std::cout << "╚════════════════════════════════════════╝\n\n";
     
     try {
-        // Step 1: Load metadata
-        auto metadata = load_chunk_metadata(date_str);
-        spdlog::info("   Events in chunk: {}", metadata.event_count);
+        // Test 1: Initialize ONNX Runtime
+        std::cout << "Test 1: Initializing ONNX Runtime...\n";
+        Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
+        Ort::SessionOptions session_options;
+        session_options.SetIntraOpNumThreads(1);
+        std::cout << "  ✅ ONNX Runtime initialized\n\n";
         
-        // Step 2: Load JSONL events
-        auto events = load_jsonl_events(metadata.jsonl_path);
-        spdlog::info("   Loaded {} events from JSONL", events.size());
+        // Test 2: Load model
+        std::cout << "Test 2: Loading ONNX model...\n";
+        Ort::Session session(env, "dummy_embedder.onnx", session_options);
         
-        // Step 3: Generate embeddings (TODO)
-        // auto ts_emb = time_series_embedder_->embed(events);
-        // auto sem_emb = semantic_embedder_->embed(events);
-        // auto att_emb = attack_embedder_->embed(events);
+        // Get model info
+        Ort::AllocatorWithDefaultOptions allocator;
+        auto input_name = session.GetInputNameAllocated(0, allocator);
+        auto output_name = session.GetOutputNameAllocated(0, allocator);
         
-        // Step 4: Commit to indices (TODO)
-        // bool success = commit_to_indices(ts_emb, sem_emb, att_emb, metadata);
+        std::cout << "  ✅ Model loaded successfully\n";
+        std::cout << "  ✅ Input name: " << input_name.get() << "\n";
+        std::cout << "  ✅ Output name: " << output_name.get() << "\n\n";
         
-        chunks_processed_++;
-        events_ingested_ += events.size();
+        // Test 3: Run inference
+        std::cout << "Test 3: Running inference...\n";
         
-        spdlog::info("✅ Chunk {} processed successfully", date_str);
-        return true;
+        // Create input tensor
+        std::vector<float> input_data(10);
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> dis(-1.0f, 1.0f);
+        for (auto& val : input_data) {
+            val = dis(gen);
+        }
+        
+        std::vector<int64_t> input_shape = {1, 10};
+        auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
+            memory_info, input_data.data(), input_data.size(),
+            input_shape.data(), input_shape.size()
+        );
+        
+        // Run inference
+        const char* input_names[] = {input_name.get()};
+        const char* output_names[] = {output_name.get()};
+        
+        auto output_tensors = session.Run(
+            Ort::RunOptions{nullptr},
+            input_names, &input_tensor, 1,
+            output_names, 1
+        );
+        
+        // Get output
+        float* output_data = output_tensors.front().GetTensorMutableData<float>();
+        auto output_shape = output_tensors.front().GetTensorTypeAndShapeInfo().GetShape();
+        
+        std::cout << "  ✅ Inference completed\n";
+        std::cout << "  ✅ Output shape: [" << output_shape[0] << ", " << output_shape[1] << "]\n";
+        std::cout << "  ✅ First 5 output values:\n";
+        for (int i = 0; i < 5; ++i) {
+            std::cout << "     " << (i+1) << ". " << output_data[i] << "\n";
+        }
+        
+        std::cout << "\n╔════════════════════════════════════════╗\n";
+        std::cout << "║  ALL TESTS PASSED ✅                   ║\n";
+        std::cout << "╚════════════════════════════════════════╝\n";
+        
+        return 0;
         
     } catch (const std::exception& e) {
-        spdlog::error("❌ Failed to process chunk {}: {}", date_str, e.what());
-        errors_++;
-        return false;
+        std::cerr << "❌ Error: " << e.what() << "\n";
+        return 1;
     }
 }
+```
 
-ChunkMetadata ChunkCoordinator::load_chunk_metadata(const std::string& date_str) {
-    ChunkMetadata metadata;
-    metadata.chunk_id = date_str;
-    metadata.jsonl_path = base_logs_path_ + "/events/" + date_str + ".jsonl";
-    
-    // Count events in JSONL
-    std::ifstream file(metadata.jsonl_path);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open JSONL: " + metadata.jsonl_path);
-    }
-    
-    std::string line;
-    size_t count = 0;
-    while (std::getline(file, line)) {
-        count++;
-    }
-    
-    metadata.event_count = count;
-    return metadata;
-}
+#### Step 3: Actualizar CMakeLists.txt
 
-std::vector<nlohmann::json> ChunkCoordinator::load_jsonl_events(const std::string& jsonl_path) {
-    std::vector<nlohmann::json> events;
-    std::ifstream file(jsonl_path);
-    
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open JSONL: " + jsonl_path);
-    }
-    
-    std::string line;
-    while (std::getline(file, line)) {
-        if (line.empty()) continue;
-        
-        try {
-            auto event = nlohmann::json::parse(line);
-            events.push_back(event);
-        } catch (const std::exception& e) {
-            spdlog::warn("Failed to parse JSONL line: {}", e.what());
-        }
-    }
-    
-    return events;
-}
+```cmake
+# Add to rag/tests/CMakeLists.txt
 
-bool ChunkCoordinator::is_healthy() const {
-    // TODO: Check embedders and indices
-    return true;
-}
+# Find ONNX Runtime
+find_library(ONNX_LIB onnxruntime PATHS /usr/local/lib REQUIRED)
+find_path(ONNX_INCLUDE onnxruntime_cxx_api.h PATHS /usr/local/include REQUIRED)
 
-nlohmann::json ChunkCoordinator::get_statistics() const {
-    return {
-        {"chunks_processed", chunks_processed_.load()},
-        {"events_ingested", events_ingested_.load()},
-        {"errors", errors_.load()}
-    };
-}
+# Test ONNX Basic
+add_executable(test_onnx_basic test_onnx_basic.cpp)
+target_include_directories(test_onnx_basic PRIVATE ${ONNX_INCLUDE})
+target_link_libraries(test_onnx_basic PRIVATE ${ONNX_LIB})
+target_compile_options(test_onnx_basic PRIVATE -Wall -Wextra)
 
-} // namespace faiss_ingester
-} // namespace ml_defender
+message(STATUS "ONNX Runtime library: ${ONNX_LIB}")
+message(STATUS "ONNX Runtime include: ${ONNX_INCLUDE}")
+```
+
+#### Step 4: Build y Test
+
+```bash
+cd /vagrant/rag/tests
+python3 create_dummy_model.py
+
+cd ../build
+cmake ../tests
+make test_onnx_basic
+
+./test_onnx_basic
 ```
 
 ---
 
-## ✅ CRITERIOS DE ÉXITO DÍA 31
+### FASE 3: Documentación y Commit (30 minutos)
+
+```bash
+# Dentro de la VM
+cd /vagrant
+
+# Verificar estado
+git status
+
+# Añadir archivos
+git add rag/tests/
+git add scripts/
+
+# Commit
+git commit -m "feat(phase2a): Day 32 - FAISS + ONNX Runtime basic tests
+
+Tests Created:
+- test_faiss_basic.cpp: Index creation, vector add, k-NN search
+- test_onnx_basic.cpp: Model loading, inference execution
+- CMakeLists.txt: Build configuration for both tests
+- create_dummy_model.py: Dummy ONNX model generator
+
+Test Results:
+- FAISS: ✅ All operations working (create, add, search)
+- ONNX Runtime: ✅ Model loading and inference working
+- Libraries: ✅ Properly linked and functional
+
+Next: Day 33 - Real embedder models (Chronos, SBERT, Custom)
+
+Via Appia Quality: Test basics first, complexity later 🏛️"
+
+# Ver log
+git log --oneline -3
+```
+
+---
+
+## ✅ CRITERIOS DE ÉXITO DÍA 32
 
 ### Mínimo para Progress:
+
 ```
-1. ONNX Models Exported:
-   ✅ chronos_embedder.onnx created
-   ✅ sbert_embedder.onnx created
-   ✅ attack_embedder.onnx created
-   ✅ All models verified with onnx.checker
-   ✅ ONNX Runtime inference tested
+1. FAISS Test:
+   ✅ test_faiss_basic.cpp created
+   ✅ CMakeLists.txt configured
+   ✅ Compiles without errors
+   ✅ Runs successfully
+   ✅ Creates index (dimension 128)
+   ✅ Adds 100 vectors
+   ✅ Searches k-NN (k=5)
+   ✅ Output shows correct results
    
-2. FAISS Integration:
-   ✅ FAISS library installed (CPU version)
-   ✅ test_faiss_integration compiles
-   ✅ test_faiss_integration runs successfully
-   ✅ Can create index, add vectors, search
+2. ONNX Runtime Test:
+   ✅ create_dummy_model.py created
+   ✅ dummy_embedder.onnx generated
+   ✅ test_onnx_basic.cpp created
+   ✅ CMakeLists.txt updated
+   ✅ Compiles without errors
+   ✅ Loads ONNX model
+   ✅ Runs inference
+   ✅ Output shape correct [1, 32]
    
-3. ONNX Runtime Integration:
-   ✅ test_onnx_inference compiles
-   ✅ Can load ONNX models in C++
-   ✅ Can run inference on dummy data
-   ✅ Output shapes correct
+3. Infrastructure:
+   ✅ CMake build system working
+   ✅ Libraries properly linked
+   ✅ Tests executable
+   ✅ Clear error messages if failures
    
-4. ChunkCoordinator Skeleton:
-   ✅ Header file created
-   ✅ Implementation skeleton created
-   ✅ Can load JSONL chunks
-   ✅ Can count events per chunk
-   ✅ Statistics tracking working
+4. Documentation:
+   ✅ Tests documented
+   ✅ Git commit clean
+   ✅ Ready for next phase
 ```
 
 ---
 
-## 🚀 COMANDOS RÁPIDOS DÍA 31
+## 🚀 COMANDOS RÁPIDOS DÍA 32
+
 ```bash
-# Phase 1: Export ONNX models
-cd /vagrant/ml-training
-python3 export_chronos_onnx.py
-python3 export_sbert_onnx.py
-python3 train_and_export_attack_embedder.py
+# Setup
+cd /vagrant/rag
+mkdir -p tests build
 
-# Verify models
-python3 -c "import onnx; onnx.checker.check_model(onnx.load('models/chronos_embedder.onnx'))"
+# Phase 1: FAISS Test
+# (Create test_faiss_basic.cpp)
+cd build
+cmake ../tests
+make test_faiss_basic
+./test_faiss_basic
 
-# Phase 2: Install FAISS
-cd /tmp
-git clone https://github.com/facebookresearch/faiss.git
-cd faiss && mkdir build && cd build
-cmake .. -DFAISS_ENABLE_GPU=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
-make -j4 && sudo make install
+# Phase 2: ONNX Test
+cd ../tests
+python3 create_dummy_model.py
+cd ../build
+cmake ../tests
+make test_onnx_basic
+./test_onnx_basic
 
-# Phase 3: Test FAISS integration
-cd /vagrant/rag/build
-cmake .. && make test_faiss_integration
-./test_faiss_integration
-
-# Phase 4: Test ONNX Runtime integration
-make test_onnx_inference
-./test_onnx_inference
-
-# Phase 5: Test ChunkCoordinator
-make test_chunk_coordinator
-./test_chunk_coordinator
+# Phase 3: Commit
+cd /vagrant
+git add rag/tests/
+git commit -m "feat(phase2a): Day 32 - basic tests complete"
 ```
 
 ---
 
-## 📊 DOCUMENTACIÓN A ACTUALIZAR
+## 📊 DOCUMENTACIÓN A CREAR
+
 ```
-1. docs/FAISS_INGESTION_IMPLEMENTATION.md (NEW)
-   - ONNX export process
-   - FAISS integration guide
-   - ChunkCoordinator design
-   - Testing results
+1. rag/tests/README.md (NEW)
+   - Explain test structure
+   - How to run tests
+   - Expected outputs
+   - Troubleshooting
 
-2. README.md:
-   - Update: Day 30 complete (memory leak resolved)
-   - Add: Day 31 FAISS ingestion started
-   - Progress: Phase 2 (FAISS) 20% complete
-
-3. PROMPT_CONTINUE_CLAUDE_DAY32.md:
-   - Continue embedder implementation
-   - IndexManager creation
-   - Feature extraction from 83 fields
+2. docs/TESTING.md (UPDATE)
+   - Add FAISS testing section
+   - Add ONNX Runtime testing
+   - CMake configuration notes
 ```
 
 ---
 
-## 🏛️ VIA APPIA QUALITY - DÍA 30
+## 🏛️ VIA APPIA QUALITY - DÍA 31
 
-**Día 30 Truth:**
-> "Memory leak investigado sistemáticamente durante 5+ horas. Testeamos
-> 5 configuraciones diferentes. ASAN analysis confirmó: leak no era 'direct
-> leak' sino stream buffer accumulation. Fix simple: current_log_.flush()
-> después de cada write. Resultado: 70% reducción (102 → 31 MB/h). Descubrimiento
-> sorprendente: CON artifacts (31 MB/h) mejor que SIN artifacts (50 MB/h).
-> Configuramos cron restart cada 72h. Sistema production-ready para 24×7×365.
-> Despacio y bien. Metodología científica. Transparencia total. 🏛️"
+**Día 31 Truth:**
+> "Infrastructure preparada. FAISS instalado con shared library (7.0M).
+> ONNX Runtime verificado (v1.17.1). Vagrantfile actualizado para
+> reproducibilidad. 32,957 eventos RAG listos. Scripts de verificación
+> funcionando. Docker eliminado del provisioning. Foundation sólida
+> completada. Despacio y bien. Test simple antes de complexity. 🏛️"
 
 ---
 
 ## 🎯 SIGUIENTE FEATURE (SEMANA 5)
 
-**FAISS Ingestion Timeline:**
-- ✅ Día 30: Memory leak resolved, logs ready
-- 🔥 Día 31-32: ONNX export + FAISS integration
-- Día 33-34: Embedder implementation (3 models)
-- Día 35-36: IndexManager + HealthMonitor
-- Día 37-38: Feature extraction (83 fields → embeddings)
-- Día 39-40: Testing + End-to-end validation
+**FAISS Ingestion Timeline (Actualizado):**
+- ✅ Día 31: FAISS + ONNX Runtime installed, Vagrantfile updated
+- 🔥 Día 32: Basic tests (FAISS + ONNX Runtime)
+- Día 33: Export real embedder models (Chronos, SBERT)
+- Día 34: Custom attack embedder training
+- Día 35: ChunkCoordinator implementation
+- Día 36: IndexManager + multi-index strategy
+- Día 37: Feature extraction (83 fields → embeddings)
+- Día 38: Integration testing
+- Día 39: HealthMonitor + reconciliation
+- Día 40: End-to-end validation
 
 **Key Milestones:**
 ```
-Week 5: Foundation (ONNX + FAISS + Skeleton)
+Week 5, Day 1-2: Infrastructure + Basic Tests ✅
+Week 5, Day 3-5: Models + Core Components
 Week 6: Implementation (Embedders + Indices)
 Week 7: Testing (E2E pipeline validation)
 Week 8: Production (Monitoring + Reconciliation)
@@ -860,6 +639,6 @@ Week 8: Production (Monitoring + Reconciliation)
 
 ---
 
-**Via Appia Quality:** Despacio y bien. Foundation primero, optimización después. 🏛️
+**Via Appia Quality:** Test basics first. Verify libraries work. Then build complexity. Despacio y bien. 🏛️
 
-**Next:** Day 31 - ONNX models + FAISS integration + ChunkCoordinator skeleton
+**Next:** Day 32 - Basic FAISS + ONNX Runtime tests in C++20
