@@ -166,4 +166,5 @@ datasets/
 backups/
 
 logs/# ONNX models (generate on-the-fly)
-*.onnx
+logs/
+*.jsonl
