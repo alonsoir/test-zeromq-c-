@@ -54,17 +54,18 @@ build-test-faiss: configure
 	@echo "🔨 Building test_faiss_basic..."
 	@cd $(BUILD_DIR) && $(MAKE) test_faiss_basic 2>&1 | grep -v "^make"
 
-# Test ONNX Runtime (placeholder para Day 32)
+# Test ONNX Runtime
+# Test ONNX Runtime
 test-onnx: build-test-onnx
 	@echo ""
 	@echo "════════════════════════════════════════════════════════════"
 	@echo "🧪 Running ONNX Runtime Test"
 	@echo "════════════════════════════════════════════════════════════"
 	@if [ -f $(BUILD_DIR)/test_onnx_basic ]; then \
-		cd $(BUILD_DIR) && ./test_onnx_basic; \
+		echo "📝 Generating dummy ONNX model..."; \
+		cd tests && python3 create_dummy_model_lite.py > /dev/null 2>&1 && echo "✅ Model generated" && ../build/test_onnx_basic; \
 	else \
 		echo "ℹ️  test_onnx_basic not yet implemented"; \
-		echo "   Coming in Day 32 Phase 2"; \
 	fi
 	@echo "════════════════════════════════════════════════════════════"
 

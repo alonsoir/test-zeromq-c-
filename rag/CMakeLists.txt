@@ -230,23 +230,19 @@ if(HAVE_FAISS)
     message(STATUS "✅ test_faiss_basic configured")
 endif()
 
+# ONNX Runtime test
 if(HAVE_ONNX)
-    message(STATUS "🧪 Configurando tests ONNX Runtime...")
+    add_executable(test_onnx_basic tests/test_onnx_basic.cpp)
+    target_include_directories(test_onnx_basic PRIVATE ${ONNX_INCLUDE_DIR})
+    target_link_libraries(test_onnx_basic PRIVATE ${ONNX_LIB})
 
-    # Test ONNX Basic (cuando esté creado)
-    # add_executable(test_onnx_basic
-    #     tests/test_onnx_basic.cpp
-    # )
-    #
-    # target_include_directories(test_onnx_basic PRIVATE
-    #     ${ONNX_INCLUDE_DIR}
-    # )
-    #
-    # target_link_libraries(test_onnx_basic PRIVATE
-    #     ${ONNX_LIB}
-    # )
-
-    message(STATUS "ℹ️  test_onnx_basic not yet created")
+    message(STATUS "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    message(STATUS "✅ test_onnx_basic configured")
+    message(STATUS "   ONNX include: ${ONNX_INCLUDE_DIR}")
+    message(STATUS "   ONNX library: ${ONNX_LIB}")
+    message(STATUS "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+else()
+    message(STATUS "⚠️  test_onnx_basic skipped (ONNX Runtime not found)")
 endif()
 
 # ============================================================================
