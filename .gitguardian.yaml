@@ -3,4 +3,12 @@ paths-ignore:
   - logs/**
   - "**/*.jsonl"
   - "**/*.log"
+  - .venv/**paths-ignore:
+  - logs/**
+  - data/**
+  - "**/*.jsonl"
+  - "**/*.log"
   - .venv/**
+  - mawi/**
+  - datasets/**
+  - backups/**

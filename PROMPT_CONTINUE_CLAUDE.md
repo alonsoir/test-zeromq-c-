@@ -1,19 +1,12 @@
-## ✅ Actualización del Prompt - Recordatorio Documentos
-
-Tienes razón, necesito añadir esa sección. Aquí está el **prompt actualizado con recordatorio explícito**:
-
----
-
-# PROMPT DE CONTINUIDAD - DÍA 33 (04 Enero 2026)
+# PROMPT DE CONTINUIDAD - DÍA 34 (06 Enero 2026)
 
 ## 📚 DOCUMENTOS NECESARIOS PARA ESTA SESIÓN
-
 ```
-Day 33 (HOY):
+Day 34 (HOY):
   ❌ NO pasar FAISS_ANTI_CURSE_DESIGN.md
   ✅ Solo este prompt de continuidad
   
-Razón: Day 33-34 son creación de modelos ONNX.
+Razón: Day 34 es testing con datos reales JSONL.
        No implementamos estrategias anti-curse todavía.
        El resumen abajo es suficiente.
 
@@ -38,18 +31,26 @@ Tamaño: ~500 líneas (12K tokens aprox)
 
 ---
 
-## 📋 CONTEXTO DÍA 32 (03 Enero 2026) - COMPLETADO ✅
+## 📋 CONTEXTO DÍA 33 (05 Enero 2026) - COMPLETADO ✅
 
-### ✅ ONNX Runtime Test - Infrastructure Complete
+### ✅ Real ONNX Embedder Models - Complete
 
-**Day 32 - ONNX Integration:**
-- ✅ create_dummy_model_lite.py: 10→32-d embedder (sin PyTorch)
-- ✅ test_onnx_basic.cpp: Load + inference test (ALL TESTS PASSED ✅)
-- ✅ Makefile: Auto-genera modelo antes de test (reproducible)
-- ✅ .gitignore: *.onnx (no binarios en git)
-- ✅ CMakeLists.txt: test_onnx_basic target habilitado
+**Day 33 - Embedder Models Created:**
+- ✅ create_chronos_embedder.py: 83→512-d time series embedder
+- ✅ create_sbert_embedder.py: 83→384-d semantic embedder
+- ✅ create_attack_embedder.py: 83→256-d attack pattern embedder
+- ✅ test_embedders.py: Verification suite (3/3 tests PASSED ✅)
+- ✅ All models exported to ONNX (opset 18)
+- ✅ Git commit: Scripts committed, models excluded (.gitignore)
 
-**Infrastructure Status (Day 32 Complete):**
+**Models Generated (Day 33):**
+```
+✅ chronos_embedder.onnx - 13KB (83→512-d)
+✅ sbert_embedder.onnx   - 22KB (83→384-d)
+✅ attack_embedder.onnx  - 9.7KB (83→256-d)
+```
+
+**Infrastructure Status (Days 31-33 Complete):**
 ```
 ✅ FAISS v1.8.0 - WORKING
    ├─ test_faiss_basic PASSING
@@ -60,6 +61,12 @@ Tamaño: ~500 líneas (12K tokens aprox)
    ├─ test_onnx_basic PASSING
    ├─ Inference pipeline validated
    └─ Auto-detection working
+
+✅ ONNX Embedder Models - CREATED
+   ├─ Chronos (time series): 83→512-d ✅
+   ├─ SBERT (semantic): 83→384-d ✅
+   ├─ Attack (patterns): 83→256-d ✅
+   └─ All verified with onnx.checker ✅
 
 ✅ Build System - ROBUST
    ├─ CMakeLists.txt: C++20, auto-detect
@@ -73,29 +80,34 @@ Tamaño: ~500 líneas (12K tokens aprox)
    └─ Límites empíricamente validados
 ```
 
-**Test Results (Day 32):**
+**Test Results (Day 33):**
 ```
-make test-faiss  → ALL TESTS PASSED ✅
-make test-onnx   → ALL TESTS PASSED ✅
-make test-all    → BOTH PASSING ✅
-make verify-libs → FAISS + ONNX OK ✅
+make test-all              → ALL TESTS PASSED ✅
+python3 test_embedders.py  → 3/3 models verified ✅
 ```
 
 **Git Status:**
 ```
 Rama: feature/faiss-ingestion-phase2a
-Último commit: "Day 32 complete - ONNX Runtime test passing"
+Último commit: "Day 33: Real ONNX embedder models created"
 Archivos añadidos:
-  - rag/tests/create_dummy_model_lite.py
-  - rag/tests/test_onnx_basic.cpp
-  - rag/Makefile (updated)
-  - rag/CMakeLists.txt (updated)
-  - .gitignore (*.onnx)
+  - rag/models/create_chronos_embedder.py
+  - rag/models/create_sbert_embedder.py
+  - rag/models/create_attack_embedder.py
+  - rag/models/test_embedders.py
+  - rag/models/.gitignore
+  - .gitguardian.yaml (updated)
 ```
+
+**Via Appia Quality Achievement (Day 33):**
+> "Creamos modelos sintéticos con arquitectura correcta para validar
+> el pipeline HOY. Los modelos reales son future work. Pipeline
+> validation > Model perfection. Tiempo: 2.5h de 4-6h estimadas.
+> Despacio, pero avanzando. 🏛️"
 
 ---
 
-## 🔬 RESUMEN ESTRATEGIAS ANTI-CURSE (Para Referencia Day 33-34)
+## 🔬 RESUMEN ESTRATEGIAS ANTI-CURSE (Para Referencia Day 34)
 
 **Estrategias que implementaremos Days 35+:**
 
@@ -147,32 +159,40 @@ Attack (256-d → 64-d):   85K benign (CV = 0.20)
 
 ---
 
-## 🎯 ESTADO ACTUAL - DÍA 33 INICIO
+## 🎯 ESTADO ACTUAL - DÍA 34 INICIO
 
 ### ✅ Completado Hasta Ahora
 
-**Phase 2A Infrastructure (Days 31-32):**
+**Phase 2A Infrastructure (Days 31-33):**
 - ✅ FAISS v1.8.0 instalado, testeado, working
 - ✅ ONNX Runtime v1.17.1 instalado, testeado, working
 - ✅ Build system configurado (C++20, auto-detection)
 - ✅ Tests pasando (test_faiss_basic, test_onnx_basic)
 - ✅ Anti-curse design completado (v2.0, peer-reviewed)
+- ✅ **3 embedder models ONNX creados y verificados** 🎉
+
+**Modelos Disponibles:**
+- ✅ chronos_embedder.onnx (13KB) - Time series
+- ✅ sbert_embedder.onnx (22KB) - Semantic
+- ✅ attack_embedder.onnx (9.7KB) - Attack patterns
+- ✅ Todos verificados con onnx.checker
+- ✅ Scripts en git, modelos regenerables
 
 **Datos Disponibles:**
 - ✅ 32,957 eventos RAG (JSONL format)
 - ✅ 43,526 artifacts Protobuf
 - ✅ 43,526 artifacts JSON
 - ❌ NO tenemos embeddings pre-computados (.npy)
-- ❌ NO tenemos modelos embedder entrenados todavía
+- ✅ Modelos listos para generar embeddings
 
 ### 🚧 Pendiente - Week 5
 
-**Days 33-34: Real Embedder Models**
-- Export/crear modelos ONNX reales
-- Chronos (time series): 83 features → 512-d
-- SBERT (semantic): 83 features → 384-d
-- Attack (custom): 83 features → 256-d
-- Test inference con estructura real
+**Day 34 (HOY): Test Embedders con Datos Reales** ← ESTAMOS AQUÍ
+- Load eventos JSONL (~32,957 disponibles)
+- Extract 83 features por evento
+- Run inference a través de 3 embedders
+- Verify output shapes y distribuciones
+- Test con ONNX Runtime C++
 
 **Days 35-40: Implementation**
 - DimensionalityReducer (faiss::PCAMatrix) ← **PASAR DESIGN DOC**
@@ -183,261 +203,476 @@ Attack (256-d → 64-d):   85K benign (CV = 0.20)
 
 ---
 
-## 🚀 PLAN DÍA 33 - REAL EMBEDDER MODELS (Parte 1)
+## 🚀 PLAN DÍA 34 - TEST CON DATOS REALES
 
 ### 🎯 Objetivo del Día
 
-**Focus**: Crear/exportar modelos ONNX reales para los 3 embedders, preparar para ingestion.
+**Focus**: Test los 3 embedders ONNX con eventos JSONL reales, validar pipeline end-to-end.
 
 **Contexto Importante:**
-- NO tenemos embeddings pre-computados
-- NO tenemos modelos custom entrenados
-- Solución: Usar modelos base/pre-trained + adapters simples
+- ✅ Tenemos 3 modelos ONNX funcionando
+- ✅ Tenemos ~32,957 eventos JSONL disponibles
+- ✅ ONNX Runtime v1.17.1 instalado y testeado
+- 🎯 Objetivo: Probar inference pipeline completo
 
-**Timeline**: 4-6 horas total
+**Timeline**: 2-3 horas total
 
-**Status**: Infrastructure ✅ → Embedders ONNX (Day 33-34) → DimensionalityReducer (Day 35)
-
----
-
-### DESAFÍO: No Tenemos Modelos Entrenados
-
-**Problema:**
-```
-Diseño original asume:
-  1. Chronos embedder custom (entrenado)
-  2. SBERT embedder custom (entrenado)  
-  3. Attack embedder custom (entrenado)
-
-Realidad:
-  ❌ No tenemos estos modelos
-  ❌ Entrenarlos requiere semanas + GPU
-```
-
-**Solución Pragmática (Via Appia Quality):**
-```
-Day 33-34: Usar modelos base + arquitectura correcta
-  ✅ Chronos: Modelo time-series sintético (83→512-d)
-  ✅ SBERT: sentence-transformers base (texto→384-d)
-  ✅ Attack: Neural network simple (83→256-d)
-  
-Objetivo: Validar PIPELINE, no entrenar modelos
-         (Modelos reales = future work / production)
-```
+**Status**: Models Created ✅ → Test with Real Data (Day 34) → DimensionalityReducer (Day 35)
 
 ---
 
-### FASE 1: Chronos Time Series Embedder (2 horas)
+### FASE 1: Python Inference Pipeline (1.5 horas)
 
-**Objetivo**: Crear modelo ONNX que acepta 83 features → 512-d embedding
+**Objetivo**: Cargar eventos JSONL → Extract features → Generate embeddings
 
-**Opción A: Modelo Sintético (Recommended)**
-
+**Script: test_real_inference.py**
 ```python
-# File: rag/models/create_chronos_embedder.py
 #!/usr/bin/env python3
 """
-Create Chronos-style time series embedder for ML Defender.
+Test ONNX embedders with real ML Defender events.
 
-Input:  83 network traffic features (float32)
-Output: 512-d time series embedding (float32)
-
-Architecture: Simple MLP mimicking time series processing
-Note: This is a PLACEHOLDER for real Chronos model training
+Process:
+1. Load events from JSONL
+2. Extract 83 features per event
+3. Run inference through all 3 embedders
+4. Verify output shapes and distributions
 """
 
-import torch
-import torch.nn as nn
-import onnx
+import json
+import numpy as np
+import onnxruntime as ort
+from pathlib import Path
+from datetime import datetime
 
-class ChronosEmbedder(nn.Module):
+def load_events_jsonl(jsonl_path, max_events=100):
+    """Load events from JSONL file"""
+    events = []
+    with open(jsonl_path, 'r') as f:
+        for i, line in enumerate(f):
+            if i >= max_events:
+                break
+            try:
+                event = json.loads(line.strip())
+                events.append(event)
+            except json.JSONDecodeError as e:
+                print(f"⚠️  Skipping line {i}: {e}")
+                continue
+    return events
+
+def extract_features(event):
     """
-    Time series embedder: 83 features → 512-d
+    Extract 83 features from RAG event.
     
-    Architecture mimics real time series processing:
-    - Input layer: 83 network features
-    - Hidden layers: Capture temporal patterns
-    - Output: 512-d embedding
+    Features (83 total):
+    - Timestamp features: 7 (year, month, day, hour, minute, second, microsecond)
+    - IP features: 8 (src_ip octets × 4, dst_ip octets × 4)
+    - Port features: 2 (src_port, dst_port)
+    - Protocol features: 3 (protocol, ip_version, tcp_flags)
+    - Packet features: 4 (packet_length, header_length, payload_length, ttl)
+    - Detection scores: 5 (fast_score, ml_score, final_score, is_malicious, severity)
+    - Network metadata: 6 (vlan_id, dscp, ecn, window_size, mss, seq_num)
+    - Behavioral features: 48 (flow stats, timing, patterns)
     """
-    def __init__(self, input_dim=83, hidden_dim=256, output_dim=512):
-        super().__init__()
-        
-        self.network = nn.Sequential(
-            # Layer 1: Feature extraction
-            nn.Linear(input_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            
-            # Layer 2: Pattern detection
-            nn.Linear(hidden_dim, hidden_dim * 2),
-            nn.LayerNorm(hidden_dim * 2),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            
-            # Layer 3: Embedding projection
-            nn.Linear(hidden_dim * 2, output_dim),
-            nn.Tanh()  # Normalize to [-1, 1]
-        )
+    features = np.zeros(83, dtype=np.float32)
     
-    def forward(self, x):
-        return self.network(x)
+    # Timestamp features (0-6)
+    if 'timestamp' in event:
+        ts = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
+        features[0] = ts.year / 2026.0  # Normalize
+        features[1] = ts.month / 12.0
+        features[2] = ts.day / 31.0
+        features[3] = ts.hour / 24.0
+        features[4] = ts.minute / 60.0
+        features[5] = ts.second / 60.0
+        features[6] = ts.microsecond / 1e6
+    
+    # IP features (7-14)
+    if 'src_ip' in event:
+        octets = [int(x) for x in event['src_ip'].split('.')]
+        features[7:11] = np.array(octets) / 255.0
+    if 'dst_ip' in event:
+        octets = [int(x) for x in event['dst_ip'].split('.')]
+        features[11:15] = np.array(octets) / 255.0
+    
+    # Port features (15-16)
+    features[15] = event.get('src_port', 0) / 65535.0
+    features[16] = event.get('dst_port', 0) / 65535.0
+    
+    # Protocol features (17-19)
+    features[17] = event.get('protocol', 0) / 255.0
+    features[18] = event.get('ip_version', 4) / 6.0
+    features[19] = event.get('tcp_flags', 0) / 255.0
+    
+    # Packet features (20-23)
+    features[20] = min(event.get('packet_length', 0) / 65535.0, 1.0)
+    features[21] = event.get('header_length', 0) / 255.0
+    features[22] = min(event.get('payload_length', 0) / 65535.0, 1.0)
+    features[23] = event.get('ttl', 64) / 255.0
+    
+    # Detection scores (24-28)
+    features[24] = event.get('fast_detector_score', 0.0)
+    features[25] = event.get('ml_detector_score', 0.0)
+    features[26] = event.get('final_score', 0.0)
+    features[27] = float(event.get('is_malicious', False))
+    features[28] = event.get('severity', 0) / 10.0
+    
+    # Network metadata (29-34)
+    features[29] = event.get('vlan_id', 0) / 4095.0
+    features[30] = event.get('dscp', 0) / 63.0
+    features[31] = event.get('ecn', 0) / 3.0
+    features[32] = event.get('window_size', 0) / 65535.0
+    features[33] = event.get('mss', 0) / 65535.0
+    features[34] = min(event.get('seq_num', 0) / 4294967295.0, 1.0)
+    
+    # Behavioral features (35-82) - Placeholder
+    # In production, these would include:
+    # - Flow statistics (bytes/packets sent/received)
+    # - Timing features (inter-arrival times, duration)
+    # - Pattern features (entropy, periodicity, burstiness)
+    # For now, fill with reasonable defaults
+    for i in range(35, 83):
+        features[i] = 0.5  # Neutral value
+    
+    return features
+
+def test_embedder(model_path, features, model_name):
+    """Test a single embedder with features"""
+    print(f"\n{'='*60}")
+    print(f"Testing: {model_name}")
+    print('='*60)
+    
+    # Load model
+    print("Step 1: Loading ONNX model...")
+    session = ort.InferenceSession(model_path)
+    print(f"  ✅ Model loaded: {model_path}")
+    
+    # Get input/output names
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
+    print(f"  Input: {input_name}, Output: {output_name}")
+    
+    # Run inference
+    print("\nStep 2: Running inference...")
+    input_data = features.reshape(1, -1).astype(np.float32)
+    outputs = session.run([output_name], {input_name: input_data})
+    embedding = outputs[0]
+    
+    print(f"  ✅ Inference completed")
+    print(f"  Input shape: {input_data.shape}")
+    print(f"  Output shape: {embedding.shape}")
+    
+    # Validate output
+    print("\nStep 3: Validating output...")
+    print(f"  Embedding dimension: {embedding.shape[1]}")
+    print(f"  Value range: [{embedding.min():.4f}, {embedding.max():.4f}]")
+    print(f"  Mean: {embedding.mean():.4f}, Std: {embedding.std():.4f}")
+    
+    # Show first few values
+    print(f"  First 5 values: {' '.join(f'{v:.4f}' for v in embedding[0][:5])}")
+    
+    return embedding
 
 def main():
-    print("╔════════════════════════════════════════╗")
-    print("║  Creating Chronos Embedder (83→512-d) ║")
-    print("╚════════════════════════════════════════╝\n")
+    print("╔════════════════════════════════════════════════════════╗")
+    print("║  ML Defender - Real Data Inference Test              ║")
+    print("╚════════════════════════════════════════════════════════╝\n")
     
-    # Create model
-    print("Step 1: Initializing Chronos architecture...")
-    model = ChronosEmbedder(input_dim=83, output_dim=512)
-    model.eval()
-    print("  ✅ Model initialized (83 → 512-d)\n")
+    # Find latest JSONL file
+    data_dir = Path("/vagrant/data/rag/events")
+    jsonl_files = sorted(data_dir.glob("*.jsonl"))
     
-    # Dummy input for export
-    print("Step 2: Creating export input...")
-    dummy_input = torch.randn(1, 83)
-    print(f"  ✅ Input shape: {dummy_input.shape}\n")
+    if not jsonl_files:
+        print("❌ No JSONL files found in /vagrant/data/rag/events")
+        return 1
     
-    # Export to ONNX
-    print("Step 3: Exporting to ONNX...")
-    torch.onnx.export(
-        model,
-        dummy_input,
-        "chronos_embedder.onnx",
-        input_names=['features'],
-        output_names=['embedding'],
-        dynamic_axes={
-            'features': {0: 'batch_size'},
-            'embedding': {0: 'batch_size'}
-        },
-        opset_version=14,
-        verbose=False
-    )
-    print("  ✅ Exported: chronos_embedder.onnx\n")
+    latest_jsonl = jsonl_files[-1]
+    print(f"📄 Using JSONL file: {latest_jsonl.name}")
+    print(f"   Path: {latest_jsonl}\n")
     
-    # Verify
-    print("Step 4: Verifying model...")
-    onnx_model = onnx.load("chronos_embedder.onnx")
-    onnx.checker.check_model(onnx_model)
-    print("  ✅ Model verified (opset 14)\n")
+    # Load events
+    print("Step 1: Loading events...")
+    events = load_events_jsonl(latest_jsonl, max_events=10)
+    print(f"  ✅ Loaded {len(events)} events\n")
     
-    print("Model Information:")
-    print("  Input:  features (batch, 83)")
-    print("  Output: embedding (batch, 512)")
-    print("  Type:   Time series embedder (MLP)")
-    print("\n╔════════════════════════════════════════╗")
-    print("║  Chronos Embedder Created ✅           ║")
-    print("╚════════════════════════════════════════╝")
+    if not events:
+        print("❌ No events loaded")
+        return 1
+    
+    # Extract features from first event
+    print("Step 2: Extracting features from first event...")
+    features = extract_features(events[0])
+    print(f"  ✅ Extracted {len(features)} features")
+    print(f"  Feature range: [{features.min():.4f}, {features.max():.4f}]")
+    print(f"  First 10 features: {' '.join(f'{v:.3f}' for v in features[:10])}\n")
+    
+    # Test all embedders
+    models = [
+        ("chronos_embedder.onnx", "Chronos (Time Series)", 512),
+        ("sbert_embedder.onnx", "SBERT (Semantic)", 384),
+        ("attack_embedder.onnx", "Attack (Patterns)", 256),
+    ]
+    
+    results = []
+    for model_path, model_name, expected_dim in models:
+        try:
+            embedding = test_embedder(model_path, features, model_name)
+            
+            # Verify dimension
+            actual_dim = embedding.shape[1]
+            if actual_dim == expected_dim:
+                print(f"  ✅ Dimension correct: {actual_dim}")
+                results.append((model_name, "✅ PASS"))
+            else:
+                print(f"  ❌ Dimension mismatch: expected {expected_dim}, got {actual_dim}")
+                results.append((model_name, "❌ FAIL"))
+        except Exception as e:
+            print(f"\n❌ {model_name} FAILED: {e}")
+            results.append((model_name, f"❌ ERROR: {e}"))
+    
+    # Summary
+    print("\n" + "="*60)
+    print("SUMMARY")
+    print("="*60)
+    for model, status in results:
+        print(f"  {model:30s} {status}")
+    
+    print("\n" + "="*60)
+    passed = sum(1 for _, status in results if status.startswith("✅"))
+    print(f"Result: {passed}/{len(models)} embedders passed")
+    print("="*60)
+    
+    if passed == len(models):
+        print("\n✅ ALL EMBEDDERS WORKING WITH REAL DATA")
+        return 0
+    else:
+        print("\n❌ SOME TESTS FAILED")
+        return 1
 
 if __name__ == "__main__":
-    main()
+    exit(main())
 ```
 
 **Ejecutar:**
 ```bash
 cd /vagrant/rag/models
-mkdir -p /vagrant/rag/models  # Si no existe
-python3 create_chronos_embedder.py
-
-# Verificar
-ls -lh chronos_embedder.onnx
+python3 test_real_inference.py
 ```
 
 ---
 
-### FASE 2: SBERT Semantic Embedder (1.5 horas)
+### FASE 2: C++ Inference Test (1 hora)
 
-**Objetivo**: Crear modelo que genera embeddings semánticos de features de red
+**Objetivo**: Adaptar test_onnx_basic.cpp para usar nuestros modelos
 
-**Opción: Arquitectura Simple (features → text concept → embedding)**
+**File: rag/tests/test_real_embedders.cpp**
+```cpp
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <onnxruntime_cxx_api.h>
 
+// Test one embedder with 83 features
+void test_embedder(const char* model_path, const char* name, size_t expected_dim) {
+    std::cout << "\n" << std::string(60, '=') << "\n";
+    std::cout << "Testing: " << name << "\n";
+    std::cout << std::string(60, '=') << "\n";
+    
+    // Initialize ONNX Runtime
+    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "ml-defender");
+    Ort::SessionOptions session_options;
+    
+    // Load model
+    std::cout << "Step 1: Loading model...\n";
+    Ort::Session session(env, model_path, session_options);
+    std::cout << "  ✅ Model loaded: " << model_path << "\n";
+    
+    // Prepare 83 features (dummy values for now)
+    std::vector<float> input_data(83, 0.5f);  // All 0.5 as placeholder
+    
+    // Create input tensor
+    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<int64_t> input_shape = {1, 83};
+    
+    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
+        memory_info, 
+        input_data.data(), 
+        input_data.size(),
+        input_shape.data(), 
+        input_shape.size()
+    );
+    
+    // Run inference
+    std::cout << "\nStep 2: Running inference...\n";
+    const char* input_names[] = {"features"};
+    const char* output_names[] = {"embedding"};
+    
+    auto output_tensors = session.Run(
+        Ort::RunOptions{nullptr},
+        input_names, &input_tensor, 1,
+        output_names, 1
+    );
+    
+    // Validate output
+    float* output_data = output_tensors[0].GetTensorMutableData<float>();
+    auto output_shape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
+    
+    std::cout << "  ✅ Inference completed\n";
+    std::cout << "  Output shape: [" << output_shape[0] << ", " << output_shape[1] << "]\n";
+    std::cout << "  Expected dim: " << expected_dim << "\n";
+    
+    if (output_shape[1] == expected_dim) {
+        std::cout << "  ✅ Dimension correct\n";
+    } else {
+        std::cout << "  ❌ Dimension mismatch!\n";
+        throw std::runtime_error("Dimension mismatch");
+    }
+    
+    // Show first few values
+    std::cout << "  First 5 values: ";
+    for (size_t i = 0; i < 5; ++i) {
+        std::cout << output_data[i] << " ";
+    }
+    std::cout << "\n";
+}
+
+int main() {
+    std::cout << "╔════════════════════════════════════════════════════════╗\n";
+    std::cout << "║  ML Defender - C++ Embedder Test                      ║\n";
+    std::cout << "╚════════════════════════════════════════════════════════╝\n";
+    
+    try {
+        test_embedder("chronos_embedder.onnx", "Chronos (Time Series)", 512);
+        test_embedder("sbert_embedder.onnx", "SBERT (Semantic)", 384);
+        test_embedder("attack_embedder.onnx", "Attack (Patterns)", 256);
+        
+        std::cout << "\n╔════════════════════════════════════════════════════════╗\n";
+        std::cout << "║  ALL TESTS PASSED ✅                                   ║\n";
+        std::cout << "╚════════════════════════════════════════════════════════╝\n";
+        
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "\n❌ TEST FAILED: " << e.what() << "\n";
+        return 1;
+    }
+}
+```
+
+**Compilar y ejecutar:**
+```bash
+cd /vagrant/rag/models
+g++ -std=c++20 -o test_real_embedders test_real_embedders.cpp \
+    -I/usr/local/include \
+    -L/usr/local/lib \
+    -lonnxruntime
+
+./test_real_embedders
+```
+
+---
+
+### FASE 3: Batch Processing Test (0.5 horas)
+
+**Objetivo**: Procesar múltiples eventos y medir performance
 ```python
-# File: rag/models/create_sbert_embedder.py
 #!/usr/bin/env python3
 """
-Create SBERT-style semantic embedder for ML Defender.
+Batch processing test for embedders.
 
-Input:  83 network traffic features (float32)
-Output: 384-d semantic embedding (float32)
-
-Architecture: MLP that maps features to semantic space
-Note: Real SBERT would use transformers, this is simplified
+Tests:
+- Load 100 events
+- Generate embeddings for all
+- Measure throughput
+- Check consistency
 """
 
-import torch
-import torch.nn as nn
-import onnx
+import time
+import numpy as np
+import onnxruntime as ort
+from test_real_inference import load_events_jsonl, extract_features
+from pathlib import Path
 
-class SBERTEmbedder(nn.Module):
-    """
-    Semantic embedder: 83 features → 384-d
+def batch_process(model_path, features_batch, batch_size=10):
+    """Process features in batches"""
+    session = ort.InferenceSession(model_path)
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
     
-    Simplified version of sentence-BERT concept
-    Maps network features to semantic embedding space
-    """
-    def __init__(self, input_dim=83, hidden_dim=192, output_dim=384):
-        super().__init__()
+    embeddings = []
+    num_batches = (len(features_batch) + batch_size - 1) // batch_size
+    
+    for i in range(num_batches):
+        start_idx = i * batch_size
+        end_idx = min(start_idx + batch_size, len(features_batch))
+        batch = features_batch[start_idx:end_idx]
         
-        self.network = nn.Sequential(
-            # Semantic feature extraction
-            nn.Linear(input_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.GELU(),  # GELU like transformers
-            
-            # Semantic representation
-            nn.Linear(hidden_dim, hidden_dim * 2),
-            nn.LayerNorm(hidden_dim * 2),
-            nn.GELU(),
-            
-            # Final embedding
-            nn.Linear(hidden_dim * 2, output_dim),
-            nn.Tanh()
-        )
+        # Pad batch if needed
+        if len(batch) < batch_size:
+            padding = np.zeros((batch_size - len(batch), 83), dtype=np.float32)
+            batch = np.vstack([batch, padding])
+        
+        # Run inference
+        outputs = session.run([output_name], {input_name: batch.astype(np.float32)})
+        embeddings.append(outputs[0][:len(batch)])
     
-    def forward(self, x):
-        return self.network(x)
+    return np.vstack(embeddings) if embeddings else np.array([])
 
 def main():
-    print("╔════════════════════════════════════════╗")
-    print("║  Creating SBERT Embedder (83→384-d)   ║")
-    print("╚════════════════════════════════════════╝\n")
+    print("╔════════════════════════════════════════════════════════╗")
+    print("║  ML Defender - Batch Processing Test                 ║")
+    print("╚════════════════════════════════════════════════════════╝\n")
     
-    print("Step 1: Initializing SBERT architecture...")
-    model = SBERTEmbedder(input_dim=83, output_dim=384)
-    model.eval()
-    print("  ✅ Model initialized (83 → 384-d)\n")
+    # Load events
+    data_dir = Path("/vagrant/data/rag/events")
+    jsonl_files = sorted(data_dir.glob("*.jsonl"))
+    latest_jsonl = jsonl_files[-1]
     
-    print("Step 2: Creating export input...")
-    dummy_input = torch.randn(1, 83)
-    print(f"  ✅ Input shape: {dummy_input.shape}\n")
+    print(f"📄 Loading events from: {latest_jsonl.name}\n")
+    events = load_events_jsonl(latest_jsonl, max_events=100)
+    print(f"  ✅ Loaded {len(events)} events\n")
     
-    print("Step 3: Exporting to ONNX...")
-    torch.onnx.export(
-        model, dummy_input, "sbert_embedder.onnx",
-        input_names=['features'],
-        output_names=['embedding'],
-        dynamic_axes={
-            'features': {0: 'batch_size'},
-            'embedding': {0: 'batch_size'}
-        },
-        opset_version=14,
-        verbose=False
-    )
-    print("  ✅ Exported: sbert_embedder.onnx\n")
+    # Extract all features
+    print("Extracting features...")
+    features_list = []
+    for i, event in enumerate(events):
+        if i % 20 == 0:
+            print(f"  Progress: {i}/{len(events)}")
+        features = extract_features(event)
+        features_list.append(features)
     
-    print("Step 4: Verifying model...")
-    onnx_model = onnx.load("sbert_embedder.onnx")
-    onnx.checker.check_model(onnx_model)
-    print("  ✅ Model verified\n")
+    features_batch = np.array(features_list)
+    print(f"  ✅ Extracted features: {features_batch.shape}\n")
     
-    print("Model Information:")
-    print("  Input:  features (batch, 83)")
-    print("  Output: embedding (batch, 384)")
-    print("  Type:   Semantic embedder (SBERT-style)")
-    print("\n╔════════════════════════════════════════╗")
-    print("║  SBERT Embedder Created ✅             ║")
-    print("╚════════════════════════════════════════╝")
+    # Test each embedder
+    models = [
+        ("chronos_embedder.onnx", "Chronos"),
+        ("sbert_embedder.onnx", "SBERT"),
+        ("attack_embedder.onnx", "Attack"),
+    ]
+    
+    for model_path, name in models:
+        print(f"\n{'='*60}")
+        print(f"Testing: {name}")
+        print('='*60)
+        
+        # Warm-up
+        _ = batch_process(model_path, features_batch[:10], batch_size=10)
+        
+        # Benchmark
+        start = time.time()
+        embeddings = batch_process(model_path, features_batch, batch_size=10)
+        elapsed = time.time() - start
+        
+        throughput = len(features_batch) / elapsed
+        
+        print(f"  ✅ Processed {len(features_batch)} events")
+        print(f"  Time: {elapsed:.2f}s")
+        print(f"  Throughput: {throughput:.1f} events/sec")
+        print(f"  Embedding shape: {embeddings.shape}")
+        print(f"  Mean: {embeddings.mean():.4f}, Std: {embeddings.std():.4f}")
+    
+    print("\n╔════════════════════════════════════════════════════════╗")
+    print("║  BATCH PROCESSING COMPLETE ✅                          ║")
+    print("╚════════════════════════════════════════════════════════╝")
 
 if __name__ == "__main__":
     main()
@@ -445,151 +680,52 @@ if __name__ == "__main__":
 
 ---
 
-### FASE 3: Attack Embedder (1 hora)
-
-```python
-# File: rag/models/create_attack_embedder.py
-#!/usr/bin/env python3
-"""
-Create Attack-specific embedder for ML Defender.
-
-Input:  83 network traffic features (float32)
-Output: 256-d attack embedding (float32)
-
-Architecture: Focused on attack pattern detection
-"""
-
-import torch
-import torch.nn as nn
-import onnx
-
-class AttackEmbedder(nn.Module):
-    """
-    Attack embedder: 83 features → 256-d
-    
-    Specialized for attack pattern detection
-    Smaller dimension for class-separated indices
-    """
-    def __init__(self, input_dim=83, hidden_dim=128, output_dim=256):
-        super().__init__()
-        
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            
-            nn.Linear(hidden_dim, hidden_dim * 2),
-            nn.BatchNorm1d(hidden_dim * 2),
-            nn.ReLU(),
-            
-            nn.Linear(hidden_dim * 2, output_dim),
-            nn.Tanh()
-        )
-    
-    def forward(self, x):
-        return self.network(x)
-
-def main():
-    print("╔════════════════════════════════════════╗")
-    print("║  Creating Attack Embedder (83→256-d)  ║")
-    print("╚════════════════════════════════════════╝\n")
-    
-    print("Step 1: Initializing Attack architecture...")
-    model = AttackEmbedder(input_dim=83, output_dim=256)
-    model.eval()
-    print("  ✅ Model initialized (83 → 256-d)\n")
-    
-    print("Step 2: Exporting to ONNX...")
-    dummy_input = torch.randn(1, 83)
-    
-    torch.onnx.export(
-        model, dummy_input, "attack_embedder.onnx",
-        input_names=['features'],
-        output_names=['embedding'],
-        dynamic_axes={
-            'features': {0: 'batch_size'},
-            'embedding': {0: 'batch_size'}
-        },
-        opset_version=14,
-        verbose=False
-    )
-    print("  ✅ Exported: attack_embedder.onnx\n")
-    
-    print("Step 3: Verifying model...")
-    onnx_model = onnx.load("attack_embedder.onnx")
-    onnx.checker.check_model(onnx_model)
-    print("  ✅ Model verified\n")
-    
-    print("Model Information:")
-    print("  Input:  features (batch, 83)")
-    print("  Output: embedding (batch, 256)")
-    print("  Type:   Attack-specific embedder")
-    print("\n╔════════════════════════════════════════╗")
-    print("║  Attack Embedder Created ✅            ║")
-    print("╚════════════════════════════════════════╝")
-
-if __name__ == "__main__":
-    main()
+## ✅ CRITERIOS DE ÉXITO DÍA 34
 ```
-
----
-
-## ✅ CRITERIOS DE ÉXITO DÍA 33
-
-```
-1. Chronos Embedder:
-   ✅ create_chronos_embedder.py created
-   ✅ chronos_embedder.onnx generated
-   ✅ Input: (batch, 83), Output: (batch, 512)
-   ✅ Model verified with onnx.checker
+1. Python Inference:
+   ✅ test_real_inference.py created
+   ✅ Load events from JSONL
+   ✅ Extract 83 features correctly
+   ✅ All 3 embedders produce valid outputs
+   ✅ Dimensions correct (512, 384, 256)
    
-2. SBERT Embedder:
-   ✅ create_sbert_embedder.py created
-   ✅ sbert_embedder.onnx generated
-   ✅ Input: (batch, 83), Output: (batch, 384)
-   ✅ Model verified
+2. C++ Inference:
+   ✅ test_real_embedders.cpp created
+   ✅ Compile and run successfully
+   ✅ ONNX Runtime integration working
+   ✅ All 3 embedders tested
    
-3. Attack Embedder:
-   ✅ create_attack_embedder.py created
-   ✅ attack_embedder.onnx generated
-   ✅ Input: (batch, 83), Output: (batch, 256)
-   ✅ Model verified
+3. Batch Processing:
+   ✅ Process 100+ events
+   ✅ Measure throughput
+   ✅ Verify consistency
 
-4. .gitignore:
-   ✅ *.onnx ya está (Day 32)
-   ✅ Scripts en git, modelos no
-
-5. Documentation:
-   ✅ README.md en /rag/models/ explicando modelos
+4. Documentation:
+   ✅ Update DAY34_SUMMARY.md
+   ✅ Document feature extraction logic
 ```
 
 ---
 
 ## 📅 TIMELINE - SEMANA 5 (ACTUALIZADO)
-
 ```
 ✅ Day 31: FAISS + Anti-curse design
 ✅ Day 32: ONNX Runtime test
+✅ Day 33: Real embedders (3 ONNX models) ✅
 
-🔥 Day 33: Real embedders (4-6h) ← ESTAMOS AQUÍ
-   - Chronos embedder (83→512-d)
-   - SBERT embedder (83→384-d)
-   - Attack embedder (83→256-d)
-   - ONNX export + verification
-   ❌ NO necesita FAISS design doc
-
-📅 Day 34: Test embedders con datos reales (2-3h)
-   - Cargar eventos JSONL
-   - Extraer 83 features
-   - Run inference
-   - Verificar outputs
+🔥 Day 34: Test con datos reales (2-3h) ← ESTAMOS AQUÍ
+   - Load eventos JSONL
+   - Extract 83 features
+   - Run inference (Python + C++)
+   - Batch processing test
    ❌ NO necesita FAISS design doc
 
 📅 Day 35: DimensionalityReducer (6h)
    ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md ← IMPORTANTE
    - Implement faiss::PCAMatrix
-   - Train PCA (cuando tengamos 10K eventos)
+   - Train PCA (10K eventos)
    - Test reduction pipeline
+   - 512→128, 384→96, 256→64
 
 📅 Day 36-38: Integration (8h)
    ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md ← IMPORTANTE
@@ -601,74 +737,51 @@ if __name__ == "__main__":
 
 ---
 
-## 🚀 COMANDOS RÁPIDOS DÍA 33
-
+## 🚀 COMANDOS RÁPIDOS DÍA 34
 ```bash
-# Crear directorio modelos
-mkdir -p /vagrant/rag/models
+# Verificar modelos existentes
 cd /vagrant/rag/models
-
-# Fase 1: Chronos (2h)
-# [Crear create_chronos_embedder.py]
-python3 create_chronos_embedder.py
-ls -lh chronos_embedder.onnx
-
-# Fase 2: SBERT (1.5h)
-# [Crear create_sbert_embedder.py]
-python3 create_sbert_embedder.py
-ls -lh sbert_embedder.onnx
-
-# Fase 3: Attack (1h)
-# [Crear create_attack_embedder.py]
-python3 create_attack_embedder.py
-ls -lh attack_embedder.onnx
-
-# Verificar todos
 ls -lh *.onnx
 
-# Git (scripts sí, modelos no)
+# Fase 1: Python inference (1.5h)
+python3 test_real_inference.py
+
+# Fase 2: C++ inference (1h)
+# [Crear test_real_embedders.cpp]
+g++ -std=c++20 -o test_real_embedders test_real_embedders.cpp \
+    -I/usr/local/include -L/usr/local/lib -lonnxruntime
+./test_real_embedders
+
+# Fase 3: Batch processing (0.5h)
+python3 test_batch_processing.py
+
+# Git
 cd /vagrant
-git add rag/models/create_*.py
-git add rag/models/README.md  # Si creamos
-# NO: git add rag/models/*.onnx (gitignored)
+git add rag/models/test_real_inference.py
+git add rag/models/test_real_embedders.cpp
+git add rag/models/test_batch_processing.py
+git commit -m "Day 34: Test embedders with real JSONL data"
 ```
 
 ---
 
-## 🏛️ VIA APPIA QUALITY - FILOSOFÍA DAY 33
+## 🏛️ VIA APPIA QUALITY - FILOSOFÍA DAY 34
 
-> "No tenemos modelos custom entrenados. Podríamos pasar 2 semanas
-> entrenando, o podemos crear arquitecturas sintéticas AHORA para
-> validar el pipeline. Elegimos lo segundo: modelos base que tienen
-> la estructura correcta (83→512/384/256) para probar ingestion,
-> PCA, índices separados. Los modelos reales son 'future work'. El
-> pipeline es lo que importa ahora. Despacio, pero avanzando. 🏛️"
+> "Day 33 creamos modelos sintéticos. Day 34 los validamos con datos
+> reales. 32,957 eventos JSONL disponibles. Extract 83 features por
+> evento. Test inference Python + C++. Medir throughput. Objetivo:
+> confirmar que pipeline funciona end-to-end antes de implementar
+> PCA y estrategias anti-curse. Validación antes de optimización.
+> Despacio, pero avanzando. 🏛️"
 
 **Key Principle:**
-- ✅ Pipeline validation > Model perfection
-- ✅ Arquitectura correcta > Pesos entrenados
-- ✅ Progress incremental > Todo perfect
+- ✅ Validation before optimization
+- ✅ Real data before synthetic only
+- ✅ Python + C++ both working
+- ✅ Throughput measurement important
 
 ---
 
-**Next**: Day 33 - Crear 3 embedders ONNX → Day 34 - Test con datos reales → Day 35 - DimensionalityReducer (**+ PASAR DESIGN DOC**)
+**Next**: Day 34 - Test con datos reales → Day 35 - DimensionalityReducer (**+ PASAR DESIGN DOC**)
 
-**Via Appia Quality**: Modelos sintéticos para validar pipeline. Modelos reales = future work. Despacio y bien. 🏛️
-
----
-
-## ✅ Cambios en el Prompt Actualizado
-
-**Añadido:**
-1. **Sección nueva al inicio**: "📚 DOCUMENTOS NECESARIOS PARA ESTA SESIÓN"
-2. **Recordatorio visual** con box para días futuros
-3. **Explicación clara** de cuándo SÍ y cuándo NO
-4. **Timeline actualizado** con indicadores de cuándo pasar doc
-
-**Formato del recordatorio:**
-```
-Day 35 (DimensionalityReducer):
-  ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md
-  Razón: Implementar Estrategia #2 (PCA)
-```
-
+**Via Appia Quality**: Validar pipeline con datos reales antes de optimizar. Despacio y bien. 🏛️
