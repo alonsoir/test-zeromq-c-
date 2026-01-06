@@ -1,5 +1,33 @@
 # PROMPT DE CONTINUIDAD - DÍA 34 (06 Enero 2026)
 
+## 🎯 BACKLOG Management Protocol
+
+**Al completar cualquier tarea mayor, Claude debe:**
+
+1. ✅ Confirmar completion con Alonso
+2. 📋 Solicitar acceso al BACKLOG.md actualizado
+3. 🔍 Revisar prioridades actuales (P0 → P1 → P2 → P3)
+4. 💡 Sugerir siguiente tarea basándose en:
+    - Blockers críticos (P0)
+    - Dependencies del roadmap
+    - Estado de Foundation Architecture
+    - Effort vs Impact ratio
+5. 🤝 Esperar aprobación de Alonso antes de proceder
+
+**Frase trigger para Claude:**
+> "Tarea completada. ¿Puedo ver el BACKLOG.md para sugerir qué sigue?"
+
+**Priorización actual (Ene 2026):**
+- P0 BLOCKER: ISSUE-005 (JSONL memory leak) ← CURRENT
+- P1 HIGH: FAISS Integration (blocked by ISSUE-005)
+- P1 HIGH: BACKLOG-001 Flow Sharding (post-FAISS)
+- P2 MEDIUM: etcd-client, Watcher, Academic paper
+
+**Via Appia Quality reminder:**
+> Resolver blockers antes que features.  
+> Foundation sólida antes que expansión.  
+> Memory leaks son P0, no P2.
+
 ## 📚 DOCUMENTOS NECESARIOS PARA ESTA SESIÓN
 ```
 Day 34 (HOY):
