@@ -69,7 +69,30 @@
 
 ---
 
-[... Epic 2A.2 FAISS sin cambios ...]
+## 🎯 PHASE 2A - FAISS/RAG INTEGRATION (Ene 2026)
+
+### Epic 2A.2: FAISS Infrastructure (Days 31-34) - IN PROGRESS
+**Priority:** P1 (HIGH)
+**Status:** 🟡 IN PROGRESS - Infrastructure Complete, Implementation Ongoing
+**Owner:** Alonso + Claude
+
+**Goal:** Semantic search para eventos históricos con FAISS
+
+**Progress (Week 5 - Days 31-34):**
+- ✅ Day 31: FAISS v1.8.0 installed + Anti-curse design (peer-reviewed)
+- ✅ Day 32: ONNX Runtime v1.23.2 installed + tested
+- ✅ Day 33: 3 ONNX embedder models created (512-d, 384-d, 256-d)
+- ✅ Day 34: Pipeline validated with real JSONL data (21 min)
+    - Python inference: 3/3 tests passed
+    - C++ inference: 3/3 tests passed (ONNX Runtime upgraded)
+    - Batch processing: 6.8K-18.5K events/sec throughput
+
+**Next (Week 6 - Days 35-40):**
+- 🔄 Day 35: DimensionalityReducer (PCA reduction 4x)
+- 🔄 Day 36-38: AttackIndexManager, SelectiveEmbedder, Integration
+- 🔄 Day 39-40: Advanced strategies (temporal tiers, quantization)
+
+**Note:** FAISS work is parallel to ISSUE-005. Not blocked.
 
 ---
 
