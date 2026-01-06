@@ -1,4 +1,4 @@
-# PROMPT DE CONTINUIDAD - DÍA 34 (06 Enero 2026)
+# PROMPT DE CONTINUIDAD - DÍA 35 (07 Enero 2026)
 
 ## 🎯 BACKLOG Management Protocol
 
@@ -8,18 +8,18 @@
 2. 📋 Solicitar acceso al BACKLOG.md actualizado
 3. 🔍 Revisar prioridades actuales (P0 → P1 → P2 → P3)
 4. 💡 Sugerir siguiente tarea basándose en:
-    - Blockers críticos (P0)
-    - Dependencies del roadmap
-    - Estado de Foundation Architecture
-    - Effort vs Impact ratio
+   - Blockers críticos (P0)
+   - Dependencies del roadmap
+   - Estado de Foundation Architecture
+   - Effort vs Impact ratio
 5. 🤝 Esperar aprobación de Alonso antes de proceder
 
 **Frase trigger para Claude:**
 > "Tarea completada. ¿Puedo ver el BACKLOG.md para sugerir qué sigue?"
 
 **Priorización actual (Ene 2026):**
-- P0 BLOCKER: ISSUE-005 (JSONL memory leak) ← CURRENT
-- P1 HIGH: FAISS Integration (blocked by ISSUE-005)
+- P0 BLOCKER: ISSUE-005 (JSONL memory leak) ← Pendiente
+- P1 HIGH: FAISS Integration (Phase 2A en progreso) ← CURRENT
 - P1 HIGH: BACKLOG-001 Flow Sharding (post-FAISS)
 - P2 MEDIUM: etcd-client, Watcher, Academic paper
 
@@ -28,116 +28,102 @@
 > Foundation sólida antes que expansión.  
 > Memory leaks son P0, no P2.
 
-## 📚 DOCUMENTOS NECESARIOS PARA ESTA SESIÓN
-```
-Day 34 (HOY):
-  ❌ NO pasar FAISS_ANTI_CURSE_DESIGN.md
-  ✅ Solo este prompt de continuidad
-  
-Razón: Day 34 es testing con datos reales JSONL.
-       No implementamos estrategias anti-curse todavía.
-       El resumen abajo es suficiente.
+---
 
-RECORDATORIO PARA DÍAS FUTUROS:
-┌─────────────────────────────────────────────────────┐
-│ Day 35 (DimensionalityReducer):                    │
-│   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md              │
-│   Razón: Implementar Estrategia #2 (PCA)          │
-│                                                     │
-│ Day 36 (Índices Separados + Selective):           │
-│   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md              │
-│   Razón: Implementar Estrategias #1 y #3          │
-│                                                     │
-│ Day 38-40 (Advanced Strategies):                   │
-│   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md              │
-│   Razón: Temporal Tiers, Re-ranking, etc.         │
-└─────────────────────────────────────────────────────┘
+## 📚 DOCUMENTOS NECESARIOS PARA ESTA SESIÓN
+
+```
+Day 35 (HOY):
+  ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md ← CRÍTICO
+  ✅ Este prompt de continuidad
+  
+Razón: Day 35 implementa DimensionalityReducer con faiss::PCAMatrix.
+       Necesitamos estrategias anti-curse y límites empíricos.
+       Estrategia #2 (Dimensionality Reduction) es CRÍTICA.
 
 Archivo: /vagrant/docs/FAISS_ANTI_CURSE_DESIGN.md
 Tamaño: ~500 líneas (12K tokens aprox)
+Contenido clave:
+  - Estrategia #2: PCA reduction (512→128, 384→96, 256→64)
+  - Límites empíricos: 180K, 450K, 85K eventos
+  - faiss::PCAMatrix implementation guidelines
+  - Variance preservation targets (96%+)
 ```
 
 ---
 
-## 📋 CONTEXTO DÍA 33 (05 Enero 2026) - COMPLETADO ✅
+## 📋 CONTEXTO DÍA 34 (06 Enero 2026) - COMPLETADO ✅
 
-### ✅ Real ONNX Embedder Models - Complete
+### ✅ Day 34 Summary - Real Data Validation COMPLETE
 
-**Day 33 - Embedder Models Created:**
-- ✅ create_chronos_embedder.py: 83→512-d time series embedder
-- ✅ create_sbert_embedder.py: 83→384-d semantic embedder
-- ✅ create_attack_embedder.py: 83→256-d attack pattern embedder
-- ✅ test_embedders.py: Verification suite (3/3 tests PASSED ✅)
-- ✅ All models exported to ONNX (opset 18)
-- ✅ Git commit: Scripts committed, models excluded (.gitignore)
+**Objetivo Day 34**: Validar ONNX embedders con eventos JSONL reales.
 
-**Models Generated (Day 33):**
-```
-✅ chronos_embedder.onnx - 13KB (83→512-d)
-✅ sbert_embedder.onnx   - 22KB (83→384-d)
-✅ attack_embedder.onnx  - 9.7KB (83→256-d)
-```
+**Resultados (3/3 Fases Complete):**
 
-**Infrastructure Status (Days 31-33 Complete):**
-```
-✅ FAISS v1.8.0 - WORKING
-   ├─ test_faiss_basic PASSING
-   ├─ CV computation validated
-   └─ Auto-detection working
+#### Fase 1: Python Inference (5 min) ✅
+- Loaded 9 events from `2025-12-31.jsonl`
+- Extracted 83 features per event
+- All 3 embedders validated:
+   - **Chronos (512-d)**: Mean -0.0107, Std 0.3527 ✅
+   - **SBERT (384-d)**: Mean 0.0511, Std 0.3324 ✅
+   - **Attack (256-d)**: Mean 0.0054, Std 0.0532 ✅
 
-✅ ONNX Runtime v1.17.1 - WORKING
-   ├─ test_onnx_basic PASSING
-   ├─ Inference pipeline validated
-   └─ Auto-detection working
+#### Fase 2: C++ Inference (15 min) ✅
+- **Issue Resolved**: IR version mismatch (v9 vs v10)
+- **Solution**: Updated ONNX Runtime C++ v1.17.1 → v1.23.2
+- All 3 embedders validated in C++:
+   - **Chronos (512-d)**: Mean -0.0060, Std 0.1751 ✅
+   - **SBERT (384-d)**: Mean 0.0079, Std 0.1644 ✅
+   - **Attack (256-d)**: Mean 0.0044, Std 0.1683 ✅
 
-✅ ONNX Embedder Models - CREATED
-   ├─ Chronos (time series): 83→512-d ✅
-   ├─ SBERT (semantic): 83→384-d ✅
-   ├─ Attack (patterns): 83→256-d ✅
-   └─ All verified with onnx.checker ✅
+#### Fase 3: Batch Processing (1 min) ✅
+- Processed 98 events from `2025-12-31.jsonl`
+- **Throughput Performance** (synthetic models):
+   - **Chronos**: 13,250 events/sec ⚡
+   - **SBERT**: 18,565 events/sec ⚡
+   - **Attack**: 6,874 events/sec ⚡
+- Note: Real trained models will be slower, but still excellent
 
-✅ Build System - ROBUST
-   ├─ CMakeLists.txt: C++20, auto-detect
-   ├─ Makefile: test-faiss, test-onnx, test-all
-   └─ All targets working
+**Total Time Day 34**: ~21 minutes (estimated 20-35 min) ⚡
 
-✅ Strategic Design - PEER REVIEWED
-   ├─ FAISS_ANTI_CURSE_DESIGN.md v2.0
-   ├─ 11 estrategias definidas
-   ├─ Peer review: 4 AI systems
-   └─ Límites empíricamente validados
-```
+**Files Created Day 34**:
+- ✅ test_real_inference.py (8.3 KB)
+- ✅ test_real_embedders.cpp (5.1 KB)
+- ✅ test_batch_processing.py (8.2 KB)
+- ✅ preflight_check.py (4.7 KB)
+- ✅ quick_fix.sh (2.0 KB)
+- ✅ update_onnxruntime_cpp.sh (2.6 KB)
+- ✅ DAY34_SUMMARY.md (9.4 KB)
 
-**Test Results (Day 33):**
-```
-make test-all              → ALL TESTS PASSED ✅
-python3 test_embedders.py  → 3/3 models verified ✅
-```
-
-**Git Status:**
+**Git Status**:
 ```
 Rama: feature/faiss-ingestion-phase2a
-Último commit: "Day 33: Real ONNX embedder models created"
+Último commit: "Day 34: ONNX embedders validated with real JSONL data"
 Archivos añadidos:
-  - rag/models/create_chronos_embedder.py
-  - rag/models/create_sbert_embedder.py
-  - rag/models/create_attack_embedder.py
-  - rag/models/test_embedders.py
-  - rag/models/.gitignore
-  - .gitguardian.yaml (updated)
+  - rag/models/test_real_inference.py
+  - rag/models/test_real_embedders.cpp
+  - rag/models/test_batch_processing.py
+  - rag/models/preflight_check.py
+  - rag/models/quick_fix.sh
+  - rag/models/update_onnxruntime_cpp.sh
 ```
 
-**Via Appia Quality Achievement (Day 33):**
-> "Creamos modelos sintéticos con arquitectura correcta para validar
-> el pipeline HOY. Los modelos reales son future work. Pipeline
-> validation > Model perfection. Tiempo: 2.5h de 4-6h estimadas.
+**Issues Resolved Day 34**:
+1. ✅ JSONL path corrected: /vagrant/data → /vagrant/logs
+2. ✅ ONNX Runtime Python installed: v1.23.2
+3. ✅ IR version mismatch resolved: C++ upgraded to v1.23.2
+
+**Via Appia Quality Achievement (Day 34)**:
+> "Day 33 creamos modelos. Day 34 los validamos con datos reales.
+> Pipeline validated end-to-end. Python + C++ both working.
+> Throughput baseline established. Validación antes de optimización.
 > Despacio, pero avanzando. 🏛️"
 
 ---
 
-## 🔬 RESUMEN ESTRATEGIAS ANTI-CURSE (Para Referencia Day 34)
+## 🔬 RESUMEN ESTRATEGIAS ANTI-CURSE (Para Contexto Day 35+)
 
-**Estrategias que implementaremos Days 35+:**
+**Estrategias que implementaremos Days 35-40:**
 
 ### 🔴 CRÍTICAS - Phase 2A (Days 35-38)
 
@@ -146,11 +132,11 @@ Archivos añadidos:
 - 10x mejora para Attack embedder
 - Evita saturación cross-class
 
-**2. Dimensionality Reduction Post-Embedding** (Day 35)
+**2. Dimensionality Reduction Post-Embedding** (Day 35) ← HOY
 - **CRÍTICO**: Usar faiss::PCAMatrix (NO Eigen manual)
 - 512→128 (preserva 96.8% varianza), 384→96, 256→64
 - 4x mejora en límites
-- **Necesitaremos FAISS_ANTI_CURSE_DESIGN.md en Day 35**
+- **PASAR FAISS_ANTI_CURSE_DESIGN.md para detalles**
 
 **3. Selective Embedding** (Day 36)
 - Malicious: 100% embedded
@@ -187,629 +173,500 @@ Attack (256-d → 64-d):   85K benign (CV = 0.20)
 
 ---
 
-## 🎯 ESTADO ACTUAL - DÍA 34 INICIO
+## 🎯 ESTADO ACTUAL - DÍA 35 INICIO
 
-### ✅ Completado Hasta Ahora
+### ✅ Completado Hasta Ahora (Days 31-34)
 
 **Phase 2A Infrastructure (Days 31-33):**
 - ✅ FAISS v1.8.0 instalado, testeado, working
-- ✅ ONNX Runtime v1.17.1 instalado, testeado, working
+- ✅ ONNX Runtime v1.23.2 (Python + C++) instalado, testeado, working
 - ✅ Build system configurado (C++20, auto-detection)
 - ✅ Tests pasando (test_faiss_basic, test_onnx_basic)
 - ✅ Anti-curse design completado (v2.0, peer-reviewed)
-- ✅ **3 embedder models ONNX creados y verificados** 🎉
+- ✅ 3 embedder models ONNX creados y verificados
+
+**Phase 2A Validation (Day 34):**
+- ✅ Python inference pipeline validated (test_real_inference.py)
+- ✅ C++ inference pipeline validated (test_real_embedders.cpp)
+- ✅ Batch processing tested (test_batch_processing.py)
+- ✅ Feature extraction working (83 features from JSONL)
+- ✅ Throughput baseline established (6.8K-18.5K events/sec)
+- ✅ ONNX Runtime versions matched (Python + C++ v1.23.2)
 
 **Modelos Disponibles:**
-- ✅ chronos_embedder.onnx (13KB) - Time series
-- ✅ sbert_embedder.onnx (22KB) - Semantic
-- ✅ attack_embedder.onnx (9.7KB) - Attack patterns
-- ✅ Todos verificados con onnx.checker
+- ✅ chronos_embedder.onnx (13KB) - 83→512-d, Time series
+- ✅ sbert_embedder.onnx (21KB) - 83→384-d, Semantic
+- ✅ attack_embedder.onnx (9.7KB) - 83→256-d, Attack patterns
+- ✅ All verified with real JSONL data
 - ✅ Scripts en git, modelos regenerables
 
 **Datos Disponibles:**
-- ✅ 32,957 eventos RAG (JSONL format)
-- ✅ 43,526 artifacts Protobuf
-- ✅ 43,526 artifacts JSON
-- ❌ NO tenemos embeddings pre-computados (.npy)
-- ✅ Modelos listos para generar embeddings
+- ✅ ~32,000+ eventos en `2025-12-12.jsonl` (34 MB)
+- ✅ ~14,000 eventos en `2025-12-15.jsonl` (14 MB)
+- ✅ ~1,500 eventos en `2025-12-30.jsonl` (1.6 MB)
+- ✅ ~750 eventos en `2025-12-31.jsonl` (787 KB)
+- ✅ Path: `/vagrant/logs/rag/events/`
 
-### 🚧 Pendiente - Week 5
+### 🚧 Pendiente - Week 5-6
 
-**Day 34 (HOY): Test Embedders con Datos Reales** ← ESTAMOS AQUÍ
-- Load eventos JSONL (~32,957 disponibles)
-- Extract 83 features por evento
-- Run inference a través de 3 embedders
-- Verify output shapes y distribuciones
-- Test con ONNX Runtime C++
+**Day 35 (HOY): DimensionalityReducer Implementation** ← ESTAMOS AQUÍ
+- Implement faiss::PCAMatrix (NOT Eigen manual)
+- Train PCA with 10K events from `2025-12-12.jsonl`
+- Test dimension reduction: 512→128, 384→96, 256→64
+- Validate variance preservation (target: 96%+)
+- Measure CV (Coefficient of Variation) improvement
 
-**Days 35-40: Implementation**
-- DimensionalityReducer (faiss::PCAMatrix) ← **PASAR DESIGN DOC**
-- AttackIndexManager (índices separados) ← **PASAR DESIGN DOC**
-- SelectiveEmbedder (sampling) ← **PASAR DESIGN DOC**
+**Days 36-38: Core Anti-Curse Strategies**
+- AttackIndexManager (índices separados por clase)
+- SelectiveEmbedder (sampling estratégico)
 - ChunkCoordinator integration
-- End-to-end pipeline
+- End-to-end pipeline tests
+
+**Days 39-40: Advanced Strategies**
+- Temporal Tiers (Hot/Warm/Cold)
+- Metadata-First Search
+- Quantization (float32 → int8)
+- IVF Attack-Aware indexing
 
 ---
 
-## 🚀 PLAN DÍA 34 - TEST CON DATOS REALES
+## 🚀 PLAN DÍA 35 - DimensionalityReducer
 
 ### 🎯 Objetivo del Día
 
-**Focus**: Test los 3 embedders ONNX con eventos JSONL reales, validar pipeline end-to-end.
+**Focus**: Implementar PCA-based dimensionality reduction usando `faiss::PCAMatrix`.
 
 **Contexto Importante:**
-- ✅ Tenemos 3 modelos ONNX funcionando
-- ✅ Tenemos ~32,957 eventos JSONL disponibles
-- ✅ ONNX Runtime v1.17.1 instalado y testeado
-- 🎯 Objetivo: Probar inference pipeline completo
+- ✅ FAISS v1.8.0 disponible con PCA support
+- ✅ 32K+ eventos disponibles para training
+- ✅ Embedders working (512-d, 384-d, 256-d)
+- 🎯 Objetivo: Reducir dimensiones 4x sin perder calidad
 
-**Timeline**: 2-3 horas total
+**Timeline**: 6 horas total
 
-**Status**: Models Created ✅ → Test with Real Data (Day 34) → DimensionalityReducer (Day 35)
+**Status**: Day 34 Complete ✅ → DimensionalityReducer (Day 35) → AttackIndexManager (Day 36)
 
 ---
 
-### FASE 1: Python Inference Pipeline (1.5 horas)
+### FASE 1: Design Review (30 min)
 
-**Objetivo**: Cargar eventos JSONL → Extract features → Generate embeddings
+**Objetivo**: Revisar FAISS_ANTI_CURSE_DESIGN.md y planificar implementation
 
-**Script: test_real_inference.py**
+**Tareas**:
+1. ✅ Leer Estrategia #2 (Dimensionality Reduction Post-Embedding)
+2. ✅ Revisar límites empíricos (180K, 450K, 85K eventos)
+3. ✅ Entender faiss::PCAMatrix API
+4. ✅ Planificar clase DimensionalityReducer
+
+**Decisiones clave**:
+- ¿Cuántos eventos usar para training? (10K recomendado)
+- ¿Qué target dimensions? (128, 96, 64)
+- ¿Cómo validar variance preservation? (>96%)
+- ¿Dónde persistir PCA matrices? (disk cache)
+
+---
+
+### FASE 2: Training PCA Models (2 horas)
+
+**Objetivo**: Entrenar 3 PCA matrices con datos reales
+
+**Script: train_pca_models.py**
 ```python
 #!/usr/bin/env python3
 """
-Test ONNX embedders with real ML Defender events.
+Train PCA models for dimensionality reduction.
 
 Process:
-1. Load events from JSONL
-2. Extract 83 features per event
-3. Run inference through all 3 embedders
-4. Verify output shapes and distributions
+1. Load 10K events from JSONL
+2. Generate embeddings using ONNX models
+3. Train PCA with faiss.PCAMatrix
+4. Validate variance preservation
+5. Save PCA matrices to disk
 """
 
-import json
 import numpy as np
+import faiss
 import onnxruntime as ort
 from pathlib import Path
-from datetime import datetime
+import pickle
 
-def load_events_jsonl(jsonl_path, max_events=100):
-    """Load events from JSONL file"""
-    events = []
-    with open(jsonl_path, 'r') as f:
-        for i, line in enumerate(f):
-            if i >= max_events:
-                break
-            try:
-                event = json.loads(line.strip())
-                events.append(event)
-            except json.JSONDecodeError as e:
-                print(f"⚠️  Skipping line {i}: {e}")
-                continue
-    return events
-
-def extract_features(event):
-    """
-    Extract 83 features from RAG event.
-    
-    Features (83 total):
-    - Timestamp features: 7 (year, month, day, hour, minute, second, microsecond)
-    - IP features: 8 (src_ip octets × 4, dst_ip octets × 4)
-    - Port features: 2 (src_port, dst_port)
-    - Protocol features: 3 (protocol, ip_version, tcp_flags)
-    - Packet features: 4 (packet_length, header_length, payload_length, ttl)
-    - Detection scores: 5 (fast_score, ml_score, final_score, is_malicious, severity)
-    - Network metadata: 6 (vlan_id, dscp, ecn, window_size, mss, seq_num)
-    - Behavioral features: 48 (flow stats, timing, patterns)
-    """
-    features = np.zeros(83, dtype=np.float32)
-    
-    # Timestamp features (0-6)
-    if 'timestamp' in event:
-        ts = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
-        features[0] = ts.year / 2026.0  # Normalize
-        features[1] = ts.month / 12.0
-        features[2] = ts.day / 31.0
-        features[3] = ts.hour / 24.0
-        features[4] = ts.minute / 60.0
-        features[5] = ts.second / 60.0
-        features[6] = ts.microsecond / 1e6
-    
-    # IP features (7-14)
-    if 'src_ip' in event:
-        octets = [int(x) for x in event['src_ip'].split('.')]
-        features[7:11] = np.array(octets) / 255.0
-    if 'dst_ip' in event:
-        octets = [int(x) for x in event['dst_ip'].split('.')]
-        features[11:15] = np.array(octets) / 255.0
-    
-    # Port features (15-16)
-    features[15] = event.get('src_port', 0) / 65535.0
-    features[16] = event.get('dst_port', 0) / 65535.0
-    
-    # Protocol features (17-19)
-    features[17] = event.get('protocol', 0) / 255.0
-    features[18] = event.get('ip_version', 4) / 6.0
-    features[19] = event.get('tcp_flags', 0) / 255.0
-    
-    # Packet features (20-23)
-    features[20] = min(event.get('packet_length', 0) / 65535.0, 1.0)
-    features[21] = event.get('header_length', 0) / 255.0
-    features[22] = min(event.get('payload_length', 0) / 65535.0, 1.0)
-    features[23] = event.get('ttl', 64) / 255.0
-    
-    # Detection scores (24-28)
-    features[24] = event.get('fast_detector_score', 0.0)
-    features[25] = event.get('ml_detector_score', 0.0)
-    features[26] = event.get('final_score', 0.0)
-    features[27] = float(event.get('is_malicious', False))
-    features[28] = event.get('severity', 0) / 10.0
-    
-    # Network metadata (29-34)
-    features[29] = event.get('vlan_id', 0) / 4095.0
-    features[30] = event.get('dscp', 0) / 63.0
-    features[31] = event.get('ecn', 0) / 3.0
-    features[32] = event.get('window_size', 0) / 65535.0
-    features[33] = event.get('mss', 0) / 65535.0
-    features[34] = min(event.get('seq_num', 0) / 4294967295.0, 1.0)
-    
-    # Behavioral features (35-82) - Placeholder
-    # In production, these would include:
-    # - Flow statistics (bytes/packets sent/received)
-    # - Timing features (inter-arrival times, duration)
-    # - Pattern features (entropy, periodicity, burstiness)
-    # For now, fill with reasonable defaults
-    for i in range(35, 83):
-        features[i] = 0.5  # Neutral value
-    
-    return features
-
-def test_embedder(model_path, features, model_name):
-    """Test a single embedder with features"""
-    print(f"\n{'='*60}")
-    print(f"Testing: {model_name}")
-    print('='*60)
-    
-    # Load model
-    print("Step 1: Loading ONNX model...")
-    session = ort.InferenceSession(model_path)
-    print(f"  ✅ Model loaded: {model_path}")
-    
-    # Get input/output names
-    input_name = session.get_inputs()[0].name
-    output_name = session.get_outputs()[0].name
-    print(f"  Input: {input_name}, Output: {output_name}")
-    
-    # Run inference
-    print("\nStep 2: Running inference...")
-    input_data = features.reshape(1, -1).astype(np.float32)
-    outputs = session.run([output_name], {input_name: input_data})
-    embedding = outputs[0]
-    
-    print(f"  ✅ Inference completed")
-    print(f"  Input shape: {input_data.shape}")
-    print(f"  Output shape: {embedding.shape}")
-    
-    # Validate output
-    print("\nStep 3: Validating output...")
-    print(f"  Embedding dimension: {embedding.shape[1]}")
-    print(f"  Value range: [{embedding.min():.4f}, {embedding.max():.4f}]")
-    print(f"  Mean: {embedding.mean():.4f}, Std: {embedding.std():.4f}")
-    
-    # Show first few values
-    print(f"  First 5 values: {' '.join(f'{v:.4f}' for v in embedding[0][:5])}")
-    
-    return embedding
-
-def main():
-    print("╔════════════════════════════════════════════════════════╗")
-    print("║  ML Defender - Real Data Inference Test              ║")
-    print("╚════════════════════════════════════════════════════════╝\n")
-    
-    # Find latest JSONL file
-    data_dir = Path("/vagrant/data/rag/events")
-    jsonl_files = sorted(data_dir.glob("*.jsonl"))
-    
-    if not jsonl_files:
-        print("❌ No JSONL files found in /vagrant/data/rag/events")
-        return 1
-    
-    latest_jsonl = jsonl_files[-1]
-    print(f"📄 Using JSONL file: {latest_jsonl.name}")
-    print(f"   Path: {latest_jsonl}\n")
-    
-    # Load events
-    print("Step 1: Loading events...")
-    events = load_events_jsonl(latest_jsonl, max_events=10)
-    print(f"  ✅ Loaded {len(events)} events\n")
-    
-    if not events:
-        print("❌ No events loaded")
-        return 1
-    
-    # Extract features from first event
-    print("Step 2: Extracting features from first event...")
-    features = extract_features(events[0])
-    print(f"  ✅ Extracted {len(features)} features")
-    print(f"  Feature range: [{features.min():.4f}, {features.max():.4f}]")
-    print(f"  First 10 features: {' '.join(f'{v:.3f}' for v in features[:10])}\n")
-    
-    # Test all embedders
-    models = [
-        ("chronos_embedder.onnx", "Chronos (Time Series)", 512),
-        ("sbert_embedder.onnx", "SBERT (Semantic)", 384),
-        ("attack_embedder.onnx", "Attack (Patterns)", 256),
-    ]
-    
-    results = []
-    for model_path, model_name, expected_dim in models:
-        try:
-            embedding = test_embedder(model_path, features, model_name)
-            
-            # Verify dimension
-            actual_dim = embedding.shape[1]
-            if actual_dim == expected_dim:
-                print(f"  ✅ Dimension correct: {actual_dim}")
-                results.append((model_name, "✅ PASS"))
-            else:
-                print(f"  ❌ Dimension mismatch: expected {expected_dim}, got {actual_dim}")
-                results.append((model_name, "❌ FAIL"))
-        except Exception as e:
-            print(f"\n❌ {model_name} FAILED: {e}")
-            results.append((model_name, f"❌ ERROR: {e}"))
-    
-    # Summary
-    print("\n" + "="*60)
-    print("SUMMARY")
-    print("="*60)
-    for model, status in results:
-        print(f"  {model:30s} {status}")
-    
-    print("\n" + "="*60)
-    passed = sum(1 for _, status in results if status.startswith("✅"))
-    print(f"Result: {passed}/{len(models)} embedders passed")
-    print("="*60)
-    
-    if passed == len(models):
-        print("\n✅ ALL EMBEDDERS WORKING WITH REAL DATA")
-        return 0
-    else:
-        print("\n❌ SOME TESTS FAILED")
-        return 1
-
-if __name__ == "__main__":
-    exit(main())
+# Load events, generate embeddings, train PCA...
+# [Implementation details from FAISS_ANTI_CURSE_DESIGN.md]
 ```
 
-**Ejecutar:**
-```bash
-cd /vagrant/rag/models
-python3 test_real_inference.py
+**Expected Output**:
+```
+Training Chronos PCA (512→128):
+  ✅ Loaded 10,000 events
+  ✅ Generated 512-d embeddings
+  ✅ Trained PCA matrix
+  ✅ Variance preserved: 96.8%
+  ✅ Saved: chronos_pca_512_128.pkl
+
+Training SBERT PCA (384→96):
+  ✅ Loaded 10,000 events
+  ✅ Generated 384-d embeddings
+  ✅ Trained PCA matrix
+  ✅ Variance preserved: 97.1%
+  ✅ Saved: sbert_pca_384_96.pkl
+
+Training Attack PCA (256→64):
+  ✅ Loaded 10,000 events
+  ✅ Generated 256-d embeddings
+  ✅ Trained PCA matrix
+  ✅ Variance preserved: 96.5%
+  ✅ Saved: attack_pca_256_64.pkl
 ```
 
 ---
 
-### FASE 2: C++ Inference Test (1 hora)
+### FASE 3: C++ DimensionalityReducer Class (2.5 horas)
 
-**Objetivo**: Adaptar test_onnx_basic.cpp para usar nuestros modelos
+**Objetivo**: Implementar clase C++ para reduction en production
 
-**File: rag/tests/test_real_embedders.cpp**
+**File: rag/src/DimensionalityReducer.hpp**
 ```cpp
+#pragma once
+
+#include <faiss/VectorTransform.h>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace ml_defender {
+
+/**
+ * DimensionalityReducer - PCA-based dimension reduction
+ * 
+ * Uses faiss::PCAMatrix for efficient reduction:
+ * - Chronos: 512 → 128 (4x reduction)
+ * - SBERT:  384 → 96  (4x reduction)
+ * - Attack:  256 → 64  (4x reduction)
+ */
+class DimensionalityReducer {
+public:
+    enum class EmbedderType {
+        CHRONOS,  // 512 → 128
+        SBERT,    // 384 → 96
+        ATTACK    // 256 → 64
+    };
+
+    DimensionalityReducer(EmbedderType type);
+    ~DimensionalityReducer();
+
+    // Load PCA matrix from disk
+    bool load(const std::string& path);
+    
+    // Apply PCA reduction
+    void reduce(const float* input, size_t n, float* output);
+    
+    // Batch reduction
+    void reduce_batch(const std::vector<float>& input_batch, 
+                     size_t batch_size,
+                     std::vector<float>& output_batch);
+    
+    // Get dimensions
+    size_t input_dim() const { return input_dim_; }
+    size_t output_dim() const { return output_dim_; }
+
+private:
+    EmbedderType type_;
+    size_t input_dim_;
+    size_t output_dim_;
+    std::unique_ptr<faiss::PCAMatrix> pca_;
+};
+
+} // namespace ml_defender
+```
+
+**File: rag/src/DimensionalityReducer.cpp**
+```cpp
+#include "DimensionalityReducer.hpp"
+#include <faiss/impl/io.h>
+#include <fstream>
+
+namespace ml_defender {
+
+DimensionalityReducer::DimensionalityReducer(EmbedderType type) 
+    : type_(type) {
+    
+    switch (type) {
+        case EmbedderType::CHRONOS:
+            input_dim_ = 512;
+            output_dim_ = 128;
+            break;
+        case EmbedderType::SBERT:
+            input_dim_ = 384;
+            output_dim_ = 96;
+            break;
+        case EmbedderType::ATTACK:
+            input_dim_ = 256;
+            output_dim_ = 64;
+            break;
+    }
+    
+    pca_ = std::make_unique<faiss::PCAMatrix>(
+        input_dim_, output_dim_, 0, true
+    );
+}
+
+bool DimensionalityReducer::load(const std::string& path) {
+    // Load PCA matrix from disk using faiss serialization
+    // [Implementation details]
+    return true;
+}
+
+void DimensionalityReducer::reduce(
+    const float* input, 
+    size_t n, 
+    float* output
+) {
+    pca_->apply_noalloc(n, input, output);
+}
+
+} // namespace ml_defender
+```
+
+---
+
+### FASE 4: Testing & Validation (1 hora)
+
+**Objetivo**: Validar que reduction preserva calidad
+
+**Script: test_dimensionality_reducer.cpp**
+```cpp
+#include "DimensionalityReducer.hpp"
 #include <iostream>
 #include <vector>
-#include <fstream>
-#include <onnxruntime_cxx_api.h>
+#include <cmath>
 
-// Test one embedder with 83 features
-void test_embedder(const char* model_path, const char* name, size_t expected_dim) {
-    std::cout << "\n" << std::string(60, '=') << "\n";
-    std::cout << "Testing: " << name << "\n";
-    std::cout << std::string(60, '=') << "\n";
+void test_chronos_reduction() {
+    using namespace ml_defender;
     
-    // Initialize ONNX Runtime
-    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "ml-defender");
-    Ort::SessionOptions session_options;
-    
-    // Load model
-    std::cout << "Step 1: Loading model...\n";
-    Ort::Session session(env, model_path, session_options);
-    std::cout << "  ✅ Model loaded: " << model_path << "\n";
-    
-    // Prepare 83 features (dummy values for now)
-    std::vector<float> input_data(83, 0.5f);  // All 0.5 as placeholder
-    
-    // Create input tensor
-    auto memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    std::vector<int64_t> input_shape = {1, 83};
-    
-    Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
-        memory_info, 
-        input_data.data(), 
-        input_data.size(),
-        input_shape.data(), 
-        input_shape.size()
+    DimensionalityReducer reducer(
+        DimensionalityReducer::EmbedderType::CHRONOS
     );
     
-    // Run inference
-    std::cout << "\nStep 2: Running inference...\n";
-    const char* input_names[] = {"features"};
-    const char* output_names[] = {"embedding"};
-    
-    auto output_tensors = session.Run(
-        Ort::RunOptions{nullptr},
-        input_names, &input_tensor, 1,
-        output_names, 1
-    );
-    
-    // Validate output
-    float* output_data = output_tensors[0].GetTensorMutableData<float>();
-    auto output_shape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
-    
-    std::cout << "  ✅ Inference completed\n";
-    std::cout << "  Output shape: [" << output_shape[0] << ", " << output_shape[1] << "]\n";
-    std::cout << "  Expected dim: " << expected_dim << "\n";
-    
-    if (output_shape[1] == expected_dim) {
-        std::cout << "  ✅ Dimension correct\n";
-    } else {
-        std::cout << "  ❌ Dimension mismatch!\n";
-        throw std::runtime_error("Dimension mismatch");
+    // Load PCA matrix
+    if (!reducer.load("chronos_pca_512_128.bin")) {
+        std::cerr << "Failed to load PCA matrix\n";
+        return;
     }
     
-    // Show first few values
-    std::cout << "  First 5 values: ";
-    for (size_t i = 0; i < 5; ++i) {
-        std::cout << output_data[i] << " ";
+    // Test data (512-d vector)
+    std::vector<float> input(512);
+    for (size_t i = 0; i < 512; ++i) {
+        input[i] = std::sin(i * 0.1f);
     }
-    std::cout << "\n";
+    
+    // Reduce
+    std::vector<float> output(128);
+    reducer.reduce(input.data(), 1, output.data());
+    
+    // Validate
+    std::cout << "Input dim: " << reducer.input_dim() << "\n";
+    std::cout << "Output dim: " << reducer.output_dim() << "\n";
+    std::cout << "First 5 reduced values: ";
+    for (int i = 0; i < 5; ++i) {
+        std::cout << output[i] << " ";
+    }
+    std::cout << "\n✅ Chronos reduction test passed\n";
 }
 
 int main() {
-    std::cout << "╔════════════════════════════════════════════════════════╗\n";
-    std::cout << "║  ML Defender - C++ Embedder Test                      ║\n";
-    std::cout << "╚════════════════════════════════════════════════════════╝\n";
-    
-    try {
-        test_embedder("chronos_embedder.onnx", "Chronos (Time Series)", 512);
-        test_embedder("sbert_embedder.onnx", "SBERT (Semantic)", 384);
-        test_embedder("attack_embedder.onnx", "Attack (Patterns)", 256);
-        
-        std::cout << "\n╔════════════════════════════════════════════════════════╗\n";
-        std::cout << "║  ALL TESTS PASSED ✅                                   ║\n";
-        std::cout << "╚════════════════════════════════════════════════════════╝\n";
-        
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "\n❌ TEST FAILED: " << e.what() << "\n";
-        return 1;
-    }
+    test_chronos_reduction();
+    // test_sbert_reduction();
+    // test_attack_reduction();
+    return 0;
 }
 ```
 
-**Compilar y ejecutar:**
+**Compilar y ejecutar**:
 ```bash
-cd /vagrant/rag/models
-g++ -std=c++20 -o test_real_embedders test_real_embedders.cpp \
-    -I/usr/local/include \
-    -L/usr/local/lib \
-    -lonnxruntime
-
-./test_real_embedders
+cd /vagrant/rag/build
+make test-dimensionality-reducer
+./test_dimensionality_reducer
 ```
 
 ---
 
-### FASE 3: Batch Processing Test (0.5 horas)
+## ✅ CRITERIOS DE ÉXITO DÍA 35
 
-**Objetivo**: Procesar múltiples eventos y medir performance
-```python
-#!/usr/bin/env python3
-"""
-Batch processing test for embedders.
-
-Tests:
-- Load 100 events
-- Generate embeddings for all
-- Measure throughput
-- Check consistency
-"""
-
-import time
-import numpy as np
-import onnxruntime as ort
-from test_real_inference import load_events_jsonl, extract_features
-from pathlib import Path
-
-def batch_process(model_path, features_batch, batch_size=10):
-    """Process features in batches"""
-    session = ort.InferenceSession(model_path)
-    input_name = session.get_inputs()[0].name
-    output_name = session.get_outputs()[0].name
-    
-    embeddings = []
-    num_batches = (len(features_batch) + batch_size - 1) // batch_size
-    
-    for i in range(num_batches):
-        start_idx = i * batch_size
-        end_idx = min(start_idx + batch_size, len(features_batch))
-        batch = features_batch[start_idx:end_idx]
-        
-        # Pad batch if needed
-        if len(batch) < batch_size:
-            padding = np.zeros((batch_size - len(batch), 83), dtype=np.float32)
-            batch = np.vstack([batch, padding])
-        
-        # Run inference
-        outputs = session.run([output_name], {input_name: batch.astype(np.float32)})
-        embeddings.append(outputs[0][:len(batch)])
-    
-    return np.vstack(embeddings) if embeddings else np.array([])
-
-def main():
-    print("╔════════════════════════════════════════════════════════╗")
-    print("║  ML Defender - Batch Processing Test                 ║")
-    print("╚════════════════════════════════════════════════════════╝\n")
-    
-    # Load events
-    data_dir = Path("/vagrant/data/rag/events")
-    jsonl_files = sorted(data_dir.glob("*.jsonl"))
-    latest_jsonl = jsonl_files[-1]
-    
-    print(f"📄 Loading events from: {latest_jsonl.name}\n")
-    events = load_events_jsonl(latest_jsonl, max_events=100)
-    print(f"  ✅ Loaded {len(events)} events\n")
-    
-    # Extract all features
-    print("Extracting features...")
-    features_list = []
-    for i, event in enumerate(events):
-        if i % 20 == 0:
-            print(f"  Progress: {i}/{len(events)}")
-        features = extract_features(event)
-        features_list.append(features)
-    
-    features_batch = np.array(features_list)
-    print(f"  ✅ Extracted features: {features_batch.shape}\n")
-    
-    # Test each embedder
-    models = [
-        ("chronos_embedder.onnx", "Chronos"),
-        ("sbert_embedder.onnx", "SBERT"),
-        ("attack_embedder.onnx", "Attack"),
-    ]
-    
-    for model_path, name in models:
-        print(f"\n{'='*60}")
-        print(f"Testing: {name}")
-        print('='*60)
-        
-        # Warm-up
-        _ = batch_process(model_path, features_batch[:10], batch_size=10)
-        
-        # Benchmark
-        start = time.time()
-        embeddings = batch_process(model_path, features_batch, batch_size=10)
-        elapsed = time.time() - start
-        
-        throughput = len(features_batch) / elapsed
-        
-        print(f"  ✅ Processed {len(features_batch)} events")
-        print(f"  Time: {elapsed:.2f}s")
-        print(f"  Throughput: {throughput:.1f} events/sec")
-        print(f"  Embedding shape: {embeddings.shape}")
-        print(f"  Mean: {embeddings.mean():.4f}, Std: {embeddings.std():.4f}")
-    
-    print("\n╔════════════════════════════════════════════════════════╗")
-    print("║  BATCH PROCESSING COMPLETE ✅                          ║")
-    print("╚════════════════════════════════════════════════════════╝")
-
-if __name__ == "__main__":
-    main()
 ```
-
----
-
-## ✅ CRITERIOS DE ÉXITO DÍA 34
-```
-1. Python Inference:
-   ✅ test_real_inference.py created
-   ✅ Load events from JSONL
-   ✅ Extract 83 features correctly
-   ✅ All 3 embedders produce valid outputs
-   ✅ Dimensions correct (512, 384, 256)
+1. PCA Training:
+   ✅ train_pca_models.py created
+   ✅ Trained with 10K events from 2025-12-12.jsonl
+   ✅ 3 PCA matrices saved (Chronos, SBERT, Attack)
+   ✅ Variance preservation validated (>96%)
    
-2. C++ Inference:
-   ✅ test_real_embedders.cpp created
+2. C++ Implementation:
+   ✅ DimensionalityReducer.hpp created
+   ✅ DimensionalityReducer.cpp implemented
+   ✅ Uses faiss::PCAMatrix (NOT Eigen)
+   ✅ Supports all 3 embedder types
+   
+3. Testing:
+   ✅ test_dimensionality_reducer.cpp created
    ✅ Compile and run successfully
-   ✅ ONNX Runtime integration working
-   ✅ All 3 embedders tested
-   
-3. Batch Processing:
-   ✅ Process 100+ events
-   ✅ Measure throughput
-   ✅ Verify consistency
+   ✅ All 3 reductions tested
+   ✅ Output dimensions correct (128, 96, 64)
 
 4. Documentation:
-   ✅ Update DAY34_SUMMARY.md
-   ✅ Document feature extraction logic
+   ✅ Update DAY35_SUMMARY.md
+   ✅ Document PCA training process
+   ✅ Document variance preservation results
 ```
 
 ---
 
-## 📅 TIMELINE - SEMANA 5 (ACTUALIZADO)
+## 📅 TIMELINE - SEMANA 5-6 (ACTUALIZADO)
+
 ```
 ✅ Day 31: FAISS + Anti-curse design
 ✅ Day 32: ONNX Runtime test
-✅ Day 33: Real embedders (3 ONNX models) ✅
+✅ Day 33: Real embedders (3 ONNX models)
+✅ Day 34: Test con datos reales (21 min) ✅
 
-🔥 Day 34: Test con datos reales (2-3h) ← ESTAMOS AQUÍ
-   - Load eventos JSONL
-   - Extract 83 features
-   - Run inference (Python + C++)
-   - Batch processing test
-   ❌ NO necesita FAISS design doc
-
-📅 Day 35: DimensionalityReducer (6h)
-   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md ← IMPORTANTE
-   - Implement faiss::PCAMatrix
-   - Train PCA (10K eventos)
+🔥 Day 35: DimensionalityReducer (6h) ← ESTAMOS AQUÍ
+   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md ← CRÍTICO
+   - Train 3 PCA matrices (10K events)
+   - Implement DimensionalityReducer class
+   - Validate variance preservation (>96%)
    - Test reduction pipeline
    - 512→128, 384→96, 256→64
 
-📅 Day 36-38: Integration (8h)
-   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md ← IMPORTANTE
-   - AttackIndexManager
-   - SelectiveEmbedder
-   - ChunkCoordinator
+📅 Day 36: AttackIndexManager (4h)
+   ✅ PASAR FAISS_ANTI_CURSE_DESIGN.md
+   - Implement separate indices (benign vs malicious)
+   - Test cross-class isolation
+   - Measure CV improvement
+
+📅 Day 37: SelectiveEmbedder (2h)
+   - Implement sampling strategy
+   - Hash-based deterministic selection
+   - 100% malicious, 10% benign
+
+📅 Day 38: ChunkCoordinator Integration (4h)
+   - Connect to existing pipeline
    - End-to-end tests
+   - Performance benchmarks
+
+📅 Days 39-40: Advanced Strategies (8h)
+   - Temporal Tiers
+   - Metadata-First Search
+   - Quantization
 ```
 
 ---
 
-## 🚀 COMANDOS RÁPIDOS DÍA 34
+## 🚀 COMANDOS RÁPIDOS DÍA 35
+
 ```bash
-# Verificar modelos existentes
+# Verificar datos disponibles
+ls -lh /vagrant/logs/rag/events/*.jsonl
+
+# Fase 1: Review design (30 min)
+# [Read FAISS_ANTI_CURSE_DESIGN.md]
+# [Plan implementation]
+
+# Fase 2: Train PCA models (2h)
 cd /vagrant/rag/models
-ls -lh *.onnx
+python3 train_pca_models.py
 
-# Fase 1: Python inference (1.5h)
-python3 test_real_inference.py
+# Fase 3: C++ implementation (2.5h)
+cd /vagrant/rag/src
+# [Create DimensionalityReducer.hpp]
+# [Create DimensionalityReducer.cpp]
+cd /vagrant/rag/build
+cmake ..
+make
 
-# Fase 2: C++ inference (1h)
-# [Crear test_real_embedders.cpp]
-g++ -std=c++20 -o test_real_embedders test_real_embedders.cpp \
-    -I/usr/local/include -L/usr/local/lib -lonnxruntime
-./test_real_embedders
+# Fase 4: Testing (1h)
+cd /vagrant/rag/tests
+# [Create test_dimensionality_reducer.cpp]
+cd /vagrant/rag/build
+make test-dimensionality-reducer
+./test_dimensionality_reducer
 
-# Fase 3: Batch processing (0.5h)
-python3 test_batch_processing.py
-
-# Git
+# Git commit
 cd /vagrant
-git add rag/models/test_real_inference.py
-git add rag/models/test_real_embedders.cpp
-git add rag/models/test_batch_processing.py
-git commit -m "Day 34: Test embedders with real JSONL data"
+git add rag/models/train_pca_models.py
+git add rag/src/DimensionalityReducer.{hpp,cpp}
+git add rag/tests/test_dimensionality_reducer.cpp
+git commit -m "Day 35: DimensionalityReducer with faiss::PCAMatrix"
 ```
 
 ---
 
-## 🏛️ VIA APPIA QUALITY - FILOSOFÍA DAY 34
+## 🏛️ VIA APPIA QUALITY - FILOSOFÍA DAY 35
 
-> "Day 33 creamos modelos sintéticos. Day 34 los validamos con datos
-> reales. 32,957 eventos JSONL disponibles. Extract 83 features por
-> evento. Test inference Python + C++. Medir throughput. Objetivo:
-> confirmar que pipeline funciona end-to-end antes de implementar
-> PCA y estrategias anti-curse. Validación antes de optimización.
+> "Day 34 validamos el pipeline. Day 35 lo optimizamos. PCA reduction
+> es Estrategia #2 del anti-curse design. 4x mejora en límites.
+> Chronos: 180K eventos posibles. SBERT: 450K eventos. Attack: 85K
+> benign. Foundation sólida primero. Usar faiss::PCAMatrix, NO Eigen.
+> Variance preservation >96%. Validación empírica antes de producción.
 > Despacio, pero avanzando. 🏛️"
 
-**Key Principle:**
-- ✅ Validation before optimization
-- ✅ Real data before synthetic only
-- ✅ Python + C++ both working
-- ✅ Throughput measurement important
+**Key Principles Day 35:**
+- ✅ Use FAISS built-in PCA (battle-tested)
+- ✅ Train with real data (10K events)
+- ✅ Validate variance preservation empirically
+- ✅ 4x dimension reduction without quality loss
+- ✅ Foundation for remaining anti-curse strategies
 
 ---
 
-**Next**: Day 34 - Test con datos reales → Day 35 - DimensionalityReducer (**+ PASAR DESIGN DOC**)
+## 📊 EXPECTED OUTCOMES DAY 35
 
-**Via Appia Quality**: Validar pipeline con datos reales antes de optimizar. Despacio y bien. 🏛️
+**After Day 35 completion:**
+
+```
+Infrastructure:
+✅ FAISS v1.8.0
+✅ ONNX Runtime v1.23.2 (Python + C++)
+✅ 3 ONNX embedder models (512-d, 384-d, 256-d)
+✅ 3 PCA matrices trained (128-d, 96-d, 64-d) ← NEW
+✅ DimensionalityReducer class (C++) ← NEW
+
+Pipeline Status:
+✅ JSONL → Features (83)
+✅ Features → Embeddings (512/384/256)
+✅ Embeddings → Reduced (128/96/64) ← NEW
+🔄 Reduced → FAISS Index (pending Day 36+)
+
+Performance Metrics:
+✅ Variance preserved: >96% (all 3 embedders)
+✅ Dimension reduction: 4x (all 3 embedders)
+✅ CV improvement: 4x better limits
+✅ Memory savings: 4x reduction
+```
+
+**Foundation Ready For:**
+- Day 36: AttackIndexManager (separate indices)
+- Day 37: SelectiveEmbedder (sampling)
+- Day 38: ChunkCoordinator integration
+
+---
+
+## ⚠️ CRITICAL REMINDER DAY 35
+
+**MUST HAVE BEFORE STARTING:**
+- ✅ FAISS_ANTI_CURSE_DESIGN.md uploaded
+- ✅ Read Estrategia #2 thoroughly
+- ✅ Understand faiss::PCAMatrix API
+- ✅ Know target dimensions (128, 96, 64)
+- ✅ Know variance targets (>96%)
+
+**DO NOT:**
+- ❌ Use Eigen for PCA (use FAISS built-in)
+- ❌ Skip variance validation
+- ❌ Train with <5K events (insufficient)
+- ❌ Use opset 14 models (IR v9 incompatible)
+
+---
+
+**Next Session**: Day 35 - DimensionalityReducer
+
+**First Action**: Solicitar FAISS_ANTI_CURSE_DESIGN.md
+
+**Via Appia Quality**: Optimización después de validación. Foundation sólida. 🏛️
