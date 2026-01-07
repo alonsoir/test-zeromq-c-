@@ -96,6 +96,31 @@
 
 ---
 
+## Security Hardening (Post-MVP)
+
+**Priority**: P1 - Critical for Production  
+**Effort**: 8-12 days  
+**Status**: Documented, pending implementation  
+**Triggered**: 2026-01-07 (Knowledge Graph poisoning article)
+
+### Tasks
+- [ ] Implement HMAC signing in ml-detector/rag_logger
+- [ ] Implement log validation in faiss-ingester
+- [ ] Implement nonce store (replay prevention)
+- [ ] Generate certificates for all components
+- [ ] Configure etcd mTLS
+- [ ] (Optional) Implement log encryption
+- [ ] Security testing (inject fake logs)
+- [ ] Documentation: Operations procedures
+
+### Dependencies
+- ✅ Phase 1 MVP complete (DimensionalityReducer + FAISS Ingester + RAG)
+- ✅ SECURITY_HARDENING.md documented
+
+### References
+- `/docs/SECURITY_HARDENING.md`
+- Article: https://www.elladodelmal.com/2026/01/adulteracion-del-knowledge-graph-de-una.html
+
 ## 🔧 ISSUES CONOCIDOS - TRACKING
 
 ### P0 - CRITICAL (Bloqueadores de Producción)
