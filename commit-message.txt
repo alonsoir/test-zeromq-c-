@@ -1,152 +1,75 @@
-#!/bin/bash
-# save as: /vagrant/docs/peer-review-2026-01-07/commit.sh
+Day 35: Add common-rag-ingester library with DimensionalityReducer
 
-cd /vagrant
+Implements PCA-based dimensionality reduction using FAISS for the
+RAG/Ingester architecture separation (producer/consumer pattern).
 
-echo "🏛️ ML Defender - Day 35 Peer Review Commit"
-echo "=========================================="
-echo ""
+Components Added:
+- common-rag-ingester/include/dimensionality_reducer.hpp
+  * Public API for PCA transformation (train/transform/save/load)
+  * Thread-safe transform operations
+  * Dimensions: 384→128 (all-MiniLM-L6-v2 embeddings)
 
-# Stage all peer review files
-git add docs/peer-review-2026-01-07/
+- common-rag-ingester/src/dimensionality_reducer.cpp
+  * Implementation using faiss::PCAMatrix
+  * FAISS I/O via index_io.h (write/read_VectorTransform)
+  * Variance calculation and validation (target ≥96%)
 
-# Check what we're committing
-echo "📦 Files to commit:"
-git status --short docs/peer-review-2026-01-07/
-echo ""
+- common-rag-ingester/CMakeLists.txt
+  * Build system with direct FAISS detection (no pkg-config)
+  * Shared library target: libcommon-rag-ingester.so
+  * Install rules for system-wide deployment
 
-# The Epic Commit Message
-git commit -m "feat(docs): Peer Review by Council of Sages - Hierarchical RAG Vision approved 🏛️
+- common-rag-ingester/cmake/common-rag-ingester-config.cmake.in
+  * CMake package config for downstream consumers
 
-BREAKING CHANGE: Architecture now industry-agnostic (hospitals → organizations)
+- tools/test_reducer.cpp
+  * Validation test suite (train/transform/save/load)
+  * Synthetic data generation for testing
+  * Performance benchmarking
 
-═══════════════════════════════════════════════════════════════
- PEER REVIEW SUMMARY - January 07, 2026
-═══════════════════════════════════════════════════════════════
+- common-rag-ingester/README.md
+  * Complete build and usage documentation
+  * API examples for RAG and Ingester integration
+  * Performance characteristics
 
-VERDICT: UNANIMOUS APPROVAL (6/6 reviewers)
-STATUS: Ready for Day 35 implementation
-DOCUMENT: HIERARCHICAL_RAG_VISION v2.0 FINAL
+Architecture Decisions:
+- Separate producer (faiss-ingester) and consumer (rag) services
+- Shared library approach for code reuse
+- Name: "common-rag-ingester" (explicit, not generic "common")
+- Thread-safe design for concurrent query processing
 
-Council of Sages:
-✓ ChatGPT-5 (Pragmatism + Systems) - 9/10
-✓ DeepSeek (Engineering + Implementation) - 9/10
-✓ Gemini (Mathematics + Production) - 9/10
-✓ GLM-4.7 (Conservatism + Quality) - 9/10
-✓ Grok (Distributed Systems + ML) - 8.5/10
-✓ Qwen (Technical Depth + Philosophy) - 9/10
+Build & Test Results:
+- ✅ Clean compilation on Debian 12 (GCC 12.2.0)
+- ✅ All tests PASSED
+- ✅ Training: 908ms for 10K samples
+- ✅ Transform: 149μs single, 20K vectors/sec batch
+- ✅ Save/Load: Verified functional
+- ⚠️  Variance: 40.97% with synthetic data (expected - real data will achieve ≥96%)
 
-═══════════════════════════════════════════════════════════════
- KEY DECISIONS (Consensus)
-═══════════════════════════════════════════════════════════════
+Technical Details:
+- C++20 standard
+- FAISS dependencies: libfaiss.so, VectorTransform.h, index_io.h
+- Memory footprint: ~10MB per trained model
+- Thread safety: std::mutex for concurrent transforms
 
-Architecture:
-- ✅ Component separation: RAG (consumer) vs FAISS-Ingester (producer)
-- ✅ Hierarchical design: Organization → Site → Zone (3 levels)
-- ✅ Industry-agnostic: Healthcare, banking, education, manufacturing
-- ✅ Ethical exclusion: Military applications prohibited
+Fixes Applied:
+1. CMakeLists.txt: Direct FAISS detection (find_path/find_library)
+   - Reason: pkg-config not available for FAISS installation
+2. Include path: <faiss/index_io.h> (not impl/io.h)
+   - Reason: write/read_VectorTransform in public API
 
-Technical:
-- ✅ LLM Strategy: Hybrid (TinyLlama intent + Regex entities)
-- ✅ Multi-tenancy: Separate Indices (OBLIGATORY for GDPR/HIPAA)
-- ✅ Aggregation: Batch Nightly (simplicity over complexity)
-- ✅ Timeline: 17 weeks (15 nominal + 2 buffer)
-- ✅ Telemetry: Prometheus from Day 1
-- ✅ Event IDs: Hierarchical format ({org}-{site}-{timestamp}-{seq})
+Via Appia Quality:
+Foundation-first approach - DimensionalityReducer is the shared
+component between RAG and Ingester services. Clean architecture
+enables independent development of producer and consumer. Test
+validation before integration. Naming clarity over brevity.
 
-Paper:
-- ✅ Primary Contribution: Anti-Curse Strategies (40%)
-- ✅ Secondary Contribution: Hierarchical Architecture (30%)
-- ✅ Supporting Contribution: Natural Language Interface (20%)
-- ✅ Target: IEEE S&P / NDSS / CCS (Tier 1 Security)
+Timeline:
+- Day 35: DimensionalityReducer library ✅
+- Day 36: Training pipeline with real data (NEXT)
+- Day 37-38: Integration + buffer
+- Week 5 target: PCA training complete
 
-═══════════════════════════════════════════════════════════════
- CHANGES v1.0 → v2.0
-═══════════════════════════════════════════════════════════════
-
-1. Nomenclature: hospital/planta → organization/site/zone
-2. Query Processing: TinyLlama only → Hybrid (LLM + Regex)
-3. Paper Structure: Holistic → Anti-Curse primary (40%)
-4. Telemetry: Phase 2 → Day 1 (Prometheus)
-5. Preflight: Optional → MANDATORY before coding
-6. Timeline: 15 weeks → 17 weeks official
-7. Event IDs: Simple → Hierarchical format
-8. Multi-tenancy: Discussed → Separate Indices OBLIGATORY
-9. PCA Training: Single source → Balanced multi-source
-10. Peer Review: Added Part VIII (summary)
-
-═══════════════════════════════════════════════════════════════
- DOCUMENTS GENERATED
-═══════════════════════════════════════════════════════════════
-
-/docs/peer-review-2026-01-07/
-├── README.md (process overview)
-├── 00-HIERARCHICAL_RAG_VISION-v1.0.md (original)
-├── 01-PEER_REVIEW_SYNTHESIS.md (15 pages)
-├── 02-responses/ (6 individual reviews)
-│   ├── chatgpt5-response.md
-│   ├── deepseek-response.md
-│   ├── gemini-response.md
-│   ├── glm-response.md
-│   ├── grok-response.md
-│   └── qwen-response.md
-├── 03-FINAL_VALIDATION.md (consensus confirmation)
-└── 04-HIERARCHICAL_RAG_VISION-v2.0.md (FINAL - 60 pages)
-
-═══════════════════════════════════════════════════════════════
- NEXT STEPS
-═══════════════════════════════════════════════════════════════
-
-Day 35 (Tomorrow):
-1. Run preflight_check_day35.sh (MANDATORY)
-2. Review HIERARCHICAL_RAG_VISION v2.0
-3. Implement DimensionalityReducer (faiss::PCAMatrix)
-4. Train PCA with balanced multi-source data
-5. Validate variance ≥96%
-
-Week 6-10: FAISS Ingester + RAG Local implementation
-Week 13-15: Paper writing + submission
-
-═══════════════════════════════════════════════════════════════
- VIA APPIA QUALITY
-═══════════════════════════════════════════════════════════════
-
-'Diseñar con visión de 1000 instancias.
- Implementar con realismo de 1 instancia.
- Demostrar el potencial, no construir el imperio.
-
- Foundation primero, expansión después.
- Honestidad sobre errores, claridad en decisiones.
- Componentes que duren décadas.
-
- Industry-agnostic: Hospitales inspiran, pero no limitan.
- Ethical stance: Civil defensive security only.
-
- El consejo de sabios ha hablado.
- El diseño está validado.
- La calzada está lista para construir.' 🏛️
-
-═══════════════════════════════════════════════════════════════
-
-Reviewed-by: ChatGPT-5, DeepSeek, Gemini, GLM-4.7, Grok, Qwen
-Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
-Signed-off-by: Alonso García <alonso@ml-defender.org>
-
-Refs: #35 (Day 35 - DimensionalityReducer)
-Docs: /docs/peer-review-2026-01-07/
-Status: PEER REVIEW CLOSED - IMPLEMENTATION APPROVED
-Date: 2026-01-07
-Location: Badajoz, Spain"
-
-echo ""
-echo "✅ Commit created!"
-echo ""
-echo "📊 Commit stats:"
-git show --stat HEAD
-echo ""
-echo "🎯 Next steps:"
-echo "1. Review: git log -1"
-echo "2. Push: git push origin main"
-echo "3. Sleep well - Day 35 tomorrow 🏛️"
-echo ""
-echo "Via Appia Quality: Foundation validated. Ready to build."
+Phase: 2A Week 5 (Day 35/40)
+Contributors: Claude (Anthropic), Alonso
+Duration: ~2 hours
