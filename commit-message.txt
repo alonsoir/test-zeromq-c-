@@ -1,75 +1,39 @@
-Day 35: Add common-rag-ingester library with DimensionalityReducer
+Day 36 Planning: Architectural gap discovered, pragmatic solution designed
 
-Implements PCA-based dimensionality reduction using FAISS for the
-RAG/Ingester architecture separation (producer/consumer pattern).
+DISCOVERY:
+- Feature extraction systems disconnected (83/40 feat extractors vs 11 fields in .pb)
+- Detection system: FUNCTIONAL ✅ (20+ hours stable)
+- RAG/FAISS pipeline: INCOMPLETE ❌ (embedders expect 83, .pb has 11)
+- Tag "requires_processing" was there - we knew something was missing
 
-Components Added:
-- common-rag-ingester/include/dimensionality_reducer.hpp
-  * Public API for PCA transformation (train/transform/save/load)
-  * Thread-safe transform operations
-  * Dimensions: 384→128 (all-MiniLM-L6-v2 embeddings)
+ROOT CAUSE:
+- Fast iteration = parallel development without integration
+- Two feature systems evolved separately (CTU-13 legacy + ML Defender real-time)
+- End-to-end testing with real data pipeline skipped
+- BACKLOG.md not maintained = lost track of TODOs
 
-- common-rag-ingester/src/dimensionality_reducer.cpp
-  * Implementation using faiss::PCAMatrix
-  * FAISS I/O via index_io.h (write/read_VectorTransform)
-  * Variance calculation and validation (target ≥96%)
+IMPACT:
+- Detection: NONE (system works perfectly)
+- FAISS: BLOCKING (cannot train PCA with incomplete features)
+- Timeline: +1 day (but double validation benefit)
 
-- common-rag-ingester/CMakeLists.txt
-  * Build system with direct FAISS detection (no pkg-config)
-  * Shared library target: libcommon-rag-ingester.so
-  * Install rules for system-wide deployment
+SOLUTION: Plan A→B→A'
+- Day 36: Train PCA with synthetic (validates architecture)
+- Day 37: Fix feature processing (40 or 83 features in .pb)
+- Day 38: Re-train PCA with real data (validates fix)
+- Net: Foundation tested twice, not rushed once
 
-- common-rag-ingester/cmake/common-rag-ingester-config.cmake.in
-  * CMake package config for downstream consumers
+DOCUMENTATION:
++ TECHNICAL_DEBT_DAY36.md (comprehensive analysis)
++ BACKLOG_UPDATE_DAY36.md (roadmap adjustments)
++ PROMPT_CONTINUE_CLAUDE_DAY36.md (Day 36 execution guide)
 
-- tools/test_reducer.cpp
-  * Validation test suite (train/transform/save/load)
-  * Synthetic data generation for testing
-  * Performance benchmarking
+VIA APPIA REFLECTION:
+Good: Discovered during planning (not production)
+Good: Detection system solid, no prod impact
+Good: Pragmatic solution designed
+Bad: Lost track of integration debt
+Bad: "requires_processing" left as TODO without follow-up
+Bad: BACKLOG.md not maintained properly
 
-- common-rag-ingester/README.md
-  * Complete build and usage documentation
-  * API examples for RAG and Ingester integration
-  * Performance characteristics
-
-Architecture Decisions:
-- Separate producer (faiss-ingester) and consumer (rag) services
-- Shared library approach for code reuse
-- Name: "common-rag-ingester" (explicit, not generic "common")
-- Thread-safe design for concurrent query processing
-
-Build & Test Results:
-- ✅ Clean compilation on Debian 12 (GCC 12.2.0)
-- ✅ All tests PASSED
-- ✅ Training: 908ms for 10K samples
-- ✅ Transform: 149μs single, 20K vectors/sec batch
-- ✅ Save/Load: Verified functional
-- ⚠️  Variance: 40.97% with synthetic data (expected - real data will achieve ≥96%)
-
-Technical Details:
-- C++20 standard
-- FAISS dependencies: libfaiss.so, VectorTransform.h, index_io.h
-- Memory footprint: ~10MB per trained model
-- Thread safety: std::mutex for concurrent transforms
-
-Fixes Applied:
-1. CMakeLists.txt: Direct FAISS detection (find_path/find_library)
-   - Reason: pkg-config not available for FAISS installation
-2. Include path: <faiss/index_io.h> (not impl/io.h)
-   - Reason: write/read_VectorTransform in public API
-
-Via Appia Quality:
-Foundation-first approach - DimensionalityReducer is the shared
-component between RAG and Ingester services. Clean architecture
-enables independent development of producer and consumer. Test
-validation before integration. Naming clarity over brevity.
-
-Timeline:
-- Day 35: DimensionalityReducer library ✅
-- Day 36: Training pipeline with real data (NEXT)
-- Day 37-38: Integration + buffer
-- Week 5 target: PCA training complete
-
-Phase: 2A Week 5 (Day 35/40)
-Contributors: Claude (Anthropic), Alonso
-Duration: ~2 hours
+NEXT: Day 36 execution with full tokens (synthetic PCA training)
