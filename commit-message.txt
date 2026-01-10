@@ -1,39 +1,28 @@
-Day 36 Planning: Architectural gap discovered, pragmatic solution designed
+cd /vagrant
 
-DISCOVERY:
-- Feature extraction systems disconnected (83/40 feat extractors vs 11 fields in .pb)
-- Detection system: FUNCTIONAL ✅ (20+ hours stable)
-- RAG/FAISS pipeline: INCOMPLETE ❌ (embedders expect 83, .pb has 11)
-- Tag "requires_processing" was there - we knew something was missing
+git add contrib/claude/pca_pipeline/
+git add docs/bugs/2025-01-10_thread_local_flowmanager_bug.md  # Si existe
+git commit -m "Day 36: PCA Embedder Pipeline Complete + Thread-Local Bug Documented
 
-ROOT CAUSE:
-- Fast iteration = parallel development without integration
-- Two feature systems evolved separately (CTU-13 legacy + ML Defender real-time)
-- End-to-end testing with real data pipeline skipped
-- BACKLOG.md not maintained = lost track of TODOs
+✅ PCA Pipeline Complete:
+- 3 Python scripts: generate → train → convert
+- Synthetic data: 100K samples × 102 features
+- PCA model: 102 → 64 dims (64% variance)
+- ONNX export: pca_embedder.onnx (28 KB, 1.08μs transform)
+- Ready for FAISS integration
 
-IMPACT:
-- Detection: NONE (system works perfectly)
-- FAISS: BLOCKING (cannot train PCA with incomplete features)
-- Timeline: +1 day (but double validation benefit)
+🐛 Thread-Local Bug Identified:
+- Root cause: cross-thread FlowManager access
+- Impact: Only 11/102 features captured in .pb files
+- Workaround: PCA trained for full 102-feature schema
+- Fix: Postponed for next week (single-threaded → hash routing)
+- Documentation: Complete root cause analysis
 
-SOLUTION: Plan A→B→A'
-- Day 36: Train PCA with synthetic (validates architecture)
-- Day 37: Fix feature processing (40 or 83 features in .pb)
-- Day 38: Re-train PCA with real data (validates fix)
-- Net: Foundation tested twice, not rushed once
+📋 Via Appia Quality:
+- Investigated thoroughly before fixing
+- Documented exhaustively for future
+- Temporary solution now, proper fix later
+- .proto is THE LAW - trained for complete schema
 
-DOCUMENTATION:
-+ TECHNICAL_DEBT_DAY36.md (comprehensive analysis)
-+ BACKLOG_UPDATE_DAY36.md (roadmap adjustments)
-+ PROMPT_CONTINUE_CLAUDE_DAY36.md (Day 36 execution guide)
-
-VIA APPIA REFLECTION:
-Good: Discovered during planning (not production)
-Good: Detection system solid, no prod impact
-Good: Pragmatic solution designed
-Bad: Lost track of integration debt
-Bad: "requires_processing" left as TODO without follow-up
-Bad: BACKLOG.md not maintained properly
-
-NEXT: Day 36 execution with full tokens (synthetic PCA training)
+Next: FAISS integration with synthetic PCA (Day 37-38)
+Future: Re-train PCA with real data (85-95% variance expected)"

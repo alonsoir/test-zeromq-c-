@@ -168,3 +168,6 @@ backups/
 logs/# ONNX models (generate on-the-fly)
 logs/
 *.jsonl
+
+contrib/claude/pca_pipeline/models/
+contrib/claude/pca_pipeline/*.npz
