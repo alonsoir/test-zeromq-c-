@@ -1,28 +1,167 @@
-cd /vagrant
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % cat /tmp/commit_message.txt
+🏗️ Day 35: RAG Ingester Foundation Complete - Skeleton & Dependencies Verified
 
-git add contrib/claude/pca_pipeline/
-git add docs/bugs/2025-01-10_thread_local_flowmanager_bug.md  # Si existe
-git commit -m "Day 36: PCA Embedder Pipeline Complete + Thread-Local Bug Documented
+## 🎯 Milestone: Phase 2A Foundation (10% Complete)
 
-✅ PCA Pipeline Complete:
-- 3 Python scripts: generate → train → convert
-- Synthetic data: 100K samples × 102 features
-- PCA model: 102 → 64 dims (64% variance)
-- ONNX export: pca_embedder.onnx (28 KB, 1.08μs transform)
-- Ready for FAISS integration
+Structure, compilation, and test suite operational. Ready for Day 36 (FileWatcher + EventLoader).
 
-🐛 Thread-Local Bug Identified:
-- Root cause: cross-thread FlowManager access
-- Impact: Only 11/102 features captured in .pb files
-- Workaround: PCA trained for full 102-feature schema
-- Fix: Postponed for next week (single-threaded → hash routing)
-- Documentation: Complete root cause analysis
+---
 
-📋 Via Appia Quality:
-- Investigated thoroughly before fixing
-- Documented exhaustively for future
-- Temporary solution now, proper fix later
-- .proto is THE LAW - trained for complete schema
+## ✅ Achievements
 
-Next: FAISS integration with synthetic PCA (Day 37-38)
-Future: Re-train PCA with real data (85-95% variance expected)"
+### Structure Created (18 directories, 12 files)
+- `/vagrant/rag-ingester/` complete directory tree
+- `src/`, `include/`, `config/`, `tests/`, `docs/`, `models/`
+- All stub files for Day 36-40 implementation
+
+### CMakeLists.txt - Dependency Resolution
+- ✅ etcd_client: `/usr/local/lib/libetcd_client.so`
+- ✅ crypto_transport: `/usr/local/lib/libcrypto_transport.so`
+- ✅ common-rag-ingester: `/vagrant/common-rag-ingester/build/`
+- ✅ FAISS: `/usr/local/lib/libfaiss.so`
+- ✅ ONNX Runtime: `/usr/local/lib/libonnxruntime.so`
+- ✅ spdlog, nlohmann_json, Protobuf
+
+### Configuration System
+- `rag-ingester.json` - Complete schema (threading, embedders, FAISS, health)
+- `ConfigParser` - JSON → Config struct (FUNCTIONAL ✅)
+- `test_config_parser` - Unit test passing ✅
+
+### Binario Funcional
+```bash
+./rag-ingester
+# [INFO] RAG Ingester Starting (Version: 0.1.0)
+# [INFO] ✅ RAG Ingester ready and waiting for events
+```
+
+### Stubs Created (Ready for Implementation)
+- `FileWatcher` (inotify) - Day 36
+- `EventLoader` (crypto-transport + protobuf) - Day 36
+- `ChronosEmbedder`, `SBERTEmbedder`, `AttackEmbedder` - Day 37
+- `MultiIndexManager` (4 FAISS indices) - Day 38
+- `IndexHealthMonitor` (CV calculation) - Day 39
+- `ThreadPool` (generic worker pool) - Day 41
+
+---
+
+## 📚 Documentation
+
+### BACKLOG.md - GAIA Vision
+**Hierarchical Immune System Architecture:**
+- Nivel 1 (Local): Edificio → etcd-server + RAG-master + N plantas
+- Nivel 2 (Campus): 5-10 edificios → Campus RAG-master (NO lateral awareness)
+- Nivel 3 (Global): All campus → Global RAG-master (override authority)
+
+**Vaccine Distribution:**
+- Local threat: <30 seconds (edificio only)
+- Campus threat: <5 minutes (campus only, NO lateral)
+- Global threat (APT): <15 minutes (cascada global)
+
+**Sincronización etcd-server:**
+- Upward: Anomalías críticas, health metrics
+- Downward: Vacunas globales, policy updates
+- NO Lateral: Blast radius control, autonomy
+
+### PROMPT_CONTINUIDAD_DIA37.md
+- Complete context for Day 36 (FileWatcher + EventLoader)
+- Technical debt documented (thread-local bug, RAGLogger leak)
+- GAIA vision explained
+- Success criteria defined
+
+### README.md
+- Build instructions
+- Dependency verification
+- Threading modes (single/parallel)
+- Via Appia quality principles
+
+---
+
+## 🔧 Technical Details
+
+### Fixes Applied
+1. **`#include <thread>` and `#include <chrono>`** in main.cpp
+2. **Log path changed** from `/var/log/` to `/tmp/` (no sudo needed)
+3. **`#include <faiss/IndexFlat.h>`** in multi_index_manager.cpp (unique_ptr fix)
+4. **Test CMakeLists.txt** updated to link config_parser source
+
+### Lessons Learned
+1. Library naming: `libetcd_client.so` (underscore, not hyphen)
+2. Forward declarations: Need full headers in .cpp for `unique_ptr<T>`
+3. System libraries: Check `/usr/local/lib` first, then local paths
+4. Test from day 1: Catches issues early
+5. Via Appia: Foundation before functionality
+
+---
+
+## 🎯 Next Steps (Day 36)
+
+### FileWatcher (inotify)
+- Watch `/vagrant/logs/rag/events/*.pb`
+- Detect `IN_CLOSE_WRITE` events
+- Pattern matching: `*.pb`
+- Thread-safe callback
+
+### EventLoader (crypto-transport)
+- Decrypt (AES-256-GCM)
+- Decompress (gzip)
+- Parse protobuf (network_security.proto)
+- Extract 83 features (or 11 with current ml-detector)
+
+### Success Criteria
+- ✅ inotify detects files within 100ms
+- ✅ Decryption successful
+- ✅ Protobuf parsing successful
+- ✅ Unit tests passing
+- ✅ No memory leaks (Valgrind)
+
+---
+
+## 🏛️ Via Appia Quality
+
+**Foundation First:**
+- Structure complete before functionality ✅
+- Dependencies verified before linking ✅
+- Test suite from day 1 ✅
+
+**Raspberry Pi Baseline:**
+- Memory budget: ~310MB (target: <500MB)
+- Designed for 4-core ARM, scalable to 64-core x86
+
+**Documentation Exhaustive:**
+- BACKLOG.md (vision + roadmap)
+- PROMPT_CONTINUIDAD (context for next session)
+- README.md (build + run)
+
+**Measure Before Optimize:**
+- Single-threaded first (Days 36-40)
+- Multi-threaded when validated (Week 6)
+- Profile with real data, not assumptions
+
+---
+
+## 📊 Progress
+```
+Phase 2A: [██░░░░░░░░░░░░░░░░░░] 10% (Day 35/40 ✅)
+```
+
+**Completed:** Day 35 - Skeleton & Dependencies  
+**Next:** Day 36 - FileWatcher & EventLoader  
+**Target:** Day 40 - etcd Integration & Symbiosis
+
+---
+
+## 🌍 Vision
+
+**GAIA System:** Hierarchical immune network for global cybersecurity.
+
+From a single Raspberry Pi in a hospital closet to a global mesh of interconnected RAG-masters protecting millions of users.
+
+**Goal:** Democratize enterprise-grade security for hospitals, schools, and small businesses.
+
+---
+
+**Co-authors:** Alonso García (Lead), Claude (AI Co-author)  
+**Philosophy:** Via Appia Quality - Build to last 2000 years 🏛️
+
+**"Foundation first, expansion properly."**
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % 

@@ -1,351 +1,743 @@
-## 🚨 CRITICAL ITEMS
+cat > /vagrant/rag-ingester/docs/BACKLOG.md << 'EOF'
+# RAG Ingester - Development Backlog
 
-### 1. Thread-Local FlowManager Bug - ROOT CAUSE IDENTIFIED & DOCUMENTED ✅
-
-**Status:** DOCUMENTED, fix postponed for next week  
-**Priority:** P0 - CRITICAL  
-**Date Discovered:** 10 Enero 2025  
-**Documentation:** Complete root cause analysis available
-
-**Root Cause:**
-```
-thread_local FlowManager = per-thread instances
-Thread A: add_packet() → FlowManager_A (has data)
-Thread B: get_flow_stats() → FlowManager_B (EMPTY!)
-Result: NULL flow_stats → features not populated → only 11/102 features
-```
-
-**Impact:**
-- ❌ Real feature capture blocked (11/102 features)
-- ⚠️ PCA training: UNBLOCKED (trained with synthetic 102-feature schema)
-- ⚠️ FAISS integration: Can proceed with synthetic PCA, will update with real later
-
-**Workaround Implemented (Day 36):**
-- ✅ PCA trained for complete 102-feature schema
-- ✅ Synthetic data generation pipeline
-- ✅ ONNX model ready for C++ inference
-- 📋 Will re-train with real data when bug fixed
-
-**Solutions Identified:**
-
-**Option 1: Single-Threaded Processing (2-3h) - RECOMMENDED FIRST**
-- Move populate_protobuf_event() to same thread as add_packet()
-- Eliminate feature_processor_loop
-- Pro: Quick unblock for real data collection
-- Con: Temporary, not scalable
-
-**Option 2: Hash Consistent Routing (2-3 days) - PRODUCTION FIX**
-- Implement hash_flow() over 5-tuple
-- Per-thread queues with flow affinity
-- Dedicated processor threads
-- Pro: Correct architecture, production-ready
-- Con: Requires extensive testing
-
-**Decision:**
-- 🏛️ Via Appia Quality: Do it RIGHT, not FAST
-- Implement Option 1 next week (unblock real data)
-- Then implement Option 2 properly (production architecture)
-- No rushing critical infrastructure
-
-**Documentation:** `/vagrant/docs/bugs/2025-01-10_thread_local_flowmanager_bug.md`
-
-**Tasks (Next Week):**
-- [ ] Implement single-threaded fix (2-3h)
-- [ ] Capture 100K real events with 102 features
-- [ ] Re-train PCA with real data (expected 85-95% variance)
-- [ ] Compare variance: synthetic (64%) vs real (85-95%)
-- [ ] Update FAISS indexes with production PCA
+**Last Updated:** 2026-01-11  
+**Current Phase:** 2A - Foundation (Day 35 Complete)  
+**Next Session:** Day 36 - FileWatcher & EventLoader
 
 ---
 
-### 3. ISSUE-005: RAGLogger Memory Leak - JSON Serialization 🔴
+## 🌍 Vision: GAIA System - Hierarchical Immune Network
 
-**Status:** IDENTIFIED, not yet fixed  
-**Priority:** P0 - CRITICAL (operational impact)  
-**Date Discovered:** ~Diciembre 2025  
-**Symptoms:** ml-detector requires restart every ~3 days
+ML Defender no es solo un IDS - es un **sistema inmunológico jerárquico distribuido** para redes empresariales globales.
 
-**Problem:**
+### Arquitectura Jerárquica Multi-Nivel
 ```
-ml-detector uptime: ~72 hours → memory exhaustion → crash/restart needed
-Root cause: Memory leak in RAGLogger JSON serialization
-Library: nlohmann/json (current implementation)
-Impact: Operational burden, service interruptions
+                    ┌─────────────────────────────────────┐
+                    │   GLOBAL RAG-MASTER (Nivel 3)      │
+                    │   etcd-server (HA cluster)          │
+                    │   "Cerebro - Visión global"         │
+                    └──────────────┬──────────────────────┘
+                                   │
+            ┌──────────────────────┼──────────────────────┐
+            │                      │                      │
+    ┌───────▼───────┐      ┌──────▼──────┐      ┌───────▼───────┐
+    │ Campus-A      │      │ Campus-B    │      │ Campus-C      │
+    │ RAG-Master L2 │      │ RAG-Master  │      │ RAG-Master    │
+    │ etcd-server   │      │ etcd-server │      │ etcd-server   │
+    │ "Ganglio"     │      │ "Ganglio"   │      │ "Ganglio"     │
+    └───────┬───────┘      └──────┬──────┘      └───────┬───────┘
+            │                     │                      │
+    ┌───────┼──────┐      ┌──────┼──────┐       ┌──────┼──────┐
+    │       │      │      │      │      │       │      │      │
+┌───▼─┐ ┌──▼──┐┌──▼─┐ ┌──▼─┐ ┌──▼──┐┌──▼─┐  ┌──▼─┐ ┌──▼──┐┌──▼─┐
+│Edif │ │Edif ││Edif│ │Edif│ │Edif ││Edif│  │Edif│ │Edif ││Edif│
+│  1  │ │  2  ││  3 │ │  4 │ │  5  ││  6 │  │  7 │ │  8  ││  9 │
+│Local│ │Local││Loc │ │Loc │ │Local││Loc │  │Loc │ │Local││Loc │
+│RAG-M│ │RAG-M││RAG │ │RAG │ │RAG-M││RAG │  │RAG │ │RAG-M││RAG │
+│etcd │ │etcd ││etcd│ │etcd│ │etcd ││etcd│  │etcd│ │etcd ││etcd│
+└──┬──┘ └──┬──┘└──┬─┘ └──┬─┘ └──┬──┘└──┬─┘  └──┬─┘ └──┬──┘└──┬─┘
+   │       │      │       │       │      │       │       │      │
+ Plant  Plant  Plant   Plant   Plant  Plant   Plant   Plant  Plant
+  1-1    1-2    1-3     2-1     2-2    2-3     3-1     3-2    3-3
 ```
 
-**Evidence:**
-- ml-detector stable for detection (20+ hours no issues)
-- Memory grows continuously during RAG logging
-- Restart clears memory, system works again
-- Pattern repeats every 3 days
+### Principios de Jerarquía
 
-**Root Cause (Suspected):**
+**Nivel 1 (Local) - Edificio/Planta:**
+```
+- 1 etcd-server por edificio
+- 1 RAG-master local
+- N RAG-clients (1 por planta/zona)
+- M ml-detectors (1:1 con RAG-clients)
+- Decisiones: Locales, inmediatas
+- Propagación: Hacia arriba (anomalías críticas)
+- Awareness: Solo su edificio
+```
+
+**Nivel 2 (Campus) - Grupo de Edificios:**
+```
+- 1 etcd-server (HA) por campus
+- 1 RAG-master campus
+- Agrega: 5-10 edificios
+- Decisiones: Campus-wide policies
+- Propagación: Bidireccional (arriba/abajo)
+- Awareness: Su campus, NO otros campus
+- Sincroniza: Con nivel superior
+```
+
+**Nivel 3 (Global) - Organización:**
+```
+- 1 etcd-server (HA cluster, multi-region)
+- 1 RAG-master global
+- Agrega: Todos los campus
+- Decisiones: Global threat response
+- Propagación: Top-down (vacunas globales)
+- Awareness: Visión completa, NO lateral entre campus
+- Autoridad: Máxima, override local si crítico
+```
+
+---
+
+## 🧬 Flujo de "Vacunación" Jerárquico
+
+### Escenario 1: Amenaza Local (Edificio 1, Planta 2)
+```
+1. RAG-client (Edificio-1, Planta-2) detecta ransomware variant
+   → Divergence score > 0.8 (nunca visto)
+   
+2. RAG-master Local (Edificio-1) recibe alerta
+   → LLM analiza: ¿Es verdadero positivo?
+   → Operador local valida: ✅ Confirma ransomware
+   → Genera "vacuna local": nuevo embedding signature
+   
+3. Decisión: Propagación limitada
+   → Distribuye a TODAS las plantas del Edificio-1
+   → Tiempo: <30 segundos
+   → NO propaga a otros edificios (autonomía local)
+   
+4. Edificio-1 inmunizado
+   → Plantas 1-5 detectan variant instantáneamente
+   → Otros edificios: sin conocimiento (aún)
+```
+
+### Escenario 2: Amenaza Campus (Campus-A)
+```
+1. RAG-master Local (Edificio-3) detecta patrón recurrente
+   → Mismo ransomware en 3 plantas diferentes
+   → Severity escalation → Informa a RAG-master Campus-A
+   
+2. RAG-master Campus-A analiza
+   → Correlaciona con Edificio-1 (mismo campus)
+   → LLM Campus-level: Patrón confirmado en 2 edificios
+   → Operador Campus valida: ✅ Amenaza campus-wide
+   → Genera "vacuna campus": embedding + metadata
+   
+3. Decisión: Propagación campus
+   → Distribuye a RAG-masters de Edificios 1-5 (Campus-A)
+   → Cada RAG-master local distribuye a sus plantas
+   → Tiempo: <5 minutos (cascada)
+   → NO propaga a Campus-B ni Campus-C (no awareness lateral)
+   
+4. Campus-A inmunizado
+   → 5 edificios, 25 plantas protegidas
+   → Otros campus: sin conocimiento
+```
+
+### Escenario 3: Amenaza Global (APT detectado)
+```
+1. RAG-master Campus-A detecta APT sofisticado
+   → Mismo actor en múltiples edificios
+   → Técnicas avanzadas (zero-day exploit)
+   → Severity: CRITICAL → Escala a RAG-master Global
+   
+2. RAG-master Global analiza
+   → Correlaciona Campus-A + Campus-B (misma firma)
+   → LLM Global: APT campaign confirmada
+   → Operador Global valida: ✅ Threat actor nation-state
+   → Genera "vacuna global": complete threat profile
+   
+3. Decisión: Propagación global
+   → Override authority: Distribuye a TODOS los campus
+   → Cada RAG-master campus → sus edificios
+   → Cada RAG-master edificio → sus plantas
+   → Tiempo: <15 minutos (cascada global)
+   → Priority: MÁXIMA (bypasses local queues)
+   
+4. Organización completa inmunizada
+   → Todos los campus, edificios, plantas
+   → Detección instantánea del APT
+   → Threat intelligence global aplicada
+```
+
+---
+
+## 🔐 Sincronización etcd-server Jerárquica
+
+### Modelo de Sincronización
+
+**Upward Sync (Bottom-Up):**
+```
+Local etcd → Campus etcd → Global etcd
+
+Qué sube:
+- Anomalías críticas (divergence > 0.7)
+- Health metrics agregados
+- Threat signatures locales (candidates)
+
+Frecuencia:
+- Real-time: Alertas críticas
+- Periodic: Cada 5 min (health)
+```
+
+**Downward Sync (Top-Down):**
+```
+Global etcd → Campus etcd → Local etcd
+
+Qué baja:
+- Vacunas globales (threat signatures)
+- Policy updates (compliance)
+- Model updates (new ML models)
+
+Frecuencia:
+- Real-time: Vacunas críticas
+- Periodic: Cada 1 hora (policies)
+```
+
+**NO Lateral Sync:**
+```
+Campus-A etcd ⇿ Campus-B etcd  ❌ PROHIBIDO
+
+Razón:
+- Blast radius control
+- Performance (avoid mesh complexity)
+- Security (lateral movement prevention)
+- Autonomy (campus independence)
+
+Excepción:
+- Solo via Global etcd (explicit authorization)
+```
+
+### Tolerancia a Fallos
+
+**Local etcd-server falla:**
+```
+1. RAG-master local sigue operando (cached policies)
+2. No puede sync upward (queued)
+3. Downward sync buffered en Campus etcd
+4. Auto-reconnect cuando etcd-server recovered
+5. Sync backlog (últimos 24h)
+```
+
+**Campus etcd-server falla (HA cluster):**
+```
+1. Failover automático (Raft consensus)
+2. Standby replica promoted a leader
+3. Local etcd-servers re-connect
+4. Zero data loss (Raft log)
+```
+
+**Global etcd-server falla:**
+```
+1. Campus etcd-servers operan autónomos
+2. Local decisions continue
+3. Global vacunas queued
+4. Manual intervention si >1 hora
+5. Disaster recovery plan activated
+```
+
+---
+
+## 📅 Phase 2A - Foundation (Week 5: Days 35-40)
+
+### ✅ Day 35 - Skeleton Complete (2026-01-11)
+
+**Completado:**
+- [x] Directory structure (18 directories, 12 files)
+- [x] CMakeLists.txt with dependency detection
+- [x] Configuration parser (JSON → Config struct)
+- [x] Main loop with signal handling
+- [x] All stub files created (embedders, indexers, etc.)
+- [x] Test suite passing (test_config_parser)
+- [x] Binary compiling and running
+- [x] Dependencies verified:
+    - ✅ etcd_client: `/usr/local/lib/libetcd_client.so`
+    - ✅ crypto_transport: `/usr/local/lib/libcrypto_transport.so`
+    - ✅ common-rag-ingester: `/vagrant/common-rag-ingester/build/`
+    - ✅ FAISS: `/usr/local/lib/libfaiss.so`
+    - ✅ ONNX Runtime: `/usr/local/lib/libonnxruntime.so`
+
+**Via Appia Milestones:**
+- 🏛️ Foundation first: Estructura completa antes de funcionalidad
+- 🏛️ Dependency clarity: Todas las librerías verificadas
+- 🏛️ Test-driven: Test suite desde día 1
+- 🏛️ Raspberry Pi target: Diseñado para hardware barato (~310MB RAM)
+
+---
+
+### 📋 Day 36 - File Watcher & Event Loader
+
+**Goals:**
+- [ ] Implement `FileWatcher` with inotify
+- [ ] Watch `/vagrant/logs/rag/events/*.pb`
+- [ ] Implement `EventLoader` with crypto-transport
+- [ ] Decrypt + decompress .pb files
+- [ ] Parse protobuf events (83 features extraction)
+- [ ] Unit tests for file watching and decryption
+
+**Implementation:**
 ```cpp
-// Current implementation in RAGLogger
-nlohmann::json j;
-j["event_id"] = event.id;
-j["features"] = event.features;  // ← Suspected leak here
-// ... many allocations per event
-// No explicit cleanup, relying on destructor
+// FileWatcher: inotify on directory
+class FileWatcher {
+    int inotify_fd_;
+    int watch_descriptor_;
+    
+    void process_event(const inotify_event* event) {
+        if (event->mask & IN_CLOSE_WRITE) {
+            std::string filepath = directory_ + "/" + event->name;
+            if (matches_pattern(filepath, pattern_)) {
+                callback_(filepath);
+            }
+        }
+    }
+};
+
+// EventLoader: crypto-transport integration
+class EventLoader {
+    std::unique_ptr<crypto::StreamDecryptor> decryptor_;
+    std::unique_ptr<crypto::Decompressor> decompressor_;
+    
+    std::vector<Event> load(const std::string& filepath) {
+        auto encrypted = read_file(filepath);
+        auto decrypted = decryptor_->decrypt(encrypted);
+        auto decompressed = decompressor_->decompress(decrypted);
+        return parse_protobuf(decompressed);
+    }
+};
 ```
 
-**Probable Issues:**
-1. nlohmann/json uses exceptions heavily (memory not freed on error paths)
-2. Deep copying of protobuf structures
-3. String allocations not properly released
-4. High allocation rate (1000s events/sec)
-
-**Solutions Evaluated:**
-
-**Option 1: Fix nlohmann/json usage (1-2 days)**
-- Audit current RAGLogger code
-- Add explicit memory cleanup
-- Use move semantics properly
-- Profile with Valgrind/ASan
-- Pro: Keep current library
-- Con: May not fix fundamental library issue
-
-**Option 2: Replace with RapidJSON (2-3 days) - RECOMMENDED**
-- SAX-style API (less allocations)
-- No exceptions (explicit error handling)
-- Faster serialization
-- Better memory control
-- Pro: Proven in high-throughput systems
-- Con: API changes required
-
-**Option 3: Replace with simdjson (3-4 days)**
-- SIMD-optimized (fastest)
-- Modern C++17 API
-- Excellent documentation
-- Pro: Best performance
-- Con: Newer library, less battle-tested
-
-**Decision Factors:**
-- RapidJSON: Used in Ericsson systems (battle-tested)
-- simdjson: Excellent performance, growing adoption
-- nlohmann/json: Convenient but allocation-heavy
-
-**Recommendation:** Option 2 (RapidJSON)
-- Proven reliability in telecom (like Ericsson)
-- SAX API fits streaming use case
-- No exceptions = predictable memory
-- 2-3 days vs weeks of debugging nlohmann
-
-**Impact Assessment:**
-- **Does NOT block FAISS work** (can develop in parallel)
-- **Does NOT block PCA training** (separate component)
-- Blocks: Long-term unattended operation (>3 days)
-
-**Implementation Plan (When Ready):**
-
-**Day 1: Investigation & Preparation (4-6h)**
-- [ ] Profile RAGLogger with Valgrind
-- [ ] Identify exact leak location
-- [ ] Install RapidJSON library
-- [ ] Create test harness
-
-**Day 2: Implementation (6-8h)**
-- [ ] Replace nlohmann::json with RapidJSON SAX writer
-- [ ] Update RAGLogger serialization code
-- [ ] Maintain same JSONL output format
-- [ ] Unit tests for JSON output correctness
-
-**Day 3: Testing & Validation (4-6h)**
-- [ ] Stress test: 72+ hours continuous operation
-- [ ] Memory profiling: Verify no leak
-- [ ] Performance comparison: Before/after
-- [ ] Integration testing with rag component
-
-**Success Criteria:**
-- ✅ ml-detector runs >7 days without restart
-- ✅ Memory stable (no continuous growth)
-- ✅ Same or better throughput
-- ✅ JSONL format unchanged (backward compatible)
-
-**Workaround (Current):**
+**Test:**
 ```bash
-# Restart ml-detector every 3 days
-# Automated with systemd timer (future)
-systemctl restart ml-detector.service
+# Generate test .pb file from ml-detector
+cd /vagrant/sniffer
+sudo ./build/sniffer --test-mode
+
+# Watch ingester consume them
+cd /vagrant/rag-ingester/build
+./rag-ingester
+
+# Expected output:
+# [INFO] FileWatcher: Detected new file: 2026-01-11_09-30-00.pb
+# [INFO] EventLoader: Decrypting file...
+# [INFO] EventLoader: Decompressing...
+# [INFO] EventLoader: Parsed 1000 events
+# [INFO] Extracted 83 features per event
 ```
 
-**Documentation:**
-- Issue tracking: ISSUE-005
-- Related: RAGLogger component
-- Code: `/vagrant/ml_detector/src/rag_logger.cpp`
-
-**Tasks (When Prioritized):**
-- [ ] Memory profiling session
-- [ ] Choose JSON library (RapidJSON recommended)
-- [ ] Implement replacement
-- [ ] 72h+ stress testing
-- [ ] Deploy and monitor
-
-**Parallel Work:**
-- ✅ Can develop FAISS while this is open
-- ✅ Can fix thread-local bug independently
-- ⚠️ Affects production stability
-
-**Timeline:**
-- Investigation: 4-6h
-- Implementation: 6-8h
-- Testing: 4-6h
-- **Total: 2-3 days**
-
-**Via Appia Note:**
-> Memory leaks in long-running systems are unacceptable.  
-> Better to replace library properly than patch symptoms.  
-> RapidJSON proven in Ericsson - reliability over convenience. 🏛️
+**Success criteria:**
+- ✅ inotify detects new .pb files within 100ms
+- ✅ Decryption successful (crypto-transport)
+- ✅ Decompression successful (gzip)
+- ✅ Protobuf parsing successful
+- ✅ 83 features extracted per event
+- ✅ No memory leaks (Valgrind clean)
 
 ---
 
-### 2. PCA Embedder Training - COMPLETE ✅
+### 📋 Day 37 - Embedders (ONNX Runtime)
 
-**Status:** Pipeline functional, ready for FAISS integration  
-**Priority:** P0 - UNBLOCKED  
-**Date Completed:** 10 Enero 2025  
-**Effort:** ~3 hours (3 scripts, testing, documentation)
+**Goals:**
+- [ ] Download/prepare ONNX models
+- [ ] Implement `ChronosEmbedder` (83 → 512-d)
+- [ ] Implement `SBERTEmbedder` (83 → 384-d)
+- [ ] Implement `AttackEmbedder` (83 → 256-d)
+- [ ] ONNX Runtime session initialization
+- [ ] Batch inference support
 
-**Deliverables:**
-```
-✅ /vagrant/contrib/claude/pca_pipeline/
-├── generate_training_data.py      # 100K samples × 102 features
-├── train_pca_embedder.py           # PCA: 102 → 64 dims
-├── convert_pca_to_onnx.py          # ONNX export
-├── README.md                       # Documentation
-└── models/
-    ├── training_data.npz           # 76 MB
-    ├── scaler.pkl                  # 2.9 KB
-    ├── pca_model.pkl               # 55 KB
-    ├── pca_embedder.onnx           # 28 KB ← Production model
-    └── training_metrics.json       # Stats
+**Models strategy:**
+```bash
+# Option 1: Use existing PCA embedder as placeholder
+cp /vagrant/contrib/claude/pca_pipeline/models/pca_embedder.onnx \
+   /vagrant/rag-ingester/models/onnx/chronos.onnx
+
+# Option 2: Download pre-trained from HuggingFace
+# Option 3: Train custom embedders (Week 6)
 ```
 
-**Results:**
-- Dimensionality: 102 → 64 (37% reduction)
-- Variance explained: 64.0% (synthetic data)
-- Transform time: 1.08 μs/sample
-- ONNX validation: PASSED
-- Model size: 28 KB
-
-**Note:** Variance lower than target (64% vs 90%) because:
-- Synthetic data = uniform random (no natural correlations)
-- Real data expected: 85-95% variance (feature correlations exist)
-- Strategy: Re-train when sniffer bug fixed
-
-**Next Steps:**
-- [ ] Integrate pca_embedder.onnx into FAISS pipeline
-- [ ] Test semantic search end-to-end
-- [ ] Re-train with real data when available
-- [ ] Performance comparison
-
----
-
-## 🏗️ HIGH PRIORITY
-
-### Multi-Threaded Architecture Refactor
-
-**Epic:** "Production-Ready Hash Consistent Routing"  
-**Priority:** HIGH  
-**Effort:** 2-3 days  
-**Target:** Week of 13-17 Enero 2025  
-**Depends On:** Single-threaded fix first
-
-**Current Plan:**
-1. Week of 10-12 Jan: Single-threaded fix (quick unblock)
-2. Week of 13-17 Jan: Hash routing (production architecture)
-
-**Architecture:**
-```
-Hash Router (5-tuple)
-  ↓
-Dedicated Threads (flow affinity)
-  ↓
-thread_local FlowManager (correct usage)
+**Implementation:**
+```cpp
+class ChronosEmbedder {
+    Ort::Session* session_;
+    Ort::MemoryInfo memory_info_;
+    
+    std::vector<float> embed(const Event& event) {
+        // Prepare input tensor (83 features)
+        std::vector<float> input = event.features;
+        
+        // Run inference
+        auto output_tensor = session_->Run(...);
+        
+        // Extract 512-d embedding
+        return std::vector<float>(output_data, output_data + 512);
+    }
+};
 ```
 
-**Deliverables:**
-- [ ] hash_flow() implementation
-- [ ] Routing logic in handle_event()
-- [ ] dedicated_processor_loop(thread_id)
-- [ ] sniffer.json update (threads: 4-8)
-- [ ] Zero race conditions
-- [ ] Performance >= single-threaded
-- [ ] Documentation & ADR
+**Success criteria:**
+- ✅ ONNX models loaded successfully
+- ✅ Inference <10ms per event
+- ✅ Correct output dimensions (512, 384, 256)
+- ✅ Batch processing functional
+- ✅ Thread-safe (multiple inference sessions)
 
 ---
 
-## 📊 SPRINT GOALS
+### 📋 Day 38 - PCA & Multi-Index Manager
 
-### Current Sprint (10-12 Enero 2025)
-**Theme:** "Unblock Phase 2A - PCA Complete, FAISS Ready"
+**Goals:**
+- [ ] Integrate `common-rag-ingester` PCA library
+- [ ] Dimensionality reduction (512→128, 384→96, 256→64)
+- [ ] Implement `MultiIndexManager`
+- [ ] Create 4 FAISS indices
+- [ ] Implement eventual consistency logic
 
-**Completed:**
-- ✅ Thread-local bug root cause identified & documented
-- ✅ PCA pipeline complete (synthetic data)
-- ✅ ONNX model ready for C++ inference
-- ✅ Feature contract documented (102 features)
+**PCA Integration:**
+```cpp
+#include <dimensionality_reducer.hpp>
 
-**In Progress:**
-- 🔄 FAISS Integration (Days 37-38)
+DimensionalityReducer reducer(512, 128);
+reducer.load("/vagrant/rag-ingester/models/pca/chronos_512_128.faiss");
 
-**Must Have:**
-- [ ] FAISS semantic search working
-- [ ] End-to-end test with synthetic PCA
-- [ ] Performance benchmarks
+auto chronos_emb = chronos_embedder->embed(event);  // 512-d
+auto reduced = reducer.transform(chronos_emb);       // 128-d
+```
 
-**Should Have:**
-- [ ] Single-threaded sniffer fix
-- [ ] Real data collection started
+**Multi-Index Architecture:**
+```cpp
+class MultiIndexManager {
+    std::unique_ptr<faiss::IndexFlatL2> chronos_index_;         // 128-d
+    std::unique_ptr<faiss::IndexFlatL2> sbert_index_;           // 96-d
+    std::unique_ptr<faiss::IndexFlatL2> entity_benign_index_;   // 64-d
+    std::unique_ptr<faiss::IndexFlatL2> entity_malicious_index_;// 64-d
+    
+    CommitResult add_event(const Event& event, 
+                          const Embeddings& embeddings) {
+        // Best-effort commit (eventual consistency)
+        CommitResult result;
+        
+        try { 
+            chronos_index_->add(1, embeddings.chronos.data());
+            result.successful_commits++;
+        } catch (...) { 
+            result.failed_commits++; 
+        }
+        
+        // Same for sbert, entity_benign, entity_malicious
+        return result;
+    }
+};
+```
 
-**Could Have:**
-- [ ] PCA re-training with real data
-
----
-
-### Next Sprint (13-17 Enero 2025)
-**Theme:** "Production Data & Architecture"
-
-**Must Have:**
-- [ ] Hash consistent routing implemented
-- [ ] Multi-threaded processing working
-- [ ] Real PCA models (85-95% variance)
-- [ ] FAISS indexes updated
-
-**Should Have:**
-- [ ] Load testing (10K+ pps)
-- [ ] CPU/memory profiling
-
----
-
-## 📈 PROGRESO VISUAL
-
-Phase 1 Progress: [████████████████████] 100% (16/16 días)
-Phase 2A Progress: [████░░░░░░░░░░░░░░░░]  20% (Week 5: Days 31-36 ✅)
-
-Day 36 PCA Pipeline: [████] 100% ✅
-- Data Generation:    [████] 100% ✅
-- PCA Training:       [████] 100% ✅
-- ONNX Conversion:    [████] 100% ✅
-- Documentation:      [████] 100% ✅
-
-Next Steps:
-- FAISS Integration:  [░░░░]   0% ← Day 37-38
-- Sniffer Fix:        [░░░░]   0% ← Week of 13-17 Jan
-- Real PCA Training:  [░░░░]   0% ← After sniffer fix
+**Success criteria:**
+- ✅ PCA reduces dimensions correctly
+- ✅ Variance retained >95%
+- ✅ All 4 indices operational
+- ✅ Best-effort commit working
+- ✅ Partial failures handled gracefully
+- ✅ Health metrics tracked
 
 ---
 
-## Last Updated
+### 📋 Day 39 - Health Monitoring
 
-**Last Updated:** 10 Enero 2025 - Day 36 Complete  
-**Next Session:** 11 Enero 2025 - FAISS Integration (Day 37)  
-**COMPLETED:** PCA Embedder Pipeline (synthetic data)  
-**DOCUMENTED:** Thread-local bug (postponed for proper fix)  
-**NEXT:** FAISS semantic search integration
+**Goals:**
+- [ ] Implement `IndexHealthMonitor`
+- [ ] CV (Coefficient of Variation) calculation
+- [ ] Alert when CV < 0.20
+- [ ] etcd health reporting
 
-**Via Appia Note:**
-> Day 36: Discovered bug, documented thoroughly, built workaround.  
-> Pipeline validated with synthetic data.  
-> Will re-train with real data when proper fix implemented.  
-> Foundation first, expansion properly. 🏛️
+**Health Monitoring:**
+```cpp
+struct HealthMetrics {
+    double CV;              // Target: >0.20
+    double mean_distance;
+    double std_distance;
+    size_t num_vectors;
+    
+    bool is_healthy() const { return CV > 0.2; }
+    bool is_degrading() const { return CV < 0.25; }
+};
+
+class IndexHealthMonitor {
+    HealthMetrics compute_health(faiss::Index* index) {
+        // Sample 1000 random vectors
+        // Compute k-NN distances
+        // Calculate statistics
+        return { CV, mean, std, ntotal };
+    }
+    
+    void monitor_loop() {
+        while (running_) {
+            auto chronos_health = compute_health(chronos_index_);
+            
+            if (!chronos_health.is_healthy()) {
+                spdlog::warn("Chronos CV={:.3f} < 0.20", chronos_health.CV);
+                trigger_alert("chronos_degradation");
+            }
+            
+            report_to_etcd(chronos_health);
+            std::this_thread::sleep_for(std::chrono::seconds(60));
+        }
+    }
+};
+```
+
+**Success criteria:**
+- ✅ CV calculated correctly
+- ✅ Alerts trigger at thresholds
+- ✅ Health reported to etcd every 60s
+- ✅ Dashboard-ready metrics
+
+---
+
+### 📋 Day 40 - etcd Integration & Symbiosis
+
+**Goals:**
+- [ ] Register in etcd with `partner_detector`
+- [ ] Heartbeat every 10s
+- [ ] Subscribe to ml-detector status
+- [ ] Alert if partner fails
+- [ ] Test coordinated shutdown
+
+**etcd Registration:**
+```cpp
+void register_service() {
+    nlohmann::json metadata = {
+        {"type", "rag-ingester"},
+        {"location", config_.service.location},
+        {"partner_detector", config_.service.etcd.partner_detector},
+        {"faiss_indices", {
+            {"chronos", {
+                {"vectors", chronos_index_->ntotal},
+                {"cv", chronos_health.CV}
+            }},
+            {"sbert", {...}},
+            {"entity_benign", {...}},
+            {"entity_malicious", {...}}
+        }},
+        {"health", {
+            {"status", "healthy"},
+            {"last_heartbeat", iso_timestamp()}
+        }}
+    };
+    
+    etcd_client_->put(
+        "/ml-defender/services/rag-ingester-" + config_.service.location,
+        metadata.dump(),
+        10  // TTL seconds
+    );
+}
+
+void heartbeat_loop() {
+    while (running_) {
+        register_service();  // Refresh TTL
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    }
+}
+
+void watch_partner() {
+    etcd_client_->watch(
+        "/ml-defender/services/" + config_.service.etcd.partner_detector,
+        [this](const etcd::Response& response) {
+            if (response.is_expired()) {
+                spdlog::error("Partner detector {} expired!", 
+                             config_.service.etcd.partner_detector);
+                // Trigger alert, pause ingestion
+            }
+        }
+    );
+}
+```
+
+**Success criteria:**
+- ✅ Service visible in etcd
+- ✅ Heartbeat maintains TTL
+- ✅ Partner detection working
+- ✅ Coordinated shutdown tested
+- ✅ Symbiosis observable
+
+---
+
+## 📅 Phase 2B - Optimization (Week 6: Days 41-45)
+
+### Day 41 - Multi-Threading
+
+**Goals:**
+- [ ] Enable parallel mode in config
+- [ ] ThreadPool for embeddings (3 workers)
+- [ ] ThreadPool for indexing (4 workers)
+- [ ] Performance benchmarking (target: 500 events/sec)
+
+### Day 42 - Persistence & Checkpointing
+
+**Goals:**
+- [ ] FAISS index save/load
+- [ ] Checkpoint every 1000 events
+- [ ] Graceful shutdown with persistence
+- [ ] Recovery from crash (load last checkpoint)
+
+### Day 43 - Advanced Strategies
+
+**Goals:**
+- [ ] Temporal tiers (hot/warm/cold)
+- [ ] Metadata-first search
+- [ ] Quantization (int8)
+
+### Day 44 - Integration Testing
+
+**Goals:**
+- [ ] End-to-end pipeline test (sniffer → ingester → search)
+- [ ] Performance benchmarks (10K events)
+- [ ] Memory profiling (target: <500MB)
+- [ ] Load testing (continuous 24h)
+
+### Day 45 - Documentation & Hardening
+
+**Goals:**
+- [ ] API documentation
+- [ ] Deployment guide (systemd service)
+- [ ] Troubleshooting guide
+- [ ] Operational runbook
+
+---
+
+## 📅 Phase 3 - GAIA System (Weeks 7-8)
+
+### RAG-Master Development (Local Level)
+
+**Components:**
+- [ ] Orchestrator service
+- [ ] LLM validator (TinyLlama)
+- [ ] Vaccine distributor (to local RAG-clients)
+- [ ] Multi-client coordination
+- [ ] Health aggregator
+
+**Features:**
+- [ ] Anomaly validation (reduce false positives)
+- [ ] Vaccine generation (embedding signatures)
+- [ ] Distribution to all plants in building
+- [ ] Decision authority (local scope)
+
+### RAG-Master Campus (Nivel 2)
+
+**Components:**
+- [ ] Campus-level orchestrator
+- [ ] Multi-building aggregation
+- [ ] Upward sync to Global
+- [ ] Downward distribution to buildings
+- [ ] NO lateral sync (isolated campus)
+
+**Features:**
+- [ ] Campus-wide threat correlation
+- [ ] Policy enforcement
+- [ ] Model update distribution
+- [ ] Building health monitoring
+
+### RAG-Master Global (Nivel 3)
+
+**Components:**
+- [ ] Global orchestrator
+- [ ] Multi-campus aggregation
+- [ ] Threat intelligence APIs
+- [ ] Global policy engine
+- [ ] Override authority
+
+**Features:**
+- [ ] APT detection (cross-campus correlation)
+- [ ] Global vaccine distribution
+- [ ] Compliance enforcement
+- [ ] Organization-wide visibility
+
+---
+
+## 📅 Phase 4 - Post-Hardening (Future)
+
+### Model Re-training
+
+**Capabilities:**
+- [ ] Continual learning from new threats
+- [ ] A/B testing of model versions
+- [ ] Automatic rollback on degradation
+- [ ] Federated learning (privacy-preserving)
+
+### Advanced Features
+
+- [ ] GPU acceleration (CUDA)
+- [ ] Distributed FAISS (cluster)
+- [ ] Real-time model updates
+- [ ] Threat intelligence APIs (STIX/TAXII)
+- [ ] Integration with SOC/SIEM
+
+---
+
+## 🎓 Lessons Learned
+
+### Day 35
+
+1. ✅ **Library naming matters**: `libetcd_client.so` not `libetcd-client.so`
+2. ✅ **Forward declarations**: Need full headers in `.cpp` for `unique_ptr<T>`
+3. ✅ **System vs local libs**: Check `/usr/local/lib` first, then `/vagrant`
+4. ✅ **Log permissions**: Use `/tmp` instead of `/var/log` to avoid sudo
+5. ✅ **Via Appia principle**: Skeleton first, functionality incremental
+6. ✅ **Dependency verification**: Always verify libraries exist before linking
+7. ✅ **Test-driven**: Test suite from day 1 catches issues early
+
+---
+
+## 📊 Success Metrics
+
+### Phase 2A (Week 5)
+- ✅ Compilation successful (Day 35)
+- ✅ All tests passing (Day 35)
+- ✅ Dependencies resolved (Day 35)
+- [ ] End-to-end pipeline working (Day 40)
+- [ ] <500ms latency per event
+
+### Phase 2B (Week 6)
+- [ ] Multi-threading operational
+- [ ] Memory usage <500MB (100K events)
+- [ ] CV metrics stable >0.20
+- [ ] 10+ hours continuous operation
+
+### Phase 3 (Weeks 7-8)
+- [ ] RAG-master Local operational
+- [ ] Vaccine distribution <30 sec (local)
+- [ ] RAG-master Campus operational
+- [ ] Vaccine distribution <5 min (campus)
+- [ ] RAG-master Global operational
+- [ ] Vaccine distribution <15 min (global)
+
+---
+
+## 📈 Progress Visual
+```
+Phase 1:  [████████████████████] 100% COMPLETE
+Phase 2A: [██░░░░░░░░░░░░░░░░░░]  10% (Day 35/40)
+Phase 2B: [░░░░░░░░░░░░░░░░░░░░]   0%
+Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
+```
+
+**Day 35 Completion:**
+- Structure:    [████] 100% ✅
+- Dependencies: [████] 100% ✅
+- Tests:        [████] 100% ✅
+- Functionality:[░░░░]   0% ← Days 36-40
+
+---
+
+## 🏛️ Via Appia Quality Checkpoints
+
+**Foundation (Week 5):**
+- [x] Estructura antes que funcionalidad
+- [x] Dependencias verificadas antes de código
+- [x] Tests desde día 1
+- [ ] End-to-end validation antes de expansión
+
+**Expansion (Week 6):**
+- [ ] Multi-threading solo cuando single funciona
+- [ ] Optimización solo con profiling real
+- [ ] Persistencia antes de distribución
+
+**Production (Weeks 7-8):**
+- [ ] GAIA hierarchy incremental (local → campus → global)
+- [ ] Failover tested en cada nivel
+- [ ] Disaster recovery procedures documented
+
+---
+
+**End of Backlog**
+
+**Last Updated:** 2026-01-11 (Day 35 Complete)  
+**Next Update:** 2026-01-12 (Day 36 - FileWatcher & EventLoader)  
+**Vision:** Sistema inmunológico jerárquico global - De edificios a planetas 🌍
+EOF
