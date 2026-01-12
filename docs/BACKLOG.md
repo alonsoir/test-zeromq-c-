@@ -91,6 +91,216 @@ Event EventLoader::load(const std::string& filepath) {
 
 ---
 
+## 🔍 ADR-002: Multi-Engine Provenance & Situational Intelligence
+
+**Date:** 12 Enero 2026  
+**Status:** APPROVED  
+**Decision:** Extend protobuf contract to capture multiple engine verdicts  
+**Proposer:** Gemini (peer reviewer)  
+**Implementation:** Day 37 (before ONNX embedders)
+
+---
+
+### Context
+
+Currently, the protobuf contract only stores the **final classification** result. This discards valuable information:
+
+- **Sniffer verdict:** Fast-path decision (eBPF/XDP)
+- **RandomForest verdict:** ML primary classification
+- **CNN verdict:** ML secondary classification (if enabled)
+
+**The discrepancy between engines IS the signal** for detecting:
+- APTs (Advanced Persistent Threats) camouflaged as benign traffic
+- 0-days (unknown attacks)
+- False positives (industrial equipment with unusual patterns)
+
+### Decision
+
+Add `DetectionProvenance` message to protobuf contract with:
+1. **Array of verdicts** - All engine opinions
+2. **Reason codes** - WHY each engine decided
+3. **Discrepancy score** - Measure of disagreement
+4. **Final decision** - What action was taken
+
+### Protobuf Extension
+
+```protobuf
+// network_security.proto
+
+message EngineVerdict {
+  string engine_name = 1;      // "fast-path-sniffer", "random-forest", "cnn-secondary"
+  string classification = 2;   // "Benign", "DDoS", "Ransomware", etc.
+  float confidence = 3;        // 0.0 - 1.0
+  string reason_code = 4;      // WHY (see table below)
+  uint64 timestamp_ns = 5;     // When this engine decided
+}
+
+message DetectionProvenance {
+  repeated EngineVerdict verdicts = 1;  // ALL opinions
+  uint64 global_timestamp_ns = 2;       // When event was logged
+  string final_decision = 3;            // "ALLOW", "DROP", "ALERT"
+  float discrepancy_score = 4;          // 0.0 (agree) - 1.0 (disagree)
+  string logic_override = 5;            // If human/RAG forced decision
+}
+
+// Add to NetworkSecurityEvent:
+message NetworkSecurityEvent {
+  // ... existing fields (101 features) ...
+  
+  DetectionProvenance provenance = 20;  // NEW
+}
+```
+
+### Reason Codes (Gemini's Table)
+
+| Code | Meaning | Value for RAG/LLM |
+|------|---------|-------------------|
+| `SIG_MATCH` | Exact signature match (blacklist) | **Immediate block priority** |
+| `STAT_ANOMALY` | Statistical deviation (Z-score high) | Unusual behavior, not necessarily malicious |
+| `PCA_OUTLIER` | Vector outside normal cloud (latent space) | **Critical for 0-day detection** 🎯 |
+| `PROT_VIOLATION` | Protocol malformation (impossible TCP flags) | Low-level technical attack |
+| `ENGINE_CONFLICT` | Sniffer vs ML disagree significantly | **High-priority alert for LLM analysis** 🚨 |
+
+### Use Cases
+
+**Case 1: APT Camouflaged**
+```
+Sniffer: "Benign" (95%) - reason: SIG_MATCH (whitelist)
+RF:      "Exfiltration" (55%) - reason: STAT_ANOMALY (timing)
+CNN:     "Suspicious" (62%) - reason: PCA_OUTLIER (latent)
+
+→ discrepancy_score: 0.85 (HIGH)
+→ reason_code: ENGINE_CONFLICT + PCA_OUTLIER
+→ RAG flags for human review
+→ LLM: "Sniffer fooled by TLS, but timing+PCA suspicious"
+→ Action: ALERT + monitor
+```
+
+**Case 2: Industrial False Positive**
+```
+Sniffer: "Benign" (99%) - reason: SIG_MATCH (known IoT)
+RF:      "Anomaly" (40%) - reason: STAT_ANOMALY (Z-score)
+CNN:     "Benign" (90%) - reason: (normal pattern)
+
+→ discrepancy_score: 0.35 (MEDIUM)
+→ Campus A: LLM learns "RF always alerts on this equipment"
+→ Action: Auto-whitelist campus A, monitor campus B
+```
+
+**Case 3: 0-Day Detection**
+```
+Sniffer: "Benign" (80%) - reason: (no signature)
+RF:      "Unknown" (50%) - reason: STAT_ANOMALY
+CNN:     "Malicious" (70%) - reason: PCA_OUTLIER (never seen)
+
+→ discrepancy_score: 0.75 (HIGH)
+→ reason_code: PCA_OUTLIER (critical!)
+→ RAG: "No engine is sure, but CNN detects novelty"
+→ Action: Escalate to human (possible 0-day)
+→ If confirmed → Global vaccine
+```
+
+### Benefits
+
+1. **Situational Intelligence** - Not just "what" but "why" and "how sure"
+2. **0-day Detection** - PCA_OUTLIER + ENGINE_CONFLICT = red flag
+3. **Adaptive Learning** - LLM learns campus-specific patterns
+4. **Reduced False Positives** - Context helps distinguish noise from threats
+5. **Forensics** - Complete audit trail of all engine decisions
+6. **Vaccine Quality** - Discrepancies help prioritize which events to analyze
+
+### Implementation Strategy
+
+**Phase 1: ml-detector (writes provenance)**
+```cpp
+void RAGLogger::log_event(
+    const PacketAnalysis& sniffer_verdict,
+    const RandomForestResult& rf_result,
+    const CNNResult& cnn_result
+) {
+    NetworkSecurityEvent event;
+    
+    // ... existing feature extraction ...
+    
+    // NEW: Fill provenance
+    auto* prov = event.mutable_provenance();
+    
+    // Add all verdicts with reason codes
+    // Calculate discrepancy score
+    // Record final decision
+    
+    // Encrypt, compress, write...
+}
+```
+
+**Phase 2: rag-ingester (reads provenance)**
+```cpp
+Event EventLoader::load(const std::string& filepath) {
+    // Decrypt, decompress, parse protobuf...
+    
+    Event event;
+    event.features = extract_101_features(proto_event);
+    
+    // NEW: Parse provenance
+    if (proto_event.has_provenance()) {
+        for (const auto& verdict : prov.verdicts()) {
+            event.verdicts.push_back(verdict);
+        }
+        event.discrepancy_score = prov.discrepancy_score();
+    }
+    
+    return event;
+}
+```
+
+**Phase 3: Embedders use discrepancy**
+```cpp
+std::vector<float> ChronosEmbedder::embed(const Event& event) {
+    std::vector<float> input = event.features;  // 101 features
+    
+    // NEW: Add meta-features from ADR-002
+    input.push_back(event.discrepancy_score);   // Feature 102
+    input.push_back(event.verdicts.size());     // Feature 103
+    
+    // ONNX inference: 103 features → 512-d
+    return run_inference(input);
+}
+```
+
+### Success Metrics
+
+- ✅ Reduced false positive rate (target: -20%)
+- ✅ 0-day detection improved (measure: time to detection)
+- ✅ LLM can explain decisions (qualitative: operator feedback)
+- ✅ Vaccine quality improved (measure: global vs local vaccine ratio)
+
+### Implementation Timeline
+
+**Day 37 Morning (2-3 hours):**
+- Update `network_security.proto`
+- Regenerate protobuf (make proto-unified)
+- Update ml-detector (fill provenance)
+- Add encryption to ml-detector (BONUS)
+- Test with synthetic data
+
+**Day 37 Afternoon (3-4 hours):**
+- Update rag-ingester (parse provenance)
+- Update embedders (use discrepancy as feature)
+- Implement ONNX embedders
+- Test end-to-end
+
+---
+
+**Full Documentation:** See `/vagrant/rag-ingester/docs/ADR_002_MULTI_ENGINE_PROVENANCE.md`
+
+**Status:** APPROVED - Ready for implementation Day 37  
+**Proposed by:** Gemini (peer reviewer)  
+**Co-authors:** Alonso, Claude, Gemini
+
+🏛️ **Via Appia:** This transforms the system from binary decision to situational intelligence - exactly the kind of architectural decision that builds systems for 2000 years.
+
+---
+
 ## 🌍 Vision: GAIA System - Hierarchical Immune Network
 
 ML Defender no es solo un IDS - es un **sistema inmunológico jerárquico distribuido** para redes empresariales globales.

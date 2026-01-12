@@ -84,110 +84,433 @@ Razón: Poison log prevention
 
 ---
 
-## 🎯 DAY 37 OBJECTIVES (Immediate Next)
+## 🎯 DAY 37 - PLAN EJECUTIVO (ADR-002 + ONNX Embedders)
 
-### ONNX Runtime Embedders Implementation
+### Overview
 
-**Goal:** Implementar 3 embedders para generar vectores densos
+**Duración estimada:** 6-8 horas  
+**Objetivo dual:**
+1. Implementar ADR-002 (Multi-Engine Provenance)
+2. Implementar ONNX Runtime Embedders
 
-**Modelos:**
-1. **ChronosEmbedder** - 83 features → 512 dimensions
-2. **SBERTEmbedder** - 83 features → 384 dimensions
-3. **AttackEmbedder** - 83 features → 256 dimensions
+**Referencia completa:** Ver `/vagrant/rag-ingester/docs/ADR_002_MULTI_ENGINE_PROVENANCE.md`
 
-**Implementation Pattern:**
+---
+
+## 📋 SESIÓN MAÑANA: Protobuf + Cifrado (2-3 horas)
+
+### 1. Actualizar Protobuf Contract (30 min)
+
+**Archivo:** `/vagrant/protobuf/network_security.proto`
+
+**Agregar mensajes:**
+```protobuf
+message EngineVerdict {
+  string engine_name = 1;      // "fast-path-sniffer", "random-forest", "cnn"
+  string classification = 2;   // "Benign", "DDoS", "Ransomware", etc.
+  float confidence = 3;        // 0.0 - 1.0
+  string reason_code = 4;      // NEW: SIG_MATCH, STAT_ANOMALY, etc.
+  uint64 timestamp_ns = 5;     // When this engine decided
+}
+
+message DetectionProvenance {
+  repeated EngineVerdict verdicts = 1;    // ALL engine opinions
+  uint64 global_timestamp_ns = 2;
+  string final_decision = 3;              // "ALLOW", "DROP", "ALERT"
+  float discrepancy_score = 4;            // 0.0 (agree) - 1.0 (disagree)
+  string logic_override = 5;              // If human/RAG forced decision
+}
+
+// Add to NetworkSecurityEvent:
+message NetworkSecurityEvent {
+  // ... existing 101 features ...
+  DetectionProvenance provenance = 20;  // NEW
+}
+```
+
+**Compilar:**
+```bash
+cd /vagrant
+make proto-unified  # Regenera .pb.h y .pb.cc
+```
+
+---
+
+### 2. Crear Reason Codes Header (15 min)
+
+**Archivo:** `/vagrant/include/reason_codes.hpp`
+
+**Tabla de Gemini (5 códigos):**
 ```cpp
-// include/embedders/chronos_embedder.hpp
-class ChronosEmbedder {
-public:
-    ChronosEmbedder(const std::string& onnx_path);
-    std::vector<float> embed(const Event& event);
-    
-private:
-    std::unique_ptr<Ort::Session> session_;
-    Ort::MemoryInfo memory_info_;
-    std::vector<int64_t> input_shape_;   // [1, 83]
-    std::vector<int64_t> output_shape_;  // [1, 512]
+#pragma once
+#include <string>
+
+namespace ml_defender {
+
+enum class ReasonCode {
+    SIG_MATCH,         // Exact signature match → Immediate block
+    STAT_ANOMALY,      // Statistical deviation (Z-score) → Unusual behavior
+    PCA_OUTLIER,       // Outside normal latent space → 0-day detection 🎯
+    PROT_VIOLATION,    // Protocol malformation → Technical attack
+    ENGINE_CONFLICT,   // Engines disagree → High-priority alert 🚨
+    UNKNOWN
+};
+
+inline const char* to_string(ReasonCode code) {
+    switch(code) {
+        case ReasonCode::SIG_MATCH:       return "SIG_MATCH";
+        case ReasonCode::STAT_ANOMALY:    return "STAT_ANOMALY";
+        case ReasonCode::PCA_OUTLIER:     return "PCA_OUTLIER";
+        case ReasonCode::PROT_VIOLATION:  return "PROT_VIOLATION";
+        case ReasonCode::ENGINE_CONFLICT: return "ENGINE_CONFLICT";
+        default:                          return "UNKNOWN";
+    }
+}
+
+} // namespace ml_defender
+```
+
+---
+
+### 3. Actualizar Sniffer (30 min)
+
+**Archivo:** `/vagrant/sniffer/src/packet_processor.cpp`
+
+**Agregar a PacketAnalysis struct:**
+```cpp
+struct PacketAnalysis {
+    std::string classification;
+    float confidence;
+    ReasonCode reason;           // NEW
+    uint64_t timestamp_ns;       // NEW
+    // ... existing fields ...
 };
 ```
 
-**ONNX Runtime Setup:**
+**Rellenar reason:**
+- Si coincide con blacklist → `SIG_MATCH`
+- Si TCP flags inválidos → `PROT_VIOLATION`
+
+---
+
+### 4. Actualizar ml-detector (1 hora + 30 min cifrado)
+
+**Archivo:** `/vagrant/sniffer/src/rag_logger.cpp`
+
+#### 4a. Fill DetectionProvenance
 ```cpp
-// src/embedders/chronos_embedder.cpp
-ChronosEmbedder::ChronosEmbedder(const std::string& onnx_path) {
-    Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "ChronosEmbedder");
-    Ort::SessionOptions session_options;
+void RAGLogger::log_event(
+    const PacketAnalysis& sniffer_verdict,
+    const RandomForestResult& rf_result,
+    const CNNResult& cnn_result
+) {
+    NetworkSecurityEvent event;
+    // ... existing 101 features ...
     
-    session_ = std::make_unique<Ort::Session>(
-        env, 
-        onnx_path.c_str(), 
-        session_options
+    // NEW: Provenance
+    auto* prov = event.mutable_provenance();
+    
+    // Sniffer verdict
+    auto* v1 = prov->add_verdicts();
+    v1->set_engine_name("fast-path-sniffer");
+    v1->set_classification(sniffer_verdict.classification);
+    v1->set_confidence(sniffer_verdict.confidence);
+    v1->set_reason_code(to_string(sniffer_verdict.reason));
+    v1->set_timestamp_ns(sniffer_verdict.timestamp_ns);
+    
+    // RandomForest verdict
+    auto* v2 = prov->add_verdicts();
+    v2->set_engine_name("random-forest");
+    v2->set_classification(rf_result.classification);
+    v2->set_confidence(rf_result.confidence);
+    v2->set_reason_code(to_string(rf_result.reason));
+    v2->set_timestamp_ns(now_ns());
+    
+    // CNN verdict (if enabled)
+    if (cnn_result.enabled) {
+        auto* v3 = prov->add_verdicts();
+        v3->set_engine_name("cnn-secondary");
+        v3->set_classification(cnn_result.classification);
+        v3->set_confidence(cnn_result.confidence);
+        v3->set_reason_code(to_string(cnn_result.reason));
+        v3->set_timestamp_ns(now_ns());
+    }
+    
+    // Discrepancy score
+    prov->set_discrepancy_score(
+        calculate_discrepancy(sniffer_verdict, rf_result, cnn_result)
     );
     
-    memory_info_ = Ort::MemoryInfo::CreateCpu(
-        OrtArenaAllocator, 
-        OrtMemTypeDefault
-    );
+    // Final decision
+    prov->set_final_decision(firewall_action);  // "ALLOW"/"DROP"/"ALERT"
+    prov->set_global_timestamp_ns(now_ns());
+    
+    // Encrypt, compress, write...
 }
 
+float calculate_discrepancy(/* verdicts */) {
+    // Simple: max confidence delta between conflicting classifications
+    // If all agree → 0.0, if max disagreement → 1.0
+    float max_delta = 0.0f;
+    // ... implementation ...
+    return max_delta;
+}
+```
+
+#### 4b. Add Encryption (BONUS - ADR-001)
+```cpp
+#include <crypto_transport/crypto.hpp>
+#include <crypto_transport/compression.hpp>
+
+void RAGLogger::write_pb_event(const NetworkSecurityEvent& event) {
+    // 1. Serialize protobuf
+    std::string serialized;
+    event.SerializeToString(&serialized);
+    std::vector<uint8_t> data(serialized.begin(), serialized.end());
+    
+    // 2. Compress (LZ4 - MANDATORY)
+    auto compressed = crypto_transport::compress(data);
+    
+    // 3. Encrypt (ChaCha20 - MANDATORY)
+    auto encrypted = crypto_transport::encrypt(compressed, encryption_key_);
+    
+    // 4. Write
+    std::ofstream file(pb_filepath, std::ios::binary);
+    file.write(reinterpret_cast<char*>(encrypted.data()), encrypted.size());
+}
+
+void RAGLogger::write_jsonl_event(const nlohmann::json& event) {
+    // Same process for .jsonl files
+    std::string json_str = event.dump();
+    std::vector<uint8_t> data(json_str.begin(), json_str.end());
+    
+    auto compressed = crypto_transport::compress(data);
+    auto encrypted = crypto_transport::encrypt(compressed, encryption_key_);
+    
+    std::ofstream file(jsonl_path, std::ios::binary | std::ios::app);
+    file.write(reinterpret_cast<char*>(encrypted.data()), encrypted.size());
+    file << "\n";
+}
+```
+
+---
+
+### 5. Recompilar Todo (15 min)
+
+```bash
+cd /vagrant
+
+# 1. Protobuf
+make proto-unified
+
+# 2. Sniffer + ml-detector
+make sniffer
+make detector
+
+# 3. Verificar
+vagrant ssh
+/vagrant/sniffer/build/sniffer --version
+```
+
+---
+
+## 📋 SESIÓN TARDE: rag-ingester + ONNX (3-4 horas)
+
+### 6. Actualizar rag-ingester (30 min)
+
+**Archivo:** `/vagrant/rag-ingester/src/event_loader.cpp`
+
+```cpp
+Event EventLoader::load(const std::string& filepath) {
+    // Decrypt, decompress, parse protobuf...
+    
+    Event event;
+    event.id = proto_event.event_id();
+    event.features = extract_101_features(proto_event);
+    
+    // NEW: Parse provenance
+    if (proto_event.has_provenance()) {
+        const auto& prov = proto_event.provenance();
+        
+        for (const auto& verdict : prov.verdicts()) {
+            EngineVerdict v;
+            v.engine_name = verdict.engine_name();
+            v.classification = verdict.classification();
+            v.confidence = verdict.confidence();
+            v.reason_code = verdict.reason_code();
+            v.timestamp_ns = verdict.timestamp_ns();
+            
+            event.verdicts.push_back(v);
+        }
+        
+        event.discrepancy_score = prov.discrepancy_score();
+        event.final_decision = prov.final_decision();
+    }
+    
+    return event;
+}
+```
+
+**Actualizar Event struct:**
+```cpp
+// include/event_loader.hpp
+struct EngineVerdict {
+    std::string engine_name;
+    std::string classification;
+    float confidence;
+    std::string reason_code;
+    uint64_t timestamp_ns;
+};
+
+struct Event {
+    uint64_t event_id;
+    std::vector<float> features;  // 101 features
+    std::string final_class;
+    float confidence;
+    
+    // NEW: Provenance
+    std::vector<EngineVerdict> verdicts;
+    float discrepancy_score;
+    std::string final_decision;
+};
+```
+
+---
+
+### 7. Implementar ONNX Embedders (2-3 horas)
+
+**ChronosEmbedder (83+2 meta → 512-d):**
+```cpp
+// src/embedders/chronos_embedder.cpp
 std::vector<float> ChronosEmbedder::embed(const Event& event) {
-    // 1. Prepare input (83 features)
-    std::vector<float> input_data = event.features;
+    std::vector<float> input = event.features;  // 101 features
     
-    // 2. Create input tensor
+    // NEW: Add meta-features from ADR-002
+    input.push_back(event.discrepancy_score);   // Feature 102
+    input.push_back(event.verdicts.size());     // Feature 103
+    
+    // ONNX inference: 103 features → 512-d
     Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
-        memory_info_,
-        input_data.data(),
-        input_data.size(),
-        input_shape_.data(),
-        input_shape_.size()
+        memory_info_, input.data(), input.size(),
+        input_shape_.data(), input_shape_.size()
     );
-    
-    // 3. Run inference
-    const char* input_names[] = {"input"};
-    const char* output_names[] = {"output"};
     
     auto output_tensors = session_->Run(
         Ort::RunOptions{nullptr},
-        input_names, &input_tensor, 1,
-        output_names, 1
+        input_names_, &input_tensor, 1,
+        output_names_, 1
     );
     
-    // 4. Extract output (512-d vector)
     float* output_data = output_tensors[0].GetTensorMutableData<float>();
     return std::vector<float>(output_data, output_data + 512);
 }
 ```
 
-**Models Strategy:**
-```bash
-# Option 1: Use placeholder ONNX (for compilation/testing)
-# Create simple identity network that outputs fixed dimensions
+**SBERTEmbedder (103 → 384-d):**
+- Same pattern, different dimensions
 
-# Option 2: Download pre-trained from HuggingFace
-# Search for time-series and sentence embedding models
-
-# Option 3: Train custom (Week 6)
-# Use synthetic data + RandomForest features
-```
-
-**AttackEmbedder Special Feature:**
+**AttackEmbedder (103 → 256-d + benign sampling):**
 ```cpp
-// Benign sampling (only 10% of benign events)
 bool AttackEmbedder::should_embed(const Event& event) const {
-    if (event.classification == "Benign") {
+    if (event.final_class == "Benign") {
         return (rand() % 100) < 10;  // 10% sampling
     }
     return true;  // All malicious events
 }
 ```
 
-**Success Criteria:**
-- ✅ ONNX models load successfully
-- ✅ Inference <10ms per event (single-threaded)
-- ✅ Correct output dimensions (512, 384, 256)
-- ✅ Memory-efficient (reuse tensors)
-- ✅ Thread-safe initialization
+---
+
+### 8. Testing (30 min)
+
+```bash
+cd /vagrant/rag-ingester/build
+
+# Test provenance parsing
+./test_event_loader
+
+# Test embedders
+./test_chronos_embedder
+
+# Integration test
+./rag-ingester ../config/rag-ingester.json
+# Copy encrypted .pb → should process with provenance
+```
+
+---
+
+## ✅ CHECKLIST DEL DÍA
+
+### Mañana (Protobuf + Cifrado):
+- [ ] Actualizar `network_security.proto` (DetectionProvenance)
+- [ ] Crear `reason_codes.hpp` (5 códigos de Gemini)
+- [ ] Regenerar protobuf: `make proto-unified`
+- [ ] Actualizar sniffer (PacketAnalysis + reason)
+- [ ] Actualizar ml-detector (provenance + encryption)
+- [ ] Recompilar: `make sniffer && make detector`
+- [ ] Verificar: binarios arrancan sin errores
+
+### Tarde (rag-ingester + ONNX):
+- [ ] Actualizar `event_loader.cpp` (parse provenance)
+- [ ] Actualizar Event struct
+- [ ] Implementar ChronosEmbedder (103 → 512)
+- [ ] Implementar SBERTEmbedder (103 → 384)
+- [ ] Implementar AttackEmbedder (103 → 256 + sampling)
+- [ ] Tests: `test_event_loader`, `test_chronos_embedder`
+- [ ] Recompilar: `make rag-ingester`
+- [ ] Integration test
+
+---
+
+## 🎯 Success Criteria
+
+**ADR-002 Implementation:**
+- ✅ Protobuf has DetectionProvenance
+- ✅ ml-detector fills all verdicts
+- ✅ rag-ingester parses provenance
+- ✅ Discrepancy score calculated
+- ✅ Reason codes working
+
+**Encryption (ADR-001 bonus):**
+- ✅ ml-detector encrypts .pb files
+- ✅ ml-detector encrypts .jsonl files
+- ✅ rag-ingester decrypts successfully
+
+**ONNX Embedders:**
+- ✅ 3 embedders operational
+- ✅ Using discrepancy as feature (102-103)
+- ✅ Inference <10ms per event
+- ✅ Correct dimensions (512, 384, 256)
+
+---
+
+## 📚 Referencias
+
+- **ADR-002 completo:** `/vagrant/rag-ingester/docs/ADR_002_MULTI_ENGINE_PROVENANCE.md`
+- **Reason codes:** Ver tabla de Gemini en ADR-002
+- **Crypto integration:** Ver GUIA_ETCD_CRYPTO_INTEGRATION.md
+- **BACKLOG:** Ver section ADR-002 en BACKLOG.md
+
+---
+
+## ⏱️ Estimación de Tiempo
+
+| Tarea | Tiempo |
+|-------|--------|
+| Protobuf update | 30 min |
+| Reason codes | 15 min |
+| Sniffer update | 30 min |
+| ml-detector update | 1h |
+| Encryption (bonus) | 30 min |
+| Compilación | 15 min |
+| **Subtotal mañana** | **3h** |
+| rag-ingester update | 30 min |
+| ChronosEmbedder | 1h |
+| SBERTEmbedder | 45 min |
+| AttackEmbedder | 45 min |
+| Testing | 30 min |
+| **Subtotal tarde** | **3.5h** |
+| **TOTAL** | **~6.5h** |
 
 ---
 
@@ -199,12 +522,12 @@ bool AttackEmbedder::should_embed(const Event& event) const {
 ```json
 // ❌ INSECURE:
 {
-  "ingester": {
-    "input": {
-      "encrypted": false,  // ← Attacker sets to false
-      "compressed": false
-    }
-  }
+   "ingester": {
+      "input": {
+         "encrypted": false,  // ← Attacker sets to false
+         "compressed": false
+      }
+   }
 }
 ```
 
@@ -546,34 +869,34 @@ Overall Phase 2A: 33% complete (2/6 days)
 ## 🏛️ VIA APPIA REMINDERS
 
 1. **Foundation first, always**
-    - Days 35-36: Structure + Crypto ✅
-    - Day 37: Processing (Embedders)
-    - Days 38-40: Integration (FAISS + etcd)
+   - Days 35-36: Structure + Crypto ✅
+   - Day 37: Processing (Embedders)
+   - Days 38-40: Integration (FAISS + etcd)
 
 2. **Security by design**
-    - Encryption mandatory (ADR-001) ✅
-    - No config-level bypasses ✅
-    - Poison log prevention ✅
+   - Encryption mandatory (ADR-001) ✅
+   - No config-level bypasses ✅
+   - Poison log prevention ✅
 
 3. **Test-driven development**
-    - Every component has unit tests
-    - Integration tests before moving on
-    - 14/14 tests passing currently ✅
+   - Every component has unit tests
+   - Integration tests before moving on
+   - 14/14 tests passing currently ✅
 
 4. **Raspberry Pi as baseline**
-    - If it works on Pi, it works anywhere
-    - Memory-conscious design from day 1
-    - <500MB target
+   - If it works on Pi, it works anywhere
+   - Memory-conscious design from day 1
+   - <500MB target
 
 5. **Measure before optimize**
-    - Single-threaded first (Days 36-40)
-    - Multi-threaded only when needed (Week 6)
-    - Profile with real data
+   - Single-threaded first (Days 36-40)
+   - Multi-threaded only when needed (Week 6)
+   - Profile with real data
 
 6. **Document exhaustively**
-    - ADRs for every architectural decision
-    - Future maintainers thank us
-    - AI collaboration transparent
+   - ADRs for every architectural decision
+   - Future maintainers thank us
+   - AI collaboration transparent
 
 ---
 
