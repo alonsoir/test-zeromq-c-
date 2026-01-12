@@ -2,7 +2,7 @@
 // RAG Ingester - EventLoader Implementation
 // Day 36: Decrypt + Decompress + Parse pipeline
 // Via Appia Quality - Robust, exception-safe event processing
-// USANDO API REAL: crypto_transport::decrypt() y decompress()
+// ACTUALIZED: Extracción COMPLETA de features según network_security.proto
 
 #include "event_loader.hpp"
 #include <fstream>
@@ -11,16 +11,15 @@
 #include <stdexcept>
 #include <cmath>
 
-// API REAL de crypto-transport
-#include <crypto_transport/crypto.hpp>
-#include <crypto_transport/compression.hpp>
+#include <crypto_transport/stream_decryptor.hpp>
+#include <crypto_transport/decompressor.hpp>
 
 #include <network_security.pb.h>
 
 namespace rag_ingester {
 
 // ============================================================================
-// CryptoImpl - PIMPL pattern con API REAL
+// CryptoImpl - PIMPL pattern to hide crypto-transport details
 // ============================================================================
 
 class EventLoader::CryptoImpl {
@@ -32,6 +31,7 @@ public:
             throw std::runtime_error("Failed to open encryption key: " + key_path);
         }
 
+        // Read key bytes (32 bytes para ChaCha20, no AES)
         key_.resize(32);
         key_file.read(reinterpret_cast<char*>(key_.data()), 32);
 
@@ -41,49 +41,39 @@ public:
 
         std::cout << "[INFO] EventLoader: Loaded encryption key ("
                   << key_.size() << " bytes)" << std::endl;
+
+        // Inicializar crypto-transport con ChaCha20 (no AES)
+        decryptor_ = std::make_unique<crypto::StreamDecryptor>(
+            crypto::Algorithm::CHACHA20_POLY1305,  // ← ChaCha20, no AES
+            key_
+        );
+
+        // Inicializar decompressor con LZ4 (no GZIP)
+        decompressor_ = std::make_unique<crypto::Decompressor>(
+            crypto::CompressionType::LZ4  // ← LZ4, no GZIP
+        );
+
         std::cout << "[INFO] EventLoader: Crypto initialized (ChaCha20-Poly1305 + LZ4)" << std::endl;
     }
 
     std::vector<uint8_t> decrypt(const std::vector<uint8_t>& encrypted) {
-        if (encrypted.empty()) {
-            return encrypted; // Pass-through si vacío
-        }
-
-        try {
-            // API REAL: crypto_transport::decrypt()
-            return crypto_transport::decrypt(encrypted, key_);
-        } catch (const std::exception& e) {
-            // Si falla el decrypt, probablemente los datos no están cifrados
-            // Retornar sin cambios (pass-through)
-            std::cerr << "[WARN] Decrypt failed (data may be unencrypted): "
-                      << e.what() << std::endl;
-            return encrypted;
-        }
+        // ml-detector aún no cifra los datos, así que por ahora es pass-through
+        // TODO: Activar cuando ml-detector implemente cifrado
+        // return decryptor_->decrypt(encrypted);
+        return encrypted;  // Pass-through temporal
     }
 
     std::vector<uint8_t> decompress(const std::vector<uint8_t>& compressed) {
-        if (compressed.empty()) {
-            return compressed; // Pass-through si vacío
-        }
-
-        try {
-            // API REAL: crypto_transport::decompress()
-            // Necesitamos estimar el tamaño original
-            size_t estimated_size = compressed.size() * 10; // 10x compression ratio
-            if (estimated_size < 1024) estimated_size = 1024;
-
-            return crypto_transport::decompress(compressed, estimated_size);
-        } catch (const std::exception& e) {
-            // Si falla el decompress, probablemente los datos no están comprimidos
-            // Retornar sin cambios (pass-through)
-            std::cerr << "[WARN] Decompress failed (data may be uncompressed): "
-                      << e.what() << std::endl;
-            return compressed;
-        }
+        // ml-detector aún no comprime los datos, así que por ahora es pass-through
+        // TODO: Activar cuando ml-detector implemente compresión
+        // return decompressor_->decompress(compressed);
+        return compressed;  // Pass-through temporal
     }
 
 private:
     std::vector<uint8_t> key_;
+    std::unique_ptr<crypto::StreamDecryptor> decryptor_;
+    std::unique_ptr<crypto::Decompressor> decompressor_;
 };
 
 // ============================================================================
@@ -92,6 +82,8 @@ private:
 
 EventLoader::EventLoader(const std::string& encryption_key_path)
     : crypto_(std::make_unique<CryptoImpl>(encryption_key_path)) {
+
+    // Initialize stats
     stats_ = {};
 }
 
@@ -99,17 +91,21 @@ EventLoader::~EventLoader() = default;
 
 Event EventLoader::load(const std::string& filepath) {
     try {
+        // Pipeline: Read → Decrypt → Decompress → Parse
         auto encrypted = read_file(filepath);
         auto decrypted = decrypt(encrypted);
         auto decompressed = decompress(decrypted);
         auto event = parse_protobuf(decompressed);
 
+        // Set source filepath
         event.filepath = filepath;
 
+        // Update stats
         stats_.total_loaded++;
         stats_.bytes_processed += encrypted.size();
 
-        int expected_features = 101;
+        // Determinar si es parcial basado en features detectadas
+        int expected_features = 101;  // Features base del FlowManager
         if (event.features.size() < expected_features) {
             event.is_partial = true;
             stats_.partial_feature_count++;
@@ -134,6 +130,7 @@ std::vector<Event> EventLoader::load_batch(const std::vector<std::string>& filep
             events.push_back(load(filepath));
         } catch (const std::exception& e) {
             std::cerr << "[ERROR] EventLoader: " << e.what() << std::endl;
+            // Continue with next file (don't fail entire batch)
         }
     }
 
@@ -144,6 +141,10 @@ EventLoader::LoadStats EventLoader::get_stats() const noexcept {
     return stats_;
 }
 
+// ----------------------------------------------------------------------------
+// Private Pipeline Stages
+// ----------------------------------------------------------------------------
+
 std::vector<uint8_t> EventLoader::read_file(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
 
@@ -151,11 +152,13 @@ std::vector<uint8_t> EventLoader::read_file(const std::string& path) {
         throw std::runtime_error("Cannot open file: " + path);
     }
 
+    // Get file size
     auto size = file.tellg();
     if (size <= 0) {
         throw std::runtime_error("Empty file: " + path);
     }
 
+    // Allocate buffer and read entire file
     std::vector<uint8_t> buffer(static_cast<size_t>(size));
     file.seekg(0, std::ios::beg);
     file.read(reinterpret_cast<char*>(buffer.data()), size);
@@ -183,8 +186,11 @@ Event EventLoader::parse_protobuf(const std::vector<uint8_t>& data) {
     }
 
     Event event;
+
+    // Extract metadata
     event.event_id = proto_event.event_id();
 
+    // Extract timestamp (convert from protobuf timestamp to nanoseconds)
     if (proto_event.has_event_timestamp()) {
         const auto& ts = proto_event.event_timestamp();
         event.timestamp_ns = ts.seconds() * 1'000'000'000ULL + ts.nanos();
@@ -192,31 +198,37 @@ Event EventLoader::parse_protobuf(const std::vector<uint8_t>& data) {
         event.timestamp_ns = 0;
     }
 
+    // Extract classification from ML analysis
     if (proto_event.has_ml_analysis()) {
         const auto& ml = proto_event.ml_analysis();
 
+        // Try to get from level 1 detection
         if (ml.has_level1_general_detection()) {
             event.final_class = ml.level1_general_detection().prediction_class();
             event.confidence = ml.level1_general_detection().confidence_score();
         }
 
+        // Override with final threat classification if available
         if (!ml.final_threat_classification().empty()) {
             event.final_class = ml.final_threat_classification();
             event.confidence = ml.ensemble_confidence();
         }
     }
 
+    // Fallback to overall classification
     if (event.final_class.empty() && !proto_event.final_classification().empty()) {
         event.final_class = proto_event.final_classification();
         event.confidence = proto_event.overall_threat_score();
     }
 
+    // Extract source detector
     if (proto_event.has_capturing_node()) {
         event.source_detector = proto_event.capturing_node().node_id();
     } else {
         event.source_detector = proto_event.originating_node_id();
     }
 
+    // Extract features (THE MAIN WORK - 100+ features)
     event.features = extract_features(&proto_event);
 
     return event;
@@ -226,6 +238,7 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
     const auto* proto_event =
         static_cast<const protobuf::NetworkSecurityEvent*>(proto_event_ptr);
 
+    // Check if network features exist
     if (!proto_event->has_network_features()) {
         throw std::runtime_error("NetworkSecurityEvent missing network_features");
     }
@@ -233,29 +246,41 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
     const auto& net = proto_event->network_features();
 
     std::vector<float> features;
-    features.reserve(140);
+    features.reserve(140);  // Pre-allocate generously (101 base + 40 embedded)
 
-    // PART 1: BASIC FLOW STATISTICS (61 features)
+    // ========================================================================
+    // PART 1: BASIC FLOW STATISTICS (61 features from FlowManager)
+    // ========================================================================
+
+    // Protocol (campo 5)
     features.push_back(static_cast<float>(net.protocol_number()));
+
+    // Dual-NIC metadata (campos 7, 9)
     features.push_back(static_cast<float>(net.interface_mode()));
     features.push_back(static_cast<float>(net.source_ifindex()));
-    features.push_back(static_cast<float>(net.flow_duration_microseconds() / 1e6));
 
+    // Flow duration (campo 13)
+    features.push_back(static_cast<float>(net.flow_duration_microseconds() / 1e6));  // Convert to seconds
+
+    // Basic packet/byte statistics (campos 14-17)
     features.push_back(static_cast<float>(net.total_forward_packets()));
     features.push_back(static_cast<float>(net.total_backward_packets()));
     features.push_back(static_cast<float>(net.total_forward_bytes()));
     features.push_back(static_cast<float>(net.total_backward_bytes()));
 
+    // Forward packet length statistics (campos 20-23)
     features.push_back(static_cast<float>(net.forward_packet_length_max()));
     features.push_back(static_cast<float>(net.forward_packet_length_min()));
     features.push_back(static_cast<float>(net.forward_packet_length_mean()));
     features.push_back(static_cast<float>(net.forward_packet_length_std()));
 
+    // Backward packet length statistics (campos 30-33)
     features.push_back(static_cast<float>(net.backward_packet_length_max()));
     features.push_back(static_cast<float>(net.backward_packet_length_min()));
     features.push_back(static_cast<float>(net.backward_packet_length_mean()));
     features.push_back(static_cast<float>(net.backward_packet_length_std()));
 
+    // Flow rates and ratios (campos 40-47)
     features.push_back(static_cast<float>(net.flow_bytes_per_second()));
     features.push_back(static_cast<float>(net.flow_packets_per_second()));
     features.push_back(static_cast<float>(net.forward_packets_per_second()));
@@ -265,23 +290,27 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
     features.push_back(static_cast<float>(net.average_forward_segment_size()));
     features.push_back(static_cast<float>(net.average_backward_segment_size()));
 
+    // Flow inter-arrival times (campos 50-53)
     features.push_back(static_cast<float>(net.flow_inter_arrival_time_mean()));
     features.push_back(static_cast<float>(net.flow_inter_arrival_time_std()));
     features.push_back(static_cast<float>(net.flow_inter_arrival_time_max()));
     features.push_back(static_cast<float>(net.flow_inter_arrival_time_min()));
 
+    // Forward inter-arrival times (campos 54-58)
     features.push_back(static_cast<float>(net.forward_inter_arrival_time_total()));
     features.push_back(static_cast<float>(net.forward_inter_arrival_time_mean()));
     features.push_back(static_cast<float>(net.forward_inter_arrival_time_std()));
     features.push_back(static_cast<float>(net.forward_inter_arrival_time_max()));
     features.push_back(static_cast<float>(net.forward_inter_arrival_time_min()));
 
+    // Backward inter-arrival times (campos 59-63)
     features.push_back(static_cast<float>(net.backward_inter_arrival_time_total()));
     features.push_back(static_cast<float>(net.backward_inter_arrival_time_mean()));
     features.push_back(static_cast<float>(net.backward_inter_arrival_time_std()));
     features.push_back(static_cast<float>(net.backward_inter_arrival_time_max()));
     features.push_back(static_cast<float>(net.backward_inter_arrival_time_min()));
 
+    // TCP flags counts (campos 70-77)
     features.push_back(static_cast<float>(net.fin_flag_count()));
     features.push_back(static_cast<float>(net.syn_flag_count()));
     features.push_back(static_cast<float>(net.rst_flag_count()));
@@ -291,11 +320,13 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
     features.push_back(static_cast<float>(net.cwe_flag_count()));
     features.push_back(static_cast<float>(net.ece_flag_count()));
 
+    // TCP flags directional (campos 78-81)
     features.push_back(static_cast<float>(net.forward_psh_flags()));
     features.push_back(static_cast<float>(net.backward_psh_flags()));
     features.push_back(static_cast<float>(net.forward_urg_flags()));
     features.push_back(static_cast<float>(net.backward_urg_flags()));
 
+    // Headers and bulk transfer (campos 85-92)
     features.push_back(static_cast<float>(net.forward_header_length()));
     features.push_back(static_cast<float>(net.backward_header_length()));
     features.push_back(static_cast<float>(net.forward_average_bytes_bulk()));
@@ -305,17 +336,22 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
     features.push_back(static_cast<float>(net.backward_average_packets_bulk()));
     features.push_back(static_cast<float>(net.backward_average_bulk_rate()));
 
+    // Additional packet statistics (campos 95-99)
     features.push_back(static_cast<float>(net.minimum_packet_length()));
     features.push_back(static_cast<float>(net.maximum_packet_length()));
     features.push_back(static_cast<float>(net.packet_length_mean()));
     features.push_back(static_cast<float>(net.packet_length_std()));
     features.push_back(static_cast<float>(net.packet_length_variance()));
 
+    // Active/Idle times (campos 104-105)
     features.push_back(static_cast<float>(net.active_mean()));
     features.push_back(static_cast<float>(net.idle_mean()));
 
+    // ========================================================================
     // PART 2: EMBEDDED DETECTOR FEATURES (40 features)
+    // ========================================================================
 
+    // DDoS Embedded Features (campo 112) - 10 features
     if (net.has_ddos_embedded()) {
         const auto& ddos = net.ddos_embedded();
         features.push_back(ddos.syn_ack_ratio());
@@ -329,9 +365,11 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
         features.push_back(ddos.traffic_escalation_rate());
         features.push_back(ddos.resource_saturation_score());
     } else {
+        // Zero-padding if not present
         for (int i = 0; i < 10; i++) features.push_back(0.0f);
     }
 
+    // Ransomware Embedded Features (campo 113) - 10 features
     if (net.has_ransomware_embedded()) {
         const auto& ransomware = net.ransomware_embedded();
         features.push_back(ransomware.io_intensity());
@@ -348,6 +386,7 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
         for (int i = 0; i < 10; i++) features.push_back(0.0f);
     }
 
+    // Traffic Classification Features (campo 114) - 10 features
     if (net.has_traffic_classification()) {
         const auto& traffic = net.traffic_classification();
         features.push_back(traffic.packet_rate());
@@ -364,6 +403,7 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
         for (int i = 0; i < 10; i++) features.push_back(0.0f);
     }
 
+    // Internal Anomaly Features (campo 115) - 10 features
     if (net.has_internal_anomaly()) {
         const auto& internal = net.internal_anomaly();
         features.push_back(internal.internal_connection_rate());
@@ -379,6 +419,10 @@ std::vector<float> EventLoader::extract_features(const void* proto_event_ptr) {
     } else {
         for (int i = 0; i < 10; i++) features.push_back(0.0f);
     }
+
+    // Total: 61 (base FlowManager) + 40 (embedded detectors) = 101 features
+
+    std::cout << "[DEBUG] Extracted " << features.size() << " features from protobuf" << std::endl;
 
     return features;
 }

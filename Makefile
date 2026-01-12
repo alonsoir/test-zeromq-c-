@@ -26,6 +26,8 @@
 .PHONY: monitor-day23-tmux
 .PHONY: test-day23-full test-day23-stress verify-rag-logs-day23
 .PHONY: day23
+.PHONY: rag-ingester rag-ingester-build rag-ingester-clean
+
 # ============================================================================
 # ThreadSanitizer Build (Race Condition Detection)
 # ============================================================================
@@ -216,6 +218,7 @@ help:
 	@echo "  make rebuild         - Clean + build all (unified)"
 	@echo "  make build-unified   - Build with unified protobuf"
 	@echo "  make rebuild-unified - Clean + unified build"
+	@echo "  make rag-ingester    - Build RAG Ingester"
 	@echo ""
 	@echo "Sniffer Packaging:"
 	@echo "  make sniffer-package - Create .deb package"
@@ -439,6 +442,25 @@ firewall-clean:
 	@echo "🧹 Cleaning Firewall ACL Agent..."
 	@vagrant ssh -c "rm -rf /vagrant/firewall-acl-agent/build/*"
 
+# ============================================================================
+# RAG Ingester (Day 36)
+# ============================================================================
+
+rag-ingester: proto etcd-client-build crypto-transport-build
+	@echo "🔨 Building RAG Ingester..."
+	@echo "   Dependencies: proto ✅  etcd-client ✅  crypto-transport ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/rag-ingester/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/rag-ingester/build/proto/ && \
+		cd /vagrant/rag-ingester/build && \
+		cmake -DCMAKE_BUILD_TYPE=Debug .. && \
+		make -j4"
+
+rag-ingester-build: rag-ingester
+
+rag-ingester-clean:
+	@echo "🧹 Cleaning RAG Ingester..."
+	@vagrant ssh -c "rm -rf /vagrant/rag-ingester/build/*"
+
 # ----------------------------------------------------------------------------
 # 4. etcd-server (independiente)
 # ----------------------------------------------------------------------------
@@ -446,16 +468,17 @@ firewall-clean:
 # ----------------------------------------------------------------------------
 # 5. Build unificado (ORDEN CORRECTO)
 # ----------------------------------------------------------------------------
-build-unified: proto-unified etcd-client-build sniffer detector firewall
+build-unified: proto-unified etcd-client-build crypto-transport-build sniffer detector firewall rag-ingester
 	@echo "🚀 Build completo con protobuf unificado y etcd-client"
 	@$(MAKE) proto-verify
 	@echo ""
 	@echo "✅ Build order executed correctly:"
 	@echo "   1. ✅ proto-unified"
 	@echo "   2. ✅ etcd-client-build"
-	@echo "   3. ✅ sniffer"
-	@echo "   4. ✅ detector"
-	@echo "   5. ✅ firewall"
+	@echo "   3. ✅ crypto-transport-build"
+	@echo "   4. ✅ sniffer"
+	@echo "   5. ✅ detector"
+	@echo "   5. ✅ rag-ingester"
 
 all: build-unified etcd-server-build
 	@echo ""
@@ -479,7 +502,7 @@ rebuild-unified: clean build-unified
 rebuild: rebuild-unified etcd-server-build
 	@echo "✅ Full rebuild complete (all components)"
 
-clean: sniffer-clean detector-clean firewall-clean crypto-transport-clean etcd-client-clean etcd-server-clean
+clean: sniffer-clean detector-clean firewall-clean rag-ingester-clean crypto-transport-clean etcd-client-clean etcd-server-clean
 	@echo "✅ Clean complete (including crypto ecosystem)"
 
 distclean: clean

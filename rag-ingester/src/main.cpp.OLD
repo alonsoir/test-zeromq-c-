@@ -3,17 +3,14 @@
 // Day 36: Complete integration with etcd-client for encryption keys
 
 #include <iostream>
-#include <fstream>     // ← AGREGADO: para std::ofstream
 #include <csignal>
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include <filesystem>
-#include <vector>
 
 #include <spdlog/spdlog.h>
 
-#include "common/config_parser.hpp"  // ← CORREGIDO: ruta correcta
+#include "common/config_parser.hpp"
 #include "file_watcher.hpp"
 #include "event_loader.hpp"
 
@@ -41,8 +38,7 @@ int main(int argc, char* argv[]) {
         spdlog::info("RAG Ingester starting...");
         spdlog::info("Loading configuration from: {}", config_path);
 
-        // CORREGIDO: sin namespace (función global)
-        auto config = rag_ingester::ConfigParser::load(config_path);
+        auto config = rag_ingester::load_config(config_path);
 
         spdlog::info("Configuration loaded:");
         spdlog::info("  Service ID: {}", config.service.id);
@@ -81,7 +77,7 @@ int main(int argc, char* argv[]) {
             // In production, key comes from etcd-client, NOT from file
             encryption_key_path = "/tmp/test_encryption_key.bin";
 
-            // Create a dummy key for testing (32 bytes)
+            // Create a dummy key for testing (32 bytes of zeros)
             // In production, this comes from etcd
             std::ofstream key_file(encryption_key_path, std::ios::binary);
             std::vector<uint8_t> dummy_key(32, 0x42); // 32 bytes of 'B'
@@ -126,8 +122,7 @@ int main(int argc, char* argv[]) {
         uint64_t events_processed = 0;
         uint64_t events_failed = 0;
 
-        // CORREGIDO: FileWatcher usa start(callback), no on_file_created()
-        auto callback = [&](const std::string& filepath) {
+        watcher.on_file_created([&](const std::string& filepath) {
             spdlog::info("New file detected: {}", filepath);
 
             try {
@@ -161,12 +156,12 @@ int main(int argc, char* argv[]) {
                     spdlog::warn("⚠️  Update ml-detector to encrypt .pb files");
                 }
             }
-        };
+        });
 
         // ====================================================================
-        // 7. Start watching (CORREGIDO: pasar callback)
+        // 7. Start watching
         // ====================================================================
-        watcher.start(callback);
+        watcher.start();
         spdlog::info("✅ RAG Ingester ready and waiting for events");
 
         // ====================================================================

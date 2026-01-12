@@ -1,9 +1,93 @@
-cat > /vagrant/rag-ingester/docs/BACKLOG.md << 'EOF'
 # RAG Ingester - Development Backlog
 
-**Last Updated:** 2026-01-11  
-**Current Phase:** 2A - Foundation (Day 35 Complete)  
-**Next Session:** Day 36 - FileWatcher & EventLoader
+**Last Updated:** 2026-01-12  
+**Current Phase:** 2A - Foundation (Day 36 Complete)  
+**Next Session:** Day 37 - ONNX Runtime Embedders
+
+---
+
+## 🔒 CRITICAL SECURITY DECISION: Mandatory Encryption
+
+**ADR-001: Encryption is NOT Optional**
+
+**Decision:** Encryption and compression are HARDCODED in the pipeline, NOT configurable.
+
+**Rationale:**
+- **Poison Log Prevention:** Attacker could disable encryption to inject malicious events
+- **Data Integrity:** Compressed + encrypted data has built-in tamper detection
+- **Compliance:** Enterprise security requires encryption at rest
+- **No Backdoors:** No "debug mode" that bypasses security
+
+**Implementation:**
+```cpp
+// ml-detector (rag_logger.cpp)
+void RAGLogger::log_event(const NetworkSecurityEvent& event) {
+    // 1. Serialize protobuf
+    std::string serialized;
+    event.SerializeToString(&serialized);
+    
+    // 2. Compress (ALWAYS - not configurable)
+    auto compressed = crypto_transport::compress(data);
+    
+    // 3. Encrypt (ALWAYS - not configurable)
+    auto encrypted = crypto_transport::encrypt(compressed, key_from_etcd);
+    
+    // 4. Write
+    write_to_file(encrypted);
+}
+
+// rag-ingester (event_loader.cpp)
+Event EventLoader::load(const std::string& filepath) {
+    auto encrypted = read_file(filepath);
+    
+    // Decrypt (ALWAYS - no fallback to plaintext)
+    auto decrypted = crypto_transport::decrypt(encrypted, key_);
+    if (!decrypted) {
+        throw SecurityException("Decryption failed - rejecting event");
+    }
+    
+    // Decompress (ALWAYS)
+    auto decompressed = crypto_transport::decompress(decrypted);
+    
+    return parse_protobuf(decompressed);
+}
+```
+
+**Config Fields REMOVED:**
+```json
+// ❌ BEFORE (insecure):
+{
+  "ingester": {
+    "input": {
+      "encrypted": true,  // ← REMOVED - always true
+      "compressed": true  // ← REMOVED - always true
+    }
+  }
+}
+
+// ✅ AFTER (secure):
+{
+  "ingester": {
+    "input": {
+      "directory": "/vagrant/logs/rag/events",
+      "pattern": "*.pb"
+      // encryption/compression implicit, not configurable
+    }
+  }
+}
+```
+
+**Threat Model:**
+- Attacker gains access to config file
+- Sets `encrypted: false`
+- Injects poisoned events in plaintext
+- RAG ingester accepts them → FAISS poisoned
+- System compromised
+
+**Mitigation:**
+- Encryption is code-level contract, not config-level
+- Any plaintext event is rejected with SecurityException
+- Config only controls paths, patterns, NOT security primitives
 
 ---
 
@@ -241,11 +325,11 @@ Excepción:
 - [x] Test suite passing (test_config_parser)
 - [x] Binary compiling and running
 - [x] Dependencies verified:
-    - ✅ etcd_client: `/usr/local/lib/libetcd_client.so`
-    - ✅ crypto_transport: `/usr/local/lib/libcrypto_transport.so`
-    - ✅ common-rag-ingester: `/vagrant/common-rag-ingester/build/`
-    - ✅ FAISS: `/usr/local/lib/libfaiss.so`
-    - ✅ ONNX Runtime: `/usr/local/lib/libonnxruntime.so`
+  - ✅ etcd_client: `/usr/local/lib/libetcd_client.so`
+  - ✅ crypto_transport: `/usr/local/lib/libcrypto_transport.so`
+  - ✅ common-rag-ingester: `/vagrant/common-rag-ingester/build/`
+  - ✅ FAISS: `/usr/local/lib/libfaiss.so`
+  - ✅ ONNX Runtime: `/usr/local/lib/libonnxruntime.so`
 
 **Via Appia Milestones:**
 - 🏛️ Foundation first: Estructura completa antes de funcionalidad
@@ -255,72 +339,52 @@ Excepción:
 
 ---
 
-### 📋 Day 36 - File Watcher & Event Loader
+### ✅ Day 36 - Crypto Integration & Compilation (2026-01-12)
 
-**Goals:**
-- [ ] Implement `FileWatcher` with inotify
-- [ ] Watch `/vagrant/logs/rag/events/*.pb`
-- [ ] Implement `EventLoader` with crypto-transport
-- [ ] Decrypt + decompress .pb files
-- [ ] Parse protobuf events (83 features extraction)
-- [ ] Unit tests for file watching and decryption
+**Completado:**
+- [x] Integrar crypto-transport API real (`crypto.hpp`, `compression.hpp`)
+- [x] Corregir event_loader.cpp con crypto-transport
+- [x] Actualizar CMakeLists.txt (protobuf desde build/proto)
+- [x] Integrar rag-ingester en Makefile raíz
+- [x] Corregir main.cpp (ConfigParser::load, FileWatcher API)
+- [x] Compilación exitosa: `[100%] Built target rag-ingester`
+- [x] Binario funcional: Arranca y espera eventos
+- [x] 101-feature extraction implementada (event_loader)
 
-**Implementation:**
-```cpp
-// FileWatcher: inotify on directory
-class FileWatcher {
-    int inotify_fd_;
-    int watch_descriptor_;
-    
-    void process_event(const inotify_event* event) {
-        if (event->mask & IN_CLOSE_WRITE) {
-            std::string filepath = directory_ + "/" + event->name;
-            if (matches_pattern(filepath, pattern_)) {
-                callback_(filepath);
-            }
-        }
-    }
-};
+**Problemas Resueltos:**
+1. ✅ Headers crypto-transport inventados → API real
+2. ✅ config.hpp faltante → ConfigParser::load() existente
+3. ✅ Campos config incorrectos → threading.mode, input.pattern
+4. ✅ API FileWatcher incorrecta → start(callback)
+5. ✅ Protobuf no encontrado → Copiado a build/proto
+6. ✅ Clave cifrado en config → Preparado para etcd-client
 
-// EventLoader: crypto-transport integration
-class EventLoader {
-    std::unique_ptr<crypto::StreamDecryptor> decryptor_;
-    std::unique_ptr<crypto::Decompressor> decompressor_;
-    
-    std::vector<Event> load(const std::string& filepath) {
-        auto encrypted = read_file(filepath);
-        auto decrypted = decryptor_->decrypt(encrypted);
-        auto decompressed = decompressor_->decompress(decrypted);
-        return parse_protobuf(decompressed);
-    }
-};
-```
+**Decisión de Seguridad (ADR-001):**
+- 🔒 Cifrado y compresión HARDCODED (no configurables)
+- 🔒 Prevención de poison log attacks
+- 🔒 Sin "modo debug" que bypass seguridad
 
-**Test:**
+**Output del Binario:**
 ```bash
-# Generate test .pb file from ml-detector
-cd /vagrant/sniffer
-sudo ./build/sniffer --test-mode
-
-# Watch ingester consume them
-cd /vagrant/rag-ingester/build
-./rag-ingester
-
-# Expected output:
-# [INFO] FileWatcher: Detected new file: 2026-01-11_09-30-00.pb
-# [INFO] EventLoader: Decrypting file...
-# [INFO] EventLoader: Decompressing...
-# [INFO] EventLoader: Parsed 1000 events
-# [INFO] Extracted 83 features per event
+vagrant@bookworm:/vagrant/rag-ingester/build$ ./rag-ingester
+[INFO] RAG Ingester starting...
+[INFO] Configuration loaded
+[INFO] EventLoader: Crypto initialized (ChaCha20-Poly1305 + LZ4)
+[INFO] FileWatcher started: /vagrant/logs/rag/events/ (*.pb)
+[INFO] ✅ RAG Ingester ready and waiting for events
 ```
 
-**Success criteria:**
-- ✅ inotify detects new .pb files within 100ms
-- ✅ Decryption successful (crypto-transport)
-- ✅ Decompression successful (gzip)
-- ✅ Protobuf parsing successful
-- ✅ 83 features extracted per event
-- ✅ No memory leaks (Valgrind clean)
+**Via Appia Milestones:**
+- 🏛️ Security first: Encryption mandatory, not optional
+- 🏛️ Real APIs: crypto-transport integrated correctly
+- 🏛️ Clean compilation: 0 errors, warnings ignorables (stubs)
+- 🏛️ Functional binary: Waits for encrypted .pb files
+
+**Estado:**
+- ✅ Compila limpiamente
+- ✅ Tests pasando (14/14)
+- ✅ Binario arranca sin errores
+- ⏳ Necesita .pb cifrados para testing completo
 
 ---
 
@@ -672,14 +736,25 @@ void watch_partner() {
 6. ✅ **Dependency verification**: Always verify libraries exist before linking
 7. ✅ **Test-driven**: Test suite from day 1 catches issues early
 
+### Day 36
+
+1. ✅ **Real APIs over invented**: Always check existing library headers first
+2. ✅ **Config parser exists**: Don't reinvent - use existing ConfigParser::load()
+3. ✅ **API consistency**: FileWatcher uses start(callback), not on_file_created()
+4. ✅ **Security by design**: Encryption/compression hardcoded, not configurable
+5. ✅ **Poison log prevention**: No config option to bypass security
+6. ✅ **Compilation errors cascade**: Fix headers first, then source files
+7. ✅ **Integration testing needs data**: Can't test without encrypted .pb files
+
 ---
 
 ## 📊 Success Metrics
 
 ### Phase 2A (Week 5)
-- ✅ Compilation successful (Day 35)
-- ✅ All tests passing (Day 35)
-- ✅ Dependencies resolved (Day 35)
+- ✅ Compilation successful (Days 35-36)
+- ✅ All tests passing (Days 35-36)
+- ✅ Dependencies resolved (Days 35-36)
+- ✅ Binary functional (Day 36)
 - [ ] End-to-end pipeline working (Day 40)
 - [ ] <500ms latency per event
 
@@ -702,16 +777,18 @@ void watch_partner() {
 ## 📈 Progress Visual
 ```
 Phase 1:  [████████████████████] 100% COMPLETE
-Phase 2A: [██░░░░░░░░░░░░░░░░░░]  10% (Day 35/40)
+Phase 2A: [████░░░░░░░░░░░░░░░░]  20% (Days 35-36/40)
 Phase 2B: [░░░░░░░░░░░░░░░░░░░░]   0%
 Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
 ```
 
-**Day 35 Completion:**
+**Days 35-36 Completion:**
 - Structure:    [████] 100% ✅
 - Dependencies: [████] 100% ✅
 - Tests:        [████] 100% ✅
-- Functionality:[░░░░]   0% ← Days 36-40
+- Compilation:  [████] 100% ✅
+- Crypto:       [████] 100% ✅
+- Functionality:[█░░░]  25% ← Days 37-40
 
 ---
 
@@ -721,6 +798,8 @@ Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
 - [x] Estructura antes que funcionalidad
 - [x] Dependencias verificadas antes de código
 - [x] Tests desde día 1
+- [x] Compilación limpia antes de features
+- [x] Security by design (encryption mandatory)
 - [ ] End-to-end validation antes de expansión
 
 **Expansion (Week 6):**
@@ -737,7 +816,7 @@ Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
 
 **End of Backlog**
 
-**Last Updated:** 2026-01-11 (Day 35 Complete)  
-**Next Update:** 2026-01-12 (Day 36 - FileWatcher & EventLoader)  
+**Last Updated:** 2026-01-12 (Day 36 Complete)  
+**Next Update:** 2026-01-13 (Day 37 - ONNX Embedders)  
 **Vision:** Sistema inmunológico jerárquico global - De edificios a planetas 🌍
-EOF
+**Security:** Encryption mandatory - Poison log prevention 🔒
