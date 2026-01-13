@@ -78,10 +78,12 @@ include_directories(
         ${Protobuf_INCLUDE_DIRS}
         /usr/local/include
         /vagrant/crypto-transport/include  # ← crypto-transport headers
+        /vagrant/common/include            # ← reason_codes.hpp (ADR-002)
 )
 
 message(STATUS "✅ protobuf headers: ${CMAKE_BINARY_DIR}/proto")
 message(STATUS "✅ crypto-transport headers: /vagrant/crypto-transport/include")
+message(STATUS "✅ reason_codes.hpp headers: /vagrant/common/include")
 
 # ============================================================================
 # Protobuf Files (copiados por Makefile raíz)

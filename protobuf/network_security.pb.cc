@@ -577,6 +577,41 @@ struct HumanInTheLoopReviewDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HumanInTheLoopReviewDefaultTypeInternal _HumanInTheLoopReview_default_instance_;
+PROTOBUF_CONSTEXPR EngineVerdict::EngineVerdict(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.engine_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.classification_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.reason_code_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.timestamp_ns_)*/uint64_t{0u}
+  , /*decltype(_impl_.confidence_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct EngineVerdictDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineVerdictDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EngineVerdictDefaultTypeInternal() {}
+  union {
+    EngineVerdict _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineVerdictDefaultTypeInternal _EngineVerdict_default_instance_;
+PROTOBUF_CONSTEXPR DetectionProvenance::DetectionProvenance(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.verdicts_)*/{}
+  , /*decltype(_impl_.final_decision_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.logic_override_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.discrepancy_reason_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.global_timestamp_ns_)*/uint64_t{0u}
+  , /*decltype(_impl_.discrepancy_score_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct DetectionProvenanceDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DetectionProvenanceDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DetectionProvenanceDefaultTypeInternal() {}
+  union {
+    DetectionProvenance _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DetectionProvenanceDefaultTypeInternal _DetectionProvenance_default_instance_;
 PROTOBUF_CONSTEXPR NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse(
     ::_pbi::ConstantInitialized) {}
 struct NetworkSecurityEvent_CustomMetadataEntry_DoNotUseDefaultTypeInternal {
@@ -612,6 +647,7 @@ PROTOBUF_CONSTEXPR NetworkSecurityEvent::NetworkSecurityEvent(
   , /*decltype(_impl_.rag_analysis_)*/nullptr
   , /*decltype(_impl_.human_review_)*/nullptr
   , /*decltype(_impl_.decision_metadata_)*/nullptr
+  , /*decltype(_impl_.provenance_)*/nullptr
   , /*decltype(_impl_.overall_threat_score_)*/0
   , /*decltype(_impl_.schema_version_)*/0u
   , /*decltype(_impl_.authoritative_source_)*/0
@@ -778,7 +814,7 @@ struct DetectionBatchDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DetectionBatchDefaultTypeInternal _DetectionBatch_default_instance_;
 }  // namespace protobuf
-static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[34];
+static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[36];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_network_5fsecurity_2eproto[10];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_network_5fsecurity_2eproto = nullptr;
 
@@ -1235,6 +1271,29 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::HumanInTheLoopReview, _impl_.escalated_timestamp_),
   PROTOBUF_FIELD_OFFSET(::protobuf::HumanInTheLoopReview, _impl_.reviewed_timestamp_),
   PROTOBUF_FIELD_OFFSET(::protobuf::HumanInTheLoopReview, _impl_.review_completed_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::EngineVerdict, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::EngineVerdict, _impl_.engine_name_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::EngineVerdict, _impl_.classification_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::EngineVerdict, _impl_.confidence_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::EngineVerdict, _impl_.reason_code_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::EngineVerdict, _impl_.timestamp_ns_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _impl_.verdicts_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _impl_.global_timestamp_ns_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _impl_.final_decision_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _impl_.discrepancy_score_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _impl_.logic_override_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::DetectionProvenance, _impl_.discrepancy_reason_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1279,6 +1338,7 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkSecurityEvent, _impl_.fast_detector_triggered_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkSecurityEvent, _impl_.fast_detector_reason_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkSecurityEvent, _impl_.decision_metadata_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkSecurityEvent, _impl_.provenance_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protobuf::EventBatch, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1416,16 +1476,18 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 410, -1, -1, sizeof(::protobuf::RAGAnalysis)},
   { 423, -1, -1, sizeof(::protobuf::HumanFeedback)},
   { 439, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
-  { 452, 460, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
-  { 462, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
-  { 496, -1, -1, sizeof(::protobuf::EventBatch)},
-  { 508, 516, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
-  { 518, 526, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
-  { 528, -1, -1, sizeof(::protobuf::SystemConfiguration)},
-  { 546, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
-  { 572, -1, -1, sizeof(::protobuf::DecisionMetadata)},
-  { 585, -1, -1, sizeof(::protobuf::Detection)},
-  { 598, -1, -1, sizeof(::protobuf::DetectionBatch)},
+  { 452, -1, -1, sizeof(::protobuf::EngineVerdict)},
+  { 463, -1, -1, sizeof(::protobuf::DetectionProvenance)},
+  { 475, 483, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
+  { 485, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
+  { 520, -1, -1, sizeof(::protobuf::EventBatch)},
+  { 532, 540, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
+  { 542, 550, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
+  { 552, -1, -1, sizeof(::protobuf::SystemConfiguration)},
+  { 570, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
+  { 596, -1, -1, sizeof(::protobuf::DecisionMetadata)},
+  { 609, -1, -1, sizeof(::protobuf::Detection)},
+  { 622, -1, -1, sizeof(::protobuf::DetectionBatch)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -1453,6 +1515,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::protobuf::_RAGAnalysis_default_instance_._instance,
   &::protobuf::_HumanFeedback_default_instance_._instance,
   &::protobuf::_HumanInTheLoopReview_default_instance_._instance,
+  &::protobuf::_EngineVerdict_default_instance_._instance,
+  &::protobuf::_DetectionProvenance_default_instance_._instance,
   &::protobuf::_NetworkSecurityEvent_CustomMetadataEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_NetworkSecurityEvent_default_instance_._instance,
   &::protobuf::_EventBatch_default_instance_._instance,
@@ -1753,102 +1817,112 @@ const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTI
   "\001(\0132\032.google.protobuf.Timestamp\022\030\n\020revie"
   "w_completed\030\007 \001(\010\"L\n\016ReviewPriority\022\007\n\003L"
   "OW\020\000\022\n\n\006MEDIUM\020\001\022\010\n\004HIGH\020\002\022\014\n\010CRITICAL\020\003"
-  "\022\r\n\tEMERGENCY\020\004\"\233\t\n\024NetworkSecurityEvent"
-  "\022\020\n\010event_id\030\001 \001(\t\0223\n\017event_timestamp\030\002 "
-  "\001(\0132\032.google.protobuf.Timestamp\022\033\n\023origi"
-  "nating_node_id\030\003 \001(\t\0223\n\020network_features"
-  "\030\004 \001(\0132\031.protobuf.NetworkFeatures\022/\n\016geo"
-  "_enrichment\030\005 \001(\0132\027.protobuf.GeoEnrichme"
-  "nt\022)\n\013time_window\030\006 \001(\0132\024.protobuf.TimeW"
-  "indow\0220\n\013ml_analysis\030\007 \001(\0132\033.protobuf.Tr"
-  "icapaMLAnalysis\022\?\n\034additional_model_pred"
-  "ictions\030\010 \003(\0132\031.protobuf.ModelPrediction"
-  "\0221\n\016capturing_node\030\t \001(\0132\031.protobuf.Dist"
-  "ributedNode\0225\n\021pipeline_tracking\030\n \001(\0132\032"
-  ".protobuf.PipelineTracking\022+\n\014rag_analys"
-  "is\030\013 \001(\0132\025.protobuf.RAGAnalysis\0224\n\014human"
-  "_review\030\014 \001(\0132\036.protobuf.HumanInTheLoopR"
-  "eview\022\034\n\024overall_threat_score\030\017 \001(\001\022\034\n\024f"
-  "inal_classification\030\020 \001(\t\022\027\n\017threat_cate"
-  "gory\030\021 \001(\t\022\026\n\016correlation_id\030\024 \001(\t\022\031\n\021re"
-  "lated_event_ids\030\025 \003(\t\022\026\n\016event_chain_id\030"
-  "\026 \001(\t\022\026\n\016schema_version\030\031 \001(\r\022K\n\017custom_"
-  "metadata\030\032 \003(\01322.protobuf.NetworkSecurit"
-  "yEvent.CustomMetadataEntry\022\022\n\nevent_tags"
-  "\030\033 \003(\t\022\030\n\020protobuf_version\030\034 \001(\t\022\033\n\023fast"
-  "_detector_score\030\035 \001(\001\022\031\n\021ml_detector_sco"
-  "re\030\036 \001(\001\0226\n\024authoritative_source\030\037 \001(\0162\030"
-  ".protobuf.DetectorSource\022\037\n\027fast_detecto"
-  "r_triggered\030  \001(\010\022\034\n\024fast_detector_reaso"
-  "n\030! \001(\t\0225\n\021decision_metadata\030\" \001(\0132\032.pro"
-  "tobuf.DecisionMetadata\0325\n\023CustomMetadata"
-  "Entry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\325\002"
-  "\n\nEventBatch\022.\n\006events\030\001 \003(\0132\036.protobuf."
-  "NetworkSecurityEvent\022\020\n\010batch_id\030\002 \001(\004\0224"
-  "\n\020batch_created_at\030\003 \001(\0132\032.google.protob"
-  "uf.Timestamp\022\022\n\nbatch_size\030\004 \001(\r\022<\n\017proc"
-  "essing_mode\030\005 \001(\0162#.protobuf.EventBatch."
-  "ProcessingMode\022\031\n\021batch_source_node\030\006 \001("
-  "\t\"b\n\016ProcessingMode\022\r\n\tREAL_TIME\020\000\022\022\n\016NE"
-  "AR_REAL_TIME\020\001\022\024\n\020BATCH_PROCESSING\020\002\022\027\n\023"
-  "HISTORICAL_ANALYSIS\020\003\"\223\005\n\023SystemConfigur"
-  "ation\022\031\n\021enabled_ml_models\030\001 \003(\t\022Y\n\027thre"
-  "at_score_thresholds\030\002 \003(\01328.protobuf.Sys"
-  "temConfiguration.ThreatScoreThresholdsEn"
-  "try\0223\n\020time_window_size\030\003 \001(\0132\031.google.p"
-  "rotobuf.Duration\022\035\n\025max_events_per_windo"
-  "w\030\004 \001(\r\0220\n\rcluster_nodes\030\005 \003(\0132\031.protobu"
-  "f.DistributedNode\022U\n\025node_role_assignmen"
-  "ts\030\006 \003(\01326.protobuf.SystemConfiguration."
-  "NodeRoleAssignmentsEntry\022\032\n\022encryption_e"
-  "nabled\030\007 \001(\010\022\033\n\023compression_enabled\030\010 \001("
-  "\010\022\034\n\024encryption_algorithm\030\t \001(\t\022\034\n\024rag_a"
-  "nalysis_enabled\030\n \001(\010\022\032\n\022rag_model_endpo"
-  "int\030\013 \001(\t\022\036\n\026knowledge_base_sources\030\014 \003("
-  "\t\032<\n\032ThreatScoreThresholdsEntry\022\013\n\003key\030\001"
-  " \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\032:\n\030NodeRoleAssig"
-  "nmentsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:"
-  "\0028\001\"\247\005\n\022RansomwareFeatures\022\031\n\021dns_query_"
-  "entropy\030\001 \001(\002\022\034\n\024new_external_ips_30s\030\002 "
-  "\001(\005\022\036\n\026dns_query_rate_per_min\030\003 \001(\002\022 \n\030f"
-  "ailed_dns_queries_ratio\030\004 \001(\002\022\"\n\032tls_sel"
-  "f_signed_cert_count\030\005 \001(\005\022$\n\034non_standar"
-  "d_port_http_count\030\006 \001(\005\022 \n\030smb_connectio"
-  "n_diversity\030\007 \001(\005\022\035\n\025rdp_failed_auth_cou"
-  "nt\030\010 \001(\005\022$\n\034new_internal_connections_30s"
-  "\030\t \001(\005\022\037\n\027port_scan_pattern_score\030\n \001(\002\022"
-  "!\n\031upload_download_ratio_30s\030\013 \001(\002\022\037\n\027bu"
-  "rst_connections_count\030\014 \001(\005\022\037\n\027unique_de"
-  "stinations_30s\030\r \001(\005\022#\n\033large_upload_ses"
-  "sions_count\030\016 \001(\005\022\037\n\027nocturnal_activity_"
-  "flag\030\017 \001(\010\022\036\n\026connection_rate_stddev\030\020 \001"
-  "(\002\022 \n\030protocol_diversity_score\030\021 \001(\002\022!\n\031"
-  "avg_flow_duration_seconds\030\022 \001(\002\022\025\n\rtcp_r"
-  "st_ratio\030\023 \001(\002\022\035\n\025syn_without_ack_ratio\030"
-  "\024 \001(\002\"\357\001\n\020DecisionMetadata\022\030\n\020score_dive"
-  "rgence\030\001 \001(\001\022\031\n\021divergence_reason\030\002 \001(\t\022"
-  "\035\n\025requires_rag_analysis\030\003 \001(\010\022\036\n\026invest"
-  "igation_priority\030\004 \001(\t\022\025\n\ranomaly_flags\030"
-  "\005 \003(\t\022\030\n\020confidence_level\030\006 \001(\001\0226\n\022decis"
-  "ion_timestamp\030\007 \001(\0132\032.google.protobuf.Ti"
-  "mestamp\"\250\001\n\tDetection\022\016\n\006src_ip\030\001 \001(\t\022%\n"
-  "\004type\030\002 \001(\0162\027.protobuf.DetectionType\022\022\n\n"
-  "confidence\030\003 \001(\002\022\021\n\ttimestamp\030\004 \001(\004\022\023\n\013d"
-  "escription\030\005 \001(\t\022\016\n\006action\030\006 \001(\t\022\030\n\020dura"
-  "tion_seconds\030\007 \001(\r\"\200\001\n\016DetectionBatch\022\'\n"
-  "\ndetections\030\001 \003(\0132\023.protobuf.Detection\022\020"
-  "\n\010batch_id\030\002 \001(\004\0223\n\017batch_timestamp\030\003 \001("
-  "\0132\032.google.protobuf.Timestamp*\225\001\n\rDetect"
-  "ionType\022\025\n\021DETECTION_UNKNOWN\020\000\022\022\n\016DETECT"
-  "ION_DDOS\020\001\022\030\n\024DETECTION_RANSOMWARE\020\002\022 \n\034"
-  "DETECTION_SUSPICIOUS_TRAFFIC\020\003\022\035\n\031DETECT"
-  "ION_INTERNAL_THREAT\020\004*\354\001\n\016DetectorSource"
-  "\022\033\n\027DETECTOR_SOURCE_UNKNOWN\020\000\022\035\n\031DETECTO"
-  "R_SOURCE_FAST_ONLY\020\001\022\033\n\027DETECTOR_SOURCE_"
-  "ML_ONLY\020\002\022!\n\035DETECTOR_SOURCE_FAST_PRIORI"
-  "TY\020\003\022\037\n\033DETECTOR_SOURCE_ML_PRIORITY\020\004\022\035\n"
-  "\031DETECTOR_SOURCE_CONSENSUS\020\005\022\036\n\032DETECTOR"
-  "_SOURCE_DIVERGENCE\020\006b\006proto3"
+  "\022\r\n\tEMERGENCY\020\004\"{\n\rEngineVerdict\022\023\n\013engi"
+  "ne_name\030\001 \001(\t\022\026\n\016classification\030\002 \001(\t\022\022\n"
+  "\nconfidence\030\003 \001(\002\022\023\n\013reason_code\030\004 \001(\t\022\024"
+  "\n\014timestamp_ns\030\005 \001(\004\"\304\001\n\023DetectionProven"
+  "ance\022)\n\010verdicts\030\001 \003(\0132\027.protobuf.Engine"
+  "Verdict\022\033\n\023global_timestamp_ns\030\002 \001(\004\022\026\n\016"
+  "final_decision\030\003 \001(\t\022\031\n\021discrepancy_scor"
+  "e\030\004 \001(\002\022\026\n\016logic_override\030\005 \001(\t\022\032\n\022discr"
+  "epancy_reason\030\006 \001(\t\"\316\t\n\024NetworkSecurityE"
+  "vent\022\020\n\010event_id\030\001 \001(\t\0223\n\017event_timestam"
+  "p\030\002 \001(\0132\032.google.protobuf.Timestamp\022\033\n\023o"
+  "riginating_node_id\030\003 \001(\t\0223\n\020network_feat"
+  "ures\030\004 \001(\0132\031.protobuf.NetworkFeatures\022/\n"
+  "\016geo_enrichment\030\005 \001(\0132\027.protobuf.GeoEnri"
+  "chment\022)\n\013time_window\030\006 \001(\0132\024.protobuf.T"
+  "imeWindow\0220\n\013ml_analysis\030\007 \001(\0132\033.protobu"
+  "f.TricapaMLAnalysis\022\?\n\034additional_model_"
+  "predictions\030\010 \003(\0132\031.protobuf.ModelPredic"
+  "tion\0221\n\016capturing_node\030\t \001(\0132\031.protobuf."
+  "DistributedNode\0225\n\021pipeline_tracking\030\n \001"
+  "(\0132\032.protobuf.PipelineTracking\022+\n\014rag_an"
+  "alysis\030\013 \001(\0132\025.protobuf.RAGAnalysis\0224\n\014h"
+  "uman_review\030\014 \001(\0132\036.protobuf.HumanInTheL"
+  "oopReview\022\034\n\024overall_threat_score\030\017 \001(\001\022"
+  "\034\n\024final_classification\030\020 \001(\t\022\027\n\017threat_"
+  "category\030\021 \001(\t\022\026\n\016correlation_id\030\024 \001(\t\022\031"
+  "\n\021related_event_ids\030\025 \003(\t\022\026\n\016event_chain"
+  "_id\030\026 \001(\t\022\026\n\016schema_version\030\031 \001(\r\022K\n\017cus"
+  "tom_metadata\030\032 \003(\01322.protobuf.NetworkSec"
+  "urityEvent.CustomMetadataEntry\022\022\n\nevent_"
+  "tags\030\033 \003(\t\022\030\n\020protobuf_version\030\034 \001(\t\022\033\n\023"
+  "fast_detector_score\030\035 \001(\001\022\031\n\021ml_detector"
+  "_score\030\036 \001(\001\0226\n\024authoritative_source\030\037 \001"
+  "(\0162\030.protobuf.DetectorSource\022\037\n\027fast_det"
+  "ector_triggered\030  \001(\010\022\034\n\024fast_detector_r"
+  "eason\030! \001(\t\0225\n\021decision_metadata\030\" \001(\0132\032"
+  ".protobuf.DecisionMetadata\0221\n\nprovenance"
+  "\030# \001(\0132\035.protobuf.DetectionProvenance\0325\n"
+  "\023CustomMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005val"
+  "ue\030\002 \001(\t:\0028\001\"\325\002\n\nEventBatch\022.\n\006events\030\001 "
+  "\003(\0132\036.protobuf.NetworkSecurityEvent\022\020\n\010b"
+  "atch_id\030\002 \001(\004\0224\n\020batch_created_at\030\003 \001(\0132"
+  "\032.google.protobuf.Timestamp\022\022\n\nbatch_siz"
+  "e\030\004 \001(\r\022<\n\017processing_mode\030\005 \001(\0162#.proto"
+  "buf.EventBatch.ProcessingMode\022\031\n\021batch_s"
+  "ource_node\030\006 \001(\t\"b\n\016ProcessingMode\022\r\n\tRE"
+  "AL_TIME\020\000\022\022\n\016NEAR_REAL_TIME\020\001\022\024\n\020BATCH_P"
+  "ROCESSING\020\002\022\027\n\023HISTORICAL_ANALYSIS\020\003\"\223\005\n"
+  "\023SystemConfiguration\022\031\n\021enabled_ml_model"
+  "s\030\001 \003(\t\022Y\n\027threat_score_thresholds\030\002 \003(\013"
+  "28.protobuf.SystemConfiguration.ThreatSc"
+  "oreThresholdsEntry\0223\n\020time_window_size\030\003"
+  " \001(\0132\031.google.protobuf.Duration\022\035\n\025max_e"
+  "vents_per_window\030\004 \001(\r\0220\n\rcluster_nodes\030"
+  "\005 \003(\0132\031.protobuf.DistributedNode\022U\n\025node"
+  "_role_assignments\030\006 \003(\01326.protobuf.Syste"
+  "mConfiguration.NodeRoleAssignmentsEntry\022"
+  "\032\n\022encryption_enabled\030\007 \001(\010\022\033\n\023compressi"
+  "on_enabled\030\010 \001(\010\022\034\n\024encryption_algorithm"
+  "\030\t \001(\t\022\034\n\024rag_analysis_enabled\030\n \001(\010\022\032\n\022"
+  "rag_model_endpoint\030\013 \001(\t\022\036\n\026knowledge_ba"
+  "se_sources\030\014 \003(\t\032<\n\032ThreatScoreThreshold"
+  "sEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\032:"
+  "\n\030NodeRoleAssignmentsEntry\022\013\n\003key\030\001 \001(\t\022"
+  "\r\n\005value\030\002 \001(\t:\0028\001\"\247\005\n\022RansomwareFeature"
+  "s\022\031\n\021dns_query_entropy\030\001 \001(\002\022\034\n\024new_exte"
+  "rnal_ips_30s\030\002 \001(\005\022\036\n\026dns_query_rate_per"
+  "_min\030\003 \001(\002\022 \n\030failed_dns_queries_ratio\030\004"
+  " \001(\002\022\"\n\032tls_self_signed_cert_count\030\005 \001(\005"
+  "\022$\n\034non_standard_port_http_count\030\006 \001(\005\022 "
+  "\n\030smb_connection_diversity\030\007 \001(\005\022\035\n\025rdp_"
+  "failed_auth_count\030\010 \001(\005\022$\n\034new_internal_"
+  "connections_30s\030\t \001(\005\022\037\n\027port_scan_patte"
+  "rn_score\030\n \001(\002\022!\n\031upload_download_ratio_"
+  "30s\030\013 \001(\002\022\037\n\027burst_connections_count\030\014 \001"
+  "(\005\022\037\n\027unique_destinations_30s\030\r \001(\005\022#\n\033l"
+  "arge_upload_sessions_count\030\016 \001(\005\022\037\n\027noct"
+  "urnal_activity_flag\030\017 \001(\010\022\036\n\026connection_"
+  "rate_stddev\030\020 \001(\002\022 \n\030protocol_diversity_"
+  "score\030\021 \001(\002\022!\n\031avg_flow_duration_seconds"
+  "\030\022 \001(\002\022\025\n\rtcp_rst_ratio\030\023 \001(\002\022\035\n\025syn_wit"
+  "hout_ack_ratio\030\024 \001(\002\"\357\001\n\020DecisionMetadat"
+  "a\022\030\n\020score_divergence\030\001 \001(\001\022\031\n\021divergenc"
+  "e_reason\030\002 \001(\t\022\035\n\025requires_rag_analysis\030"
+  "\003 \001(\010\022\036\n\026investigation_priority\030\004 \001(\t\022\025\n"
+  "\ranomaly_flags\030\005 \003(\t\022\030\n\020confidence_level"
+  "\030\006 \001(\001\0226\n\022decision_timestamp\030\007 \001(\0132\032.goo"
+  "gle.protobuf.Timestamp\"\250\001\n\tDetection\022\016\n\006"
+  "src_ip\030\001 \001(\t\022%\n\004type\030\002 \001(\0162\027.protobuf.De"
+  "tectionType\022\022\n\nconfidence\030\003 \001(\002\022\021\n\ttimes"
+  "tamp\030\004 \001(\004\022\023\n\013description\030\005 \001(\t\022\016\n\006actio"
+  "n\030\006 \001(\t\022\030\n\020duration_seconds\030\007 \001(\r\"\200\001\n\016De"
+  "tectionBatch\022\'\n\ndetections\030\001 \003(\0132\023.proto"
+  "buf.Detection\022\020\n\010batch_id\030\002 \001(\004\0223\n\017batch"
+  "_timestamp\030\003 \001(\0132\032.google.protobuf.Times"
+  "tamp*\225\001\n\rDetectionType\022\025\n\021DETECTION_UNKN"
+  "OWN\020\000\022\022\n\016DETECTION_DDOS\020\001\022\030\n\024DETECTION_R"
+  "ANSOMWARE\020\002\022 \n\034DETECTION_SUSPICIOUS_TRAF"
+  "FIC\020\003\022\035\n\031DETECTION_INTERNAL_THREAT\020\004*\354\001\n"
+  "\016DetectorSource\022\033\n\027DETECTOR_SOURCE_UNKNO"
+  "WN\020\000\022\035\n\031DETECTOR_SOURCE_FAST_ONLY\020\001\022\033\n\027D"
+  "ETECTOR_SOURCE_ML_ONLY\020\002\022!\n\035DETECTOR_SOU"
+  "RCE_FAST_PRIORITY\020\003\022\037\n\033DETECTOR_SOURCE_M"
+  "L_PRIORITY\020\004\022\035\n\031DETECTOR_SOURCE_CONSENSU"
+  "S\020\005\022\036\n\032DETECTOR_SOURCE_DIVERGENCE\020\006b\006pro"
+  "to3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fduration_2eproto,
@@ -1856,9 +1930,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_
 };
 static ::_pbi::once_flag descriptor_table_network_5fsecurity_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_network_5fsecurity_2eproto = {
-    false, false, 15308, descriptor_table_protodef_network_5fsecurity_2eproto,
+    false, false, 15683, descriptor_table_protodef_network_5fsecurity_2eproto,
     "network_security.proto",
-    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 34,
+    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 36,
     schemas, file_default_instances, TableStruct_network_5fsecurity_2eproto::offsets,
     file_level_metadata_network_5fsecurity_2eproto, file_level_enum_descriptors_network_5fsecurity_2eproto,
     file_level_service_descriptors_network_5fsecurity_2eproto,
@@ -15082,6 +15156,790 @@ void HumanInTheLoopReview::InternalSwap(HumanInTheLoopReview* other) {
 
 // ===================================================================
 
+class EngineVerdict::_Internal {
+ public:
+};
+
+EngineVerdict::EngineVerdict(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.EngineVerdict)
+}
+EngineVerdict::EngineVerdict(const EngineVerdict& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  EngineVerdict* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.engine_name_){}
+    , decltype(_impl_.classification_){}
+    , decltype(_impl_.reason_code_){}
+    , decltype(_impl_.timestamp_ns_){}
+    , decltype(_impl_.confidence_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.engine_name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.engine_name_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_engine_name().empty()) {
+    _this->_impl_.engine_name_.Set(from._internal_engine_name(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.classification_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.classification_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_classification().empty()) {
+    _this->_impl_.classification_.Set(from._internal_classification(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.reason_code_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.reason_code_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_reason_code().empty()) {
+    _this->_impl_.reason_code_.Set(from._internal_reason_code(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.timestamp_ns_, &from._impl_.timestamp_ns_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.confidence_) -
+    reinterpret_cast<char*>(&_impl_.timestamp_ns_)) + sizeof(_impl_.confidence_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.EngineVerdict)
+}
+
+inline void EngineVerdict::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.engine_name_){}
+    , decltype(_impl_.classification_){}
+    , decltype(_impl_.reason_code_){}
+    , decltype(_impl_.timestamp_ns_){uint64_t{0u}}
+    , decltype(_impl_.confidence_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.engine_name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.engine_name_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.classification_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.classification_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.reason_code_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.reason_code_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+EngineVerdict::~EngineVerdict() {
+  // @@protoc_insertion_point(destructor:protobuf.EngineVerdict)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void EngineVerdict::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.engine_name_.Destroy();
+  _impl_.classification_.Destroy();
+  _impl_.reason_code_.Destroy();
+}
+
+void EngineVerdict::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void EngineVerdict::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.EngineVerdict)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.engine_name_.ClearToEmpty();
+  _impl_.classification_.ClearToEmpty();
+  _impl_.reason_code_.ClearToEmpty();
+  ::memset(&_impl_.timestamp_ns_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.confidence_) -
+      reinterpret_cast<char*>(&_impl_.timestamp_ns_)) + sizeof(_impl_.confidence_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineVerdict::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string engine_name = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_engine_name();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.EngineVerdict.engine_name"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string classification = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_classification();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.EngineVerdict.classification"));
+        } else
+          goto handle_unusual;
+        continue;
+      // float confidence = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _impl_.confidence_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // string reason_code = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          auto str = _internal_mutable_reason_code();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.EngineVerdict.reason_code"));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 timestamp_ns = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.timestamp_ns_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* EngineVerdict::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.EngineVerdict)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string engine_name = 1;
+  if (!this->_internal_engine_name().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_engine_name().data(), static_cast<int>(this->_internal_engine_name().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.EngineVerdict.engine_name");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_engine_name(), target);
+  }
+
+  // string classification = 2;
+  if (!this->_internal_classification().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_classification().data(), static_cast<int>(this->_internal_classification().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.EngineVerdict.classification");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_classification(), target);
+  }
+
+  // float confidence = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_confidence = this->_internal_confidence();
+  uint32_t raw_confidence;
+  memcpy(&raw_confidence, &tmp_confidence, sizeof(tmp_confidence));
+  if (raw_confidence != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_confidence(), target);
+  }
+
+  // string reason_code = 4;
+  if (!this->_internal_reason_code().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_reason_code().data(), static_cast<int>(this->_internal_reason_code().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.EngineVerdict.reason_code");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_reason_code(), target);
+  }
+
+  // uint64 timestamp_ns = 5;
+  if (this->_internal_timestamp_ns() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(5, this->_internal_timestamp_ns(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.EngineVerdict)
+  return target;
+}
+
+size_t EngineVerdict::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.EngineVerdict)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string engine_name = 1;
+  if (!this->_internal_engine_name().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_engine_name());
+  }
+
+  // string classification = 2;
+  if (!this->_internal_classification().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_classification());
+  }
+
+  // string reason_code = 4;
+  if (!this->_internal_reason_code().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_reason_code());
+  }
+
+  // uint64 timestamp_ns = 5;
+  if (this->_internal_timestamp_ns() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_timestamp_ns());
+  }
+
+  // float confidence = 3;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_confidence = this->_internal_confidence();
+  uint32_t raw_confidence;
+  memcpy(&raw_confidence, &tmp_confidence, sizeof(tmp_confidence));
+  if (raw_confidence != 0) {
+    total_size += 1 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineVerdict::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    EngineVerdict::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineVerdict::GetClassData() const { return &_class_data_; }
+
+
+void EngineVerdict::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineVerdict*>(&to_msg);
+  auto& from = static_cast<const EngineVerdict&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.EngineVerdict)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_engine_name().empty()) {
+    _this->_internal_set_engine_name(from._internal_engine_name());
+  }
+  if (!from._internal_classification().empty()) {
+    _this->_internal_set_classification(from._internal_classification());
+  }
+  if (!from._internal_reason_code().empty()) {
+    _this->_internal_set_reason_code(from._internal_reason_code());
+  }
+  if (from._internal_timestamp_ns() != 0) {
+    _this->_internal_set_timestamp_ns(from._internal_timestamp_ns());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_confidence = from._internal_confidence();
+  uint32_t raw_confidence;
+  memcpy(&raw_confidence, &tmp_confidence, sizeof(tmp_confidence));
+  if (raw_confidence != 0) {
+    _this->_internal_set_confidence(from._internal_confidence());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void EngineVerdict::CopyFrom(const EngineVerdict& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.EngineVerdict)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineVerdict::IsInitialized() const {
+  return true;
+}
+
+void EngineVerdict::InternalSwap(EngineVerdict* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.engine_name_, lhs_arena,
+      &other->_impl_.engine_name_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.classification_, lhs_arena,
+      &other->_impl_.classification_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.reason_code_, lhs_arena,
+      &other->_impl_.reason_code_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(EngineVerdict, _impl_.confidence_)
+      + sizeof(EngineVerdict::_impl_.confidence_)
+      - PROTOBUF_FIELD_OFFSET(EngineVerdict, _impl_.timestamp_ns_)>(
+          reinterpret_cast<char*>(&_impl_.timestamp_ns_),
+          reinterpret_cast<char*>(&other->_impl_.timestamp_ns_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineVerdict::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[24]);
+}
+
+// ===================================================================
+
+class DetectionProvenance::_Internal {
+ public:
+};
+
+DetectionProvenance::DetectionProvenance(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.DetectionProvenance)
+}
+DetectionProvenance::DetectionProvenance(const DetectionProvenance& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  DetectionProvenance* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.verdicts_){from._impl_.verdicts_}
+    , decltype(_impl_.final_decision_){}
+    , decltype(_impl_.logic_override_){}
+    , decltype(_impl_.discrepancy_reason_){}
+    , decltype(_impl_.global_timestamp_ns_){}
+    , decltype(_impl_.discrepancy_score_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.final_decision_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.final_decision_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_final_decision().empty()) {
+    _this->_impl_.final_decision_.Set(from._internal_final_decision(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.logic_override_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.logic_override_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_logic_override().empty()) {
+    _this->_impl_.logic_override_.Set(from._internal_logic_override(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.discrepancy_reason_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.discrepancy_reason_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_discrepancy_reason().empty()) {
+    _this->_impl_.discrepancy_reason_.Set(from._internal_discrepancy_reason(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.global_timestamp_ns_, &from._impl_.global_timestamp_ns_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.discrepancy_score_) -
+    reinterpret_cast<char*>(&_impl_.global_timestamp_ns_)) + sizeof(_impl_.discrepancy_score_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.DetectionProvenance)
+}
+
+inline void DetectionProvenance::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.verdicts_){arena}
+    , decltype(_impl_.final_decision_){}
+    , decltype(_impl_.logic_override_){}
+    , decltype(_impl_.discrepancy_reason_){}
+    , decltype(_impl_.global_timestamp_ns_){uint64_t{0u}}
+    , decltype(_impl_.discrepancy_score_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.final_decision_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.final_decision_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.logic_override_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.logic_override_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.discrepancy_reason_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.discrepancy_reason_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+DetectionProvenance::~DetectionProvenance() {
+  // @@protoc_insertion_point(destructor:protobuf.DetectionProvenance)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void DetectionProvenance::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.verdicts_.~RepeatedPtrField();
+  _impl_.final_decision_.Destroy();
+  _impl_.logic_override_.Destroy();
+  _impl_.discrepancy_reason_.Destroy();
+}
+
+void DetectionProvenance::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void DetectionProvenance::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.DetectionProvenance)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.verdicts_.Clear();
+  _impl_.final_decision_.ClearToEmpty();
+  _impl_.logic_override_.ClearToEmpty();
+  _impl_.discrepancy_reason_.ClearToEmpty();
+  ::memset(&_impl_.global_timestamp_ns_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.discrepancy_score_) -
+      reinterpret_cast<char*>(&_impl_.global_timestamp_ns_)) + sizeof(_impl_.discrepancy_score_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* DetectionProvenance::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // repeated .protobuf.EngineVerdict verdicts = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_verdicts(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 global_timestamp_ns = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.global_timestamp_ns_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string final_decision = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_final_decision();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.DetectionProvenance.final_decision"));
+        } else
+          goto handle_unusual;
+        continue;
+      // float discrepancy_score = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 37)) {
+          _impl_.discrepancy_score_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // string logic_override = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          auto str = _internal_mutable_logic_override();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.DetectionProvenance.logic_override"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string discrepancy_reason = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
+          auto str = _internal_mutable_discrepancy_reason();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protobuf.DetectionProvenance.discrepancy_reason"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* DetectionProvenance::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.DetectionProvenance)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // repeated .protobuf.EngineVerdict verdicts = 1;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_verdicts_size()); i < n; i++) {
+    const auto& repfield = this->_internal_verdicts(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // uint64 global_timestamp_ns = 2;
+  if (this->_internal_global_timestamp_ns() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_global_timestamp_ns(), target);
+  }
+
+  // string final_decision = 3;
+  if (!this->_internal_final_decision().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_final_decision().data(), static_cast<int>(this->_internal_final_decision().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.DetectionProvenance.final_decision");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_final_decision(), target);
+  }
+
+  // float discrepancy_score = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_discrepancy_score = this->_internal_discrepancy_score();
+  uint32_t raw_discrepancy_score;
+  memcpy(&raw_discrepancy_score, &tmp_discrepancy_score, sizeof(tmp_discrepancy_score));
+  if (raw_discrepancy_score != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(4, this->_internal_discrepancy_score(), target);
+  }
+
+  // string logic_override = 5;
+  if (!this->_internal_logic_override().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_logic_override().data(), static_cast<int>(this->_internal_logic_override().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.DetectionProvenance.logic_override");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_logic_override(), target);
+  }
+
+  // string discrepancy_reason = 6;
+  if (!this->_internal_discrepancy_reason().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_discrepancy_reason().data(), static_cast<int>(this->_internal_discrepancy_reason().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protobuf.DetectionProvenance.discrepancy_reason");
+    target = stream->WriteStringMaybeAliased(
+        6, this->_internal_discrepancy_reason(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.DetectionProvenance)
+  return target;
+}
+
+size_t DetectionProvenance::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.DetectionProvenance)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .protobuf.EngineVerdict verdicts = 1;
+  total_size += 1UL * this->_internal_verdicts_size();
+  for (const auto& msg : this->_impl_.verdicts_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string final_decision = 3;
+  if (!this->_internal_final_decision().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_final_decision());
+  }
+
+  // string logic_override = 5;
+  if (!this->_internal_logic_override().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_logic_override());
+  }
+
+  // string discrepancy_reason = 6;
+  if (!this->_internal_discrepancy_reason().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_discrepancy_reason());
+  }
+
+  // uint64 global_timestamp_ns = 2;
+  if (this->_internal_global_timestamp_ns() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_global_timestamp_ns());
+  }
+
+  // float discrepancy_score = 4;
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_discrepancy_score = this->_internal_discrepancy_score();
+  uint32_t raw_discrepancy_score;
+  memcpy(&raw_discrepancy_score, &tmp_discrepancy_score, sizeof(tmp_discrepancy_score));
+  if (raw_discrepancy_score != 0) {
+    total_size += 1 + 4;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData DetectionProvenance::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    DetectionProvenance::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*DetectionProvenance::GetClassData() const { return &_class_data_; }
+
+
+void DetectionProvenance::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<DetectionProvenance*>(&to_msg);
+  auto& from = static_cast<const DetectionProvenance&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.DetectionProvenance)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.verdicts_.MergeFrom(from._impl_.verdicts_);
+  if (!from._internal_final_decision().empty()) {
+    _this->_internal_set_final_decision(from._internal_final_decision());
+  }
+  if (!from._internal_logic_override().empty()) {
+    _this->_internal_set_logic_override(from._internal_logic_override());
+  }
+  if (!from._internal_discrepancy_reason().empty()) {
+    _this->_internal_set_discrepancy_reason(from._internal_discrepancy_reason());
+  }
+  if (from._internal_global_timestamp_ns() != 0) {
+    _this->_internal_set_global_timestamp_ns(from._internal_global_timestamp_ns());
+  }
+  static_assert(sizeof(uint32_t) == sizeof(float), "Code assumes uint32_t and float are the same size.");
+  float tmp_discrepancy_score = from._internal_discrepancy_score();
+  uint32_t raw_discrepancy_score;
+  memcpy(&raw_discrepancy_score, &tmp_discrepancy_score, sizeof(tmp_discrepancy_score));
+  if (raw_discrepancy_score != 0) {
+    _this->_internal_set_discrepancy_score(from._internal_discrepancy_score());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void DetectionProvenance::CopyFrom(const DetectionProvenance& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.DetectionProvenance)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool DetectionProvenance::IsInitialized() const {
+  return true;
+}
+
+void DetectionProvenance::InternalSwap(DetectionProvenance* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.verdicts_.InternalSwap(&other->_impl_.verdicts_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.final_decision_, lhs_arena,
+      &other->_impl_.final_decision_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.logic_override_, lhs_arena,
+      &other->_impl_.logic_override_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.discrepancy_reason_, lhs_arena,
+      &other->_impl_.discrepancy_reason_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(DetectionProvenance, _impl_.discrepancy_score_)
+      + sizeof(DetectionProvenance::_impl_.discrepancy_score_)
+      - PROTOBUF_FIELD_OFFSET(DetectionProvenance, _impl_.global_timestamp_ns_)>(
+          reinterpret_cast<char*>(&_impl_.global_timestamp_ns_),
+          reinterpret_cast<char*>(&other->_impl_.global_timestamp_ns_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata DetectionProvenance::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[25]);
+}
+
+// ===================================================================
+
 NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse() {}
 NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
     : SuperType(arena) {}
@@ -15091,7 +15949,7 @@ void NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::MergeFrom(const NetworkS
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[24]);
+      file_level_metadata_network_5fsecurity_2eproto[26]);
 }
 
 // ===================================================================
@@ -15108,6 +15966,7 @@ class NetworkSecurityEvent::_Internal {
   static const ::protobuf::RAGAnalysis& rag_analysis(const NetworkSecurityEvent* msg);
   static const ::protobuf::HumanInTheLoopReview& human_review(const NetworkSecurityEvent* msg);
   static const ::protobuf::DecisionMetadata& decision_metadata(const NetworkSecurityEvent* msg);
+  static const ::protobuf::DetectionProvenance& provenance(const NetworkSecurityEvent* msg);
 };
 
 const ::PROTOBUF_NAMESPACE_ID::Timestamp&
@@ -15150,6 +16009,10 @@ const ::protobuf::DecisionMetadata&
 NetworkSecurityEvent::_Internal::decision_metadata(const NetworkSecurityEvent* msg) {
   return *msg->_impl_.decision_metadata_;
 }
+const ::protobuf::DetectionProvenance&
+NetworkSecurityEvent::_Internal::provenance(const NetworkSecurityEvent* msg) {
+  return *msg->_impl_.provenance_;
+}
 void NetworkSecurityEvent::clear_event_timestamp() {
   if (GetArenaForAllocation() == nullptr && _impl_.event_timestamp_ != nullptr) {
     delete _impl_.event_timestamp_;
@@ -15191,6 +16054,7 @@ NetworkSecurityEvent::NetworkSecurityEvent(const NetworkSecurityEvent& from)
     , decltype(_impl_.rag_analysis_){nullptr}
     , decltype(_impl_.human_review_){nullptr}
     , decltype(_impl_.decision_metadata_){nullptr}
+    , decltype(_impl_.provenance_){nullptr}
     , decltype(_impl_.overall_threat_score_){}
     , decltype(_impl_.schema_version_){}
     , decltype(_impl_.authoritative_source_){}
@@ -15295,6 +16159,9 @@ NetworkSecurityEvent::NetworkSecurityEvent(const NetworkSecurityEvent& from)
   if (from._internal_has_decision_metadata()) {
     _this->_impl_.decision_metadata_ = new ::protobuf::DecisionMetadata(*from._impl_.decision_metadata_);
   }
+  if (from._internal_has_provenance()) {
+    _this->_impl_.provenance_ = new ::protobuf::DetectionProvenance(*from._impl_.provenance_);
+  }
   ::memcpy(&_impl_.overall_threat_score_, &from._impl_.overall_threat_score_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.fast_detector_triggered_) -
     reinterpret_cast<char*>(&_impl_.overall_threat_score_)) + sizeof(_impl_.fast_detector_triggered_));
@@ -15328,6 +16195,7 @@ inline void NetworkSecurityEvent::SharedCtor(
     , decltype(_impl_.rag_analysis_){nullptr}
     , decltype(_impl_.human_review_){nullptr}
     , decltype(_impl_.decision_metadata_){nullptr}
+    , decltype(_impl_.provenance_){nullptr}
     , decltype(_impl_.overall_threat_score_){0}
     , decltype(_impl_.schema_version_){0u}
     , decltype(_impl_.authoritative_source_){0}
@@ -15405,6 +16273,7 @@ inline void NetworkSecurityEvent::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.rag_analysis_;
   if (this != internal_default_instance()) delete _impl_.human_review_;
   if (this != internal_default_instance()) delete _impl_.decision_metadata_;
+  if (this != internal_default_instance()) delete _impl_.provenance_;
 }
 
 void NetworkSecurityEvent::ArenaDtor(void* object) {
@@ -15473,6 +16342,10 @@ void NetworkSecurityEvent::Clear() {
     delete _impl_.decision_metadata_;
   }
   _impl_.decision_metadata_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.provenance_ != nullptr) {
+    delete _impl_.provenance_;
+  }
+  _impl_.provenance_ = nullptr;
   ::memset(&_impl_.overall_threat_score_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.fast_detector_triggered_) -
       reinterpret_cast<char*>(&_impl_.overall_threat_score_)) + sizeof(_impl_.fast_detector_triggered_));
@@ -15746,6 +16619,14 @@ const char* NetworkSecurityEvent::_InternalParse(const char* ptr, ::_pbi::ParseC
       case 34:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_decision_metadata(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.DetectionProvenance provenance = 35;
+      case 35:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_provenance(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -16036,6 +16917,13 @@ uint8_t* NetworkSecurityEvent::_InternalSerialize(
         _Internal::decision_metadata(this).GetCachedSize(), target, stream);
   }
 
+  // .protobuf.DetectionProvenance provenance = 35;
+  if (this->_internal_has_provenance()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(35, _Internal::provenance(this),
+        _Internal::provenance(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -16210,6 +17098,13 @@ size_t NetworkSecurityEvent::ByteSizeLong() const {
         *_impl_.decision_metadata_);
   }
 
+  // .protobuf.DetectionProvenance provenance = 35;
+  if (this->_internal_has_provenance()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.provenance_);
+  }
+
   // double overall_threat_score = 15;
   static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
   double tmp_overall_threat_score = this->_internal_overall_threat_score();
@@ -16341,6 +17236,10 @@ void NetworkSecurityEvent::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, c
     _this->_internal_mutable_decision_metadata()->::protobuf::DecisionMetadata::MergeFrom(
         from._internal_decision_metadata());
   }
+  if (from._internal_has_provenance()) {
+    _this->_internal_mutable_provenance()->::protobuf::DetectionProvenance::MergeFrom(
+        from._internal_provenance());
+  }
   static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
   double tmp_overall_threat_score = from._internal_overall_threat_score();
   uint64_t raw_overall_threat_score;
@@ -16437,7 +17336,7 @@ void NetworkSecurityEvent::InternalSwap(NetworkSecurityEvent* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkSecurityEvent::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[25]);
+      file_level_metadata_network_5fsecurity_2eproto[27]);
 }
 
 // ===================================================================
@@ -16808,7 +17707,7 @@ void EventBatch::InternalSwap(EventBatch* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EventBatch::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[26]);
+      file_level_metadata_network_5fsecurity_2eproto[28]);
 }
 
 // ===================================================================
@@ -16822,7 +17721,7 @@ void SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse::MergeFrom(const Sy
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[27]);
+      file_level_metadata_network_5fsecurity_2eproto[29]);
 }
 
 // ===================================================================
@@ -16836,7 +17735,7 @@ void SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse::MergeFrom(const Syst
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[28]);
+      file_level_metadata_network_5fsecurity_2eproto[30]);
 }
 
 // ===================================================================
@@ -17481,7 +18380,7 @@ void SystemConfiguration::InternalSwap(SystemConfiguration* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[29]);
+      file_level_metadata_network_5fsecurity_2eproto[31]);
 }
 
 // ===================================================================
@@ -18244,7 +19143,7 @@ void RansomwareFeatures::InternalSwap(RansomwareFeatures* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RansomwareFeatures::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[30]);
+      file_level_metadata_network_5fsecurity_2eproto[32]);
 }
 
 // ===================================================================
@@ -18691,7 +19590,7 @@ void DecisionMetadata::InternalSwap(DecisionMetadata* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DecisionMetadata::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[31]);
+      file_level_metadata_network_5fsecurity_2eproto[33]);
 }
 
 // ===================================================================
@@ -19117,7 +20016,7 @@ void Detection::InternalSwap(Detection* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Detection::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[32]);
+      file_level_metadata_network_5fsecurity_2eproto[34]);
 }
 
 // ===================================================================
@@ -19381,7 +20280,7 @@ void DetectionBatch::InternalSwap(DetectionBatch* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DetectionBatch::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[33]);
+      file_level_metadata_network_5fsecurity_2eproto[35]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -19482,6 +20381,14 @@ Arena::CreateMaybeMessage< ::protobuf::HumanFeedback >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::protobuf::HumanInTheLoopReview*
 Arena::CreateMaybeMessage< ::protobuf::HumanInTheLoopReview >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protobuf::HumanInTheLoopReview >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::EngineVerdict*
+Arena::CreateMaybeMessage< ::protobuf::EngineVerdict >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::EngineVerdict >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::DetectionProvenance*
+Arena::CreateMaybeMessage< ::protobuf::DetectionProvenance >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::DetectionProvenance >(arena);
 }
 template<> PROTOBUF_NOINLINE ::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse*
 Arena::CreateMaybeMessage< ::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse >(Arena* arena) {

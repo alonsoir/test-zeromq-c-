@@ -274,10 +274,26 @@ LIBBPF_PROFILE
         cp -r onnxruntime-linux-x64-1.17.1/include/* /usr/local/include/
         cp -r onnxruntime-linux-x64-1.17.1/lib/* /usr/local/lib/
         ldconfig
+
+        # Fix: Create /usr/local/lib64 symlinks for CMake compatibility
+        echo "🔗 Creating /usr/local/lib64 symlinks for ONNX Runtime..."
+        mkdir -p /usr/local/lib64
+        ln -sf /usr/local/lib/libonnxruntime.so* /usr/local/lib64/
+        ln -sf /usr/local/lib/libonnxruntime_providers_shared.so /usr/local/lib64/
+
         rm -rf onnxruntime-linux-*
-        echo "✅ ONNX Runtime installed"
+        echo "✅ ONNX Runtime installed with lib64 symlinks"
       else
         echo "✅ ONNX Runtime already installed"
+
+        # Ensure lib64 symlinks exist even if ONNX was previously installed
+        if [ ! -d /usr/local/lib64 ]; then
+          echo "🔗 Creating missing /usr/local/lib64 symlinks..."
+          mkdir -p /usr/local/lib64
+          ln -sf /usr/local/lib/libonnxruntime.so* /usr/local/lib64/
+          ln -sf /usr/local/lib/libonnxruntime_providers_shared.so /usr/local/lib64/ 2>/dev/null || true
+          echo "✅ lib64 symlinks created"
+        fi
       fi
 
       # FAISS v1.8.0 (CPU-only, shared library) - Phase 2A

@@ -121,6 +121,9 @@ include_directories(${CMAKE_BINARY_DIR})
 set(ML_DEFENDER_DIR "${CMAKE_SOURCE_DIR}/../ml-detector")
 include_directories(${ML_DEFENDER_DIR}/include)
 
+# Common headers (reason codes, shared types)
+include_directories(/vagrant/common/include)
+
 # Core dependencies includes
 include_directories(${LIBBPF_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})

@@ -518,6 +518,29 @@ message HumanInTheLoopReview {
 }
 
 // =====================================================================
+// 🎯 ADR-002: MULTI-ENGINE DETECTION PROVENANCE (Day 37 - January 2026)
+// =====================================================================
+
+// Individual engine verdict with reason code
+message EngineVerdict {
+  string engine_name = 1;          // "fast-path-sniffer", "random-forest", "cnn-secondary"
+  string classification = 2;       // "Benign", "DDoS", "Ransomware", etc.
+  float confidence = 3;            // 0.0 - 1.0
+  string reason_code = 4;          // "SIG_MATCH", "STAT_ANOMALY", "PCA_OUTLIER", etc.
+  uint64 timestamp_ns = 5;         // When this engine made its decision
+}
+
+// Complete provenance trail for multi-engine detection
+message DetectionProvenance {
+  repeated EngineVerdict verdicts = 1;    // ALL engine opinions (sniffer, RF, CNN)
+  uint64 global_timestamp_ns = 2;         // When final decision was made
+  string final_decision = 3;              // "ALLOW", "DROP", "ALERT"
+  float discrepancy_score = 4;            // 0.0 (all agree) - 1.0 (max disagreement)
+  string logic_override = 5;              // Optional: if human/RAG forced decision
+  string discrepancy_reason = 6;          // Human-readable explanation if engines disagree
+}
+
+// =====================================================================
 // 🎯 MAIN EVENT MESSAGE - Estructura Principal Limpia
 // =====================================================================
 
@@ -568,6 +591,8 @@ message NetworkSecurityEvent {
   bool fast_detector_triggered = 32;         // ¿Se activó el Fast Detector?
   string fast_detector_reason = 33;          // Razón de activación ("high_external_ips", etc)
   DecisionMetadata decision_metadata = 34;   // Metadatos para RAG e investigación
+  // 🎯 ADR-002: Multi-Engine Provenance (Day 37 - January 2026)
+  DetectionProvenance provenance = 35;  // Complete detection provenance trail
 }
 
 // =====================================================================

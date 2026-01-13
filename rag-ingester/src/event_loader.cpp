@@ -16,6 +16,7 @@
 #include <crypto_transport/compression.hpp>
 
 #include <network_security.pb.h>
+#include <reason_codes.hpp>
 
 namespace rag_ingester {
 
@@ -218,6 +219,40 @@ Event EventLoader::parse_protobuf(const std::vector<uint8_t>& data) {
     }
 
     event.features = extract_features(&proto_event);
+
+    // 🎯 ADR-002: Parse Multi-Engine Provenance (Day 37)
+    if (proto_event.has_provenance()) {
+        const auto& prov = proto_event.provenance();
+
+        // Parse all engine verdicts
+        for (int i = 0; i < prov.verdicts_size(); i++) {
+            const auto& v = prov.verdicts(i);
+
+            EngineVerdict verdict;
+            verdict.engine_name = v.engine_name();
+            verdict.classification = v.classification();
+            verdict.confidence = v.confidence();
+            verdict.reason_code = v.reason_code();
+            verdict.timestamp_ns = v.timestamp_ns();
+
+            event.verdicts.push_back(verdict);
+        }
+
+        // Parse provenance metadata
+        event.discrepancy_score = prov.discrepancy_score();
+        event.final_decision = prov.final_decision();
+
+        // Log if high discrepancy
+        if (event.discrepancy_score > 0.30f) {
+            std::cout << "[INFO] EventLoader: High discrepancy event "
+                      << event.event_id << " (score=" << event.discrepancy_score
+                      << ", engines=" << event.verdicts.size() << ")" << std::endl;
+        }
+    } else {
+        // No provenance - legacy event or sniffer-only
+        event.discrepancy_score = 0.0f;
+        event.final_decision = "UNKNOWN";
+    }
 
     return event;
 }

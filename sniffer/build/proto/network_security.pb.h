@@ -63,12 +63,18 @@ extern DetectionDefaultTypeInternal _Detection_default_instance_;
 class DetectionBatch;
 struct DetectionBatchDefaultTypeInternal;
 extern DetectionBatchDefaultTypeInternal _DetectionBatch_default_instance_;
+class DetectionProvenance;
+struct DetectionProvenanceDefaultTypeInternal;
+extern DetectionProvenanceDefaultTypeInternal _DetectionProvenance_default_instance_;
 class DistributedNode;
 struct DistributedNodeDefaultTypeInternal;
 extern DistributedNodeDefaultTypeInternal _DistributedNode_default_instance_;
 class DistributedNode_NodeCapabilitiesEntry_DoNotUse;
 struct DistributedNode_NodeCapabilitiesEntry_DoNotUseDefaultTypeInternal;
 extern DistributedNode_NodeCapabilitiesEntry_DoNotUseDefaultTypeInternal _DistributedNode_NodeCapabilitiesEntry_DoNotUse_default_instance_;
+class EngineVerdict;
+struct EngineVerdictDefaultTypeInternal;
+extern EngineVerdictDefaultTypeInternal _EngineVerdict_default_instance_;
 class EventBatch;
 struct EventBatchDefaultTypeInternal;
 extern EventBatchDefaultTypeInternal _EventBatch_default_instance_;
@@ -159,8 +165,10 @@ template<> ::protobuf::DDoSFeatures* Arena::CreateMaybeMessage<::protobuf::DDoSF
 template<> ::protobuf::DecisionMetadata* Arena::CreateMaybeMessage<::protobuf::DecisionMetadata>(Arena*);
 template<> ::protobuf::Detection* Arena::CreateMaybeMessage<::protobuf::Detection>(Arena*);
 template<> ::protobuf::DetectionBatch* Arena::CreateMaybeMessage<::protobuf::DetectionBatch>(Arena*);
+template<> ::protobuf::DetectionProvenance* Arena::CreateMaybeMessage<::protobuf::DetectionProvenance>(Arena*);
 template<> ::protobuf::DistributedNode* Arena::CreateMaybeMessage<::protobuf::DistributedNode>(Arena*);
 template<> ::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse>(Arena*);
+template<> ::protobuf::EngineVerdict* Arena::CreateMaybeMessage<::protobuf::EngineVerdict>(Arena*);
 template<> ::protobuf::EventBatch* Arena::CreateMaybeMessage<::protobuf::EventBatch>(Arena*);
 template<> ::protobuf::FlowAggregation* Arena::CreateMaybeMessage<::protobuf::FlowAggregation>(Arena*);
 template<> ::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse>(Arena*);
@@ -7081,6 +7089,440 @@ class HumanInTheLoopReview final :
 };
 // -------------------------------------------------------------------
 
+class EngineVerdict final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.EngineVerdict) */ {
+ public:
+  inline EngineVerdict() : EngineVerdict(nullptr) {}
+  ~EngineVerdict() override;
+  explicit PROTOBUF_CONSTEXPR EngineVerdict(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  EngineVerdict(const EngineVerdict& from);
+  EngineVerdict(EngineVerdict&& from) noexcept
+    : EngineVerdict() {
+    *this = ::std::move(from);
+  }
+
+  inline EngineVerdict& operator=(const EngineVerdict& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline EngineVerdict& operator=(EngineVerdict&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const EngineVerdict& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const EngineVerdict* internal_default_instance() {
+    return reinterpret_cast<const EngineVerdict*>(
+               &_EngineVerdict_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    24;
+
+  friend void swap(EngineVerdict& a, EngineVerdict& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(EngineVerdict* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(EngineVerdict* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  EngineVerdict* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<EngineVerdict>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const EngineVerdict& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const EngineVerdict& from) {
+    EngineVerdict::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(EngineVerdict* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.EngineVerdict";
+  }
+  protected:
+  explicit EngineVerdict(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kEngineNameFieldNumber = 1,
+    kClassificationFieldNumber = 2,
+    kReasonCodeFieldNumber = 4,
+    kTimestampNsFieldNumber = 5,
+    kConfidenceFieldNumber = 3,
+  };
+  // string engine_name = 1;
+  void clear_engine_name();
+  const std::string& engine_name() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_engine_name(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_engine_name();
+  PROTOBUF_NODISCARD std::string* release_engine_name();
+  void set_allocated_engine_name(std::string* engine_name);
+  private:
+  const std::string& _internal_engine_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_engine_name(const std::string& value);
+  std::string* _internal_mutable_engine_name();
+  public:
+
+  // string classification = 2;
+  void clear_classification();
+  const std::string& classification() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_classification(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_classification();
+  PROTOBUF_NODISCARD std::string* release_classification();
+  void set_allocated_classification(std::string* classification);
+  private:
+  const std::string& _internal_classification() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_classification(const std::string& value);
+  std::string* _internal_mutable_classification();
+  public:
+
+  // string reason_code = 4;
+  void clear_reason_code();
+  const std::string& reason_code() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_reason_code(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_reason_code();
+  PROTOBUF_NODISCARD std::string* release_reason_code();
+  void set_allocated_reason_code(std::string* reason_code);
+  private:
+  const std::string& _internal_reason_code() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_reason_code(const std::string& value);
+  std::string* _internal_mutable_reason_code();
+  public:
+
+  // uint64 timestamp_ns = 5;
+  void clear_timestamp_ns();
+  uint64_t timestamp_ns() const;
+  void set_timestamp_ns(uint64_t value);
+  private:
+  uint64_t _internal_timestamp_ns() const;
+  void _internal_set_timestamp_ns(uint64_t value);
+  public:
+
+  // float confidence = 3;
+  void clear_confidence();
+  float confidence() const;
+  void set_confidence(float value);
+  private:
+  float _internal_confidence() const;
+  void _internal_set_confidence(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.EngineVerdict)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr engine_name_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr classification_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr reason_code_;
+    uint64_t timestamp_ns_;
+    float confidence_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DetectionProvenance final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.DetectionProvenance) */ {
+ public:
+  inline DetectionProvenance() : DetectionProvenance(nullptr) {}
+  ~DetectionProvenance() override;
+  explicit PROTOBUF_CONSTEXPR DetectionProvenance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DetectionProvenance(const DetectionProvenance& from);
+  DetectionProvenance(DetectionProvenance&& from) noexcept
+    : DetectionProvenance() {
+    *this = ::std::move(from);
+  }
+
+  inline DetectionProvenance& operator=(const DetectionProvenance& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DetectionProvenance& operator=(DetectionProvenance&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DetectionProvenance& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DetectionProvenance* internal_default_instance() {
+    return reinterpret_cast<const DetectionProvenance*>(
+               &_DetectionProvenance_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    25;
+
+  friend void swap(DetectionProvenance& a, DetectionProvenance& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DetectionProvenance* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DetectionProvenance* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DetectionProvenance* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DetectionProvenance>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DetectionProvenance& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DetectionProvenance& from) {
+    DetectionProvenance::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DetectionProvenance* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.DetectionProvenance";
+  }
+  protected:
+  explicit DetectionProvenance(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVerdictsFieldNumber = 1,
+    kFinalDecisionFieldNumber = 3,
+    kLogicOverrideFieldNumber = 5,
+    kDiscrepancyReasonFieldNumber = 6,
+    kGlobalTimestampNsFieldNumber = 2,
+    kDiscrepancyScoreFieldNumber = 4,
+  };
+  // repeated .protobuf.EngineVerdict verdicts = 1;
+  int verdicts_size() const;
+  private:
+  int _internal_verdicts_size() const;
+  public:
+  void clear_verdicts();
+  ::protobuf::EngineVerdict* mutable_verdicts(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::EngineVerdict >*
+      mutable_verdicts();
+  private:
+  const ::protobuf::EngineVerdict& _internal_verdicts(int index) const;
+  ::protobuf::EngineVerdict* _internal_add_verdicts();
+  public:
+  const ::protobuf::EngineVerdict& verdicts(int index) const;
+  ::protobuf::EngineVerdict* add_verdicts();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::EngineVerdict >&
+      verdicts() const;
+
+  // string final_decision = 3;
+  void clear_final_decision();
+  const std::string& final_decision() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_final_decision(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_final_decision();
+  PROTOBUF_NODISCARD std::string* release_final_decision();
+  void set_allocated_final_decision(std::string* final_decision);
+  private:
+  const std::string& _internal_final_decision() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_final_decision(const std::string& value);
+  std::string* _internal_mutable_final_decision();
+  public:
+
+  // string logic_override = 5;
+  void clear_logic_override();
+  const std::string& logic_override() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_logic_override(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_logic_override();
+  PROTOBUF_NODISCARD std::string* release_logic_override();
+  void set_allocated_logic_override(std::string* logic_override);
+  private:
+  const std::string& _internal_logic_override() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_logic_override(const std::string& value);
+  std::string* _internal_mutable_logic_override();
+  public:
+
+  // string discrepancy_reason = 6;
+  void clear_discrepancy_reason();
+  const std::string& discrepancy_reason() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_discrepancy_reason(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_discrepancy_reason();
+  PROTOBUF_NODISCARD std::string* release_discrepancy_reason();
+  void set_allocated_discrepancy_reason(std::string* discrepancy_reason);
+  private:
+  const std::string& _internal_discrepancy_reason() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_discrepancy_reason(const std::string& value);
+  std::string* _internal_mutable_discrepancy_reason();
+  public:
+
+  // uint64 global_timestamp_ns = 2;
+  void clear_global_timestamp_ns();
+  uint64_t global_timestamp_ns() const;
+  void set_global_timestamp_ns(uint64_t value);
+  private:
+  uint64_t _internal_global_timestamp_ns() const;
+  void _internal_set_global_timestamp_ns(uint64_t value);
+  public:
+
+  // float discrepancy_score = 4;
+  void clear_discrepancy_score();
+  float discrepancy_score() const;
+  void set_discrepancy_score(float value);
+  private:
+  float _internal_discrepancy_score() const;
+  void _internal_set_discrepancy_score(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.DetectionProvenance)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::EngineVerdict > verdicts_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr final_decision_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr logic_override_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr discrepancy_reason_;
+    uint64_t global_timestamp_ns_;
+    float discrepancy_score_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
 class NetworkSecurityEvent_CustomMetadataEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<NetworkSecurityEvent_CustomMetadataEntry_DoNotUse, 
     std::string, std::string,
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
@@ -7157,7 +7599,7 @@ class NetworkSecurityEvent final :
                &_NetworkSecurityEvent_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    27;
 
   friend void swap(NetworkSecurityEvent& a, NetworkSecurityEvent& b) {
     a.Swap(&b);
@@ -7255,6 +7697,7 @@ class NetworkSecurityEvent final :
     kRagAnalysisFieldNumber = 11,
     kHumanReviewFieldNumber = 12,
     kDecisionMetadataFieldNumber = 34,
+    kProvenanceFieldNumber = 35,
     kOverallThreatScoreFieldNumber = 15,
     kSchemaVersionFieldNumber = 25,
     kAuthoritativeSourceFieldNumber = 31,
@@ -7637,6 +8080,24 @@ class NetworkSecurityEvent final :
       ::protobuf::DecisionMetadata* decision_metadata);
   ::protobuf::DecisionMetadata* unsafe_arena_release_decision_metadata();
 
+  // .protobuf.DetectionProvenance provenance = 35;
+  bool has_provenance() const;
+  private:
+  bool _internal_has_provenance() const;
+  public:
+  void clear_provenance();
+  const ::protobuf::DetectionProvenance& provenance() const;
+  PROTOBUF_NODISCARD ::protobuf::DetectionProvenance* release_provenance();
+  ::protobuf::DetectionProvenance* mutable_provenance();
+  void set_allocated_provenance(::protobuf::DetectionProvenance* provenance);
+  private:
+  const ::protobuf::DetectionProvenance& _internal_provenance() const;
+  ::protobuf::DetectionProvenance* _internal_mutable_provenance();
+  public:
+  void unsafe_arena_set_allocated_provenance(
+      ::protobuf::DetectionProvenance* provenance);
+  ::protobuf::DetectionProvenance* unsafe_arena_release_provenance();
+
   // double overall_threat_score = 15;
   void clear_overall_threat_score();
   double overall_threat_score() const;
@@ -7725,6 +8186,7 @@ class NetworkSecurityEvent final :
     ::protobuf::RAGAnalysis* rag_analysis_;
     ::protobuf::HumanInTheLoopReview* human_review_;
     ::protobuf::DecisionMetadata* decision_metadata_;
+    ::protobuf::DetectionProvenance* provenance_;
     double overall_threat_score_;
     uint32_t schema_version_;
     int authoritative_source_;
@@ -7786,7 +8248,7 @@ class EventBatch final :
                &_EventBatch_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    28;
 
   friend void swap(EventBatch& a, EventBatch& b) {
     a.Swap(&b);
@@ -8100,7 +8562,7 @@ class SystemConfiguration final :
                &_SystemConfiguration_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    31;
 
   friend void swap(SystemConfiguration& a, SystemConfiguration& b) {
     a.Swap(&b);
@@ -8454,7 +8916,7 @@ class RansomwareFeatures final :
                &_RansomwareFeatures_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    32;
 
   friend void swap(RansomwareFeatures& a, RansomwareFeatures& b) {
     a.Swap(&b);
@@ -8811,7 +9273,7 @@ class DecisionMetadata final :
                &_DecisionMetadata_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    33;
 
   friend void swap(DecisionMetadata& a, DecisionMetadata& b) {
     a.Swap(&b);
@@ -9059,7 +9521,7 @@ class Detection final :
                &_Detection_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    34;
 
   friend void swap(Detection& a, Detection& b) {
     a.Swap(&b);
@@ -9288,7 +9750,7 @@ class DetectionBatch final :
                &_DetectionBatch_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    33;
+    35;
 
   friend void swap(DetectionBatch& a, DetectionBatch& b) {
     a.Swap(&b);
@@ -19554,6 +20016,434 @@ inline void HumanInTheLoopReview::set_review_completed(bool value) {
 
 // -------------------------------------------------------------------
 
+// EngineVerdict
+
+// string engine_name = 1;
+inline void EngineVerdict::clear_engine_name() {
+  _impl_.engine_name_.ClearToEmpty();
+}
+inline const std::string& EngineVerdict::engine_name() const {
+  // @@protoc_insertion_point(field_get:protobuf.EngineVerdict.engine_name)
+  return _internal_engine_name();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void EngineVerdict::set_engine_name(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.engine_name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.EngineVerdict.engine_name)
+}
+inline std::string* EngineVerdict::mutable_engine_name() {
+  std::string* _s = _internal_mutable_engine_name();
+  // @@protoc_insertion_point(field_mutable:protobuf.EngineVerdict.engine_name)
+  return _s;
+}
+inline const std::string& EngineVerdict::_internal_engine_name() const {
+  return _impl_.engine_name_.Get();
+}
+inline void EngineVerdict::_internal_set_engine_name(const std::string& value) {
+  
+  _impl_.engine_name_.Set(value, GetArenaForAllocation());
+}
+inline std::string* EngineVerdict::_internal_mutable_engine_name() {
+  
+  return _impl_.engine_name_.Mutable(GetArenaForAllocation());
+}
+inline std::string* EngineVerdict::release_engine_name() {
+  // @@protoc_insertion_point(field_release:protobuf.EngineVerdict.engine_name)
+  return _impl_.engine_name_.Release();
+}
+inline void EngineVerdict::set_allocated_engine_name(std::string* engine_name) {
+  if (engine_name != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.engine_name_.SetAllocated(engine_name, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.engine_name_.IsDefault()) {
+    _impl_.engine_name_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.EngineVerdict.engine_name)
+}
+
+// string classification = 2;
+inline void EngineVerdict::clear_classification() {
+  _impl_.classification_.ClearToEmpty();
+}
+inline const std::string& EngineVerdict::classification() const {
+  // @@protoc_insertion_point(field_get:protobuf.EngineVerdict.classification)
+  return _internal_classification();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void EngineVerdict::set_classification(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.classification_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.EngineVerdict.classification)
+}
+inline std::string* EngineVerdict::mutable_classification() {
+  std::string* _s = _internal_mutable_classification();
+  // @@protoc_insertion_point(field_mutable:protobuf.EngineVerdict.classification)
+  return _s;
+}
+inline const std::string& EngineVerdict::_internal_classification() const {
+  return _impl_.classification_.Get();
+}
+inline void EngineVerdict::_internal_set_classification(const std::string& value) {
+  
+  _impl_.classification_.Set(value, GetArenaForAllocation());
+}
+inline std::string* EngineVerdict::_internal_mutable_classification() {
+  
+  return _impl_.classification_.Mutable(GetArenaForAllocation());
+}
+inline std::string* EngineVerdict::release_classification() {
+  // @@protoc_insertion_point(field_release:protobuf.EngineVerdict.classification)
+  return _impl_.classification_.Release();
+}
+inline void EngineVerdict::set_allocated_classification(std::string* classification) {
+  if (classification != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.classification_.SetAllocated(classification, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.classification_.IsDefault()) {
+    _impl_.classification_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.EngineVerdict.classification)
+}
+
+// float confidence = 3;
+inline void EngineVerdict::clear_confidence() {
+  _impl_.confidence_ = 0;
+}
+inline float EngineVerdict::_internal_confidence() const {
+  return _impl_.confidence_;
+}
+inline float EngineVerdict::confidence() const {
+  // @@protoc_insertion_point(field_get:protobuf.EngineVerdict.confidence)
+  return _internal_confidence();
+}
+inline void EngineVerdict::_internal_set_confidence(float value) {
+  
+  _impl_.confidence_ = value;
+}
+inline void EngineVerdict::set_confidence(float value) {
+  _internal_set_confidence(value);
+  // @@protoc_insertion_point(field_set:protobuf.EngineVerdict.confidence)
+}
+
+// string reason_code = 4;
+inline void EngineVerdict::clear_reason_code() {
+  _impl_.reason_code_.ClearToEmpty();
+}
+inline const std::string& EngineVerdict::reason_code() const {
+  // @@protoc_insertion_point(field_get:protobuf.EngineVerdict.reason_code)
+  return _internal_reason_code();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void EngineVerdict::set_reason_code(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.reason_code_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.EngineVerdict.reason_code)
+}
+inline std::string* EngineVerdict::mutable_reason_code() {
+  std::string* _s = _internal_mutable_reason_code();
+  // @@protoc_insertion_point(field_mutable:protobuf.EngineVerdict.reason_code)
+  return _s;
+}
+inline const std::string& EngineVerdict::_internal_reason_code() const {
+  return _impl_.reason_code_.Get();
+}
+inline void EngineVerdict::_internal_set_reason_code(const std::string& value) {
+  
+  _impl_.reason_code_.Set(value, GetArenaForAllocation());
+}
+inline std::string* EngineVerdict::_internal_mutable_reason_code() {
+  
+  return _impl_.reason_code_.Mutable(GetArenaForAllocation());
+}
+inline std::string* EngineVerdict::release_reason_code() {
+  // @@protoc_insertion_point(field_release:protobuf.EngineVerdict.reason_code)
+  return _impl_.reason_code_.Release();
+}
+inline void EngineVerdict::set_allocated_reason_code(std::string* reason_code) {
+  if (reason_code != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.reason_code_.SetAllocated(reason_code, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.reason_code_.IsDefault()) {
+    _impl_.reason_code_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.EngineVerdict.reason_code)
+}
+
+// uint64 timestamp_ns = 5;
+inline void EngineVerdict::clear_timestamp_ns() {
+  _impl_.timestamp_ns_ = uint64_t{0u};
+}
+inline uint64_t EngineVerdict::_internal_timestamp_ns() const {
+  return _impl_.timestamp_ns_;
+}
+inline uint64_t EngineVerdict::timestamp_ns() const {
+  // @@protoc_insertion_point(field_get:protobuf.EngineVerdict.timestamp_ns)
+  return _internal_timestamp_ns();
+}
+inline void EngineVerdict::_internal_set_timestamp_ns(uint64_t value) {
+  
+  _impl_.timestamp_ns_ = value;
+}
+inline void EngineVerdict::set_timestamp_ns(uint64_t value) {
+  _internal_set_timestamp_ns(value);
+  // @@protoc_insertion_point(field_set:protobuf.EngineVerdict.timestamp_ns)
+}
+
+// -------------------------------------------------------------------
+
+// DetectionProvenance
+
+// repeated .protobuf.EngineVerdict verdicts = 1;
+inline int DetectionProvenance::_internal_verdicts_size() const {
+  return _impl_.verdicts_.size();
+}
+inline int DetectionProvenance::verdicts_size() const {
+  return _internal_verdicts_size();
+}
+inline void DetectionProvenance::clear_verdicts() {
+  _impl_.verdicts_.Clear();
+}
+inline ::protobuf::EngineVerdict* DetectionProvenance::mutable_verdicts(int index) {
+  // @@protoc_insertion_point(field_mutable:protobuf.DetectionProvenance.verdicts)
+  return _impl_.verdicts_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::EngineVerdict >*
+DetectionProvenance::mutable_verdicts() {
+  // @@protoc_insertion_point(field_mutable_list:protobuf.DetectionProvenance.verdicts)
+  return &_impl_.verdicts_;
+}
+inline const ::protobuf::EngineVerdict& DetectionProvenance::_internal_verdicts(int index) const {
+  return _impl_.verdicts_.Get(index);
+}
+inline const ::protobuf::EngineVerdict& DetectionProvenance::verdicts(int index) const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionProvenance.verdicts)
+  return _internal_verdicts(index);
+}
+inline ::protobuf::EngineVerdict* DetectionProvenance::_internal_add_verdicts() {
+  return _impl_.verdicts_.Add();
+}
+inline ::protobuf::EngineVerdict* DetectionProvenance::add_verdicts() {
+  ::protobuf::EngineVerdict* _add = _internal_add_verdicts();
+  // @@protoc_insertion_point(field_add:protobuf.DetectionProvenance.verdicts)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protobuf::EngineVerdict >&
+DetectionProvenance::verdicts() const {
+  // @@protoc_insertion_point(field_list:protobuf.DetectionProvenance.verdicts)
+  return _impl_.verdicts_;
+}
+
+// uint64 global_timestamp_ns = 2;
+inline void DetectionProvenance::clear_global_timestamp_ns() {
+  _impl_.global_timestamp_ns_ = uint64_t{0u};
+}
+inline uint64_t DetectionProvenance::_internal_global_timestamp_ns() const {
+  return _impl_.global_timestamp_ns_;
+}
+inline uint64_t DetectionProvenance::global_timestamp_ns() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionProvenance.global_timestamp_ns)
+  return _internal_global_timestamp_ns();
+}
+inline void DetectionProvenance::_internal_set_global_timestamp_ns(uint64_t value) {
+  
+  _impl_.global_timestamp_ns_ = value;
+}
+inline void DetectionProvenance::set_global_timestamp_ns(uint64_t value) {
+  _internal_set_global_timestamp_ns(value);
+  // @@protoc_insertion_point(field_set:protobuf.DetectionProvenance.global_timestamp_ns)
+}
+
+// string final_decision = 3;
+inline void DetectionProvenance::clear_final_decision() {
+  _impl_.final_decision_.ClearToEmpty();
+}
+inline const std::string& DetectionProvenance::final_decision() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionProvenance.final_decision)
+  return _internal_final_decision();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DetectionProvenance::set_final_decision(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.final_decision_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.DetectionProvenance.final_decision)
+}
+inline std::string* DetectionProvenance::mutable_final_decision() {
+  std::string* _s = _internal_mutable_final_decision();
+  // @@protoc_insertion_point(field_mutable:protobuf.DetectionProvenance.final_decision)
+  return _s;
+}
+inline const std::string& DetectionProvenance::_internal_final_decision() const {
+  return _impl_.final_decision_.Get();
+}
+inline void DetectionProvenance::_internal_set_final_decision(const std::string& value) {
+  
+  _impl_.final_decision_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DetectionProvenance::_internal_mutable_final_decision() {
+  
+  return _impl_.final_decision_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DetectionProvenance::release_final_decision() {
+  // @@protoc_insertion_point(field_release:protobuf.DetectionProvenance.final_decision)
+  return _impl_.final_decision_.Release();
+}
+inline void DetectionProvenance::set_allocated_final_decision(std::string* final_decision) {
+  if (final_decision != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.final_decision_.SetAllocated(final_decision, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.final_decision_.IsDefault()) {
+    _impl_.final_decision_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DetectionProvenance.final_decision)
+}
+
+// float discrepancy_score = 4;
+inline void DetectionProvenance::clear_discrepancy_score() {
+  _impl_.discrepancy_score_ = 0;
+}
+inline float DetectionProvenance::_internal_discrepancy_score() const {
+  return _impl_.discrepancy_score_;
+}
+inline float DetectionProvenance::discrepancy_score() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionProvenance.discrepancy_score)
+  return _internal_discrepancy_score();
+}
+inline void DetectionProvenance::_internal_set_discrepancy_score(float value) {
+  
+  _impl_.discrepancy_score_ = value;
+}
+inline void DetectionProvenance::set_discrepancy_score(float value) {
+  _internal_set_discrepancy_score(value);
+  // @@protoc_insertion_point(field_set:protobuf.DetectionProvenance.discrepancy_score)
+}
+
+// string logic_override = 5;
+inline void DetectionProvenance::clear_logic_override() {
+  _impl_.logic_override_.ClearToEmpty();
+}
+inline const std::string& DetectionProvenance::logic_override() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionProvenance.logic_override)
+  return _internal_logic_override();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DetectionProvenance::set_logic_override(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.logic_override_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.DetectionProvenance.logic_override)
+}
+inline std::string* DetectionProvenance::mutable_logic_override() {
+  std::string* _s = _internal_mutable_logic_override();
+  // @@protoc_insertion_point(field_mutable:protobuf.DetectionProvenance.logic_override)
+  return _s;
+}
+inline const std::string& DetectionProvenance::_internal_logic_override() const {
+  return _impl_.logic_override_.Get();
+}
+inline void DetectionProvenance::_internal_set_logic_override(const std::string& value) {
+  
+  _impl_.logic_override_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DetectionProvenance::_internal_mutable_logic_override() {
+  
+  return _impl_.logic_override_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DetectionProvenance::release_logic_override() {
+  // @@protoc_insertion_point(field_release:protobuf.DetectionProvenance.logic_override)
+  return _impl_.logic_override_.Release();
+}
+inline void DetectionProvenance::set_allocated_logic_override(std::string* logic_override) {
+  if (logic_override != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.logic_override_.SetAllocated(logic_override, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.logic_override_.IsDefault()) {
+    _impl_.logic_override_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DetectionProvenance.logic_override)
+}
+
+// string discrepancy_reason = 6;
+inline void DetectionProvenance::clear_discrepancy_reason() {
+  _impl_.discrepancy_reason_.ClearToEmpty();
+}
+inline const std::string& DetectionProvenance::discrepancy_reason() const {
+  // @@protoc_insertion_point(field_get:protobuf.DetectionProvenance.discrepancy_reason)
+  return _internal_discrepancy_reason();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DetectionProvenance::set_discrepancy_reason(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.discrepancy_reason_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:protobuf.DetectionProvenance.discrepancy_reason)
+}
+inline std::string* DetectionProvenance::mutable_discrepancy_reason() {
+  std::string* _s = _internal_mutable_discrepancy_reason();
+  // @@protoc_insertion_point(field_mutable:protobuf.DetectionProvenance.discrepancy_reason)
+  return _s;
+}
+inline const std::string& DetectionProvenance::_internal_discrepancy_reason() const {
+  return _impl_.discrepancy_reason_.Get();
+}
+inline void DetectionProvenance::_internal_set_discrepancy_reason(const std::string& value) {
+  
+  _impl_.discrepancy_reason_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DetectionProvenance::_internal_mutable_discrepancy_reason() {
+  
+  return _impl_.discrepancy_reason_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DetectionProvenance::release_discrepancy_reason() {
+  // @@protoc_insertion_point(field_release:protobuf.DetectionProvenance.discrepancy_reason)
+  return _impl_.discrepancy_reason_.Release();
+}
+inline void DetectionProvenance::set_allocated_discrepancy_reason(std::string* discrepancy_reason) {
+  if (discrepancy_reason != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.discrepancy_reason_.SetAllocated(discrepancy_reason, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.discrepancy_reason_.IsDefault()) {
+    _impl_.discrepancy_reason_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:protobuf.DetectionProvenance.discrepancy_reason)
+}
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // NetworkSecurityEvent
@@ -21190,6 +22080,96 @@ inline void NetworkSecurityEvent::set_allocated_decision_metadata(::protobuf::De
   }
   _impl_.decision_metadata_ = decision_metadata;
   // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkSecurityEvent.decision_metadata)
+}
+
+// .protobuf.DetectionProvenance provenance = 35;
+inline bool NetworkSecurityEvent::_internal_has_provenance() const {
+  return this != internal_default_instance() && _impl_.provenance_ != nullptr;
+}
+inline bool NetworkSecurityEvent::has_provenance() const {
+  return _internal_has_provenance();
+}
+inline void NetworkSecurityEvent::clear_provenance() {
+  if (GetArenaForAllocation() == nullptr && _impl_.provenance_ != nullptr) {
+    delete _impl_.provenance_;
+  }
+  _impl_.provenance_ = nullptr;
+}
+inline const ::protobuf::DetectionProvenance& NetworkSecurityEvent::_internal_provenance() const {
+  const ::protobuf::DetectionProvenance* p = _impl_.provenance_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::DetectionProvenance&>(
+      ::protobuf::_DetectionProvenance_default_instance_);
+}
+inline const ::protobuf::DetectionProvenance& NetworkSecurityEvent::provenance() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkSecurityEvent.provenance)
+  return _internal_provenance();
+}
+inline void NetworkSecurityEvent::unsafe_arena_set_allocated_provenance(
+    ::protobuf::DetectionProvenance* provenance) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.provenance_);
+  }
+  _impl_.provenance_ = provenance;
+  if (provenance) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkSecurityEvent.provenance)
+}
+inline ::protobuf::DetectionProvenance* NetworkSecurityEvent::release_provenance() {
+  
+  ::protobuf::DetectionProvenance* temp = _impl_.provenance_;
+  _impl_.provenance_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::DetectionProvenance* NetworkSecurityEvent::unsafe_arena_release_provenance() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkSecurityEvent.provenance)
+  
+  ::protobuf::DetectionProvenance* temp = _impl_.provenance_;
+  _impl_.provenance_ = nullptr;
+  return temp;
+}
+inline ::protobuf::DetectionProvenance* NetworkSecurityEvent::_internal_mutable_provenance() {
+  
+  if (_impl_.provenance_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::DetectionProvenance>(GetArenaForAllocation());
+    _impl_.provenance_ = p;
+  }
+  return _impl_.provenance_;
+}
+inline ::protobuf::DetectionProvenance* NetworkSecurityEvent::mutable_provenance() {
+  ::protobuf::DetectionProvenance* _msg = _internal_mutable_provenance();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkSecurityEvent.provenance)
+  return _msg;
+}
+inline void NetworkSecurityEvent::set_allocated_provenance(::protobuf::DetectionProvenance* provenance) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.provenance_;
+  }
+  if (provenance) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(provenance);
+    if (message_arena != submessage_arena) {
+      provenance = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, provenance, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.provenance_ = provenance;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkSecurityEvent.provenance)
 }
 
 // -------------------------------------------------------------------
@@ -23066,6 +24046,10 @@ inline void DetectionBatch::set_allocated_batch_timestamp(::PROTOBUF_NAMESPACE_I
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
