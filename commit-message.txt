@@ -65,6 +65,6 @@ Compiled Successfully:
   - ml-detector: [100%] Built target ml-detector
   - rag-ingester: [100%] Built target rag-ingester
 
-Co-authors: Alonso Martinez-Alonso, Claude (Anthropic), Gemini (Google)
+Co-authors: Alonso Isidoro Roman, Claude (Anthropic), Gemini (Google)
 Via Appia Quality: Foundation for 2000-year architecture ✅
 Security: ADR-001 + ADR-002 enforced at code level, not config level 🔒"

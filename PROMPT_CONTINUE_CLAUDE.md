@@ -595,6 +595,107 @@ auto logger = std::make_shared<spdlog::logger>("ml-detector",
 
 ---
 
+---
+
+## 🎯 DAY 38 - PRIORITY TASKS (from Grok4)
+
+**Context Quick:**
+- Day 37 completado: ADR-002 (provenance multi-engine) + ADR-001 (encryption mandatory)
+- Event struct ahora tiene: std::vector<EngineVerdict> + discrepancy_score
+- Embedders necesitan pasar de 101 → 103 features
+- Ya tenemos: generate_synthetic_events.py (versión mínima), acceptance test básico, ChronosEmbedder actualizado
+
+**Tareas en orden de prioridad:**
+
+### 1. Mejorar generate_synthetic_events.py ⏱️ 1h
+```python
+# Objetivos:
+- Pasar de 10 → 100-200 eventos
+- Distribución realista: 20-25% malicious
+- Variar discrepancy_score:
+  • 75-80% baja (0.0-0.25) - engines agree
+  • 10-15% media (0.25-0.5) - slight disagreement
+  • 10-15% alta (>0.5) - significant conflict
+- Variar reason_codes:
+  • SIG_MATCH (~40%)
+  • STAT_ANOMALY (~35%)
+  • PCA_OUTLIER (~10%)
+  • PROT_VIOLATION (~10%)
+  • ENGINE_CONFLICT (~5%)
+- Añadir parámetros: --count, --malicious-ratio
+```
+
+### 2. Completar acceptance tests protobuf ⏱️ 45min
+```python
+# test_protobuf_contract.py
+def test_end_to_end_preservation():
+    """Verificar que provenance sobrevive: sniffer → ml-detector → rag-ingester"""
+    # Verificar: discrepancy_score intacto
+    # Verificar: final_decision preservado
+    # Verificar: 5 reason_codes diferentes funcionan
+```
+
+### 3. Actualizar embedders restantes ⏱️ 1h
+```cpp
+// SBERTEmbedder: 103 → 384
+// AttackEmbedder: 103 → 256
+// Patrón:
+input.reserve(103);
+input.insert(input.end(), event.features.begin(), event.features.end());
+input.push_back(event.discrepancy_score);  // 102
+input.push_back(static_cast<float>(event.verdicts.size()));  // 103
+
+if (input.size() != INPUT_DIM) {
+    throw std::runtime_error("Invalid input size");
+}
+```
+
+### 4. Añadir visibilidad de embeddings ⏱️ 30min
+```cpp
+// En rag-ingester, punto de generación:
+auto embedding = chronos_embedder->embed(event);
+float norm = std::sqrt(std::inner_product(
+    embedding.begin(), embedding.end(), 
+    embedding.begin(), 0.0f
+));
+
+logger_->info("Embedding: event={}, dim={}, norm={:.4f}, first_5=[{:.4f},{:.4f},{:.4f},{:.4f},{:.4f}]",
+    event.event_id, embedding.size(), norm,
+    embedding[0], embedding[1], embedding[2], embedding[3], embedding[4]
+);
+```
+
+### 5. Smoke test end-to-end ⏱️ 30min
+```bash
+# Generar eventos
+python3 generate_synthetic_events.py --count 100 --malicious-ratio 0.20
+
+# Ejecutar rag-ingester
+./rag-ingester ../config/rag-ingester.json
+
+# Verificar logs:
+grep "verdicts_size" logs/*.log
+grep "discrepancy_score" logs/*.log
+grep "Embedding generated" logs/*.log
+grep ERROR logs/*.log  # Should be empty
+```
+
+**Success Criteria:**
+- ✅ 100-200 eventos sintéticos realistas
+- ✅ Acceptance tests PASS (incluyendo end-to-end)
+- ✅ 3 embedders procesando 103 features sin errores
+- ✅ Logs muestran embeddings con normas razonables
+- ✅ Pipeline completo sin crashes
+
+**Nice-to-have (si sobra tiempo):**
+- Naming: `/vagrant/logs/rag/events/synthetic/`
+- Timestamps en filenames: `event_20260114_143052_001234.pb.enc`
+- Dry-run mode: `rag-ingester --dry-run`
+
+**Objetivo:** Ver si embeddings capturan señal de provenance (discrepancy como feature discriminante)
+
+---
+
 ## 🏛️ VIA APPIA REMINDERS
 
 1. **Foundation first** - Day 37 completó protobuf contract ✅
