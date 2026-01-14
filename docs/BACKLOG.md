@@ -3,9 +3,9 @@
 ```markdown
 # RAG Ingester - Development Backlog
 
-**Last Updated:** 2026-01-13  
-**Current Phase:** 2A - Foundation (Day 37 Complete)  
-**Next Session:** Day 38 - Synthetic Data + ONNX Embedders (103 features)
+**Last Updated:** 2026-01-14 (Day 38 Parcial)  
+**Current Phase:** 2A - Foundation  
+**Next Session:** Day 38 Completion - Execute Generator + ONNX Embedders
 
 ---
 
@@ -58,6 +58,95 @@ Event EventLoader::load(const std::string& filepath) {
 }
 ```
 
+### 🔄 Day 38 - Synthetic Data + ONNX Embedders (2026-01-14 PARCIAL)
+
+**Status:** 40% Complete (Generator compiled, execution pending)
+
+**Completado:**
+- [x] Tools infrastructure created (`/vagrant/tools/`)
+- [x] `generate_synthetic_events.cpp` implemented (850 lines)
+- [x] Config file: `synthetic_generator_config.json`
+- [x] CMakeLists.txt: Protobuf + etcd-client linking fixed
+- [x] Makefile integration: `make tools-build` working
+- [x] Binary compiled successfully (2.5MB)
+- [x] 100% compliance architecture (etcd + RAGLogger)
+
+**Pendiente (Tomorrow Morning):**
+- [ ] etcd-server setup with encryption_seed
+- [ ] Execute generator (100-200 events)
+- [ ] Verify .pb.enc artifacts generated
+- [ ] Update ChronosEmbedder (103 → 512-d)
+- [ ] Update SBERTEmbedder (103 → 384-d)
+- [ ] Update AttackEmbedder (103 → 256-d)
+- [ ] End-to-end smoke test
+
+**Architecture Decisions:**
+```
+Via Appia Quality:
+1. No hardcoded keys → Uses etcd (same as ml-detector)
+2. Zero drift → Reuses production RAGLogger directly
+3. Realistic data → 101 features + ADR-002 provenance
+4. Security first → Encryption from etcd, not config
+```
+
+**Compilation Fixes Applied:**
+- ❌ `-lnetwork_security_proto` → ✅ Compile `.pb.cc` directly
+- ❌ Missing etcd symbols → ✅ Added `etcd_client.cpp`
+- ❌ Missing OpenSSL/CURL → ✅ Added to CMakeLists
+- ❌ Reason code enums → ✅ Use strings directly
+
+**Success criteria:**
+- ✅ Generator compiles cleanly
+- ⏳ 100+ .pb.enc files with provenance
+- ⏳ Embedders process 103 features
+- ⏳ End-to-end pipeline functional
+
+**Via Appia Milestones:**
+- 🏛️ Reuse over reinvent: Production RAGLogger used directly
+- 🏛️ Security by design: etcd integration, no hardcoded secrets
+- 🏛️ Test tools = production quality
+
+---
+
+## 🐛 TECHNICAL DEBT REGISTER
+
+### ISSUE-008: etcd-server encryption_seed Bootstrap (NEW - Day 38)
+
+**Severity:** Medium  
+**Impact:** Generator can't run without encryption_seed  
+**Discovered:** 2026-01-14 (Day 38)
+
+**Problem:**
+- Generator requires `/crypto/ml-detector/tokens/encryption_seed` in etcd
+- Currently manual setup required
+- No bootstrap script exists
+
+**Solution:**
+Create `/vagrant/scripts/bootstrap_etcd_encryption.sh`:
+```bash
+#!/bin/bash
+# Generate and store encryption seed in etcd
+SEED=$(openssl rand -hex 32)
+ETCDCTL_API=3 etcdctl put /crypto/ml-detector/tokens/encryption_seed $SEED
+echo "✅ Encryption seed created: ${SEED:0:16}..."
+```
+
+**Affected Components:**
+- generate_synthetic_events
+- ml-detector (also requires this key)
+
+**Estimación:** 15 minutes  
+**Priority:** HIGH (blocks Day 38 execution)  
+**Assigned:** Tomorrow morning
+
+---
+## 📚 KEY DOCUMENTS
+
+### Day 38 Files (NEW)
+- `/vagrant/tools/generate_synthetic_events.cpp` - Synthetic data generator (850 lines)
+- `/vagrant/tools/config/synthetic_generator_config.json` - Generator config
+- `/vagrant/tools/CMakeLists.txt` - Build system (corrected)
+- `/vagrant/tools/build/generate_synthetic_events` - Compiled binary
 **Status:** ✅ IMPLEMENTED (Day 37)
 
 ---
@@ -272,25 +361,35 @@ std::vector<float> ChronosEmbedder::embed(const Event& event) {
 5. **Forensics** - Complete audit trail of all engine decisions
 6. **Vaccine Quality** - Discrepancies help prioritize which events to analyze
 
-### Success Metrics
+## 📊 Success Metrics
 
-- ✅ Protobuf contract extended (Day 37)
-- ✅ Sniffer fills verdict (Day 37)
-- ✅ ml-detector fills verdict + discrepancy (Day 37)
-- ✅ rag-ingester parses provenance (Day 37)
-- ⏳ Embedders use discrepancy as feature (Day 38)
-- ⏳ Reduced false positive rate (target: -20%)
-- ⏳ 0-day detection improved (measure: time to detection)
-- ⏳ LLM can explain decisions (qualitative: operator feedback)
+### Phase 2A (Week 5)
+- ✅ Compilation successful (Days 35-37)
+- ✅ All tests passing (Days 35-37)
+- ✅ Dependencies resolved (Days 35-37)
+- ✅ Binary functional (Days 36-37)
+- ✅ ADR-002 implemented (Day 37)
+- ✅ ADR-001 hardened (Day 37)
+- ✅ Generator compiled (Day 38 parcial) ← NEW
+- [ ] Synthetic data generation (Day 38 completion)
+- [ ] ONNX Embedders updated (Day 38 completion)
+- [ ] End-to-end pipeline working (Day 40)
 
 ---
+## 📈 Progress Visual
+```
+Phase 1:  [████████████████████] 100% COMPLETE
+Phase 2A: [██████████░░░░░░░░░░]  50% (Days 35-38/40) ← Updated
+Phase 2B: [░░░░░░░░░░░░░░░░░░░░]   0%
+Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
+```
 
-**Status:** ✅ IMPLEMENTED (Day 37)  
-**Next:** Embedders update for 103 features (Day 38)  
-**Proposed by:** Gemini (peer reviewer)  
-**Co-authors:** Alonso, Claude, Gemini
-
-🏛️ **Via Appia:** This transforms the system from binary decision to situational intelligence - exactly the kind of architectural decision that builds systems for 2000 years.
+**Day 38 Progress:**
+- Structure:    [████] 100% ✅
+- Compilation:  [████] 100% ✅ (NEW)
+- Execution:    [░░░░]   0% ← Tomorrow
+- Embedders:    [░░░░]   0% ← Tomorrow
+- Integration:  [█░░░]  25%
 
 ---
 
@@ -936,7 +1035,9 @@ Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
 - [x] Compilación limpia antes de features
 - [x] Security by design (encryption mandatory)
 - [x] Provenance contract complete (ADR-002)
-- [ ] Synthetic data validation (Day 38)
+- [x] Generator compiled with production compliance (Day 38) ← NEW
+- [ ] Synthetic data execution validated (Day 38 completion)
+- [ ] ONNX embedders updated (Day 38 completion)
 - [ ] End-to-end validation antes de expansión (Day 40)
 
 **Expansion (Week 6):**
@@ -953,11 +1054,8 @@ Phase 3:  [░░░░░░░░░░░░░░░░░░░░]   0%
 
 **End of Backlog**
 
-**Last Updated:** 2026-01-13 (Day 37 Complete - ADR-002 + ADR-001)  
-**Next Update:** 2026-01-14 (Day 38 - Synthetic Data + ONNX)  
-**Vision:** Sistema inmunológico jerárquico global con inteligencia situacional 🌍  
+**Last Updated:** 2026-01-14 (Day 38 Parcial - Generator Compiled)  
+**Next Update:** 2026-01-15 (Day 38 Complete - Execution + ONNX)  
+**Vision:** Sistema inmunológico jerárquico global 🌍  
 **Security:** Multi-engine provenance + Encryption mandatory 🔒  
-**Quality:** Via Appia - Foundation complete, ready for data pipeline 🏛️
-```
-
-¡Listo! Ahora tienes la documentación completa actualizada. ¿Hacemos el commit épico? 🎉
+**Quality:** Via Appia - Generator ready, execution tomorrow 🏛️

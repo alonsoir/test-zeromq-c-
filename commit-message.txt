@@ -1,70 +1,53 @@
-git add -A
-git commit -m "🎯 Day 37: ADR-002 Multi-Engine Provenance + ADR-001 Encrypted Artifacts
+git add /vagrant/tools/
+git add /vagrant/Makefile
+git add /vagrant/rag-ingester/docs/
 
-MAJOR MILESTONE: Complete implementation of situational intelligence system
+git commit -m "🏛️ Day 38: Synthetic Event Generator - Via Appia Quality
 
-## ADR-002: Multi-Engine Detection Provenance ✅
-- Extended protobuf contract with DetectionProvenance message
-- Added 5 reason codes (Gemini table): SIG_MATCH, STAT_ANOMALY, PCA_OUTLIER, PROT_VIOLATION, ENGINE_CONFLICT
-- Sniffer now fills EngineVerdict with fast-path detection context
-- ml-detector adds RandomForest verdict + calculates discrepancy_score
-- rag-ingester parses complete provenance (verdicts + metadata)
-- Event struct extended with std::vector<EngineVerdict> + discrepancy_score
+✨ MAJOR MILESTONE: Production-Grade Test Data Generator
 
-## ADR-001: Encrypted RAG Artifacts (BONUS) ✅
-- RAGLogger now encrypts .pb and .json artifacts (.pb.enc, .json.enc)
-- Pipeline: Serialize → Compress (LZ4) → Encrypt (ChaCha20-Poly1305)
-- Prevents log poisoning attacks (no config bypass for security)
-- crypto_manager correctly passed through component chain
+Architecture:
+- 100% compliance with ml-detector infrastructure
+- Uses production RAGLogger directly (zero drift)
+- etcd-client integration for encryption keys
+- NO hardcoded secrets (security by design)
 
-## Infrastructure Updates ✅
-- Vagrantfile: Permanent fix for ONNX Runtime lib64 symlinks
-- Created /vagrant/common/include/ for shared headers (reason_codes.hpp)
-- Updated CMakeLists.txt for sniffer, ml-detector, rag-ingester
-- All components compile cleanly and produce functional binaries
+Implementation:
+- generate_synthetic_events.cpp (850 lines)
+- Full 101-feature generation (61 basic + 40 embedded)
+- ADR-002 provenance: 2 verdicts per event
+- Realistic distributions (20% malicious, 80% benign)
+- Discrepancy scores: 78% low, 12% medium, 10% high
+- Reason codes: SIG_MATCH (40%), STAT_ANOMALY (35%), PCA_OUTLIER (10%)
 
-## Technical Debt Identified 📋
-- ISSUE-007: Magic numbers in ml-detector (0.30, 0.70) → Move to JSON config
-- ISSUE-005: RAGLogger memory leak (nlohmann/json) → RapidJSON migration
-- ISSUE-003: Thread-local FlowManager bug → 11/102 features only
-- MISSING: Acceptance tests for protobuf contract
-- MISSING: Log file persistence (stdout only, should write to files)
+Compilation Fixes:
+- CMakeLists.txt: Compile protobuf sources directly
+- Added etcd_client.cpp to executable
+- Linked OpenSSL + CURL for HTTP operations
+- Reason codes as strings (not enum constants)
+- SPEC as function (avoid const json init issues)
 
-## Architecture Impact 🏛️
-This transforms the system from binary classification to **situational intelligence**:
-- Not just \"what\" but \"why\" and \"how confident\"
-- Enables 0-day detection via PCA_OUTLIER + ENGINE_CONFLICT signals
-- Supports adaptive learning (LLM understands campus-specific patterns)
-- Complete audit trail for forensics and vaccine generation
-- Foundation for GAIA hierarchical immune system
+Integration:
+- Makefile: New targets (tools-build, tools-synthetic-gen)
+- Config: synthetic_generator_config.json
+- Binary: /vagrant/tools/build/generate_synthetic_events (2.5MB)
 
-## Next Steps (Day 38) 🎯
-1. Verify clean compilation from scratch (VM rebuild test)
-2. Generate synthetic .pb.enc files with provenance for testing
-3. Update ONNX Embedders to process 103 features (101 + 2 meta)
-4. Acceptance tests for protobuf contract end-to-end
-5. Prepare fixes for identified technical debt
+Via Appia Principles:
+✅ Reuse production code (RAGLogger)
+✅ Security first (etcd for keys)
+✅ Zero drift guarantee (same crypto-transport)
+✅ Test tools = production quality
 
-## Files Changed
-Modified:
-  - /vagrant/protobuf/network_security.proto (DetectionProvenance)
-  - /vagrant/common/include/reason_codes.hpp (NEW)
-  - /vagrant/sniffer/src/userspace/ring_consumer.cpp (verdict filling)
-  - /vagrant/sniffer/CMakeLists.txt (common include)
-  - /vagrant/ml-detector/src/zmq_handler.cpp (provenance + crypto)
-  - /vagrant/ml-detector/include/rag_logger.hpp (crypto_manager)
-  - /vagrant/ml-detector/src/rag_logger.cpp (encrypted artifacts)
-  - /vagrant/ml-detector/CMakeLists.txt (common include)
-  - /vagrant/rag-ingester/include/event_loader.hpp (EngineVerdict struct)
-  - /vagrant/rag-ingester/src/event_loader.cpp (provenance parsing)
-  - /vagrant/rag-ingester/CMakeLists.txt (common include)
-  - Vagrantfile (ONNX Runtime lib64 symlinks)
+Status:
+[x] Generator compiled successfully
+[x] etcd-client integration complete
+[x] 100% compliance architecture verified
+[ ] Execution pending (etcd encryption_seed setup)
+[ ] ONNX embedders update (103 features)
+[ ] End-to-end smoke test
 
-Compiled Successfully:
-  - sniffer: 1.4M binary
-  - ml-detector: [100%] Built target ml-detector
-  - rag-ingester: [100%] Built target rag-ingester
+Next: Execute generator → Update embedders → E2E validation
 
-Co-authors: Alonso Isidoro Roman, Claude (Anthropic), Gemini (Google)
-Via Appia Quality: Foundation for 2000-year architecture ✅
-Security: ADR-001 + ADR-002 enforced at code level, not config level 🔒"
+Co-authors: Alonso Isidoro Roman, Claude (Anthropic)
+Phase: 2A Foundation - Day 38 (Parcial Complete)
+Quality: Via Appia - Built to last 2000 years 🏛️"

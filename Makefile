@@ -27,6 +27,7 @@
 .PHONY: test-day23-full test-day23-stress verify-rag-logs-day23
 .PHONY: day23
 .PHONY: rag-ingester rag-ingester-build rag-ingester-clean
+.PHONY: tools-build tools-clean tools-synthetic-gen
 
 # ============================================================================
 # ThreadSanitizer Build (Race Condition Detection)
@@ -257,6 +258,9 @@ help:
 	@echo ""
 	@echo "Memory Debugging:"
 	@echo "  make detector-asan       - Build ml-detector with AddressSanitizer"
+	@echo "Tools:"
+	@echo "  make tools-build         - Build synthetic data generator"
+	@echo "  make tools-synthetic-gen - Generate synthetic events"
 
 # ============================================================================
 # VM Management
@@ -461,6 +465,28 @@ rag-ingester-clean:
 	@echo "🧹 Cleaning RAG Ingester..."
 	@vagrant ssh -c "rm -rf /vagrant/rag-ingester/build/*"
 
+# ============================================================================
+# Tools - Synthetic Data Generator & Validators (Day 38)
+# ============================================================================
+
+tools-build: proto etcd-client-build crypto-transport-build
+	@echo "🔨 Building ML Defender Tools..."
+	@echo "   Dependencies: proto ✅  etcd-client ✅  crypto-transport ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/tools/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/tools/build/proto/ && \
+		cd /vagrant/tools/build && \
+		cmake .. && \
+		make -j4"
+	@echo "✅ Tools built successfully"
+
+tools-clean:
+	@echo "🧹 Cleaning Tools..."
+	@vagrant ssh -c "rm -rf /vagrant/tools/build/*"
+
+tools-synthetic-gen: tools-build
+	@echo "🎯 Running Synthetic Event Generator..."
+	@vagrant ssh -c "cd /vagrant/tools/build && ./generate_synthetic_events"
+
 # ----------------------------------------------------------------------------
 # 4. etcd-server (independiente)
 # ----------------------------------------------------------------------------
@@ -468,7 +494,7 @@ rag-ingester-clean:
 # ----------------------------------------------------------------------------
 # 5. Build unificado (ORDEN CORRECTO)
 # ----------------------------------------------------------------------------
-build-unified: proto-unified etcd-client-build crypto-transport-build sniffer detector firewall rag-ingester
+build-unified: proto-unified etcd-client-build crypto-transport-build sniffer detector firewall rag-ingester tools-build
 	@echo "🚀 Build completo con protobuf unificado y etcd-client"
 	@$(MAKE) proto-verify
 	@echo ""
@@ -478,7 +504,8 @@ build-unified: proto-unified etcd-client-build crypto-transport-build sniffer de
 	@echo "   3. ✅ crypto-transport-build"
 	@echo "   4. ✅ sniffer"
 	@echo "   5. ✅ detector"
-	@echo "   5. ✅ rag-ingester"
+	@echo "   6. ✅ rag-ingester"
+	@echo "   7. ✅ tools"
 
 all: build-unified etcd-server-build
 	@echo ""
@@ -502,8 +529,8 @@ rebuild-unified: clean build-unified
 rebuild: rebuild-unified etcd-server-build
 	@echo "✅ Full rebuild complete (all components)"
 
-clean: sniffer-clean detector-clean firewall-clean rag-ingester-clean crypto-transport-clean etcd-client-clean etcd-server-clean
-	@echo "✅ Clean complete (including crypto ecosystem)"
+clean: sniffer-clean detector-clean firewall-clean rag-ingester-clean crypto-transport-clean etcd-client-clean etcd-server-clean tools-clean
+	@echo "✅ Clean complete (including crypto ecosystem + tools)"
 
 distclean: clean
 	@vagrant ssh -c "rm -f /vagrant/protobuf/network_security.pb.* /vagrant/protobuf/network_security_pb2.py"
