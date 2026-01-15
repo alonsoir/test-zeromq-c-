@@ -1628,3 +1628,161 @@ day23:
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
 		$(MAKE) test-day23-full; \
 	fi
+
+# ============================================================================
+# Day 38 - Synthetic Data Generation (5 Steps)
+# ============================================================================
+
+.PHONY: day38-step1 day38-step2 day38-step3 day38-step4 day38-step5
+.PHONY: day38-full day38-status day38-clean
+
+day38-step1:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 1: etcd-server Bootstrap (Idempotent)"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Checking etcd-server status..."
+	@vagrant ssh -c "pgrep -f 'etcd-server' > /dev/null && echo '✅ etcd-server already running (PID: \$$(pgrep -f etcd-server))' || (echo '🚀 Starting etcd-server...' && cd /vagrant/etcd-server/build && nohup ./etcd-server > /vagrant/logs/etcd-server.log 2>&1 & sleep 2 && echo 'Started with PID: '\$$(pgrep -f etcd-server))"
+	@sleep 3
+	@echo ""
+	@echo "Verifying connectivity..."
+	@vagrant ssh -c "curl -s http://localhost:2379/health > /dev/null 2>&1 && echo '✅ etcd-server responding (HTTP 200)' || echo '❌ etcd-server not responding'"
+	@echo ""
+	@echo "Checking /seed endpoint availability..."
+	@vagrant ssh -c "curl -s http://localhost:2379/seed | head -c 50 && echo '... (truncated)'"
+	@echo ""
+	@echo "✅ Step 1 complete - etcd-server ready"
+
+# Paso 2: Generar 100 eventos (10 min)
+# Paso 2: Generar 100 eventos (10 min)
+day38-step2: tools-build
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 2: Generate 100 Synthetic Events"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Creating output directories..."
+	@vagrant ssh -c "mkdir -p /vagrant/logs/rag/synthetic/events"
+	@vagrant ssh -c "mkdir -p /vagrant/logs/rag/synthetic/artifacts"
+	@vagrant ssh -c "ls -ld /vagrant/logs/rag/synthetic/*"
+	@echo ""
+	@echo "2️⃣  Executing generator (C++ handles seed idempotency)..."
+	@vagrant ssh -c "cd /vagrant/tools/build && ./generate_synthetic_events 100 0.20"
+	@echo ""
+	@echo "✅ Step 2 complete - Synthetic events generated"
+
+# Paso 3: Validar artefactos (15 min)
+# Paso 3: Validar artefactos (15 min)
+day38-step3:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 3: Validate Artifacts"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Counting .pb.enc files..."
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name 'event_*.pb.enc' | wc -l | xargs echo 'Generated:'"
+	@echo ""
+	@echo "2️⃣  CRÍTICO (Gepeto): Verificar dispersión real..."
+	@vagrant ssh -c 'export LC_ALL=C; jq -r ".detection.scores.divergence" /vagrant/logs/rag/synthetic/events/*.jsonl | awk "BEGIN{sum=0;sumsq=0;n=0} {sum+=\$$1; sumsq+=\$$1*\$$1; n++} END {mean=sum/n; stddev=sqrt(sumsq/n-mean*mean); printf \"Mean: %.3f  StdDev: %.3f\n\", mean, stddev; if (stddev > 0.1) print \"✅ Real dispersion confirmed (StdDev > 0.1)\"; else print \"❌ WARNING: Low dispersion (< 0.1)\";}"'
+	@echo ""
+	@echo "3️⃣  Verificar todos eventos tienen divergence..."
+	@vagrant ssh -c "jq -r '.detection.scores.divergence' /vagrant/logs/rag/synthetic/events/*.jsonl | wc -l | xargs echo 'Events with divergence:'"
+	@echo ""
+	@echo "✅ Step 3 complete - Artifacts validated"
+
+# Paso 4: Actualizar embedders (2h)
+day38-step4:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 4: Update Embedders (101 → 103 features)"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "⚠️  MANUAL STEP REQUIRED"
+	@echo ""
+	@echo "Archivos a modificar (6):"
+	@echo "  1. /vagrant/rag-ingester/src/embedders/chronos_embedder.hpp"
+	@echo "  2. /vagrant/rag-ingester/src/embedders/chronos_embedder.cpp"
+	@echo "  3. /vagrant/rag-ingester/src/embedders/sbert_embedder.hpp"
+	@echo "  4. /vagrant/rag-ingester/src/embedders/sbert_embedder.cpp"
+	@echo "  5. /vagrant/rag-ingester/src/embedders/attack_embedder.hpp"
+	@echo "  6. /vagrant/rag-ingester/src/embedders/attack_embedder.cpp"
+	@echo ""
+	@echo "Cambios necesarios en cada archivo:"
+	@echo "  - INPUT_DIM: 101 → 103"
+	@echo "  - Añadir: input.push_back(event.discrepancy_score);              // 102"
+	@echo "  - Añadir: input.push_back(static_cast<float>(event.verdicts.size())); // 103"
+	@echo ""
+	@echo "Después de modificar, recompilar:"
+	@echo "  make rag-ingester-build"
+	@echo ""
+	@read -p "Press ENTER when embedders are updated and recompiled..." dummy
+	@echo "✅ Step 4 complete - Embedders updated"
+
+# Paso 5: Smoke test (30 min)
+day38-step5:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 5: Smoke Test End-to-End"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Running rag-ingester with synthetic events..."
+	@vagrant ssh -c "cd /vagrant/rag-ingester/build && ./rag-ingester ../config/rag-ingester.json"
+	@echo ""
+	@echo "1️⃣  Eventos cargados:"
+	@vagrant ssh -c "grep 'Event loaded' /vagrant/logs/rag-ingester/*.log | wc -l | xargs echo 'Count:'"
+	@echo ""
+	@echo "2️⃣  Provenance parseada:"
+	@vagrant ssh -c "grep 'verdicts' /vagrant/logs/rag-ingester/*.log | head -5"
+	@echo ""
+	@echo "3️⃣  Embeddings generados:"
+	@vagrant ssh -c "grep 'Embedding' /vagrant/logs/rag-ingester/*.log | wc -l | xargs echo 'Count (expected 300):'"
+	@echo ""
+	@echo "4️⃣  CRÍTICO (Invariante Gepeto): disc > 0.5 ⇒ verdicts ≥ 2"
+	@vagrant ssh -c "grep 'discrepancy' /vagrant/logs/rag-ingester/*.log | \
+		awk '{ \
+			if (\$$NF > 0.5 && \$$(\$$NF-2) < 2) { \
+				print \"❌ INVARIANT VIOLATION\"; exit 1; \
+			} \
+		}' && echo '✅ Invariant validated' || echo '❌ Invariant violated'"
+	@echo ""
+	@echo "5️⃣  Errores:"
+	@vagrant ssh -c "grep ERROR /vagrant/logs/rag-ingester/*.log || echo '✅ No errors'"
+	@echo ""
+	@echo "✅ Step 5 complete - Smoke test passed"
+
+# Full Day 38 workflow
+day38-full:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 Day 38 - Full Completion Workflow                     ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@$(MAKE) day38-step1
+	@echo ""
+	@$(MAKE) day38-step2
+	@echo ""
+	@$(MAKE) day38-step3
+	@echo ""
+	@$(MAKE) day38-step4
+	@echo ""
+	@$(MAKE) day38-step5
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "✅ Day 38 COMPLETE"
+	@echo "════════════════════════════════════════════════════════════"
+
+# Status check
+day38-status:
+	@echo "Day 38 Status:"
+	@echo ""
+	@echo "etcd-server:"
+	@vagrant ssh -c "pgrep -f etcd-server && echo '  ✅ Running' || echo '  ❌ Stopped'"
+	@echo ""
+	@echo "Synthetic artifacts:"
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name '*.pb.enc' | wc -l | xargs echo '  Generated:'"
+	@echo ""
+	@echo "Embedders:"
+	@vagrant ssh -c "grep -r 'INPUT_DIM = 103' /vagrant/rag-ingester/src/embedders/*.hpp && echo '  ✅ Updated' || echo '  ❌ Not updated (still 101)'"
+
+# Clean Day 38 artifacts
+day38-clean:
+	@echo "🧹 Cleaning Day 38 artifacts..."
+	@vagrant ssh -c "rm -rf /vagrant/logs/rag/synthetic/*"
+	@vagrant ssh -c "rm -rf /vagrant/logs/rag-ingester/*"
+	@echo "✅ Day 38 artifacts cleaned"

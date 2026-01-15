@@ -6,7 +6,7 @@
 // STRATEGY: Reuse RAGLogger directly to guarantee compliance
 //
 // AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)
-// DATE: 14 Enero 2026 - Day 38
+// DATE: 15 Enero 2026 - Day 38 (Simplified - HTTP only)
 
 #include <iostream>
 #include <random>
@@ -25,6 +25,9 @@
 // JSON for SPEC and stats
 #include <nlohmann/json.hpp>
 
+// HTTP client (simple GET to /seed)
+#include <httplib.h>
+
 // Protobuf
 #include "network_security.pb.h"
 
@@ -34,7 +37,7 @@
 
 // RAG Logger (PRODUCTION CODE - zero drift)
 #include "rag_logger.hpp"
-#include "etcd_client.hpp"
+
 // Reason codes
 #include "reason_codes.hpp"
 
@@ -45,14 +48,10 @@ using json = nlohmann::json;
 // SPEC Definition (Ground Truth)
 // ============================================================================
 
-// Forward declaration
-json get_spec();
-
-// Implementación (poner después de las clases RandomGen, FeatureSet, etc., antes de main)
 json get_spec() {
     json spec;
     spec["version"] = "1.0.0";
-    spec["date"] = "2026-01-14";
+    spec["date"] = "2026-01-15";
     spec["protobuf_version"] = "3.1.0";
 
     spec["features"]["total_count"] = 101;
@@ -141,20 +140,16 @@ FeatureSet generate_features(RandomGen& rng, bool is_malicious, const std::strin
     FeatureSet features;
 
     // PART 1: BASIC FLOW STATISTICS (61 features)
-    // Following extract_features() from event_loader.cpp lines 209-268
-
     uint64_t fwd_packets, bwd_packets;
     double bytes_per_sec;
     uint32_t syn_count;
 
     if (is_malicious) {
-        // Attack pattern - high, asymmetric
         fwd_packets = rng.uniform_int(500, 5000);
         bwd_packets = rng.uniform_int(10, 100);
         bytes_per_sec = rng.uniform(100000, 1000000);
         syn_count = rng.uniform_int(100, 500);
     } else {
-        // Benign pattern - normal, balanced
         fwd_packets = rng.uniform_int(10, 200);
         bwd_packets = rng.uniform_int(10, 200);
         bytes_per_sec = rng.uniform(1000, 50000);
@@ -162,93 +157,58 @@ FeatureSet generate_features(RandomGen& rng, bool is_malicious, const std::strin
     }
 
     features.basic_flow = {
-        6.0,  // protocol_number (TCP)
-        1.0,  // interface_mode
-        0.0,  // source_ifindex
-        rng.uniform(0.1, 10.0),  // flow_duration_seconds
-
+        6.0, 1.0, 0.0, rng.uniform(0.1, 10.0),
         static_cast<double>(fwd_packets),
         static_cast<double>(bwd_packets),
         static_cast<double>(fwd_packets * rng.uniform_int(40, 1500)),
         static_cast<double>(bwd_packets * rng.uniform_int(40, 1500)),
-
-        static_cast<double>(rng.uniform_int(40, 1500)),  // fwd_pkt_len_max
-        40.0,  // fwd_pkt_len_min
-        rng.uniform(100, 800),   // fwd_pkt_len_mean
-        rng.uniform(50, 300),    // fwd_pkt_len_std
-
-        static_cast<double>(rng.uniform_int(40, 1500)),
-        40.0,
-        rng.uniform(100, 800),
-        rng.uniform(50, 300),
-
-        bytes_per_sec,
-        fwd_packets / 10.0,
-        fwd_packets / 10.0,
-        bwd_packets / 10.0,
-        static_cast<double>(bwd_packets) / static_cast<double>(std::max(fwd_packets, 1UL)),  // download_upload_ratio
-        rng.uniform(200, 800),
-        rng.uniform(200, 800),
-        rng.uniform(200, 800),
-
-        rng.uniform(1000, 50000),   // flow_iat_mean
-        rng.uniform(500, 20000),    // flow_iat_std
+        static_cast<double>(rng.uniform_int(40, 1500)), 40.0,
+        rng.uniform(100, 800), rng.uniform(50, 300),
+        static_cast<double>(rng.uniform_int(40, 1500)), 40.0,
+        rng.uniform(100, 800), rng.uniform(50, 300),
+        bytes_per_sec, fwd_packets / 10.0, fwd_packets / 10.0, bwd_packets / 10.0,
+        static_cast<double>(bwd_packets) / static_cast<double>(std::max(fwd_packets, 1UL)),
+        rng.uniform(200, 800), rng.uniform(200, 800), rng.uniform(200, 800),
+        rng.uniform(1000, 50000), rng.uniform(500, 20000),
         static_cast<double>(rng.uniform_int(100000, 500000)),
         static_cast<double>(rng.uniform_int(100, 5000)),
-
-        rng.uniform(10000, 100000),
-        rng.uniform(1000, 50000),
-        rng.uniform(500, 20000),
+        rng.uniform(10000, 100000), rng.uniform(1000, 50000), rng.uniform(500, 20000),
         static_cast<double>(rng.uniform_int(100000, 500000)),
         static_cast<double>(rng.uniform_int(100, 5000)),
-
-        rng.uniform(10000, 100000),
-        rng.uniform(1000, 50000),
-        rng.uniform(500, 20000),
+        rng.uniform(10000, 100000), rng.uniform(1000, 50000), rng.uniform(500, 20000),
         static_cast<double>(rng.uniform_int(100000, 500000)),
         static_cast<double>(rng.uniform_int(100, 5000)),
-
-        static_cast<double>(rng.uniform_int(0, 10)),   // fin_flag
-        static_cast<double>(syn_count),                // syn_flag
-        static_cast<double>(rng.uniform_int(0, 5)),    // rst_flag
-        static_cast<double>(rng.uniform_int(0, 50)),   // psh_flag
-        static_cast<double>(rng.uniform_int(10, 200)), // ack_flag
-        0.0, 0.0, 0.0,  // urg, cwe, ece
-
-        static_cast<double>(rng.uniform_int(0, 20)),  // fwd_psh
-        static_cast<double>(rng.uniform_int(0, 20)),  // bwd_psh
-        0.0, 0.0,  // fwd_urg, bwd_urg
-
-        rng.uniform(20, 60),   // fwd_header_len
-        rng.uniform(20, 60),   // bwd_header_len
-        0.0, 0.0, 0.0,         // bulk stats (zeros)
+        static_cast<double>(rng.uniform_int(0, 10)),
+        static_cast<double>(syn_count),
+        static_cast<double>(rng.uniform_int(0, 5)),
+        static_cast<double>(rng.uniform_int(0, 50)),
+        static_cast<double>(rng.uniform_int(10, 200)),
         0.0, 0.0, 0.0,
-
-        40.0,  // min_pkt_len
+        static_cast<double>(rng.uniform_int(0, 20)),
+        static_cast<double>(rng.uniform_int(0, 20)),
+        0.0, 0.0,
+        rng.uniform(20, 60), rng.uniform(20, 60),
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        40.0,
         static_cast<double>(rng.uniform_int(1000, 1500)),
-        rng.uniform(200, 800),
-        rng.uniform(100, 400),
+        rng.uniform(200, 800), rng.uniform(100, 400),
         rng.uniform(10000, 160000),
-
-        rng.uniform(1000, 50000),  // active_mean
-        rng.uniform(1000, 50000)   // idle_mean
+        rng.uniform(1000, 50000), rng.uniform(1000, 50000)
     };
 
     // PART 2: EMBEDDED DETECTOR FEATURES (40 features)
-
-    // DDoS Features (10)
     if (is_malicious && attack_type == "DDoS") {
         features.ddos = {
-            static_cast<float>(rng.uniform(0.8, 1.0)),    // syn_ack_ratio
-            static_cast<float>(rng.uniform(0.1, 0.3)),    // packet_symmetry
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // source_ip_dispersion
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // protocol_anomaly
-            static_cast<float>(rng.uniform(0.6, 0.9)),    // packet_size_entropy
-            static_cast<float>(rng.uniform(2.0, 10.0)),   // traffic_amplification
-            static_cast<float>(rng.uniform(0.1, 0.3)),    // flow_completion_rate
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // geo_concentration
-            static_cast<float>(rng.uniform(5.0, 20.0)),   // traffic_escalation
-            static_cast<float>(rng.uniform(0.8, 1.0))     // resource_saturation
+            static_cast<float>(rng.uniform(0.8, 1.0)),
+            static_cast<float>(rng.uniform(0.1, 0.3)),
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(0.6, 0.9)),
+            static_cast<float>(rng.uniform(2.0, 10.0)),
+            static_cast<float>(rng.uniform(0.1, 0.3)),
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(5.0, 20.0)),
+            static_cast<float>(rng.uniform(0.8, 1.0))
         };
     } else {
         for (int i = 0; i < 10; i++) {
@@ -256,19 +216,18 @@ FeatureSet generate_features(RandomGen& rng, bool is_malicious, const std::strin
         }
     }
 
-    // Ransomware Features (10)
     if (is_malicious && attack_type == "Ransomware") {
         features.ransomware = {
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // io_intensity
-            static_cast<float>(rng.uniform(0.8, 1.0)),    // entropy
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // resource_usage
-            static_cast<float>(rng.uniform(0.6, 0.9)),    // network_activity
-            static_cast<float>(rng.uniform(0.8, 1.0)),    // file_operations
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // process_anomaly
-            static_cast<float>(rng.uniform(0.6, 0.9)),    // temporal_pattern
-            static_cast<float>(rng.uniform(0.7, 1.0)),    // access_frequency
-            static_cast<float>(rng.uniform(0.8, 1.0)),    // data_volume
-            static_cast<float>(rng.uniform(0.5, 0.8))     // behavior_consistency
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(0.8, 1.0)),
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(0.6, 0.9)),
+            static_cast<float>(rng.uniform(0.8, 1.0)),
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(0.6, 0.9)),
+            static_cast<float>(rng.uniform(0.7, 1.0)),
+            static_cast<float>(rng.uniform(0.8, 1.0)),
+            static_cast<float>(rng.uniform(0.5, 0.8))
         };
     } else {
         for (int i = 0; i < 10; i++) {
@@ -276,7 +235,6 @@ FeatureSet generate_features(RandomGen& rng, bool is_malicious, const std::strin
         }
     }
 
-    // Traffic Classification Features (10)
     features.traffic = {
         static_cast<float>(rng.uniform(10, 100)),
         static_cast<float>(rng.uniform(1, 10)),
@@ -290,7 +248,6 @@ FeatureSet generate_features(RandomGen& rng, bool is_malicious, const std::strin
         static_cast<float>(rng.uniform(0.4, 0.9))
     };
 
-    // Internal Anomaly Features (10)
     features.internal = {
         static_cast<float>(rng.uniform(0.1, 5.0)),
         static_cast<float>(rng.uniform(0.5, 1.0)),
@@ -320,7 +277,6 @@ struct ProvenanceData {
 ProvenanceData generate_provenance(RandomGen& rng, bool is_malicious) {
     ProvenanceData prov;
 
-    // Reason code distribution
     std::map<std::string, double> reason_dist = {
         {"SIG_MATCH", 0.40},
         {"STAT_ANOMALY", 0.35},
@@ -329,7 +285,6 @@ ProvenanceData generate_provenance(RandomGen& rng, bool is_malicious) {
         {"ENGINE_CONFLICT", 0.05}
     };
 
-    // Sniffer verdict
     protobuf::EngineVerdict sniffer;
     sniffer.set_engine_name("fast-path-sniffer");
     sniffer.set_classification(is_malicious ? "MALICIOUS" : "BENIGN");
@@ -338,17 +293,14 @@ ProvenanceData generate_provenance(RandomGen& rng, bool is_malicious) {
     sniffer.set_timestamp_ns(std::chrono::system_clock::now().time_since_epoch().count());
     prov.verdicts.push_back(sniffer);
 
-    // RandomForest verdict
     protobuf::EngineVerdict rf;
     rf.set_engine_name("random-forest-level1");
     rf.set_classification(is_malicious ? "Attack" : "Benign");
     rf.set_confidence(is_malicious ? rng.uniform(0.80, 0.98) : rng.uniform(0.05, 0.20));
-    rf.set_reason_code("STAT_ANOMALY");  // RF always uses STAT_ANOMALY
+    rf.set_reason_code("STAT_ANOMALY");
     rf.set_timestamp_ns(std::chrono::system_clock::now().time_since_epoch().count());
     prov.verdicts.push_back(rf);
 
-    // Discrepancy score with realistic distribution
-    // 78% low, 12% medium, 10% high
     double rand = rng.uniform(0.0, 1.0);
     if (rand < 0.78) {
         prov.discrepancy_score = rng.uniform(0.0, 0.25);
@@ -375,12 +327,10 @@ protobuf::NetworkSecurityEvent generate_event(
 {
     protobuf::NetworkSecurityEvent event;
 
-    // Event ID
     std::ostringstream oss;
     oss << "synthetic_" << std::setfill('0') << std::setw(6) << event_id;
     event.set_event_id(oss.str());
 
-    // Timestamp
     auto now = std::chrono::system_clock::now();
     auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
     auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() % 1000000000;
@@ -388,34 +338,26 @@ protobuf::NetworkSecurityEvent generate_event(
     event.mutable_event_timestamp()->set_seconds(seconds);
     event.mutable_event_timestamp()->set_nanos(nanos);
 
-    // Generate features
     auto feat = generate_features(rng, is_malicious, attack_type);
-
-    // NetworkFeatures - fill all fields
     auto* nf = event.mutable_network_features();
 
-    // Basic flow (mapped to protobuf fields)
     auto& bf = feat.basic_flow;
     nf->set_protocol_number(static_cast<uint32_t>(bf[0]));
     nf->set_interface_mode(static_cast<uint32_t>(bf[1]));
     nf->set_source_ifindex(static_cast<uint32_t>(bf[2]));
     nf->set_flow_duration_microseconds(static_cast<uint64_t>(bf[3] * 1e6));
-
     nf->set_total_forward_packets(static_cast<uint64_t>(bf[4]));
     nf->set_total_backward_packets(static_cast<uint64_t>(bf[5]));
     nf->set_total_forward_bytes(static_cast<uint64_t>(bf[6]));
     nf->set_total_backward_bytes(static_cast<uint64_t>(bf[7]));
-
     nf->set_forward_packet_length_max(static_cast<uint64_t>(bf[8]));
     nf->set_forward_packet_length_min(static_cast<uint64_t>(bf[9]));
     nf->set_forward_packet_length_mean(bf[10]);
     nf->set_forward_packet_length_std(bf[11]);
-
     nf->set_backward_packet_length_max(static_cast<uint64_t>(bf[12]));
     nf->set_backward_packet_length_min(static_cast<uint64_t>(bf[13]));
     nf->set_backward_packet_length_mean(bf[14]);
     nf->set_backward_packet_length_std(bf[15]);
-
     nf->set_flow_bytes_per_second(bf[16]);
     nf->set_flow_packets_per_second(bf[17]);
     nf->set_forward_packets_per_second(bf[18]);
@@ -424,24 +366,20 @@ protobuf::NetworkSecurityEvent generate_event(
     nf->set_average_packet_size(bf[21]);
     nf->set_average_forward_segment_size(bf[22]);
     nf->set_average_backward_segment_size(bf[23]);
-
     nf->set_flow_inter_arrival_time_mean(bf[24]);
     nf->set_flow_inter_arrival_time_std(bf[25]);
     nf->set_flow_inter_arrival_time_max(static_cast<uint64_t>(bf[26]));
     nf->set_flow_inter_arrival_time_min(static_cast<uint64_t>(bf[27]));
-
     nf->set_forward_inter_arrival_time_total(bf[28]);
     nf->set_forward_inter_arrival_time_mean(bf[29]);
     nf->set_forward_inter_arrival_time_std(bf[30]);
     nf->set_forward_inter_arrival_time_max(static_cast<uint64_t>(bf[31]));
     nf->set_forward_inter_arrival_time_min(static_cast<uint64_t>(bf[32]));
-
     nf->set_backward_inter_arrival_time_total(bf[33]);
     nf->set_backward_inter_arrival_time_mean(bf[34]);
     nf->set_backward_inter_arrival_time_std(bf[35]);
     nf->set_backward_inter_arrival_time_max(static_cast<uint64_t>(bf[36]));
     nf->set_backward_inter_arrival_time_min(static_cast<uint64_t>(bf[37]));
-
     nf->set_fin_flag_count(static_cast<uint32_t>(bf[38]));
     nf->set_syn_flag_count(static_cast<uint32_t>(bf[39]));
     nf->set_rst_flag_count(static_cast<uint32_t>(bf[40]));
@@ -450,12 +388,10 @@ protobuf::NetworkSecurityEvent generate_event(
     nf->set_urg_flag_count(static_cast<uint32_t>(bf[43]));
     nf->set_cwe_flag_count(static_cast<uint32_t>(bf[44]));
     nf->set_ece_flag_count(static_cast<uint32_t>(bf[45]));
-
     nf->set_forward_psh_flags(static_cast<uint32_t>(bf[46]));
     nf->set_backward_psh_flags(static_cast<uint32_t>(bf[47]));
     nf->set_forward_urg_flags(static_cast<uint32_t>(bf[48]));
     nf->set_backward_urg_flags(static_cast<uint32_t>(bf[49]));
-
     nf->set_forward_header_length(bf[50]);
     nf->set_backward_header_length(bf[51]);
     nf->set_forward_average_bytes_bulk(bf[52]);
@@ -464,17 +400,14 @@ protobuf::NetworkSecurityEvent generate_event(
     nf->set_backward_average_bytes_bulk(bf[55]);
     nf->set_backward_average_packets_bulk(bf[56]);
     nf->set_backward_average_bulk_rate(bf[57]);
-
     nf->set_minimum_packet_length(static_cast<uint64_t>(bf[58]));
     nf->set_maximum_packet_length(static_cast<uint64_t>(bf[59]));
     nf->set_packet_length_mean(bf[60]);
     nf->set_packet_length_std(bf[61]);
     nf->set_packet_length_variance(bf[62]);
-
     nf->set_active_mean(bf[63]);
     nf->set_idle_mean(bf[64]);
 
-    // Embedded features (40 features)
     auto* ddos = nf->mutable_ddos_embedded();
     ddos->set_syn_ack_ratio(feat.ddos[0]);
     ddos->set_packet_symmetry(feat.ddos[1]);
@@ -523,7 +456,6 @@ protobuf::NetworkSecurityEvent generate_event(
     internal->set_temporal_anomaly_score(feat.internal[8]);
     internal->set_access_pattern_entropy(feat.internal[9]);
 
-    // IP addresses (synthetic)
     nf->set_source_ip("192.168." + std::to_string(rng.uniform_int(1, 254)) +
                       "." + std::to_string(rng.uniform_int(1, 254)));
     nf->set_destination_ip("10.0." + std::to_string(rng.uniform_int(1, 254)) +
@@ -534,7 +466,6 @@ protobuf::NetworkSecurityEvent generate_event(
     nf->set_destination_port(rng.choice(common_ports));
     nf->set_protocol_name("TCP");
 
-    // ADR-002: Provenance
     auto prov_data = generate_provenance(rng, is_malicious);
     auto* prov = event.mutable_provenance();
 
@@ -551,7 +482,6 @@ protobuf::NetworkSecurityEvent generate_event(
         prov->set_discrepancy_reason("Engines disagree on threat level");
     }
 
-    // Legacy fields (backward compat)
     event.set_final_classification(is_malicious ? "MALICIOUS" : "BENIGN");
     event.set_overall_threat_score(prov_data.verdicts[1].confidence());
 
@@ -575,9 +505,6 @@ struct Statistics {
         int medium = 0;
         int high = 0;
     } discrepancy;
-
-    std::vector<double> compression_ratios;
-    std::vector<size_t> encrypted_sizes;
 };
 
 // ============================================================================
@@ -585,7 +512,6 @@ struct Statistics {
 // ============================================================================
 
 int main(int argc, char** argv) {
-    // Parse arguments
     int count = 100;
     double malicious_ratio = 0.20;
     std::string config_path = "/vagrant/tools/config/synthetic_generator_config.json";
@@ -597,7 +523,7 @@ int main(int argc, char** argv) {
     std::cout << "\n";
     std::cout << "╔════════════════════════════════════════════════════════════╗\n";
     std::cout << "║  Synthetic Event Generator - Via Appia Quality             ║\n";
-    std::cout << "║  100% Compliance: etcd + RAGLogger + crypto-transport      ║\n";
+    std::cout << "║  Simplified: HTTP GET /seed (no EtcdClient dependency)     ║\n";
     std::cout << "╚════════════════════════════════════════════════════════════╝\n\n";
 
     try {
@@ -613,53 +539,57 @@ int main(int argc, char** argv) {
 
         json config;
         config_file >> config;
-
         std::string output_base = config["generation"]["output_base"];
 
         std::cout << "✅ Configuration loaded\n\n";
 
         // ═══════════════════════════════════════════════════════════════
-        // 2. Initialize etcd-client (SAME as ml-detector)
+        // 2. Get Encryption Seed from etcd-server (HTTP GET /seed)
         // ═══════════════════════════════════════════════════════════════
-        std::unique_ptr<ml_detector::EtcdClient> etcd_client;
+
+        std::string encryption_seed_hex;
 
         if (config["etcd"]["enabled"]) {
             std::string etcd_endpoint = config["etcd"]["endpoints"][0];
 
-            std::cout << "🔗 [etcd] Initializing connection to " << etcd_endpoint << "\n";
+            // Parse host:port
+            size_t colon_pos = etcd_endpoint.find(':');
+            std::string host = etcd_endpoint.substr(0, colon_pos);
+            int port = std::stoi(etcd_endpoint.substr(colon_pos + 1));
 
-            etcd_client = std::make_unique<ml_detector::EtcdClient>(
-                etcd_endpoint,
-                "synthetic-generator"
-            );
+            std::cout << "🔗 [etcd] Connecting to " << etcd_endpoint << "\n";
 
-            if (!etcd_client->initialize()) {
-                throw std::runtime_error("[etcd] Failed to initialize");
+            httplib::Client cli(host, port);
+            cli.set_connection_timeout(5);
+            cli.set_read_timeout(5);
+
+            auto res = cli.Get("/seed");
+
+            if (!res) {
+                throw std::runtime_error("[etcd] HTTP GET /seed failed (connection error)");
             }
 
-            if (!etcd_client->registerService()) {
-                throw std::runtime_error("[etcd] Failed to register service");
+            if (res->status != 200) {
+                throw std::runtime_error(
+                    "[etcd] HTTP GET /seed failed (status " +
+                    std::to_string(res->status) + ")"
+                );
             }
 
-            std::cout << "✅ [etcd] Connected and registered\n\n";
+            json seed_response = json::parse(res->body);
+            encryption_seed_hex = seed_response["seed"];
+
+            std::cout << "✅ [etcd] Retrieved encryption seed ("
+                      << encryption_seed_hex.size() << " hex chars)\n";
+
         } else {
             throw std::runtime_error("etcd is REQUIRED for 100% compliance");
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // 3. Get Encryption Seed from etcd (SAME as ml-detector)
+        // 3. Convert HEX seed to binary
         // ═══════════════════════════════════════════════════════════════
-        std::cout << "🔑 [crypto] Retrieving encryption seed from etcd...\n";
 
-        std::string encryption_seed_hex = etcd_client->get_encryption_seed();
-        if (encryption_seed_hex.empty()) {
-            throw std::runtime_error("[crypto] Failed to get encryption seed from etcd");
-        }
-
-        std::cout << "🔑 [crypto] Retrieved encryption seed ("
-                  << encryption_seed_hex.size() << " hex chars)\n";
-
-        // Convert HEX to binary (64 hex chars → 32 bytes)
         std::string encryption_seed;
         try {
             auto key_bytes = crypto_transport::hex_to_bytes(encryption_seed_hex);
@@ -677,18 +607,19 @@ int main(int argc, char** argv) {
             );
         }
 
-        std::cout << "✅ [crypto] Encryption key converted: 32 bytes\n";
+        std::cout << "✅ [crypto] Encryption key converted: 32 bytes\n\n";
 
         // ═══════════════════════════════════════════════════════════════
-        // 4. Create CryptoManager (SAME as ml-detector)
+        // 4. Create CryptoManager
         // ═══════════════════════════════════════════════════════════════
+
         auto crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
-
         std::cout << "✅ [crypto] CryptoManager initialized (ChaCha20-Poly1305 + LZ4)\n\n";
 
         // ═══════════════════════════════════════════════════════════════
         // 5. Create Logger
         // ═══════════════════════════════════════════════════════════════
+
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         auto logger = std::make_shared<spdlog::logger>("generator", console_sink);
         logger->set_level(spdlog::level::info);
@@ -696,6 +627,7 @@ int main(int argc, char** argv) {
         // ═══════════════════════════════════════════════════════════════
         // 6. Create RAGLogger (SAME as ml-detector)
         // ═══════════════════════════════════════════════════════════════
+
         ml_defender::RAGLoggerConfig rag_config;
         rag_config.base_path = config["rag_logger"]["base_dir"];
         rag_config.deployment_id = config["rag_logger"]["deployment_id"];
@@ -715,6 +647,7 @@ int main(int argc, char** argv) {
         // ═══════════════════════════════════════════════════════════════
         // 7. Print Summary
         // ═══════════════════════════════════════════════════════════════
+
         std::cout << "╔═══════════════════════════════════════════════════════════════╗\n";
         std::cout << "║  SYNTHETIC EVENT GENERATOR - CONFIGURATION                    ║\n";
         std::cout << "╚═══════════════════════════════════════════════════════════════╝\n\n";
@@ -738,7 +671,7 @@ int main(int argc, char** argv) {
         logger->info("");
 
         // ═══════════════════════════════════════════════════════════════
-        // 8. Generate Events (REST OF CODE REMAINS THE SAME)
+        // 8. Generate Events
         // ═══════════════════════════════════════════════════════════════
 
         RandomGen rng;
@@ -761,10 +694,8 @@ int main(int argc, char** argv) {
             context.investigation_priority =
                 (event.provenance().discrepancy_score() > 0.50) ? "HIGH" : "MEDIUM";
 
-            // LOG EVENT using production RAGLogger (zero drift!)
             rag_logger->log_event(event, context);
 
-            // Update stats
             if (is_malicious) {
                 stats.malicious++;
                 stats.attack_types[attack_type]++;
@@ -781,7 +712,6 @@ int main(int argc, char** argv) {
                 stats.reason_codes[v.reason_code()]++;
             }
 
-            // Progress
             if ((i + 1) % 10 == 0 || (i + 1) == count) {
                 std::cout << "   [" << std::setw(3) << (i + 1) << "/" << count << "] "
                          << std::setw(12) << std::left << attack_type << " | "
@@ -790,11 +720,10 @@ int main(int argc, char** argv) {
             }
         }
 
-        // Flush logger
         rag_logger->flush();
 
         // ═══════════════════════════════════════════════════════════════
-        // 9. Print Statistics (SAME AS BEFORE)
+        // 9. Print Statistics
         // ═══════════════════════════════════════════════════════════════
 
         std::cout << "\n";
@@ -829,13 +758,11 @@ int main(int argc, char** argv) {
         }
         std::cout << "\n";
 
-        // RAGLogger stats
         auto rag_stats = rag_logger->get_statistics();
         std::cout << "📁 RAGLogger Statistics:\n";
         std::cout << "   Events logged: " << rag_stats["events_logged"] << "\n";
         std::cout << "   Current log: " << rag_stats["current_log_path"] << "\n\n";
 
-        // Save SPEC
         std::string spec_path = output_base + "/SPEC.json";
         std::ofstream spec_file(spec_path);
         spec_file << get_spec().dump(2);

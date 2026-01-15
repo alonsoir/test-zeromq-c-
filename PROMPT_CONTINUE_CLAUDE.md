@@ -1,95 +1,208 @@
 # RAG Ingester - Continuation Prompt
-**Last Updated:** 14 Enero 2026 - Day 38 (Parcial Complete + Gepeto Peer Review)  
+**Last Updated:** 15 Enero 2026 - Day 38 (75% Complete - Steps 1-3 Done)  
 **Phase:** 2A - Foundation + Synthetic Data Generation  
-**Status:** ✅ Generator Compiled | ⏳ Execution Tomorrow | ✅ Peer Reviewed
+**Status:** ✅ Steps 1-3 Complete | ⏳ Steps 4-5 Tomorrow (2.5h)
 
 ---
 
-## 🤝 GEPETO PEER REVIEW (14 Enero 2026 - Evening)
+## 🎉 Day 38 PROGRESS - 75% COMPLETE (15 Enero 2026)
 
-### ✅ Validación Técnica Recibida
+### ✅ COMPLETED TODAY (Steps 1-3)
 
-**Estado confirmado por Gepeto:**
-- ✅ Generador sintético: arquitectura impecable (etcd + crypto + RAGLogger)
-- ✅ ADR-001 / ADR-002: no solo implementados, sino operacionalizados
-- ✅ Diseño de features (103): extensión mínima, semánticamente correcta
-- ✅ Backlog: limpio, priorizado, dependencias explícitas
-- ✅ **"Esto ya no es infra experimental: es infra de producción en modo laboratorio"**
+**Step 1: etcd-server Bootstrap** ✅
+- etcd-server running (PID verified)
+- HTTP endpoint `/seed` responding (200 OK)
+- Seed retrieval working (64 hex chars)
+- Idempotency validated (Via Appia)
 
-### ⚠️ Puntos de Atención Críticos Identificados
+**Step 2: Synthetic Event Generation** ✅
+- 100 eventos generados exitosamente
+- Distribution: 19% malicious, 81% benign
+- Attack types: 13 DDoS, 6 Ransomware
+- Output: `/vagrant/logs/rag/synthetic/events/2026-01-15.jsonl`
+- Artifacts: 100 `.pb.enc` files encrypted + compressed
+- RAGLogger: 0 errors, 100 events logged
 
-#### 1. etcd Bootstrap - Idempotencia CRÍTICA
-**Observación Gepeto:** Script debe ser idempotente para evitar regenerar keys que invaliden artefactos antiguos.
-
-**Solución Implementada:**
-```bash
-#!/bin/bash
-# /vagrant/scripts/bootstrap_etcd_encryption.sh
-set -e
-
-ETCD_KEY="/crypto/ml-detector/tokens/encryption_seed"
-EXISTING=$(ETCDCTL_API=3 etcdctl get "$ETCD_KEY" --print-value-only 2>/dev/null || echo "")
-
-if [ -n "$EXISTING" ]; then
-    echo "✅ Encryption seed already exists: ${EXISTING:0:16}..."
-    echo "   (not regenerating - idempotent)"
-else
-    NEW_SEED=$(openssl rand -hex 32)
-    ETCDCTL_API=3 etcdctl put "$ETCD_KEY" "$NEW_SEED"
-    echo "✅ Encryption seed created: ${NEW_SEED:0:16}..."
-fi
-```
-
-**Status:** ✅ Script corregido con idempotencia
+**Step 3: Gepeto Validation PASSED** ✅
+- ✅ Count: 100 `.pb.enc` files verified
+- ✅ **Dispersión Real Confirmada:**
+    - Mean: 0.244
+    - **StdDev: 0.226** (> 0.1 threshold) ← CRITICAL
+    - Real variance, not linear correlation
+- ✅ 100% events have divergence scores
+- ✅ Distribution: 75% low, 14% medium, 11% high
+- ✅ ADR-002 compliance: Multi-engine provenance present
 
 ---
 
-#### 2. Dispersión Real en Discrepancy Score
-**Observación Gepeto:** Verificar que discrepancy_score tiene dispersión real, no solo distribución nominal. Si no hay dispersión → embedding meta pierde señal.
+## 🔧 KEY FIXES APPLIED TODAY
 
-**Validación Añadida:**
-```bash
-# Verificar dispersión estadística
-grep "discrepancy_score" /vagrant/logs/rag/synthetic/events/*.jsonl | \
-  jq -r '.discrepancy_score' | \
-  awk '{sum+=$1; sumsq+=$1*$1} END {
-    mean = sum/NR; 
-    stddev = sqrt(sumsq/NR - mean*mean);
-    print "Mean:", mean, "StdDev:", stddev
-  }'
-
-# Success: StdDev > 0.1 (dispersión real)
-```
-
-**Comprobación:** Mañana validar que existe dispersión real, no correlación lineal con confidence.
-
----
-
-#### 3. Separación Features Core vs Meta - NO REFACTORIZAR
-**Observación Gepeto:** La separación actual (101 core + 2 meta) es arquitectónicamente correcta. NO "limpiar" agrupándolas en estructuras.
-
-**Razón:** Phase 2B necesita analizar core vs meta por separado. Mantener estructura actual:
+### Fix 1: Simplified Generator (HTTP Direct)
+**Problem:** EtcdClient dependency coupling with ml-detector
+**Solution:** Direct HTTP GET to `/seed` endpoint
 ```cpp
-// ✅ MANTENER así (correcto):
+// BEFORE: Complex EtcdClient with ml-detector coupling
+// AFTER: Simple HTTP client
+httplib::Client cli("localhost", 2379);
+auto res = cli.Get("/seed");
+json seed_response = json::parse(res->body);
+encryption_seed_hex = seed_response["seed"];
+```
+**Result:** ✅ Clean, minimal, Via Appia compliant
+
+### Fix 2: RAGLogger Provenance Field
+**Problem:** `divergence` always 0.0 (wrong protobuf field)
+**Solution:** Read from `provenance.discrepancy_score`
+```cpp
+// BEFORE (line 192):
+{"divergence", event.has_decision_metadata() ?
+    event.decision_metadata().score_divergence() : 0.0}
+
+// AFTER:
+{"divergence", event.has_provenance() ?
+    event.provenance().discrepancy_score() :
+    (event.has_decision_metadata() ? event.decision_metadata().score_divergence() : 0.0)}
+```
+**Result:** ✅ Real dispersion (StdDev: 0.226)
+
+### Fix 3: Makefile Locale Fix
+**Problem:** European locale (comma decimal) breaking awk
+**Solution:** Force `LC_ALL=C` in validation script
+```makefile
+@vagrant ssh -c 'export LC_ALL=C; jq -r ".detection.scores.divergence" ... | awk ...'
+```
+**Result:** ✅ Correct calculation (Mean: 0.244, StdDev: 0.226)
+
+---
+
+## 📍 CURRENT STATE (End of Day 38)
+
+**Architecture Validated:**
+```
+generate_synthetic_events (C++)
+    ↓ HTTP GET /seed
+etcd-server (custom, port 2379)
+    ↓ Returns encryption_seed (64 hex)
+crypto_manager (ChaCha20-Poly1305 + LZ4)
+    ↓ Encrypt + Compress
+RAGLogger (production code - zero drift)
+    ↓ Write artifacts
+/vagrant/logs/rag/synthetic/
+    ├── events/2026-01-15.jsonl (151KB, 100 events)
+    └── artifacts/ (100 x .pb.enc files)
+```
+
+**Data Quality Metrics:**
+- Features: 101 (61 basic + 40 embedded)
+- Provenance: 2 verdicts per event (sniffer + RF)
+- Divergence: Mean 0.244, StdDev 0.226 ✅
+- Reason codes: 5 types distributed realistically
+- Encryption: ChaCha20-Poly1305 (32-byte key from etcd)
+- Compression: LZ4 (before encryption)
+
+---
+
+## 🎯 TOMORROW - DAY 38 COMPLETION (Steps 4-5)
+
+### ⏳ Step 4: Update Embedders (2 hours)
+
+**Files to modify (6 total):**
+```
+/vagrant/rag-ingester/src/embedders/chronos_embedder.hpp
+/vagrant/rag-ingester/src/embedders/chronos_embedder.cpp
+/vagrant/rag-ingester/src/embedders/sbert_embedder.hpp
+/vagrant/rag-ingester/src/embedders/sbert_embedder.cpp
+/vagrant/rag-ingester/src/embedders/attack_embedder.hpp
+/vagrant/rag-ingester/src/embedders/attack_embedder.cpp
+```
+
+**Pattern (identical for all 3 embedders):**
+
+**In .hpp files:**
+```cpp
+// BEFORE:
+static constexpr size_t INPUT_DIM = 101;
+
+// AFTER:
+static constexpr size_t INPUT_DIM = 103;  // 101 core + 2 meta
+```
+
+**In .cpp files (embed() function):**
+```cpp
+// BEFORE:
+std::vector<float> input = event.features;  // Only 101
+
+// AFTER:
 std::vector<float> input;
+input.reserve(INPUT_DIM);
 input.insert(input.end(), event.features.begin(), event.features.end());  // 101 core
 input.push_back(event.discrepancy_score);                                  // 102 meta
 input.push_back(static_cast<float>(event.verdicts.size()));               // 103 meta
 
-// ❌ NO REFACTORIZAR a:
-// struct EnhancedFeatures { vector<float> core; vector<float> meta; };
+if (input.size() != INPUT_DIM) {
+    throw std::runtime_error("Invalid input size for embedding: " +
+                            std::to_string(input.size()) + " (expected " +
+                            std::to_string(INPUT_DIM) + ")");
+}
 ```
 
-**Decisión:** Mantener separación conceptual sin refactoring estructural.
+**Critical Notes (Gepeto):**
+- ✅ Keep core/meta separation (do NOT refactor into struct)
+- ✅ Maintain sequential insertion (101 + 2)
+- ✅ Add size validation (defensive programming)
+- ✅ Same pattern for all 3 embedders (consistency)
+
+**Validation after changes:**
+```bash
+# Recompile
+make rag-ingester-clean
+make rag-ingester-build
+
+# Verify INPUT_DIM change
+grep "INPUT_DIM = 103" /vagrant/rag-ingester/src/embedders/*.hpp
+# Expected: 3 matches
+
+# Verify size check added
+grep "if (input.size()" /vagrant/rag-ingester/src/embedders/*.cpp
+# Expected: 3 matches
+```
+
+**Estimated time:** 2 hours (careful editing + testing)
 
 ---
 
-#### 4. Invariante Crítico: Discrepancy > 0.5 ⇒ Verdicts ≥ 2
-**Observación Gepeto:** Añadir validación de invariante en smoke test.
+### ⏳ Step 5: Smoke Test End-to-End (30 min)
 
-**Invariante Añadido:**
+**Execution:**
 ```bash
-grep "discrepancy" /vagrant/logs/rag-ingester/rag-ingester.log | \
+cd /vagrant/rag-ingester/build
+./rag-ingester ../config/rag-ingester.json
+```
+
+**Validations (Gepeto Critical Points):**
+
+**1. Event Loading:**
+```bash
+grep "Event loaded" /vagrant/logs/rag-ingester/*.log | wc -l
+# Expected: 100
+```
+
+**2. Provenance Parsing:**
+```bash
+grep "verdicts" /vagrant/logs/rag-ingester/*.log | head -5
+# Expected: Shows parsed verdicts with engine names
+```
+
+**3. Embedding Generation:**
+```bash
+grep "Embedding generated" /vagrant/logs/rag-ingester/*.log | wc -l
+# Expected: 300 (100 events × 3 embedders)
+```
+
+**4. CRITICAL - Invariant (Gepeto):**
+```bash
+# Validate: discrepancy > 0.5 ⇒ verdicts ≥ 2
+grep "discrepancy" /vagrant/logs/rag-ingester/*.log | \
 awk '{
     disc = $NF;
     verdicts = $(NF-2);
@@ -100,260 +213,153 @@ awk '{
 }' && echo "✅ Invariant validated"
 ```
 
-**Significado:** Si discrepancy alta pero <2 verdicts → bug en generador o parser.
-
----
-
-#### 5. Observación Arquitectónica - GAIA + ADR-002
-**Validación Gepeto:** "La combinación ADR-002 + embeddings meta + RAG jerárquico no es común ni en productos comerciales."
-
-**Cadena Arquitectónica Validada:**
-```
-ADR-002 (Multi-Engine Provenance)
-    ↓
-Embeddings aprenden "cómo fallan los motores", no solo "qué clasifican"
-    ↓
-0-day detection (PCA_OUTLIER + ENGINE_CONFLICT signals)
-    ↓
-Vacunas transferibles (embedding signatures)
-    ↓
-GAIA jerárquico (local → campus → global)
-```
-
-**Coherencia confirmada:** No hay contradicciones. Decisiones Day 37-38 habilitan GAIA sin refactoring futuro.
-
----
-
-### 🎯 Plan Mañana - SCOPE MÍNIMO (Validado por Gepeto)
-
-**EXACTAMENTE estos 5 pasos, sin ampliaciones:**
-
-#### Paso 1: etcd Bootstrap (15 min)
+**5. Error Check:**
 ```bash
-bash /vagrant/scripts/bootstrap_etcd_encryption.sh
-# Verificar: key existe, 64 hex chars, idempotente
-```
-
-#### Paso 2: Generar 100 Eventos (10 min)
-```bash
-cd /vagrant/tools/build
-./generate_synthetic_events 100 0.20
-# Verificar: 100 .pb.enc files creados
-```
-
-#### Paso 3: Validar Artefactos (15 min)
-```bash
-# Contar archivos
-ls /vagrant/logs/rag/synthetic/artifacts/*/event_*.pb.enc | wc -l
-# Expected: 100
-
-# CRÍTICO (Punto Gepeto): Verificar dispersión real
-grep "discrepancy_score" /vagrant/logs/rag/synthetic/events/*.jsonl | \
-  jq -r '.discrepancy_score' | \
-  awk '{sum+=$1; sumsq+=$1*$1} END {
-    mean=sum/NR; 
-    print "Mean:", mean, "StdDev:", sqrt(sumsq/NR-mean*mean)
-  }'
-# Expected: StdDev > 0.1
-
-# Verificar provenance
-grep "verdicts" /vagrant/logs/rag/synthetic/events/*.jsonl | \
-  jq -r '.provenance.verdicts | length' | sort | uniq -c
-# Expected: All events have 2 verdicts
-```
-
-#### Paso 4: Actualizar Embedders (2 horas)
-```cpp
-// Modificar 6 archivos:
-// - chronos_embedder.hpp/cpp
-// - sbert_embedder.hpp/cpp  
-// - attack_embedder.hpp/cpp
-
-// Patrón único para todos:
-static constexpr size_t INPUT_DIM = 103;  // Was 101
-
-std::vector<float> input;
-input.reserve(INPUT_DIM);
-input.insert(input.end(), event.features.begin(), event.features.end());  // 101
-input.push_back(event.discrepancy_score);                                  // 102
-input.push_back(static_cast<float>(event.verdicts.size()));               // 103
-
-if (input.size() != INPUT_DIM) {
-    throw std::runtime_error("Invalid input size");
-}
-```
-
-#### Paso 5: Smoke Test (30 min)
-```bash
-cd /vagrant/rag-ingester/build
-./rag-ingester ../config/rag-ingester.json
-
-# Verificaciones:
-# 1. 100 eventos cargados
-grep "Event loaded" /vagrant/logs/rag-ingester/*.log | wc -l
-
-# 2. Provenance parseada
-grep "verdicts" /vagrant/logs/rag-ingester/*.log | head -5
-
-# 3. Embeddings generados
-grep "Embedding" /vagrant/logs/rag-ingester/*.log | wc -l
-# Expected: 300 (100 events * 3 embedders)
-
-# 4. CRÍTICO (Invariante Gepeto): Validar discrepancy > 0.5 ⇒ verdicts ≥ 2
-grep "discrepancy" /vagrant/logs/rag-ingester/*.log | \
-awk '{
-    if ($NF > 0.5 && $(NF-2) < 2) {
-        print "❌ INVARIANT VIOLATION"; exit 1;
-    }
-}' && echo "✅ Invariant validated"
-
-# 5. No errors
 grep ERROR /vagrant/logs/rag-ingester/*.log
-# Expected: empty
+# Expected: empty (no errors)
 ```
 
-**STOP.** Nada más. Cierre limpio Day 38.
+**6. Output Dimensions:**
+```bash
+# Verify embeddings have correct dimensions
+grep "ChronosEmbedder" /vagrant/logs/rag-ingester/*.log | grep "512-d"
+grep "SBERTEmbedder" /vagrant/logs/rag-ingester/*.log | grep "384-d"
+grep "AttackEmbedder" /vagrant/logs/rag-ingester/*.log | grep "256-d"
+```
+
+**Success Criteria:**
+- ✅ 100 events loaded without errors
+- ✅ 300 embeddings generated (100 × 3)
+- ✅ Correct dimensions (512/384/256)
+- ✅ Invariant validated (disc > 0.5 ⇒ verdicts ≥ 2)
+- ✅ No ERROR logs
+- ✅ Provenance parsed correctly
+
+**Estimated time:** 30 minutes
 
 ---
 
-### 📋 Checklist de Validación (Gepeto Approved)
+## 📋 Day 38 Completion Checklist
+
+**Steps 1-3 (DONE TODAY):** ✅
+- [x] etcd-server running and responding
+- [x] 100 synthetic events generated
+- [x] 100 .pb.enc encrypted artifacts created
+- [x] Dispersión real verified (StdDev: 0.226 > 0.1)
+- [x] Gepeto validation PASSED
+- [x] Distribution validated (75% low, 14% med, 11% high)
+
+**Steps 4-5 (TOMORROW):** ⏳
+- [ ] chronos_embedder.hpp: INPUT_DIM = 103
+- [ ] chronos_embedder.cpp: Add meta features
+- [ ] sbert_embedder.hpp: INPUT_DIM = 103
+- [ ] sbert_embedder.cpp: Add meta features
+- [ ] attack_embedder.hpp: INPUT_DIM = 103
+- [ ] attack_embedder.cpp: Add meta features
+- [ ] Recompile rag-ingester successfully
+- [ ] Execute smoke test
+- [ ] 100 events loaded
+- [ ] 300 embeddings generated
+- [ ] Invariant validated
+- [ ] No errors in logs
+- [ ] **Day 38 COMPLETE** ✅
+
+---
+
+## 🔒 Gepeto Critical Reminders
+
+**DO:**
+- ✅ Keep core/meta separation (101 + 2)
+- ✅ Validate input.size() == INPUT_DIM
+- ✅ Test invariant (disc > 0.5 ⇒ verdicts ≥ 2)
+- ✅ Verify real dispersion maintained
+- ✅ Follow pattern exactly for all 3 embedders
+
+**DON'T:**
+- ❌ Refactor into struct (Phase 2B needs separation)
+- ❌ Skip size validation (defensive programming)
+- ❌ Amplify scope (only Steps 4-5)
+- ❌ Change meta feature order (semantic meaning)
+
+---
+
+## 🏛️ Via Appia Quality Validation
+
+**Foundation Complete:** ✅
+- Synthetic data: Production-quality (ADR-001 + ADR-002)
+- Zero drift: RAGLogger reused directly
+- Security: Encryption from etcd, not config
+- Validation: Real dispersion (not synthetic)
+
+**Tomorrow's Work:**
+- Mechanical: Pattern-based editing (low risk)
+- Testable: Smoke test automated
+- Incremental: 6 files, same pattern
+- Reversible: Git checkpoint before changes
+
+---
+
+## 🚀 Execution Plan Tomorrow
+
+**Duration:** 2.5-3 hours total
+
+**Sequence:**
+1. Open 6 embedder files
+2. Apply pattern (INPUT_DIM + input construction)
+3. Verify changes with grep
+4. Recompile (expect clean build)
+5. Run smoke test
+6. Validate all checkpoints
+7. **Day 38 COMPLETE**
+
+**Blockers:** None (all dependencies ready)
+
+**Risk Level:** Low (mechanical changes, clear pattern)
+
+---
+
+## 📊 Progress Visual
 ```
-[ ] Script bootstrap idempotente ejecutado
-[ ] 100 .pb.enc generados
-[ ] Dispersión discrepancy verificada (StdDev > 0.1) ← CRÍTICO Gepeto
-[ ] Todos eventos tienen 2 verdicts
-[ ] Embedders aceptan 103 features
-[ ] Separación core/meta NO refactorizada ← CRÍTICO Gepeto
-[ ] Invariante validado (disc > 0.5 ⇒ verdicts ≥ 2) ← CRÍTICO Gepeto
-[ ] 300 embeddings generados sin errors
-[ ] SCOPE NO AMPLIADO ← CRÍTICO Gepeto
+Day 38 Progress:
+[███████░] 75% Complete
+
+✅ Step 1: etcd Bootstrap       [████] 100%
+✅ Step 2: Generate Events      [████] 100%
+✅ Step 3: Validate Artifacts   [████] 100%
+⏳ Step 4: Update Embedders     [░░░░]   0%
+⏳ Step 5: Smoke Test           [░░░░]   0%
+```
+
+**Phase 2A Overall:**
+```
+[████████░░░░░░░░░░░░]  60% (Days 35-38/40)
+
+Day 35: Structure        [████] 100% ✅
+Day 36: Crypto           [████] 100% ✅
+Day 37: ADR-002          [████] 100% ✅
+Day 38: Synthetic Data   [███░]  75% ⏳ (finish tomorrow)
+Day 39: Tech Debt        [░░░░]   0%
+Day 40: Integration      [░░░░]   0%
 ```
 
 ---
 
-### 🔒 Próximo Riesgo Real (Post Day 38)
+## 🤝 Acknowledgments
 
-**Identificado por Gepeto:** ISSUE-003 (Thread-Local FlowManager Bug)
-- **Cuándo:** Después de Day 38, no ahora
-- **Impacto:** Solo 11/102 features capturadas en sniffer
-- **Workaround actual:** PCA entrenado con datos sintéticos
-- **Prioridad:** HIGH, pero no bloqueante para Day 38
+**Today's Achievement:** Synthetic data pipeline validated with real dispersion
 
----
-
-## 📍 CURRENT STATE (14 Enero 2026 - Evening)
-
-### ✅ Day 38 Achievements (TODAY) - Synthetic Event Generator
-
-**Tools Infrastructure - COMPLETADO:**
-- ✅ `/vagrant/tools/` directory structure established
-- ✅ `generate_synthetic_events.cpp` implemented (850 lines)
-- ✅ Config: `synthetic_generator_config.json` created
-- ✅ CMakeLists.txt: Correct protobuf + etcd-client linking
-- ✅ Makefile integration: `make tools-build` functional
-- ✅ Binary compiled: `/vagrant/tools/build/generate_synthetic_events`
-- ✅ **Gepeto peer review passed** ← NEW
-
-**100% Compliance Architecture:**
-```
-generate_synthetic_events
-├─> etcd-client (get encryption_seed from etcd)
-├─> crypto_manager (SAME key as ml-detector)
-├─> RAGLogger (SAME code as production)
-└─> Output: IDENTICAL to ml-detector (.pb.enc)
-```
-
-**Key Design Decisions (Gepeto Validated):**
-1. ✅ No hardcoded keys - Uses etcd like ml-detector
-2. ✅ Zero drift - Reuses production RAGLogger directly
-3. ✅ 101 features + provenance - Full ADR-002 compliance
-4. ✅ Realistic distributions with real dispersion
-5. ✅ Core/Meta separation maintained (no refactoring)
-
-**Features Generated:**
-```cpp
-// 101 features: 61 basic + 40 embedded
-features.basic_flow = [61];    // TCP/IP statistics
-features.ddos = [10];          // DDoS signatures
-features.ransomware = [10];    // Ransomware patterns
-features.traffic = [10];       // Traffic classification
-features.internal = [10];      // Internal anomaly
-
-// Provenance (ADR-002)
-verdict.sniffer = {engine: "fast-path-sniffer", confidence: 0.9, reason: "SIG_MATCH"}
-verdict.rf = {engine: "random-forest-level1", confidence: 0.85, reason: "STAT_ANOMALY"}
-discrepancy_score = 0.15  // Low (agreement) - WITH REAL DISPERSION
-```
-
----
-
-## 🎯 Success Criteria Day 38 (Gepeto Validated)
-
-**Synthetic Data Generation:**
-- ✅ Generator compiled with etcd integration
-- ⏳ 100+ eventos .pb.enc generados
-- ⏳ Encryption + Compression verificados
-- ⏳ Provenance completa en cada evento
-- ⏳ **Dispersión real verificada (StdDev > 0.1)** ← NEW from Gepeto
-
-**ONNX Embedders:**
-- ⏳ 103 features procesadas correctamente
-- ⏳ Output dimensions verificadas (512/384/256)
-- ⏳ Validation errors capturados
-- ⏳ **Separación core/meta mantenida** ← NEW from Gepeto
-
-**End-to-End:**
-- ⏳ rag-ingester procesa sintéticos sin errors
-- ⏳ Provenance parseada correctamente
-- ⏳ Embeddings generados con normas razonables
-- ⏳ **Invariante validado (disc > 0.5 ⇒ verdicts ≥ 2)** ← NEW from Gepeto
-
----
-
-## 🏛️ VIA APPIA + GEPETO REMINDERS
-
-**Via Appia Principles:**
-1. ✅ Zero Drift - Generador usa código de producción
-2. ✅ Security by Design - Clave desde etcd, no hardcoded
-3. ✅ Test before Scale - Sintéticos antes de datos reales
-4. ✅ Foundation Complete - Compilación exitosa antes de ejecución
-5. ✅ Measure before Optimize - End-to-end funcional antes de optimizar
-
-**Gepeto Additions:**
-1. ✅ Idempotencia - Scripts deben ser re-ejecutables sin efectos
-2. ✅ Dispersión Real - No solo distribución nominal
-3. ✅ Separación Conceptual - Mantener arquitectura, no "limpiar"
-4. ✅ Invariantes Explícitos - Validar suposiciones críticas
-5. ✅ Scope Mínimo - 5 pasos, sin ampliaciones
-
----
-
-## 🤝 Reconocimientos
-
-**Gepeto (Peer Reviewer):**
-- Validación técnica precisa y concisa
-- Identificación de riesgos críticos (idempotencia, dispersión)
-- Observaciones arquitectónicas valiosas (core/meta, GAIA coherence)
-- Scope mínimo validado (5 pasos, sin ampliaciones)
-
-**Alonso (Arquitecto Principal):**
-- Filosofía Via Appia: "Cerrar bien las costuras"
-- 100% compliance: Mismas librerías, mismo flujo que producción
-- Vision GAIA: Sistema inmunológico jerárquico global
-
-**Claude (Co-autor):**
-- Implementación técnica (850 líneas generate_synthetic_events.cpp)
-- Integración etcd-client + crypto-transport
-- Documentación exhaustiva
+**Via Appia:** Foundation solid, execution clean
+**Gepeto:** Critical validations passed, invariants defined
+**Alonso:** Architecture vision maintained, quality uncompromised
 
 ---
 
 **End of Continuation Prompt**
 
-**Ready for Day 38 Completion:** Execute generator → Update embedders → E2E test  
-**Dependencies:** etcd-server with encryption_seed (idempotent bootstrap ready)  
-**Expected Duration:** 4-5 hours  
-**Blockers:** None (generator compiled, peer reviewed, ready to run)  
-**Peer Review:** ✅ Passed (Gepeto validation received)
+**Ready for:** Day 38 Completion (Steps 4-5)  
+**Time Required:** 2.5-3 hours  
+**Blockers:** None  
+**Risk:** Low (mechanical changes)  
+**Success:** Highly probable (foundation proven today)
 
-🏛️ Via Appia + 🤖 Gepeto: Day 38 parcial complete - Generator compiled with 100% production compliance, idempotent bootstrap ready, architectural coherence validated, ready for execution with minimal scope.
+🏛️ Via Appia + 🤖 Gepeto: 75% complete, quality foundations laid, final integration tomorrow

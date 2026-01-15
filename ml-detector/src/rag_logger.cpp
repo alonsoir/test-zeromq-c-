@@ -188,8 +188,8 @@ nlohmann::json RAGLogger::build_json_record(
         {"fast_detector", event.fast_detector_score()},
         {"ml_detector", event.ml_detector_score()},
         {"final_score", event.overall_threat_score()},
-        {"divergence", event.has_decision_metadata() ?
-            event.decision_metadata().score_divergence() : 0.0}
+        {"divergence", event.has_provenance() ? event.provenance().discrepancy_score()
+                                              : (event.has_decision_metadata() ? event.decision_metadata().score_divergence() : 0.0)}
     };
 
     // Classification
