@@ -9,6 +9,9 @@ struct Event;
 
 class ChronosEmbedder {
 public:
+    static constexpr size_t INPUT_DIM = 103;  // 101 core + 2 meta (Day 38)
+    static constexpr size_t OUTPUT_DIM = 512; // Chronos embedding dimension
+    
     explicit ChronosEmbedder(const std::string& onnx_path);
     ~ChronosEmbedder();
     

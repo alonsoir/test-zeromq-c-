@@ -5,6 +5,62 @@
 
 ---
 
+📄 Documento de Continuación - Day 38 Final
+Estado actual (End of Day 38 - 75% → 90%):
+✅ COMPLETADO HOY:
+
+Step 1: etcd-server bootstrap ✅
+Step 2: 100 eventos sintéticos generados ✅
+Step 3: Validación Gepeto (StdDev: 0.226) ✅
+Step 4: Embedders actualizados (INPUT_DIM=103) ✅
+
+chronos_embedder: 103 features (101 core + 2 meta)
+sbert_embedder: 103 features
+attack_embedder: 103 features
+Size validation añadida
+Recompilado exitosamente
+
+
+
+🔧 PENDIENTE (Step 5 - Mañana):
+Problema identificado:
+
+EventLoader usa key file directamente
+Resto del pipeline (ml-detector, generador) usa etcd-client → seed hex → CryptoManager
+Inconsistencia arquitectural
+
+Solución (30-45 min mañana):
+
+Modificar rag-ingester/src/main.cpp:
+
+// Agregar después de cargar config:
+#include <etcd_client/etcd_client.hpp>
+#include <crypto_transport/utils.hpp>
+
+// Inicializar etcd-client
+EtcdClient etcd(config.etcd_endpoints);
+std::string seed_hex = etcd.get_encryption_seed();
+auto key_bytes = crypto_transport::hex_to_bytes(seed_hex);
+std::string encryption_seed(key_bytes.begin(), key_bytes.end());
+
+// Crear CryptoManager (igual que ml-detector)
+auto crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
+
+Modificar EventLoader:
+
+Cambiar constructor: EventLoader(shared_ptr<CryptoManager>)
+Eliminar CryptoImpl interno
+Usar crypto_manager_ directamente
+
+
+Recompilar y ejecutar smoke test
+
+Archivos a modificar:
+
+/vagrant/rag-ingester/src/main.cpp
+/vagrant/rag-ingester/include/event_loader.hpp
+/vagrant/rag-ingester/src/event_loader.cpp
+
 ## 🎉 Day 38 PROGRESS - 75% COMPLETE (15 Enero 2026)
 
 ### ✅ COMPLETED TODAY (Steps 1-3)

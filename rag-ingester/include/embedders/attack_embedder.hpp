@@ -9,6 +9,9 @@ struct Event;
 
 class AttackEmbedder {
 public:
+    static constexpr size_t INPUT_DIM = 103;  // 101 core + 2 meta (Day 38)
+    static constexpr size_t OUTPUT_DIM = 256; // Attack embedding dimension
+    
     explicit AttackEmbedder(const std::string& onnx_path, float benign_sample_rate);
     ~AttackEmbedder();
     

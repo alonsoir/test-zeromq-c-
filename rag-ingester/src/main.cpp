@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         if (config.ingester.input.encrypted) {
             // WARNING: This is TEST-ONLY hardcoded path
             // In production, key comes from etcd-client, NOT from file
-            encryption_key_path = "/tmp/test_encryption_key.bin";
+            encryption_key_path = "/tmp/etcd_encryption.key.bin";
 
             // Create a dummy key for testing (32 bytes)
             // In production, this comes from etcd

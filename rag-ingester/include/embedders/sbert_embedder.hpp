@@ -9,6 +9,9 @@ struct Event;
 
 class SBERTEmbedder {
 public:
+    static constexpr size_t INPUT_DIM = 103;  // 101 core + 2 meta (Day 38)
+    static constexpr size_t OUTPUT_DIM = 384; // SBERT embedding dimension
+    
     explicit SBERTEmbedder(const std::string& onnx_path);
     ~SBERTEmbedder();
     
