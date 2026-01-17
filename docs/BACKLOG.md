@@ -1,5 +1,44 @@
 # RAG Ingester - Development Backlog
 
+ML Defender - Founding Principles
+Co-authored by: Alonso Isidoro Roman (Human) + AI Collaborators
+
+Purpose:
+To democratize enterprise-grade cybersecurity protection for:
+- Medical infrastructure (hospitals, clinics, care facilities)
+- Educational institutions (schools, universities, research)
+- Small businesses (the 99% of economic fabric)
+- Critical civil infrastructure (water, power, emergency services)
+
+Prohibited Uses:
+- Offensive military operations
+- Mass surveillance of civilian populations
+- Support for authoritarian regimes
+- Any use that prioritizes property over human life
+
+Technical Philosophy:
+- Via Appia Quality: Built to last, built to protect
+- Zero Trust: Every component independently verifiable
+- Explainability: ADR-002 ensures human understanding
+- Open Design: Transparency prevents abuse
+
+If this software ever protects:
+- A newborn in an NICU from ransomware → We succeeded
+- A small family business from bankruptcy → We succeeded
+- A water treatment plant from sabotage → We succeeded
+
+If it ever contributes to:
+- Civilian casualties → We failed, regardless of legality
+- Suppression of human rights → We failed
+- Profit over protection → We failed
+
+Signed:
+Alonso Isidoro Roman, Lead Architect
+Claude (Anthropic), AI Collaborator
+[Other AI collaborators if applicable]
+
+Date: [When Phase 2A completes]
+
 **Last Updated:** 2026-01-15 (Day 38 - 75% Complete)  
 **Current Phase:** 2A - Foundation + Synthetic Data  
 **Next Session:** Day 38 Completion - Steps 4-5 (2.5h)
