@@ -6,8 +6,7 @@
 // STRATEGY: Reuse RAGLogger directly to guarantee compliance
 //
 // AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)
-// DATE: 15 Enero 2026 - Day 38 (Simplified - HTTP only)
-
+// DATE: 15 Enero 2026 - Day 38 (Consistent with ml-detector - etcd-client)
 #include <iostream>
 #include <random>
 #include <vector>
@@ -25,16 +24,14 @@
 // JSON for SPEC and stats
 #include <nlohmann/json.hpp>
 
-// HTTP client (simple GET to /seed)
-#include <httplib.h>
-
 // Protobuf
 #include "network_security.pb.h"
 
 // Crypto
 #include <crypto_transport/crypto_manager.hpp>
 #include <crypto_transport/utils.hpp>
-
+// etcd-client (consistent with ml-detector, rag-ingester)
+#include <etcd_client/etcd_client.hpp>
 // RAG Logger (PRODUCTION CODE - zero drift)
 #include "rag_logger.hpp"
 
@@ -544,42 +541,58 @@ int main(int argc, char** argv) {
         std::cout << "✅ Configuration loaded\n\n";
 
         // ═══════════════════════════════════════════════════════════════
-        // 2. Get Encryption Seed from etcd-server (HTTP GET /seed)
+        // 2. Get Encryption Seed from etcd-server (via etcd-client)
         // ═══════════════════════════════════════════════════════════════
 
         std::string encryption_seed_hex;
 
         if (config["etcd"]["enabled"]) {
-            std::string etcd_endpoint = config["etcd"]["endpoints"][0];
+            // Parse endpoint: "localhost:2379" → host="localhost", port=2379
+            std::string endpoint = config["etcd"]["endpoints"][0];
+            size_t colon_pos = endpoint.find(':');
 
-            // Parse host:port
-            size_t colon_pos = etcd_endpoint.find(':');
-            std::string host = etcd_endpoint.substr(0, colon_pos);
-            int port = std::stoi(etcd_endpoint.substr(colon_pos + 1));
-
-            std::cout << "🔗 [etcd] Connecting to " << etcd_endpoint << "\n";
-
-            httplib::Client cli(host, port);
-            cli.set_connection_timeout(5);
-            cli.set_read_timeout(5);
-
-            auto res = cli.Get("/seed");
-
-            if (!res) {
-                throw std::runtime_error("[etcd] HTTP GET /seed failed (connection error)");
+            if (colon_pos == std::string::npos) {
+                throw std::runtime_error("[etcd] Invalid endpoint format: " + endpoint +
+                                        " (expected host:port)");
             }
 
-            if (res->status != 200) {
-                throw std::runtime_error(
-                    "[etcd] HTTP GET /seed failed (status " +
-                    std::to_string(res->status) + ")"
-                );
+            std::string host = endpoint.substr(0, colon_pos);
+            int port = std::stoi(endpoint.substr(colon_pos + 1));
+
+            std::cout << "🔗 [etcd] Initializing etcd-client: " << host << ":" << port << "\n";
+
+            // Build etcd-client Config (CORRECT way)
+            etcd_client::Config etcd_config;
+            etcd_config.host = host;
+            etcd_config.port = port;
+            etcd_config.timeout_seconds = 5;
+            etcd_config.component_name = config["component"]["name"];
+            etcd_config.encryption_enabled = true;
+            etcd_config.heartbeat_enabled = true;
+
+            // Initialize etcd-client
+            etcd_client::EtcdClient etcd(etcd_config);
+
+            // CRITICAL: Connect and register (this initializes encryption_key)
+            if (!etcd.connect()) {
+                throw std::runtime_error("[etcd] Failed to connect to etcd-server");
             }
 
-            json seed_response = json::parse(res->body);
-            encryption_seed_hex = seed_response["seed"];
+            if (!etcd.register_component()) {
+                throw std::runtime_error("[etcd] Failed to register component");
+            }
 
-            std::cout << "✅ [etcd] Retrieved encryption seed ("
+            std::cout << "✅ [etcd] Connected and registered: "
+                      << config["component"]["name"] << "\n";
+
+            // NOW we can get the encryption key (it's been initialized)
+            encryption_seed_hex = etcd.get_encryption_key();
+
+            if (encryption_seed_hex.empty()) {
+                throw std::runtime_error("[etcd] Encryption key is empty after registration");
+            }
+
+            std::cout << "✅ [etcd] Retrieved encryption key ("
                       << encryption_seed_hex.size() << " hex chars)\n";
 
         } else {
@@ -657,8 +670,12 @@ int main(int argc, char** argv) {
         std::cout << "   Node: " << config["component"]["node_id"] << "\n\n";
 
         std::cout << "🔒 Security:\n";
-        std::cout << "   etcd endpoint: " << config["etcd"]["endpoints"][0] << "\n";
-        std::cout << "   Encryption: ChaCha20-Poly1305 (32-byte key from etcd)\n";
+        std::cout << "   etcd-client: ";
+        for (const auto& ep : config["etcd"]["endpoints"]) {
+            std::cout << ep << " ";
+        }
+        std::cout << "\n";
+        std::cout << "   Encryption: ChaCha20-Poly1305 (32-byte key via etcd-client)\n";
         std::cout << "   Compression: LZ4\n\n";
 
         std::cout << "🎯 Generation:\n";

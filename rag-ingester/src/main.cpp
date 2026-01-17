@@ -1,9 +1,8 @@
 // main.cpp
 // RAG Ingester - Main Entry Point
-// Day 36: Complete integration with etcd-client for encryption keys
+// Day 38: Integration with etcd-client for encryption consistency
 
 #include <iostream>
-#include <fstream>     // ← AGREGADO: para std::ofstream
 #include <csignal>
 #include <atomic>
 #include <thread>
@@ -13,12 +12,13 @@
 
 #include <spdlog/spdlog.h>
 
-#include "common/config_parser.hpp"  // ← CORREGIDO: ruta correcta
+#include "common/config_parser.hpp"
 #include "file_watcher.hpp"
 #include "event_loader.hpp"
 
-// TODO Day 37+: Uncomment when integrating etcd-client
-// #include <etcd_client/etcd_client.hpp>
+// Day 38: etcd-client integration (PRODUCTION CODE)
+#include <etcd_client/etcd_client.hpp>
+#include <crypto_transport/utils.hpp>
 
 namespace {
     std::atomic<bool> running{true};
@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
         spdlog::info("RAG Ingester starting...");
         spdlog::info("Loading configuration from: {}", config_path);
 
-        // CORREGIDO: sin namespace (función global)
         auto config = rag_ingester::ConfigParser::load(config_path);
 
         spdlog::info("Configuration loaded:");
@@ -54,53 +53,44 @@ int main(int argc, char* argv[]) {
         spdlog::info("  Compressed: {}", config.ingester.input.compressed);
 
         // ====================================================================
-        // 2. Register with etcd and get encryption key
+        // 2. Initialize etcd-client and get encryption seed (PRODUCTION CODE)
         // ====================================================================
-        // TODO Day 37+: Replace this hardcoded key with etcd-client integration
-        //
-        // PRODUCTION CODE (when etcd-client integrated):
-        // ```
-        // etcd::Client etcd_client(config.service.etcd.endpoints);
-        // etcd_client.register_component(config.service.id, config.service.location);
-        //
-        // // Get ROTATIVE encryption key from etcd
-        // std::string encryption_key = etcd_client.get_encryption_key();
-        //
-        // // Set up key rotation callback (every N minutes)
-        // etcd_client.on_key_rotation([&](const std::string& new_key) {
-        //     spdlog::info("Encryption key rotated");
-        //     // Update EventLoader with new key
-        // });
-        // ```
-        //
-        // CURRENT TEST-ONLY CODE:
-        std::string encryption_key_path;
+        std::shared_ptr<crypto::CryptoManager> crypto_manager;
 
         if (config.ingester.input.encrypted) {
-            // WARNING: This is TEST-ONLY hardcoded path
-            // In production, key comes from etcd-client, NOT from file
-            encryption_key_path = "/tmp/etcd_encryption.key.bin";
+            spdlog::info("Initializing etcd-client for encryption...");
 
-            // Create a dummy key for testing (32 bytes)
-            // In production, this comes from etcd
-            std::ofstream key_file(encryption_key_path, std::ios::binary);
-            std::vector<uint8_t> dummy_key(32, 0x42); // 32 bytes of 'B'
-            key_file.write(reinterpret_cast<char*>(dummy_key.data()), 32);
-            key_file.close();
+            // Initialize etcd-client (same as ml-detector)
+            EtcdClient etcd(config.service.etcd.endpoints);
 
-            spdlog::warn("⚠️  USING TEST-ONLY ENCRYPTION KEY");
-            spdlog::warn("⚠️  In production, key will come from etcd-client");
+            // Get encryption seed (64 hex chars)
+            std::string seed_hex = etcd.get_encryption_seed();
+            spdlog::info("Retrieved encryption seed from etcd ({} chars)", seed_hex.size());
+
+            // Convert hex to bytes
+            auto key_bytes = crypto_transport::hex_to_bytes(seed_hex);
+            if (key_bytes.size() != 32) {
+                throw std::runtime_error("Invalid encryption seed size: " +
+                                        std::to_string(key_bytes.size()) + " (expected 32)");
+            }
+
+            // Create encryption seed string
+            std::string encryption_seed(key_bytes.begin(), key_bytes.end());
+
+            // Create CryptoManager (same as ml-detector)
+            crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
+            spdlog::info("✅ CryptoManager initialized (ChaCha20-Poly1305 + LZ4)");
+
         } else {
-            // No encryption - use dummy path
-            encryption_key_path = "/dev/null";
             spdlog::warn("⚠️  Encryption DISABLED - data in plaintext");
+            crypto_manager = nullptr;
         }
 
         // ====================================================================
-        // 3. Initialize EventLoader
+        // 3. Initialize EventLoader (UPDATED: uses CryptoManager)
         // ====================================================================
         spdlog::info("Initializing EventLoader...");
-        rag_ingester::EventLoader loader(encryption_key_path);
+        rag_ingester::EventLoader loader(crypto_manager);
 
         // ====================================================================
         // 4. Initialize FileWatcher
@@ -126,7 +116,6 @@ int main(int argc, char* argv[]) {
         uint64_t events_processed = 0;
         uint64_t events_failed = 0;
 
-        // CORREGIDO: FileWatcher usa start(callback), no on_file_created()
         auto callback = [&](const std::string& filepath) {
             spdlog::info("New file detected: {}", filepath);
 
@@ -141,7 +130,7 @@ int main(int argc, char* argv[]) {
                     event.confidence
                 );
 
-                // TODO Day 37+: Send to embedders and indexers
+                // TODO Day 39+: Send to embedders and indexers
 
                 // Delete file if configured
                 if (config.ingester.input.delete_after_process) {
@@ -152,19 +141,11 @@ int main(int argc, char* argv[]) {
             } catch (const std::exception& e) {
                 events_failed++;
                 spdlog::error("Failed to process {}: {}", filepath, e.what());
-
-                // If decryption/decompression fails, data might not be encrypted
-                // This is EXPECTED if ml-detector hasn't been updated yet
-                if (std::string(e.what()).find("decrypt") != std::string::npos ||
-                    std::string(e.what()).find("decompress") != std::string::npos) {
-                    spdlog::warn("⚠️  File may not be encrypted/compressed yet");
-                    spdlog::warn("⚠️  Update ml-detector to encrypt .pb files");
-                }
             }
         };
 
         // ====================================================================
-        // 7. Start watching (CORREGIDO: pasar callback)
+        // 7. Start watching
         // ====================================================================
         watcher.start(callback);
         spdlog::info("✅ RAG Ingester ready and waiting for events");

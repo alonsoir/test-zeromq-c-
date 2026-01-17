@@ -53,6 +53,13 @@ else()
     Run: make etcd-client-build")
 endif()
 
+find_library(ETCD_CLIENT_LIB
+        NAMES etcd_client
+        PATHS /usr/local/lib /usr/lib /vagrant/etcd-client/build
+        REQUIRED
+)
+
+
 # crypto-transport (search /usr/local first, then local build)
 find_library(CRYPTO_TRANSPORT_LIB
         NAMES crypto_transport

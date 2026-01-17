@@ -1,23 +1,63 @@
-git add -A
-git commit -m "Day 38 (75% complete): Synthetic data generator executed successfully
+# 🎯 Git Commit Message
+```
+feat(day38): Unified architecture - etcd-client integration complete
 
-✅ COMPLETED TODAY:
-- Step 1: etcd-server bootstrap (idempotent)
-- Step 2: 100 synthetic events generated (.pb.enc encrypted)
-- Step 3: Gepeto validation PASSED
-  * Mean divergence: 0.244
-  * StdDev: 0.226 (> 0.1 threshold)
-  * Real dispersion confirmed
-  * 100% ADR-002 compliance
+SCOPE: ML Defender Phase 2A - Synthetic Data Pipeline (90% complete)
 
-CHANGES:
-- tools/generate_synthetic_events.cpp: Simplified (HTTP GET /seed)
-- ml-detector/src/rag_logger.cpp: Fixed provenance.discrepancy_score
-- Makefile: day38-step1/2/3 tasks added with Gepeto validations
-- logs/rag/synthetic/: 100 events + artifacts generated
+ACHIEVEMENTS (Day 38 - 17 Enero 2026):
+- ✅ Generated 200 synthetic events (ADR-002 compliant)
+- ✅ Validated real dispersion (StdDev: 0.224 > 0.1 threshold)
+- ✅ Unified architecture: ml-detector = rag-ingester = tools
+- ✅ Eliminated code duplication (-66 lines CryptoImpl)
 
-⏳ PENDING (Tomorrow 2.5h):
-- Step 4: Update embedders (6 files, 101→103 features)
-- Step 5: End-to-end smoke test
+ARCHITECTURAL CHANGES:
+1. tools/generate_synthetic_events.cpp
+   - Migrated from HTTP direct to etcd_client::EtcdClient
+   - Added connect() + register_component() flow
+   - Now receives 64 hex chars encryption key correctly
+   
+2. rag-ingester/src/main.cpp
+   - Integrated etcd-client → hex_to_bytes → CryptoManager
+   - Pattern identical to ml-detector (Via Appia consistency)
+   - Passes CryptoManager to EventLoader
+   
+3. rag-ingester/{include,src}/event_loader.{hpp,cpp}
+   - Constructor: EventLoader(shared_ptr<CryptoManager>)
+   - Eliminated CryptoImpl class (66 lines removed)
+   - Uses crypto_manager_ directly (zero duplication)
 
-Via Appia + Gepeto: Quality foundations laid, execution tomorrow."
+DATA QUALITY:
+- Events: 200 encrypted .pb.enc files
+- Features: 101 (61 basic + 40 embedded)
+- Provenance: 2 verdicts per event (multi-engine)
+- Divergence: Mean 0.236, StdDev 0.224 ✅
+- Distribution: 76% low, 14% medium, 10% high discrepancy
+- Attack types: DDoS (12), Ransomware (9), Benign (179)
+
+VALIDATION:
+- ✅ Gepeto validation PASSED (real dispersion confirmed)
+- ✅ ADR-001: Mandatory encryption (ChaCha20-Poly1305)
+- ✅ ADR-002: Multi-engine provenance (2 verdicts/event)
+- ✅ Via Appia: Architectural consistency verified
+
+PENDING (Mañana - 2.5h):
+- Step 4: Update 6 embedder files (INPUT_DIM: 101 → 103)
+- Step 5: End-to-end smoke test (200 events → 600 embeddings)
+
+TECHNICAL STACK:
+- etcd-server: Custom HTTP server (port 2379)
+- etcd-client: Shared library (connect/register/get_key)
+- crypto-transport: ChaCha20-Poly1305 + LZ4
+- Protobuf: NetworkSecurityEvent v3.1.0
+
+FILES MODIFIED:
+- tools/generate_synthetic_events.cpp (etcd-client integration)
+- rag-ingester/src/main.cpp (CryptoManager initialization)
+- rag-ingester/include/event_loader.hpp (constructor signature)
+- rag-ingester/src/event_loader.cpp (CryptoImpl removal)
+
+AUTHORED-BY: Alonso Isidoro <alonsoir@gmail.com>
+CO-AUTHORED-BY: Claude (Anthropic) <assistant@anthropic.com>
+CO-AUTHORED-BY: Gepeto (Validation) <chatGPT5>
+
+Via Appia Quality: Foundation solid, execution clean 🏛️

@@ -1,8 +1,7 @@
 // event_loader.cpp
 // RAG Ingester - EventLoader Implementation
-// Day 36: Decrypt + Decompress + Parse pipeline
+// Day 38: Updated to use shared CryptoManager (consistency with ml-detector)
 // Via Appia Quality - Robust, exception-safe event processing
-// USANDO API REAL: crypto_transport::decrypt() y decompress()
 
 #include "event_loader.hpp"
 #include <fstream>
@@ -11,89 +10,25 @@
 #include <stdexcept>
 #include <cmath>
 
-// API REAL de crypto-transport
-#include <crypto_transport/crypto.hpp>
 #include <crypto_transport/compression.hpp>
-
 #include <network_security.pb.h>
 #include <reason_codes.hpp>
 
 namespace rag_ingester {
 
 // ============================================================================
-// CryptoImpl - PIMPL pattern con API REAL
-// ============================================================================
-
-class EventLoader::CryptoImpl {
-public:
-    CryptoImpl(const std::string& key_path) {
-        // Read encryption key from file
-        std::ifstream key_file(key_path, std::ios::binary);
-        if (!key_file) {
-            throw std::runtime_error("Failed to open encryption key: " + key_path);
-        }
-
-        key_.resize(32);
-        key_file.read(reinterpret_cast<char*>(key_.data()), 32);
-
-        if (key_file.gcount() != 32) {
-            throw std::runtime_error("Invalid key file (expected 32 bytes): " + key_path);
-        }
-
-        std::cout << "[INFO] EventLoader: Loaded encryption key ("
-                  << key_.size() << " bytes)" << std::endl;
-        std::cout << "[INFO] EventLoader: Crypto initialized (ChaCha20-Poly1305 + LZ4)" << std::endl;
-    }
-
-    std::vector<uint8_t> decrypt(const std::vector<uint8_t>& encrypted) {
-        if (encrypted.empty()) {
-            return encrypted; // Pass-through si vacío
-        }
-
-        try {
-            // API REAL: crypto_transport::decrypt()
-            return crypto_transport::decrypt(encrypted, key_);
-        } catch (const std::exception& e) {
-            // Si falla el decrypt, probablemente los datos no están cifrados
-            // Retornar sin cambios (pass-through)
-            std::cerr << "[WARN] Decrypt failed (data may be unencrypted): "
-                      << e.what() << std::endl;
-            return encrypted;
-        }
-    }
-
-    std::vector<uint8_t> decompress(const std::vector<uint8_t>& compressed) {
-        if (compressed.empty()) {
-            return compressed; // Pass-through si vacío
-        }
-
-        try {
-            // API REAL: crypto_transport::decompress()
-            // Necesitamos estimar el tamaño original
-            size_t estimated_size = compressed.size() * 10; // 10x compression ratio
-            if (estimated_size < 1024) estimated_size = 1024;
-
-            return crypto_transport::decompress(compressed, estimated_size);
-        } catch (const std::exception& e) {
-            // Si falla el decompress, probablemente los datos no están comprimidos
-            // Retornar sin cambios (pass-through)
-            std::cerr << "[WARN] Decompress failed (data may be uncompressed): "
-                      << e.what() << std::endl;
-            return compressed;
-        }
-    }
-
-private:
-    std::vector<uint8_t> key_;
-};
-
-// ============================================================================
 // EventLoader Implementation
 // ============================================================================
 
-EventLoader::EventLoader(const std::string& encryption_key_path)
-    : crypto_(std::make_unique<CryptoImpl>(encryption_key_path)) {
+EventLoader::EventLoader(std::shared_ptr<crypto::CryptoManager> crypto_manager)
+    : crypto_manager_(crypto_manager) {
     stats_ = {};
+
+    if (crypto_manager_) {
+        std::cout << "[INFO] EventLoader: Encryption enabled (ChaCha20-Poly1305 + LZ4)" << std::endl;
+    } else {
+        std::cout << "[WARN] EventLoader: Encryption DISABLED - plaintext mode" << std::endl;
+    }
 }
 
 EventLoader::~EventLoader() = default;
@@ -169,11 +104,48 @@ std::vector<uint8_t> EventLoader::read_file(const std::string& path) {
 }
 
 std::vector<uint8_t> EventLoader::decrypt(const std::vector<uint8_t>& encrypted) {
-    return crypto_->decrypt(encrypted);
+    if (!crypto_manager_) {
+        // No encryption - pass through
+        return encrypted;
+    }
+
+    if (encrypted.empty()) {
+        return encrypted;
+    }
+
+    try {
+        // Use shared CryptoManager (same as ml-detector)
+        return crypto_manager_->decrypt(encrypted);
+    } catch (const std::exception& e) {
+        // If decryption fails, data may not be encrypted - pass through
+        std::cerr << "[WARN] Decrypt failed (data may be unencrypted): "
+                  << e.what() << std::endl;
+        return encrypted;
+    }
 }
 
 std::vector<uint8_t> EventLoader::decompress(const std::vector<uint8_t>& compressed) {
-    return crypto_->decompress(compressed);
+    if (!crypto_manager_) {
+        // No compression - pass through
+        return compressed;
+    }
+
+    if (compressed.empty()) {
+        return compressed;
+    }
+
+    try {
+        // Use crypto_transport::decompress (LZ4)
+        size_t estimated_size = compressed.size() * 10; // 10x compression ratio
+        if (estimated_size < 1024) estimated_size = 1024;
+
+        return crypto_transport::decompress(compressed, estimated_size);
+    } catch (const std::exception& e) {
+        // If decompression fails, data may not be compressed - pass through
+        std::cerr << "[WARN] Decompress failed (data may be uncompressed): "
+                  << e.what() << std::endl;
+        return compressed;
+    }
 }
 
 Event EventLoader::parse_protobuf(const std::vector<uint8_t>& data) {
@@ -220,7 +192,7 @@ Event EventLoader::parse_protobuf(const std::vector<uint8_t>& data) {
 
     event.features = extract_features(&proto_event);
 
-    // 🎯 ADR-002: Parse Multi-Engine Provenance (Day 37)
+    // 🎯 ADR-002: Parse Multi-Engine Provenance
     if (proto_event.has_provenance()) {
         const auto& prov = proto_event.provenance();
 

@@ -1786,3 +1786,90 @@ day38-clean:
 	@vagrant ssh -c "rm -rf /vagrant/logs/rag/synthetic/*"
 	@vagrant ssh -c "rm -rf /vagrant/logs/rag-ingester/*"
 	@echo "✅ Day 38 artifacts cleaned"
+
+# ============================================================================
+# Day 38 - Complete Synthetic Workflow (Full Pipeline)
+# ============================================================================
+
+.PHONY: day38-pipeline day38-pipeline-start day38-pipeline-stop day38-pipeline-status
+
+# Full pipeline: compile → start services → generate → ingest
+day38-pipeline:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  Day 38 - Complete Synthetic Data Pipeline                ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Phase 1: Build all components..."
+	@$(MAKE) proto-unified
+	@$(MAKE) crypto-transport-build
+	@$(MAKE) etcd-client-build
+	@$(MAKE) etcd-server-build
+	@$(MAKE) tools-build
+	@$(MAKE) rag-ingester-build
+	@echo ""
+	@echo "Phase 2: Start etcd-server..."
+	@$(MAKE) day38-step1
+	@echo ""
+	@echo "Phase 3: Generate synthetic events (100 events, 20% malicious)..."
+	@$(MAKE) day38-step2
+	@echo ""
+	@echo "Phase 4: Validate synthetic artifacts..."
+	@$(MAKE) day38-step3
+	@echo ""
+	@echo "✅ Pipeline complete!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  - Update embedders: Follow instructions in continuation prompt"
+	@echo "  - Run ingester: make day38-step5"
+
+# Start all services for Day 38
+day38-pipeline-start:
+	@echo "🚀 Starting Day 38 services..."
+	@$(MAKE) etcd-server-start
+	@sleep 3
+	@vagrant ssh -c "pgrep -f etcd-server && echo '✅ etcd-server running' || echo '❌ etcd-server failed to start'"
+	@echo ""
+	@echo "Services ready for synthetic data generation"
+
+# Stop all Day 38 services
+day38-pipeline-stop:
+	@echo "🛑 Stopping Day 38 services..."
+	@$(MAKE) etcd-server-stop
+	@echo "✅ All services stopped"
+
+# Check status of Day 38 pipeline
+day38-pipeline-status:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 Pipeline Status"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1. etcd-server:"
+	@vagrant ssh -c "pgrep -f etcd-server > /dev/null && echo '   ✅ Running (PID: \$$(pgrep -f etcd-server))' || echo '   ❌ Stopped'"
+	@echo ""
+	@echo "2. Encryption key available:"
+	@vagrant ssh -c "curl -s http://localhost:2379/seed 2>/dev/null | jq -r '.seed' | head -c 10 && echo '... (available)' || echo '   ❌ Not available'"
+	@echo ""
+	@echo "3. Synthetic events generated:"
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name '*.pb.enc' 2>/dev/null | wc -l | xargs echo '   Count:'"
+	@echo ""
+	@echo "4. Components built:"
+	@vagrant ssh -c "ls -lh /vagrant/tools/build/generate_synthetic_events 2>/dev/null | awk '{print \"   tools: \" \$$5}' || echo '   tools: ❌ Not built'"
+	@vagrant ssh -c "ls -lh /vagrant/rag-ingester/build/rag-ingester 2>/dev/null | awk '{print \"   rag-ingester: \" \$$5}' || echo '   rag-ingester: ❌ Not built'"
+	@echo "════════════════════════════════════════════════════════════"
+
+# Quick test of full pipeline (10 events only)
+day38-pipeline-test:
+	@echo "⚡ Quick pipeline test (10 events)..."
+	@$(MAKE) day38-clean
+	@$(MAKE) day38-pipeline-start
+	@sleep 3
+	@echo ""
+	@echo "Generating 10 synthetic events..."
+	@vagrant ssh -c "cd /vagrant/tools/build && ./generate_synthetic_events 10 0.20"
+	@echo ""
+	@echo "Validation:"
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name '*.pb.enc' | wc -l | xargs echo 'Events generated:'"
+	@vagrant ssh -c "jq -r '.detection.scores.divergence' /vagrant/logs/rag/synthetic/events/*.jsonl 2>/dev/null | head -5"
+	@echo ""
+	@echo "✅ Quick test complete"
