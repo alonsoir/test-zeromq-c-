@@ -109,7 +109,12 @@ private:
      * @return true if matches pattern
      */
     bool matches_pattern(const std::string& filename) const;
-    
+
+    /**
+     * @brief Process files that already exist in directory (Day 38 fix)
+     */
+    void process_existing_files();
+
     /**
      * @brief Initialize inotify file descriptors
      * @throws std::runtime_error on failure

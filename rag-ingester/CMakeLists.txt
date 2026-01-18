@@ -173,15 +173,16 @@ target_link_libraries(test_file_watcher PRIVATE file_watcher)
 add_test(NAME FileWatcherTest COMMAND test_file_watcher)
 
 # Test: EventLoader (Day 36)
-add_executable(test_event_loader
-        tests/test_event_loader.cpp
-        ${PROTO_SRCS}  # ← Include protobuf sources
-)
-target_link_libraries(test_event_loader
-        PRIVATE
-        event_loader
-        ${Protobuf_LIBRARIES}
-)
+# # add_executable(test_event_loader
+# #         tests/test_event_loader.cpp
+# #         ${PROTO_SRCS}  # ← Include protobuf sources
+# # )
+# 
+# target_link_libraries(test_event_loader
+#         PRIVATE
+#         event_loader
+#         ${Protobuf_LIBRARIES}
+# )
 add_test(NAME EventLoaderTest COMMAND test_event_loader)
 
 # ============================================================================

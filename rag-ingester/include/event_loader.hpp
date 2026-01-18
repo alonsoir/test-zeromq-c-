@@ -10,7 +10,7 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
-
+#include <crypto_transport/crypto_manager.hpp>
 // Day 38: Use shared CryptoManager
 #include <crypto_transport/crypto.hpp>
 

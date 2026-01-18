@@ -1,63 +1,163 @@
-# 🎯 Git Commit Message
-```
-feat(day38): Unified architecture - etcd-client integration complete
+```bash
+git add -A
+git commit -m "feat(day38): RAG Ingester architecture unified + embedders updated (decrypt bug pending)
 
-SCOPE: ML Defender Phase 2A - Synthetic Data Pipeline (90% complete)
+SCOPE: ML Defender Phase 2A - Day 38 (80% complete)
 
-ACHIEVEMENTS (Day 38 - 17 Enero 2026):
-- ✅ Generated 200 synthetic events (ADR-002 compliant)
-- ✅ Validated real dispersion (StdDev: 0.224 > 0.1 threshold)
-- ✅ Unified architecture: ml-detector = rag-ingester = tools
-- ✅ Eliminated code duplication (-66 lines CryptoImpl)
+═══════════════════════════════════════════════════════════════════
+🎯 ACHIEVEMENTS (18 Enero 2026)
+═══════════════════════════════════════════════════════════════════
 
-ARCHITECTURAL CHANGES:
-1. tools/generate_synthetic_events.cpp
-   - Migrated from HTTP direct to etcd_client::EtcdClient
-   - Added connect() + register_component() flow
-   - Now receives 64 hex chars encryption key correctly
+✅ ARCHITECTURAL UNIFICATION (Via Appia validated)
+   - All components use identical etcd-client pattern
+   - Eliminated 66 lines of duplicate code (CryptoImpl)
+   - Consistency: ml-detector = rag-ingester = tools
+
+✅ SYNTHETIC DATA PIPELINE
+   - Generated 100 production-quality events
+   - Seed: 98CCC3EA6214306BCA883D554D835819585DBB0309AA08174699E977FAC29C1E
+   - Distribution: 13% malicious (8 DDoS, 5 Ransomware), 87% benign
+   - ADR-002 compliant: Multi-engine provenance in all events
+
+✅ EMBEDDERS UPDATED (Step 4 complete)
+   - INPUT_DIM: 101 → 103 (added meta features)
+   - Meta feature #1: discrepancy_score (ADR-002)
+   - Meta feature #2: verdict count (ADR-002)
+   - Files: chronos/sbert/attack embedders (.hpp + .cpp)
+
+✅ CRITICAL BUGS FIXED
+   - FileWatcher::matches_pattern() - Double extension support (*.pb.enc)
+   - FileWatcher::process_existing_files() - Initial directory scan
+   - event_loader namespace fix (crypto:: not crypto_transport::)
+   - etcd-client integration (Config object pattern)
+
+═══════════════════════════════════════════════════════════════════
+🔴 KNOWN ISSUE - Blocking Step 5 (Smoke Test)
+═══════════════════════════════════════════════════════════════════
+
+SYMPTOM: EventLoader successfully detects 100 files but fails to decrypt
+ERROR: \"Failed to parse protobuf NetworkSecurityEvent\" (x100)
+
+ROOT CAUSE (hypothesis):
+   Order-of-operations mismatch between generator and ingester:
    
-2. rag-ingester/src/main.cpp
-   - Integrated etcd-client → hex_to_bytes → CryptoManager
-   - Pattern identical to ml-detector (Via Appia consistency)
-   - Passes CryptoManager to EventLoader
+   Generator:  protobuf → ??? → ??? → .pb.enc
+   Ingester:   .pb.enc  → decrypt() → decompress() → protobuf
    
-3. rag-ingester/{include,src}/event_loader.{hpp,cpp}
-   - Constructor: EventLoader(shared_ptr<CryptoManager>)
-   - Eliminated CryptoImpl class (66 lines removed)
-   - Uses crypto_manager_ directly (zero duplication)
+   Possible issues:
+   1. CryptoManager::encrypt() may already include compression
+   2. CryptoManager::decrypt() may already include decompression
+   3. EventLoader::decompress() might be redundant
+   4. Order might be inverted (compress→encrypt vs encrypt→compress)
 
-DATA QUALITY:
-- Events: 200 encrypted .pb.enc files
-- Features: 101 (61 basic + 40 embedded)
-- Provenance: 2 verdicts per event (multi-engine)
-- Divergence: Mean 0.236, StdDev 0.224 ✅
-- Distribution: 76% low, 14% medium, 10% high discrepancy
-- Attack types: DDoS (12), Ransomware (9), Benign (179)
+EVIDENCE:
+   - hexdump confirms files ARE encrypted (random bytes)
+   - decrypt() returns without throwing (silent failure)
+   - Catch block returns encrypted data → parse fails
+   - FileWatcher correctly processes 100 files
 
-VALIDATION:
-- ✅ Gepeto validation PASSED (real dispersion confirmed)
-- ✅ ADR-001: Mandatory encryption (ChaCha20-Poly1305)
-- ✅ ADR-002: Multi-engine provenance (2 verdicts/event)
-- ✅ Via Appia: Architectural consistency verified
+NEXT STEPS (Day 38 continuation):
+   1. Investigate generator save flow (compress/encrypt order)
+   2. Verify CryptoManager::encrypt/decrypt() behavior
+   3. Align EventLoader::load() pipeline
+   4. Complete smoke test (100 events → 300 embeddings)
 
-PENDING (Mañana - 2.5h):
-- Step 4: Update 6 embedder files (INPUT_DIM: 101 → 103)
-- Step 5: End-to-end smoke test (200 events → 600 embeddings)
+═══════════════════════════════════════════════════════════════════
+📝 DETAILED CHANGES
+═══════════════════════════════════════════════════════════════════
+
+1. rag-ingester/src/main.cpp
+   - Migrated from vector<endpoints> to etcd_client::Config pattern
+   - Added: host/port parsing from endpoint string
+   - Added: connect() + register_component() flow
+   - Changed: get_encryption_seed() → get_encryption_key()
+   - Result: Identical pattern to tools/generate_synthetic_events.cpp
+
+2. rag-ingester/{include,src}/event_loader.{hpp,cpp}
+   - Constructor: EventLoader(shared_ptr<crypto::CryptoManager>)
+   - Eliminated: CryptoImpl class (66 lines removed)
+   - Fixed: crypto_transport:: → crypto:: namespace
+   - Added: vector<uint8_t> ↔ string conversions for decrypt()
+   - Modified: decrypt() signature (removed try-catch for debugging)
+
+3. rag-ingester/{include,src}/file_watcher.{hpp,cpp}
+   - Added: process_existing_files() method
+   - Fixed: matches_pattern() for double extensions
+   - Logic: suffix comparison instead of last-dot-only
+   - Result: *.pb.enc now correctly matches event_synthetic_*.pb.enc
+
+4. rag-ingester/src/embedders/*.{hpp,cpp}
+   - chronos: INPUT_DIM 101 → 103, meta features added
+   - sbert:   INPUT_DIM 101 → 103, meta features added  
+   - attack:  INPUT_DIM 101 → 103, meta features added
+   - Pattern: input.push_back(event.discrepancy_score)
+             input.push_back(static_cast<float>(event.verdicts.size()))
+
+5. rag-ingester/config/rag-ingester.json
+   - Updated: directory path to 2026-01-18 artifacts
+   - Kept: pattern \"*.pb.enc\" (now works with fix)
+
+═══════════════════════════════════════════════════════════════════
+📊 METRICS
+═══════════════════════════════════════════════════════════════════
+
+Code Quality:
+   - Lines removed: 66 (CryptoImpl elimination)
+   - Bugs fixed: 4 critical (namespace, pattern, scan, etcd-client)
+   - Consistency: 100% (all components use same pattern)
+
+Data Quality:
+   - Synthetic events: 100 (ADR-002 compliant)
+   - Discrepancy mean: 0.236, StdDev: ~0.224
+   - Attack distribution: Realistic (13% malicious)
+
+Progress:
+   - Day 38 completion: 80% (4.5/5 steps)
+   - Blocked by: decrypt/decompress order mismatch
+   - Time to fix: ~30 min (investigation + alignment)
+
+═══════════════════════════════════════════════════════════════════
+🏛️ VIA APPIA QUALITY VALIDATION
+═══════════════════════════════════════════════════════════════════
+
+Foundation:
+   ✅ Architecture unified (etcd-client pattern)
+   ✅ Zero code duplication (CryptoImpl removed)
+   ✅ Embedders ready (103-dim input)
+   ✅ FileWatcher robust (existing files + double extensions)
+   🔴 Decrypt pipeline needs alignment
+
+Technical Debt:
+   - RESOLVED: Namespace inconsistency (crypto vs crypto_transport)
+   - RESOLVED: Missing initial directory scan
+   - RESOLVED: Pattern matching for *.pb.enc
+   - PENDING: Encrypt/decrypt operation order verification
+
+═══════════════════════════════════════════════════════════════════
 
 TECHNICAL STACK:
-- etcd-server: Custom HTTP server (port 2379)
-- etcd-client: Shared library (connect/register/get_key)
-- crypto-transport: ChaCha20-Poly1305 + LZ4
-- Protobuf: NetworkSecurityEvent v3.1.0
+   - etcd-server: Custom HTTP (port 2379, seed-based)
+   - etcd-client: Shared library (connect/register/get_key)
+   - crypto-transport: ChaCha20-Poly1305 + LZ4
+   - Protobuf: NetworkSecurityEvent v3.1.0
+   - FileWatcher: inotify + initial scan
 
-FILES MODIFIED:
-- tools/generate_synthetic_events.cpp (etcd-client integration)
-- rag-ingester/src/main.cpp (CryptoManager initialization)
-- rag-ingester/include/event_loader.hpp (constructor signature)
-- rag-ingester/src/event_loader.cpp (CryptoImpl removal)
+FILES MODIFIED (10 total):
+   rag-ingester/src/main.cpp
+   rag-ingester/include/event_loader.hpp
+   rag-ingester/src/event_loader.cpp
+   rag-ingester/include/file_watcher.hpp
+   rag-ingester/src/file_watcher.cpp
+   rag-ingester/src/embedders/chronos_embedder.{hpp,cpp}
+   rag-ingester/src/embedders/sbert_embedder.{hpp,cpp}
+   rag-ingester/src/embedders/attack_embedder.{hpp,cpp}
+   rag-ingester/config/rag-ingester.json
 
-AUTHORED-BY: Alonso Isidoro <alonsoir@gmail.com>
+CO-AUTHORED-BY: Alonso <alonsoir@gmail.com>
 CO-AUTHORED-BY: Claude (Anthropic) <assistant@anthropic.com>
-CO-AUTHORED-BY: Gepeto (Validation) <chatGPT5>
+CO-AUTHORED-BY: Gepeto (Validation) <validation@ml-defender.dev>
 
-Via Appia Quality: Foundation solid, execution clean 🏛️
+Day 38: Solid foundation, clean architecture, one decrypt bug to resolve 🏛️
+Next session: Align encrypt/decrypt pipeline → Complete smoke test → Day 38 DONE ✅"
+```
+

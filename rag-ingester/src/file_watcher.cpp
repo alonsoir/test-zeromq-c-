@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 
 namespace rag_ingester {
 
@@ -53,7 +54,10 @@ void FileWatcher::start(FileCallback callback) {
     }
     
     callback_ = std::move(callback);
-    
+
+    // 🔧 FIX Day 38: Process existing files BEFORE watching new ones
+    process_existing_files();
+
     // Initialize inotify
     init_inotify();
     
@@ -205,34 +209,64 @@ void FileWatcher::process_events(const char* buffer, ssize_t length) {
 
 bool FileWatcher::matches_pattern(const std::string& filename) const {
     // Simple wildcard matching for "*.ext" pattern
-    // Extract extension from pattern (e.g., "*.pb" -> "pb")
-    
+
     if (pattern_.empty() || pattern_ == "*") {
         return true; // Match all
     }
-    
-    // Check for "*.ext" pattern
+
+    // Check for "*.ext" pattern (supports double extensions like "*.pb.enc")
     if (pattern_.size() >= 2 && pattern_[0] == '*' && pattern_[1] == '.') {
-        std::string extension = pattern_.substr(2); // Skip "*."
-        
-        // Check if filename ends with .extension
-        if (filename.size() < extension.size() + 1) {
+        std::string suffix = pattern_.substr(1); // Skip "*", keep ".ext" (e.g., ".pb.enc")
+
+        // Check if filename ends with suffix
+        if (filename.size() < suffix.size()) {
             return false;
         }
-        
-        // Find last dot in filename
-        size_t dot_pos = filename.rfind('.');
-        if (dot_pos == std::string::npos) {
-            return false;
-        }
-        
-        // Compare extension (case-sensitive for now)
-        std::string file_ext = filename.substr(dot_pos + 1);
-        return file_ext == extension;
+
+        // Compare the end of filename with suffix
+        return filename.compare(filename.size() - suffix.size(), suffix.size(), suffix) == 0;
     }
-    
+
     // Fallback: exact match
     return filename == pattern_;
+}
+
+void FileWatcher::process_existing_files() {
+    namespace fs = std::filesystem;
+
+    if (!fs::exists(directory_)) {
+        std::cout << "[WARN] Directory does not exist: " << directory_ << std::endl;
+        return;
+    }
+
+    std::cout << "[INFO] Scanning for existing files in: " << directory_ << std::endl;
+
+    size_t count = 0;
+    try {
+        for (const auto& entry : fs::directory_iterator(directory_)) {
+            if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string();
+
+                if (matches_pattern(filename)) {
+                    std::string filepath = entry.path().string();
+
+                    try {
+                        callback_(filepath);
+                        count++;
+                    } catch (const std::exception& e) {
+                        std::cerr << "[ERROR] Failed to process existing file "
+                                  << filepath << ": " << e.what() << std::endl;
+                    }
+                }
+            }
+        }
+
+        std::cout << "[INFO] Processed " << count << " existing files" << std::endl;
+        files_detected_.fetch_add(count);
+
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to scan directory: " << e.what() << std::endl;
+    }
 }
 
 } // namespace rag_ingester

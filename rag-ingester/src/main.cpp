@@ -60,24 +60,50 @@ int main(int argc, char* argv[]) {
         if (config.ingester.input.encrypted) {
             spdlog::info("Initializing etcd-client for encryption...");
 
-            // Initialize etcd-client (same as ml-detector)
-            EtcdClient etcd(config.service.etcd.endpoints);
+            // Parse endpoint (host:port)
+            std::string endpoint = config.service.etcd.endpoints[0];
+            size_t colon_pos = endpoint.find(':');
+            std::string host = endpoint.substr(0, colon_pos);
+            int port = std::stoi(endpoint.substr(colon_pos + 1));
 
-            // Get encryption seed (64 hex chars)
-            std::string seed_hex = etcd.get_encryption_seed();
-            spdlog::info("Retrieved encryption seed from etcd ({} chars)", seed_hex.size());
+            spdlog::info("🔗 [etcd] Connecting to: {}:{}", host, port);
+
+            // Build etcd-client Config
+            etcd_client::Config etcd_config;
+            etcd_config.host = host;
+            etcd_config.port = port;
+            etcd_config.timeout_seconds = 5;
+            etcd_config.component_name = config.service.id;
+            etcd_config.encryption_enabled = true;
+            etcd_config.heartbeat_enabled = true;
+
+            // Initialize etcd-client
+            etcd_client::EtcdClient etcd(etcd_config);
+
+            // Connect and register
+            if (!etcd.connect()) {
+                throw std::runtime_error("[etcd] Failed to connect to etcd-server");
+            }
+
+            if (!etcd.register_component()) {
+                throw std::runtime_error("[etcd] Failed to register component");
+            }
+
+            // Get encryption key (NOT seed)
+            std::string seed_hex = etcd.get_encryption_key();
+            spdlog::info("Retrieved encryption key from etcd ({} chars)", seed_hex.size());
 
             // Convert hex to bytes
             auto key_bytes = crypto_transport::hex_to_bytes(seed_hex);
             if (key_bytes.size() != 32) {
-                throw std::runtime_error("Invalid encryption seed size: " +
+                throw std::runtime_error("Invalid encryption key size: " +
                                         std::to_string(key_bytes.size()) + " (expected 32)");
             }
 
             // Create encryption seed string
             std::string encryption_seed(key_bytes.begin(), key_bytes.end());
 
-            // Create CryptoManager (same as ml-detector)
+            // Create CryptoManager
             crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
             spdlog::info("✅ CryptoManager initialized (ChaCha20-Poly1305 + LZ4)");
 

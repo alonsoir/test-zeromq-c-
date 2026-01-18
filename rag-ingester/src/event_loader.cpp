@@ -34,31 +34,31 @@ EventLoader::EventLoader(std::shared_ptr<crypto::CryptoManager> crypto_manager)
 EventLoader::~EventLoader() = default;
 
 Event EventLoader::load(const std::string& filepath) {
-    try {
-        auto encrypted = read_file(filepath);
-        auto decrypted = decrypt(encrypted);
-        auto decompressed = decompress(decrypted);
-        auto event = parse_protobuf(decompressed);
+        try {
+            auto encrypted = read_file(filepath);
+            auto decrypted = decrypt(encrypted);
+            // ELIMINAR: auto decompressed = decompress(decrypted);
+            auto event = parse_protobuf(decrypted);  // ← Cambiar de 'decompressed' a 'decrypted'
 
-        event.filepath = filepath;
+            event.filepath = filepath;
 
-        stats_.total_loaded++;
-        stats_.bytes_processed += encrypted.size();
+            stats_.total_loaded++;
+            stats_.bytes_processed += encrypted.size();
 
-        int expected_features = 101;
-        if (event.features.size() < expected_features) {
-            event.is_partial = true;
-            stats_.partial_feature_count++;
-        } else {
-            event.is_partial = false;
+            int expected_features = 101;
+            if (event.features.size() < expected_features) {
+                event.is_partial = true;
+                stats_.partial_feature_count++;
+            } else {
+                event.is_partial = false;
+            }
+
+            return event;
+
+        } catch (const std::exception& e) {
+            stats_.total_failed++;
+            throw std::runtime_error("Failed to load " + filepath + ": " + e.what());
         }
-
-        return event;
-
-    } catch (const std::exception& e) {
-        stats_.total_failed++;
-        throw std::runtime_error("Failed to load " + filepath + ": " + e.what());
-    }
 }
 
 std::vector<Event> EventLoader::load_batch(const std::vector<std::string>& filepaths) {
@@ -105,23 +105,20 @@ std::vector<uint8_t> EventLoader::read_file(const std::string& path) {
 
 std::vector<uint8_t> EventLoader::decrypt(const std::vector<uint8_t>& encrypted) {
     if (!crypto_manager_) {
-        // No encryption - pass through
         return encrypted;
     }
-
     if (encrypted.empty()) {
         return encrypted;
     }
 
-    try {
-        // Use shared CryptoManager (same as ml-detector)
-        return crypto_manager_->decrypt(encrypted);
-    } catch (const std::exception& e) {
-        // If decryption fails, data may not be encrypted - pass through
-        std::cerr << "[WARN] Decrypt failed (data may be unencrypted): "
-                  << e.what() << std::endl;
-        return encrypted;
-    }
+    // Convert vector<uint8_t> → string
+    std::string encrypted_str(encrypted.begin(), encrypted.end());
+
+    // Decrypt using CryptoManager (NO try-catch, deja que falle)
+    std::string decrypted_str = crypto_manager_->decrypt(encrypted_str);
+
+    // Convert string → vector<uint8_t>
+    return std::vector<uint8_t>(decrypted_str.begin(), decrypted_str.end());
 }
 
 std::vector<uint8_t> EventLoader::decompress(const std::vector<uint8_t>& compressed) {
