@@ -1642,14 +1642,27 @@ day38-step1:
 	@echo "════════════════════════════════════════════════════════════"
 	@echo ""
 	@echo "Checking etcd-server status..."
-	@vagrant ssh -c "pgrep -f 'etcd-server' > /dev/null && echo '✅ etcd-server already running (PID: \$$(pgrep -f etcd-server))' || (echo '🚀 Starting etcd-server...' && cd /vagrant/etcd-server/build && nohup ./etcd-server > /vagrant/logs/etcd-server.log 2>&1 & sleep 2 && echo 'Started with PID: '\$$(pgrep -f etcd-server))"
-	@sleep 3
+	@vagrant ssh -c "if pgrep -f 'etcd-server' > /dev/null; then \
+		echo '✅ etcd-server already running (PID: '\`pgrep -f etcd-server\`')'; \
+	else \
+		echo '🚀 Starting etcd-server...'; \
+		mkdir -p /vagrant/logs; \
+		cd /vagrant/etcd-server/build && nohup ./etcd-server > /vagrant/logs/etcd-server.log 2>&1 & \
+		sleep 3; \
+		if pgrep -f etcd-server > /dev/null; then \
+			echo '✅ Started with PID: '\`pgrep -f etcd-server\`; \
+		else \
+			echo '❌ Failed to start etcd-server'; \
+			exit 1; \
+		fi; \
+	fi"
+	@sleep 2
 	@echo ""
 	@echo "Verifying connectivity..."
 	@vagrant ssh -c "curl -s http://localhost:2379/health > /dev/null 2>&1 && echo '✅ etcd-server responding (HTTP 200)' || echo '❌ etcd-server not responding'"
 	@echo ""
 	@echo "Checking /seed endpoint availability..."
-	@vagrant ssh -c "curl -s http://localhost:2379/seed | head -c 50 && echo '... (truncated)'"
+	@vagrant ssh -c "curl -s http://localhost:2379/seed 2>/dev/null | head -c 64 && echo '... (truncated)' || echo '❌ /seed endpoint not responding'"
 	@echo ""
 	@echo "✅ Step 1 complete - etcd-server ready"
 

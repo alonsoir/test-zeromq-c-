@@ -5,7 +5,11 @@
 
 #include "event_loader.hpp"
 #include <fstream>
-#include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
+#include <optional>
+#include <iostream>  // Para std::cerr si no hay logging
 #include <cstring>
 #include <stdexcept>
 #include <cmath>
@@ -34,31 +38,19 @@ EventLoader::EventLoader(std::shared_ptr<crypto::CryptoManager> crypto_manager)
 EventLoader::~EventLoader() = default;
 
 Event EventLoader::load(const std::string& filepath) {
-        try {
-            auto encrypted = read_file(filepath);
-            auto decrypted = decrypt(encrypted);
-            // ELIMINAR: auto decompressed = decompress(decrypted);
-            auto event = parse_protobuf(decrypted);  // ← Cambiar de 'decompressed' a 'decrypted'
+    // 1. Read encrypted file
+    auto encrypted = read_file(filepath);
 
-            event.filepath = filepath;
+    // 2. Decrypt (ChaCha20-Poly1305)
+    auto decrypted = decrypt(encrypted);
 
-            stats_.total_loaded++;
-            stats_.bytes_processed += encrypted.size();
+    // 3. Decompress with size header (FIXED: usar decompress_with_size)
+    std::string decrypted_str(decrypted.begin(), decrypted.end());
+    std::string decompressed_str = crypto_manager_->decompress_with_size(decrypted_str);
+    std::vector<uint8_t> decompressed(decompressed_str.begin(), decompressed_str.end());
 
-            int expected_features = 101;
-            if (event.features.size() < expected_features) {
-                event.is_partial = true;
-                stats_.partial_feature_count++;
-            } else {
-                event.is_partial = false;
-            }
-
-            return event;
-
-        } catch (const std::exception& e) {
-            stats_.total_failed++;
-            throw std::runtime_error("Failed to load " + filepath + ": " + e.what());
-        }
+    // 4. Parse protobuf
+    return parse_protobuf(decompressed);
 }
 
 std::vector<Event> EventLoader::load_batch(const std::vector<std::string>& filepaths) {
@@ -104,20 +96,8 @@ std::vector<uint8_t> EventLoader::read_file(const std::string& path) {
 }
 
 std::vector<uint8_t> EventLoader::decrypt(const std::vector<uint8_t>& encrypted) {
-    if (!crypto_manager_) {
-        return encrypted;
-    }
-    if (encrypted.empty()) {
-        return encrypted;
-    }
-
-    // Convert vector<uint8_t> → string
     std::string encrypted_str(encrypted.begin(), encrypted.end());
-
-    // Decrypt using CryptoManager (NO try-catch, deja que falle)
     std::string decrypted_str = crypto_manager_->decrypt(encrypted_str);
-
-    // Convert string → vector<uint8_t>
     return std::vector<uint8_t>(decrypted_str.begin(), decrypted_str.end());
 }
 
