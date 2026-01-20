@@ -1,6 +1,6 @@
 // main.cpp
 // RAG Ingester - Main Entry Point
-// Day 38.5: SimpleEmbedder + FAISS integration (REAL)
+// Day 38: Integration with etcd-client for encryption consistency
 
 #include <iostream>
 #include <csignal>
@@ -15,8 +15,6 @@
 #include "common/config_parser.hpp"
 #include "file_watcher.hpp"
 #include "event_loader.hpp"
-#include "embedders/simple_embedder.hpp"
-#include "indexers/multi_index_manager.hpp"
 
 // Day 38: etcd-client integration (PRODUCTION CODE)
 #include <etcd_client/etcd_client.hpp>
@@ -121,15 +119,6 @@ int main(int argc, char* argv[]) {
         rag_ingester::EventLoader loader(crypto_manager);
 
         // ====================================================================
-        // 3.5. Initialize SimpleEmbedder and MultiIndexManager (Day 38.5)
-        // ====================================================================
-        spdlog::info("Initializing SimpleEmbedder...");
-        rag_ingester::SimpleEmbedder embedder;
-
-        spdlog::info("Initializing MultiIndexManager...");
-        rag_ingester::MultiIndexManager index_manager;
-
-        // ====================================================================
         // 4. Initialize FileWatcher
         // ====================================================================
         spdlog::info("Initializing FileWatcher...");
@@ -148,17 +137,15 @@ int main(int argc, char* argv[]) {
         std::signal(SIGTERM, signal_handler);
 
         // ====================================================================
-        // 6. Event processing callback (Day 38.5: EMBEDDINGS + FAISS)
+        // 6. Event processing callback
         // ====================================================================
         uint64_t events_processed = 0;
         uint64_t events_failed = 0;
-        uint64_t vectors_indexed = 0;
 
         auto callback = [&](const std::string& filepath) {
             spdlog::info("New file detected: {}", filepath);
 
             try {
-                // Load event
                 auto event = loader.load(filepath);
                 events_processed++;
 
@@ -169,22 +156,7 @@ int main(int argc, char* argv[]) {
                     event.confidence
                 );
 
-                // Day 38.5: Generate embeddings
-                auto chronos_emb = embedder.embed_chronos(event);
-                auto sbert_emb = embedder.embed_sbert(event);
-                auto attack_emb = embedder.embed_attack(event);
-
-                spdlog::debug("Embeddings generated: chronos={}, sbert={}, attack={}",
-                    chronos_emb.size(), sbert_emb.size(), attack_emb.size());
-
-                // Day 38.5: Add to FAISS indices
-                index_manager.add_chronos(chronos_emb);
-                index_manager.add_sbert(sbert_emb);
-                index_manager.add_entity_malicious(attack_emb);
-
-                vectors_indexed++;
-                spdlog::debug("Event {} indexed in FAISS (total vectors: {})", 
-                    event.event_id, vectors_indexed);
+                // TODO Day 39+: Send to embedders and indexers
 
                 // Delete file if configured
                 if (config.ingester.input.delete_after_process) {
@@ -222,7 +194,6 @@ int main(int argc, char* argv[]) {
                 spdlog::info("=== Statistics (last 60s) ===");
                 spdlog::info("  Events processed: {}", events_processed);
                 spdlog::info("  Events failed: {}", events_failed);
-                spdlog::info("  Vectors indexed: {}", vectors_indexed);
                 spdlog::info("  Total loaded: {}", stats.total_loaded);
                 spdlog::info("  Total failed: {}", stats.total_failed);
                 spdlog::info("  Bytes processed: {}", stats.bytes_processed);
@@ -242,11 +213,10 @@ int main(int argc, char* argv[]) {
         spdlog::info("=== Final Statistics ===");
         spdlog::info("  Total events: {}", events_processed);
         spdlog::info("  Failed events: {}", events_failed);
-        spdlog::info("  Vectors indexed: {}", vectors_indexed);
         spdlog::info("  Bytes processed: {}", final_stats.bytes_processed);
 
         spdlog::info("RAG Ingester stopped gracefully");
-        return 00;
+        return 0;
 
     } catch (const std::exception& e) {
         spdlog::error("Fatal error: {}", e.what());

@@ -128,6 +128,7 @@ set(SOURCES
         src/embedders/chronos_embedder.cpp
         src/embedders/sbert_embedder.cpp
         src/embedders/attack_embedder.cpp
+        src/embedders/simple_embedder.cpp
         src/indexers/multi_index_manager.cpp
         src/indexers/index_health_monitor.cpp
         src/indexers/eventual_consistency.cpp

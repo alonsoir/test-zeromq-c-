@@ -54,15 +54,15 @@ Overall Phase 2A: ████████████████████ 1
 ```
 
 2. **Test Queries** (1h)
-    - Query evento con alta discrepancia
-    - Buscar top-5 similares
-    - Validar distancias L2
-    - Verificar coherencia de features
+   - Query evento con alta discrepancia
+   - Buscar top-5 similares
+   - Validar distancias L2
+   - Verificar coherencia de features
 
 3. **Validation** (30min)
-    - Eventos similares tienen features parecidas ✅
-    - Distancias L2 razonables ✅
-    - No crashes ✅
+   - Eventos similares tienen features parecidas ✅
+   - Distancias L2 razonables ✅
+   - No crashes ✅
 
 **Success Criteria:**
 ```bash
