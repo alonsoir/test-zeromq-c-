@@ -154,6 +154,9 @@ set(SOURCES
         src/base_validator.cpp
         src/rag_validator.cpp
         src/llama_integration_real.cpp
+        # NUEVOS: Embedders (Phase 2A)
+        src/embedders/simple_embedder.cpp
+        src/embedders/embedder_factory.cpp
 )
 
 # ============================================================================
@@ -169,6 +172,9 @@ target_include_directories(rag-security PRIVATE
         ${HTTPLIB_INCLUDE_DIR}
         ${JSON_INCLUDE_DIR}
         ${ETCD_CLIENT_INCLUDE_DIR}
+        # NUEVO: Para embedders
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/embedders
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/common
 )
 
 # ============================================================================
@@ -186,6 +192,16 @@ if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
 else()
     message(STATUS "❌ llama.cpp not available - using simulation mode")
     target_compile_definitions(rag-security PRIVATE LLAMA_SIMULATION_MODE)
+endif()
+
+# NUEVO: Link FAISS si está disponible
+if(HAVE_FAISS)
+    target_link_libraries(rag-security PRIVATE
+            ${FAISS_LIB}
+            ${BLAS_LIBRARIES}
+    )
+    target_include_directories(rag-security PRIVATE ${FAISS_INCLUDE_DIR})
+    message(STATUS "✅ FAISS linked to rag-security")
 endif()
 
 # ============================================================================
@@ -228,6 +244,23 @@ if(HAVE_FAISS)
     )
 
     message(STATUS "✅ test_faiss_basic configured")
+    add_executable(test_embedder
+            tests/test_embedder.cpp
+            src/embedders/simple_embedder.cpp
+            src/embedders/embedder_factory.cpp
+    )
+
+    target_include_directories(test_embedder PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/embedders
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/common
+    )
+
+    target_link_libraries(test_embedder PRIVATE
+            Threads::Threads
+    )
+
+    message(STATUS "✅ test_embedder configured")
 endif()
 
 # ONNX Runtime test
