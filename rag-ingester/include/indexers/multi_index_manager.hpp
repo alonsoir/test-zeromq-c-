@@ -21,6 +21,28 @@ public:
     
     void save_all(const std::string& path);
     void load_all(const std::string& path);
+
+    // Day 40: Getters para save_indices_to_disk()
+    faiss::Index& get_chronos_index() {
+        if (!chronos_index_) {
+            throw std::runtime_error("Chronos index not initialized");
+        }
+        return *chronos_index_;
+    }
+
+    faiss::Index& get_sbert_index() {
+        if (!sbert_index_) {
+            throw std::runtime_error("SBERT index not initialized");
+        }
+        return *sbert_index_;
+    }
+
+    faiss::Index& get_entity_malicious_index() {
+        if (!entity_malicious_index_) {
+            throw std::runtime_error("Entity malicious index not initialized");
+        }
+        return *entity_malicious_index_;
+    }
     
 private:
     std::unique_ptr<faiss::Index> chronos_index_;

@@ -1,6 +1,6 @@
 // main.cpp
 // RAG Ingester - Main Entry Point
-// Day 38.5: SimpleEmbedder + FAISS integration (REAL)
+// Day 40: Producer complete - metadata_db + FAISS persistence
 
 #include <iostream>
 #include <csignal>
@@ -11,7 +11,9 @@
 #include <vector>
 
 #include <spdlog/spdlog.h>
-
+#include "metadata_db.hpp"
+#include <faiss/index_io.h>
+#include <faiss/IndexFlat.h>
 #include "common/config_parser.hpp"
 #include "file_watcher.hpp"
 #include "event_loader.hpp"
@@ -25,11 +27,57 @@
 namespace {
     std::atomic<bool> running{true};
 
+    // Global for save_indices_to_disk()
+    rag_ingester::MultiIndexManager* g_index_manager = nullptr;
+    rag::MetadataDB* g_metadata_db = nullptr;
+
     void signal_handler(int signal) {
         if (signal == SIGINT || signal == SIGTERM) {
             spdlog::info("Received signal {}, shutting down gracefully...", signal);
             running = false;
         }
+    }
+}
+
+// ============================================================================
+// FUNCTION: Save indices to disk
+// ============================================================================
+void save_indices_to_disk() {
+    if (!g_index_manager) {
+        spdlog::warn("Cannot save indices: index_manager not initialized");
+        return;
+    }
+
+    std::string base_path = "/vagrant/shared/indices/";
+
+    spdlog::info("💾 Saving FAISS indices to disk...");
+
+    try {
+        // Create directory if it doesn't exist
+        std::filesystem::create_directories(base_path);
+
+        // Get raw FAISS indices from MultiIndexManager
+        auto& chronos_index = g_index_manager->get_chronos_index();
+        auto& sbert_index = g_index_manager->get_sbert_index();
+        auto& attack_index = g_index_manager->get_entity_malicious_index();
+
+        // Write indices to disk
+        faiss::write_index(&chronos_index, (base_path + "chronos.faiss").c_str());
+        faiss::write_index(&sbert_index, (base_path + "sbert.faiss").c_str());
+        faiss::write_index(&attack_index, (base_path + "attack.faiss").c_str());
+
+        // Flush metadata
+        if (g_metadata_db) {
+            g_metadata_db->flush();
+        }
+
+        spdlog::info("✅ FAISS indices saved:");
+        spdlog::info("   Chronos: {} vectors", chronos_index.ntotal);
+        spdlog::info("   SBERT:   {} vectors", sbert_index.ntotal);
+        spdlog::info("   Attack:  {} vectors", attack_index.ntotal);
+
+    } catch (const std::exception& e) {
+        spdlog::error("❌ Failed to save indices: {}", e.what());
     }
 }
 
@@ -53,6 +101,11 @@ int main(int argc, char* argv[]) {
         spdlog::info("  File pattern: {}", config.ingester.input.pattern);
         spdlog::info("  Encrypted: {}", config.ingester.input.encrypted);
         spdlog::info("  Compressed: {}", config.ingester.input.compressed);
+
+        // ====================================================================
+        // 1.1 Initialize metadata_db
+        // ====================================================================
+        std::unique_ptr<rag::MetadataDB> metadata_db;
 
         // ====================================================================
         // 2. Initialize etcd-client and get encryption seed (PRODUCTION CODE)
@@ -129,6 +182,28 @@ int main(int argc, char* argv[]) {
         spdlog::info("Initializing MultiIndexManager...");
         rag_ingester::MultiIndexManager index_manager;
 
+        // Set global pointer for save_indices_to_disk()
+        g_index_manager = &index_manager;
+
+        // ====================================================================
+        // 3.6. Initialize MetadataDB (Day 40)
+        // ====================================================================
+        try {
+            // Create shared indices directory
+            std::filesystem::create_directories("/vagrant/shared/indices/");
+
+            std::string db_path = "/vagrant/shared/indices/metadata.db";
+            metadata_db = std::make_unique<rag::MetadataDB>(db_path);
+            g_metadata_db = metadata_db.get();
+
+            spdlog::info("✅ Metadata DB initialized: {}", db_path);
+            spdlog::info("   Existing events: {}", metadata_db->count());
+
+        } catch (const std::exception& e) {
+            spdlog::error("❌ Failed to init metadata DB: {}", e.what());
+            return 1;
+        }
+
         // ====================================================================
         // 4. Initialize FileWatcher
         // ====================================================================
@@ -148,11 +223,14 @@ int main(int argc, char* argv[]) {
         std::signal(SIGTERM, signal_handler);
 
         // ====================================================================
-        // 6. Event processing callback (Day 38.5: EMBEDDINGS + FAISS)
+        // 6. Event processing callback (Day 40: + metadata_db)
         // ====================================================================
         uint64_t events_processed = 0;
         uint64_t events_failed = 0;
         uint64_t vectors_indexed = 0;
+
+        const size_t SAVE_INTERVAL = 100;  // Save every 100 events
+        size_t events_since_last_save = 0;
 
         auto callback = [&](const std::string& filepath) {
             spdlog::info("New file detected: {}", filepath);
@@ -183,8 +261,44 @@ int main(int argc, char* argv[]) {
                 index_manager.add_entity_malicious(attack_emb);
 
                 vectors_indexed++;
-                spdlog::debug("Event {} indexed in FAISS (total vectors: {})", 
-                    event.event_id, vectors_indexed);
+
+                // ============================================================
+                // DAY 40: Insert metadata (Producer responsibility)
+                // ============================================================
+
+                // FAISS index of this event (0-based, last added)
+                size_t faiss_idx = vectors_indexed - 1;
+
+                // Extract metadata from event
+                std::string event_id = event.event_id;
+                std::string classification = event.final_class;
+                float discrepancy_score = event.discrepancy_score;
+
+                // Insert into metadata DB (sin IPs - no están en Event struct)
+                try {
+                    metadata_db->insert_event(
+                        faiss_idx,
+                        event_id,
+                        classification,
+                        discrepancy_score
+                    );
+
+                    spdlog::debug("Metadata inserted: faiss_idx={}, event_id={}",
+                                 faiss_idx, event_id);
+
+                } catch (const std::exception& e) {
+                    spdlog::error("Failed to insert metadata for {}: {}",
+                                 event_id, e.what());
+                }
+
+                // ============================================================
+                // Periodic save to disk
+                // ============================================================
+                events_since_last_save++;
+                if (events_since_last_save >= SAVE_INTERVAL) {
+                    save_indices_to_disk();
+                    events_since_last_save = 0;
+                }
 
                 // Delete file if configured
                 if (config.ingester.input.delete_after_process) {
@@ -203,6 +317,7 @@ int main(int argc, char* argv[]) {
         // ====================================================================
         watcher.start(callback);
         spdlog::info("✅ RAG Ingester ready and waiting for events");
+        spdlog::info("   Indices will be saved every {} events", SAVE_INTERVAL);
 
         // ====================================================================
         // 8. Main loop with statistics
@@ -223,6 +338,7 @@ int main(int argc, char* argv[]) {
                 spdlog::info("  Events processed: {}", events_processed);
                 spdlog::info("  Events failed: {}", events_failed);
                 spdlog::info("  Vectors indexed: {}", vectors_indexed);
+                spdlog::info("  Metadata entries: {}", metadata_db->count());
                 spdlog::info("  Total loaded: {}", stats.total_loaded);
                 spdlog::info("  Total failed: {}", stats.total_failed);
                 spdlog::info("  Bytes processed: {}", stats.bytes_processed);
@@ -233,20 +349,25 @@ int main(int argc, char* argv[]) {
         }
 
         // ====================================================================
-        // 9. Graceful shutdown
+        // 9. Graceful shutdown (Day 40: SAVE FINAL STATE)
         // ====================================================================
         spdlog::info("Shutting down...");
         watcher.stop();
+
+        // Save final state to disk
+        spdlog::info("🔒 Saving final state to disk...");
+        save_indices_to_disk();
 
         auto final_stats = loader.get_stats();
         spdlog::info("=== Final Statistics ===");
         spdlog::info("  Total events: {}", events_processed);
         spdlog::info("  Failed events: {}", events_failed);
         spdlog::info("  Vectors indexed: {}", vectors_indexed);
+        spdlog::info("  Metadata entries: {}", metadata_db->count());
         spdlog::info("  Bytes processed: {}", final_stats.bytes_processed);
 
         spdlog::info("RAG Ingester stopped gracefully");
-        return 00;
+        return 0;
 
     } catch (const std::exception& e) {
         spdlog::error("Fatal error: {}", e.what());

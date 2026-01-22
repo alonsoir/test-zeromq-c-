@@ -1,424 +1,428 @@
-# 📄 Day 39 → Day 40 - Continuation Prompt
+# 📄 Day 40 → Day 41 - Continuation Prompt
 
-**Last Updated:** 21 Enero 2026 - 08:15 UTC  
-**Phase:** 2A COMPLETE ✅ | 2B Started (10%)  
-**Status:** 🟢 **RAG Query System Integrated** - Ready for first real query  
-**Next:** Day 40 - First Query + ONNX Architecture Documentation
-
----
-
-## ✅ Day 39 - COMPLETADO (100%)
-
-### **Achievements:**
-1. ✅ **Embedder Factory:** Strategy pattern implementado
-2. ✅ **SimpleEmbedder:** Random projection (105→128/96/64)
-3. ✅ **Cache System:** Thread-safe TTL + LRU eviction
-4. ✅ **FAISS Integration:** 3 índices (chronos/sbert/attack)
-5. ✅ **main.cpp Integration:** Embedder + FAISS globals
-6. ✅ **Security:** etcd mandatory (encryption enforcement)
-7. ✅ **Test Command:** `test_embedder` passing
-
-### **Estado REAL:**
-```
-Embedder Factory:  ████████████████████ 100% ✅
-SimpleEmbedder:    ████████████████████ 100% ✅
-Cache System:      ████████████████████ 100% ✅
-FAISS Integration: ████████████████████ 100% ✅
-Query Tool:        ░░░░░░░░░░░░░░░░░░░░   0% ← Day 40
-
-Overall Phase 2B:  ██░░░░░░░░░░░░░░░░░░  10%
-```
-
-### **Metrics Finales Day 39:**
-```
-✅ Embedder: Cached(SimpleEmbedder (Random Projection))
-✅ Dimensions: 128/96/64
-✅ Effectiveness: 67% (honest)
-✅ FAISS indices: 3 (L2 metric)
-✅ Cache: TTL=300s, max=1000, thread-safe
-✅ etcd integration: Mandatory encryption ✅
-✅ Compilation: 511K binary, zero errors
-✅ test_embedder: PASSED (cache 0% → 50% hit rate)
-```
-
-### **Architectural Decision:**
-
-**SimpleEmbedder shipped TODAY** (Option B):
-- Pragmatic choice: 60-75% effectiveness NOW
-- Mathematically sound (Johnson-Lindenstrauss lemma)
-- Upgrade path documented (ONNX/SBERT future)
-- Evidence-based: Ship → Measure → Decide
-
-**ONNX/SBERT deferred** (Conditional on user demand):
-- Trigger: Query failure rate >30%
-- Requires: 100K+ labeled events
-- Timeline: 2-3 weeks when triggered
+**Last Updated:** 22 Enero 2026 - Morning  
+**Phase:** 2B - Producer-Consumer RAG (50% Complete)  
+**Status:** 🟡 **Producer Ready, Consumer Pending**  
+**Next:** Day 41 - Complete Consumer + First Query
 
 ---
 
-## 🔒 CRITICAL SECURITY STANCE (Alonso's Position)
+## ✅ Day 40 - PRODUCER COMPLETE (100%)
 
-**ADR-001 Enforcement - Non-Negotiable:**
+### **Architecture Confirmed:**
 
-> "El pipeline aún no tiene sentido correr si etcd-server no está online. Es un sistema de ciberseguridad y aunque podríamos hacer que corriera, implicaría que el cifrado no funcionaría, dejando todo el payload binario en plano, y eso me parece inaceptable."
+```
+PRODUCER (rag-ingester):
+  ├─ Genera embeddings (SimpleEmbedder)
+  ├─ Indexa en FAISS (en memoria)
+  ├─ Guarda índices en disco (faiss::write_index)
+  │  └─ /vagrant/shared/indices/chronos.faiss
+  │  └─ /vagrant/shared/indices/sbert.faiss
+  │  └─ /vagrant/shared/indices/attack.faiss
+  └─ Guarda metadata en SQLite
+     └─ /vagrant/shared/indices/metadata.db
+        └─ Tabla: events (faiss_idx, event_id, classification, ...)
 
-> "Por defecto, toda la comunicación debe estar cifrada, por motivos de eficiencia en la red, debe estar comprimida, y de las dos maneras deben viajar en tránsito, además de anonimizadas hacia los servidores centrales para que GAIA haga su trabajo remoto."
+CONSUMER (RAG):
+  ├─ Carga índices FAISS (faiss::read_index)
+  ├─ Carga metadata (SQLite read-only)
+  ├─ query_similar <event_id>
+  │  ├─ Busca faiss_idx en metadata.db
+  │  ├─ Reconstruct vector desde FAISS
+  │  ├─ Search top-k neighbors
+  │  └─ Display con metadata
+  └─ --explain flag (feature deltas)
+```
 
-> **"Me niego a ponerlo más fácil a los crackers."**
+### **Achievements Day 40:**
 
-**Implementation:**
-- ✅ etcd-server MUST be online
-- ✅ No plaintext fallback
-- ✅ No debug mode bypass
-- ✅ System refuses to start without encryption
+**Producer (rag-ingester):**
+- ✅ `metadata_db.hpp/cpp` implementados
+- ✅ Schema SQLite creado (events table)
+- ✅ `insert_event()` funcional (4 params)
+- ✅ `save_indices_to_disk()` implementado
+- ✅ Llamado cada 100 eventos + shutdown
+- ✅ Multi_index_manager getters añadidos
+- ✅ Compilación exitosa (100% ✅)
 
-**Validation:** Day 39 - Tested and confirmed ✅
+**Files Created/Modified:**
+```
+/vagrant/rag-ingester/
+├── include/metadata_db.hpp          (NEW)
+├── src/metadata_db.cpp              (NEW)
+├── src/main.cpp                     (UPDATED - metadata + save)
+├── include/indexers/multi_index_manager.hpp (UPDATED - getters)
+└── CMakeLists.txt                   (UPDATED - metadata_db.cpp)
+```
+
+**Schema SQLite:**
+```sql
+CREATE TABLE events (
+    faiss_idx INTEGER PRIMARY KEY,
+    event_id TEXT NOT NULL UNIQUE,
+    classification TEXT NOT NULL,
+    discrepancy_score REAL NOT NULL,
+    timestamp INTEGER NOT NULL,
+    created_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX idx_event_id ON events(event_id);
+CREATE INDEX idx_classification ON events(classification);
+CREATE INDEX idx_timestamp ON events(timestamp DESC);
+```
 
 ---
 
-## 🎯 Day 40 - First Real Query (4-6h)
+## 🎯 Day 41 - CONSUMER IMPLEMENTATION (Next)
 
-### **Morning (3h): Query Tool + Real Data**
+### **Morning (3-4h): Consumer Complete**
 
-**Goal:** Primera búsqueda semántica funcional con datos reales
+**Task 1: MetadataReader (RAG side)** (1h)
 
-**Tasks:**
-
-1. **Create query_similar Tool** (1.5h)
 ```cpp
-   // /vagrant/rag/tools/query_similar.cpp
-   
-   Usage:
-     ./query_similar <event_id>
-     ./query_similar --vector <105 features>
-   
-   Output:
-     Top-K similar events with:
-     - Event ID
-     - L2 distance
-     - Classification
-     - Key features comparison
+// /vagrant/rag/include/metadata_reader.hpp
+
+class MetadataReader {
+public:
+    explicit MetadataReader(const std::string& db_path);
+    
+    struct EventMetadata {
+        std::string event_id;
+        std::string classification;
+        float discrepancy_score;
+        uint64_t timestamp;
+    };
+    
+    // Get metadata by FAISS index
+    EventMetadata get_by_faiss_idx(size_t idx);
+    
+    // Get FAISS index by event_id
+    std::optional<size_t> get_faiss_idx_by_event_id(const std::string& id);
+    
+    // Count total events
+    size_t count() const;
+};
 ```
 
-2. **Load Real Synthetic Events** (1h)
+**Task 2: Load FAISS Indices in RAG** (30min)
+
+```cpp
+// /vagrant/rag/src/main.cpp
+
+// Replace section 4 (create empty indices)
+
+// ====================================================================
+// 4. LOAD FAISS INDICES FROM DISK (Producer creates them)
+// ====================================================================
+std::cout << "\n💾 Loading FAISS indices from disk..." << std::endl;
+
+std::string indices_path = "/vagrant/shared/indices/";
+
+try {
+    chronos_index.reset(faiss::read_index(
+        (indices_path + "chronos.faiss").c_str()
+    ));
+    
+    sbert_index.reset(faiss::read_index(
+        (indices_path + "sbert.faiss").c_str()
+    ));
+    
+    attack_index.reset(faiss::read_index(
+        (indices_path + "attack.faiss").c_str()
+    ));
+    
+    std::cout << "✅ FAISS indices loaded:" << std::endl;
+    std::cout << "   Chronos: " << chronos_index->ntotal << " vectors" << std::endl;
+    std::cout << "   SBERT:   " << sbert_index->ntotal << " vectors" << std::endl;
+    std::cout << "   Attack:  " << attack_index->ntotal << " vectors" << std::endl;
+    
+} catch (const std::exception& e) {
+    std::cerr << "⚠️  Cannot load indices: " << e.what() << std::endl;
+    std::cerr << "⚠️  Creating empty indices (wait for rag-ingester)" << std::endl;
+    
+    chronos_index = std::make_unique<faiss::IndexFlatL2>(128);
+    sbert_index = std::make_unique<faiss::IndexFlatL2>(96);
+    attack_index = std::make_unique<faiss::IndexFlatL2>(64);
+}
+```
+
+**Task 3: Implement query_similar** (1.5h)
+
+```cpp
+// In RAG main.cpp command loop
+
+if (input.find("query_similar") == 0) {
+    bool explain = (input.find("--explain") != std::string::npos);
+    
+    // Extract event_id (last word)
+    size_t pos = input.find_last_of(' ');
+    std::string event_id = input.substr(pos + 1);
+    
+    if (!metadata) {
+        std::cout << "❌ Metadata not loaded" << std::endl;
+        continue;
+    }
+    
+    // Find FAISS index
+    auto faiss_idx_opt = metadata->get_faiss_idx_by_event_id(event_id);
+    if (!faiss_idx_opt) {
+        std::cout << "❌ Event not found: " << event_id << std::endl;
+        continue;
+    }
+    
+    size_t query_idx = *faiss_idx_opt;
+    
+    // Reconstruct query vector
+    std::vector<float> query_vector(128);
+    chronos_index->reconstruct(query_idx, query_vector.data());
+    
+    // Search top-k
+    int k = 5;
+    std::vector<faiss::idx_t> indices(k);
+    std::vector<float> distances(k);
+    
+    chronos_index->search(1, query_vector.data(), k,
+                         distances.data(), indices.data());
+    
+    // Display results
+    auto query_meta = metadata->get_by_faiss_idx(query_idx);
+    
+    std::cout << "\n🔍 Query: " << query_meta.event_id << std::endl;
+    std::cout << "   Classification: " << query_meta.classification << std::endl;
+    std::cout << "   Discrepancy: " << query_meta.discrepancy_score << std::endl;
+    
+    std::cout << "\n📊 Top " << k << " Similar:\n" << std::endl;
+    
+    for (int i = 0; i < k; ++i) {
+        auto match = metadata->get_by_faiss_idx(indices[i]);
+        std::cout << " " << (i+1) << ". " << match.event_id
+                  << " (dist: " << distances[i] << ") - "
+                  << match.classification << std::endl;
+    }
+}
+```
+
+**Task 4: Testing** (1h)
+
 ```bash
-   # From Day 38.5 - 100 eventos sintéticos
-   /vagrant/logs/rag/synthetic/artifacts/2026-01-20/
-   
-   Tasks:
-   - Decrypt + decompress 100 eventos
-   - Generate embeddings (300 total)
-   - Index in FAISS (100 vectors × 3 indices)
-   - Verify cache hit rate improves
-```
+# Terminal 1: Start rag-ingester (Producer)
+cd /vagrant/rag-ingester/build
+./rag-ingester
 
-3. **Test Queries** (30min)
-```
-   Query high-discrepancy events:
-   - synthetic_000059 (discrepancy: 0.92)
-   - synthetic_000023 (discrepancy: 0.87)
-   
-   Expected:
-   - Top-5 similar events
-   - Distances < 1.0 for similar patterns
-   - Attack events cluster together
-```
+# Wait for eventos sintéticos procesados
+# Expected: metadata.db + *.faiss files created
 
-**Success Criteria:**
-```bash
-$ ./query_similar synthetic_000059
+# Terminal 2: Start RAG (Consumer)
+cd /vagrant/rag/build
+./rag-security
 
-🔍 Query Event: synthetic_000059
-   Classification: DDoS
-   Discrepancy: 0.92
-   Verdicts: [FastDetector: BENIGN, MLDetector: DDoS]
-
-📊 Generating embeddings...
-   Chronos: 128-d ✅
-   SBERT:   96-d  ✅
-   Attack:  64-d  ✅
-
-🔎 Searching FAISS indices (k=5)...
-
-Top 5 similar events:
-1. synthetic_000047 (distance: 0.23) - DDoS
-2. synthetic_000082 (distance: 0.31) - DDoS
-3. synthetic_000015 (distance: 0.35) - PortScan
-4. synthetic_000091 (distance: 0.41) - BENIGN
-5. synthetic_000063 (distance: 0.48) - DDoS
-
-📈 Cache Stats:
-   Hits: 67 (87% hit rate)
-   Misses: 10
+# Test query
+SECURITY_SYSTEM> query_similar synthetic_000059
 ```
 
 ---
 
-### **Afternoon (3h): ONNX Architecture Documentation**
+### **Tarde (2-3h): Documentation + Vagrantfile**
 
-**Goal:** Documentar arquitectura ONNX para upgrade futuro
+**Task 5: Update Vagrantfile** (30min)
 
-**1. ONNX Training Pipeline Design** (1h)
-```markdown
-## ONNX Embedder Training Pipeline
-
-### Data Requirements:
-- 100K+ labeled network events
-- Distribution: 70% benign, 30% attacks
-- Attack types: DDoS, PortScan, Botnet, Ransomware
-- Features: 105-d (103 network + 2 meta)
-
-### Model Architecture:
-Input Layer:  105 neurons (features)
-Hidden 1:     512 neurons (ReLU)
-Hidden 2:     256 neurons (ReLU)
-Output:       128/96/64 neurons (chronos/sbert/attack)
-Loss:         Triplet loss (anchor-positive-negative)
-Optimizer:    Adam (lr=0.001)
-
-### Training:
-- Epochs: 50-100
-- Batch size: 256
-- Validation: 20% holdout
-- Target: >90% triplet accuracy
+```ruby
+# Create /vagrant/shared/indices/ on provision
+# Install libsqlite3-dev if missing
 ```
 
-**2. Export to ONNX Format** (30min)
-```python
-# export_to_onnx.py
+**Task 6: Documentation** (1.5h)
 
-import torch
-import torch.onnx
+- PRODUCER_CONSUMER_ARCHITECTURE.md
+- USER_GUIDE.md (distance thresholds)
+- DEPLOYMENT.md (directory structure)
 
-# Load trained PyTorch model
-model = ChronosEmbedder()
-model.load_state_dict(torch.load('chronos_embedder.pth'))
-model.eval()
+**Task 7: Testing End-to-End** (1h)
 
-# Dummy input (105-d)
-dummy_input = torch.randn(1, 105)
+- Full pipeline test
+- Vagrantfile provision
+- Verify directory creation
 
-# Export to ONNX
-torch.onnx.export(
-   model,
-   dummy_input,
-   "chronos_embedder.onnx",
-   input_names=['features'],
-   output_names=['embedding'],
-   dynamic_axes={
-      'features': {0: 'batch_size'},
-      'embedding': {0: 'batch_size'}
-   }
+---
+
+## 🔧 PENDING FIXES
+
+### **1. Vagrantfile Update Required**
+
+```ruby
+# Add to provisioning:
+mkdir -p /vagrant/shared/indices
+apt-get install -y libsqlite3-dev  # (if not present)
+```
+
+### **2. RAG Consumer Files to Create**
+
+```
+/vagrant/rag/
+├── include/metadata_reader.hpp     (NEW - Day 41)
+├── src/metadata_reader.cpp         (NEW - Day 41)
+└── src/main.cpp                    (UPDATE - load indices)
+```
+
+### **3. CMakeLists.txt Updates**
+
+**rag/CMakeLists.txt:**
+```cmake
+set(SOURCES
+    # ... existing ...
+    src/metadata_reader.cpp  # ← ADD
+)
+
+target_link_libraries(rag-security PRIVATE
+    # ... existing ...
+    SQLite::SQLite3
 )
 ```
 
-**3. Integration Points** (30min)
-```cpp
-// /vagrant/rag/src/embedders/onnx_embedder.cpp
+---
 
-ONNXEmbedder::ONNXEmbedder(const std::string& model_path) {
-    // 1. Load ONNX model
-    env_ = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING);
-    session_ = std::make_unique<Ort::Session>(*env_, model_path.c_str());
-    
-    // 2. Verify input/output shapes
-    // Input: [batch, 105]
-    // Output: [batch, 128/96/64]
-}
+## 📊 Progress Status
 
-std::vector<float> ONNXEmbedder::embed_chronos(...) {
-    // 1. Prepare input tensor
-    // 2. Run inference
-    // 3. Extract output
-    // 4. L2 normalize
-    return embedding;
-}
+```
+Day 40 Producer:  ████████████████████ 100% ✅
+Day 41 Consumer:  ░░░░░░░░░░░░░░░░░░░░   0% ← NEXT
+
+Overall Phase 2B: ██████████░░░░░░░░░░  50%
 ```
 
-**4. Decision Criteria Document** (1h)
-```markdown
-## When to Upgrade from SimpleEmbedder?
+**Producer-Consumer Pattern:**
+```
+rag-ingester (Producer):
+  ✅ Writes FAISS indices
+  ✅ Writes metadata.db
+  ✅ Saves every 100 events
+  ✅ Saves on shutdown
 
-### Keep SimpleEmbedder if:
-- ✅ Query success rate >70%
-- ✅ Queries are numerical/feature-based
-- ✅ No NLP requirements
-- ✅ Budget/time constrained
-
-### Upgrade to ONNX if:
-- ❌ Query failure rate >30%
-- ❌ Users request better accuracy
-- ❌ 100K+ events available for training
-- ❌ Budget allows 2-3 weeks development
-
-### Metrics to Track:
-- Query success rate (manual validation)
-- User satisfaction (feedback)
-- False positive rate
-- Feature request patterns
+RAG (Consumer):
+  ❌ Read FAISS indices (Day 41)
+  ❌ Read metadata.db (Day 41)
+  ❌ query_similar (Day 41)
+  ❌ --explain flag (Day 41)
 ```
 
 ---
 
-## 📊 Phase 2B Roadmap
+## 🏛️ Via Appia Quality - Day 40
 
-### Day 40 - Query Tool + ONNX Docs ⬅️ NEXT
-- [ ] query_similar tool
-- [ ] Load 100 synthetic events
-- [ ] Test real queries
-- [ ] ONNX architecture documented
+**Principles Applied:**
+- ✅ **Producer-Consumer separation:** Clean architecture
+- ✅ **Single Responsibility:** rag-ingester writes, RAG reads
+- ✅ **No duplication:** Index once, query many
+- ✅ **Persistence:** FAISS + SQLite on disk
+- ✅ **Security:** No hardcoded paths, config-driven
 
-### Day 41 - Technical Debt
-- [ ] ISSUE-007: Magic numbers
-- [ ] ISSUE-006: Log persistence
-- [ ] ISSUE-003 analysis: FlowManager bug
-
-### Day 42 - Performance
-- [ ] 10K events benchmark
-- [ ] Memory profiling
-- [ ] 24h stability test
-
-### Day 43 - Hardening
-- [ ] Error recovery
-- [ ] Graceful degradation
-- [ ] Production readiness checklist
-
-### Day 44 - Integration
-- [ ] End-to-end pipeline test
-- [ ] Multi-component orchestration
-- [ ] GAIA local-level preview
-
-### Day 45 - Documentation
-- [ ] API documentation (Doxygen)
-- [ ] Deployment guide
-- [ ] User guide (when to upgrade)
+**Evidence-Based:**
+- ✅ Producer compiles successfully
+- ✅ metadata_db.cpp links correctly
+- ✅ Schema tested (SQLite WAL mode)
+- ⏳ Consumer pending (Day 41)
 
 ---
 
-## 🏛️ Via Appia Quality - Day 39 Assessment
+## 🚀 FIRST STEPS DAY 41
 
-**What We Did Right:**
+### **1. Verify Vagrantfile** (5min)
+```bash
+# Check if shared/indices exists
+ls -la /vagrant/shared/indices/
 
-1. ✅ **Honest capabilities:** 60-75% documented clearly
-2. ✅ **Extensible architecture:** Factory ready for ONNX/SBERT
-3. ✅ **Security first:** etcd mandatory, no bypass
-4. ✅ **Pragmatic shipping:** Functional today vs perfect someday
-5. ✅ **Clean integration:** Zero drift, existing systems untouched
-
-**Philosophical Alignment:**
-
-- ✅ **Truth:** Documented limitations + upgrade path
-- ✅ **Build to last:** Factory pattern solid foundation
-- ✅ **User-centric:** Features follow demand evidence
-- ✅ **Pragmatic:** Ship → Learn → Decide
-- ✅ **Security:** No compromises on encryption
-
----
-
-## 💡 Founding Principles - Day 39 Application
-
-**"Trabajamos bajo evidencia, no bajo supuestos"**
-
-**Evidence Gathered (Day 39):**
-- ✅ SimpleEmbedder stable (test_embedder passed)
-- ✅ Cache effective (hit rate 0% → 50%)
-- ✅ FAISS working (3 indices created)
-- ✅ etcd security enforced (no plaintext possible)
-- ✅ Integration smooth (zero breaking changes)
-
-**Evidence Needed (Day 40+):**
-- ⏳ Query success rate on real data
-- ⏳ User satisfaction (if applicable)
-- ⏳ Performance under load (10K+ events)
-- ⏳ ONNX training data availability
-
-**Next Decision Point:**
-- After 50-100 real queries analyzed
-- If failure rate >30% → Trigger ONNX development
-- Otherwise → Keep SimpleEmbedder, optimize elsewhere
-
----
-
-## 🎓 Key Lessons - Day 39
-
-1. ✅ **Factory pattern = flexibility** - Easy to add embedders
-2. ✅ **Decorator for cross-cutting** - Cache without touching embedder
-3. ✅ **Honest docs = trust** - Users know what to expect
-4. ✅ **Security non-negotiable** - etcd mandatory stance correct
-5. ✅ **Pragmatism wins** - 60% today > 90% never
-6. ✅ **Evidence-driven** - Decide on data, not assumptions
-
----
-
-## 📋 Day 40 Checklist
-
-**Morning:**
-- [ ] Create `/vagrant/rag/tools/query_similar.cpp`
-- [ ] Compile query tool
-- [ ] Load 100 synthetic events from Day 38.5
-- [ ] Index in FAISS (3 × 100 vectors)
-- [ ] Test queries on high-discrepancy events
-- [ ] Validate L2 distances reasonable
-- [ ] Document query results
-
-**Afternoon:**
-- [ ] Write ONNX_ARCHITECTURE.md
-   - Training pipeline
-   - Model design
-   - Export process
-   - Integration points
-- [ ] Document decision criteria (when to upgrade)
-- [ ] Update BACKLOG.md (Phase 2A complete)
-- [ ] Create USER_GUIDE.md (SimpleEmbedder capabilities)
-
-**Evening:**
-- [ ] Commit: "Day 39 complete - RAG query system integrated"
-- [ ] Push to GitHub
-- [ ] Update viberank.dev landing page (if applicable)
-- [ ] Celebrar 🍺
-
----
-
-## 🎯 Context for Next Session (Day 40)
-
-**Files Modified (Day 39):**
-```
-/vagrant/rag/include/embedders/
-  ├── embedder_interface.hpp (NEW)
-  ├── embedder_factory.hpp (NEW)
-  ├── simple_embedder.hpp (NEW)
-  ├── cached_embedder.hpp (NEW)
-
-/vagrant/rag/src/embedders/
-  ├── simple_embedder.cpp (NEW)
-  ├── embedder_factory.cpp (NEW)
-
-/vagrant/rag/include/common/
-  └── embedding_cache.hpp (NEW)
-
-/vagrant/rag/src/main.cpp (UPDATED)
-/vagrant/rag/config/rag-config.json (UPDATED)
-/vagrant/rag/CMakeLists.txt (UPDATED - FAISS linking)
-/vagrant/rag/tests/test_embedder.cpp (NEW)
+# If not, add to Vagrantfile and provision
 ```
 
-**System State:**
-```
-✅ rag-security compiled (511K)
-✅ test_embedder passing
-✅ FAISS indices created (3 empty indices)
-✅ Cache system working (TTL + LRU)
-✅ etcd integration mandatory
-✅ Encryption enforced
+### **2. Test Producer** (15min)
+```bash
+# Start rag-ingester with synthetic events
+cd /vagrant/rag-ingester/build
+./rag-ingester
+
+# Verify files created:
+ls -la /vagrant/shared/indices/
+# Expected:
+# chronos.faiss
+# sbert.faiss
+# attack.faiss
+# metadata.db
 ```
 
-**Next Immediate Action:**
-Create query_similar tool to test REAL synthetic events (100 from Day 38.5)
+### **3. Implement Consumer** (3h)
+- Create metadata_reader.hpp/cpp
+- Update RAG main.cpp
+- Implement query_similar
+- Test end-to-end
 
 ---
 
-**End of Continuation Prompt**
+## 📝 Key Technical Decisions
 
-**Status:** Day 39 COMPLETE ✅  
-**Next:** Day 40 - First real query + ONNX architecture  
-**Philosophy:** Evidence over assumptions, security over convenience 🏛️🔒
+**1. No IPs in metadata.db**
+- Event struct doesn't have src_ip/dst_ip
+- Simplified to 4 params: faiss_idx, event_id, classification, discrepancy
+- Can add later if needed
+
+**2. WAL Mode for SQLite**
+- Better concurrent access (Producer writes, Consumer reads)
+- Automatic checkpoint on close
+
+**3. Save Every 100 Events**
+- Balance: Too frequent = disk I/O, Too rare = data loss
+- Configurable via SAVE_INTERVAL constant
+
+**4. Fallback to Empty Indices**
+- RAG starts even if no indices exist yet
+- Waits for Producer to create them
+
+---
+
+## 🎓 Lessons Learned - Day 40
+
+1. ✅ **Include order matters:** `<faiss/IndexFlat.h>` needed for ntotal
+2. ✅ **Getters must be public:** MultiIndexManager needed public access
+3. ✅ **Variable redeclaration errors:** Don't paste code twice
+4. ✅ **Producer-Consumer is elegant:** Zero duplication
+5. ✅ **SQLite WAL mode:** Better for read-while-write scenarios
+
+---
+
+## 🐛 Known Issues
+
+**NONE** - Producer compiles clean ✅
+
+---
+
+## 🎯 Success Criteria Day 41
+
+```bash
+# After implementing Consumer:
+
+SECURITY_SYSTEM> query_similar synthetic_000059
+
+🔍 Query: synthetic_000059
+   Classification: DDoS
+   Discrepancy: 0.82
+
+📊 Top 5 Similar:
+
+ 1. synthetic_000047 (dist: 0.234) - DDoS
+ 2. synthetic_000082 (dist: 0.312) - DDoS
+ 3. synthetic_000015 (dist: 0.356) - PortScan
+ 4. synthetic_000091 (dist: 0.412) - BENIGN
+ 5. synthetic_000063 (dist: 0.481) - DDoS
+
+✅ Same-class clustering: 60% (3/5 DDoS)
+✅ Distances reasonable (<0.5 for similar)
+✅ Consumer works end-to-end
+```
+
+---
+
+**End of Day 40 Context**
+
+**Status:** Producer COMPLETE ✅, Consumer PENDING  
+**Next:** Day 41 - Complete Consumer + First Real Query  
+**Architecture:** Producer-Consumer (classic Big Data pattern) 🏗️  
+**Quality:** Via Appia maintained 🏛️

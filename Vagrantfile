@@ -552,6 +552,30 @@ BASHRC_EOF
 
   end  # End defender VM
 
+  # ════════════════════════════════════════════════════════════════════════
+  # Provisioning: SQLite.db necessary for RAG and RAG-INGESTER
+  # ════════════════════════════════════════════════════════════════════════
+  defender.vm.provision "shell", inline: <<-SHELL
+    # Existing provisions...
+
+    # Day 40: Create shared indices directory
+    echo "📁 Creating shared indices directory..."
+    mkdir -p /vagrant/shared/indices
+    chown -R vagrant:vagrant /vagrant/shared/indices
+    chmod 755 /vagrant/shared/indices
+
+    echo "✅ Shared indices directory ready"
+
+    # SQLite3 dev headers (if not already installed)
+    if ! dpkg -l | grep -q libsqlite3-dev; then
+      echo "📦 Installing SQLite3 development headers..."
+      apt-get install -y libsqlite3-dev
+      echo "✅ SQLite3 dev installed"
+    else
+      echo "✅ SQLite3 dev already installed"
+    fi
+  SHELL
+
   # ════════════════════════════════════════════════════════════════════════════
   # CLIENT VM - Traffic Generator & Gateway Testing
   # ════════════════════════════════════════════════════════════════════════════

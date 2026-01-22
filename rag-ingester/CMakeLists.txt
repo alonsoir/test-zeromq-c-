@@ -16,6 +16,8 @@ find_package(Threads REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(SQLite3 REQUIRED)
+
 
 # etcd-client (REQUIRED)
 find_library(ETCD_CLIENT_LIB
@@ -132,6 +134,7 @@ set(SOURCES
         src/indexers/multi_index_manager.cpp
         src/indexers/index_health_monitor.cpp
         src/indexers/eventual_consistency.cpp
+        src/metadata_db.cpp                    # ← DAY 40: Producer metadata
         ${PROTO_SRCS}  # ← Include protobuf sources
 )
 
@@ -148,6 +151,7 @@ target_link_libraries(rag-ingester
         ${CRYPTO_TRANSPORT_LIB}
         spdlog::spdlog
         nlohmann_json::nlohmann_json
+        SQLite::SQLite3
 )
 
 # Link optional libraries
@@ -178,7 +182,7 @@ add_test(NAME FileWatcherTest COMMAND test_file_watcher)
 # #         tests/test_event_loader.cpp
 # #         ${PROTO_SRCS}  # ← Include protobuf sources
 # # )
-# 
+#
 # target_link_libraries(test_event_loader
 #         PRIVATE
 #         event_loader
@@ -222,9 +226,11 @@ else()
     message(STATUS "  ONNX Runtime: DISABLED (Day 37)")
 endif()
 message(STATUS "")
-message(STATUS "Day 36 Status:")
+message(STATUS "Day 40 Status:")
 message(STATUS "  EventLoader: crypto-transport ready")
 message(STATUS "  FileWatcher: Active")
+message(STATUS "  MetadataDB: Producer (write)")
+message(STATUS "  FAISS Persistence: Enabled")
 message(STATUS "  Features: 101 (61 base + 40 embedded)")
 message(STATUS "========================================")
 message(STATUS "")
