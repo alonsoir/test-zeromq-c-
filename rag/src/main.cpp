@@ -5,6 +5,7 @@
 #include "embedders/embedder_factory.hpp"
 #include "embedders/cached_embedder.hpp"  // ← AÑADIDO: Para dynamic_cast
 #include <faiss/IndexFlat.h>
+#include <faiss/index_io.h>  // read_index, write_index
 #include <iostream>
 #include <csignal>
 #include <memory>
@@ -164,26 +165,83 @@ int main() {
         std::cout << "   Efectividad: " << embedder->effectiveness_percent() << "%" << std::endl;
 
         // ====================================================================
-        // 4. INICIALIZAR ÍNDICES FAISS (NUEVO)
+// 4. LOAD FAISS INDICES FROM DISK (Producer creates them)
+// ====================================================================
+std::cout << "\n💾 Loading FAISS indices from disk..." << std::endl;
+
+std::string indices_path = "/vagrant/shared/indices/";
+
+std::unique_ptr<faiss::IndexFlatL2> chronos_index;
+std::unique_ptr<faiss::IndexFlatL2> sbert_index;
+std::unique_ptr<faiss::IndexFlatL2> attack_index;
+
+try {
+    chronos_index.reset(dynamic_cast<faiss::IndexFlatL2*>(
+        faiss::read_index((indices_path + "chronos.faiss").c_str())
+    ));
+
+    sbert_index.reset(dynamic_cast<faiss::IndexFlatL2*>(
+        faiss::read_index((indices_path + "sbert.faiss").c_str())
+    ));
+
+    attack_index.reset(dynamic_cast<faiss::IndexFlatL2*>(
+        faiss::read_index((indices_path + "attack.faiss").c_str())
+    ));
+
+    std::cout << "✅ FAISS indices loaded:" << std::endl;
+    std::cout << "   Chronos: " << chronos_index->ntotal << " vectors" << std::endl;
+    std::cout << "   SBERT:   " << sbert_index->ntotal << " vectors" << std::endl;
+    std::cout << "   Attack:  " << attack_index->ntotal << " vectors" << std::endl;
+
+} catch (const std::exception& e) {
+    std::cerr << "⚠️  Cannot load indices: " << e.what() << std::endl;
+    std::cerr << "⚠️  Creating empty indices (wait for rag-ingester)" << std::endl;
+
+    chronos_index = std::make_unique<faiss::IndexFlatL2>(128);
+    sbert_index = std::make_unique<faiss::IndexFlatL2>(96);
+    attack_index = std::make_unique<faiss::IndexFlatL2>(64);
+}
+
+// ====================================================================
+// 5. LOAD METADATA DATABASE
+// ====================================================================
+std::cout << "\n📊 Loading metadata database..." << std::endl;
+
+std::unique_ptr<ml_defender::MetadataReader> metadata;
+
+try {
+    metadata = std::make_unique<ml_defender::MetadataReader>(
+        indices_path + "metadata.db"
+    );
+
+    size_t event_count = metadata->count();
+    std::cout << "✅ Metadata loaded: " << event_count << " events" << std::endl;
+
+} catch (const std::exception& e) {
+    std::cerr << "⚠️  Cannot load metadata: " << e.what() << std::endl;
+    std::cerr << "⚠️  query_similar will not be available" << std::endl;
+}
+
         // ====================================================================
-        std::cout << "\n💾 Inicializando índices FAISS..." << std::endl;
-
-        chronos_index = std::make_unique<faiss::IndexFlatL2>(128);  // Chronos 128-d
-        sbert_index = std::make_unique<faiss::IndexFlatL2>(96);     // SBERT 96-d
-        attack_index = std::make_unique<faiss::IndexFlatL2>(64);    // Attack 64-d
-
-        std::cout << "✅ FAISS indices creados:" << std::endl;
-        std::cout << "   Chronos: 128-d (L2)" << std::endl;
-        std::cout << "   SBERT:   96-d  (L2)" << std::endl;
-        std::cout << "   Attack:  64-d  (L2)" << std::endl;
-
-        // ====================================================================
-        // 5. INICIALIZAR WHITELIST MANAGER
+        // 6. INICIALIZAR WHITELIST MANAGER
         // ====================================================================
         whitelist_manager = std::make_unique<Rag::WhiteListManager>();
 
         // Registrar RagCommandManager
         auto rag_manager = std::make_shared<Rag::RagCommandManager>();
+        // ========== Day 41: Register FAISS indices ==========
+        if (chronos_index && sbert_index && attack_index) {
+            rag_manager->setFAISSIndices(
+                chronos_index.get(),
+                sbert_index.get(),
+                attack_index.get()
+            );
+        }
+
+        if (metadata) {
+            rag_manager->setMetadataReader(metadata.get());
+        }
+        // ===================================================
         whitelist_manager->registerCommandManager("rag", rag_manager);
 
         // Inicializar sistema
@@ -193,15 +251,15 @@ int main() {
         }
 
         // ====================================================================
-        // 6. SISTEMA LISTO
+        // 7. SISTEMA LISTO
         // ====================================================================
         std::cout << "\n✅ Sistema listo. Escribe 'help' para ver comandos disponibles." << std::endl;
         std::cout << "   Comandos especiales:" << std::endl;
-        std::cout << "   - test_embedder : Probar sistema de embeddings" << std::endl;
+        //std::cout << "   - test_embedder : Probar sistema de embeddings" << std::endl;
         std::cout << "   - exit/quit     : Salir del sistema" << std::endl;
 
         // ====================================================================
-        // 7. BUCLE PRINCIPAL DE COMANDOS
+        // 8. BUCLE PRINCIPAL DE COMANDOS
         // ====================================================================
         std::string input;
         while (true) {
@@ -215,10 +273,10 @@ int main() {
                 break;
             }
 
-            if (input == "test_embedder") {
-                testEmbedder();
-                continue;
-            }
+            //if (input == "test_embedder") {
+            //    testEmbedder();
+            //    continue;
+            //}
 
             // Comandos regulares (WhiteListManager)
             whitelist_manager->processCommand(input);

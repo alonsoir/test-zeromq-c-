@@ -550,35 +550,34 @@ BASHRC_EOF
       crontab -u vagrant -l
     CRON
 
-  end  # End defender VM
+        # ════════════════════════════════════════════════════════════════════════
+        # Provisioning: SQLite.db necessary for RAG and RAG-INGESTER (Day 40)
+        # ════════════════════════════════════════════════════════════════════════
+        defender.vm.provision "shell", name: "configure-sqlite-day40", run: "once", inline: <<-SQLITE
+          echo "📁 Day 40: Creating shared indices directory..."
+          mkdir -p /vagrant/shared/indices
+          chown -R vagrant:vagrant /vagrant/shared/indices
+          chmod 755 /vagrant/shared/indices
 
-  # ════════════════════════════════════════════════════════════════════════
-  # Provisioning: SQLite.db necessary for RAG and RAG-INGESTER
-  # ════════════════════════════════════════════════════════════════════════
-  defender.vm.provision "shell", inline: <<-SHELL
-    # Existing provisions...
+          echo "✅ Shared indices directory ready: /vagrant/shared/indices"
 
-    # Day 40: Create shared indices directory
-    echo "📁 Creating shared indices directory..."
-    mkdir -p /vagrant/shared/indices
-    chown -R vagrant:vagrant /vagrant/shared/indices
-    chmod 755 /vagrant/shared/indices
+          # SQLite3 dev headers + CLI tool
+          if ! dpkg -l | grep -q libsqlite3-dev; then
+            echo "📦 Installing SQLite3 development headers + CLI..."
+            apt-get install -y libsqlite3-dev sqlite3  # ← AÑADIR sqlite3 aquí
+            echo "✅ SQLite3 dev + CLI installed"
+          else
+            echo "✅ SQLite3 dev already installed"
+            # Asegurar que el CLI también está instalado
+            apt-get install -y sqlite3
+          fi
+        SQLITE
 
-    echo "✅ Shared indices directory ready"
+      end  # End defender VM  ← AQUÍ termina el bloque defender
 
-    # SQLite3 dev headers (if not already installed)
-    if ! dpkg -l | grep -q libsqlite3-dev; then
-      echo "📦 Installing SQLite3 development headers..."
-      apt-get install -y libsqlite3-dev
-      echo "✅ SQLite3 dev installed"
-    else
-      echo "✅ SQLite3 dev already installed"
-    fi
-  SHELL
-
-  # ════════════════════════════════════════════════════════════════════════════
-  # CLIENT VM - Traffic Generator & Gateway Testing
-  # ════════════════════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════════════════════
+      # CLIENT VM - Traffic Generator & Gateway Testing
+      # ════════════════════════════════════════════════════════════════════════════
 
   config.vm.define "client", autostart: false do |client|
     client.vm.box = "debian/bookworm64"

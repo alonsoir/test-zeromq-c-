@@ -69,7 +69,7 @@ find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
 
 # 3. Threads
 find_package(Threads REQUIRED)
-
+find_package(SQLite3 REQUIRED)
 # ============================================================================
 # FAISS - CONFIGURACIÓN (Phase 2A)
 # ============================================================================
@@ -157,6 +157,7 @@ set(SOURCES
         # NUEVOS: Embedders (Phase 2A)
         src/embedders/simple_embedder.cpp
         src/embedders/embedder_factory.cpp
+        src/metadata_reader.cpp
 )
 
 # ============================================================================
@@ -182,7 +183,8 @@ target_include_directories(rag-security PRIVATE
 # ============================================================================
 target_link_libraries(rag-security PRIVATE
         Threads::Threads
-        ${ETCD_CLIENT_LIB})
+        ${ETCD_CLIENT_LIB}
+        SQLite::SQLite3)
 
 if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
     target_link_libraries(rag-security PRIVATE "${LLAMA_LIB_PATH}")
