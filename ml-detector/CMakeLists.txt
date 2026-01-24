@@ -255,11 +255,12 @@ set(HEADERS
 )
 
 # ============================================================================
-# INCLUDE DIRECTORIES - ACTUALIZADO PARA PROTOBUF UNIFICADO
+# INCLUDE DIRECTORIES - ACTUALIZADO PARA PROTOBUF UNIFICADO y reason_codes
 # ============================================================================
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
+        /vagrant/common/include # Se incluye reason_codes.hpp
 )
 
 # ============================================================================

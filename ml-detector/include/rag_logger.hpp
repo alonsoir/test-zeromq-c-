@@ -20,7 +20,7 @@
 
 // Protobuf
 #include "network_security.pb.h"
-
+#include <crypto_transport/crypto_manager.hpp>
 namespace ml_defender {
 
 // ============================================================================
@@ -80,7 +80,8 @@ struct MLContext {
 class RAGLogger {
 public:
     RAGLogger(const RAGLoggerConfig& config,
-              std::shared_ptr<spdlog::logger> logger);
+          std::shared_ptr<spdlog::logger> logger,
+          std::shared_ptr<crypto::CryptoManager> crypto_manager);  // NUEVO
     ~RAGLogger();
 
     // Prevent copying
@@ -137,14 +138,17 @@ private:
 
     // Static utilities
     static std::string calculate_sha256(const std::string& data);
+
+    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
 };
 
 // ============================================================================
 // Factory Function
 // ============================================================================
 
-std::unique_ptr<RAGLogger> create_rag_logger_from_config(
-    const std::string& config_path,
-    std::shared_ptr<spdlog::logger> logger);
+    std::unique_ptr<RAGLogger> create_rag_logger_from_config(
+        const std::string& config_path,
+        std::shared_ptr<spdlog::logger> logger,
+        std::shared_ptr<crypto::CryptoManager> crypto_manager);  // NUEVO
 
 } // namespace ml_defender

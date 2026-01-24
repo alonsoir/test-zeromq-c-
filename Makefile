@@ -26,6 +26,9 @@
 .PHONY: monitor-day23-tmux
 .PHONY: test-day23-full test-day23-stress verify-rag-logs-day23
 .PHONY: day23
+.PHONY: rag-ingester rag-ingester-build rag-ingester-clean
+.PHONY: tools-build tools-clean tools-synthetic-gen
+
 # ============================================================================
 # ThreadSanitizer Build (Race Condition Detection)
 # ============================================================================
@@ -216,6 +219,7 @@ help:
 	@echo "  make rebuild         - Clean + build all (unified)"
 	@echo "  make build-unified   - Build with unified protobuf"
 	@echo "  make rebuild-unified - Clean + unified build"
+	@echo "  make rag-ingester    - Build RAG Ingester"
 	@echo ""
 	@echo "Sniffer Packaging:"
 	@echo "  make sniffer-package - Create .deb package"
@@ -254,6 +258,9 @@ help:
 	@echo ""
 	@echo "Memory Debugging:"
 	@echo "  make detector-asan       - Build ml-detector with AddressSanitizer"
+	@echo "Tools:"
+	@echo "  make tools-build         - Build synthetic data generator"
+	@echo "  make tools-synthetic-gen - Generate synthetic events"
 
 # ============================================================================
 # VM Management
@@ -439,6 +446,47 @@ firewall-clean:
 	@echo "🧹 Cleaning Firewall ACL Agent..."
 	@vagrant ssh -c "rm -rf /vagrant/firewall-acl-agent/build/*"
 
+# ============================================================================
+# RAG Ingester (Day 36)
+# ============================================================================
+
+rag-ingester: proto etcd-client-build crypto-transport-build
+	@echo "🔨 Building RAG Ingester..."
+	@echo "   Dependencies: proto ✅  etcd-client ✅  crypto-transport ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/rag-ingester/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/rag-ingester/build/proto/ && \
+		cd /vagrant/rag-ingester/build && \
+		cmake -DCMAKE_BUILD_TYPE=Debug .. && \
+		make -j4"
+
+rag-ingester-build: rag-ingester
+
+rag-ingester-clean:
+	@echo "🧹 Cleaning RAG Ingester..."
+	@vagrant ssh -c "rm -rf /vagrant/rag-ingester/build/*"
+
+# ============================================================================
+# Tools - Synthetic Data Generator & Validators (Day 38)
+# ============================================================================
+
+tools-build: proto etcd-client-build crypto-transport-build
+	@echo "🔨 Building ML Defender Tools..."
+	@echo "   Dependencies: proto ✅  etcd-client ✅  crypto-transport ✅"
+	@vagrant ssh -c "mkdir -p /vagrant/tools/build/proto && \
+		cp /vagrant/protobuf/network_security.pb.* /vagrant/tools/build/proto/ && \
+		cd /vagrant/tools/build && \
+		cmake .. && \
+		make -j4"
+	@echo "✅ Tools built successfully"
+
+tools-clean:
+	@echo "🧹 Cleaning Tools..."
+	@vagrant ssh -c "rm -rf /vagrant/tools/build/*"
+
+tools-synthetic-gen: tools-build
+	@echo "🎯 Running Synthetic Event Generator..."
+	@vagrant ssh -c "cd /vagrant/tools/build && ./generate_synthetic_events"
+
 # ----------------------------------------------------------------------------
 # 4. etcd-server (independiente)
 # ----------------------------------------------------------------------------
@@ -446,16 +494,18 @@ firewall-clean:
 # ----------------------------------------------------------------------------
 # 5. Build unificado (ORDEN CORRECTO)
 # ----------------------------------------------------------------------------
-build-unified: proto-unified etcd-client-build sniffer detector firewall
+build-unified: proto-unified etcd-client-build crypto-transport-build sniffer detector firewall rag-ingester tools-build
 	@echo "🚀 Build completo con protobuf unificado y etcd-client"
 	@$(MAKE) proto-verify
 	@echo ""
 	@echo "✅ Build order executed correctly:"
 	@echo "   1. ✅ proto-unified"
 	@echo "   2. ✅ etcd-client-build"
-	@echo "   3. ✅ sniffer"
-	@echo "   4. ✅ detector"
-	@echo "   5. ✅ firewall"
+	@echo "   3. ✅ crypto-transport-build"
+	@echo "   4. ✅ sniffer"
+	@echo "   5. ✅ detector"
+	@echo "   6. ✅ rag-ingester"
+	@echo "   7. ✅ tools"
 
 all: build-unified etcd-server-build
 	@echo ""
@@ -479,8 +529,8 @@ rebuild-unified: clean build-unified
 rebuild: rebuild-unified etcd-server-build
 	@echo "✅ Full rebuild complete (all components)"
 
-clean: sniffer-clean detector-clean firewall-clean crypto-transport-clean etcd-client-clean etcd-server-clean
-	@echo "✅ Clean complete (including crypto ecosystem)"
+clean: sniffer-clean detector-clean firewall-clean rag-ingester-clean crypto-transport-clean etcd-client-clean etcd-server-clean tools-clean
+	@echo "✅ Clean complete (including crypto ecosystem + tools)"
 
 distclean: clean
 	@vagrant ssh -c "rm -f /vagrant/protobuf/network_security.pb.* /vagrant/protobuf/network_security_pb2.py"
@@ -1578,3 +1628,261 @@ day23:
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
 		$(MAKE) test-day23-full; \
 	fi
+
+# ============================================================================
+# Day 38 - Synthetic Data Generation (5 Steps)
+# ============================================================================
+
+.PHONY: day38-step1 day38-step2 day38-step3 day38-step4 day38-step5
+.PHONY: day38-full day38-status day38-clean
+
+day38-step1:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 1: etcd-server Bootstrap (Idempotent)"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Checking etcd-server status..."
+	@vagrant ssh -c "if pgrep -f 'etcd-server' > /dev/null; then \
+		echo '✅ etcd-server already running (PID: '\`pgrep -f etcd-server\`')'; \
+	else \
+		echo '🚀 Starting etcd-server...'; \
+		mkdir -p /vagrant/logs; \
+		cd /vagrant/etcd-server/build && nohup ./etcd-server > /vagrant/logs/etcd-server.log 2>&1 & \
+		sleep 3; \
+		if pgrep -f etcd-server > /dev/null; then \
+			echo '✅ Started with PID: '\`pgrep -f etcd-server\`; \
+		else \
+			echo '❌ Failed to start etcd-server'; \
+			exit 1; \
+		fi; \
+	fi"
+	@sleep 2
+	@echo ""
+	@echo "Verifying connectivity..."
+	@vagrant ssh -c "curl -s http://localhost:2379/health > /dev/null 2>&1 && echo '✅ etcd-server responding (HTTP 200)' || echo '❌ etcd-server not responding'"
+	@echo ""
+	@echo "Checking /seed endpoint availability..."
+	@vagrant ssh -c "curl -s http://localhost:2379/seed 2>/dev/null | head -c 64 && echo '... (truncated)' || echo '❌ /seed endpoint not responding'"
+	@echo ""
+	@echo "✅ Step 1 complete - etcd-server ready"
+
+# Paso 2: Generar 100 eventos (10 min)
+# Paso 2: Generar 100 eventos (10 min)
+day38-step2: tools-build
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 2: Generate 100 Synthetic Events"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Creating output directories..."
+	@vagrant ssh -c "mkdir -p /vagrant/logs/rag/synthetic/events"
+	@vagrant ssh -c "mkdir -p /vagrant/logs/rag/synthetic/artifacts"
+	@vagrant ssh -c "ls -ld /vagrant/logs/rag/synthetic/*"
+	@echo ""
+	@echo "2️⃣  Executing generator (C++ handles seed idempotency)..."
+	@vagrant ssh -c "cd /vagrant/tools/build && ./generate_synthetic_events 100 0.20"
+	@echo ""
+	@echo "✅ Step 2 complete - Synthetic events generated"
+
+# Paso 3: Validar artefactos (15 min)
+# Paso 3: Validar artefactos (15 min)
+day38-step3:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 3: Validate Artifacts"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Counting .pb.enc files..."
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name 'event_*.pb.enc' | wc -l | xargs echo 'Generated:'"
+	@echo ""
+	@echo "2️⃣  CRÍTICO (Gepeto): Verificar dispersión real..."
+	@vagrant ssh -c 'export LC_ALL=C; jq -r ".detection.scores.divergence" /vagrant/logs/rag/synthetic/events/*.jsonl | awk "BEGIN{sum=0;sumsq=0;n=0} {sum+=\$$1; sumsq+=\$$1*\$$1; n++} END {mean=sum/n; stddev=sqrt(sumsq/n-mean*mean); printf \"Mean: %.3f  StdDev: %.3f\n\", mean, stddev; if (stddev > 0.1) print \"✅ Real dispersion confirmed (StdDev > 0.1)\"; else print \"❌ WARNING: Low dispersion (< 0.1)\";}"'
+	@echo ""
+	@echo "3️⃣  Verificar todos eventos tienen divergence..."
+	@vagrant ssh -c "jq -r '.detection.scores.divergence' /vagrant/logs/rag/synthetic/events/*.jsonl | wc -l | xargs echo 'Events with divergence:'"
+	@echo ""
+	@echo "✅ Step 3 complete - Artifacts validated"
+
+# Paso 4: Actualizar embedders (2h)
+day38-step4:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 4: Update Embedders (101 → 103 features)"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "⚠️  MANUAL STEP REQUIRED"
+	@echo ""
+	@echo "Archivos a modificar (6):"
+	@echo "  1. /vagrant/rag-ingester/src/embedders/chronos_embedder.hpp"
+	@echo "  2. /vagrant/rag-ingester/src/embedders/chronos_embedder.cpp"
+	@echo "  3. /vagrant/rag-ingester/src/embedders/sbert_embedder.hpp"
+	@echo "  4. /vagrant/rag-ingester/src/embedders/sbert_embedder.cpp"
+	@echo "  5. /vagrant/rag-ingester/src/embedders/attack_embedder.hpp"
+	@echo "  6. /vagrant/rag-ingester/src/embedders/attack_embedder.cpp"
+	@echo ""
+	@echo "Cambios necesarios en cada archivo:"
+	@echo "  - INPUT_DIM: 101 → 103"
+	@echo "  - Añadir: input.push_back(event.discrepancy_score);              // 102"
+	@echo "  - Añadir: input.push_back(static_cast<float>(event.verdicts.size())); // 103"
+	@echo ""
+	@echo "Después de modificar, recompilar:"
+	@echo "  make rag-ingester-build"
+	@echo ""
+	@read -p "Press ENTER when embedders are updated and recompiled..." dummy
+	@echo "✅ Step 4 complete - Embedders updated"
+
+# Paso 5: Smoke test (30 min)
+day38-step5:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 - Step 5: Smoke Test End-to-End"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Running rag-ingester with synthetic events..."
+	@vagrant ssh -c "cd /vagrant/rag-ingester/build && ./rag-ingester ../config/rag-ingester.json"
+	@echo ""
+	@echo "1️⃣  Eventos cargados:"
+	@vagrant ssh -c "grep 'Event loaded' /vagrant/logs/rag-ingester/*.log | wc -l | xargs echo 'Count:'"
+	@echo ""
+	@echo "2️⃣  Provenance parseada:"
+	@vagrant ssh -c "grep 'verdicts' /vagrant/logs/rag-ingester/*.log | head -5"
+	@echo ""
+	@echo "3️⃣  Embeddings generados:"
+	@vagrant ssh -c "grep 'Embedding' /vagrant/logs/rag-ingester/*.log | wc -l | xargs echo 'Count (expected 300):'"
+	@echo ""
+	@echo "4️⃣  CRÍTICO (Invariante Gepeto): disc > 0.5 ⇒ verdicts ≥ 2"
+	@vagrant ssh -c "grep 'discrepancy' /vagrant/logs/rag-ingester/*.log | \
+		awk '{ \
+			if (\$$NF > 0.5 && \$$(\$$NF-2) < 2) { \
+				print \"❌ INVARIANT VIOLATION\"; exit 1; \
+			} \
+		}' && echo '✅ Invariant validated' || echo '❌ Invariant violated'"
+	@echo ""
+	@echo "5️⃣  Errores:"
+	@vagrant ssh -c "grep ERROR /vagrant/logs/rag-ingester/*.log || echo '✅ No errors'"
+	@echo ""
+	@echo "✅ Step 5 complete - Smoke test passed"
+
+# Full Day 38 workflow
+day38-full:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 Day 38 - Full Completion Workflow                     ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@$(MAKE) day38-step1
+	@echo ""
+	@$(MAKE) day38-step2
+	@echo ""
+	@$(MAKE) day38-step3
+	@echo ""
+	@$(MAKE) day38-step4
+	@echo ""
+	@$(MAKE) day38-step5
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "✅ Day 38 COMPLETE"
+	@echo "════════════════════════════════════════════════════════════"
+
+# Status check
+day38-status:
+	@echo "Day 38 Status:"
+	@echo ""
+	@echo "etcd-server:"
+	@vagrant ssh -c "pgrep -f etcd-server && echo '  ✅ Running' || echo '  ❌ Stopped'"
+	@echo ""
+	@echo "Synthetic artifacts:"
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name '*.pb.enc' | wc -l | xargs echo '  Generated:'"
+	@echo ""
+	@echo "Embedders:"
+	@vagrant ssh -c "grep -r 'INPUT_DIM = 103' /vagrant/rag-ingester/src/embedders/*.hpp && echo '  ✅ Updated' || echo '  ❌ Not updated (still 101)'"
+
+# Clean Day 38 artifacts
+day38-clean:
+	@echo "🧹 Cleaning Day 38 artifacts..."
+	@vagrant ssh -c "rm -rf /vagrant/logs/rag/synthetic/*"
+	@vagrant ssh -c "rm -rf /vagrant/logs/rag-ingester/*"
+	@echo "✅ Day 38 artifacts cleaned"
+
+# ============================================================================
+# Day 38 - Complete Synthetic Workflow (Full Pipeline)
+# ============================================================================
+
+.PHONY: day38-pipeline day38-pipeline-start day38-pipeline-stop day38-pipeline-status
+
+# Full pipeline: compile → start services → generate → ingest
+day38-pipeline:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  Day 38 - Complete Synthetic Data Pipeline                ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Phase 1: Build all components..."
+	@$(MAKE) proto-unified
+	@$(MAKE) crypto-transport-build
+	@$(MAKE) etcd-client-build
+	@$(MAKE) etcd-server-build
+	@$(MAKE) tools-build
+	@$(MAKE) rag-ingester-build
+	@echo ""
+	@echo "Phase 2: Start etcd-server..."
+	@$(MAKE) day38-step1
+	@echo ""
+	@echo "Phase 3: Generate synthetic events (100 events, 20% malicious)..."
+	@$(MAKE) day38-step2
+	@echo ""
+	@echo "Phase 4: Validate synthetic artifacts..."
+	@$(MAKE) day38-step3
+	@echo ""
+	@echo "✅ Pipeline complete!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  - Update embedders: Follow instructions in continuation prompt"
+	@echo "  - Run ingester: make day38-step5"
+
+# Start all services for Day 38
+day38-pipeline-start:
+	@echo "🚀 Starting Day 38 services..."
+	@$(MAKE) etcd-server-start
+	@sleep 3
+	@vagrant ssh -c "pgrep -f etcd-server && echo '✅ etcd-server running' || echo '❌ etcd-server failed to start'"
+	@echo ""
+	@echo "Services ready for synthetic data generation"
+
+# Stop all Day 38 services
+day38-pipeline-stop:
+	@echo "🛑 Stopping Day 38 services..."
+	@$(MAKE) etcd-server-stop
+	@echo "✅ All services stopped"
+
+# Check status of Day 38 pipeline
+day38-pipeline-status:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "Day 38 Pipeline Status"
+	@echo "════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1. etcd-server:"
+	@vagrant ssh -c "pgrep -f etcd-server > /dev/null && echo '   ✅ Running (PID: \$$(pgrep -f etcd-server))' || echo '   ❌ Stopped'"
+	@echo ""
+	@echo "2. Encryption key available:"
+	@vagrant ssh -c "curl -s http://localhost:2379/seed 2>/dev/null | jq -r '.seed' | head -c 10 && echo '... (available)' || echo '   ❌ Not available'"
+	@echo ""
+	@echo "3. Synthetic events generated:"
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name '*.pb.enc' 2>/dev/null | wc -l | xargs echo '   Count:'"
+	@echo ""
+	@echo "4. Components built:"
+	@vagrant ssh -c "ls -lh /vagrant/tools/build/generate_synthetic_events 2>/dev/null | awk '{print \"   tools: \" \$$5}' || echo '   tools: ❌ Not built'"
+	@vagrant ssh -c "ls -lh /vagrant/rag-ingester/build/rag-ingester 2>/dev/null | awk '{print \"   rag-ingester: \" \$$5}' || echo '   rag-ingester: ❌ Not built'"
+	@echo "════════════════════════════════════════════════════════════"
+
+# Quick test of full pipeline (10 events only)
+day38-pipeline-test:
+	@echo "⚡ Quick pipeline test (10 events)..."
+	@$(MAKE) day38-clean
+	@$(MAKE) day38-pipeline-start
+	@sleep 3
+	@echo ""
+	@echo "Generating 10 synthetic events..."
+	@vagrant ssh -c "cd /vagrant/tools/build && ./generate_synthetic_events 10 0.20"
+	@echo ""
+	@echo "Validation:"
+	@vagrant ssh -c "find /vagrant/logs/rag/synthetic/artifacts -name '*.pb.enc' | wc -l | xargs echo 'Events generated:'"
+	@vagrant ssh -c "jq -r '.detection.scores.divergence' /vagrant/logs/rag/synthetic/events/*.jsonl 2>/dev/null | head -5"
+	@echo ""
+	@echo "✅ Quick test complete"

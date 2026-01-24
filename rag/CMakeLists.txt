@@ -4,7 +4,7 @@ project(rag-security-system VERSION 1.0.0 LANGUAGES CXX)
 # ============================================================================
 # CONFIGURACIÓN BÁSICA
 # ============================================================================
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)  # ← Changed to C++20 for FAISS tests
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -69,9 +69,63 @@ find_path(JSON_INCLUDE_DIR nlohmann/json.hpp
 
 # 3. Threads
 find_package(Threads REQUIRED)
+find_package(SQLite3 REQUIRED)
+# ============================================================================
+# FAISS - CONFIGURACIÓN (Phase 2A)
+# ============================================================================
+message(STATUS "🔍 Buscando FAISS library...")
+
+find_library(FAISS_LIB
+        NAMES faiss
+        PATHS /usr/local/lib /usr/lib
+)
+
+find_path(FAISS_INCLUDE_DIR
+        NAMES faiss/IndexFlat.h
+        PATHS /usr/local/include /usr/include
+)
+
+if(FAISS_LIB AND FAISS_INCLUDE_DIR)
+    set(HAVE_FAISS TRUE)
+    message(STATUS "✅ Found FAISS library: ${FAISS_LIB}")
+    message(STATUS "✅ Found FAISS headers: ${FAISS_INCLUDE_DIR}")
+else()
+    set(HAVE_FAISS FALSE)
+    message(WARNING "❌ FAISS not found - Phase 2A features disabled")
+endif()
+
+# BLAS (required by FAISS)
+if(HAVE_FAISS)
+    find_package(BLAS REQUIRED)
+    message(STATUS "✅ Found BLAS: ${BLAS_LIBRARIES}")
+endif()
 
 # ============================================================================
-# ETCD-CLIENT LIBRARY (New)
+# ONNX Runtime - CONFIGURACIÓN (Phase 2A)
+# ============================================================================
+message(STATUS "🔍 Buscando ONNX Runtime...")
+
+find_library(ONNX_LIB
+        NAMES onnxruntime
+        PATHS /usr/local/lib /usr/lib
+)
+
+find_path(ONNX_INCLUDE_DIR
+        NAMES onnxruntime_cxx_api.h
+        PATHS /usr/local/include /usr/include
+)
+
+if(ONNX_LIB AND ONNX_INCLUDE_DIR)
+    set(HAVE_ONNX TRUE)
+    message(STATUS "✅ Found ONNX Runtime: ${ONNX_LIB}")
+    message(STATUS "✅ Found ONNX headers: ${ONNX_INCLUDE_DIR}")
+else()
+    set(HAVE_ONNX FALSE)
+    message(WARNING "❌ ONNX Runtime not found - Phase 2A features disabled")
+endif()
+
+# ============================================================================
+# ETCD-CLIENT LIBRARY
 # ============================================================================
 message(STATUS "🔍 Buscando etcd-client library...")
 
@@ -89,7 +143,7 @@ else()
 endif()
 
 # ============================================================================
-# ARCHIVOS FUENTE - ACTUALIZADO CON NUEVOS COMPONENTES
+# ARCHIVOS FUENTE - RAG SECURITY PRINCIPAL
 # ============================================================================
 set(SOURCES
         src/main.cpp
@@ -100,29 +154,37 @@ set(SOURCES
         src/base_validator.cpp
         src/rag_validator.cpp
         src/llama_integration_real.cpp
+        # NUEVOS: Embedders (Phase 2A)
+        src/embedders/simple_embedder.cpp
+        src/embedders/embedder_factory.cpp
+        src/metadata_reader.cpp
 )
 
 # ============================================================================
-# EJECUTABLE PRINCIPAL
+# EJECUTABLE PRINCIPAL - RAG SECURITY
 # ============================================================================
 add_executable(rag-security ${SOURCES})
 
 # ============================================================================
-# CONFIGURACIÓN DE INCLUSIONES
+# CONFIGURACIÓN DE INCLUSIONES - RAG SECURITY
 # ============================================================================
 target_include_directories(rag-security PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${HTTPLIB_INCLUDE_DIR}
         ${JSON_INCLUDE_DIR}
         ${ETCD_CLIENT_INCLUDE_DIR}
+        # NUEVO: Para embedders
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/embedders
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/common
 )
 
 # ============================================================================
-# LINKING
+# LINKING - RAG SECURITY
 # ============================================================================
 target_link_libraries(rag-security PRIVATE
-                    Threads::Threads
-                    ${ETCD_CLIENT_LIB})
+        Threads::Threads
+        ${ETCD_CLIENT_LIB}
+        SQLite::SQLite3)
 
 if(HAVE_LLAMA_CPP AND LLAMA_LIB_PATH AND LLAMA_INCLUDE_DIRS)
     target_link_libraries(rag-security PRIVATE "${LLAMA_LIB_PATH}")
@@ -134,8 +196,18 @@ else()
     target_compile_definitions(rag-security PRIVATE LLAMA_SIMULATION_MODE)
 endif()
 
+# NUEVO: Link FAISS si está disponible
+if(HAVE_FAISS)
+    target_link_libraries(rag-security PRIVATE
+            ${FAISS_LIB}
+            ${BLAS_LIBRARIES}
+    )
+    target_include_directories(rag-security PRIVATE ${FAISS_INCLUDE_DIR})
+    message(STATUS "✅ FAISS linked to rag-security")
+endif()
+
 # ============================================================================
-# CONFIGURACIÓN DE COMPILACIÓN
+# CONFIGURACIÓN DE COMPILACIÓN - RAG SECURITY
 # ============================================================================
 target_compile_options(rag-security PRIVATE
         -Wall
@@ -149,11 +221,100 @@ else()
 endif()
 
 # ============================================================================
+# TESTS - PHASE 2A (FAISS + ONNX Runtime)
+# ============================================================================
+if(HAVE_FAISS)
+    message(STATUS "🧪 Configurando tests FAISS...")
+
+    # Test FAISS Basic
+    add_executable(test_faiss_basic
+            tests/test_faiss_basic.cpp
+    )
+
+    target_include_directories(test_faiss_basic PRIVATE
+            ${FAISS_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_faiss_basic PRIVATE
+            ${FAISS_LIB}
+            ${BLAS_LIBRARIES}
+    )
+
+    target_compile_options(test_faiss_basic PRIVATE
+            -Wall
+            -Wextra
+    )
+
+    message(STATUS "✅ test_faiss_basic configured")
+    add_executable(test_embedder
+            tests/test_embedder.cpp
+            src/embedders/simple_embedder.cpp
+            src/embedders/embedder_factory.cpp
+    )
+
+    target_include_directories(test_embedder PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/embedders
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/common
+    )
+
+    target_link_libraries(test_embedder PRIVATE
+            Threads::Threads
+    )
+
+    message(STATUS "✅ test_embedder configured")
+endif()
+
+# ONNX Runtime test
+if(HAVE_ONNX)
+    add_executable(test_onnx_basic tests/test_onnx_basic.cpp)
+    target_include_directories(test_onnx_basic PRIVATE ${ONNX_INCLUDE_DIR})
+    target_link_libraries(test_onnx_basic PRIVATE ${ONNX_LIB})
+
+    message(STATUS "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    message(STATUS "✅ test_onnx_basic configured")
+    message(STATUS "   ONNX include: ${ONNX_INCLUDE_DIR}")
+    message(STATUS "   ONNX library: ${ONNX_LIB}")
+    message(STATUS "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+else()
+    message(STATUS "⚠️  test_onnx_basic skipped (ONNX Runtime not found)")
+endif()
+
+# ============================================================================
 # VERIFICACIÓN FINAL
 # ============================================================================
-message(STATUS "🎯 Build configuration:")
+message(STATUS "")
+message(STATUS "╔════════════════════════════════════════════════════════════╗")
+message(STATUS "║  RAG Security System - Build Configuration                ║")
+message(STATUS "╚════════════════════════════════════════════════════════════╝")
+message(STATUS "")
+message(STATUS "📦 Core Dependencies:")
 message(STATUS "   - httplib: ${HTTPLIB_INCLUDE_DIR}")
 message(STATUS "   - nlohmann/json: ${JSON_INCLUDE_DIR}")
 message(STATUS "   - llama.cpp: ${HAVE_LLAMA_CPP}")
+message(STATUS "   - etcd-client: ${ETCD_CLIENT_LIB}")
 message(STATUS "   - threads: OK")
-message(STATUS "   - Archivos fuente: ${SOURCES}")
+message(STATUS "")
+message(STATUS "🔬 Phase 2A Dependencies:")
+message(STATUS "   - FAISS: ${HAVE_FAISS}")
+if(HAVE_FAISS)
+    message(STATUS "     • Library: ${FAISS_LIB}")
+    message(STATUS "     • Include: ${FAISS_INCLUDE_DIR}")
+    message(STATUS "     • BLAS: ${BLAS_LIBRARIES}")
+endif()
+message(STATUS "   - ONNX Runtime: ${HAVE_ONNX}")
+if(HAVE_ONNX)
+    message(STATUS "     • Library: ${ONNX_LIB}")
+    message(STATUS "     • Include: ${ONNX_INCLUDE_DIR}")
+endif()
+message(STATUS "")
+message(STATUS "🎯 Targets:")
+message(STATUS "   - rag-security (main executable)")
+if(HAVE_FAISS)
+    message(STATUS "   - test_faiss_basic (FAISS integration test)")
+endif()
+if(HAVE_ONNX)
+    message(STATUS "   - test_onnx_basic (planned)")
+endif()
+message(STATUS "")
+message(STATUS "═══════════════════════════════════════════════════════════")

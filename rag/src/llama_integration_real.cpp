@@ -13,15 +13,28 @@ private:
 
     // 🎯 **FUNCIÓN ALTERNATIVA PARA LIMPIAR CACHE KV**
     void clear_kv_cache() {
-        // Crear un batch vacío para forzar reset del estado interno
-        llama_batch batch = llama_batch_init(1, 0, 1);
-        batch.n_tokens = 0;  // Batch vacío
+        // ✅ Método ultra-compatible que funciona en cualquier versión de llama.cpp
+        // Recreamos el contexto para garantizar estado limpio
 
-        // Esto resetea el estado interno del contexto
-        llama_decode(ctx, batch);
-        llama_batch_free(batch);
+        if (ctx && model) {
+            // Configuración del contexto (igual que en loadModel)
+            llama_context_params ctx_params = llama_context_default_params();
+            ctx_params.n_ctx = 1024;
+            ctx_params.n_threads = 2;
 
-        std::cout << "🧹 Cache KV resetado manualmente" << std::endl;
+            // Liberar contexto anterior
+            llama_free(ctx);
+
+            // Crear nuevo contexto con estado limpio
+            ctx = llama_new_context_with_model(model, ctx_params);
+
+            if (!ctx) {
+                std::cerr << "❌ Error recreando contexto en clear_kv_cache" << std::endl;
+                return;
+            }
+        }
+
+        std::cout << "🧹 Cache KV limpiado (contexto recreado)" << std::endl;
     }
 
 public:

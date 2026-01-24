@@ -30,10 +30,11 @@ namespace Rag {
         std::unique_ptr<EtcdClient> etcd_client_;
         // Cambiar a referencia en lugar de shared_ptr
         ConfigManager& config_manager_;
-
         void registerSystemWithEtcd();
         void unregisterSystemFromEtcd();
         std::vector<std::string> tokenizeCommand(const std::string& input);
+
+        void handleQuerySimilar(const std::vector<std::string>& tokens);
     };
 
 } // namespace Rag

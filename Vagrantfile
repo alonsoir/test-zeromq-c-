@@ -17,11 +17,17 @@
 # │  │  • ML Detector          │   LAN   │  • Gateway testing           │   │
 # │  │  • Firewall ACL Agent   │  eth2   │  • PCAP dataset replay       │   │
 # │  │  • RAG Security System  │         │  • Performance benchmarks    │   │
+# │  │  • FAISS Ingestion      │         │                              │   │
 # │  │                         │         │                              │   │
 # │  │  eth1: 192.168.56.20    │         │  eth1: 192.168.100.50        │   │
 # │  │  eth2: 192.168.100.1    │         │  Gateway: 192.168.100.1      │   │
 # │  └─────────────────────────┘         └──────────────────────────────┘   │
 # └──────────────────────────────────────────────────────────────────────────┘
+#
+# PHASE 2A: FAISS Ingestion Support
+#   • FAISS v1.8.0 (CPU-only, shared library)
+#   • ONNX Runtime v1.17.1
+#   • Cron restart every 72h (memory leak mitigation)
 #
 # USAGE:
 #   Development (defender only):   vagrant up defender
@@ -70,10 +76,8 @@ Vagrant.configure("2") do |config|
     # eth0: NAT (Vagrant management)
     # eth1: 192.168.56.20 (WAN-facing, host-only) - Host-based IDS
     # eth2: 192.168.100.1 (LAN-facing, internal) - Gateway mode
-    # Note: public_network removed for stability (caused NIC reordering)
 
     defender.vm.network "private_network", ip: "192.168.56.20"  # eth1: WAN-facing
-    # defender.vm.network "public_network", bridge: "en0: Wi-Fi"  # DISABLED - caused interface swap
     defender.vm.network "private_network", ip: "192.168.100.1",
       virtualbox__intnet: "ml_defender_gateway_lan"  # eth2: Gateway LAN
 
@@ -188,7 +192,7 @@ Vagrant.configure("2") do |config|
       set -x
 
       echo "╔════════════════════════════════════════════════════════════╗"
-      echo "║  Installing ALL dependencies - Single Phase                ║"
+      echo "║  Installing ALL dependencies - Phase 2A (FAISS)           ║"
       echo "╚════════════════════════════════════════════════════════════╝"
 
       # Core system packages
@@ -252,21 +256,6 @@ LIBBPF_PROFILE
       # Testing tools (para gateway testing)
       apt-get install -y hping3 nmap tcpreplay netcat-openbsd iperf3 net-tools dnsutils
 
-      # Docker
-      if ! command -v docker >/dev/null 2>&1; then
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
-        usermod -aG docker vagrant
-        systemctl enable docker
-        systemctl start docker
-      fi
-
-      # Docker Compose
-      if ! command -v docker-compose >/dev/null 2>&1; then
-        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-      fi
-
       # CMake 3.25+
       CMAKE_VERSION=$(cmake --version 2>/dev/null | head -1 | awk '{print $3}')
       if [ -z "$CMAKE_VERSION" ] || [ "$(printf '%s\n' "3.20" "$CMAKE_VERSION" | sort -V | head -n1)" != "3.20" ]; then
@@ -276,15 +265,71 @@ LIBBPF_PROFILE
         rm cmake-3.25.0-linux-x86_64.sh
       fi
 
-      # ONNX Runtime
+      # ONNX Runtime v1.17.1
       if [ ! -f /usr/local/lib/libonnxruntime.so ]; then
+        echo "🧠 Installing ONNX Runtime v1.17.1..."
         cd /tmp
         wget -q https://github.com/microsoft/onnxruntime/releases/download/v1.17.1/onnxruntime-linux-x64-1.17.1.tgz
         tar -xzf onnxruntime-linux-x64-1.17.1.tgz
         cp -r onnxruntime-linux-x64-1.17.1/include/* /usr/local/include/
         cp -r onnxruntime-linux-x64-1.17.1/lib/* /usr/local/lib/
         ldconfig
+
+        # Fix: Create /usr/local/lib64 symlinks for CMake compatibility
+        echo "🔗 Creating /usr/local/lib64 symlinks for ONNX Runtime..."
+        mkdir -p /usr/local/lib64
+        ln -sf /usr/local/lib/libonnxruntime.so* /usr/local/lib64/
+        ln -sf /usr/local/lib/libonnxruntime_providers_shared.so /usr/local/lib64/
+
         rm -rf onnxruntime-linux-*
+        echo "✅ ONNX Runtime installed with lib64 symlinks"
+      else
+        echo "✅ ONNX Runtime already installed"
+
+        # Ensure lib64 symlinks exist even if ONNX was previously installed
+        if [ ! -d /usr/local/lib64 ]; then
+          echo "🔗 Creating missing /usr/local/lib64 symlinks..."
+          mkdir -p /usr/local/lib64
+          ln -sf /usr/local/lib/libonnxruntime.so* /usr/local/lib64/
+          ln -sf /usr/local/lib/libonnxruntime_providers_shared.so /usr/local/lib64/ 2>/dev/null || true
+          echo "✅ lib64 symlinks created"
+        fi
+      fi
+
+      # FAISS v1.8.0 (CPU-only, shared library) - Phase 2A
+      if [ ! -f /usr/local/lib/libfaiss.so ]; then
+        echo "🔍 Installing FAISS v1.8.0 (CPU-only, shared library)..."
+
+        # Dependencies
+        apt-get install -y libblas-dev liblapack-dev
+
+        # Build from source
+        cd /tmp && rm -rf faiss
+        git clone --depth 1 --branch v1.8.0 https://github.com/facebookresearch/faiss.git
+        cd faiss
+
+        mkdir -p build && cd build
+        cmake .. \
+          -DFAISS_ENABLE_GPU=OFF \
+          -DFAISS_ENABLE_PYTHON=OFF \
+          -DBUILD_TESTING=OFF \
+          -DBUILD_SHARED_LIBS=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/usr/local
+
+        make -j$(nproc)
+        make install
+        ldconfig
+
+        cd /tmp && rm -rf faiss
+        echo "✅ FAISS installed successfully"
+      else
+        echo "✅ FAISS already installed"
+      fi
+
+      # Verify FAISS installation
+      if [ -f /usr/local/lib/libfaiss.so ]; then
+        echo "✅ FAISS library verified: $(ls -lh /usr/local/lib/libfaiss.so | awk '{print $5}')"
       fi
 
       # etcd-cpp-api
@@ -389,7 +434,7 @@ EOF
       fi
 
       # Bash aliases
-      if ! grep -q "build-rag" /home/vagrant/.bashrc; then
+      if ! grep -q "FAISS Ingestion aliases" /home/vagrant/.bashrc; then
         cat >> /home/vagrant/.bashrc << 'BASHRC_EOF'
 # ML Defender aliases
 alias build-sniffer='cd /vagrant/sniffer && make'
@@ -415,17 +460,26 @@ alias test-gateway='/vagrant/scripts/gateway/defender/validate_gateway.sh'
 alias start-gateway='/vagrant/scripts/gateway/defender/start_gateway_test.sh'
 alias gateway-dash='/vagrant/scripts/gateway/defender/gateway_dashboard.sh'
 
+# FAISS Ingestion aliases (Phase 2A)
+alias explore-logs='/vagrant/scripts/explore_rag_logs.sh'
+alias verify-faiss='ls -lh /usr/local/lib/libfaiss.so && ls -d /usr/local/include/faiss'
+alias verify-onnx='ls -lh /usr/local/lib/libonnxruntime.so && find /usr/local/include -name "onnxruntime*.h"'
+
 export PROJECT_ROOT="/vagrant"
 export MODELS_DIR="/vagrant/ml-detector/models/production"
 
 cat << 'WELCOME'
 ╔════════════════════════════════════════════════════════════╗
 ║  ML Defender - Network Security Pipeline                   ║
-║  Development Environment - MULTI-VM GATEWAY READY          ║
+║  Development Environment - PHASE 2A (FAISS)                ║
 ╚════════════════════════════════════════════════════════════╝
 🎯 Dual-NIC Configuration:
    eth1: 192.168.56.20 (WAN-facing, host-based IDS)
    eth2: 192.168.100.1 (LAN-facing, gateway mode)
+🔍 FAISS Ingestion Ready:
+   explore-logs     # Explore available RAG logs
+   verify-faiss     # Verify FAISS installation
+   verify-onnx      # Verify ONNX Runtime
 🚀 Gateway Testing:
    start-gateway    # Start sniffer in gateway mode
    test-gateway     # Validate gateway capture
@@ -474,7 +528,9 @@ BASHRC_EOF
       echo "═══════════════════════════════════════════════════════════"
     SNIFFER_CONFIG
 
-    # En Vagrantfile, dentro de config.vm.define "defender":
+    # ════════════════════════════════════════════════════════════════════════
+    # Provisioning: Cron restart every 72h (memory leak mitigation)
+    # ════════════════════════════════════════════════════════════════════════
     defender.vm.provision "shell", name: "configure-cron-restart", run: "once", inline: <<-CRON
       echo "⏰ Configurando cron para restart automático cada 72h..."
 
@@ -494,11 +550,34 @@ BASHRC_EOF
       crontab -u vagrant -l
     CRON
 
-  end  # End defender VM
+        # ════════════════════════════════════════════════════════════════════════
+        # Provisioning: SQLite.db necessary for RAG and RAG-INGESTER (Day 40)
+        # ════════════════════════════════════════════════════════════════════════
+        defender.vm.provision "shell", name: "configure-sqlite-day40", run: "once", inline: <<-SQLITE
+          echo "📁 Day 40: Creating shared indices directory..."
+          mkdir -p /vagrant/shared/indices
+          chown -R vagrant:vagrant /vagrant/shared/indices
+          chmod 755 /vagrant/shared/indices
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # CLIENT VM - Traffic Generator & Gateway Testing
-  # ════════════════════════════════════════════════════════════════════════════
+          echo "✅ Shared indices directory ready: /vagrant/shared/indices"
+
+          # SQLite3 dev headers + CLI tool
+          if ! dpkg -l | grep -q libsqlite3-dev; then
+            echo "📦 Installing SQLite3 development headers + CLI..."
+            apt-get install -y libsqlite3-dev sqlite3  # ← AÑADIR sqlite3 aquí
+            echo "✅ SQLite3 dev + CLI installed"
+          else
+            echo "✅ SQLite3 dev already installed"
+            # Asegurar que el CLI también está instalado
+            apt-get install -y sqlite3
+          fi
+        SQLITE
+
+      end  # End defender VM  ← AQUÍ termina el bloque defender
+
+      # ════════════════════════════════════════════════════════════════════════════
+      # CLIENT VM - Traffic Generator & Gateway Testing
+      # ════════════════════════════════════════════════════════════════════════════
 
   config.vm.define "client", autostart: false do |client|
     client.vm.box = "debian/bookworm64"

@@ -18,35 +18,33 @@ namespace fs = std::filesystem;
 
 namespace ml_defender {
 
-// ============================================================================
-// Constructor & Destructor
-// ============================================================================
+    RAGLogger::RAGLogger(const RAGLoggerConfig& config,
+                         std::shared_ptr<spdlog::logger> logger,
+                         std::shared_ptr<crypto::CryptoManager> crypto_manager)  // NUEVO
+        : config_(config)
+        , logger_(logger)
+        , crypto_manager_(crypto_manager)  // NUEVO
+        , start_time_(std::chrono::system_clock::now())
+    {
+        logger_->info("🎯 Initializing RAG Logger");
+        logger_->info("   Base path: {}", config_.base_path);
+        logger_->info("   Deployment: {}", config_.deployment_id);
+        logger_->info("   Node: {}", config_.node_id);
 
-RAGLogger::RAGLogger(const RAGLoggerConfig& config,
-                     std::shared_ptr<spdlog::logger> logger)
-    : config_(config)
-    , logger_(logger)
-    , start_time_(std::chrono::system_clock::now())
-{
-    logger_->info("🎯 Initializing RAG Logger");
-    logger_->info("   Base path: {}", config_.base_path);
-    logger_->info("   Deployment: {}", config_.deployment_id);
-    logger_->info("   Node: {}", config_.node_id);
+        // Ensure directories exist
+        ensure_directories();
 
-    // Ensure directories exist
-    ensure_directories();
+        // Open initial log file
+        current_date_ = get_date_string();
+        current_log_path_ = get_current_log_path();
 
-    // Open initial log file
-    current_date_ = get_date_string();
-    current_log_path_ = get_current_log_path();
+        current_log_.open(current_log_path_, std::ios::app);
+        if (!current_log_.is_open()) {
+            throw std::runtime_error("Failed to open RAG log file: " + current_log_path_);
+        }
 
-    current_log_.open(current_log_path_, std::ios::app);
-    if (!current_log_.is_open()) {
-        throw std::runtime_error("Failed to open RAG log file: " + current_log_path_);
+        logger_->info("✅ RAG Logger initialized: {}", current_log_path_);
     }
-
-    logger_->info("✅ RAG Logger initialized: {}", current_log_path_);
-}
 
 RAGLogger::~RAGLogger() {
     flush();
@@ -190,8 +188,8 @@ nlohmann::json RAGLogger::build_json_record(
         {"fast_detector", event.fast_detector_score()},
         {"ml_detector", event.ml_detector_score()},
         {"final_score", event.overall_threat_score()},
-        {"divergence", event.has_decision_metadata() ?
-            event.decision_metadata().score_divergence() : 0.0}
+        {"divergence", event.has_provenance() ? event.provenance().discrepancy_score()
+                                              : (event.has_decision_metadata() ? event.decision_metadata().score_divergence() : 0.0)}
     };
 
     // Classification
@@ -373,30 +371,53 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         // Generate filename based on event ID
         std::string base_filename = artifact_dir + "/event_" + event.event_id();
 
-        // Save protobuf if enabled
+        // 🎯 ADR-001: Save ENCRYPTED protobuf if enabled
         if (config_.save_protobuf_artifacts) {
-            std::string pb_path = base_filename + ".pb";
+            std::string pb_path = base_filename + ".pb.enc";  // .enc extension
             std::ofstream pb_file(pb_path, std::ios::binary);
+
             if (pb_file.is_open()) {
+                // Serialize protobuf
                 std::string serialized;
                 event.SerializeToString(&serialized);
-                pb_file.write(serialized.data(), serialized.size());
+
+                // Compress → Encrypt (ADR-001 pipeline)
+                auto compressed = crypto_manager_->compress_with_size(serialized);
+                auto encrypted = crypto_manager_->encrypt(compressed);
+
+                // Write encrypted data
+                pb_file.write(encrypted.data(), encrypted.size());
                 pb_file.close();
+
+                logger_->trace("🔒 Saved encrypted protobuf: {} ({} → {} bytes)",
+                              pb_path, serialized.size(), encrypted.size());
             }
         }
 
-        // Save JSON if enabled
+        // 🎯 ADR-001: Save ENCRYPTED JSON if enabled
         if (config_.save_json_artifacts) {
-            std::string json_path = base_filename + ".json";
-            std::ofstream json_file(json_path);
+            std::string json_path = base_filename + ".json.enc";  // .enc extension
+            std::ofstream json_file(json_path, std::ios::binary);
+
             if (json_file.is_open()) {
-                json_file << json_record.dump(2);  // Pretty print with 2-space indent
+                // Serialize JSON (pretty print)
+                std::string json_str = json_record.dump(2);
+
+                // Compress → Encrypt (ADR-001 pipeline)
+                auto compressed = crypto_manager_->compress_with_size(json_str);
+                auto encrypted = crypto_manager_->encrypt(compressed);
+
+                // Write encrypted data
+                json_file.write(encrypted.data(), encrypted.size());
                 json_file.close();
+
+                logger_->trace("🔒 Saved encrypted JSON: {} ({} → {} bytes)",
+                              json_path, json_str.size(), encrypted.size());
             }
         }
 
     } catch (const std::exception& e) {
-        logger_->warn("Failed to save artifacts: {}", e.what());
+        logger_->warn("Failed to save encrypted artifacts: {}", e.what());
     }
 }
 
@@ -500,7 +521,8 @@ std::string RAGLogger::calculate_sha256(const std::string& data) {
 
 std::unique_ptr<RAGLogger> create_rag_logger_from_config(
     const std::string& config_path,
-    std::shared_ptr<spdlog::logger> logger) {
+    std::shared_ptr<spdlog::logger> logger,
+    std::shared_ptr<crypto::CryptoManager> crypto_manager) {
 
     // Load config from JSON file
     std::ifstream config_file(config_path);
@@ -523,7 +545,7 @@ std::unique_ptr<RAGLogger> create_rag_logger_from_config(
     config.save_protobuf_artifacts = config_json.value("save_protobuf_artifacts", true);
     config.save_json_artifacts = config_json.value("save_json_artifacts", true);
 
-    return std::make_unique<RAGLogger>(config, logger);
+    return std::make_unique<RAGLogger>(config, logger, crypto_manager);
 }
 
 } // namespace ml_defender

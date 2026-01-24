@@ -2,6 +2,7 @@
 #include "compression_handler.hpp"
 #include "ring_consumer.hpp"
 #include "fast_detector.hpp"
+#include <reason_codes.hpp>
 // 🎯 DAY 29: Crypto-transport utilities
 #include <crypto_transport/utils.hpp>
 #include "feature_logger.hpp"
@@ -1110,6 +1111,19 @@ void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
 		alert.set_fast_detector_reason("high_external_ips");
 		alert.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_ONLY);
 
+        // 🎯 ADR-002: Multi-Engine Provenance (Day 37)
+        auto* provenance = alert.mutable_provenance();
+        auto* sniffer_verdict = provenance->add_verdicts();
+        sniffer_verdict->set_engine_name("fast-path-sniffer");
+        sniffer_verdict->set_classification("SUSPICIOUS");
+        sniffer_verdict->set_confidence(fast_detector_config_.ransomware.scores.alert);
+        sniffer_verdict->set_reason_code(ml_defender::to_string(ml_defender::ReasonCode::STAT_ANOMALY));
+        sniffer_verdict->set_timestamp_ns(event.timestamp);
+
+        provenance->set_global_timestamp_ns(event.timestamp);
+        provenance->set_final_decision("ALERT");  // Sniffer solo alerta, no bloquea
+        provenance->set_discrepancy_score(0.0);   // Solo un motor por ahora
+
 		alert.set_final_classification("SUSPICIOUS");
         alert.set_threat_category("RANSOMWARE_FAST_DETECTION");
         
@@ -1163,77 +1177,94 @@ void RingBufferConsumer::send_ransomware_features(const protobuf::RansomwareFeat
         ransom_features->CopyFrom(features);
         
         bool high_threat = (
-    features.new_external_ips_30s() > fast_detector_config_.ransomware.activation_thresholds.external_ips_30s ||
-    features.smb_connection_diversity() > fast_detector_config_.ransomware.activation_thresholds.smb_diversity
-);
+            features.new_external_ips_30s() > fast_detector_config_.ransomware.activation_thresholds.external_ips_30s ||
+            features.smb_connection_diversity() > fast_detector_config_.ransomware.activation_thresholds.smb_diversity
+        );
 
-// Calculate fast detector score
-double fast_score = high_threat
-    ? fast_detector_config_.ransomware.scores.high_threat
-    : fast_detector_config_.ransomware.scores.suspicious;
+        // Calculate fast detector score
+        double fast_score = high_threat
+        ? fast_detector_config_.ransomware.scores.high_threat
+        : fast_detector_config_.ransomware.scores.suspicious;
 
-// 🎯 DAY 13: Dual-Score Architecture
-event.set_fast_detector_score(fast_score);
-event.set_ml_detector_score(0.0);  // ML no ha ejecutado aún
-event.set_fast_detector_triggered(true);
-event.set_fast_detector_reason(
-    high_threat ? "external_ips_smb_high" : "external_ips_smb_medium"
-);
-event.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_ONLY);
+        // 🎯 DAY 13: Dual-Score Architecture
+        event.set_fast_detector_score(fast_score);
+        event.set_ml_detector_score(0.0);  // ML no ha ejecutado aún
+        event.set_fast_detector_triggered(true);
+        event.set_fast_detector_reason(
+            high_threat ? "external_ips_smb_high" : "external_ips_smb_medium"
+        );
+        event.set_authoritative_source(protobuf::DETECTOR_SOURCE_FAST_ONLY);
 
-// Set overall score and classification
-event.set_overall_threat_score(fast_score);
+        // 🎯 ADR-002: Multi-Engine Provenance (Day 37)
+        auto* provenance = event.mutable_provenance();
+        auto* sniffer_verdict = provenance->add_verdicts();
+        sniffer_verdict->set_engine_name("fast-path-sniffer");
+        sniffer_verdict->set_classification(high_threat ? "MALICIOUS" : "SUSPICIOUS");
+        sniffer_verdict->set_confidence(fast_score);
+        sniffer_verdict->set_reason_code(
+            high_threat
+                ? ml_defender::to_string(ml_defender::ReasonCode::STAT_ANOMALY)
+                : ml_defender::to_string(ml_defender::ReasonCode::STAT_ANOMALY)
+        );
+        sniffer_verdict->set_timestamp_ns(now_ns);
 
-if (high_threat) {
-    event.set_final_classification("MALICIOUS");
-    stats_.ransomware_confirmed_threats++;
+        provenance->set_global_timestamp_ns(now_ns);
+        provenance->set_final_decision(high_threat ? "DROP" : "ALERT");
+        provenance->set_discrepancy_score(0.0);
 
-    // ✅ Day 12: Logging detallado con configuración externalizada
-    if (fast_detector_config_.logging.log_activations) {
-        std::cout << "[FAST-DETECT] HIGH_THREAT: "
-                  << "ExtIPs=" << features.new_external_ips_30s()
-                  << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.external_ips_30s << "), "
-                  << "SMB=" << features.smb_connection_diversity()
-                  << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.smb_diversity << "), "
-                  << "DNS=" << std::fixed << std::setprecision(2) << features.dns_query_entropy()
-                  << ", FastScore=" << fast_score
-                  << std::endl;
-    }
-} else {
-    event.set_final_classification("SUSPICIOUS");
+        // Set overall score and classification
+        event.set_overall_threat_score(fast_score);
 
-    // ✅ Day 12: Logging detallado con configuración externalizada
-    if (fast_detector_config_.logging.log_activations) {
-        std::cout << "[FAST-DETECT] SUSPICIOUS: "
-                  << "ExtIPs=" << features.new_external_ips_30s()
-                  << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.external_ips_30s << "), "
-                  << "SMB=" << features.smb_connection_diversity()
-                  << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.smb_diversity << "), "
-                  << "DNS=" << std::fixed << std::setprecision(2) << features.dns_query_entropy()
-                  << ", FastScore=" << fast_score
-                  << std::endl;
-    }
-}
-        
-        event.set_threat_category("RANSOMWARE_CONFIRMED");
-        event.set_correlation_id("ransomware-analysis-" + std::to_string(now_ns / 1'000'000'000ULL));
-        
-        std::string serialized;
-        if (event.SerializeToString(&serialized)) {
-            std::vector<uint8_t> data(serialized.begin(), serialized.end());
-            
-            std::lock_guard<std::mutex> lock(send_queue_mutex_);
-            send_queue_.push(std::move(data));
-            send_queue_cv_.notify_one();
-            
-            stats_.ransomware_feature_extractions++;
-            
-            std::cout << "[RANSOMWARE] Features: ExtIPs=" << features.new_external_ips_30s()
-                      << ", SMB=" << features.smb_connection_diversity()
-                      << ", DNS=" << features.dns_query_entropy()
-                      << ", Score=" << event.overall_threat_score()
-                      << ", Class=" << event.final_classification() << std::endl;
+    if (high_threat) {
+        event.set_final_classification("MALICIOUS");
+        stats_.ransomware_confirmed_threats++;
+
+        // ✅ Day 12: Logging detallado con configuración externalizada
+        if (fast_detector_config_.logging.log_activations) {
+            std::cout << "[FAST-DETECT] HIGH_THREAT: "
+                      << "ExtIPs=" << features.new_external_ips_30s()
+                      << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.external_ips_30s << "), "
+                      << "SMB=" << features.smb_connection_diversity()
+                      << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.smb_diversity << "), "
+                      << "DNS=" << std::fixed << std::setprecision(2) << features.dns_query_entropy()
+                      << ", FastScore=" << fast_score
+                      << std::endl;
         }
+    } else {
+        event.set_final_classification("SUSPICIOUS");
+
+        // ✅ Day 12: Logging detallado con configuración externalizada
+        if (fast_detector_config_.logging.log_activations) {
+            std::cout << "[FAST-DETECT] SUSPICIOUS: "
+                      << "ExtIPs=" << features.new_external_ips_30s()
+                      << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.external_ips_30s << "), "
+                      << "SMB=" << features.smb_connection_diversity()
+                      << " (threshold=" << fast_detector_config_.ransomware.activation_thresholds.smb_diversity << "), "
+                      << "DNS=" << std::fixed << std::setprecision(2) << features.dns_query_entropy()
+                      << ", FastScore=" << fast_score
+                      << std::endl;
+        }
+    }
+
+            event.set_threat_category("RANSOMWARE_CONFIRMED");
+            event.set_correlation_id("ransomware-analysis-" + std::to_string(now_ns / 1'000'000'000ULL));
+
+            std::string serialized;
+            if (event.SerializeToString(&serialized)) {
+                std::vector<uint8_t> data(serialized.begin(), serialized.end());
+
+                std::lock_guard<std::mutex> lock(send_queue_mutex_);
+                send_queue_.push(std::move(data));
+                send_queue_cv_.notify_one();
+
+                stats_.ransomware_feature_extractions++;
+
+                std::cout << "[RANSOMWARE] Features: ExtIPs=" << features.new_external_ips_30s()
+                          << ", SMB=" << features.smb_connection_diversity()
+                          << ", DNS=" << features.dns_query_entropy()
+                          << ", Score=" << event.overall_threat_score()
+                          << ", Class=" << event.final_classification() << std::endl;
+            }
         
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Ransomware features failed: " << e.what() << std::endl;

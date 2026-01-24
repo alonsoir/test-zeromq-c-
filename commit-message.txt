@@ -1,268 +1,41 @@
-## MENSAJE DE COMMIT SUGERIDO - DÍA 28
-
-### Opción 1: Conciso (Recomendado)
-
-```
-feat(crypto): Complete sniffer integration - 100% linkage ecosystem
-
-Day 28 complete: All 6 components now have crypto-transport linked.
-
-Changes:
-- Verified firewall + RAG compilation/linkage (15 min each)
-- Integrated sniffer: CMakeLists.txt patch (~50 lines surgical)
-- Via Appia: Started from backup, not from scratch
-- Linkage verified: crypto-transport + etcd-client + libsodium + lz4
-- Tests passing: 100% (firewall --help, RAG model load, sniffer --help)
-- Zero crashes, clean compilation
-
-Components Status:
-✅ crypto-transport (base library)
-✅ etcd-client (refactored Day 26)
-✅ firewall-acl-agent (integrated Day 26)
-✅ etcd-server (migrated Day 27)
-✅ ml-detector (integrated Day 27)
-✅ RAG (integrated Day 19)
-✅ sniffer (LINKAGE Day 28, code pending Day 29)
-
-Linkage: 100% (6/6 components)
-Code: 83% (sniffer ZMQ send pending)
-
-Next (Day 29):
-- Sniffer ZMQ code integration
-- Clean build from scratch
-- Stability test (idle)
-- Neris PCAP relay test
-- IPSet blocking implementation
-- Merge to main if stable
-
-Via Appia Quality: Methodical > speed. Slow and steady. 🏛️
-```
-
----
-
-### Opción 2: Detallado (Para Historia)
-
-```
-feat(crypto): Day 28 - Sniffer integration completes unified ecosystem
-
-🎉 MILESTONE: 100% Component Linkage (6/6)
-
-All ML Defender components now use crypto-transport library.
-Unified architecture: Single source of truth for crypto/compression.
-
-## Summary
-
-Day 28 focused on:
-1. Verification: firewall + RAG still work post-refactor
-2. Integration: sniffer CMakeLists.txt surgical patch
-3. Validation: Linkage 100% verified across all components
-
-## Changes
-
-### Verification (30 min)
-- ✅ firewall-acl-agent: Compiled, linked, --help/--version OK
-- ✅ RAG: Compiled, linked, TinyLlama model loads successfully
-- ✅ Both show crypto-transport + etcd-client transitively linked
-
-### Sniffer Integration (2.5h)
-- ❌ Attempted: CMakeLists from scratch (learning experience)
-- ✅ Decided: Start from backup CMakeLists.txt (Via Appia wisdom)
-- ✅ Patched: ~50 lines surgical changes over 500+ existing
-  - Added crypto-transport detection
-  - Added libsodium detection  
-  - Added includes crypto-transport headers
-  - Added linkage both libraries
-  - Added build summary status
-- ✅ Result: Clean compilation, zero errors
-- ✅ Linkage: libcrypto_transport.so.1 ✅
-- ✅ Linkage: libetcd_client.so.1 ✅
-- ✅ Linkage: libsodium.so.23 ✅
-- ✅ Linkage: liblz4.so.1 ✅
-- ✅ Binary: Enhanced Sniffer v3.2 (Dec 29 2025 07:39:33)
-- ✅ --help: Executes without crash
-
-## Architecture
-
-```
-crypto-transport (UNIFIED BASE)
-    ↓ XSalsa20-Poly1305 + LZ4
-etcd-client
-    ↓ HTTP + key exchange
-Components (ALL LINKED):
-├─ sniffer ✅
-├─ ml-detector ✅
-├─ firewall-acl-agent ✅
-├─ etcd-server ✅
-└─ RAG ✅
-```
-
-## Test Results
-
-```
-Component          Compilation  Linkage  Runtime
-──────────────────────────────────────────────────
-firewall           ✅           ✅       ✅ --help OK
-RAG                ✅           ✅       ✅ Model loads
-sniffer            ✅           ✅       ✅ --help OK
-ml-detector        ✅           ✅       ✅ (Day 27)
-etcd-server        ✅           ✅       ✅ (Day 27)
-crypto-transport   N/A          ✅       ✅ 16/16 tests
-etcd-client        N/A          ✅       ✅ 3/3 tests
-```
-
-## Methodology (Via Appia Quality)
-
-Time breakdown:
-- Firewall verification: 15 min ✅
-- RAG verification: 15 min ✅
-- Sniffer attempts (learning): 1h ⏱️
-- Sniffer solution (patch): 1.5h ✅
-- Total: ~3h (methodical, not rushed)
-
-Key decisions:
-- ✅ Verify before integrate
-- ✅ Learn from failed attempts
-- ✅ Pivot to working approach (backup)
-- ✅ Surgical patch over rewrite
-- ✅ Test each step
-
-## Status
-
-Linkage: 100% ✅ (6/6 components)
-Code: 83% ⏳ (sniffer ZMQ send pending Day 29)
-
-All components have crypto-transport libraries linked.
-Sniffer needs ZMQ send path code integration (Day 29).
-
-## Next Steps (Day 29)
-
-Priority 1: Sniffer ZMQ code integration (2-3h)
-- Modify: src/userspace/zmq_pool_manager.cpp
-- Pattern: serialize → encrypt_and_compress() → send
-- Reference: ml-detector zmq_handler.cpp
-
-Priority 2: Clean build from scratch (2h)
-- Verify: make clean-all + rebuild works
-- Validate: Dependency order correct
-- Test: All components compile in sequence
-
-Priority 3: Stability test (2h)
-- Duration: 30-60 min idle (no PCAP)
-- Monitor: Memory, CPU, logs
-- Verify: Zero crashes
-
-Priority 4: Neris PCAP relay (4-6h)
-- Duration: 1 hour traffic injection
-- Verify: IPSet blacklist populates 🚨
-- Capture: Metrics (latency, throughput, compression)
-- Check: RAG artifacts generation
-
-Priority 5: IPSet blocking implementation (1h)
-- Implement: IP addition to blacklist
-- Threshold: final_score > 0.7
-- Timeout: 3600 seconds
-
-If stable → Merge to main ✅
-
-## Via Appia Quality Statement
-
-"Verificamos firewall + RAG compilados sin errores. Linkage correcto.
-Integramos sniffer: Intentamos desde cero - aprendimos. Decisión
-correcta: partir del backup funcional. Patch quirúrgico ~50 líneas.
-Compilación limpia. Linkage 100% (6/6). Tests passing. Zero crashes.
-Linkage primero, código después (Day 29). Metodología > velocidad.
-Despacio y bien. 🏛️"
-
-## Files Changed
-
-- sniffer/CMakeLists.txt (patched ~50 lines)
-- docs/DAY_28_SNIFFER_LINKAGE.md (new)
-- README.md (updated Day 28 status)
-
-## Co-Authors
-
-- Alonso (Implementation, debugging, decisions)
-- Claude (Architecture, documentation, troubleshooting)
-
-Signed-off-by: Alonso <alonso@ml-defender.dev>
-```
-
----
-
-### Opción 3: Ultra-Conciso (Git Log Friendly)
-
-```
-feat: Day 28 - Sniffer linkage complete (6/6 components)
-
-Verified firewall + RAG. Integrated sniffer with crypto-transport.
-CMakeLists surgical patch (~50 lines). 100% linkage verified.
-Tests passing. Zero crashes. Code integration Day 29.
-
-Via Appia Quality: Methodical > speed. 🏛️
-```
-
----
-
-## Recomendación
-
-**Usar Opción 1 (Conciso)** para commit message.
-
-Es suficientemente descriptivo para entender qué se hizo,
-pero no abrumador. El detalle completo está en docs/.
-
-## Comandos Git
-
-```bash
-# 1. Stage changes
-git add sniffer/CMakeLists.txt
-git add README.md
-git add docs/DAY_28_SNIFFER_LINKAGE.md  # Si creaste esta doc
-
-# 2. Commit (usar mensaje Opción 1)
-git commit -F- <<'EOF'
-feat(crypto): Complete sniffer integration - 100% linkage ecosystem
-
-Day 28 complete: All 6 components now have crypto-transport linked.
-
-Changes:
-- Verified firewall + RAG compilation/linkage (15 min each)
-- Integrated sniffer: CMakeLists.txt patch (~50 lines surgical)
-- Via Appia: Started from backup, not from scratch
-- Linkage verified: crypto-transport + etcd-client + libsodium + lz4
-- Tests passing: 100% (firewall --help, RAG model load, sniffer --help)
-- Zero crashes, clean compilation
-
-Components Status:
-✅ crypto-transport (base library)
-✅ etcd-client (refactored Day 26)
-✅ firewall-acl-agent (integrated Day 26)
-✅ etcd-server (migrated Day 27)
-✅ ml-detector (integrated Day 27)
-✅ RAG (integrated Day 19)
-✅ sniffer (LINKAGE Day 28, code pending Day 29)
-
-Linkage: 100% (6/6 components)
-Code: 83% (sniffer ZMQ send pending)
-
-Next (Day 29):
-- Sniffer ZMQ code integration
-- Clean build from scratch
-- Stability test (idle)
-- Neris PCAP relay test
-- IPSet blocking implementation
-- Merge to main if stable
-
-Via Appia Quality: Methodical > speed. Slow and steady. 🏛️
-EOF
-
-# 3. Push (cuando estés listo)
-# git push origin feature/crypto-transport-ecosystem
-
-# O si esperas merge Day 29:
-# Espera hasta que pase TODOS los tests Día 29
-# Luego merge a main
-```
-
----
-
-**Via Appia Quality:** Commit cuando feature esté 100% completa. 🏛️
+# 3. Commit final de Phase 2A
+git commit -m "feat(rag): Phase 2A complete - functional baseline with TinyLlama
+
+PHASE 2A COMPLETE:
+- Producer (rag-ingester): 100 events → SQLite + FAISS ✅
+- Consumer (RAG): TinyLlama NL queries functional ✅
+- Crypto-transport: ChaCha20-Poly1305 + LZ4 end-to-end ✅
+- SimpleEmbedder: 3 indices (Chronos 128d, SBERT 96d, Attack 64d) ✅
+- Multi-turn queries: KV cache fix implemented ✅
+
+TEST RESULTS:
+- Events processed: 100/100 (100% success rate)
+- Decryption: 0 errors (ChaCha20-Poly1305)
+- Decompression: 0 errors (LZ4)
+- FAISS indices: chronos (51KB), sbert (38KB), attack (26KB)
+- SQLite: 100 events with optimized indices
+- TinyLlama: Multi-turn conversations working
+
+ARCHITECTURE VALIDATED:
+Generator → Encrypted Artifacts → RAG Ingester → SQLite + FAISS → RAG Consumer + TinyLlama
+
+KNOWN LIMITATIONS (Phase 2B):
+- SimpleEmbedder: TF-IDF based (migrate to ONNX semantic)
+- FAISS: IndexFlatL2 (optimize for >100K vectors with IVF/PQ)
+- Stress testing: 100 events (scale to 10M+)
+- Valgrind: Deferred to hardening phase
+
+FIX APPLIED:
+- llama_integration_real.cpp: KV cache clear using ultra-compatible method
+- Method: Context recreation (works across all llama.cpp versions)
+- Result: Multi-turn queries functional
+
+FILES MODIFIED:
+- rag/src/llama_integration_real.cpp (KV cache fix)
+- README.md (Day 42 status update)
+- docs/DAY_42_CONTINUATION_PROMPT.md (NEW)
+- docs/BACKLOG.md (Phase 2A complete)
+
+NEXT: Day 43 - ISSUE-003 ShardedFlowManager (HIGH PRIORITY)
+
+Via Appia Quality: Arquitectura validada. Despacio y bien. 🏛️"

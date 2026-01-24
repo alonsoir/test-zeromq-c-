@@ -11,6 +11,18 @@
     "host": "localhost",
     "port": 2379
   },
+  "embedder": {
+    "type": "simple",
+    "cache_enabled": true,
+    "cache_ttl_seconds": 300,
+    "cache_max_entries": 1000
+  },
+  "faiss": {
+    "chronos_dim": 128,
+    "sbert_dim": 96,
+    "attack_dim": 64,
+    "metric": "l2"
+  },
   "security_level": 3,
   "log_level": "info",
   "whitelist_path": "../config/command_whitelist.json",
@@ -21,7 +33,7 @@
     "use_mlock": false,
     "use_mmap": true
   },
-  "capabilities": ["component_management", "config_validation", "pipeline_control"],
+  "capabilities": ["component_management", "config_validation", "pipeline_control", "embedder_system", "faiss_search"],
   "compression": "lz4",
   "encryption": "AES-256-CBC",
   "whitelist_commands": true,

@@ -1,3 +1,4 @@
+#include <reason_codes.hpp>
 #include "zmq_handler.hpp"
 #include "rag_logger.hpp"
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -108,13 +109,14 @@ ZMQHandler::ZMQHandler(
         throw;
     }
 
-    // 🎯 DAY 14: Initialize RAG Logger
+    // 🎯 DAY 14: Initialize RAG Logger (Day 37: with crypto for ADR-001)
     try {
         rag_logger_ = ml_defender::create_rag_logger_from_config(
             "../config/rag_logger_config.json",
-            logger_
+            logger_,
+            crypto_manager_  // 🎯 Day 37: Pass crypto_manager for encrypted artifacts
         );
-        logger_->info("✅ RAG Logger initialized successfully");
+        logger_->info("✅ RAG Logger initialized successfully (encrypted artifacts enabled)");
     } catch (const std::exception& e) {
         logger_->error("❌ Failed to initialize RAG Logger: {}", e.what());
         logger_->warn("⚠️  Continuing without RAG logging");
@@ -363,6 +365,62 @@ void ZMQHandler::process_event(const std::string& message) {
 
         // Set classification based on final score
         event.set_final_classification(final_score >= 0.70 ? "MALICIOUS" : "BENIGN");
+
+        // ====================================================================
+        // 🎯 ADR-002: MULTI-ENGINE DETECTION PROVENANCE (Day 37)
+        // ====================================================================
+        auto* provenance = event.mutable_provenance();
+
+        // 1. Check if sniffer already added a verdict
+        bool sniffer_verdict_exists = (provenance->verdicts_size() > 0);
+
+        if (sniffer_verdict_exists) {
+            logger_->debug("📊 Provenance: Sniffer verdict exists, adding ML verdict");
+        }
+
+        // 2. Add RandomForest (Level 1) verdict
+        auto* rf_verdict = provenance->add_verdicts();
+        rf_verdict->set_engine_name("random-forest-level1");
+        rf_verdict->set_classification(label_l1 == 0 ? "Benign" : "Attack");
+        rf_verdict->set_confidence(confidence_l1);
+        rf_verdict->set_reason_code(
+            label_l1 == 1
+                ? ml_defender::to_string(ml_defender::ReasonCode::STAT_ANOMALY)
+                : ml_defender::to_string(ml_defender::ReasonCode::UNKNOWN)
+        );
+        rf_verdict->set_timestamp_ns(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count()
+        );
+
+        // 3. Calculate discrepancy score
+        float discrepancy = 0.0f;
+        if (sniffer_verdict_exists) {
+            // Compare sniffer vs ML
+            const auto& sniffer_v = provenance->verdicts(0);
+            float sniffer_conf = sniffer_v.confidence();
+            discrepancy = std::abs(sniffer_conf - ml_score);
+
+            logger_->debug("📊 Provenance discrepancy: sniffer={:.4f}, ml={:.4f}, diff={:.4f}",
+                          sniffer_conf, ml_score, discrepancy);
+        }
+
+        provenance->set_discrepancy_score(discrepancy);
+        provenance->set_global_timestamp_ns(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count()
+        );
+        provenance->set_final_decision(final_score >= 0.70 ? "DROP" : "ALLOW");
+
+        // Set discrepancy reason if divergence detected
+        if (score_divergence > 0.30) {
+            provenance->set_discrepancy_reason(
+                "Fast detector and ML detector disagree (divergence: " +
+                std::to_string(score_divergence) + ")"
+            );
+        }
 
         // ========================================================================
         // 🎯 DAY 14: RAG LOGGING
