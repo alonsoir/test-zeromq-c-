@@ -170,4 +170,10 @@ logs/
 *.jsonl
 
 contrib/claude/pca_pipeline/models/
-contrib/claude/pca_pipeline/*.npz
+contrib/claude/pca_pipeline/*.npz# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+build/
+cmake-build-*/
