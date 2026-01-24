@@ -1,59 +1,41 @@
-cd /vagrant
-git add -A
+# 3. Commit final de Phase 2A
+git commit -m "feat(rag): Phase 2A complete - functional baseline with TinyLlama
 
-git commit -m "✅ Day 41: Consumer Complete - 100% Clustering Quality
+PHASE 2A COMPLETE:
+- Producer (rag-ingester): 100 events → SQLite + FAISS ✅
+- Consumer (RAG): TinyLlama NL queries functional ✅
+- Crypto-transport: ChaCha20-Poly1305 + LZ4 end-to-end ✅
+- SimpleEmbedder: 3 indices (Chronos 128d, SBERT 96d, Attack 64d) ✅
+- Multi-turn queries: KV cache fix implemented ✅
 
-ACHIEVEMENT: Producer-Consumer RAG pipeline fully functional
+TEST RESULTS:
+- Events processed: 100/100 (100% success rate)
+- Decryption: 0 errors (ChaCha20-Poly1305)
+- Decompression: 0 errors (LZ4)
+- FAISS indices: chronos (51KB), sbert (38KB), attack (26KB)
+- SQLite: 100 events with optimized indices
+- TinyLlama: Multi-turn conversations working
 
-Producer (rag-ingester):
-- Writes FAISS indices (chronos/sbert/attack)
-- Saves metadata.db (SQLite WAL mode)
-- Persistent storage in /vagrant/shared/indices/
+ARCHITECTURE VALIDATED:
+Generator → Encrypted Artifacts → RAG Ingester → SQLite + FAISS → RAG Consumer + TinyLlama
 
-Consumer (RAG):
-- Loads pre-built FAISS indices (read-only)
-- MetadataReader for SQLite queries
-- RagCommandManager extended with 7 commands
-- 100% same-class clustering in similarity search
+KNOWN LIMITATIONS (Phase 2B):
+- SimpleEmbedder: TF-IDF based (migrate to ONNX semantic)
+- FAISS: IndexFlatL2 (optimize for >100K vectors with IVF/PQ)
+- Stress testing: 100 events (scale to 10M+)
+- Valgrind: Deferred to hardening phase
 
-New Files:
-- /vagrant/rag/include/metadata_reader.hpp
-- /vagrant/rag/src/metadata_reader.cpp
+FIX APPLIED:
+- llama_integration_real.cpp: KV cache clear using ultra-compatible method
+- Method: Context recreation (works across all llama.cpp versions)
+- Result: Multi-turn queries functional
 
-Modified:
-- /vagrant/rag/include/rag/rag_command_manager.hpp
-- /vagrant/rag/src/rag_command_manager.cpp (4 new handlers)
-- /vagrant/rag/src/main.cpp (FAISS load from disk)
-- /vagrant/rag/CMakeLists.txt (SQLite3 support)
+FILES MODIFIED:
+- rag/src/llama_integration_real.cpp (KV cache fix)
+- README.md (Day 42 status update)
+- docs/DAY_42_CONTINUATION_PROMPT.md (NEW)
+- docs/BACKLOG.md (Phase 2A complete)
 
-Commands Implemented:
-✅ rag query_similar <event_id> [--explain]
-✅ rag recent [--limit N]
-✅ rag list [BENIGN|MALICIOUS]
-✅ rag stats
-✅ rag info
-✅ rag help
-⚠️  rag search [filters] (partial)
+NEXT: Day 43 - ISSUE-003 ShardedFlowManager (HIGH PRIORITY)
 
-Performance:
-- Query time: <10ms
-- Load time: <1s
-- Memory: ~650MB
-- Clustering quality: 100%
-
-Testing:
-- Dataset: 100 synthetic events (79 BENIGN, 21 MALICIOUS)
-- Top-4 neighbors: 100% same-class
-- Distance: <0.165 for same-class
-
-Known Issues:
-- ISSUE-013: Timestamp display shows 1970 (cosmetic)
-- ISSUE-014: Search command filters incomplete
-
-Next:
-- Day 42: Fix timestamps + complete search filters
-- Target: 1000 events performance testing
-
-Via Appia Quality: Architecture validated with evidence ✅
-Alonso Isidoro Roman + Claude (Anthropic)
-23 Enero 2026"
+Via Appia Quality: Arquitectura validada. Despacio y bien. 🏛️"

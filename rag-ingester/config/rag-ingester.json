@@ -14,7 +14,7 @@
   "ingester": {
     "input": {
       "source": "file_watch",
-      "directory": "/vagrant/logs/rag/synthetic/artifacts/2026-01-23",
+      "directory": "/vagrant/logs/rag/synthetic/artifacts/2026-01-24",
       "pattern": "*.pb.enc",
       "encrypted": true,
       "compressed": true,
