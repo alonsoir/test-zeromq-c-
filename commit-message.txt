@@ -1,41 +1,61 @@
-# 3. Commit final de Phase 2A
-git commit -m "feat(rag): Phase 2A complete - functional baseline with TinyLlama
+cd /vagrant/sniffer
 
-PHASE 2A COMPLETE:
-- Producer (rag-ingester): 100 events → SQLite + FAISS ✅
-- Consumer (RAG): TinyLlama NL queries functional ✅
-- Crypto-transport: ChaCha20-Poly1305 + LZ4 end-to-end ✅
-- SimpleEmbedder: 3 indices (Chronos 128d, SBERT 96d, Attack 64d) ✅
-- Multi-turn queries: KV cache fix implemented ✅
+git add include/flow/sharded_flow_manager.hpp
+git add src/flow/sharded_flow_manager.cpp
+git add CMakeLists.txt
 
-TEST RESULTS:
-- Events processed: 100/100 (100% success rate)
-- Decryption: 0 errors (ChaCha20-Poly1305)
-- Decompression: 0 errors (LZ4)
-- FAISS indices: chronos (51KB), sbert (38KB), attack (26KB)
-- SQLite: 100 events with optimized indices
-- TinyLlama: Multi-turn conversations working
+git commit -m "Day 43: Implement ShardedFlowManager (ISSUE-003 fix)
 
-ARCHITECTURE VALIDATED:
-Generator → Encrypted Artifacts → RAG Ingester → SQLite + FAISS → RAG Consumer + TinyLlama
+ISSUE-003: FlowManager thread-local bug causing 89% feature loss
 
-KNOWN LIMITATIONS (Phase 2B):
-- SimpleEmbedder: TF-IDF based (migrate to ONNX semantic)
-- FAISS: IndexFlatL2 (optimize for >100K vectors with IVF/PQ)
-- Stress testing: 100 events (scale to 10M+)
-- Valgrind: Deferred to hardening phase
+Root Cause:
+- thread_local FlowManager per consumer thread
+- Different threads → different FlowManager instances
+- FlowStatistics isolated per thread → massive feature loss
 
-FIX APPLIED:
-- llama_integration_real.cpp: KV cache clear using ultra-compatible method
-- Method: Context recreation (works across all llama.cpp versions)
-- Result: Multi-turn queries functional
+Solution:
+- Global singleton ShardedFlowManager
+- Hash-based sharding (dynamic shard count)
+- std::shared_mutex per shard (readers don't block)
+- unique_ptr pattern for non-copyable types
+- Lock-free statistics (std::atomic)
+- Non-blocking cleanup (try_lock)
 
-FILES MODIFIED:
-- rag/src/llama_integration_real.cpp (KV cache fix)
-- README.md (Day 42 status update)
-- docs/DAY_42_CONTINUATION_PROMPT.md (NEW)
-- docs/BACKLOG.md (Phase 2A complete)
+Implementation:
+- include/flow/sharded_flow_manager.hpp (120 lines)
+- src/flow/sharded_flow_manager.cpp (280 lines)
+- CMakeLists.txt updated (removed flow_key.cpp)
 
-NEXT: Day 43 - ISSUE-003 ShardedFlowManager (HIGH PRIORITY)
+Architecture:
+- Singleton pattern (thread-safe C++11)
+- Dynamic sharding (hardware_concurrency, min 4)
+- FlowKey::Hash from existing flow_tracker.hpp
+- LRU eviction per shard (max_flows_per_shard)
+- Statistics aggregation across shards
 
-Via Appia Quality: Arquitectura validada. Despacio y bien. 🏛️"
+Performance Targets (to validate Day 44):
+- Insert: >8M ops/sec (vs 500K current)
+- Lookup P99: <10µs (vs ~100µs current)
+- Memory: Stable (no spikes)
+- Features: 142/142 (vs 11/142 broken)
+
+Next Steps:
+- Day 44 AM: Unit tests (concurrent insert/read/cleanup)
+- Day 44 PM: ring_consumer integration
+- Day 45: Performance validation + documentation
+
+Status:
+- Compilation: ✅ SUCCESS (1.4MB binary)
+- Unit tests: ⏳ PENDING
+- Integration: ⏳ PENDING
+- Validation: ⏳ PENDING
+
+Via Appia Quality:
+- Implementation complete (evidence: compiles)
+- Performance unproven (needs benchmarks)
+- Correctness unproven (needs tests)
+- Integration pending (ring_consumer.cpp)
+
+Co-authored-by: Claude (Anthropic)
+Co-authored-by: DeepSeek (analysis)
+"

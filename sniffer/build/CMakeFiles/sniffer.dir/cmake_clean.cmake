@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o"
   "CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o.d"
+  "CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.o"
+  "CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o"
   "CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o.d"
   "CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.o"

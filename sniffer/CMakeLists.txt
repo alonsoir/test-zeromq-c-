@@ -94,7 +94,6 @@ if(SODIUM_LIB)
 else()
     message(FATAL_ERROR "❌ libsodium not found - install: sudo apt install libsodium-dev")
 endif()
-# ============================================================================
 
 # ============================================================================
 # CONFIGURATION VALIDATION
@@ -233,8 +232,10 @@ set(SNIFFER_SOURCES
         ${ML_DEFENDER_SOURCES}
 )
 
-
-
+# ShardedFlowManager (Day 43)
+set(SHARDED_FLOW_SOURCES
+        src/flow/sharded_flow_manager.cpp
+)
 
 # Feature-specific sources
 set(SNIFFER_FEATURE_SOURCES "")
@@ -254,9 +255,49 @@ endif()
 # EXECUTABLE TARGET
 # ============================================================================
 
-add_executable(sniffer ${SNIFFER_SOURCES})
+add_executable(sniffer
+        ${SNIFFER_SOURCES}
+        ${SHARDED_FLOW_SOURCES})
 
 add_dependencies(sniffer bpf_program )
+
+target_include_directories(sniffer PRIVATE
+        # Core directories
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow          # ← NEW: ShardedFlowManager
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+        ${CMAKE_BINARY_DIR}
+
+        # ML Defender Phase 1 - Embedded C++20 Detectors
+        ${ML_DEFENDER_DIR}/include
+
+        # Common headers (reason codes, shared types)
+        /vagrant/common/include
+
+        # Core dependencies includes
+        ${LIBBPF_INCLUDE_DIRS}
+        ${ZMQ_INCLUDE_DIRS}
+        ${JSONCPP_INCLUDE_DIRS}
+        ${Protobuf_INCLUDE_DIRS}
+
+        # Compression includes (mandatory)
+        ${LZ4_INCLUDE_DIRS}
+        ${ZSTD_INCLUDE_DIRS}
+)
+
+# Optional includes
+if(SNAPPY_FOUND)
+    target_include_directories(sniffer PRIVATE ${SNAPPY_INCLUDE_DIRS})
+endif()
+
+if(ETCD_CLIENT_LIB)
+    target_include_directories(sniffer PRIVATE ${ETCD_CLIENT_INCLUDE_DIR})
+endif()
+
+if(CRYPTO_TRANSPORT_LIB)
+    target_include_directories(sniffer PRIVATE ${CRYPTO_TRANSPORT_INCLUDE})
+endif()
 
 # ============================================================================
 # LIBRARIES CONFIGURATION

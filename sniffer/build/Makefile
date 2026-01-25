@@ -266,6 +266,30 @@ proto/network_security.pb.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.s
 .PHONY : proto/network_security.pb.cc.s
 
+src/flow/sharded_flow_manager.o: src/flow/sharded_flow_manager.cpp.o
+.PHONY : src/flow/sharded_flow_manager.o
+
+# target to build an object file
+src/flow/sharded_flow_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.o
+.PHONY : src/flow/sharded_flow_manager.cpp.o
+
+src/flow/sharded_flow_manager.i: src/flow/sharded_flow_manager.cpp.i
+.PHONY : src/flow/sharded_flow_manager.i
+
+# target to preprocess a source file
+src/flow/sharded_flow_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.i
+.PHONY : src/flow/sharded_flow_manager.cpp.i
+
+src/flow/sharded_flow_manager.s: src/flow/sharded_flow_manager.cpp.s
+.PHONY : src/flow/sharded_flow_manager.s
+
+# target to generate assembly for a file
+src/flow/sharded_flow_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.s
+.PHONY : src/flow/sharded_flow_manager.cpp.s
+
 src/userspace/bpf_map_manager.o: src/userspace/bpf_map_manager.cpp.o
 .PHONY : src/userspace/bpf_map_manager.o
 
@@ -1100,6 +1124,9 @@ help:
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
 	@echo "... proto/network_security.pb.s"
+	@echo "... src/flow/sharded_flow_manager.o"
+	@echo "... src/flow/sharded_flow_manager.i"
+	@echo "... src/flow/sharded_flow_manager.s"
 	@echo "... src/userspace/bpf_map_manager.o"
 	@echo "... src/userspace/bpf_map_manager.i"
 	@echo "... src/userspace/bpf_map_manager.s"

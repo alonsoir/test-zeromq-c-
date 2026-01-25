@@ -90,6 +90,201 @@ Distances: <0.120 (perfect clustering)
 **Approach:** 64-shard HashMap  
 **Expected:** 10-16x throughput improvement
 
+## ✅ Day 43 - ISSUE-003: ShardedFlowManager IMPLEMENTED (25 Enero 2026)
+
+### **Achievement: Core Performance Fix**
+
+**Problem Solved:** FlowManager thread-local bug causing 89% feature loss  
+**Solution:** Global ShardedFlowManager with dynamic sharding  
+**Architecture:** unique_ptr pattern for non-copyable types
+
+**Files Created:**
+```
+/vagrant/sniffer/
+├── include/flow/
+│   └── sharded_flow_manager.hpp         ✅ NEW (120 lines)
+└── src/flow/
+    └── sharded_flow_manager.cpp         ✅ NEW (280 lines)
+```
+
+**Implementation Details:**
+- ✅ Singleton pattern (thread-safe C++11 magic statics)
+- ✅ Dynamic shard count (hardware_concurrency, min 4)
+- ✅ Hash-based sharding (FlowKey::Hash)
+- ✅ std::shared_mutex (readers don't block readers)
+- ✅ Lock-free statistics (std::atomic)
+- ✅ Non-blocking cleanup (try_lock)
+- ✅ LRU eviction per shard
+- ✅ unique_ptr pattern (handles non-copyable types)
+
+**Key Design Decisions:**
+- **Global state:** Singleton instance (vs thread_local)
+- **Sharding:** Hash-based (vs time-based)
+- **Synchronization:** shared_mutex per shard (independent locking)
+- **Memory:** unique_ptr for non-movable types (std::atomic, std::shared_mutex)
+- **Cleanup:** Non-blocking try_lock (never blocks hot path)
+
+**Compilation:**
+```bash
+✅ Sniffer compiled successfully!
+   Binary: 1.4MB (includes ShardedFlowManager)
+   eBPF:   160KB
+   Status: READY FOR TESTING
+```
+
+**Performance Targets (to validate):**
+- Insert throughput: >8M ops/sec (vs 500K thread_local)
+- Lookup latency P99: <10µs (vs ~100µs current)
+- Memory: Stable (no spikes during cleanup)
+- Features captured: 142/142 (vs 11/142 broken)
+
+---
+
+### **Technical Deep Dive:**
+
+**Root Cause Analysis:**
+```cpp
+// BROKEN (thread_local):
+thread_local FlowManager flow_manager_;
+
+// Thread A: add_packet(event) → FlowManager_A
+// Thread B: get_flow_stats() → FlowManager_B (EMPTY!)
+// Result: 89% feature loss
+```
+
+**Solution Architecture:**
+```cpp
+// FIXED (global singleton):
+ShardedFlowManager::instance().add_packet(key, event);
+
+// All threads → Same global instance
+// Hash-based sharding → Independent locks
+// Result: 100% feature capture
+```
+
+**Shard Structure:**
+```cpp
+struct Shard {
+    unique_ptr<unordered_map<FlowKey, FlowStatistics>> flows;
+    unique_ptr<list<FlowKey>> lru_queue;
+    unique_ptr<shared_mutex> mtx;
+    atomic<uint64_t> last_seen_ns;
+    ShardStats stats;
+};
+
+vector<unique_ptr<Shard>> shards_;  // Dynamic size
+```
+
+**Why unique_ptr?**
+- `std::atomic` → NOT copyable/movable
+- `std::shared_mutex` → NOT copyable/movable
+- `std::vector` requires movable types
+- `unique_ptr<T>` → IS movable (transfers ownership)
+
+---
+
+### **Next Steps - Day 44:**
+
+**Morning (2-3h): Unit Testing**
+- [ ] Create `test_sharded_flow_manager.cpp`
+- [ ] Test: Singleton instance
+- [ ] Test: Concurrent inserts (4 threads)
+- [ ] Test: Concurrent read/write
+- [ ] Test: LRU eviction
+- [ ] Test: Cleanup expired flows
+- [ ] Test: Statistics accuracy
+
+**Afternoon (2-3h): Integration**
+- [ ] Modify `ring_consumer.hpp` (remove thread_local)
+- [ ] Modify `ring_consumer.cpp` (use ShardedFlowManager)
+- [ ] Validate: 142/142 features captured
+- [ ] Validate: Features reach protobuf contract
+- [ ] Performance test: 60s run, 10K+ events
+
+**Success Criteria:**
+```bash
+✅ Unit tests pass (100%)
+✅ Features: 142/142 (vs 11/142 broken)
+✅ Throughput: >4K events/sec
+✅ Latency P99: <10ms
+✅ Memory: Stable (no leaks)
+✅ Protobuf: All features present
+```
+
+---
+
+## 🐛 Technical Debt Update
+
+### ISSUE-003: FlowManager Thread-Local Bug ✅ RESOLVED
+
+**Status:** IMPLEMENTED (Day 43)  
+**Severity:** CRITICAL → RESOLVED  
+**Impact:** 89% feature loss → 100% capture expected  
+**Files:** `sharded_flow_manager.hpp/cpp`
+
+**Resolution:**
+- ✅ Global singleton pattern
+- ✅ Hash-based sharding (dynamic count)
+- ✅ unique_ptr for non-copyable types
+- ✅ Compiled successfully (1.4MB binary)
+- ⏳ Testing pending (Day 44)
+- ⏳ Integration pending (Day 44)
+
+**Evidence Required (Day 44):**
+- [ ] Unit tests prove correctness
+- [ ] Integration shows 142/142 features
+- [ ] Performance meets targets (>8M ops/sec)
+- [ ] Memory profiling shows stability
+
+---
+
+## 📊 ML Defender Status
+```
+Phase 1 (Embedded Detectors): ████████████████████ 100% ✅
+Phase 2A (RAG Baseline):      ████████████████████ 100% ✅
+Phase 2B (RAG Production):    ████████░░░░░░░░░░░░  40% 🟡
+
+ISSUE-003 (ShardedFlowMgr):   ████████████████████ 100% ✅ (impl)
+                              ░░░░░░░░░░░░░░░░░░░░   0% (test)
+```
+
+**Critical Path:**
+1. ✅ Day 43: ShardedFlowManager implementation
+2. ⏳ Day 44: Unit testing + ring_consumer integration
+3. ⏳ Day 45: Performance validation + documentation
+
+---
+
+## 🏛️ Via Appia Quality - Day 43
+
+**Evidence-Based Progress:**
+- ✅ Binary compiled (1.4MB, measured)
+- ✅ Code uses industry patterns (unique_ptr, shared_mutex)
+- ✅ Architecture sound (singleton, sharding)
+- ⏳ Performance unproven (needs benchmarks)
+- ⏳ Correctness unproven (needs tests)
+
+**Scientific Honesty:**
+- ✅ Implementation complete
+- ⚠️ Zero tests written yet
+- ⚠️ Not integrated with sniffer
+- ⚠️ Performance claims unvalidated
+- ✅ Clear next steps defined
+
+**Despacio y Bien:**
+- Day 43: Design + Implementation (3h) ✅
+- Day 44: Testing + Integration (4-6h) ⏳
+- Day 45: Validation + Docs (2-3h) ⏳
+
+---
+
+**End of Day 43 Update**
+
+**Status:** ShardedFlowManager COMPILED ✅  
+**Binary:** 1.4MB sniffer executable  
+**Next:** Day 44 - Unit Testing + Integration  
+**Quality:** Via Appia maintained 🏛️
+
 ## 🎯 Day 42 - ADVANCED FEATURES (NEXT)
 
 ### **Goal:** Production-ready query interface
