@@ -1,5 +1,74 @@
 "Buenos días Claude. Continuando Day 45 post Day 44. Esto es CONTINUITY_DAY45.md con todo el contexto. Vamos a: (1) Integrar fix3 como oficial, (2) Compilar pipeline + TSAN, (3) Validar NEORIS, (4) Generar backlog actualizado y documentación final."
 
+GEMINI me pide que añada estas notas para Claude:
+
+Alonso, para el **Day 44**, el diablo está en los detalles de implementación de C++. Manejar iteradores dentro de un `std::unordered_map` requiere precisión para evitar que se invaliden o que el código se vuelva ilegible con tipos anidados.
+
+Aquí tienes la "fórmula magistral" para implementar el **O(1) Fix** y los comandos de compilación para que el **Consejo de Sabios** vea mañana resultados impecables.
+
+### 1. El Patrón de Datos O(1)
+
+Para que el `splice` funcione, el mapa debe conocer la posición exacta en la lista, y la lista debe contener la clave para poder borrar del mapa durante la evicción.
+
+```cpp
+// Estructura sugerida para Shard::FlowEntry
+struct FlowEntry {
+    FlowStatistics stats;
+    std::list<FlowKey>::iterator lru_pos; 
+};
+
+// En add_packet (Lógica de Actualización O(1)):
+auto it = shard.flows->find(key);
+if (it != shard.flows->end()) {
+    // Re-ubicamos el nodo al principio de la lista sin mover datos en memoria
+    shard.lru_queue->splice(shard.lru_queue->begin(), *shard.lru_queue, it->second.lru_pos);
+    // El iterador lru_pos sigue siendo válido tras el splice
+    it->second.stats.add_packet(event, key);
+}
+
+```
+
+---
+
+### 2. Comandos de "Fuego Real" (Compilación y Debug)
+
+Para el test con **ThreadSanitizer (TSAN)**, usa estas flags exactas. TSAN es muy exigente con la memoria, así que usaremos `-O1` para que el análisis sea rápido pero preciso.
+
+```bash
+# Compilación para detección de Race Conditions
+g++ -std=c++20 -O1 -g -fsanitize=thread \
+    -Iinclude \
+    src/flow/sharded_flow_manager.cpp \
+    tests/test_data_race_mut.cpp \
+    -o build/test_tsan -lpthread
+
+# Ejecución (Si hay un race, TSAN detendrá el proceso aquí)
+./build/test_tsan
+
+```
+
+---
+
+### 3. El "Visualizador de Equilibrio" (One-liner)
+
+Para validar la **Distribución de Hash** (el punto 5 del Peer Review) sin complicarnos, puedes usar este comando tras ejecutar tus tests para ver si los shards están equilibrados:
+
+```bash
+# Extrae los contadores de cada shard del log y calcula la desviación
+grep "Active flows:" results/lru_benchmark.log | awk '{sum+=$3; sumsq+=$3*$3; n++} END {print "Average:", sum/n, "StdDev:", sqrt(sumsq/n - (sum/n)**2)}'
+
+```
+
+---
+
+### 🏛️ Consejo Final para mañana AM:
+
+Cuando implementes el `splice`, recuerda que `std::list::splice` **no invalida iteradores**. Esta es la propiedad mágica que hace que tu `lru_pos` guardado en el mapa siga apuntando al lugar correcto después de moverlo al `front`. Si usaras un `std::vector`, esto sería imposible.
+
+**¿Te gustaría que preparemos el "Plan de Contingencia" por si el ThreadSanitizer detecta un race condition en el Singleton, o prefieres ir directo a la cirugía O(1) mañana?** 🏛️🚀🔬
+
+FIN del mensaje de GEMINI.
+
 cat > /vagrant/docs/CONTINUITY_DAY45.md << 'EOF'
 # 🏛️ Day 45 Continuity Prompt - ML Defender (aegisIDS)
 
