@@ -1,14 +1,10 @@
-// sniffer/src/flow/sharded_flow_manager.cpp
-// Day 43 - ShardedFlowManager Implementation (unique_ptr version)
+// Day 44 - FIX #3: Thread-safe API implementation
 
-#include "flow/sharded_flow_manager.hpp"
-#include "main.h"
+#include "flow/sharded_flow_manager_fix3.hpp"
 #include <iostream>
-#include <iomanip>
-#include <algorithm>
+#include <chrono>
 
-namespace sniffer {
-namespace flow {
+namespace sniffer::flow {
 
 ShardedFlowManager& ShardedFlowManager::instance() {
     static ShardedFlowManager instance;
@@ -16,249 +12,204 @@ ShardedFlowManager& ShardedFlowManager::instance() {
 }
 
 void ShardedFlowManager::initialize(const Config& config) {
-    if (initialized_) {
-        std::cout << "[ShardedFlowManager] Already initialized, ignoring" << std::endl;
-        return;
-    }
+    std::call_once(init_flag_, [this, &config]() {
+        config_ = config;
+        shards_.resize(config_.shard_count);
+        
+        for (size_t i = 0; i < config_.shard_count; ++i) {
+            shards_[i] = std::make_unique<Shard>();
+            shards_[i]->flows = std::make_unique<std::unordered_map<FlowKey, FlowEntry, FlowKey::Hash>>();
+            shards_[i]->lru_queue = std::make_unique<std::list<FlowKey>>();
+            shards_[i]->mutex = std::make_unique<std::mutex>();
+        }
+        
+        initialized_.store(true, std::memory_order_release);
+        
+        std::cout << "[ShardedFlowManager] Initialized:" << std::endl;
+        std::cout << "  Shard count: " << config_.shard_count << std::endl;
+        std::cout << "  Max flows per shard: " << config_.max_flows_per_shard << std::endl;
+        std::cout << "  Flow timeout: " << config_.flow_timeout_ns / 1'000'000'000 << " seconds" << std::endl;
+        std::cout << "  Total capacity: " << config_.shard_count * config_.max_flows_per_shard << " flows" << std::endl;
+    });
+}
 
-    config_ = config;
+size_t ShardedFlowManager::get_shard_id(const FlowKey& key) const {
+    FlowKey::Hash hasher;
+    return hasher(key) % config_.shard_count;
+}
 
-    size_t shard_count;
-    if (config_.shard_count == 0) {
-        shard_count = std::max(4u, std::thread::hardware_concurrency());
-    } else {
-        shard_count = config_.shard_count;
-    }
-
-    for (size_t i = 0; i < shard_count; ++i) {
-        shards_.push_back(std::make_unique<Shard>());
-    }
-
-    std::cout << "[ShardedFlowManager] Initialized:" << std::endl;
-    std::cout << "  Shard count: " << shard_count << std::endl;
-    std::cout << "  Max flows per shard: " << config_.max_flows_per_shard << std::endl;
-    std::cout << "  Flow timeout: " << (config_.flow_timeout_ns / 1000000000ULL) << " seconds" << std::endl;
-    std::cout << "  Total capacity: " << (shard_count * config_.max_flows_per_shard) << " flows" << std::endl;
-
-    initialized_ = true;
+uint64_t ShardedFlowManager::now_ns() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()
+    ).count();
 }
 
 void ShardedFlowManager::add_packet(const FlowKey& key, const SimpleEvent& event) {
-    if (!initialized_) {
+    if (!initialized_.load(std::memory_order_acquire)) {
         std::cerr << "[ShardedFlowManager] ERROR: Not initialized!" << std::endl;
         return;
     }
 
     size_t shard_id = get_shard_id(key);
-    Shard& shard = *shards_[shard_id];
+    auto& shard = *shards_[shard_id];
 
-    std::unique_lock lock(*shard.mtx);
+    std::unique_lock lock(*shard.mutex);
 
     shard.last_seen_ns.store(now_ns(), std::memory_order_relaxed);
 
     auto it = shard.flows->find(key);
 
     if (it == shard.flows->end()) {
+        // New flow
         if (shard.flows->size() >= config_.max_flows_per_shard) {
             if (!shard.lru_queue->empty()) {
                 FlowKey evict_key = shard.lru_queue->back();
                 shard.lru_queue->pop_back();
                 shard.flows->erase(evict_key);
-                shard.stats.flows_expired.fetch_add(1, std::memory_order_relaxed);
             }
         }
 
-        FlowStatistics flow_stats;
-        flow_stats.add_packet(event, key);
-
-        (*shard.flows)[key] = std::move(flow_stats);
+        FlowEntry entry;
+        entry.stats.add_packet(event, key);
+        
+        // FIX #2: O(1) LRU with iterator
         shard.lru_queue->push_front(key);
-
-        shard.stats.flows_created.fetch_add(1, std::memory_order_relaxed);
-        shard.stats.current_flows.store(shard.flows->size(), std::memory_order_relaxed);
+        entry.lru_pos = shard.lru_queue->begin();
+        
+        (*shard.flows)[key] = std::move(entry);
 
     } else {
-        it->second.add_packet(event, key);
-        shard.lru_queue->remove(key);
-        shard.lru_queue->push_front(key);
+        // Existing flow
+        it->second.stats.add_packet(event, key);
+        
+        // FIX #2: O(1) LRU update using splice
+        shard.lru_queue->splice(
+            shard.lru_queue->begin(),
+            *shard.lru_queue,
+            it->second.lru_pos
+        );
+        it->second.lru_pos = shard.lru_queue->begin();
     }
-
-    shard.stats.packets_processed.fetch_add(1, std::memory_order_relaxed);
 }
 
-const FlowStatistics* ShardedFlowManager::get_flow_stats(const FlowKey& key) const {
-    if (!initialized_) {
-        return nullptr;
+// FIX #3: NEW - Thread-safe copy (reads inside lock)
+std::optional<FlowStatistics> ShardedFlowManager::get_flow_stats_copy(const FlowKey& key) const {
+    if (!initialized_.load(std::memory_order_acquire)) {
+        return std::nullopt;
     }
 
     size_t shard_id = get_shard_id(key);
-    const Shard& shard = *shards_[shard_id];
+    auto& shard = *shards_[shard_id];
 
-    std::shared_lock lock(*shard.mtx);
-
-    auto it = shard.flows->find(key);
-
-    if (it != shard.flows->end()) {
-        return &it->second;
-    }
-
-    return nullptr;
-}
-
-FlowStatistics* ShardedFlowManager::get_flow_stats_mut(const FlowKey& key) {
-    if (!initialized_) {
-        return nullptr;
-    }
-
-    size_t shard_id = get_shard_id(key);
-    Shard& shard = *shards_[shard_id];
-
-    std::unique_lock lock(*shard.mtx);
+    std::unique_lock lock(*shard.mutex);
 
     auto it = shard.flows->find(key);
-
     if (it != shard.flows->end()) {
-        return &it->second;
+        // Create copy manually (FlowStatistics has unique_ptr members)
+        FlowStatistics copy;
+        
+        // Copy primitive fields
+        copy.flow_start_ns = it->second.stats.flow_start_ns;
+        copy.flow_last_seen_ns = it->second.stats.flow_last_seen_ns;
+        copy.spkts = it->second.stats.spkts;
+        copy.dpkts = it->second.stats.dpkts;
+        copy.sbytes = it->second.stats.sbytes;
+        copy.dbytes = it->second.stats.dbytes;
+        
+        // Copy vectors
+        copy.fwd_lengths = it->second.stats.fwd_lengths;
+        copy.bwd_lengths = it->second.stats.bwd_lengths;
+        copy.all_lengths = it->second.stats.all_lengths;
+        copy.packet_timestamps = it->second.stats.packet_timestamps;
+        copy.fwd_timestamps = it->second.stats.fwd_timestamps;
+        copy.bwd_timestamps = it->second.stats.bwd_timestamps;
+        
+        // Copy TCP flags
+        copy.fin_count = it->second.stats.fin_count;
+        copy.syn_count = it->second.stats.syn_count;
+        copy.rst_count = it->second.stats.rst_count;
+        copy.psh_count = it->second.stats.psh_count;
+        copy.ack_count = it->second.stats.ack_count;
+        copy.urg_count = it->second.stats.urg_count;
+        copy.ece_count = it->second.stats.ece_count;
+        copy.cwr_count = it->second.stats.cwr_count;
+        copy.fwd_psh_flags = it->second.stats.fwd_psh_flags;
+        copy.bwd_psh_flags = it->second.stats.bwd_psh_flags;
+        copy.fwd_urg_flags = it->second.stats.fwd_urg_flags;
+        copy.bwd_urg_flags = it->second.stats.bwd_urg_flags;
+        
+        // Copy header lengths
+        copy.fwd_header_lengths = it->second.stats.fwd_header_lengths;
+        copy.bwd_header_lengths = it->second.stats.bwd_header_lengths;
+        
+        // time_windows will be created by FlowStatistics() constructor
+        
+        return std::make_optional(std::move(copy));
     }
-
-    return nullptr;
+    return std::nullopt;
 }
 
-size_t ShardedFlowManager::cleanup_expired(std::chrono::seconds ttl) {
-    if (!initialized_) {
+size_t ShardedFlowManager::cleanup_expired_flows(uint64_t current_ns) {
+    if (!initialized_.load(std::memory_order_acquire)) {
         return 0;
     }
 
-    size_t total_removed = 0;
-    uint64_t now = now_ns();
-    uint64_t ttl_ns = ttl.count() * 1000000000ULL;
+    size_t total_cleaned = 0;
 
     for (auto& shard_ptr : shards_) {
-        Shard& shard = *shard_ptr;
+        auto& shard = *shard_ptr;
+        std::unique_lock lock(*shard.mutex);
 
-        uint64_t last_seen = shard.last_seen_ns.load(std::memory_order_relaxed);
-        if ((now - last_seen) < ttl_ns) {
-            continue;
-        }
-
-        std::unique_lock lock(*shard.mtx, std::try_to_lock);
-        if (!lock.owns_lock()) {
-            shard.stats.cleanup_skipped.fetch_add(1, std::memory_order_relaxed);
-            continue;
-        }
-
-        size_t removed = cleanup_shard_partial(shard, 100);
-        total_removed += removed;
-
-        shard.stats.current_flows.store(shard.flows->size(), std::memory_order_relaxed);
-    }
-
-    return total_removed;
-}
-
-size_t ShardedFlowManager::cleanup_all() {
-    if (!initialized_) {
-        return 0;
-    }
-
-    size_t total_removed = 0;
-
-    for (auto& shard_ptr : shards_) {
-        Shard& shard = *shard_ptr;
-        std::unique_lock lock(*shard.mtx);
-
-        size_t removed = shard.flows->size();
-        shard.flows->clear();
-        shard.lru_queue->clear();
-
-        total_removed += removed;
-
-        shard.stats.flows_expired.fetch_add(removed, std::memory_order_relaxed);
-        shard.stats.current_flows.store(0, std::memory_order_relaxed);
-    }
-
-    std::cout << "[ShardedFlowManager] Cleaned up " << total_removed << " flows" << std::endl;
-
-    return total_removed;
-}
-
-size_t ShardedFlowManager::cleanup_shard_partial(Shard& shard, size_t max_remove) {
-    uint64_t now = now_ns();
-    uint64_t timeout_ns = config_.flow_timeout_ns;
-    size_t removed = 0;
-
-    auto it = shard.flows->begin();
-    while (it != shard.flows->end() && removed < max_remove) {
-        const FlowStatistics& flow = it->second;
-
-        if (flow.should_expire(now, timeout_ns)) {
-            shard.lru_queue->remove(it->first);
-            it = shard.flows->erase(it);
-            removed++;
-            shard.stats.flows_expired.fetch_add(1, std::memory_order_relaxed);
-        } else {
-            ++it;
+        auto it = shard.flows->begin();
+        while (it != shard.flows->end()) {
+            if (it->second.stats.should_expire(current_ns, config_.flow_timeout_ns)) {
+                shard.lru_queue->remove(it->first);
+                it = shard.flows->erase(it);
+                ++total_cleaned;
+            } else {
+                ++it;
+            }
         }
     }
 
-    return removed;
-}
-
-ShardedFlowManager::GlobalStats ShardedFlowManager::get_stats() const {
-    GlobalStats stats;
-    stats.shard_count = shards_.size();
-
-    for (const auto& shard_ptr : shards_) {
-        const Shard& shard = *shard_ptr;
-
-        stats.total_flows_created += shard.stats.flows_created.load(std::memory_order_relaxed);
-        stats.total_flows_expired += shard.stats.flows_expired.load(std::memory_order_relaxed);
-        stats.total_packets_processed += shard.stats.packets_processed.load(std::memory_order_relaxed);
-        stats.total_active_flows += shard.stats.current_flows.load(std::memory_order_relaxed);
-        stats.total_lock_contentions += shard.stats.lock_contentions.load(std::memory_order_relaxed);
-        stats.total_cleanup_skipped += shard.stats.cleanup_skipped.load(std::memory_order_relaxed);
-    }
-
-    return stats;
+    return total_cleaned;
 }
 
 void ShardedFlowManager::print_stats() const {
-    auto stats = get_stats();
-
-    std::cout << "\n╔═══════════════════════════════════════════════════════╗\n";
-    std::cout << "║  ShardedFlowManager Statistics                        ║\n";
-    std::cout << "╚═══════════════════════════════════════════════════════╝\n";
-    std::cout << "\n📊 Global Statistics:\n";
-    std::cout << "  Shard count: " << stats.shard_count << "\n";
-    std::cout << "  Total flows created: " << stats.total_flows_created << "\n";
-    std::cout << "  Total flows expired: " << stats.total_flows_expired << "\n";
-    std::cout << "  Active flows: " << stats.total_active_flows << "\n";
-    std::cout << "  Total packets processed: " << stats.total_packets_processed << "\n";
-    std::cout << "  Lock contentions: " << stats.total_lock_contentions << "\n";
-    std::cout << "  Cleanup skipped: " << stats.total_cleanup_skipped << "\n";
-
-    if (stats.total_flows_created > 0) {
-        double avg_packets = static_cast<double>(stats.total_packets_processed) /
-                            static_cast<double>(stats.total_flows_created);
-        std::cout << "  Average packets per flow: " << std::fixed << std::setprecision(2)
-                  << avg_packets << "\n";
+    if (!initialized_.load(std::memory_order_acquire)) {
+        std::cout << "[ShardedFlowManager] Not initialized" << std::endl;
+        return;
     }
 
-    std::cout << "╚═══════════════════════════════════════════════════════╝\n";
+    size_t total_flows = 0;
+    for (const auto& shard_ptr : shards_) {
+        auto& shard = *shard_ptr;
+        std::unique_lock lock(*shard.mutex);
+        total_flows += shard.flows->size();
+    }
+
+    std::cout << "[ShardedFlowManager] Stats:" << std::endl;
+    std::cout << "  Active flows: " << total_flows << std::endl;
+    std::cout << "  Shards: " << config_.shard_count << std::endl;
 }
 
-void ShardedFlowManager::reset_stats() {
+ShardedFlowManager::~ShardedFlowManager() {
+    if (!initialized_.load(std::memory_order_acquire)) {
+        return;
+    }
+
+    size_t total_flows = 0;
     for (auto& shard_ptr : shards_) {
-        Shard& shard = *shard_ptr;
-        shard.stats.flows_created.store(0, std::memory_order_relaxed);
-        shard.stats.flows_expired.store(0, std::memory_order_relaxed);
-        shard.stats.packets_processed.store(0, std::memory_order_relaxed);
-        shard.stats.lock_contentions.store(0, std::memory_order_relaxed);
-        shard.stats.cleanup_skipped.store(0, std::memory_order_relaxed);
+        auto& shard = *shard_ptr;
+        std::unique_lock lock(*shard.mutex);
+        total_flows += shard.flows->size();
+        shard.flows->clear();
+        shard.lru_queue->clear();
     }
 
-    std::cout << "[ShardedFlowManager] Statistics reset" << std::endl;
+    if (total_flows > 0) {
+        std::cout << "[ShardedFlowManager] Cleaned up " << total_flows << " flows" << std::endl;
+    }
 }
 
-} // namespace flow
-} // namespace sniffer
+} // namespace sniffer::flow

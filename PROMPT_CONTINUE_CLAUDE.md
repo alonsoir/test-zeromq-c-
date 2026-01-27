@@ -1,640 +1,299 @@
-"Buenos días Claude. Continuando Day 45 post Day 44. Esto es CONTINUITY_DAY45.md con todo el contexto. Vamos a: (1) Integrar fix3 como oficial, (2) Compilar pipeline + TSAN, (3) Validar NEORIS, (4) Generar backlog actualizado y documentación final."
+# 🏛️ Day 45 Summary - ShardedFlowManager Integration
 
-GEMINI me pide que añada estas notas para Claude:
-
-Alonso, para el **Day 44**, el diablo está en los detalles de implementación de C++. Manejar iteradores dentro de un `std::unordered_map` requiere precisión para evitar que se invaliden o que el código se vuelva ilegible con tipos anidados.
-
-Aquí tienes la "fórmula magistral" para implementar el **O(1) Fix** y los comandos de compilación para que el **Consejo de Sabios** vea mañana resultados impecables.
-
-### 1. El Patrón de Datos O(1)
-
-Para que el `splice` funcione, el mapa debe conocer la posición exacta en la lista, y la lista debe contener la clave para poder borrar del mapa durante la evicción.
-
-```cpp
-// Estructura sugerida para Shard::FlowEntry
-struct FlowEntry {
-    FlowStatistics stats;
-    std::list<FlowKey>::iterator lru_pos; 
-};
-
-// En add_packet (Lógica de Actualización O(1)):
-auto it = shard.flows->find(key);
-if (it != shard.flows->end()) {
-    // Re-ubicamos el nodo al principio de la lista sin mover datos en memoria
-    shard.lru_queue->splice(shard.lru_queue->begin(), *shard.lru_queue, it->second.lru_pos);
-    // El iterador lru_pos sigue siendo válido tras el splice
-    it->second.stats.add_packet(event, key);
-}
-
-```
-
----
-
-### 2. Comandos de "Fuego Real" (Compilación y Debug)
-
-Para el test con **ThreadSanitizer (TSAN)**, usa estas flags exactas. TSAN es muy exigente con la memoria, así que usaremos `-O1` para que el análisis sea rápido pero preciso.
-
-```bash
-# Compilación para detección de Race Conditions
-g++ -std=c++20 -O1 -g -fsanitize=thread \
-    -Iinclude \
-    src/flow/sharded_flow_manager.cpp \
-    tests/test_data_race_mut.cpp \
-    -o build/test_tsan -lpthread
-
-# Ejecución (Si hay un race, TSAN detendrá el proceso aquí)
-./build/test_tsan
-
-```
-
----
-
-### 3. El "Visualizador de Equilibrio" (One-liner)
-
-Para validar la **Distribución de Hash** (el punto 5 del Peer Review) sin complicarnos, puedes usar este comando tras ejecutar tus tests para ver si los shards están equilibrados:
-
-```bash
-# Extrae los contadores de cada shard del log y calcula la desviación
-grep "Active flows:" results/lru_benchmark.log | awk '{sum+=$3; sumsq+=$3*$3; n++} END {print "Average:", sum/n, "StdDev:", sqrt(sumsq/n - (sum/n)**2)}'
-
-```
-
----
-
-### 🏛️ Consejo Final para mañana AM:
-
-Cuando implementes el `splice`, recuerda que `std::list::splice` **no invalida iteradores**. Esta es la propiedad mágica que hace que tu `lru_pos` guardado en el mapa siga apuntando al lugar correcto después de moverlo al `front`. Si usaras un `std::vector`, esto sería imposible.
-
-**¿Te gustaría que preparemos el "Plan de Contingencia" por si el ThreadSanitizer detecta un race condition en el Singleton, o prefieres ir directo a la cirugía O(1) mañana?** 🏛️🚀🔬
-
-FIN del mensaje de GEMINI.
-
-cat > /vagrant/docs/CONTINUITY_DAY45.md << 'EOF'
-# 🏛️ Day 45 Continuity Prompt - ML Defender (aegisIDS)
-
-**Investigador:** Alonso Isidoro Román  
-**Proyecto:** ML Defender (aegisIDS)  
-**Contexto:** Post Day 44 - ShardedFlowManager validado científicamente  
 **Fecha:** 27 Enero 2026  
-**Metodología:** Via Appia Quality + Scientific Method
+**Investigador:** Alonso Isidoro Román  
+**Status:** INTEGRATION COMPLETE ✅ (Steps 1-3)
 
 ---
 
-## 🎯 CONTEXTO COMPLETADO (Day 44)
+## 🎯 OBJETIVO CUMPLIDO
 
-### Trabajo Realizado:
+**Migración de FlowManager thread-local → ShardedFlowManager singleton**
 
-**ISSUE-003: ShardedFlowManager Thread-Safety & Performance - RESUELTO**
+### Problema Original (ISSUE-003):
+- `thread_local FlowManager` aislaba estado entre threads
+- Resultado: **89/142 features** capturados (62% pérdida)
+- Root cause: Cada thread tiene su propia instancia
 
-Se identificaron y validaron científicamente **3 vulnerabilidades críticas** mediante:
-- Peer review de 5 sistemas AI (GROK, GEMINI, QWEN, DeepSeek, ChatGPT-5)
-- Validación con ThreadSanitizer (TSAN)
-- Benchmarks de performance empíricos
-- Documentación científica exhaustiva
-
-### Fixes Implementados y Validados:
-
-#### **FIX #1: Thread-Safe Initialization**
-````cpp
-// Race condition en initialize() - ELIMINADO
-std::once_flag init_flag_;
-std::atomic<bool> initialized_{false};
-
-void initialize(const Config& config) {
-    std::call_once(init_flag_, [this, &config]() {
-        // ... inicialización única thread-safe
-        initialized_.store(true, std::memory_order_release);
-    });
-}
-````
-
-**Validación:**
-- TSAN: 1 data race → 0 warnings ✅
-- Test: 1000 threads, 1 inicialización exitosa ✅
-
-#### **FIX #2: LRU O(1) Performance**
-````cpp
-// Antes: O(n) - list::remove() escanea toda la lista
-shard.lru_queue->remove(key);  // O(n)
-
-// Después: O(1) - splice con iterator directo
-struct FlowEntry {
-    FlowStatistics stats;
-    std::list<FlowKey>::iterator lru_pos;  // ← NEW
-};
-
-shard.lru_queue->splice(
-    shard.lru_queue->begin(),
-    *shard.lru_queue,
-    it->second.lru_pos  // ← O(1) access
-);
-````
-
-**Validación:**
-- Performance @ 10K flows: 3.69μs → 0.93μs (4x mejora) ✅
-- Performance @ 20K flows: 2.75μs → 1.37μs (2x mejora) ✅
-- Proyección @ 100K flows: ~100μs → ~2μs (50x esperado) ✅
-- Consistencia: Varianza reducida significativamente ✅
-
-#### **FIX #3: Thread-Safe API by Design**
-````cpp
-// ELIMINADOS (unsafe - retornaban punteros sin protección):
-FlowStatistics* get_flow_stats_mut(const FlowKey& key);
-const FlowStatistics* get_flow_stats(const FlowKey& key) const;
-
-// NUEVOS (safe - copia o callback dentro del lock):
-std::optional<FlowStatistics> get_flow_stats_copy(const FlowKey& key) const;
-
-template<typename Func>
-void with_flow_stats(const FlowKey& key, Func&& func) const;
-````
-
-**Validación:**
-- TSAN: 42 data races → 0 warnings ✅
-- Root cause: Punteros usados fuera del lock - ELIMINADO ✅
-
-### Resumen Métricas:
-
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| Data races (TSAN) | 43 | **0** | **100%** |
-| LRU @ 10K flows | 3.69μs | **0.93μs** | **4x** |
-| LRU @ 20K flows | 2.75μs | **1.37μs** | **2x** |
-| APIs unsafe | 2 | **0** | **100%** |
-| Thread-safe init | ❌ | ✅ | N/A |
-
-### Peer Review (Consejo de Sabios):
-
-- ✅ **GROK:** "APROBADO INCONDICIONALMENTE" (9.5/10)
-- ✅ **GEMINI:** "Investigación aplicada de vanguardia"
-- ✅ **QWEN:** "Gobernanza del conocimiento"
-- ✅ **DeepSeek:** 7/10 → 9/10 post-fixes
-- ✅ **ChatGPT-5:** "Defendible a nivel senior/arquitectura"
-
-**Consenso:** Integración inmediata recomendada.
+### Solución Implementada:
+- `ShardedFlowManager::instance()` - singleton global
+- **16 shards** con locks independientes
+- API thread-safe: `get_flow_stats_copy()` (devuelve copia)
+- Esperado: **142/142 features** (100% captura)
 
 ---
 
-## 📁 ARCHIVOS CLAVE
+## 📝 ARCHIVOS MODIFICADOS
 
-### Documentación Generada:
-````
-/vagrant/docs/validation/day44/
-├── CONSEJO_PRESENTATION.md       ← Presentación completa científica
-├── TEST1_EVIDENCE.md              ← Evidencia initialize() race
-├── TEST2_EVIDENCE.md              ← Evidencia LRU performance
-└── TEST3_EVIDENCE.md              ← Evidencia get_flow_stats_mut() race
-````
-
-### Código Implementado:
-````
-/vagrant/sniffer/
-├── include/flow/
-│   ├── sharded_flow_manager.hpp           ← Original (baseline)
-│   ├── sharded_flow_manager_fix1.hpp      ← FIX #1: Thread-safe init
-│   ├── sharded_flow_manager_fix2.hpp      ← FIX #2: O(1) LRU
-│   └── sharded_flow_manager_fix3.hpp      ← FIX #3: Safe API (FINAL)
-├── src/flow/
-│   ├── sharded_flow_manager_original.cpp  ← Baseline preservado
-│   ├── sharded_flow_manager_fix1.cpp
-│   ├── sharded_flow_manager_fix2.cpp
-│   └── sharded_flow_manager_fix3.cpp      ← FINAL (todos los fixes)
-└── tests/
-    ├── test_race_initialize_fix1.cpp      ← Test #1 (TSAN clean ✅)
-    ├── benchmark_lru_performance.cpp       ← Test #2 (4x mejora ✅)
-    └── test_data_race_mut_fix3.cpp        ← Test #3 (TSAN clean ✅)
-````
-
-### Resultados de Tests:
-````
-/vagrant/sniffer/results/
-├── test1_before_fix.log / test1_after_fix.log
-├── test2_before_fix.log / test2_after_fix.log
-└── test3_original.log / test3_final_fix.log
-````
-
----
-
-## 🚀 TAREAS PENDIENTES (Day 45)
-
-### PRIORIDAD 1: Integración del Código
-
-#### **Paso 1: Backup y Migración**
-````bash
-cd /vagrant/sniffer
-
-# Backup del código actual
-cp -r src/flow src/flow.backup.day44
-cp -r include/flow include/flow.backup.day44
-
-# Integrar versión final (fix3 = fix1 + fix2 + fix3)
-cp include/flow/sharded_flow_manager_fix3.hpp include/flow/sharded_flow_manager.hpp
-cp src/flow/sharded_flow_manager_fix3.cpp src/flow/sharded_flow_manager.cpp
-````
-
-#### **Paso 2: Actualizar Dependencias**
-
-**Archivos a revisar (posibles usos de API antigua):**
-- `src/userspace/ring_consumer.cpp` - Usar add_packet() directamente
-- `src/ml/feature_extractor.cpp` - Migrar a get_flow_stats_copy()
-- `tests/` - Actualizar tests existentes
-
-**Breaking changes a buscar:**
-````bash
-grep -r "get_flow_stats_mut" --include="*.cpp" --include="*.hpp" src/
-grep -r "get_flow_stats(" --include="*.cpp" --include="*.hpp" src/ | grep -v "get_flow_stats_copy"
-````
-
-#### **Paso 3: Compilación y Validación**
-````bash
-# Limpiar y recompilar
-make clean
-make -j4
-
-# Verificar que compila sin warnings
-# Esperado: 0 warnings relacionados con ShardedFlowManager
-
-# Regression testing
-./build/test_race_initialize_fix1
-./build/benchmark_lru_fix2
-./build/test_data_race_mut_fix3
-
-# Esperado: Todos PASS con TSAN clean
-````
-
-#### **Paso 4: Pipeline Integrado con TSAN**
-````bash
-# Compilar pipeline completo con TSAN
-g++ -std=c++20 -fsanitize=thread -g -O0 \
-    tests/integration_full_pipeline.cpp \
-    src/flow/sharded_flow_manager.cpp \
-    src/userspace/ring_consumer.cpp \
-    src/ml/feature_extractor.cpp \
-    src/userspace/time_window_manager.cpp \
-    -o build/integration_pipeline_tsan -lpthread
-
-# Ejecutar con monitoreo
-./build/integration_pipeline_tsan 2>&1 | tee results/integration_tsan.log
-
-# Verificar resultado
-grep "ThreadSanitizer" results/integration_tsan.log || echo "✅ PIPELINE TSAN CLEAN"
-````
-
-#### **Paso 5: Validación con NEORIS Dataset**
-````bash
-# Test con dataset académico (320K packets)
-./build/sniffer --pcap /vagrant/data/neoris_botnet.pcap --output results/neoris_day45.json
-
-# Verificar extracción completa de features
-grep "Features extracted: 142/142" logs/sniffer_day45.log
-
-# Si sale 89/142 → ISSUE-003 persiste (thread_local bug)
-# Si sale 142/142 → ISSUE-003 RESUELTO ✅
-````
-
-#### **Paso 6: Stress Test**
-````bash
-# 10K events/sec por 60 segundos
-./tests/stress_test.sh \
-    --duration 60 \
-    --rate 10000 \
-    --shards 4 \
-    --flows 50000
-
-# Métricas esperadas:
-# - CPU: <70%
-# - Memory: Estable (sin leaks)
-# - Packet drops: 0
-# - TSAN: clean
-````
-
----
-
-### PRIORIDAD 2: Watcher Module (Memory Leak)
-
-**Issue identificado:** RAGLogger acumula buffers sin liberar
-
-**Tareas:**
-````bash
-# 1. Diagnóstico con Valgrind
-valgrind --leak-check=full --show-leak-kinds=all \
-    ./build/sniffer --duration 600 2>&1 | tee results/valgrind_rag.log
-
-# 2. Identificar leak exacto
-grep "definitely lost" results/valgrind_rag.log
-
-# 3. Fix (ejemplo hipotético):
-# En rag_logger.cpp:
-void RAGLogger::flush() {
-    // Liberar buffers acumulados
-    accumulated_logs_.clear();
-    accumulated_logs_.shrink_to_fit();
-}
-
-# 4. Re-test con Valgrind
-# Esperado: 0 bytes definitely lost
-````
-
----
-
-### PRIORIDAD 3: Documentación Final
-
-#### **CHANGELOG.md**
-````bash
-cat > CHANGELOG.md << 'EOF'
-# CHANGELOG - ML Defender (aegisIDS)
-
-## [Day 44] - 2026-01-26 - ShardedFlowManager Fixes
-
-### Added
-- Thread-safe initialization with std::call_once + std::atomic
-- O(1) LRU updates with iterator tracking in FlowEntry
-- Safe API: get_flow_stats_copy() returns copy inside lock
-- Safe API: with_flow_stats() template for callback execution
-
-### Fixed
-- **CRITICAL**: Race condition in initialize() (1 data race → 0)
-- **CRITICAL**: 42 data races in get_flow_stats_mut() → method removed
-- **PERFORMANCE**: LRU O(n) → O(1) (4x current, 50x projected @ 100K flows)
-
-### Changed
-- **BREAKING**: Removed get_flow_stats() (use get_flow_stats_copy())
-- **BREAKING**: Removed get_flow_stats_mut() (use add_packet() directly)
-- Mutex type: shared_mutex → mutex (simpler, equally performant)
-
-### Performance
-- LRU @ 10K flows: 3.69μs → 0.93μs (4x faster)
-- LRU @ 20K flows: 2.75μs → 1.37μs (2x faster)
-- Consistency: Low variance (<1μs) vs high variance (1.3-3.7μs)
-- Thread-safety: 43 TSAN warnings → 0 (100% clean)
-
-### Validation
-- ThreadSanitizer: 3 tests executed, all CLEAN
-- Benchmarks: 5 load scenarios tested (100, 1K, 5K, 10K, 20K flows)
-- Peer review: 5 AI systems (GROK, GEMINI, QWEN, DeepSeek, ChatGPT-5)
-- Consensus: APPROVED unanimously for production integration
-
-### Documentation
-- Scientific presentation: /docs/validation/day44/CONSEJO_PRESENTATION.md
-- Evidence files: TEST1_EVIDENCE.md, TEST2_EVIDENCE.md, TEST3_EVIDENCE.md
-- Methodology: Via Appia Quality + Scientific Method
-EOF
-````
-
-#### **README.md Update**
-````bash
-cat >> README.md << 'EOF'
-
-## 🏛️ Thread-Safety & Performance (Day 44 Validation)
-
-The `ShardedFlowManager` has been **scientifically validated** through:
-
-- ✅ **ThreadSanitizer:** 0 data races (validated with 3 concurrent tests)
-- ✅ **O(1) LRU:** Sub-microsecond updates (4x current, 50x projected)
-- ✅ **Safe API:** No raw pointers, all operations protected by locks
-- ✅ **Peer Review:** 5 independent AI systems (unanimous approval)
-
-### Key Metrics:
-- **Before:** 43 data races, O(n) LRU, unsafe API
-- **After:** 0 data races, O(1) LRU, safe by design
-- **Performance:** 3.69μs → 0.93μs @ 10K flows
-
-See: [/docs/validation/day44/CONSEJO_PRESENTATION.md](/docs/validation/day44/CONSEJO_PRESENTATION.md)
-
-### Migration Guide (Breaking Changes):
-
-**Old API (removed):**
-```cpp
-// ❌ REMOVED: Unsafe pointer exposure
-const FlowStatistics* stats = manager.get_flow_stats(key);
-FlowStatistics* stats_mut = manager.get_flow_stats_mut(key);
+### Headers:
+```
+include/ring_consumer.hpp
+  - ELIMINADO: thread_local FlowManager flow_manager_
+  - ELIMINADO: #include "flow_manager.hpp"
+  + AGREGADO: #include "flow/sharded_flow_manager.hpp"
 ```
 
-**New API (safe):**
+### Implementation:
+```
+src/userspace/ring_consumer.cpp
+  - ELIMINADO: Declaración thread_local (líneas 30-36)
+  - ELIMINADO: Referencias a flow_manager_ (2 instancias)
+  + AGREGADO: Inicialización ShardedFlowManager (constructor)
+  + AGREGADO: API calls correctos (instance(), shard_count, flow_timeout_ns)
+  + MODIFICADO: add_packet() usa singleton
+  + MODIFICADO: get_flow_stats_copy() en populate_protobuf_event()
+```
+
+### Backups Creados:
+```
+✅ src/flow.backup.day44/
+✅ include/flow.backup.day44/
+✅ src/userspace/ring_consumer.cpp.backup.day45
+✅ src/userspace/ring_consumer.cpp.OLD_THREADLOCAL
+```
+
+---
+
+## ⚙️ CONFIGURACIÓN APLICADA
 ```cpp
-// ✅ NEW: Copy returned inside lock
-auto stats_opt = manager.get_flow_stats_copy(key);
+ShardedFlowManager::Config{
+    .shard_count = 16,
+    .max_flows_per_shard = 10000,
+    .flow_timeout_ns = 120000000000ULL  // 120 seconds
+}
+```
+
+**Capacidad total:** 160,000 flows simultáneos  
+**Timeout:** 2 minutos  
+**Sharding:** Hash-based (FlowKey::Hash)
+
+---
+
+## ✅ VALIDACIÓN DE COMPILACIÓN
+
+### Resultado:
+```bash
+✅ Sniffer compiled successfully!
+   Binary: 1.4MB (27 Enero 09:06)
+   eBPF:   160KB
+   Warnings: Solo -Wreorder (cosmético, no crítico)
+   Errors: 0
+```
+
+### Advertencias (no críticas):
+- `-Wreorder`: Orden de inicialización en constructor
+- **No afecta funcionalidad**
+- Pueden corregirse en refactor futuro
+
+---
+
+## 🧪 PRUEBA INICIAL
+
+### Comando Ejecutado:
+```bash
+sudo ./build/sniffer lo 5
+```
+
+### Resultado:
+```
+✅ Programa kernel (eBPF) cargado correctamente
+✅ ShardedFlowManager inicializa (mensaje visible en logs)
+⚠️  etcd-server no arrancado (esperado, no crítico para test)
+```
+
+**Interpretación:**  
+El binario funciona. El kernel eBPF se carga. La integración básica está operativa.
+
+---
+
+## 📊 CAMBIOS DE API
+
+### API Antigua (thread_local):
+```cpp
+// ❌ ELIMINADO
+thread_local FlowManager flow_manager_;
+flow_manager_.add_packet(event);
+auto* stats = flow_manager_.get_flow_stats_unsafe(key);
+```
+
+### API Nueva (singleton):
+```cpp
+// ✅ NUEVO
+auto& mgr = sniffer::flow::ShardedFlowManager::instance();
+mgr.add_packet(flow_key, event);
+auto stats_opt = mgr.get_flow_stats_copy(flow_key);
 if (stats_opt.has_value()) {
     const auto& stats = stats_opt.value();
-    // Use stats safely
+    // Usar stats...
 }
-
-// ✅ NEW: Callback executed inside lock
-manager.with_flow_stats(key, [](const FlowStatistics& stats) {
-    // Access stats with lock held
-});
 ```
-EOF
-````
 
 ---
 
-## 🔬 HIPÓTESIS DE INVESTIGACIÓN
+## 🎯 FEATURES IMPLEMENTADOS (Day 44 → Day 45)
 
-### **Hipótesis Central:**
-> "Un humano experimentado trabajando en armonía con múltiples modelos de IA del estado del arte puede producir software de calidad excepcional que está fuera del alcance de cualquiera de las partes trabajando de forma aislada."
+### FIX #1: Thread-Safe Initialization ✅
+- `std::call_once` + `std::atomic<bool>`
+- 1 data race → 0 (validado TSAN Day 44)
 
-### **Evidencia Acumulada (Day 44):**
+### FIX #2: O(1) LRU Performance ✅
+- Iterator tracking en `FlowEntry::lru_pos`
+- 3.69μs → 0.93μs @ 10K flows (4x mejora)
 
-1. **Multi-Perspective Review:** 5 sistemas AI encontraron issues que testing manual no detectó
-2. **Validación Científica:** Método científico aplicado completamente (hipótesis → test → evidencia)
-3. **Documentación Exhaustiva:** Trazabilidad total de decisiones técnicas
-4. **Código Publicable:** Calidad defendible ante peer review académico
+### FIX #3: Safe API ✅
+- `get_flow_stats_copy()` retorna `std::optional<>`
+- 42 data races → 0 (validado TSAN Day 44)
 
-### **Status:** ✅ **HIPÓTESIS SOPORTADA**
-
-**Conclusión parcial (Day 44):**  
-La colaboración humano-AI con metodología científica rigurosa produce:
-- Código más robusto (43 → 0 races)
-- Mejor performance (4x-50x mejora)
-- Arquitectura más segura (API safe by design)
-- Documentación científica (publicable)
+### INTEGRATION (Day 45) ✅
+- Migración completa de ring_consumer.cpp
+- Compilación exitosa
+- Binario funcional
 
 ---
 
-## 📊 BACKLOG ACTUALIZADO (Para Day 45)
+## 📋 TAREAS PENDIENTES (Day 46+)
 
-### Tareas Completadas (Day 44):
-- [x] Identificar vulnerabilidades (Peer review × 5)
-- [x] Diseñar tests científicos (3 experimentos)
-- [x] Implementar fixes (FIX #1, #2, #3)
-- [x] Validar con TSAN (0 warnings)
-- [x] Benchmark performance (4x mejora)
-- [x] Documentar evidencia (4 documentos)
-- [x] Obtener aprobación (5/5 unánime)
+### PRIORIDAD ALTA:
+1. **Validación TSAN Pipeline Completo**
+    - Compilar con `-fsanitize=thread`
+    - Ejecutar 60s con tráfico real
+    - Verificar: 0 data races
 
-### Tareas Pendientes (Day 45):
-- [ ] Integrar código final (fix3 → oficial)
-- [ ] Compilar pipeline completo
-- [ ] TSAN sobre pipeline integrado
-- [ ] Validar NEORIS (142/142 features)
-- [ ] Stress test (10K events/sec × 60s)
-- [ ] Fix RAGLogger memory leak
-- [ ] Actualizar CHANGELOG + README
-- [ ] Commit final Day 45
+2. **Test NEORIS Dataset**
+    - 320K packets botnet traffic
+    - Verificar: 142/142 features extraídos
+    - Comparar: 89/142 (antes) vs 142/142 (después)
 
----
+3. **Stress Test**
+    - 10K events/sec × 60 segundos
+    - Métricas: CPU <70%, Memory estable, 0 drops
 
-## 🎯 CRITERIOS DE ÉXITO (Day 45)
-
-### Must-Have:
-- ✅ Pipeline compila sin warnings
-- ✅ TSAN clean en pipeline completo
-- ✅ NEORIS: 142/142 features extraídos
-- ✅ Stress test: <70% CPU, 0 drops
-
-### Nice-to-Have:
-- ✅ RAGLogger leak resuelto
-- ✅ Documentación actualizada
-- ✅ Benchmarks comparativos publicados
+### PRIORIDAD MEDIA:
+4. **RAGLogger Memory Leak** (watcher module)
+5. **Documentación Actualizada** (CHANGELOG, README)
+6. **Commit Final** con mensaje descriptivo
 
 ---
 
-## 💡 NOTAS TÉCNICAS CLAVE
+## 🏛️ METODOLOGÍA VIA APPIA APLICADA
 
-### **1. FlowEntry con Iterator (FIX #2)**
-````cpp
-struct FlowEntry {
-    FlowStatistics stats;
-    std::list<FlowKey>::iterator lru_pos;  // ← Clave: O(1) LRU
-};
+### Evidencia Antes de Acción:
+- ✅ Day 44: Peer review × 5 sistemas AI
+- ✅ TSAN validó 0 data races en fix3
+- ✅ Benchmarks confirmaron 4x mejora
+- ✅ Integración basada en código validado
 
-// Uso en add_packet():
-shard.lru_queue->push_front(key);
-entry.lru_pos = shard.lru_queue->begin();  // Guardar iterator
-
-// Update LRU:
-shard.lru_queue->splice(
-    shard.lru_queue->begin(),
-    *shard.lru_queue,
-    it->second.lru_pos  // ← Acceso O(1)
-);
-````
-
-### **2. Copia Manual de FlowStatistics (FIX #3)**
-
-**Problema:** `FlowStatistics` tiene `unique_ptr` → no copiable por defecto
-
-**Solución:**
-````cpp
-std::optional<FlowStatistics> get_flow_stats_copy(const FlowKey& key) const {
-    std::unique_lock lock(*shard.mutex);
-    
-    auto it = shard.flows->find(key);
-    if (it != shard.flows->end()) {
-        FlowStatistics copy;
-        
-        // Copiar campos primitivos
-        copy.spkts = it->second.stats.spkts;
-        copy.dpkts = it->second.stats.dpkts;
-        // ... (todos los campos)
-        
-        // time_windows se crea automáticamente en constructor
-        
-        return std::make_optional(std::move(copy));
-    }
-    return std::nullopt;
-}
-````
-
-### **3. Mutex Simplificado**
-
-**Decisión:** `shared_mutex` → `mutex`
-
-**Razón:**
-- API safe no retorna punteros (no hay lecturas largas)
-- Todas las operaciones son cortas
-- `mutex` más simple y predecible
-- TSAN más feliz con `mutex` simple
-
----
-
-## 🏛️ PRINCIPIOS VIA APPIA APLICADOS
-
-### **1. Despacio y Bien**
+### Despacio y Bien:
 - Day 43: Diseño + Implementación baseline
-- Day 44: Testing + Fixes + Validación científica
-- Day 45: Integración cuidadosa + Verificación
+- Day 44: Testing científico + Fixes
+- **Day 45: Integración cuidadosa ← COMPLETADO**
+- Day 46: Validación end-to-end (pendiente)
 
-### **2. Evidencia antes que Teoría**
-- No asumimos: medimos (TSAN, benchmarks)
-- No opinamos: demostramos (logs, gráficas)
-- No intuimos: validamos (peer review)
-
-### **3. Honestidad Científica**
-- Limitaciones reconocidas (VM vs hardware, proyecciones)
-- Errores documentados (intentos fallidos FIX #3)
-- Incertidumbre aceptada ("no sabemos" es válido)
-
-### **4. Código que Dura Décadas**
-- Thread-safety by design
-- Performance predictible (O(1))
-- API simple y segura
-- Documentación exhaustiva
+### Honestidad Científica:
+- ✅ Backups completos preservados
+- ✅ Cambios documentados línea por línea
+- ✅ Errores reconocidos (5+ iteraciones sed)
+- ⏳ Validación pendiente (TSAN, NEORIS)
 
 ---
 
-## 📞 CONTACTO Y REFERENCIAS
+## 📊 MÉTRICAS PROYECTADAS (A VALIDAR)
 
-**Investigador Principal:**  
-Alonso Isidoro Román  
-Universidad de Extremadura (UEX)  
-ML Defender (aegisIDS)
-
-**Consejo de Sabios (Co-autores):**
-- Claude (Anthropic) - Lead AI Engineer
-- GROK (xAI) - Systems Architecture
-- GEMINI (Google) - Scientific Validation
-- QWEN (Alibaba) - Code Quality
-- DeepSeek (China) - Bug Detection
-- ChatGPT-5 (OpenAI) - Design Review
-
-**Repositorio:** `/vagrant/sniffer/`  
-**Documentación:** `/vagrant/docs/`
+| Métrica | Antes | Después (esperado) | Validar |
+|---------|-------|-------------------|---------|
+| Features capturados | 89/142 (62%) | **142/142 (100%)** | ⏳ NEORIS |
+| Data races (TSAN) | 43 | **0** | ⏳ Pipeline |
+| LRU @ 10K flows | 3.69μs | **0.93μs** | ✅ Day 44 |
+| Thread-safety | ❌ | ✅ | ⏳ TSAN |
 
 ---
 
-## 🎓 LECCIONES APRENDIDAS (Day 44)
+## 🚀 COMANDOS PARA DAY 46
 
-1. **Multi-AI review es efectivo:** Cada sistema aportó perspectiva única
-2. **TSAN es indispensable:** Detecta races invisibles en testing manual
-3. **Benchmarks revelan verdad:** "Funciona bien" necesita datos que lo respalden
-4. **API design matters:** Thread-safety debe ser inherente, no parcheada
-5. **Documentación es inversión:** Replicabilidad = credibilidad científica
+### 1. Validación TSAN:
+```bash
+cd /vagrant/sniffer
+make clean
+cmake -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_CXX_FLAGS="-fsanitize=thread -g" ..
+make -j4
+sudo ./build/sniffer lo 1000  # Capturar 1000 packets
+# Verificar: ThreadSanitizer no reporta warnings
+```
+
+### 2. Test NEORIS:
+```bash
+sudo ./build/sniffer --pcap /path/to/neoris.pcap \
+                     --output results/neoris_day45.json
+grep "Features extracted" logs/sniffer.log
+# Esperar: 142/142 (no 89/142)
+```
+
+### 3. Stress Test:
+```bash
+./tests/stress_test.sh --rate 10000 --duration 60
+# Monitorear: htop, memory, packet drops
+```
 
 ---
 
-## 🚀 NEXT STEPS (IMMEDIATE)
+## 💡 NOTAS TÉCNICAS IMPORTANTES
 
-**Al retomar el trabajo (Day 45):**
+### 1. Namespace Completo:
+```cpp
+sniffer::flow::ShardedFlowManager::instance()
+// NO solo ShardedFlowManager::instance()
+```
 
-1. **Leer este documento completo** (5 min)
-2. **Verificar archivos clave existen** (2 min)
-3. **Ejecutar comandos Paso 1** (backup + integración)
-4. **Compilar y validar** (make clean && make)
-5. **Ejecutar tests regression** (3 tests, esperar TSAN clean)
-6. **Proceder con pipeline integrado** (Paso 4)
+### 2. Config Struct:
+```cpp
+.shard_count = 16           // NO num_shards
+.flow_timeout_ns = 120e9    // NO timeout_seconds
+```
 
-**Frase de inicio para Claude/AI:**
-> "Continuando Day 45 post-validación científica Day 44. Tengo que integrar sharded_flow_manager_fix3 como versión oficial, compilar pipeline completo con TSAN, y validar con NEORIS dataset. Documentación en /vagrant/docs/CONTINUITY_DAY45.md"
+### 3. API Safe:
+```cpp
+auto opt = mgr.get_flow_stats_copy(key);  // Retorna copia
+// NO usar get_flow_stats_unsafe() (eliminado)
+```
+
+---
+
+## 🎓 LECCIONES APRENDIDAS
+
+1. **Namespace Matters:** C++ namespaces anidados requieren path completo
+2. **API Naming:** Leer header real > asumir nombres de API
+3. **Sed Limitations:** Scripts complejos mejor con Python/C++
+4. **Iterative Fixing:** 5+ intentos normales en migraciones grandes
+5. **Compilation Success ≠ Correctness:** TSAN validation crítico
+
+---
+
+## 📞 HANDOFF PARA PRÓXIMA SESIÓN
+
+**Estado:** Integration COMPLETE ✅  
+**Binario:** Funcional (1.4MB, compiled 09:06)  
+**Próximo paso:** TSAN validation + NEORIS test  
+**Bloqueadores:** Ninguno  
+**Backups:** Completos y seguros
+
+**Frase de inicio sugerida:**
+> "Buenos días Claude. Continuando Day 45 → Day 46. Ayer integré ShardedFlowManager exitosamente (compilación OK). Hoy necesito: (1) Validar con TSAN pipeline completo, (2) Test NEORIS para confirmar 142/142 features, (3) Stress test. Documentación en /vagrant/docs/DAY45_SUMMARY.md"
 
 ---
 
 ## 🏛️ VIA APPIA ETERNUM
 
-*"Non multa sed multum"*  
-*"No mucho, sino profundo"*
+**"Non multa sed multum"**  
+*No mucho, sino profundo*
 
-Código que dura décadas.  
-Construido con la precisión de ingenieros romanos.  
-Validado con el rigor de científicos modernos.
+Integración completada con precisión.  
+Validación pendiente con rigor científico.  
+Código que aspira a durar décadas.
 
-**Alonso Isidoro Román + Consejo de Sabios**  
-**26 Enero 2026**
+**Alonso Isidoro Román**  
+**27 Enero 2026 - 09:30 AM**
 
 ---
 
-**END OF CONTINUITY DOCUMENT**
-EOF
-
-echo "✅ Prompt de continuidad creado: /vagrant/docs/CONTINUITY_DAY45.md"
+**END OF DAY 45 SUMMARY**
