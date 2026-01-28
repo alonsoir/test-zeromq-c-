@@ -68,6 +68,9 @@ all: CMakeFiles/test_ransomware_feature_extractor.dir/all
 all: CMakeFiles/test_integration_simple_event.dir/all
 all: CMakeFiles/test_fast_detector.dir/all
 all: CMakeFiles/test_payload_analyzer.dir/all
+all: CMakeFiles/test_sharded_flow_full_contract.dir/all
+all: CMakeFiles/test_ring_consumer_protobuf.dir/all
+all: CMakeFiles/test_sharded_flow_multithread.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -81,6 +84,9 @@ clean: CMakeFiles/test_ransomware_feature_extractor.dir/clean
 clean: CMakeFiles/test_integration_simple_event.dir/clean
 clean: CMakeFiles/test_fast_detector.dir/clean
 clean: CMakeFiles/test_payload_analyzer.dir/clean
+clean: CMakeFiles/test_sharded_flow_full_contract.dir/clean
+clean: CMakeFiles/test_ring_consumer_protobuf.dir/clean
+clean: CMakeFiles/test_sharded_flow_multithread.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -238,6 +244,84 @@ test_payload_analyzer: CMakeFiles/test_payload_analyzer.dir/rule
 CMakeFiles/test_payload_analyzer.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/clean
 .PHONY : CMakeFiles/test_payload_analyzer.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_sharded_flow_full_contract.dir
+
+# All Build rule for target.
+CMakeFiles/test_sharded_flow_full_contract.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=65,66,67,68,69,70 "Built target test_sharded_flow_full_contract"
+.PHONY : CMakeFiles/test_sharded_flow_full_contract.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_sharded_flow_full_contract.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles 6
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_sharded_flow_full_contract.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_sharded_flow_full_contract.dir/rule
+
+# Convenience name for target.
+test_sharded_flow_full_contract: CMakeFiles/test_sharded_flow_full_contract.dir/rule
+.PHONY : test_sharded_flow_full_contract
+
+# clean rule for target.
+CMakeFiles/test_sharded_flow_full_contract.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/clean
+.PHONY : CMakeFiles/test_sharded_flow_full_contract.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_ring_consumer_protobuf.dir
+
+# All Build rule for target.
+CMakeFiles/test_ring_consumer_protobuf.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=57,58,59,60,61,62,63,64 "Built target test_ring_consumer_protobuf"
+.PHONY : CMakeFiles/test_ring_consumer_protobuf.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_ring_consumer_protobuf.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_ring_consumer_protobuf.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_ring_consumer_protobuf.dir/rule
+
+# Convenience name for target.
+test_ring_consumer_protobuf: CMakeFiles/test_ring_consumer_protobuf.dir/rule
+.PHONY : test_ring_consumer_protobuf
+
+# clean rule for target.
+CMakeFiles/test_ring_consumer_protobuf.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/clean
+.PHONY : CMakeFiles/test_ring_consumer_protobuf.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_sharded_flow_multithread.dir
+
+# All Build rule for target.
+CMakeFiles/test_sharded_flow_multithread.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/vagrant/sniffer/build/CMakeFiles --progress-num=71,72,73,74,75,76,77,78 "Built target test_sharded_flow_multithread"
+.PHONY : CMakeFiles/test_sharded_flow_multithread.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_sharded_flow_multithread.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_sharded_flow_multithread.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /vagrant/sniffer/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_sharded_flow_multithread.dir/rule
+
+# Convenience name for target.
+test_sharded_flow_multithread: CMakeFiles/test_sharded_flow_multithread.dir/rule
+.PHONY : test_sharded_flow_multithread
+
+# clean rule for target.
+CMakeFiles/test_sharded_flow_multithread.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/clean
+.PHONY : CMakeFiles/test_sharded_flow_multithread.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

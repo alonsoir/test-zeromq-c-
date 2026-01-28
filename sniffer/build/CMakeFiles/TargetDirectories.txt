@@ -4,6 +4,9 @@
 /vagrant/sniffer/build/CMakeFiles/test_integration_simple_event.dir
 /vagrant/sniffer/build/CMakeFiles/test_fast_detector.dir
 /vagrant/sniffer/build/CMakeFiles/test_payload_analyzer.dir
+/vagrant/sniffer/build/CMakeFiles/test_sharded_flow_full_contract.dir
+/vagrant/sniffer/build/CMakeFiles/test_ring_consumer_protobuf.dir
+/vagrant/sniffer/build/CMakeFiles/test_sharded_flow_multithread.dir
 /vagrant/sniffer/build/CMakeFiles/edit_cache.dir
 /vagrant/sniffer/build/CMakeFiles/rebuild_cache.dir
 /vagrant/sniffer/build/CMakeFiles/list_install_components.dir

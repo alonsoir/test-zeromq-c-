@@ -239,6 +239,45 @@ test_payload_analyzer/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_payload_analyzer.dir/build.make CMakeFiles/test_payload_analyzer.dir/build
 .PHONY : test_payload_analyzer/fast
 
+#=============================================================================
+# Target rules for targets named test_sharded_flow_full_contract
+
+# Build rule for target.
+test_sharded_flow_full_contract: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_sharded_flow_full_contract
+.PHONY : test_sharded_flow_full_contract
+
+# fast build rule for target.
+test_sharded_flow_full_contract/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/build
+.PHONY : test_sharded_flow_full_contract/fast
+
+#=============================================================================
+# Target rules for targets named test_ring_consumer_protobuf
+
+# Build rule for target.
+test_ring_consumer_protobuf: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_ring_consumer_protobuf
+.PHONY : test_ring_consumer_protobuf
+
+# fast build rule for target.
+test_ring_consumer_protobuf/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/build
+.PHONY : test_ring_consumer_protobuf/fast
+
+#=============================================================================
+# Target rules for targets named test_sharded_flow_multithread
+
+# Build rule for target.
+test_sharded_flow_multithread: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_sharded_flow_multithread
+.PHONY : test_sharded_flow_multithread
+
+# fast build rule for target.
+test_sharded_flow_multithread/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/build
+.PHONY : test_sharded_flow_multithread/fast
+
 proto/network_security.pb.o: proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.o
 
@@ -246,6 +285,8 @@ proto/network_security.pb.o: proto/network_security.pb.cc.o
 proto/network_security.pb.cc.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/proto/network_security.pb.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/proto/network_security.pb.cc.o
 .PHONY : proto/network_security.pb.cc.o
 
 proto/network_security.pb.i: proto/network_security.pb.cc.i
@@ -255,6 +296,8 @@ proto/network_security.pb.i: proto/network_security.pb.cc.i
 proto/network_security.pb.cc.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/proto/network_security.pb.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/proto/network_security.pb.cc.i
 .PHONY : proto/network_security.pb.cc.i
 
 proto/network_security.pb.s: proto/network_security.pb.cc.s
@@ -264,6 +307,8 @@ proto/network_security.pb.s: proto/network_security.pb.cc.s
 proto/network_security.pb.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/proto/network_security.pb.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/proto/network_security.pb.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/proto/network_security.pb.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/proto/network_security.pb.cc.s
 .PHONY : proto/network_security.pb.cc.s
 
 src/flow/sharded_flow_manager.o: src/flow/sharded_flow_manager.cpp.o
@@ -272,6 +317,9 @@ src/flow/sharded_flow_manager.o: src/flow/sharded_flow_manager.cpp.o
 # target to build an object file
 src/flow/sharded_flow_manager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/flow/sharded_flow_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/flow/sharded_flow_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/flow/sharded_flow_manager.cpp.o
 .PHONY : src/flow/sharded_flow_manager.cpp.o
 
 src/flow/sharded_flow_manager.i: src/flow/sharded_flow_manager.cpp.i
@@ -280,6 +328,9 @@ src/flow/sharded_flow_manager.i: src/flow/sharded_flow_manager.cpp.i
 # target to preprocess a source file
 src/flow/sharded_flow_manager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/flow/sharded_flow_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/flow/sharded_flow_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/flow/sharded_flow_manager.cpp.i
 .PHONY : src/flow/sharded_flow_manager.cpp.i
 
 src/flow/sharded_flow_manager.s: src/flow/sharded_flow_manager.cpp.s
@@ -288,6 +339,9 @@ src/flow/sharded_flow_manager.s: src/flow/sharded_flow_manager.cpp.s
 # target to generate assembly for a file
 src/flow/sharded_flow_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/flow/sharded_flow_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/flow/sharded_flow_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/flow/sharded_flow_manager.cpp.s
 .PHONY : src/flow/sharded_flow_manager.cpp.s
 
 src/userspace/bpf_map_manager.o: src/userspace/bpf_map_manager.cpp.o
@@ -572,6 +626,9 @@ src/userspace/flow_manager.o: src/userspace/flow_manager.cpp.o
 # target to build an object file
 src/userspace/flow_manager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_manager.cpp.o
 .PHONY : src/userspace/flow_manager.cpp.o
 
 src/userspace/flow_manager.i: src/userspace/flow_manager.cpp.i
@@ -580,6 +637,9 @@ src/userspace/flow_manager.i: src/userspace/flow_manager.cpp.i
 # target to preprocess a source file
 src/userspace/flow_manager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_manager.cpp.i
 .PHONY : src/userspace/flow_manager.cpp.i
 
 src/userspace/flow_manager.s: src/userspace/flow_manager.cpp.s
@@ -588,6 +648,9 @@ src/userspace/flow_manager.s: src/userspace/flow_manager.cpp.s
 # target to generate assembly for a file
 src/userspace/flow_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_manager.cpp.s
 .PHONY : src/userspace/flow_manager.cpp.s
 
 src/userspace/flow_tracker.o: src/userspace/flow_tracker.cpp.o
@@ -680,6 +743,8 @@ src/userspace/ml_defender_features.o: src/userspace/ml_defender_features.cpp.o
 # target to build an object file
 src/userspace/ml_defender_features.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ml_defender_features.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ml_defender_features.cpp.o
 .PHONY : src/userspace/ml_defender_features.cpp.o
 
 src/userspace/ml_defender_features.i: src/userspace/ml_defender_features.cpp.i
@@ -688,6 +753,8 @@ src/userspace/ml_defender_features.i: src/userspace/ml_defender_features.cpp.i
 # target to preprocess a source file
 src/userspace/ml_defender_features.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ml_defender_features.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ml_defender_features.cpp.i
 .PHONY : src/userspace/ml_defender_features.cpp.i
 
 src/userspace/ml_defender_features.s: src/userspace/ml_defender_features.cpp.s
@@ -696,6 +763,8 @@ src/userspace/ml_defender_features.s: src/userspace/ml_defender_features.cpp.s
 # target to generate assembly for a file
 src/userspace/ml_defender_features.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ml_defender_features.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ml_defender_features.cpp.s
 .PHONY : src/userspace/ml_defender_features.cpp.s
 
 src/userspace/payload_analyzer.o: src/userspace/payload_analyzer.cpp.o
@@ -839,6 +908,9 @@ src/userspace/time_window_aggregator.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_aggregator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_aggregator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_aggregator.cpp.o
 .PHONY : src/userspace/time_window_aggregator.cpp.o
 
 src/userspace/time_window_aggregator.i: src/userspace/time_window_aggregator.cpp.i
@@ -850,6 +922,9 @@ src/userspace/time_window_aggregator.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_aggregator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_aggregator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_aggregator.cpp.i
 .PHONY : src/userspace/time_window_aggregator.cpp.i
 
 src/userspace/time_window_aggregator.s: src/userspace/time_window_aggregator.cpp.s
@@ -861,6 +936,9 @@ src/userspace/time_window_aggregator.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/src/userspace/time_window_aggregator.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_integration_simple_event.dir/build.make CMakeFiles/test_integration_simple_event.dir/src/userspace/time_window_aggregator.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_fast_detector.dir/build.make CMakeFiles/test_fast_detector.dir/src/userspace/time_window_aggregator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_aggregator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_aggregator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_aggregator.cpp.s
 .PHONY : src/userspace/time_window_aggregator.cpp.s
 
 src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
@@ -869,6 +947,9 @@ src/userspace/time_window_manager.o: src/userspace/time_window_manager.cpp.o
 # target to build an object file
 src/userspace/time_window_manager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_manager.cpp.o
 .PHONY : src/userspace/time_window_manager.cpp.o
 
 src/userspace/time_window_manager.i: src/userspace/time_window_manager.cpp.i
@@ -877,6 +958,9 @@ src/userspace/time_window_manager.i: src/userspace/time_window_manager.cpp.i
 # target to preprocess a source file
 src/userspace/time_window_manager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_manager.cpp.i
 .PHONY : src/userspace/time_window_manager.cpp.i
 
 src/userspace/time_window_manager.s: src/userspace/time_window_manager.cpp.s
@@ -885,6 +969,9 @@ src/userspace/time_window_manager.s: src/userspace/time_window_manager.cpp.s
 # target to generate assembly for a file
 src/userspace/time_window_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_manager.cpp.s
 .PHONY : src/userspace/time_window_manager.cpp.s
 
 src/userspace/zmq_pool_manager.o: src/userspace/zmq_pool_manager.cpp.o
@@ -1007,6 +1094,78 @@ tests/test_ransomware_feature_extractor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ransomware_feature_extractor.dir/build.make CMakeFiles/test_ransomware_feature_extractor.dir/tests/test_ransomware_feature_extractor.cpp.s
 .PHONY : tests/test_ransomware_feature_extractor.cpp.s
 
+tests/test_ring_consumer_protobuf.o: tests/test_ring_consumer_protobuf.cpp.o
+.PHONY : tests/test_ring_consumer_protobuf.o
+
+# target to build an object file
+tests/test_ring_consumer_protobuf.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/tests/test_ring_consumer_protobuf.cpp.o
+.PHONY : tests/test_ring_consumer_protobuf.cpp.o
+
+tests/test_ring_consumer_protobuf.i: tests/test_ring_consumer_protobuf.cpp.i
+.PHONY : tests/test_ring_consumer_protobuf.i
+
+# target to preprocess a source file
+tests/test_ring_consumer_protobuf.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/tests/test_ring_consumer_protobuf.cpp.i
+.PHONY : tests/test_ring_consumer_protobuf.cpp.i
+
+tests/test_ring_consumer_protobuf.s: tests/test_ring_consumer_protobuf.cpp.s
+.PHONY : tests/test_ring_consumer_protobuf.s
+
+# target to generate assembly for a file
+tests/test_ring_consumer_protobuf.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/tests/test_ring_consumer_protobuf.cpp.s
+.PHONY : tests/test_ring_consumer_protobuf.cpp.s
+
+tests/test_sharded_flow_full_contract.o: tests/test_sharded_flow_full_contract.cpp.o
+.PHONY : tests/test_sharded_flow_full_contract.o
+
+# target to build an object file
+tests/test_sharded_flow_full_contract.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/tests/test_sharded_flow_full_contract.cpp.o
+.PHONY : tests/test_sharded_flow_full_contract.cpp.o
+
+tests/test_sharded_flow_full_contract.i: tests/test_sharded_flow_full_contract.cpp.i
+.PHONY : tests/test_sharded_flow_full_contract.i
+
+# target to preprocess a source file
+tests/test_sharded_flow_full_contract.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/tests/test_sharded_flow_full_contract.cpp.i
+.PHONY : tests/test_sharded_flow_full_contract.cpp.i
+
+tests/test_sharded_flow_full_contract.s: tests/test_sharded_flow_full_contract.cpp.s
+.PHONY : tests/test_sharded_flow_full_contract.s
+
+# target to generate assembly for a file
+tests/test_sharded_flow_full_contract.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/tests/test_sharded_flow_full_contract.cpp.s
+.PHONY : tests/test_sharded_flow_full_contract.cpp.s
+
+tests/test_sharded_flow_multithread.o: tests/test_sharded_flow_multithread.cpp.o
+.PHONY : tests/test_sharded_flow_multithread.o
+
+# target to build an object file
+tests/test_sharded_flow_multithread.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/tests/test_sharded_flow_multithread.cpp.o
+.PHONY : tests/test_sharded_flow_multithread.cpp.o
+
+tests/test_sharded_flow_multithread.i: tests/test_sharded_flow_multithread.cpp.i
+.PHONY : tests/test_sharded_flow_multithread.i
+
+# target to preprocess a source file
+tests/test_sharded_flow_multithread.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/tests/test_sharded_flow_multithread.cpp.i
+.PHONY : tests/test_sharded_flow_multithread.cpp.i
+
+tests/test_sharded_flow_multithread.s: tests/test_sharded_flow_multithread.cpp.s
+.PHONY : tests/test_sharded_flow_multithread.s
+
+# target to generate assembly for a file
+tests/test_sharded_flow_multithread.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/tests/test_sharded_flow_multithread.cpp.s
+.PHONY : tests/test_sharded_flow_multithread.cpp.s
+
 vagrant/ml-detector/src/ddos_detector.o: vagrant/ml-detector/src/ddos_detector.cpp.o
 .PHONY : vagrant/ml-detector/src/ddos_detector.o
 
@@ -1121,6 +1280,9 @@ help:
 	@echo "... test_integration_simple_event"
 	@echo "... test_payload_analyzer"
 	@echo "... test_ransomware_feature_extractor"
+	@echo "... test_ring_consumer_protobuf"
+	@echo "... test_sharded_flow_full_contract"
+	@echo "... test_sharded_flow_multithread"
 	@echo "... proto/network_security.pb.o"
 	@echo "... proto/network_security.pb.i"
 	@echo "... proto/network_security.pb.s"
@@ -1211,6 +1373,15 @@ help:
 	@echo "... tests/test_ransomware_feature_extractor.o"
 	@echo "... tests/test_ransomware_feature_extractor.i"
 	@echo "... tests/test_ransomware_feature_extractor.s"
+	@echo "... tests/test_ring_consumer_protobuf.o"
+	@echo "... tests/test_ring_consumer_protobuf.i"
+	@echo "... tests/test_ring_consumer_protobuf.s"
+	@echo "... tests/test_sharded_flow_full_contract.o"
+	@echo "... tests/test_sharded_flow_full_contract.i"
+	@echo "... tests/test_sharded_flow_full_contract.s"
+	@echo "... tests/test_sharded_flow_multithread.o"
+	@echo "... tests/test_sharded_flow_multithread.i"
+	@echo "... tests/test_sharded_flow_multithread.s"
 	@echo "... vagrant/ml-detector/src/ddos_detector.o"
 	@echo "... vagrant/ml-detector/src/ddos_detector.i"
 	@echo "... vagrant/ml-detector/src/ddos_detector.s"

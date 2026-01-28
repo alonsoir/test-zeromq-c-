@@ -650,3 +650,101 @@ target_link_libraries(test_payload_analyzer
 )
 
 message(STATUS "🧪 Unit Test: test_payload_analyzer configured")
+
+# ============================================================================
+# SHARDED FLOW MANAGER FULL CONTRACT TEST - Day 46 (ISSUE-003 Validation)
+# ============================================================================
+
+add_executable(test_sharded_flow_full_contract
+        tests/test_sharded_flow_full_contract.cpp
+
+        # ShardedFlowManager components
+        src/flow/sharded_flow_manager.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/time_window_manager.cpp
+        src/userspace/time_window_aggregator.cpp
+)
+
+target_include_directories(test_sharded_flow_full_contract PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_sharded_flow_full_contract
+        Threads::Threads
+        gtest
+        gtest_main
+)
+
+message(STATUS "🧪 Unit Test: test_sharded_flow_full_contract configured (Day 46 - ISSUE-003)")
+
+# ============================================================================
+# RING CONSUMER PROTOBUF PIPELINE TEST - Day 46 (40 features validation)
+# ============================================================================
+
+add_executable(test_ring_consumer_protobuf
+        tests/test_ring_consumer_protobuf.cpp
+
+        # ShardedFlowManager + ML Defender extractor
+        src/flow/sharded_flow_manager.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/time_window_manager.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ml_defender_features.cpp
+
+        # Protobuf
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(test_ring_consumer_protobuf PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+        ${ML_DEFENDER_DIR}/include
+)
+
+target_link_libraries(test_ring_consumer_protobuf
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+        gtest
+        gtest_main
+)
+
+message(STATUS "🧪 Unit Test: test_ring_consumer_protobuf configured (Day 46 - 40 features)")
+
+# ============================================================================
+# SHARDED FLOW MANAGER MULTITHREAD TEST - Day 46 (Concurrency validation)
+# ============================================================================
+
+add_executable(test_sharded_flow_multithread
+        tests/test_sharded_flow_multithread.cpp
+
+        # ShardedFlowManager + ML Defender extractor
+        src/flow/sharded_flow_manager.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/time_window_manager.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ml_defender_features.cpp
+
+        # Protobuf
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(test_sharded_flow_multithread PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+        ${ML_DEFENDER_DIR}/include
+)
+
+target_link_libraries(test_sharded_flow_multithread
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+        gtest
+        gtest_main
+)
+
+message(STATUS "🧪 Unit Test: test_sharded_flow_multithread configured (Day 46 - Concurrency)")
