@@ -62,9 +62,6 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/bpf_program.dir/DependInfo.cmake"
   "CMakeFiles/sniffer.dir/DependInfo.cmake"
-  "CMakeFiles/test_ransomware_feature_extractor.dir/DependInfo.cmake"
-  "CMakeFiles/test_integration_simple_event.dir/DependInfo.cmake"
-  "CMakeFiles/test_fast_detector.dir/DependInfo.cmake"
   "CMakeFiles/test_payload_analyzer.dir/DependInfo.cmake"
   "CMakeFiles/test_sharded_flow_full_contract.dir/DependInfo.cmake"
   "CMakeFiles/test_ring_consumer_protobuf.dir/DependInfo.cmake"

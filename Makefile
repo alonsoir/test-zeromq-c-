@@ -1886,3 +1886,79 @@ day38-pipeline-test:
 	@vagrant ssh -c "jq -r '.detection.scores.divergence' /vagrant/logs/rag/synthetic/events/*.jsonl 2>/dev/null | head -5"
 	@echo ""
 	@echo "✅ Quick test complete"
+# ============================================================================
+# DAY 46/47 - HARDENING TEST SUITE (Test-Driven Hardening)
+# ============================================================================
+
+.PHONY: test-hardening test-hardening-build test-hardening-run
+.PHONY: test-sharded-mgr test-full-contract test-protobuf test-multithread
+.PHONY: test-hardening-clean test-hardening-tsan
+
+# Build all hardening tests
+test-hardening-build: proto etcd-client-build
+	@echo "🔨 Building Test-Driven Hardening Suite..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build && \
+		cmake .. && \
+		make test_sharded_flow_full_contract \
+		     test_ring_consumer_protobuf \
+		     test_sharded_flow_multithread -j4"
+	@echo "✅ Hardening tests built"
+
+# Run all hardening tests
+test-hardening-run:
+	@echo "🧪 Running Test-Driven Hardening Suite..."
+	# @echo ""
+	# @echo "Test 1: ShardedFlowManager (Unit)"
+	# @vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_manager"
+	@echo ""
+	@echo "Test 1: Full Contract (Integration)"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_full_contract"
+	@echo ""
+	@echo "Test 2: Protobuf Pipeline"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_ring_consumer_protobuf"
+	@echo ""
+	@echo "Test 3: Multithreading (Stress)"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_multithread"
+	@echo ""
+	@echo "✅ All hardening tests PASSED"
+
+# Combined: build + run
+test-hardening: test-hardening-build test-hardening-run
+
+# Individual test targets
+test-sharded-mgr:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_manager"
+
+test-full-contract:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_full_contract"
+
+test-protobuf:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_ring_consumer_protobuf"
+
+test-multithread:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_multithread"
+
+# TSAN validation (ThreadSanitizer)
+test-hardening-tsan:
+	@echo "🔬 Building with ThreadSanitizer..."
+	@vagrant ssh -c "cd /vagrant/sniffer && rm -rf build && mkdir build && cd build && \
+		cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		      -DCMAKE_CXX_FLAGS='-fsanitize=thread -O1 -g' .. && \
+		make test_sharded_flow_multithread -j4"
+	@echo ""
+	@echo "Running TSAN validation..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build && \
+		TSAN_OPTIONS='halt_on_error=1 second_deadlock_stack=1' \
+		./test_sharded_flow_multithread"
+	@echo "✅ TSAN validation complete"
+
+# Clean test builds
+test-hardening-clean:
+	@echo "🧹 Cleaning hardening tests..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build && \
+		rm -f test_sharded_flow_manager \
+		      test_sharded_flow_full_contract \
+		      test_ring_consumer_protobuf \
+		      test_sharded_flow_multithread"
+	@echo "✅ Tests cleaned"
+
