@@ -582,3 +582,190 @@ obsolete_archive/ (8 files):
 **Next:** Day 42 Advanced Features  
 **Architecture:** Producer-Consumer (validated) 🏗️  
 **Quality:** Via Appia maintained 🏛️
+## ✅ Day 48 Phase 0 - TSAN Baseline COMPLETE (30 Enero 2026)
+
+### **Achievement: THREAD-SAFE VALIDATED**
+```
+╔════════════════════════════════════════════════════════════╗
+║  🏆 TSAN Baseline - RESULTADO PERFECTO                     ║
+╚════════════════════════════════════════════════════════════╝
+
+📊 Componentes:    4/4 ✅
+✅ Race Conditions: 0
+✅ Deadlocks:      0
+✅ Warnings:       0
+✅ Integration:    300s stable ✅
+```
+
+**TSAN Validation Results:**
+- **sniffer**: 23MB binary, 300s stable, 0 warnings
+- **ml-detector**: 25MB binary, 6/6 unit tests PASS, 0 warnings
+- **rag-ingester**: 13MB binary, 300s stable, 0 warnings
+- **etcd-server**: 13MB binary, 300s stable, 0 warnings
+
+**Integration Test:**
+- Duration: 300 seconds (5 minutes)
+- Health checks: 30/30 PASS
+- Crashes: 0
+- Components: All stable under TSAN monitoring
+
+**ISSUE-003 Concurrency Validation:**
+| Metric | Day 47 | Day 48 Phase 0 | Status |
+|--------|--------|----------------|--------|
+| Thread-safety | Assumed | **VALIDATED** | ✅ |
+| Race conditions | Unknown | **0** | ✅ |
+| Deadlocks | Unknown | **0** | ✅ |
+| Integration stability | Untested | **300s** | ✅ |
+
+**Files Generated:**
+- `/vagrant/tsan-reports/day48/TSAN_SUMMARY.md` - Consolidated report
+- `/vagrant/tsan-reports/day48/NOTES.md` - Methodology & conclusions
+- `/vagrant/tsan-reports/day48/*.log` - 8 test logs
+- `/vagrant/tsan-reports/baseline/` - Symlink to day48
+
+**Makefile Additions:**
+```makefile
+# New TSAN targets
+tsan-all           # Full: clean + build + test + report
+tsan-quick         # Quick: build + unit tests + report
+tsan-build-all     # Build all with TSAN
+tsan-run-all       # Run unit tests
+tsan-integration   # 5min integration test
+tsan-report        # Generate TSAN_SUMMARY.md
+tsan-clean         # Clean TSAN builds
+```
+
+**Issues Found & Fixed:**
+1. **ml-detector hardcoded ASAN flags** (líneas 29-30)
+   - Fixed: Commented out hardcoded flags
+   - Impact: Allows Makefile control of sanitizers
+
+2. **Integration test config paths**
+   - Fixed: Updated script to use `ml_detector_config.json`
+   - Impact: All components now start correctly
+
+**Via Appia Quality Applied:**
+- ✅ Baseline BEFORE contract validation
+- ✅ Evidence-based (TSAN reports, not assumptions)
+- ✅ Systematic approach (unit → integration → analysis)
+- ✅ Complete documentation (reports + notes)
+
+**Next Session (Day 48 Phase 1 - 31 Enero):**
+1. [ ] Contract validation: 142 features flow verification
+2. [ ] ml-detector input logging
+3. [ ] rag-ingester output validation
+4. [ ] End-to-end pipeline test
+
+---
+
+## 🎯 Day 48 Phase 1 - Contract Validation (NEXT - 31 Enero 2026)
+
+### **Goal:** Verify 142 features flow without loss
+
+**Objective:** Validate sniffer → ml-detector → rag-ingester contract
+
+**Plan (2-3 hours):**
+
+**Morning:**
+1. [ ] Add contract logging to ml-detector
+2. [ ] Add contract logging to rag-ingester
+3. [ ] Replay CTU-13 smallFlows.pcap
+4. [ ] Analyze logs for feature counts
+
+**Success Criteria:**
+```bash
+✅ ml-detector logs: "142/142 features validated"
+✅ rag-ingester logs: "142/142 features received"
+✅ 0 features lost in serialization
+✅ Evidence: grep "CONTRACT" logs/*.log
+```
+
+**Implementation:**
+```cpp
+// ml-detector/src/ml_detector.cpp
+void validate_input_contract(const SecurityEvent& event) {
+    int count = count_valid_features(event);
+    if (count < 142) {
+        LOG_ERROR("[CONTRACT] Expected 142, got {}", count);
+        log_missing_features(event);
+    } else {
+        LOG_INFO("[CONTRACT] 142/142 features validated");
+    }
+}
+```
+
+**Test:**
+```bash
+# Start pipeline
+make run-lab-dev-day23
+
+# Replay traffic
+make test-replay-small
+
+# Validate
+grep "CONTRACT" /vagrant/logs/*.log
+```
+
+---
+
+## 🔧 Technical Debt Update - Day 48
+
+### **New Item: CMakeLists.txt Refactoring**
+
+**Priority:** MEDIUM (can wait until Day 49-50)  
+**Impact:** Build system consistency  
+**Effort:** 4-6 hours
+
+**Problem:**
+Hardcoded flags in component CMakeLists.txt interfere with Makefile control.
+
+**Example:**
+```cmake
+# ml-detector/CMakeLists.txt
+set(CMAKE_CXX_FLAGS_DEBUG "-fsanitize=address ...") # Conflicts with TSAN
+```
+
+**Solution:**
+1. Remove all hardcoded CMAKE_CXX_FLAGS from CMakeLists.txt
+2. Centralize profiles in root Makefile
+3. Pass flags via cmake -DCMAKE_CXX_FLAGS="..."
+
+**Components to Clean:**
+- [ ] sniffer/CMakeLists.txt
+- [x] ml-detector/CMakeLists.txt (partial - lines 29-30 commented)
+- [ ] rag-ingester/CMakeLists.txt
+- [ ] etcd-server/CMakeLists.txt
+- [ ] crypto-transport/CMakeLists.txt
+- [ ] etcd-client/CMakeLists.txt
+
+**Estimated Timeline:**
+- Day 49 AM: Audit + document current flags
+- Day 49 PM: Remove hardcoded flags
+- Day 50 AM: Consolidate in Makefile
+- Day 50 PM: Validation tests
+
+---
+
+## 📊 ML Defender Status - Post Day 48 Phase 0
+```
+Foundation (ISSUE-003):        ████████████████████ 100% ✅
+Thread-Safety Validation:      ████████████████████ 100% ✅
+Contract Validation (Phase 1): ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+Build System Refactoring:      ████░░░░░░░░░░░░░░░░  20% 🟡
+```
+
+**Status Summary:**
+- ✅ ISSUE-003: Implementation complete (Day 43-47)
+- ✅ Thread-safety: TSAN validated (Day 48 Phase 0)
+- ⏳ Contract: Validation pending (Day 48 Phase 1)
+- ⏳ Build system: Cleanup needed (Day 49-50)
+
+**Critical Path:**
+1. ✅ Day 43-47: ShardedFlowManager + Tests
+2. ✅ Day 48 Phase 0: TSAN baseline
+3. ⏳ Day 48 Phase 1: Contract validation
+4. ⏳ Day 49-50: Build system refactoring
+5. ⏳ Day 51+: Production hardening
+
+---
+

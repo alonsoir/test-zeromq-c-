@@ -689,6 +689,10 @@ add_executable(test_sharded_flow_full_contract
         src/userspace/flow_manager.cpp
         src/userspace/time_window_manager.cpp
         src/userspace/time_window_aggregator.cpp
+
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
 )
 
 target_include_directories(test_sharded_flow_full_contract PRIVATE
@@ -718,6 +722,10 @@ add_executable(test_ring_consumer_protobuf
         src/userspace/time_window_manager.cpp
         src/userspace/time_window_aggregator.cpp
         src/userspace/ml_defender_features.cpp
+
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
 
         # Protobuf
         ${PROTO_SOURCES}
@@ -753,6 +761,10 @@ add_executable(test_sharded_flow_multithread
         src/userspace/time_window_manager.cpp
         src/userspace/time_window_aggregator.cpp
         src/userspace/ml_defender_features.cpp
+
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
 
         # Protobuf
         ${PROTO_SOURCES}

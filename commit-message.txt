@@ -1,133 +1,38 @@
-cd /vagrant
+# Añadir archivos
+git add tsan-reports/day48/
+git add docs/DAY48_PLAN.md
+git add docs/BACKLOG.md
+git add Makefile  # Con los nuevos TSAN targets
+git add ml-detector/CMakeLists.txt  # Con flags comentados
+git add scripts/tsan-integration-test.sh  # Script corregido
+git add sniffer/CMakeLists.txt  # Con dependencias actualizadas para tests
 
-git add -A
+# Commit
+git commit -m "Day 48 Phase 0 COMPLETE: TSAN Baseline Validation
 
-git commit -m "Day 47: Test Suite Audit Complete - Build System Cleaned
+✅ ACHIEVEMENTS:
+- 4/4 components built with ThreadSanitizer
+- ml-detector: 6/6 unit tests PASS with TSAN
+- Integration test: 300s stable, 0 crashes
+- TSAN analysis: 0 warnings, 0 errors, 0 race conditions
 
-╔════════════════════════════════════════════════════════════╗
-║  DAY 47 - TEST-DRIVEN HARDENING: AUDIT & CLEANUP          ║
-╚════════════════════════════════════════════════════════════╝
+📊 RESULTS:
+- Race conditions: 0
+- Deadlocks: 0
+- Integration stability: 300s continuous
+- ShardedFlowManager: Thread-safe validated
 
-AUDIT METHODOLOGY:
-✅ Thread_local Hunter (bash script)
-   - 2 false positives identified
-   - 0 actual thread_local issues found
+🔧 FIXES:
+- ml-detector: Removed hardcoded ASAN flags (lines 29-30)
+- Integration script: Fixed config path (detector.json → ml_detector_config.json)
+- sniffer tests: Added missing dependencies (flow_tracker, dns_analyzer, ip_whitelist)
 
-✅ Orphan Test Detection (filesystem comparison)
-   - 8 obsolete tests identified
-   - Evidence-based archival decisions
+📁 FILES:
+- tsan-reports/day48/TSAN_SUMMARY.md - Consolidated report (0W/0E)
+- tsan-reports/day48/NOTES.md - Methodology & conclusions
+- tsan-reports/baseline/ - Symlink to day48
+- Makefile: 8 new TSAN targets added
 
-TESTS ARCHIVED (8 files, 59 KB):
-tests/obsolete_archive/
-├─ Day 44 experiments (4 files):
-│  ├─ test_data_race_mut.cpp (5.4 KB)
-│  ├─ test_data_race_mut_fix3.cpp (4.7 KB)
-│  ├─ test_race_initialize.cpp (1.7 KB)
-│  └─ test_race_initialize_fix1.cpp (1.7 KB)
-│
-├─ Phase 1 legacy (3 files):
-│  ├─ test_fast_detector.cpp (7.6 KB)
-│  ├─ test_integration_simple_event.cpp (19.6 KB)
-│  └─ test_ransomware_feature_extractor.cpp (18.5 KB)
-│
-└─ Day 43 prototype (1 file):
-   └─ test_sharded_flow_manager.cpp (9 KB)
-      Analysis: NEVER in CMakeLists.txt (Jan 25)
-      Replacement: test_sharded_flow_full_contract.cpp (Jan 28)
+⏭️  NEXT: Day 48 Phase 1 - Contract Validation (142 features flow)
 
-BUILD SYSTEM UPDATES:
-✅ CMakeLists.txt (sniffer):
-   - 4 obsolete test blocks commented (lines 551-675)
-   - Preserved for historical reference
-
-✅ Root Makefile (/vagrant):
-   - test-hardening-build: Compile all tests
-   - test-hardening-run: Execute test suite
-   - test-hardening-tsan: ThreadSanitizer validation
-   - test-hardening-clean: Cleanup artifacts
-
-TEST VALIDATION RESULTS:
-═══════════════════════════════════════════════════════════
-
-Test 1: ShardedFlowManager Full Contract
-✅ 4/4 sub-tests PASSED
-   - Field population: 20/21 (95.2%)
-   - TCP flags: SYN=2 ACK=7 PSH=2 FIN=1 RST=1
-   - TimeWindowManager: Integrated
-
-Test 2: Protobuf Pipeline
-✅ 4/4 sub-tests PASSED
-   - Feature extraction: 142/142 fields (100%)
-   - ML Defender: 40 features
-   - Base NetworkFeatures: 102 fields
-   - Sample validation: 20/20 key fields
-
-Test 3: Multithreading Stress
-✅ 6/6 sub-tests PASSED
-   - Concurrent writes: 400K ops/sec (0 errors)
-   - Reads/Writes: 0 data inconsistencies
-   - Feature extraction: 40K/sec (142 fields each)
-   - High concurrency: 800K ops/sec (16 threads)
-   - Shard distribution: 1000/1000 flows
-
-OVERALL: 14/14 TESTS PASSED (100%) ✅
-
-═══════════════════════════════════════════════════════════
-
-ISSUE-003 FINAL STATUS:
-┌───────────────────────────────────────────────────────────┐
-│ Feature Extraction:    142/142 (100%) ✅                  │
-│ Thread-Safety:         0 inconsistencies ✅               │
-│ Performance:           800K ops/sec sustained ✅           │
-│ Test Coverage:         14/14 passing ✅                   │
-│ Documentation:         Complete ✅                         │
-└───────────────────────────────────────────────────────────┘
-
-VIA APPIA METHODOLOGY APPLIED:
-🏛️ Evidence-Based Decisions:
-   - File dates analyzed (Jan 25 vs Jan 28)
-   - CMakeLists.txt history checked (0 occurrences)
-   - Test execution validated (100% pass rate)
-
-🏛️ Despacio y Bien:
-   - Incremental validation (test after each change)
-   - Reversible actions (backups at each step)
-   - Preserved history (archive, not delete)
-
-🏛️ Scientific Honesty:
-   - Documented archival rationale (README.md)
-   - False positives acknowledged (thread_local Hunter)
-   - Limitations noted (TSAN pending - optional)
-
-FILES MODIFIED:
-sniffer/
-├─ tests/obsolete_archive/          (8 .cpp files archived)
-├─ tests/obsolete_archive/README.md (archival documentation)
-├─ CMakeLists.txt                   (4 blocks commented)
-└─ include/simple_event.h           (removed - using main.h)
-
-docs/validation/day47/
-└─ DAY47_SUMMARY.md                 (complete audit report)
-
-Makefile                            (test-hardening suite added)
-BACKLOG.md                          (Day 47 entry added)
-
-METRICS:
-- Tests archived: 8 files (59 KB code preserved)
-- Active tests: 4 files (14 sub-tests)
-- Success rate: 100% (14/14 passing)
-- Build time: <5 seconds
-- Test execution: <50ms total
-
-NEXT STEPS (OPTIONAL):
-- [ ] TSAN validation (make test-hardening-tsan)
-- [ ] Implement clear() method (test isolation)
-- [ ] CI/CD integration (automated testing)
-
-Co-authored-by: Claude (Anthropic)
-Co-authored-by: Gemini (Google DeepMind)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Via Appia: Not just fixing bugs, but building foundations
-that will support decades of reliable software engineering.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+Via Appia Quality: Evidence-based validation, baseline-first approach 🏛️"
