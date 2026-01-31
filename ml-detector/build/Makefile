@@ -347,6 +347,30 @@ src/config_loader.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/config_loader.cpp.s
 .PHONY : src/config_loader.cpp.s
 
+src/contract_validator.o: src/contract_validator.cpp.o
+.PHONY : src/contract_validator.o
+
+# target to build an object file
+src/contract_validator.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/contract_validator.cpp.o
+.PHONY : src/contract_validator.cpp.o
+
+src/contract_validator.i: src/contract_validator.cpp.i
+.PHONY : src/contract_validator.i
+
+# target to preprocess a source file
+src/contract_validator.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/contract_validator.cpp.i
+.PHONY : src/contract_validator.cpp.i
+
+src/contract_validator.s: src/contract_validator.cpp.s
+.PHONY : src/contract_validator.s
+
+# target to generate assembly for a file
+src/contract_validator.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ml-detector.dir/build.make CMakeFiles/ml-detector.dir/src/contract_validator.cpp.s
+.PHONY : src/contract_validator.cpp.s
+
 src/ddos_detector.o: src/ddos_detector.cpp.o
 .PHONY : src/ddos_detector.o
 
@@ -857,6 +881,9 @@ help:
 	@echo "... src/config_loader.o"
 	@echo "... src/config_loader.i"
 	@echo "... src/config_loader.s"
+	@echo "... src/contract_validator.o"
+	@echo "... src/contract_validator.i"
+	@echo "... src/contract_validator.s"
 	@echo "... src/ddos_detector.o"
 	@echo "... src/ddos_detector.i"
 	@echo "... src/ddos_detector.s"

@@ -404,6 +404,9 @@ src/userspace/dns_analyzer.o: src/userspace/dns_analyzer.cpp.o
 # target to build an object file
 src/userspace/dns_analyzer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/dns_analyzer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/dns_analyzer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/dns_analyzer.cpp.o
 .PHONY : src/userspace/dns_analyzer.cpp.o
 
 src/userspace/dns_analyzer.i: src/userspace/dns_analyzer.cpp.i
@@ -412,6 +415,9 @@ src/userspace/dns_analyzer.i: src/userspace/dns_analyzer.cpp.i
 # target to preprocess a source file
 src/userspace/dns_analyzer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/dns_analyzer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/dns_analyzer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/dns_analyzer.cpp.i
 .PHONY : src/userspace/dns_analyzer.cpp.i
 
 src/userspace/dns_analyzer.s: src/userspace/dns_analyzer.cpp.s
@@ -420,6 +426,9 @@ src/userspace/dns_analyzer.s: src/userspace/dns_analyzer.cpp.s
 # target to generate assembly for a file
 src/userspace/dns_analyzer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/dns_analyzer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/dns_analyzer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/dns_analyzer.cpp.s
 .PHONY : src/userspace/dns_analyzer.cpp.s
 
 src/userspace/dual_nic_manager.o: src/userspace/dual_nic_manager.cpp.o
@@ -605,6 +614,9 @@ src/userspace/flow_tracker.o: src/userspace/flow_tracker.cpp.o
 # target to build an object file
 src/userspace/flow_tracker.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_tracker.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_tracker.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_tracker.cpp.o
 .PHONY : src/userspace/flow_tracker.cpp.o
 
 src/userspace/flow_tracker.i: src/userspace/flow_tracker.cpp.i
@@ -613,6 +625,9 @@ src/userspace/flow_tracker.i: src/userspace/flow_tracker.cpp.i
 # target to preprocess a source file
 src/userspace/flow_tracker.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_tracker.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_tracker.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_tracker.cpp.i
 .PHONY : src/userspace/flow_tracker.cpp.i
 
 src/userspace/flow_tracker.s: src/userspace/flow_tracker.cpp.s
@@ -621,6 +636,9 @@ src/userspace/flow_tracker.s: src/userspace/flow_tracker.cpp.s
 # target to generate assembly for a file
 src/userspace/flow_tracker.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_tracker.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_tracker.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_tracker.cpp.s
 .PHONY : src/userspace/flow_tracker.cpp.s
 
 src/userspace/ip_whitelist.o: src/userspace/ip_whitelist.cpp.o
@@ -629,6 +647,9 @@ src/userspace/ip_whitelist.o: src/userspace/ip_whitelist.cpp.o
 # target to build an object file
 src/userspace/ip_whitelist.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/ip_whitelist.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ip_whitelist.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ip_whitelist.cpp.o
 .PHONY : src/userspace/ip_whitelist.cpp.o
 
 src/userspace/ip_whitelist.i: src/userspace/ip_whitelist.cpp.i
@@ -637,6 +658,9 @@ src/userspace/ip_whitelist.i: src/userspace/ip_whitelist.cpp.i
 # target to preprocess a source file
 src/userspace/ip_whitelist.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/ip_whitelist.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ip_whitelist.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ip_whitelist.cpp.i
 .PHONY : src/userspace/ip_whitelist.cpp.i
 
 src/userspace/ip_whitelist.s: src/userspace/ip_whitelist.cpp.s
@@ -645,6 +669,9 @@ src/userspace/ip_whitelist.s: src/userspace/ip_whitelist.cpp.s
 # target to generate assembly for a file
 src/userspace/ip_whitelist.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sniffer.dir/build.make CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_full_contract.dir/build.make CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/ip_whitelist.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_ring_consumer_protobuf.dir/build.make CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ip_whitelist.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_sharded_flow_multithread.dir/build.make CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ip_whitelist.cpp.s
 .PHONY : src/userspace/ip_whitelist.cpp.s
 
 src/userspace/main.o: src/userspace/main.cpp.o
