@@ -17,6 +17,7 @@
 // 🎯 DAY 27: Crypto-Transport Integration
 #include <crypto_transport/crypto_manager.hpp>
 #include <crypto_transport/utils.hpp>  // 🎯 DAY 29: For hex_to_bytes
+#include "contract_validator.h"
 
 //ml-detector/src/main.cpp
 using namespace ml_detector;
@@ -511,6 +512,9 @@ int main(int argc, char* argv[]) {
         log->info("   Avg Processing Time: {:.2f}ms", stats.avg_processing_time_ms);
 
         log->info("✅ ML Detector stopped gracefully");
+
+        // Log contract validation summary
+        mldefender::g_contract_stats.log_summary();
 
         Logger::shutdown();
 

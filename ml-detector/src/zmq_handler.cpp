@@ -1,6 +1,7 @@
 #include <reason_codes.hpp>
 #include "zmq_handler.hpp"
 #include "rag_logger.hpp"
+#include "contract_validator.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <chrono>
 #include <sstream>
@@ -259,6 +260,23 @@ void ZMQHandler::process_event(const std::string& message) {
         }
 
         logger_->debug("📦 Event received: id={}", event.event_id());
+
+        // ====================================================================
+        // 🎯 CONTRACT VALIDATION - ISSUE-003 (Day 48)
+        // ====================================================================
+        static std::atomic<uint64_t> event_counter{0};
+        event_counter++;
+
+        int feature_count = mldefender::ContractValidator::count_features(event);
+        mldefender::g_contract_stats.record(feature_count);
+        mldefender::g_contract_stats.log_progress(event_counter.load());
+
+        // Log primeras 10 violaciones
+        static std::atomic<uint64_t> violations_logged{0};
+        if (feature_count < 100 && violations_logged.load() < 10) {
+            mldefender::ContractValidator::log_missing_features(event, event_counter.load());
+            violations_logged++;
+        }
 
         // ====================================================================
         // DAY 13: READ FAST DETECTOR SCORE

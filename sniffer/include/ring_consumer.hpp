@@ -8,7 +8,6 @@
 #include "thread_manager.hpp"
 #include "fast_detector.hpp"
 #include "ransomware_feature_processor.hpp"
-#include "flow_manager.hpp"
 #include "ml_defender_features.hpp"
 #include "payload_analyzer.hpp"
 // ML Defender embedded detectors
@@ -29,6 +28,7 @@
 #include <atomic>
 #include <array>
 #include <functional>
+#include "flow/sharded_flow_manager.hpp"  // DAY 45
 
 namespace sniffer {
 
@@ -229,7 +229,6 @@ private:
     // Layer 1 - Fast Detection (thread-local)
     thread_local static FastDetector fast_detector_;
     thread_local static PayloadAnalyzer payload_analyzer_;
-    thread_local static FlowManager flow_manager_;      // Flow state tracking
     thread_local static MLDefenderExtractor ml_extractor_;  // Feature extraction
 
     // Layer 2 - Deep Analysis (singleton)

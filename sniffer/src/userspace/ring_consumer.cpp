@@ -6,7 +6,7 @@
 // 🎯 DAY 29: Crypto-transport utilities
 #include <crypto_transport/utils.hpp>
 #include "feature_logger.hpp"
-#include "flow_manager.hpp"
+#include "flow/sharded_flow_manager.hpp"  // ✅ DAY 45: Migrated
 #include "ml_defender_features.hpp"
 #include <iostream>
 #include <cstring>
@@ -27,14 +27,6 @@ namespace sniffer {
     thread_local PayloadAnalyzer RingBufferConsumer::payload_analyzer_;
 
     // ML Defender: Flow tracking (thread-local, per-consumer)
-    thread_local FlowManager RingBufferConsumer::flow_manager_(
-        FlowManager::Config{
-            .flow_timeout_ns = 120'000'000'000ULL,  // 120s timeout
-            .max_flows = 10'000,                     // Per-thread limit
-            .auto_export_on_tcp_close = false,       // Phase 2 feature
-            .enable_statistics = false               // Low overhead mode
-        }
-    );
 
 	// ML Defender: Feature extractor (thread-local, stateless)
 	thread_local MLDefenderExtractor RingBufferConsumer::ml_extractor_;
@@ -77,6 +69,18 @@ namespace sniffer {
         } else {
             std::cout << "[INFO] Fast Detector disabled" << std::endl;
         }
+
+        // ✅ DAY 45: Initialize ShardedFlowManager (thread-safe singleton)
+        auto& flow_manager = sniffer::flow::ShardedFlowManager::instance();
+        static std::once_flag init_flag;
+        std::call_once(init_flag, [&]() {
+            flow_manager.initialize(sniffer::flow::ShardedFlowManager::Config{
+                .shard_count = 16,
+                .max_flows_per_shard = 10000,
+                .flow_timeout_ns = 120000000000ULL  // 120 seconds in ns
+            });
+            std::cout << "[INFO] ✅ ShardedFlowManager initialized (16 shards, 10K flows/shard)" << std::endl;
+        });
     }
 
 RingBufferConsumer::~RingBufferConsumer() {
@@ -484,7 +488,16 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
     // ===== ML DEFENDER: Flow Tracking (Phase 1, Day 3) =====
     // Track flow state for feature extraction
     // NOTE: Each thread maintains its own flow table (thread_local)
-    flow_manager_.add_packet(event);
+    // ✅ DAY 45: Migración a ShardedFlowManager
+    FlowKey flow_key{
+        .src_ip = event.src_ip,
+        .dst_ip = event.dst_ip,
+        .src_port = event.src_port,
+        .dst_port = event.dst_port,
+        .protocol = event.protocol
+    };
+    auto& flow_manager = sniffer::flow::ShardedFlowManager::instance();
+    flow_manager.add_packet(flow_key, event);
 
     // ===== Layer 1.5: Payload Analysis (thread-local, ~1-150 μs) =====
     // Only analyze if payload is present
@@ -680,24 +693,22 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
         .dst_port = event.dst_port,
         .protocol = event.protocol
     };
+    auto& flow_manager = sniffer::flow::ShardedFlowManager::instance();
+    auto flow_stats_opt = flow_manager.get_flow_stats_copy(flow_key);
+    
+    if (flow_stats_opt.has_value()) {
+        const auto& flow_stats = flow_stats_opt.value();
 
-    // Get flow statistics from thread-local FlowManager
-    // NOTE: const_cast is safe here because flow_manager_ is thread_local
-    // (each thread has its own instance, guaranteed thread-safety)
-    auto& mutable_flow_mgr = const_cast<FlowManager&>(flow_manager_);
-    FlowStatistics* flow_stats = mutable_flow_mgr.get_flow_stats_unsafe(flow_key);
-
-    if (flow_stats) {
         // Extract and populate ML Defender features (40 features)
         // This populates 4 submessages: DDoS, Ransomware, Traffic, Internal
-        ml_extractor_.populate_ml_defender_features(*flow_stats, proto_event);
+        ml_extractor_.populate_ml_defender_features(flow_stats, proto_event);
 
         // Optional: Log feature extraction if verbosity enabled
         if (g_verbosity >= FeatureLogger::VerbosityLevel::GROUPED) {
             std::cout << "[ML Defender] Extracted features for flow: "
-                      << "spkts=" << flow_stats->spkts
-                      << ", dpkts=" << flow_stats->dpkts
-                      << ", duration=" << (flow_stats->get_duration_us() / 1000.0) << "ms"
+                      << "spkts=" << flow_stats.spkts
+                      << ", dpkts=" << flow_stats.dpkts
+                      << ", duration=" << (flow_stats.get_duration_us() / 1000.0) << "ms"
                       << std::endl;
         }
     } else {

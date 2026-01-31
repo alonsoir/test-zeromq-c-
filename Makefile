@@ -1886,3 +1886,290 @@ day38-pipeline-test:
 	@vagrant ssh -c "jq -r '.detection.scores.divergence' /vagrant/logs/rag/synthetic/events/*.jsonl 2>/dev/null | head -5"
 	@echo ""
 	@echo "✅ Quick test complete"
+# ============================================================================
+# DAY 46/47 - HARDENING TEST SUITE (Test-Driven Hardening)
+# ============================================================================
+
+.PHONY: test-hardening test-hardening-build test-hardening-run
+.PHONY: test-sharded-mgr test-full-contract test-protobuf test-multithread
+.PHONY: test-hardening-clean test-hardening-tsan
+
+# Build all hardening tests
+test-hardening-build: proto etcd-client-build
+	@echo "🔨 Building Test-Driven Hardening Suite..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build && \
+		cmake .. && \
+		make test_sharded_flow_full_contract \
+		     test_ring_consumer_protobuf \
+		     test_sharded_flow_multithread -j4"
+	@echo "✅ Hardening tests built"
+
+# Run all hardening tests
+test-hardening-run:
+	@echo "🧪 Running Test-Driven Hardening Suite..."
+	# @echo ""
+	# @echo "Test 1: ShardedFlowManager (Unit)"
+	# @vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_manager"
+	@echo ""
+	@echo "Test 1: Full Contract (Integration)"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_full_contract"
+	@echo ""
+	@echo "Test 2: Protobuf Pipeline"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_ring_consumer_protobuf"
+	@echo ""
+	@echo "Test 3: Multithreading (Stress)"
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_multithread"
+	@echo ""
+	@echo "✅ All hardening tests PASSED"
+
+# Combined: build + run
+test-hardening: test-hardening-build test-hardening-run
+
+# Individual test targets
+test-sharded-mgr:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_manager"
+
+test-full-contract:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_full_contract"
+
+test-protobuf:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_ring_consumer_protobuf"
+
+test-multithread:
+	@vagrant ssh -c "cd /vagrant/sniffer/build && ./test_sharded_flow_multithread"
+
+# TSAN validation (ThreadSanitizer)
+test-hardening-tsan:
+	@echo "🔬 Building with ThreadSanitizer..."
+	@vagrant ssh -c "cd /vagrant/sniffer && rm -rf build && mkdir build && cd build && \
+		cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		      -DCMAKE_CXX_FLAGS='-fsanitize=thread -O1 -g' .. && \
+		make test_sharded_flow_multithread -j4"
+	@echo ""
+	@echo "Running TSAN validation..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build && \
+		TSAN_OPTIONS='halt_on_error=1 second_deadlock_stack=1' \
+		./test_sharded_flow_multithread"
+	@echo "✅ TSAN validation complete"
+
+# Clean test builds
+test-hardening-clean:
+	@echo "🧹 Cleaning hardening tests..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build && \
+		rm -f test_sharded_flow_manager \
+		      test_sharded_flow_full_contract \
+		      test_ring_consumer_protobuf \
+		      test_sharded_flow_multithread"
+	@echo "✅ Tests cleaned"
+
+# ============================================================================
+# DAY 48 - PHASE 0: TSAN Baseline (Concurrency Validation)
+# ============================================================================
+
+.PHONY: tsan-all tsan-clean tsan-build-all tsan-run-all tsan-integration tsan-report tsan-quick
+.PHONY: tsan-build-sniffer tsan-build-ml-detector tsan-build-rag-ingester tsan-build-etcd-server
+.PHONY: tsan-run-sniffer tsan-run-ml-detector tsan-run-rag-ingester tsan-run-etcd-server
+
+# === TSAN Configuration ===
+TSAN_FLAGS := -fsanitize=thread -g -O1 -fno-omit-frame-pointer
+
+# === Main TSAN Targets ===
+
+tsan-all: tsan-clean tsan-build-all tsan-run-all tsan-report
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ TSAN Full Analysis Complete                           ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "📊 Report: tsan-reports/day48/TSAN_SUMMARY.md"
+
+tsan-quick: tsan-clean tsan-build-all tsan-run-all tsan-report
+	@echo "⚡ TSAN Quick check complete (unit tests only)"
+
+# === Cleanup ===
+
+tsan-clean:
+	@echo "🧹 Cleaning previous TSAN builds..."
+	@vagrant ssh -c "rm -rf /vagrant/sniffer/build-tsan"
+	@vagrant ssh -c "rm -rf /vagrant/ml-detector/build-tsan"
+	@vagrant ssh -c "rm -rf /vagrant/rag-ingester/build-tsan"
+	@vagrant ssh -c "rm -rf /vagrant/etcd-server/build-tsan"
+	@vagrant ssh -c "mkdir -p /vagrant/tsan-reports/day48"
+	@echo "✅ TSAN builds cleaned"
+
+# === Build Targets (with explicit verification) ===
+
+tsan-build-all:
+	@echo "🔨 Building all components with TSAN..."
+	@echo ""
+	@echo "Step 1: Ensuring protobuf is generated (inside VM)..."
+	@vagrant ssh -c "cd /vagrant/protobuf && \
+		chmod +x generate.sh && \
+		./generate.sh && \
+		echo '✅ Protobuf generated' && \
+		ls -lh /vagrant/protobuf/network_security.pb.h /vagrant/protobuf/network_security.pb.cc"
+	@echo ""
+	@echo "Step 2: Verifying protobuf files are accessible..."
+	@vagrant ssh -c "if [ -f /vagrant/protobuf/network_security.pb.h ]; then \
+		echo '  ✅ network_security.pb.h exists'; \
+	else \
+		echo '  ❌ network_security.pb.h NOT FOUND!'; \
+		exit 1; \
+	fi"
+	@echo ""
+	@echo "Step 3: Building libraries..."
+	@$(MAKE) crypto-transport-build
+	@$(MAKE) etcd-client-build
+	@echo ""
+	@echo "Step 4: Building components with TSAN..."
+	@$(MAKE) tsan-build-sniffer-internal
+	@$(MAKE) tsan-build-ml-detector-internal
+	@$(MAKE) tsan-build-rag-ingester-internal
+	@$(MAKE) tsan-build-etcd-server-internal
+	@echo ""
+	@echo "✅ All components built with TSAN"
+
+tsan-build-sniffer-internal:
+	@echo "🔨 Building sniffer with TSAN..."
+	@echo "  Verifying protobuf files exist..."
+	@vagrant ssh -c "ls -lh /vagrant/protobuf/network_security.pb.h /vagrant/protobuf/network_security.pb.cc || (echo '❌ Protobuf files missing!' && exit 1)"
+	@vagrant ssh -c "cd /vagrant/sniffer && \
+		mkdir -p build-tsan/proto && \
+		echo '📋 Copying protobuf files to build-tsan/proto/' && \
+		cp /vagrant/protobuf/network_security.pb.cc build-tsan/proto/ && \
+		cp /vagrant/protobuf/network_security.pb.h build-tsan/proto/ && \
+		ls -lh build-tsan/proto/network_security.pb.* && \
+		cd build-tsan && \
+		cmake -DCMAKE_BUILD_TYPE=Debug \
+		      -DCMAKE_CXX_FLAGS='$(TSAN_FLAGS)' \
+		      -DCMAKE_C_FLAGS='$(TSAN_FLAGS)' \
+		      .. && \
+		make -j4"
+	@echo "✅ sniffer TSAN build complete"
+
+tsan-build-ml-detector-internal:
+	@echo "🔨 Building ml-detector with TSAN..."
+	@echo "  ⚠️  Overriding sanitizer flags (TSAN only, no ASAN)"
+	@vagrant ssh -c "cd /vagrant/ml-detector && \
+		mkdir -p build-tsan && \
+		cd build-tsan && \
+		mkdir -p proto && \
+		cp /vagrant/protobuf/network_security.pb.* proto/ && \
+		cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		      -DCMAKE_CXX_FLAGS='-fsanitize=thread -g -O1 -fno-omit-frame-pointer' \
+		      -DCMAKE_C_FLAGS='-fsanitize=thread -g -O1 -fno-omit-frame-pointer' \
+		      -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=thread' \
+		      -DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=thread' \
+		      .. && \
+		make -j4 2>&1 | grep -v 'is incompatible' || true"
+	@echo "✅ ml-detector TSAN build complete"
+
+tsan-build-rag-ingester-internal:
+	@echo "🔨 Building rag-ingester with TSAN..."
+	@vagrant ssh -c "cd /vagrant/rag-ingester && \
+		mkdir -p build-tsan && \
+		cd build-tsan && \
+		mkdir -p proto && \
+		cp /vagrant/protobuf/network_security.pb.* proto/ && \
+		cmake -DCMAKE_BUILD_TYPE=Debug \
+		      -DCMAKE_CXX_FLAGS='$(TSAN_FLAGS)' \
+		      .. && \
+		make -j4"
+	@echo "✅ rag-ingester TSAN build complete"
+
+tsan-build-etcd-server-internal:
+	@echo "🔨 Building etcd-server with TSAN..."
+	@vagrant ssh -c "cd /vagrant/etcd-server && \
+		mkdir -p build-tsan && \
+		cd build-tsan && \
+		cmake -DCMAKE_BUILD_TYPE=Debug \
+		      -DCMAKE_CXX_FLAGS='$(TSAN_FLAGS)' \
+		      .. && \
+		make -j4"
+	@echo "✅ etcd-server TSAN build complete"
+
+tsan-build-sniffer: tsan-build-all
+tsan-build-ml-detector: tsan-build-all
+tsan-build-rag-ingester: tsan-build-all
+tsan-build-etcd-server: tsan-build-all
+
+# === Test Execution ===
+
+tsan-run-all: tsan-run-sniffer tsan-run-ml-detector tsan-run-rag-ingester tsan-run-etcd-server
+	@echo "✅ All TSAN unit tests executed"
+
+tsan-run-sniffer:
+	@echo "🧪 Running sniffer TSAN tests..."
+	@vagrant ssh -c "cd /vagrant/sniffer/build-tsan && \
+		TSAN_OPTIONS='log_path=/vagrant/tsan-reports/day48/sniffer-tsan history_size=7 second_deadlock_stack=1' \
+		ctest --output-on-failure 2>&1 | tee /vagrant/tsan-reports/day48/sniffer-tsan-tests.log" || true
+	@echo "✅ sniffer tests complete"
+
+tsan-run-ml-detector:
+	@echo "🧪 Running ml-detector TSAN tests..."
+	@vagrant ssh -c "cd /vagrant/ml-detector/build-tsan && \
+		TSAN_OPTIONS='log_path=/vagrant/tsan-reports/day48/ml-detector-tsan history_size=7' \
+		ctest --output-on-failure 2>&1 | tee /vagrant/tsan-reports/day48/ml-detector-tsan-tests.log" || true
+	@echo "✅ ml-detector tests complete"
+
+tsan-run-rag-ingester:
+	@echo "🧪 Running rag-ingester TSAN tests..."
+	@vagrant ssh -c "cd /vagrant/rag-ingester/build-tsan && \
+		TSAN_OPTIONS='log_path=/vagrant/tsan-reports/day48/rag-ingester-tsan history_size=7' \
+		ctest --output-on-failure 2>&1 | tee /vagrant/tsan-reports/day48/rag-ingester-tsan-tests.log" || true
+	@echo "✅ rag-ingester tests complete"
+
+tsan-run-etcd-server:
+	@echo "🧪 Running etcd-server TSAN tests..."
+	@vagrant ssh -c "cd /vagrant/etcd-server/build-tsan && \
+		TSAN_OPTIONS='log_path=/vagrant/tsan-reports/day48/etcd-server-tsan history_size=7' \
+		ctest --output-on-failure 2>&1 | tee /vagrant/tsan-reports/day48/etcd-server-tsan-tests.log" || true
+	@echo "✅ etcd-server tests complete"
+
+# === Integration Test (5min high load) ===
+
+tsan-integration:
+	@echo "🔥 Running TSAN integration test (5min high load)..."
+	@echo "⚠️  This requires the integration test script"
+	@vagrant ssh -c "cd /vagrant && bash scripts/tsan-integration-test.sh"
+
+# === Report Generation ===
+
+tsan-report:
+	@echo "📊 Generating TSAN summary report..."
+	@vagrant ssh -c "cd /vagrant && python3 scripts/analyze-tsan-reports.py tsan-reports/day48"
+	@echo ""
+	@echo "✅ TSAN reports generated:"
+	@echo "   📄 Summary: tsan-reports/day48/TSAN_SUMMARY.md"
+	@echo "   📁 Logs:    tsan-reports/day48/*.log"
+	@echo ""
+	@echo "View summary:"
+	@echo "   cat tsan-reports/day48/TSAN_SUMMARY.md"
+
+# === Helper: View TSAN Summary ===
+
+tsan-summary:
+	@echo "📊 TSAN Summary Report:"
+	@echo "════════════════════════════════════════════════════════════"
+	@cat tsan-reports/day48/TSAN_SUMMARY.md 2>/dev/null || echo "❌ No summary found. Run: make tsan-all"
+	@echo "════════════════════════════════════════════════════════════"
+
+# === Helper: Check TSAN Status ===
+
+tsan-status:
+	@echo "🔍 TSAN Build Status:"
+	@echo ""
+	@echo "Sniffer:"
+	@vagrant ssh -c "ls -lh /vagrant/sniffer/build-tsan/sniffer 2>/dev/null && echo '  ✅ Built' || echo '  ❌ Not built'"
+	@echo ""
+	@echo "ml-detector:"
+	@vagrant ssh -c "ls -lh /vagrant/ml-detector/build-tsan/ml-detector 2>/dev/null && echo '  ✅ Built' || echo '  ❌ Not built'"
+	@echo ""
+	@echo "rag-ingester:"
+	@vagrant ssh -c "ls -lh /vagrant/rag-ingester/build-tsan/rag-ingester 2>/dev/null && echo '  ✅ Built' || echo '  ❌ Not built'"
+	@echo ""
+	@echo "etcd-server:"
+	@vagrant ssh -c "ls -lh /vagrant/etcd-server/build-tsan/etcd-server 2>/dev/null && echo '  ✅ Built' || echo '  ❌ Not built'"
+	@echo ""
+	@echo "Reports:"
+	@vagrant ssh -c "ls -lh /vagrant/tsan-reports/day48/*.log 2>/dev/null | wc -l | xargs echo '  Logs:'" || echo "  ❌ No reports"

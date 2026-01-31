@@ -1,0 +1,7 @@
+test_classifier 1 0.0721849
+test_feature_extractor 1 0.0353469
+test_model_loader 1 0.0341885
+test_detectors 1 0.196982
+RansomwareDetectorUnit 1 0.124888
+DetectorsUnit 1 0.15971
+---

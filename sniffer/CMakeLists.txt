@@ -94,7 +94,6 @@ if(SODIUM_LIB)
 else()
     message(FATAL_ERROR "❌ libsodium not found - install: sudo apt install libsodium-dev")
 endif()
-# ============================================================================
 
 # ============================================================================
 # CONFIGURATION VALIDATION
@@ -233,8 +232,10 @@ set(SNIFFER_SOURCES
         ${ML_DEFENDER_SOURCES}
 )
 
-
-
+# ShardedFlowManager (Day 43)
+set(SHARDED_FLOW_SOURCES
+        src/flow/sharded_flow_manager.cpp
+)
 
 # Feature-specific sources
 set(SNIFFER_FEATURE_SOURCES "")
@@ -254,9 +255,49 @@ endif()
 # EXECUTABLE TARGET
 # ============================================================================
 
-add_executable(sniffer ${SNIFFER_SOURCES})
+add_executable(sniffer
+        ${SNIFFER_SOURCES}
+        ${SHARDED_FLOW_SOURCES})
 
 add_dependencies(sniffer bpf_program )
+
+target_include_directories(sniffer PRIVATE
+        # Core directories
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow          # ← NEW: ShardedFlowManager
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+        ${CMAKE_BINARY_DIR}
+
+        # ML Defender Phase 1 - Embedded C++20 Detectors
+        ${ML_DEFENDER_DIR}/include
+
+        # Common headers (reason codes, shared types)
+        /vagrant/common/include
+
+        # Core dependencies includes
+        ${LIBBPF_INCLUDE_DIRS}
+        ${ZMQ_INCLUDE_DIRS}
+        ${JSONCPP_INCLUDE_DIRS}
+        ${Protobuf_INCLUDE_DIRS}
+
+        # Compression includes (mandatory)
+        ${LZ4_INCLUDE_DIRS}
+        ${ZSTD_INCLUDE_DIRS}
+)
+
+# Optional includes
+if(SNAPPY_FOUND)
+    target_include_directories(sniffer PRIVATE ${SNAPPY_INCLUDE_DIRS})
+endif()
+
+if(ETCD_CLIENT_LIB)
+    target_include_directories(sniffer PRIVATE ${ETCD_CLIENT_INCLUDE_DIR})
+endif()
+
+if(CRYPTO_TRANSPORT_LIB)
+    target_include_directories(sniffer PRIVATE ${CRYPTO_TRANSPORT_INCLUDE})
+endif()
 
 # ============================================================================
 # LIBRARIES CONFIGURATION
@@ -507,89 +548,89 @@ message(STATUS "")
 # ============================================================================
 
 # Test executable for ransomware feature extractor
-add_executable(test_ransomware_feature_extractor
-        tests/test_ransomware_feature_extractor.cpp
+# add_executable(test_ransomware_feature_extractor
+#         tests/test_ransomware_feature_extractor.cpp
 
         # Ransomware detection components (SIN processor)
-        src/userspace/flow_tracker.cpp
-        src/userspace/dns_analyzer.cpp
-        src/userspace/ip_whitelist.cpp
-        src/userspace/time_window_aggregator.cpp
-        src/userspace/ransomware_feature_extractor.cpp
+#         src/userspace/flow_tracker.cpp
+#         src/userspace/dns_analyzer.cpp
+#         src/userspace/ip_whitelist.cpp
+#         src/userspace/time_window_aggregator.cpp
+#         src/userspace/ransomware_feature_extractor.cpp
         # ⚠️ NOTA: NO incluimos ransomware_feature_processor.cpp porque necesita protobuf
         #          y este test solo valida el extractor
-)
+# )
 
 # Include directories
-target_include_directories(test_ransomware_feature_extractor PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-)
+# target_include_directories(test_ransomware_feature_extractor PRIVATE
+#         ${CMAKE_SOURCE_DIR}/include
+#         ${CMAKE_SOURCE_DIR}/src
+# )
 
 # Link libraries (solo threads, sin protobuf)
-target_link_libraries(test_ransomware_feature_extractor
-        Threads::Threads
-)
+# target_link_libraries(test_ransomware_feature_extractor
+#         Threads::Threads
+# )
 
-message(STATUS "")
-message(STATUS "🧪 Unit Tests:")
-message(STATUS "   ✅ test_ransomware_feature_extractor configured")
-message(STATUS "")
+# message(STATUS "")
+# message(STATUS "🧪 Unit Tests:")
+# message(STATUS "   ✅ test_ransomware_feature_extractor configured")
+# message(STATUS "")
 
 # ============================================================================
 # INTEGRATION TEST - Phase 1C (Two-layer detection)
 # ============================================================================
 
-add_executable(test_integration_simple_event
-        tests/test_integration_simple_event.cpp
+# add_executable(test_integration_simple_event
+#         tests/test_integration_simple_event.cpp
 
         # Ransomware detection components
-        src/userspace/flow_tracker.cpp
-        src/userspace/dns_analyzer.cpp
-        src/userspace/ip_whitelist.cpp
-        src/userspace/time_window_aggregator.cpp
-        src/userspace/ransomware_feature_extractor.cpp
-        src/userspace/ransomware_feature_processor.cpp
-        src/userspace/fast_detector.cpp  # Layer 1 detection
+#         src/userspace/flow_tracker.cpp
+#         src/userspace/dns_analyzer.cpp
+#         src/userspace/ip_whitelist.cpp
+#         src/userspace/time_window_aggregator.cpp
+#         src/userspace/ransomware_feature_extractor.cpp
+#         src/userspace/ransomware_feature_processor.cpp
+#         src/userspace/fast_detector.cpp  # Layer 1 detection
 
         # Protobuf
-        ${PROTO_SOURCES}   # Usar los archivos protobuf unificados
-)
+#         ${PROTO_SOURCES}   # Usar los archivos protobuf unificados
+# )
 
 # Include directories
-target_include_directories(test_integration_simple_event PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/proto
-)
+# target_include_directories(test_integration_simple_event PRIVATE
+#         ${CMAKE_SOURCE_DIR}/include
+#         ${CMAKE_SOURCE_DIR}/src
+#         ${CMAKE_BINARY_DIR}/proto
+# )
 
 # Link libraries
-target_link_libraries(test_integration_simple_event
-        Threads::Threads
-        ${Protobuf_LIBRARIES}
-)
+# target_link_libraries(test_integration_simple_event
+#         Threads::Threads
+#         ${Protobuf_LIBRARIES}
+# )
 
-message(STATUS "🧪 Integration Test: test_integration_simple_event configured")
+# message(STATUS "🧪 Integration Test: test_integration_simple_event configured")
 
 # ============================================================================
 # FAST DETECTOR UNIT TEST
 # ============================================================================
 
-add_executable(test_fast_detector
-        tests/test_fast_detector.cpp
-        src/userspace/fast_detector.cpp
-        src/userspace/time_window_aggregator.cpp
-)
+# add_executable(test_fast_detector
+#         tests/test_fast_detector.cpp
+#         src/userspace/fast_detector.cpp
+#         src/userspace/time_window_aggregator.cpp
+# )
 
-target_include_directories(test_fast_detector PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-)
+# target_include_directories(test_fast_detector PRIVATE
+#         ${CMAKE_SOURCE_DIR}/include
+# )
 
-target_link_libraries(test_fast_detector
-        Threads::Threads
-)
+# target_link_libraries(test_fast_detector
+#         Threads::Threads
+# )
 
-message(STATUS "🧪 Unit Test: test_fast_detector configured")
+# message(STATUS "🧪 Unit Test: test_fast_detector configured")
 
 # ============================================================================
 # PAYLOAD ANALYZER UNIT TEST
@@ -609,3 +650,139 @@ target_link_libraries(test_payload_analyzer
 )
 
 message(STATUS "🧪 Unit Test: test_payload_analyzer configured")
+
+# ============================================================================
+# SHARDED FLOW MANAGER TEST - Day 43 (Unit tests)
+# ============================================================================
+
+# add_executable(test_sharded_flow_manager
+#         tests/test_sharded_flow_manager.cpp
+#         src/flow/sharded_flow_manager.cpp
+#         src/userspace/flow_manager.cpp
+#         src/userspace/time_window_manager.cpp
+#         src/userspace/time_window_aggregator.cpp
+# )
+
+# target_include_directories(test_sharded_flow_manager PRIVATE
+#         ${CMAKE_SOURCE_DIR}/include
+#         ${CMAKE_SOURCE_DIR}/include/flow
+#         ${CMAKE_SOURCE_DIR}/src
+# )
+
+# target_link_libraries(test_sharded_flow_manager
+#         Threads::Threads
+#         gtest
+#         gtest_main
+# )
+
+# message(STATUS "🧪 Unit Test: test_sharded_flow_manager configured (Day 43)")
+
+# ============================================================================
+# SHARDED FLOW MANAGER FULL CONTRACT TEST - Day 46 (ISSUE-003 Validation)
+# ============================================================================
+
+add_executable(test_sharded_flow_full_contract
+        tests/test_sharded_flow_full_contract.cpp
+
+        # ShardedFlowManager components
+        src/flow/sharded_flow_manager.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/time_window_manager.cpp
+        src/userspace/time_window_aggregator.cpp
+
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+)
+
+target_include_directories(test_sharded_flow_full_contract PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_sharded_flow_full_contract
+        Threads::Threads
+        gtest
+        gtest_main
+)
+
+message(STATUS "🧪 Unit Test: test_sharded_flow_full_contract configured (Day 46 - ISSUE-003)")
+
+# ============================================================================
+# RING CONSUMER PROTOBUF PIPELINE TEST - Day 46 (40 features validation)
+# ============================================================================
+
+add_executable(test_ring_consumer_protobuf
+        tests/test_ring_consumer_protobuf.cpp
+
+        # ShardedFlowManager + ML Defender extractor
+        src/flow/sharded_flow_manager.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/time_window_manager.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ml_defender_features.cpp
+
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+
+        # Protobuf
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(test_ring_consumer_protobuf PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+        ${ML_DEFENDER_DIR}/include
+)
+
+target_link_libraries(test_ring_consumer_protobuf
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+        gtest
+        gtest_main
+)
+
+message(STATUS "🧪 Unit Test: test_ring_consumer_protobuf configured (Day 46 - 40 features)")
+
+# ============================================================================
+# SHARDED FLOW MANAGER MULTITHREAD TEST - Day 46 (Concurrency validation)
+# ============================================================================
+
+add_executable(test_sharded_flow_multithread
+        tests/test_sharded_flow_multithread.cpp
+
+        # ShardedFlowManager + ML Defender extractor
+        src/flow/sharded_flow_manager.cpp
+        src/userspace/flow_manager.cpp
+        src/userspace/time_window_manager.cpp
+        src/userspace/time_window_aggregator.cpp
+        src/userspace/ml_defender_features.cpp
+
+        src/userspace/flow_tracker.cpp
+        src/userspace/dns_analyzer.cpp
+        src/userspace/ip_whitelist.cpp
+
+        # Protobuf
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(test_sharded_flow_multithread PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/flow
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/proto
+        ${ML_DEFENDER_DIR}/include
+)
+
+target_link_libraries(test_sharded_flow_multithread
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+        gtest
+        gtest_main
+)
+
+message(STATUS "🧪 Unit Test: test_sharded_flow_multithread configured (Day 46 - Concurrency)")

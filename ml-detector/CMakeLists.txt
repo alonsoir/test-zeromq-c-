@@ -30,8 +30,8 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 
 # Debug flags
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+# DISABLED FOR MAKEFILE CONTROL: set(CMAKE_BUILD_TYPE Debug)
+# DISABLED FOR MAKEFILE CONTROL: set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
 
 # ============================================================================
 # FIND DEPENDENCIES
@@ -193,6 +193,7 @@ set(SOURCES
         src/classifier_tricapa.cpp
         src/feature_extractor.cpp
         src/rag_logger.cpp
+        src/contract_validator.cpp
         src/zmq_handler.cpp
         src/model_loader.cpp
         src/onnx_model.cpp

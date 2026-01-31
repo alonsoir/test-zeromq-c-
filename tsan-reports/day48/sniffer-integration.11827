@@ -1,0 +1,107 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=11827)
+  Read of size 4 at 0x55b8e9afc5a0 by thread T12:
+    #0 std::ios_base::setf(std::_Ios_Fmtflags, std::_Ios_Fmtflags) /usr/include/c++/12/bits/ios_base.h:704 (sniffer+0x5af24)
+    #1 std::fixed(std::ios_base&) /usr/include/c++/12/bits/ios_base.h:1082 (sniffer+0x5af24)
+    #2 std::ostream::operator<<(std::ios_base& (*)(std::ios_base&)) /usr/include/c++/12/ostream:132 (sniffer+0x5af24)
+    #3 sniffer::RingBufferConsumer::send_ransomware_features(protobuf::RansomwareFeatures const&) /vagrant/sniffer/src/userspace/ring_consumer.cpp:1254 (sniffer+0x5af24)
+    #4 sniffer::RingBufferConsumer::ransomware_processor_loop() /vagrant/sniffer/src/userspace/ring_consumer.cpp:1079 (sniffer+0x5ba01)
+    #5 void std::__invoke_impl<void, void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(std::__invoke_memfun_deref, void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:74 (sniffer+0x5bbb2)
+    #6 std::__invoke_result<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>::type std::__invoke<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:96 (sniffer+0x5bbb2)
+    #7 void std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) /usr/include/c++/12/bits/std_thread.h:252 (sniffer+0x5bbb2)
+    #8 std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::operator()() /usr/include/c++/12/bits/std_thread.h:259 (sniffer+0x5bbb2)
+    #9 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> > >::_M_run() /usr/include/c++/12/bits/std_thread.h:210 (sniffer+0x5bbb2)
+    #10 <null> <null> (libstdc++.so.6+0xd44a2)
+
+  Previous write of size 4 at 0x55b8e9afc5a0 by thread T13:
+    #0 std::operator|=(std::_Ios_Fmtflags&, std::_Ios_Fmtflags) /usr/include/c++/12/bits/ios_base.h:100 (sniffer+0x4cddf)
+    #1 std::ios_base::setf(std::_Ios_Fmtflags, std::_Ios_Fmtflags) /usr/include/c++/12/bits/ios_base.h:706 (sniffer+0x4cddf)
+    #2 std::fixed(std::ios_base&) /usr/include/c++/12/bits/ios_base.h:1082 (sniffer+0x4cddf)
+    #3 std::ostream::operator<<(std::ios_base& (*)(std::ios_base&)) /usr/include/c++/12/ostream:132 (sniffer+0x4cddf)
+    #4 sniffer::RingBufferConsumer::stats_display_loop() /vagrant/sniffer/src/userspace/ring_consumer.cpp:450 (sniffer+0x4cddf)
+    #5 void std::__invoke_impl<void, void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(std::__invoke_memfun_deref, void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:74 (sniffer+0x5bbb2)
+    #6 std::__invoke_result<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>::type std::__invoke<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:96 (sniffer+0x5bbb2)
+    #7 void std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) /usr/include/c++/12/bits/std_thread.h:252 (sniffer+0x5bbb2)
+    #8 std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::operator()() /usr/include/c++/12/bits/std_thread.h:259 (sniffer+0x5bbb2)
+    #9 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> > >::_M_run() /usr/include/c++/12/bits/std_thread.h:210 (sniffer+0x5bbb2)
+    #10 <null> <null> (libstdc++.so.6+0xd44a2)
+
+  As if synchronized via sleep:
+    #0 nanosleep ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:358 (libtsan.so.2+0x620f6)
+    #1 void std::this_thread::sleep_for<long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1l> > const&) /usr/include/c++/12/bits/this_thread_sleep.h:80 (sniffer+0x5b9cd)
+    #2 sniffer::RingBufferConsumer::ransomware_processor_loop() /vagrant/sniffer/src/userspace/ring_consumer.cpp:1072 (sniffer+0x5b9cd)
+    #3 void std::__invoke_impl<void, void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(std::__invoke_memfun_deref, void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:74 (sniffer+0x5bbb2)
+    #4 std::__invoke_result<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>::type std::__invoke<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:96 (sniffer+0x5bbb2)
+    #5 void std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) /usr/include/c++/12/bits/std_thread.h:252 (sniffer+0x5bbb2)
+    #6 std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::operator()() /usr/include/c++/12/bits/std_thread.h:259 (sniffer+0x5bbb2)
+    #7 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> > >::_M_run() /usr/include/c++/12/bits/std_thread.h:210 (sniffer+0x5bbb2)
+    #8 <null> <null> (libstdc++.so.6+0xd44a2)
+
+  Location is global '_ZSt4cout@GLIBCXX_3.4' of size 272 at 0x55b8e9afc580 (sniffer+0x1ba5a0)
+
+  Thread T12 (tid=11844, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1001 (libtsan.so.2+0x5e686)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xd4578)
+    #2 main /vagrant/sniffer/src/userspace/main.cpp:705 (sniffer+0x26cbd)
+
+  Thread T13 (tid=11845, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1001 (libtsan.so.2+0x5e686)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xd4578)
+    #2 std::thread& std::vector<std::thread, std::allocator<std::thread> >::emplace_back<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/vector.tcc:123 (sniffer+0x55c4e)
+    #3 sniffer::RingBufferConsumer::start() /vagrant/sniffer/src/userspace/ring_consumer.cpp:200 (sniffer+0x55c4e)
+    #4 main /vagrant/sniffer/src/userspace/main.cpp:705 (sniffer+0x26cbd)
+
+SUMMARY: ThreadSanitizer: data race /usr/include/c++/12/bits/ios_base.h:704 in std::ios_base::setf(std::_Ios_Fmtflags, std::_Ios_Fmtflags)
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=11827)
+  Write of size 8 at 0x55b8e9afc590 by thread T12:
+    #0 std::ios_base::precision(long) /usr/include/c++/12/bits/ios_base.h:740 (sniffer+0x5af67)
+    #1 std::basic_ostream<char, std::char_traits<char> >& std::operator<< <char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, std::_Setprecision) /usr/include/c++/12/iomanip:210 (sniffer+0x5af67)
+    #2 sniffer::RingBufferConsumer::send_ransomware_features(protobuf::RansomwareFeatures const&) /vagrant/sniffer/src/userspace/ring_consumer.cpp:1254 (sniffer+0x5af67)
+    #3 sniffer::RingBufferConsumer::ransomware_processor_loop() /vagrant/sniffer/src/userspace/ring_consumer.cpp:1079 (sniffer+0x5ba01)
+    #4 void std::__invoke_impl<void, void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(std::__invoke_memfun_deref, void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:74 (sniffer+0x5bbb2)
+    #5 std::__invoke_result<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>::type std::__invoke<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:96 (sniffer+0x5bbb2)
+    #6 void std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) /usr/include/c++/12/bits/std_thread.h:252 (sniffer+0x5bbb2)
+    #7 std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::operator()() /usr/include/c++/12/bits/std_thread.h:259 (sniffer+0x5bbb2)
+    #8 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> > >::_M_run() /usr/include/c++/12/bits/std_thread.h:210 (sniffer+0x5bbb2)
+    #9 <null> <null> (libstdc++.so.6+0xd44a2)
+
+  Previous write of size 8 at 0x55b8e9afc590 by thread T13:
+    #0 std::ios_base::precision(long) /usr/include/c++/12/bits/ios_base.h:740 (sniffer+0x4ce02)
+    #1 std::basic_ostream<char, std::char_traits<char> >& std::operator<< <char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, std::_Setprecision) /usr/include/c++/12/iomanip:210 (sniffer+0x4ce02)
+    #2 sniffer::RingBufferConsumer::stats_display_loop() /vagrant/sniffer/src/userspace/ring_consumer.cpp:450 (sniffer+0x4ce02)
+    #3 void std::__invoke_impl<void, void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(std::__invoke_memfun_deref, void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:74 (sniffer+0x5bbb2)
+    #4 std::__invoke_result<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>::type std::__invoke<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:96 (sniffer+0x5bbb2)
+    #5 void std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) /usr/include/c++/12/bits/std_thread.h:252 (sniffer+0x5bbb2)
+    #6 std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::operator()() /usr/include/c++/12/bits/std_thread.h:259 (sniffer+0x5bbb2)
+    #7 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> > >::_M_run() /usr/include/c++/12/bits/std_thread.h:210 (sniffer+0x5bbb2)
+    #8 <null> <null> (libstdc++.so.6+0xd44a2)
+
+  As if synchronized via sleep:
+    #0 nanosleep ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:358 (libtsan.so.2+0x620f6)
+    #1 void std::this_thread::sleep_for<long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1l> > const&) /usr/include/c++/12/bits/this_thread_sleep.h:80 (sniffer+0x5b9cd)
+    #2 sniffer::RingBufferConsumer::ransomware_processor_loop() /vagrant/sniffer/src/userspace/ring_consumer.cpp:1072 (sniffer+0x5b9cd)
+    #3 void std::__invoke_impl<void, void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(std::__invoke_memfun_deref, void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:74 (sniffer+0x5bbb2)
+    #4 std::__invoke_result<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>::type std::__invoke<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/invoke.h:96 (sniffer+0x5bbb2)
+    #5 void std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::_M_invoke<0ul, 1ul>(std::_Index_tuple<0ul, 1ul>) /usr/include/c++/12/bits/std_thread.h:252 (sniffer+0x5bbb2)
+    #6 std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> >::operator()() /usr/include/c++/12/bits/std_thread.h:259 (sniffer+0x5bbb2)
+    #7 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*> > >::_M_run() /usr/include/c++/12/bits/std_thread.h:210 (sniffer+0x5bbb2)
+    #8 <null> <null> (libstdc++.so.6+0xd44a2)
+
+  Location is global '_ZSt4cout@GLIBCXX_3.4' of size 272 at 0x55b8e9afc580 (sniffer+0x1ba590)
+
+  Thread T12 (tid=11844, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1001 (libtsan.so.2+0x5e686)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xd4578)
+    #2 main /vagrant/sniffer/src/userspace/main.cpp:705 (sniffer+0x26cbd)
+
+  Thread T13 (tid=11845, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1001 (libtsan.so.2+0x5e686)
+    #1 std::thread::_M_start_thread(std::unique_ptr<std::thread::_State, std::default_delete<std::thread::_State> >, void (*)()) <null> (libstdc++.so.6+0xd4578)
+    #2 std::thread& std::vector<std::thread, std::allocator<std::thread> >::emplace_back<void (sniffer::RingBufferConsumer::*)(), sniffer::RingBufferConsumer*>(void (sniffer::RingBufferConsumer::*&&)(), sniffer::RingBufferConsumer*&&) /usr/include/c++/12/bits/vector.tcc:123 (sniffer+0x55c4e)
+    #3 sniffer::RingBufferConsumer::start() /vagrant/sniffer/src/userspace/ring_consumer.cpp:200 (sniffer+0x55c4e)
+    #4 main /vagrant/sniffer/src/userspace/main.cpp:705 (sniffer+0x26cbd)
+
+SUMMARY: ThreadSanitizer: data race /usr/include/c++/12/bits/ios_base.h:740 in std::ios_base::precision(long)
+==================

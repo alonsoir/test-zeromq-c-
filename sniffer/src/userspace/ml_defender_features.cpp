@@ -701,6 +701,7 @@ float MLDefenderExtractor::calculate_iat_coefficient_of_variation(const std::vec
 
     // ============================================================================
     // CONVENIENCE METHOD - Populate all ML Defender features at once
+    // DAY 46 COMPLETION: Now extracts ALL 142 fields from FlowStatistics
     // ============================================================================
 
     void MLDefenderExtractor::populate_ml_defender_features(
@@ -709,6 +710,10 @@ float MLDefenderExtractor::calculate_iat_coefficient_of_variation(const std::vec
 
     // Get network_features submessage
     auto* net_features = proto_event.mutable_network_features();
+
+    // ========================================================================
+    // PART 1: ML DEFENDER EMBEDDED FEATURES (40 features)
+    // ========================================================================
 
     // Extract DDoS features (10 features)
     auto* ddos = net_features->mutable_ddos_embedded();
@@ -725,6 +730,227 @@ float MLDefenderExtractor::calculate_iat_coefficient_of_variation(const std::vec
     // Extract Internal features (10 features)
     auto* internal = net_features->mutable_internal_anomaly();
     extract_internal_features(flow, internal);
+
+    // ========================================================================
+    // PART 2: BASE NETWORK FEATURES (102+ fields) - DAY 46 COMPLETION
+    // ========================================================================
+
+    // 📊 ESTADÍSTICAS BÁSICAS DE PAQUETES
+    net_features->set_total_forward_packets(flow.spkts);
+    net_features->set_total_backward_packets(flow.dpkts);
+    net_features->set_total_forward_bytes(flow.sbytes);
+    net_features->set_total_backward_bytes(flow.dbytes);
+
+    // ⏰ TIMING - Flow duration
+    uint64_t duration_us = flow.get_duration_us();
+    net_features->set_flow_duration_microseconds(duration_us);
+
+    // 📏 ESTADÍSTICAS DE LONGITUD - FORWARD
+    if (!flow.fwd_lengths.empty()) {
+        auto fwd_minmax = std::minmax_element(flow.fwd_lengths.begin(), flow.fwd_lengths.end());
+        net_features->set_forward_packet_length_min(*fwd_minmax.first);
+        net_features->set_forward_packet_length_max(*fwd_minmax.second);
+        net_features->set_forward_packet_length_mean(calculate_mean(flow.fwd_lengths));
+        net_features->set_forward_packet_length_std(calculate_std_dev(flow.fwd_lengths));
+    }
+
+    // 📏 ESTADÍSTICAS DE LONGITUD - BACKWARD
+    if (!flow.bwd_lengths.empty()) {
+        auto bwd_minmax = std::minmax_element(flow.bwd_lengths.begin(), flow.bwd_lengths.end());
+        net_features->set_backward_packet_length_min(*bwd_minmax.first);
+        net_features->set_backward_packet_length_max(*bwd_minmax.second);
+        net_features->set_backward_packet_length_mean(calculate_mean(flow.bwd_lengths));
+        net_features->set_backward_packet_length_std(calculate_std_dev(flow.bwd_lengths));
+    }
+
+    // 📊 ESTADÍSTICAS GLOBALES DE LONGITUD
+    if (!flow.all_lengths.empty()) {
+        auto all_minmax = std::minmax_element(flow.all_lengths.begin(), flow.all_lengths.end());
+        net_features->set_minimum_packet_length(*all_minmax.first);
+        net_features->set_maximum_packet_length(*all_minmax.second);
+
+        float mean = calculate_mean(flow.all_lengths);
+        float std_dev = calculate_std_dev(flow.all_lengths);
+
+        net_features->set_packet_length_mean(mean);
+        net_features->set_packet_length_std(std_dev);
+        net_features->set_packet_length_variance(std_dev * std_dev);
+        net_features->set_average_packet_size(mean);
+    }
+
+    // 🚀 VELOCIDADES Y RATIOS
+    float duration_sec = duration_us / 1000000.0f;
+    if (duration_sec > 0.0f) {
+        uint64_t total_packets = flow.spkts + flow.dpkts;
+        uint64_t total_bytes = flow.sbytes + flow.dbytes;
+
+        net_features->set_flow_packets_per_second(total_packets / duration_sec);
+        net_features->set_flow_bytes_per_second(total_bytes / duration_sec);
+        net_features->set_forward_packets_per_second(flow.spkts / duration_sec);
+        net_features->set_backward_packets_per_second(flow.dpkts / duration_sec);
+    }
+
+    // Download/Upload ratio
+    float download_upload = safe_divide(
+        static_cast<float>(flow.dbytes),
+        static_cast<float>(flow.sbytes)
+    );
+    net_features->set_download_upload_ratio(download_upload);
+
+    // Average segment sizes
+    if (flow.spkts > 0) {
+        net_features->set_average_forward_segment_size(
+            static_cast<double>(flow.sbytes) / flow.spkts
+        );
+    }
+    if (flow.dpkts > 0) {
+        net_features->set_average_backward_segment_size(
+            static_cast<double>(flow.dbytes) / flow.dpkts
+        );
+    }
+
+    // ⏱️ INTER-ARRIVAL TIMES - FLOW (all packets)
+    if (flow.packet_timestamps.size() >= 2) {
+        std::vector<uint64_t> iats;
+        iats.reserve(flow.packet_timestamps.size() - 1);
+
+        for (size_t i = 1; i < flow.packet_timestamps.size(); ++i) {
+            if (flow.packet_timestamps[i] >= flow.packet_timestamps[i-1]) {
+                iats.push_back(flow.packet_timestamps[i] - flow.packet_timestamps[i-1]);
+            }
+        }
+
+        if (!iats.empty()) {
+            auto iat_minmax = std::minmax_element(iats.begin(), iats.end());
+
+            uint64_t sum = std::accumulate(iats.begin(), iats.end(), 0ULL);
+            float mean_ns = static_cast<float>(sum) / iats.size();
+
+            // Calculate std dev
+            float sum_sq_diff = 0.0f;
+            for (uint64_t iat : iats) {
+                float diff = static_cast<float>(iat) - mean_ns;
+                sum_sq_diff += diff * diff;
+            }
+            float std_ns = std::sqrt(sum_sq_diff / iats.size());
+
+            net_features->set_flow_inter_arrival_time_min(*iat_minmax.first);
+            net_features->set_flow_inter_arrival_time_max(*iat_minmax.second);
+            net_features->set_flow_inter_arrival_time_mean(mean_ns / 1000.0);  // Convert to microseconds
+            net_features->set_flow_inter_arrival_time_std(std_ns / 1000.0);
+        }
+    }
+
+    // ⏱️ INTER-ARRIVAL TIMES - FORWARD
+    if (flow.fwd_timestamps.size() >= 2) {
+        std::vector<uint64_t> fwd_iats;
+        fwd_iats.reserve(flow.fwd_timestamps.size() - 1);
+
+        for (size_t i = 1; i < flow.fwd_timestamps.size(); ++i) {
+            if (flow.fwd_timestamps[i] >= flow.fwd_timestamps[i-1]) {
+                fwd_iats.push_back(flow.fwd_timestamps[i] - flow.fwd_timestamps[i-1]);
+            }
+        }
+
+        if (!fwd_iats.empty()) {
+            auto fwd_minmax = std::minmax_element(fwd_iats.begin(), fwd_iats.end());
+            uint64_t sum = std::accumulate(fwd_iats.begin(), fwd_iats.end(), 0ULL);
+            float mean_ns = static_cast<float>(sum) / fwd_iats.size();
+
+            float sum_sq_diff = 0.0f;
+            for (uint64_t iat : fwd_iats) {
+                float diff = static_cast<float>(iat) - mean_ns;
+                sum_sq_diff += diff * diff;
+            }
+            float std_ns = std::sqrt(sum_sq_diff / fwd_iats.size());
+
+            net_features->set_forward_inter_arrival_time_min(*fwd_minmax.first);
+            net_features->set_forward_inter_arrival_time_max(*fwd_minmax.second);
+            net_features->set_forward_inter_arrival_time_mean(mean_ns / 1000.0);
+            net_features->set_forward_inter_arrival_time_std(std_ns / 1000.0);
+            net_features->set_forward_inter_arrival_time_total(sum / 1000.0);
+        }
+    }
+
+    // ⏱️ INTER-ARRIVAL TIMES - BACKWARD
+    if (flow.bwd_timestamps.size() >= 2) {
+        std::vector<uint64_t> bwd_iats;
+        bwd_iats.reserve(flow.bwd_timestamps.size() - 1);
+
+        for (size_t i = 1; i < flow.bwd_timestamps.size(); ++i) {
+            if (flow.bwd_timestamps[i] >= flow.bwd_timestamps[i-1]) {
+                bwd_iats.push_back(flow.bwd_timestamps[i] - flow.bwd_timestamps[i-1]);
+            }
+        }
+
+        if (!bwd_iats.empty()) {
+            auto bwd_minmax = std::minmax_element(bwd_iats.begin(), bwd_iats.end());
+            uint64_t sum = std::accumulate(bwd_iats.begin(), bwd_iats.end(), 0ULL);
+            float mean_ns = static_cast<float>(sum) / bwd_iats.size();
+
+            float sum_sq_diff = 0.0f;
+            for (uint64_t iat : bwd_iats) {
+                float diff = static_cast<float>(iat) - mean_ns;
+                sum_sq_diff += diff * diff;
+            }
+            float std_ns = std::sqrt(sum_sq_diff / bwd_iats.size());
+
+            net_features->set_backward_inter_arrival_time_min(*bwd_minmax.first);
+            net_features->set_backward_inter_arrival_time_max(*bwd_minmax.second);
+            net_features->set_backward_inter_arrival_time_mean(mean_ns / 1000.0);
+            net_features->set_backward_inter_arrival_time_std(std_ns / 1000.0);
+            net_features->set_backward_inter_arrival_time_total(sum / 1000.0);
+        }
+    }
+
+    // 🏳️ TCP FLAGS COUNTS
+    net_features->set_fin_flag_count(flow.fin_count);
+    net_features->set_syn_flag_count(flow.syn_count);
+    net_features->set_rst_flag_count(flow.rst_count);
+    net_features->set_psh_flag_count(flow.psh_count);
+    net_features->set_ack_flag_count(flow.ack_count);
+    net_features->set_urg_flag_count(flow.urg_count);
+    net_features->set_ece_flag_count(flow.ece_count);
+    net_features->set_cwe_flag_count(flow.cwr_count);
+
+    // 🏳️ TCP FLAGS DIRECTIONAL
+    net_features->set_forward_psh_flags(flow.fwd_psh_flags);
+    net_features->set_backward_psh_flags(flow.bwd_psh_flags);
+    net_features->set_forward_urg_flags(flow.fwd_urg_flags);
+    net_features->set_backward_urg_flags(flow.bwd_urg_flags);
+
+    // 📋 HEADERS
+    if (!flow.fwd_header_lengths.empty()) {
+        uint64_t sum = std::accumulate(flow.fwd_header_lengths.begin(),
+                                       flow.fwd_header_lengths.end(), 0ULL);
+        net_features->set_forward_header_length(
+            static_cast<double>(sum) / flow.fwd_header_lengths.size()
+        );
+    }
+
+    if (!flow.bwd_header_lengths.empty()) {
+        uint64_t sum = std::accumulate(flow.bwd_header_lengths.begin(),
+                                       flow.bwd_header_lengths.end(), 0ULL);
+        net_features->set_backward_header_length(
+            static_cast<double>(sum) / flow.bwd_header_lengths.size()
+        );
+    }
+
+    // 📋 BULK TRANSFER (placeholders - require deeper analysis)
+    // These would need analysis of packet sequences to detect bulk transfers
+    // For now, set to 0 (no bulk detected)
+    net_features->set_forward_average_bytes_bulk(0.0);
+    net_features->set_forward_average_packets_bulk(0.0);
+    net_features->set_forward_average_bulk_rate(0.0);
+    net_features->set_backward_average_bytes_bulk(0.0);
+    net_features->set_backward_average_packets_bulk(0.0);
+    net_features->set_backward_average_bulk_rate(0.0);
+
+    // 🎯 ACTIVE/IDLE TIMES (placeholders - require time window analysis)
+    // These would need TimeWindowManager data
+    // For now, use flow duration as approximation
+    net_features->set_active_mean(duration_us);
+    net_features->set_idle_mean(0.0);
 }
 
 } // namespace sniffer

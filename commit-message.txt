@@ -1,41 +1,50 @@
-# 3. Commit final de Phase 2A
-git commit -m "feat(rag): Phase 2A complete - functional baseline with TinyLlama
+cd /vagrant
 
-PHASE 2A COMPLETE:
-- Producer (rag-ingester): 100 events → SQLite + FAISS ✅
-- Consumer (RAG): TinyLlama NL queries functional ✅
-- Crypto-transport: ChaCha20-Poly1305 + LZ4 end-to-end ✅
-- SimpleEmbedder: 3 indices (Chronos 128d, SBERT 96d, Attack 64d) ✅
-- Multi-turn queries: KV cache fix implemented ✅
+# Ver estado
+git status
 
-TEST RESULTS:
-- Events processed: 100/100 (100% success rate)
-- Decryption: 0 errors (ChaCha20-Poly1305)
-- Decompression: 0 errors (LZ4)
-- FAISS indices: chronos (51KB), sbert (38KB), attack (26KB)
-- SQLite: 100 events with optimized indices
-- TinyLlama: Multi-turn conversations working
+# Add files modificados
+git add ml-detector/src/contract_validator.cpp
+git add ml-detector/src/contract_validator.h
+git add ml-detector/src/rag_logger.cpp
+git add ml-detector/CMakeLists.txt
+git add ml-detector/src/zmq_handler.cpp
+git add ml-detector/src/main.cpp
+git add BACKLOG.md
 
-ARCHITECTURE VALIDATED:
-Generator → Encrypted Artifacts → RAG Ingester → SQLite + FAISS → RAG Consumer + TinyLlama
+# Commit con mensaje detallado
+git commit -m "Day 48 Phase 1: ISSUE-003 + ISSUE-004 CLOSED
 
-KNOWN LIMITATIONS (Phase 2B):
-- SimpleEmbedder: TF-IDF based (migrate to ONNX semantic)
-- FAISS: IndexFlatL2 (optimize for >100K vectors with IVF/PQ)
-- Stress testing: 100 events (scale to 10M+)
-- Valgrind: Deferred to hardening phase
+ISSUE-003: Contract Validation Implementation ✅
+- Created contract_validator.cpp/h with dynamic protobuf reflection
+- Validates 114+ features (74 scalars + 40 embedded)
+- Checks all 4 critical embedded messages (DDoS, Ransomware, Traffic, Internal)
+- Instrumented zmq_handler.cpp with per-event validation
+- Added shutdown summary in main.cpp
+- Integrated into CMakeLists.txt
 
-FIX APPLIED:
-- llama_integration_real.cpp: KV cache clear using ultra-compatible method
-- Method: Context recreation (works across all llama.cpp versions)
-- Result: Multi-turn queries functional
+ISSUE-004: RAGLogger Null Pointer Fix ✅
+- Added validation before protobuf serialization
+- Prevents SEGFAULT on incomplete embedded messages
+- Gracefully skips artifact save with warning log
+- Validated with 17 events (0 crashes)
 
-FILES MODIFIED:
-- rag/src/llama_integration_real.cpp (KV cache fix)
-- README.md (Day 42 status update)
-- docs/DAY_42_CONTINUATION_PROMPT.md (NEW)
-- docs/BACKLOG.md (Phase 2A complete)
+Evidence:
+- Integration test: 17 events processed, 0 crashes
+- Contract violations detected correctly (5 test events)
+- RAGLogger skips incomplete events safely (1 event)
+- Both issues validated with real traffic
 
-NEXT: Day 43 - ISSUE-003 ShardedFlowManager (HIGH PRIORITY)
+Files:
+- NEW: ml-detector/src/contract_validator.cpp (190 lines)
+- NEW: ml-detector/src/contract_validator.h (35 lines)
+- MOD: ml-detector/src/rag_logger.cpp (+30 lines validation)
+- MOD: ml-detector/src/zmq_handler.cpp (+15 lines instrumentation)
+- MOD: ml-detector/src/main.cpp (+2 lines shutdown hook)
+- MOD: ml-detector/CMakeLists.txt (+1 line build)
+- UPD: BACKLOG.md (Day 48 Phase 1 complete)
 
-Via Appia Quality: Arquitectura validada. Despacio y bien. 🏛️"
+Quality: Via Appia - Evidence-based validation ✅"
+
+# Verificar el commit
+git log -1 --stat

@@ -364,6 +364,40 @@ bool RAGLogger::write_jsonl(const nlohmann::json& record) {
 void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
                                const nlohmann::json& json_record) {
     try {
+        // ====================================================================
+        // 🎯 ISSUE-004 FIX: Validate event completeness before serialization
+        // ====================================================================
+        // CRITICAL: Protobuf serialization crashes on null embedded messages
+        // This validation prevents SEGFAULT when processing incomplete events
+        
+        if (!event.has_network_features()) {
+            logger_->warn("⚠️  Skipping artifact save: event {} missing network_features", 
+                         event.event_id());
+            return;
+        }
+        
+        const auto& nf = event.network_features();
+        
+        // Validate critical embedded messages exist (prevent null pointer deref)
+        bool has_required_embedded = 
+            nf.has_ddos_embedded() &&
+            nf.has_ransomware_embedded() &&
+            nf.has_traffic_classification() &&
+            nf.has_internal_anomaly();
+        
+        if (!has_required_embedded) {
+            logger_->warn("⚠️  Skipping artifact save: event {} has incomplete embedded messages", 
+                         event.event_id());
+            logger_->debug("   ddos_embedded: {}, ransomware_embedded: {}, traffic: {}, internal: {}",
+                          nf.has_ddos_embedded(), nf.has_ransomware_embedded(),
+                          nf.has_traffic_classification(), nf.has_internal_anomaly());
+            return;
+        }
+        
+        // ====================================================================
+        // Event is valid, proceed with artifact save
+        // ====================================================================
+        
         // Get artifact directory for today
         std::string artifact_dir = config_.base_path + "/artifacts/" + current_date_;
         fs::create_directories(artifact_dir);
@@ -377,7 +411,7 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
             std::ofstream pb_file(pb_path, std::ios::binary);
 
             if (pb_file.is_open()) {
-                // Serialize protobuf
+                // Serialize protobuf (SAFE now - validated above)
                 std::string serialized;
                 event.SerializeToString(&serialized);
 
@@ -420,6 +454,7 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         logger_->warn("Failed to save encrypted artifacts: {}", e.what());
     }
 }
+
 
 // FIX: New function that assumes mutex_ is already held
 void RAGLogger::check_rotation_locked() {
