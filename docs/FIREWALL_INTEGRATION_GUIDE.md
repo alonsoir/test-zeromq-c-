@@ -111,7 +111,7 @@ cp /vagrant/firewall-acl-agent/CMakeLists.txt /vagrant/firewall-acl-agent/CMakeL
 
 ```cmake
 cmake_minimum_required(VERSION 3.10)
-project(firewall-acl-agent)
+project(../firewall-acl-agent)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -121,7 +121,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ============================================================================
 
 # Find required packages
-find_package(Protobuf REQUIRED)
+find_package(../protobuf REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 
@@ -136,9 +136,9 @@ find_package(OpenSSL REQUIRED)
 
 # etcd-client (custom) - NEW
 find_library(ETCD_CLIENT_LIB etcd_client
-  PATHS ${CMAKE_SOURCE_DIR}/../etcd-client/build
-  NO_DEFAULT_PATH
-  REQUIRED
+        PATHS ${CMAKE_SOURCE_DIR}/../etcd-client/build
+        NO_DEFAULT_PATH
+        REQUIRED
 )
 
 message(STATUS "Found etcd_client: ${ETCD_CLIENT_LIB}")
@@ -150,11 +150,11 @@ message(STATUS "Found OpenSSL: ${OPENSSL_LIBRARIES}")
 # ============================================================================
 
 include_directories(
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/../proto
-  ${CMAKE_SOURCE_DIR}/../etcd-client/include  # NEW
-  ${PROTOBUF_INCLUDE_DIRS}
-  ${OPENSSL_INCLUDE_DIR}                       # NEW
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/../proto
+        ${CMAKE_SOURCE_DIR}/../etcd-client/include  # NEW
+        ${PROTOBUF_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}                       # NEW
 )
 
 # ============================================================================
@@ -162,14 +162,14 @@ include_directories(
 # ============================================================================
 
 set(SOURCES
-  src/main.cpp
-  src/firewall_agent.cpp  # si existe
-  # ... otros archivos ...
+        src/main.cpp
+        src/firewall_agent.cpp  # si existe
+        # ... otros archivos ...
 )
 
 # Protobuf generated files
 set(PROTO_SRCS
-  ${CMAKE_SOURCE_DIR}/../proto/packet.pb.cc
+        ${CMAKE_SOURCE_DIR}/../proto/packet.pb.cc
 )
 
 # ============================================================================
@@ -177,8 +177,8 @@ set(PROTO_SRCS
 # ============================================================================
 
 add_executable(firewall-acl-agent
-  ${SOURCES}
-  ${PROTO_SRCS}
+        ${SOURCES}
+        ${PROTO_SRCS}
 )
 
 # ============================================================================
@@ -186,14 +186,14 @@ add_executable(firewall-acl-agent
 # ============================================================================
 
 target_link_libraries(firewall-acl-agent
-  ${PROTOBUF_LIBRARIES}
-  ${ZMQ_LIB}
-  spdlog::spdlog
-  nlohmann_json::nlohmann_json
-  ${ETCD_CLIENT_LIB}      # NEW
-  ${LZ4_LIB}              # NEW
-  ${OPENSSL_LIBRARIES}    # NEW (ssl + crypto)
-  pthread
+        ${PROTOBUF_LIBRARIES}
+        ${ZMQ_LIB}
+        spdlog::spdlog
+        nlohmann_json::nlohmann_json
+        ${ETCD_CLIENT_LIB}      # NEW
+        ${LZ4_LIB}              # NEW
+        ${OPENSSL_LIBRARIES}    # NEW (ssl + crypto)
+        pthread
 )
 
 # ============================================================================
@@ -201,16 +201,16 @@ target_link_libraries(firewall-acl-agent
 # ============================================================================
 
 target_compile_options(firewall-acl-agent PRIVATE
-  -Wall
-  -Wextra
-  -O2
-  -g
+        -Wall
+        -Wextra
+        -O2
+        -g
 )
 
 # For etcd-client to find shared library at runtime
 set_target_properties(firewall-acl-agent PROPERTIES
-  BUILD_RPATH "${CMAKE_SOURCE_DIR}/../etcd-client/build"
-  INSTALL_RPATH "${CMAKE_SOURCE_DIR}/../etcd-client/build"
+        BUILD_RPATH "${CMAKE_SOURCE_DIR}/../etcd-client/build"
+        INSTALL_RPATH "${CMAKE_SOURCE_DIR}/../etcd-client/build"
 )
 ```
 
