@@ -1,13 +1,30 @@
 cmake_minimum_required(VERSION 3.20)
 project(rag-ingester VERSION 0.1.0 LANGUAGES CXX)
 
+# ============================================================================
+# C++20 STANDARD
+# ============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Optimization flags
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -pedantic")
+# ============================================================================
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
+# ============================================================================
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set CMAKE_CXX_FLAGS_RELEASE, CMAKE_CXX_FLAGS_DEBUG here
+# ⚠️  DO NOT set -O, -g, -march, -fsanitize flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 
 # ============================================================================
 # Required Dependencies
@@ -17,7 +34,6 @@ find_package(Protobuf REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(SQLite3 REQUIRED)
-
 
 # etcd-client (REQUIRED)
 find_library(ETCD_CLIENT_LIB
@@ -107,6 +123,13 @@ add_library(file_watcher STATIC src/file_watcher.cpp)
 target_include_directories(file_watcher PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(file_watcher PRIVATE Threads::Threads)
 
+# Warnings only (no optimization flags - controlled by Makefile)
+target_compile_options(file_watcher PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
 # EventLoader library
 add_library(event_loader STATIC
         src/event_loader.cpp
@@ -117,6 +140,13 @@ target_link_libraries(event_loader
         PRIVATE
         ${CRYPTO_TRANSPORT_LIB}
         ${Protobuf_LIBRARIES}
+)
+
+# Warnings only (no optimization flags - controlled by Makefile)
+target_compile_options(event_loader PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
 )
 
 # ============================================================================
@@ -139,6 +169,22 @@ set(SOURCES
 )
 
 add_executable(rag-ingester ${SOURCES})
+
+# ============================================================================
+# COMPILER OPTIONS - Warnings Only
+# ============================================================================
+# ⚠️  Optimization flags (-O3, -g, -march, -fsanitize) are controlled by root Makefile
+# ⚠️  Only warnings are set here
+
+target_compile_options(rag-ingester PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+# ============================================================================
+# Link Libraries
+# ============================================================================
 
 # Link all required libraries
 target_link_libraries(rag-ingester
@@ -178,17 +224,17 @@ target_link_libraries(test_file_watcher PRIVATE file_watcher)
 add_test(NAME FileWatcherTest COMMAND test_file_watcher)
 
 # Test: EventLoader (Day 36)
-# # add_executable(test_event_loader
-# #         tests/test_event_loader.cpp
-# #         ${PROTO_SRCS}  # ← Include protobuf sources
-# # )
+# add_executable(test_event_loader
+#         tests/test_event_loader.cpp
+#         ${PROTO_SRCS}  # ← Include protobuf sources
+# )
 #
 # target_link_libraries(test_event_loader
 #         PRIVATE
 #         event_loader
 #         ${Protobuf_LIBRARIES}
 # )
-add_test(NAME EventLoaderTest COMMAND test_event_loader)
+# add_test(NAME EventLoaderTest COMMAND test_event_loader)
 
 # ============================================================================
 # Installation
@@ -203,6 +249,7 @@ message(STATUS "")
 message(STATUS "=== RAG Ingester Build Configuration ===")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
 message(STATUS "")
 message(STATUS "Required libraries:")
 message(STATUS "  etcd-client: ${ETCD_CLIENT_LIB}")
@@ -232,5 +279,8 @@ message(STATUS "  FileWatcher: Active")
 message(STATUS "  MetadataDB: Producer (write)")
 message(STATUS "  FAISS Persistence: Enabled")
 message(STATUS "  Features: 101 (61 base + 40 embedded)")
+message(STATUS "")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "========================================")
 message(STATUS "")

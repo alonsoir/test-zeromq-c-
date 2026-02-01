@@ -1,21 +1,34 @@
 cmake_minimum_required(VERSION 3.16)
 project(etcd_client VERSION 1.0.0 LANGUAGES CXX)
 
-# C++20 required
+# ============================================================================
+# C++20 STANDARD
+# ============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
+# ============================================================================
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
+# ============================================================================
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set CMAKE_BUILD_TYPE, CMAKE_CXX_FLAGS_RELEASE here
+# ⚠️  DO NOT set -O, -g, -march, -fsanitize flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
 
-# Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 
-# Find dependencies
+# ============================================================================
+# Find Dependencies
+# ============================================================================
 find_package(PkgConfig REQUIRED)
 
 # Find crypto-transport library (our new dependency)
@@ -30,7 +43,9 @@ if(NOT nlohmann_json_FOUND)
     message(STATUS "nlohmann_json not found via find_package, will use system headers")
 endif()
 
-# Sources (crypto and compression removed - now in crypto-transport)
+# ============================================================================
+# Sources
+# ============================================================================
 set(SOURCES
         src/etcd_client.cpp
         src/config_loader.cpp
@@ -38,7 +53,9 @@ set(SOURCES
         src/component_registration.cpp
 )
 
-# Create shared library
+# ============================================================================
+# Library Target
+# ============================================================================
 add_library(etcd_client SHARED ${SOURCES})
 
 # Include directories
@@ -51,7 +68,22 @@ target_include_directories(etcd_client
         /usr/local/include  # For crypto-transport headers
 )
 
-# Link libraries
+# ============================================================================
+# COMPILER OPTIONS - Warnings Only
+# ============================================================================
+# ⚠️  Optimization flags (-O3, -g, -march, -fsanitize) are controlled by root Makefile
+# ⚠️  Only warnings are set here
+
+target_compile_options(etcd_client
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+# ============================================================================
+# Link Libraries
+# ============================================================================
 target_link_libraries(etcd_client
         PRIVATE
         ${CRYPTO_TRANSPORT_LIB}
@@ -62,14 +94,18 @@ if(nlohmann_json_FOUND)
     target_link_libraries(etcd_client PRIVATE nlohmann_json::nlohmann_json)
 endif()
 
-# Set library properties
+# ============================================================================
+# Library Properties
+# ============================================================================
 set_target_properties(etcd_client PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
         PUBLIC_HEADER include/etcd_client/etcd_client.hpp
 )
 
-# Install rules
+# ============================================================================
+# Install Rules
+# ============================================================================
 install(TARGETS etcd_client
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
@@ -82,20 +118,29 @@ install(DIRECTORY include/etcd_client
         FILES_MATCHING PATTERN "*.hpp"
 )
 
+# ============================================================================
 # Tests (optional)
+# ============================================================================
 option(BUILD_TESTS "Build tests" ON)
+
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
 
-# Print configuration summary
+# ============================================================================
+# Configuration Summary
+# ============================================================================
 message(STATUS "========================================")
 message(STATUS "etcd-client Library Configuration")
 message(STATUS "========================================")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
 message(STATUS "crypto-transport: Found")
 message(STATUS "  Encryption: ChaCha20-Poly1305")
 message(STATUS "  Compression: LZ4")
+message(STATUS "")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "========================================")

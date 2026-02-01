@@ -14,24 +14,24 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ============================================================================
 option(BUILD_TESTS "Build unit and integration tests" ON)
 option(ENABLE_PROFILING "Enable profiling support" OFF)
-option(ENABLE_SIMD "Enable SIMD optimizations (AVX2)" ON)
-option(ENABLE_LTO "Enable Link Time Optimization" OFF)
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
-option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 
 # ============================================================================
-# BUILD TYPE DEFAULT
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
 # ============================================================================
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
-endif()
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set CMAKE_CXX_FLAGS_DEBUG, CMAKE_CXX_FLAGS_RELEASE, etc.
+# ⚠️  DO NOT set -fsanitize, -O, -g flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
-
-# Debug flags
-# DISABLED FOR MAKEFILE CONTROL: set(CMAKE_BUILD_TYPE Debug)
-# DISABLED FOR MAKEFILE CONTROL: set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 
 # ============================================================================
 # FIND DEPENDENCIES
@@ -135,7 +135,7 @@ else()
 endif()
 
 # ============================================================================
-# CRYPTO-TRANSPORT LIBRARY (Custom) - DAY 27 FIX
+# CRYPTO-TRANSPORT LIBRARY (Custom)
 # ============================================================================
 # Busca primero en /usr/local (instalación system-wide), luego en build local
 find_library(CRYPTO_TRANSPORT_LIB
@@ -224,14 +224,11 @@ target_compile_features(ransomware_detector
         PUBLIC cxx_std_20
 )
 
+# Warnings only (no optimization flags - controlled by Makefile)
 target_compile_options(ransomware_detector PRIVATE
         -Wall
         -Wextra
         -Wpedantic
-        -O3
-        -march=native
-        -flto
-        $<$<CONFIG:Release>:-DNDEBUG>
 )
 
 # Optional: Install headers
@@ -368,10 +365,11 @@ if(HAVE_ETCD_CPP_API)
 endif()
 
 # ============================================================================
-# COMPILER FLAGS
+# COMPILER OPTIONS - Warnings Only
 # ============================================================================
+# ⚠️  Optimization flags (-O3, -g, -fsanitize) are controlled by root Makefile
+# ⚠️  Only warnings are set here
 
-# Warnings
 target_compile_options(ml-detector PRIVATE
         -Wall
         -Wextra
@@ -380,49 +378,6 @@ target_compile_options(ml-detector PRIVATE
         -Wsign-conversion
         -Wno-unused-parameter
 )
-
-# Release optimizations
-target_compile_options(ml-detector PRIVATE
-        $<$<CONFIG:Release>:-O3>
-        $<$<CONFIG:Release>:-DNDEBUG>
-        $<$<CONFIG:Release>:-ffast-math>
-        $<$<CONFIG:Release>:-funroll-loops>
-)
-
-# SIMD optimizations (AVX2)
-if(ENABLE_SIMD)
-    target_compile_options(ml-detector PRIVATE
-            $<$<CONFIG:Release>:-march=native>
-            $<$<CONFIG:Release>:-mavx2>
-    )
-    message(STATUS "SIMD optimizations enabled (AVX2)")
-endif()
-
-# Debug options
-target_compile_options(ml-detector PRIVATE
-        $<$<CONFIG:Debug>:-g>
-        $<$<CONFIG:Debug>:-O0>
-        $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
-)
-
-# Link Time Optimization
-if(ENABLE_LTO)
-    set_property(TARGET ml-detector PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-    message(STATUS "Link Time Optimization enabled")
-endif()
-
-# Sanitizers
-if(ENABLE_ASAN)
-    target_compile_options(ml-detector PRIVATE -fsanitize=address)
-    target_link_options(ml-detector PRIVATE -fsanitize=address)
-    message(STATUS "AddressSanitizer enabled")
-endif()
-
-if(ENABLE_TSAN)
-    target_compile_options(ml-detector PRIVATE -fsanitize=thread)
-    target_link_options(ml-detector PRIVATE -fsanitize=thread)
-    message(STATUS "ThreadSanitizer enabled")
-endif()
 
 # Position Independent Code
 set_property(TARGET ml-detector PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -468,7 +423,7 @@ if(BUILD_TESTS)
         endforeach()
 
         # ============================================================================
-        # TEST_DETECTORS - FIXED: Ahora incluye los archivos .cpp de detectores
+        # TEST_DETECTORS
         # ============================================================================
         add_executable(test_detectors
                 tests/unit/test_detectors.cpp
@@ -563,7 +518,7 @@ if(BUILD_TESTS)
 endif()
 
 # ============================================================================
-# SUMMARY - ACTUALIZADO
+# SUMMARY
 # ============================================================================
 message(STATUS "")
 message(STATUS "======================================")
@@ -573,6 +528,7 @@ message(STATUS "Build type:        ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ compiler:      ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C++ standard:      ${CMAKE_CXX_STANDARD}")
 message(STATUS "Install prefix:    ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "CXX Flags:         ${CMAKE_CXX_FLAGS}")
 message(STATUS "")
 message(STATUS "Dependencies:")
 message(STATUS "  ZeroMQ:          ${ZMQ_VERSION}")
@@ -586,14 +542,11 @@ message(STATUS "  etcd-cpp-api:    ${HAVE_ETCD_CPP_API}")
 message(STATUS "")
 message(STATUS "Options:")
 message(STATUS "  Build tests:     ${BUILD_TESTS}")
-message(STATUS "  SIMD (AVX2):     ${ENABLE_SIMD}")
-message(STATUS "  LTO:             ${ENABLE_LTO}")
-message(STATUS "  ASAN:            ${ENABLE_ASAN}")
-message(STATUS "  TSAN:            ${ENABLE_TSAN}")
 message(STATUS "")
 message(STATUS "🎯 Single Source of Truth:")
 message(STATUS "  Models:          ${CMAKE_SOURCE_DIR}/models → build/models (symlink)")
 message(STATUS "  Config:          ${CMAKE_SOURCE_DIR}/config → build/config (symlink)")
 message(STATUS "  Protobuf:        ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc (unificado)")
+message(STATUS "  Compiler Flags:  Controlled by root Makefile via PROFILE")
 message(STATUS "======================================")
 message(STATUS "")

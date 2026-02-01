@@ -179,3 +179,13 @@ build/
 cmake-build-*/
 contrib/claude/pca_pipeline/training_data.npz
 *.npz
+
+# Build directories (all profiles)
+*/build-debug/
+*/build-production/
+*/build-tsan/
+*/build-asan/
+*/build/
+!*/build-*/config/  # Exception: keep config symlinks*/build-*/
+rm --cached ml-detector/build-asan/ml-detector
+/build-*/config/

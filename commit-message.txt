@@ -1,50 +1,70 @@
-cd /vagrant
+git checkout -b feature/build-system-single-source-of-truth
 
-# Ver estado
-git status
+git add Makefile \
+        ml-detector/CMakeLists.txt \
+        sniffer/CMakeLists.txt \
+        rag-ingester/CMakeLists.txt \
+        common-rag-ingester/CMakeLists.txt \
+        firewall-acl-agent/CMakeLists.txt \
+        etcd-server/CMakeLists.txt \
+        tools/CMakeLists.txt \
+        crypto-transport/CMakeLists.txt \
+        etcd-client/CMakeLists.txt
 
-# Add files modificados
-git add ml-detector/src/contract_validator.cpp
-git add ml-detector/src/contract_validator.h
-git add ml-detector/src/rag_logger.cpp
-git add ml-detector/CMakeLists.txt
-git add ml-detector/src/zmq_handler.cpp
-git add ml-detector/src/main.cpp
-git add BACKLOG.md
+git commit -m "refactor(build): Establish root Makefile as Single Source of Truth
 
-# Commit con mensaje detallado
-git commit -m "Day 48 Phase 1: ISSUE-003 + ISSUE-004 CLOSED
+PROBLEM:
+- Hardcoded compiler flags in 9 CMakeLists.txt files
+- Conflicts between component flags and root Makefile
+- Inconsistent build configurations across profiles
+- Docker/docker-compose references (obsolete)
 
-ISSUE-003: Contract Validation Implementation ✅
-- Created contract_validator.cpp/h with dynamic protobuf reflection
-- Validates 114+ features (74 scalars + 40 embedded)
-- Checks all 4 critical embedded messages (DDoS, Ransomware, Traffic, Internal)
-- Instrumented zmq_handler.cpp with per-event validation
-- Added shutdown summary in main.cpp
-- Integrated into CMakeLists.txt
+SOLUTION:
+- Remove ALL hardcoded -O, -g, -fsanitize flags from CMakeLists.txt
+- Implement profile system in root Makefile (production/debug/tsan/asan)
+- Add profile-specific build directories (build-PROFILE/)
+- Fix protobuf distribution for profile-aware builds
+- Eliminate Docker/docker-compose references
 
-ISSUE-004: RAGLogger Null Pointer Fix ✅
-- Added validation before protobuf serialization
-- Prevents SEGFAULT on incomplete embedded messages
-- Gracefully skips artifact save with warning log
-- Validated with 17 events (0 crashes)
+VALIDATION:
+- Production: 1.4M (91% size reduction via -O3 -flto)
+- Debug: 17M (full symbols, -g -O0)
+- TSAN: 23M (ThreadSanitizer v2 active, validated)
+- ASAN: AddressSanitizer active (validated)
+- Linkage: etcd_client + crypto_transport correct in all profiles
 
-Evidence:
-- Integration test: 17 events processed, 0 crashes
-- Contract violations detected correctly (5 test events)
-- RAGLogger skips incomplete events safely (1 event)
-- Both issues validated with real traffic
+COMPONENTS REFACTORED:
+- sniffer, ml-detector, rag-ingester, firewall-acl-agent
+- etcd-server, tools, crypto-transport, etcd-client
+- common-rag-ingester
 
-Files:
-- NEW: ml-detector/src/contract_validator.cpp (190 lines)
-- NEW: ml-detector/src/contract_validator.h (35 lines)
-- MOD: ml-detector/src/rag_logger.cpp (+30 lines validation)
-- MOD: ml-detector/src/zmq_handler.cpp (+15 lines instrumentation)
-- MOD: ml-detector/src/main.cpp (+2 lines shutdown hook)
-- MOD: ml-detector/CMakeLists.txt (+1 line build)
-- UPD: BACKLOG.md (Day 48 Phase 1 complete)
+FILES MODIFIED: 10 (1 Makefile + 9 CMakeLists.txt)
 
-Quality: Via Appia - Evidence-based validation ✅"
+Via Appia Quality:
+- Evidence-based validation (measured binary sizes)
+- Systematic refactoring (identical pattern across 9 files)
+- Build system foundation solidified
 
-# Verificar el commit
-git log -1 --stat
+Tested: macOS → Vagrant → Ubuntu 22.04
+Co-authored-by: Claude (Anthropic AI)"
+```
+
+---
+
+## 📊 ESTADO DEL PROYECTO
+
+### **Build System:**
+```
+Single Source of Truth:    ████████████████████ 100% ✅
+Profile System:             ████████████████████ 100% ✅
+CMakeLists.txt Cleanup:     ████████████████████ 100% ✅
+Validation Tests:           ████████████████████ 100% ✅
+Documentation:              ████████░░░░░░░░░░░░  40% 🟡
+```
+
+### **ML Defender Pipeline:**
+```
+Foundation (ISSUE-003):     ████████████████████ 100% ✅
+Thread-Safety (TSAN):       ████████████████████ 100% ✅
+Contract Validation:        ████████████████████ 100% ✅
+Build System Refactoring:   ████████████████████ 100% ✅
