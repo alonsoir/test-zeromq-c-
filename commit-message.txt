@@ -1,70 +1,50 @@
-git checkout -b feature/build-system-single-source-of-truth
+cd /vagrant
 
-git add Makefile \
-        ml-detector/CMakeLists.txt \
-        sniffer/CMakeLists.txt \
-        rag-ingester/CMakeLists.txt \
-        common-rag-ingester/CMakeLists.txt \
-        firewall-acl-agent/CMakeLists.txt \
-        etcd-server/CMakeLists.txt \
-        tools/CMakeLists.txt \
-        crypto-transport/CMakeLists.txt \
-        etcd-client/CMakeLists.txt
+# Stage todo lo necesario
+git add docs/STRESS_TEST_FIREWALL.md
+git add tools/src/synthetic_ml_output_injector.cpp
+git add tools/src/synthetic_sniffer_injector.cpp
+git add tools/CMakeLists.txt
 
-git commit -m "refactor(build): Establish root Makefile as Single Source of Truth
+# Commit
+git commit -m "feat(contract-validation): Add stress test tools for 142-feature contract validation
 
-PROBLEM:
-- Hardcoded compiler flags in 9 CMakeLists.txt files
-- Conflicts between component flags and root Makefile
-- Inconsistent build configurations across profiles
-- Docker/docker-compose references (obsolete)
+Add synthetic event injectors to validate protobuf contract compliance
+across all pipeline components under load.
 
-SOLUTION:
-- Remove ALL hardcoded -O, -g, -fsanitize flags from CMakeLists.txt
-- Implement profile system in root Makefile (production/debug/tsan/asan)
-- Add profile-specific build directories (build-PROFILE/)
-- Fix protobuf distribution for profile-aware builds
-- Eliminate Docker/docker-compose references
+Tools Added:
+- synthetic_sniffer_injector: Validates sniffer→ml-detector contract
+  * Generates complete NetworkSecurityEvent (142 features)
+  * Tests protobuf serialization + crypto-transport at scale
+  * Port 5571, achieves ~1.4K events/sec
 
-VALIDATION:
-- Production: 1.4M (91% size reduction via -O3 -flto)
-- Debug: 17M (full symbols, -g -O0)
-- TSAN: 23M (ThreadSanitizer v2 active, validated)
-- ASAN: AddressSanitizer active (validated)
-- Linkage: etcd_client + crypto_transport correct in all profiles
+- synthetic_ml_output_injector: Validates ml-detector→firewall contract
+  * Generates threat events with ML analysis fields
+  * Tests firewall protobuf parsing under load
+  * Port 5572, achieves ~1.4K events/sec
 
-COMPONENTS REFACTORED:
-- sniffer, ml-detector, rag-ingester, firewall-acl-agent
-- etcd-server, tools, crypto-transport, etcd-client
-- common-rag-ingester
+Stress Test Report (Day 49 - Iteration 1-2):
+- Discovered firewall etcd registration bug (HIGH severity)
+- Established injector baseline: ~1.5K events/sec max throughput
+- Validated crypto-transport integration (ChaCha20+LZ4)
+- Contract compliance: Protobuf messages correctly formed
 
-FILES MODIFIED: 10 (1 Makefile + 9 CMakeLists.txt)
+Issues Found:
+1. [HIGH] Firewall crashes when etcd registration fails mid-startup
+2. [MEDIUM] Injector bottleneck: per-event crypto overhead
+3. [LOW] Insufficient logging visibility in firewall processing
 
-Via Appia Quality:
-- Evidence-based validation (measured binary sizes)
-- Systematic refactoring (identical pattern across 9 files)
-- Build system foundation solidified
+Next Actions (Day 50):
+- Add verbose logging to firewall (IP additions, batch operations)
+- Add crash diagnostics (exception context, stack traces)
+- Fix etcd registration bug
+- Re-run with detailed observability
 
-Tested: macOS → Vagrant → Ubuntu 22.04
-Co-authored-by: Claude (Anthropic AI)"
-```
+Documentation: docs/STRESS_TEST_FIREWALL.md
 
----
+Branch: feature/contract-validation-142-features
+Refs: Day 49 Phase 1 Hardening
+"
 
-## 📊 ESTADO DEL PROYECTO
-
-### **Build System:**
-```
-Single Source of Truth:    ████████████████████ 100% ✅
-Profile System:             ████████████████████ 100% ✅
-CMakeLists.txt Cleanup:     ████████████████████ 100% ✅
-Validation Tests:           ████████████████████ 100% ✅
-Documentation:              ████████░░░░░░░░░░░░  40% 🟡
-```
-
-### **ML Defender Pipeline:**
-```
-Foundation (ISSUE-003):     ████████████████████ 100% ✅
-Thread-Safety (TSAN):       ████████████████████ 100% ✅
-Contract Validation:        ████████████████████ 100% ✅
-Build System Refactoring:   ████████████████████ 100% ✅
+# Push
+git push origin feature/contract-validation-142-features

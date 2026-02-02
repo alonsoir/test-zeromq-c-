@@ -141,6 +141,78 @@ target_include_directories(generate_synthetic_events
 )
 
 # ============================================================================
+# 2. Synthetic Sniffer Injector (sniffer → ml-detector)
+# ============================================================================
+
+add_executable(synthetic_sniffer_injector
+        synthetic_sniffer_injector.cpp
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(synthetic_sniffer_injector
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf
+        ${CMAKE_CURRENT_SOURCE_DIR}/../etcd-client/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../crypto-transport/include
+        ${Protobuf_INCLUDE_DIRS}
+)
+
+target_compile_options(synthetic_sniffer_injector
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+target_link_libraries(synthetic_sniffer_injector
+        PRIVATE
+        ${Protobuf_LIBRARIES}
+        ${CRYPTO_TRANSPORT_LIB}
+        ${ETCD_CLIENT_LIB}
+        zmq
+        Threads::Threads
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ${CURL_LIBRARIES}
+)
+
+# ============================================================================
+# 3. Synthetic ML Output Injector (ml-detector → firewall)
+# ============================================================================
+
+add_executable(synthetic_ml_output_injector
+        synthetic_ml_output_injector.cpp
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(synthetic_ml_output_injector
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf
+        ${CMAKE_CURRENT_SOURCE_DIR}/../etcd-client/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../crypto-transport/include
+        ${Protobuf_INCLUDE_DIRS}
+)
+
+target_compile_options(synthetic_ml_output_injector
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+target_link_libraries(synthetic_ml_output_injector
+        PRIVATE
+        ${Protobuf_LIBRARIES}
+        ${CRYPTO_TRANSPORT_LIB}
+        ${ETCD_CLIENT_LIB}
+        zmq
+        Threads::Threads
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ${CURL_LIBRARIES}
+)
+
+# ============================================================================
 # COMPILER OPTIONS - Warnings Only
 # ============================================================================
 # ⚠️  Optimization flags (-O3, -g, -march, -fsanitize) are controlled by root Makefile
@@ -174,7 +246,10 @@ target_link_libraries(generate_synthetic_events
 # Installation
 # ============================================================================
 
-install(TARGETS generate_synthetic_events
+install(TARGETS
+        generate_synthetic_events
+        synthetic_sniffer_injector
+        synthetic_ml_output_injector
         RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build
 )
 

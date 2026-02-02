@@ -174,6 +174,32 @@ generate_synthetic_events/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/build
 .PHONY : generate_synthetic_events/fast
 
+#=============================================================================
+# Target rules for targets named synthetic_sniffer_injector
+
+# Build rule for target.
+synthetic_sniffer_injector: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 synthetic_sniffer_injector
+.PHONY : synthetic_sniffer_injector
+
+# fast build rule for target.
+synthetic_sniffer_injector/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/build
+.PHONY : synthetic_sniffer_injector/fast
+
+#=============================================================================
+# Target rules for targets named synthetic_ml_output_injector
+
+# Build rule for target.
+synthetic_ml_output_injector: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 synthetic_ml_output_injector
+.PHONY : synthetic_ml_output_injector
+
+# fast build rule for target.
+synthetic_ml_output_injector/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/build
+.PHONY : synthetic_ml_output_injector/fast
+
 generate_synthetic_events.o: generate_synthetic_events.cpp.o
 .PHONY : generate_synthetic_events.o
 
@@ -197,6 +223,54 @@ generate_synthetic_events.s: generate_synthetic_events.cpp.s
 generate_synthetic_events.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/generate_synthetic_events.cpp.s
 .PHONY : generate_synthetic_events.cpp.s
+
+synthetic_ml_output_injector.o: synthetic_ml_output_injector.cpp.o
+.PHONY : synthetic_ml_output_injector.o
+
+# target to build an object file
+synthetic_ml_output_injector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/synthetic_ml_output_injector.cpp.o
+.PHONY : synthetic_ml_output_injector.cpp.o
+
+synthetic_ml_output_injector.i: synthetic_ml_output_injector.cpp.i
+.PHONY : synthetic_ml_output_injector.i
+
+# target to preprocess a source file
+synthetic_ml_output_injector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/synthetic_ml_output_injector.cpp.i
+.PHONY : synthetic_ml_output_injector.cpp.i
+
+synthetic_ml_output_injector.s: synthetic_ml_output_injector.cpp.s
+.PHONY : synthetic_ml_output_injector.s
+
+# target to generate assembly for a file
+synthetic_ml_output_injector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/synthetic_ml_output_injector.cpp.s
+.PHONY : synthetic_ml_output_injector.cpp.s
+
+synthetic_sniffer_injector.o: synthetic_sniffer_injector.cpp.o
+.PHONY : synthetic_sniffer_injector.o
+
+# target to build an object file
+synthetic_sniffer_injector.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/synthetic_sniffer_injector.cpp.o
+.PHONY : synthetic_sniffer_injector.cpp.o
+
+synthetic_sniffer_injector.i: synthetic_sniffer_injector.cpp.i
+.PHONY : synthetic_sniffer_injector.i
+
+# target to preprocess a source file
+synthetic_sniffer_injector.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/synthetic_sniffer_injector.cpp.i
+.PHONY : synthetic_sniffer_injector.cpp.i
+
+synthetic_sniffer_injector.s: synthetic_sniffer_injector.cpp.s
+.PHONY : synthetic_sniffer_injector.s
+
+# target to generate assembly for a file
+synthetic_sniffer_injector.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/synthetic_sniffer_injector.cpp.s
+.PHONY : synthetic_sniffer_injector.cpp.s
 
 vagrant/ml-detector/src/etcd_client.o: vagrant/ml-detector/src/etcd_client.cpp.o
 .PHONY : vagrant/ml-detector/src/etcd_client.o
@@ -252,6 +326,8 @@ vagrant/protobuf/network_security.pb.o: vagrant/protobuf/network_security.pb.cc.
 # target to build an object file
 vagrant/protobuf/network_security.pb.cc.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/vagrant/protobuf/network_security.pb.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/vagrant/protobuf/network_security.pb.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/vagrant/protobuf/network_security.pb.cc.o
 .PHONY : vagrant/protobuf/network_security.pb.cc.o
 
 vagrant/protobuf/network_security.pb.i: vagrant/protobuf/network_security.pb.cc.i
@@ -260,6 +336,8 @@ vagrant/protobuf/network_security.pb.i: vagrant/protobuf/network_security.pb.cc.
 # target to preprocess a source file
 vagrant/protobuf/network_security.pb.cc.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/vagrant/protobuf/network_security.pb.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/vagrant/protobuf/network_security.pb.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/vagrant/protobuf/network_security.pb.cc.i
 .PHONY : vagrant/protobuf/network_security.pb.cc.i
 
 vagrant/protobuf/network_security.pb.s: vagrant/protobuf/network_security.pb.cc.s
@@ -268,6 +346,8 @@ vagrant/protobuf/network_security.pb.s: vagrant/protobuf/network_security.pb.cc.
 # target to generate assembly for a file
 vagrant/protobuf/network_security.pb.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/vagrant/protobuf/network_security.pb.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/vagrant/protobuf/network_security.pb.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_ml_output_injector.dir/build.make CMakeFiles/synthetic_ml_output_injector.dir/vagrant/protobuf/network_security.pb.cc.s
 .PHONY : vagrant/protobuf/network_security.pb.cc.s
 
 # Help Target
@@ -283,9 +363,17 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... generate_synthetic_events"
+	@echo "... synthetic_ml_output_injector"
+	@echo "... synthetic_sniffer_injector"
 	@echo "... generate_synthetic_events.o"
 	@echo "... generate_synthetic_events.i"
 	@echo "... generate_synthetic_events.s"
+	@echo "... synthetic_ml_output_injector.o"
+	@echo "... synthetic_ml_output_injector.i"
+	@echo "... synthetic_ml_output_injector.s"
+	@echo "... synthetic_sniffer_injector.o"
+	@echo "... synthetic_sniffer_injector.i"
+	@echo "... synthetic_sniffer_injector.s"
 	@echo "... vagrant/ml-detector/src/etcd_client.o"
 	@echo "... vagrant/ml-detector/src/etcd_client.i"
 	@echo "... vagrant/ml-detector/src/etcd_client.s"
