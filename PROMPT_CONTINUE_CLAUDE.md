@@ -1,80 +1,70 @@
-# 🔬 Day 50 Continuity Prompt - Firewall Hardening Observability
+# 🔬 Day 50 - Firewall Observability & Hardening
 
 ## 📍 CONTEXT
-Branch: feature/contract-validation-142-features
-Status: Day 49 stress testing revealed critical observability gaps
-Document: docs/STRESS_TEST_FIREWALL.md (MUST READ)
+- **Branch:** `feature/contract-validation-142-features`
+- **Status:** Day 49 stress test revealed critical observability gaps
+- **Document:** `docs/STRESS_TEST_FIREWALL.md` (READ FIRST - complete context)
+- **Commit:** Stress test tools + Day 49 iterations documented
 
 ## 🎯 OBJECTIVE
-Add comprehensive observability to firewall-acl-agent before continuing stress tests.
+Add comprehensive observability to firewall-acl-agent to diagnose crash @ 50% load.
 
-## ⚠️ CRITICAL ISSUES DISCOVERED
-1. **Firewall crash @ 50% load** - Unknown error, no diagnostics
-2. **Zero visibility** - Can't see IPs entering ipsets
-3. **etcd registration bug** - Crashes when config path wrong
+## ⚠️ CRITICAL ISSUES (from Day 49)
+1. **Firewall crash @ 50% load** - No diagnostic context, unknown error location
+2. **Zero visibility** - Cannot see IPs entering ipsets, batch operations invisible
+3. **etcd registration bug** - Hardcoded `../config/firewall.json` causes crash
 
-## 📋 TODAY'S TASKS
+## 📋 TODAY'S PRIORITIES
 
-### PRIORITY 1: Add Verbose Logging (2 hours)
-**File:** `firewall-acl-agent/src/api/zmq_subscriber.cpp`
-- [ ] Log every IP addition attempt (source IP, confidence, action)
-- [ ] Log batch processor operations (batch size, IPs processed)
-- [ ] Log ipset operations (add/remove with result)
-- [ ] Add structured logging with severity levels
+### P1: Verbose Logging (2h)
+**Files:** `firewall-acl-agent/src/api/zmq_subscriber.cpp`, `batch_processor.cpp`
+- [ ] Log every ZMQ message (size, decrypt/decompress steps)
+- [ ] Log every protobuf parse (source IP, confidence, threat type)
+- [ ] Log every batch operation (assembly, flush, ipset calls)
+- [ ] Log ipset results (success/failure with context)
 
-**File:** `firewall-acl-agent/src/batch_processor.cpp`
-- [ ] Log batch assembly (count, threshold reached)
-- [ ] Log ipset API calls with return codes
-- [ ] Add performance metrics (batch latency)
-
-### PRIORITY 2: Add Crash Diagnostics (1 hour)
+### P2: Crash Diagnostics (1h)
 **Files:** `firewall-acl-agent/src/main.cpp`, `zmq_subscriber.cpp`
-- [ ] Wrap critical sections in try-catch with context
-- [ ] Log exception type, message, and processing state
-- [ ] Add signal handler for SIGSEGV with backtrace
-- [ ] Log component state before crash (events processed, memory)
+- [ ] Add signal handlers (SIGSEGV/SIGABRT) with backtrace
+- [ ] Wrap critical sections in try-catch with state dump
+- [ ] Log component state before crashes (memory, events processed)
 
-### PRIORITY 3: Fix etcd Registration Bug (30 min)
+### P3: Fix etcd Bug (30min)
 **File:** `firewall-acl-agent/src/main.cpp`
-- [ ] Pass config path to etcd registration
+- [ ] Pass config_path to etcd registration
 - [ ] Remove hardcoded `../config/firewall.json`
-- [ ] Test with absolute path from /vagrant/
+- [ ] Test from /vagrant/ with absolute path
 
-### PRIORITY 4: Re-run Stress Test (1 hour)
-- [ ] Start firewall with fixed build + verbose logging
-- [ ] Run injector @ 1K/sec sustained (10K events)
-- [ ] Monitor logs in real-time (tail -f)
+### P4: Re-run Stress Test (1h)
+- [ ] Start firewall with verbose logging enabled
+- [ ] Run injector @ 1K/sec (10K events total)
+- [ ] Monitor logs real-time: `tail -f logs/firewall-acl-agent/*.log`
 - [ ] Identify exact failure point with diagnostic context
-- [ ] Update STRESS_TEST_FIREWALL.md with Iteration 3 results
+- [ ] Document as Iteration 3 in STRESS_TEST_FIREWALL.md
 
-## 🔍 EXPECTED VISIBILITY
-After changes, logs should show:
+## 🔍 EXPECTED LOG VISIBILITY
+After changes, should see:
 ```
-[DEBUG] ZMQ message received: 512 bytes
-[DEBUG] Decrypted: 387 bytes
-[DEBUG] Decompressed: 1024 bytes
-[DEBUG] Protobuf parsed: NetworkSecurityEvent
-[DEBUG]   Source IP: 192.168.1.100
-[DEBUG]   Threat: DDOS, Confidence: 0.95
-[DEBUG]   ML Analysis: attack_detected_level1=true
-[DEBUG] Batch processor: Adding 192.168.1.100 to queue (9/10)
-[DEBUG] Batch threshold reached: Flushing 10 IPs
-[DEBUG] IPSet operation: ADD 192.168.1.100 to ml_defender_blacklist_test
-[DEBUG] IPSet result: SUCCESS (timeout=600s)
+[DEBUG] ZMQ message: 512 bytes
+[DEBUG] Decrypted: 387 bytes → Decompressed: 1024 bytes
+[DEBUG] Protobuf: source_ip=192.168.1.100, threat=DDOS, confidence=0.95
+[DEBUG] Batch: Adding 192.168.1.100 (9/10)
+[DEBUG] Batch flush: 10 IPs
+[DEBUG] IPSet ADD 192.168.1.100 → SUCCESS (timeout=600s)
 ```
 
 ## 📊 SUCCESS CRITERIA
-- ✅ Can see every IP processed in logs
-- ✅ Can identify exact crash location with context
-- ✅ Can measure batch processor performance
+- ✅ Every IP processed is visible in logs
+- ✅ Crash location identified with backtrace
+- ✅ Batch processor performance measured
 - ✅ etcd registration succeeds reliably
-- ✅ Stress test completes OR failure point clearly documented
-
-## 📚 FILES TO READ FIRST
-1. `docs/STRESS_TEST_FIREWALL.md` - Full context from Day 49
-2. `firewall-acl-agent/src/api/zmq_subscriber.cpp` - Main processing loop
-3. `firewall-acl-agent/src/batch_processor.cpp` - Batching logic
+- ✅ Stress test completes OR failure clearly documented
 
 ## 🏛️ VIA APPIA PRINCIPLE
-"Que se haga la luz" - Build comprehensive observability BEFORE
-continuing hardening. Evidence-based debugging requires visibility.
+"Fiat Lux" - Build observability BEFORE optimization.
+Evidence-based debugging requires visibility.
+
+## 📚 READ FIRST
+1. `docs/STRESS_TEST_FIREWALL.md` - Full Day 49 context
+2. `firewall-acl-agent/src/api/zmq_subscriber.cpp` - Main loop
+3. `firewall-acl-agent/src/batch_processor.cpp` - Batching logic
