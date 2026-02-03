@@ -1,50 +1,83 @@
-cd /vagrant
+git add firewall-acl-agent/include/firewall_observability_logger.hpp
+git add firewall-acl-agent/include/crash_diagnostics.hpp
+git add firewall-acl-agent/src/core/batch_processor.cpp
+git add firewall-acl-agent/src/api/zmq_subscriber.cpp
+git add firewall-acl-agent/src/main.cpp
 
-# Stage todo lo necesario
-git add docs/STRESS_TEST_FIREWALL.md
-git add tools/src/synthetic_ml_output_injector.cpp
-git add tools/src/synthetic_sniffer_injector.cpp
-git add tools/CMakeLists.txt
+git commit -m "Day 50: Comprehensive observability & crash diagnostics for firewall-acl-agent
 
-# Commit
-git commit -m "feat(contract-validation): Add stress test tools for 142-feature contract validation
+PROBLEM:
+Day 49 stress test revealed critical observability gaps:
+- Firewall crashed @ 50% load with no diagnostic context
+- Zero visibility into ZMQ transport, protobuf parsing, batch operations
+- No crash location information (no backtrace, no state dump)
+- Unable to diagnose root cause of failure
 
-Add synthetic event injectors to validate protobuf contract compliance
-across all pipeline components under load.
+SOLUTION:
+Implemented comprehensive observability infrastructure with two-layer system:
 
-Tools Added:
-- synthetic_sniffer_injector: Validates sniffer→ml-detector contract
-  * Generates complete NetworkSecurityEvent (142 features)
-  * Tests protobuf serialization + crypto-transport at scale
-  * Port 5571, achieves ~1.4K events/sec
+1. ObservabilityLogger (firewall_observability_logger.hpp):
+   - Microsecond-precision timestamps for performance analysis
+   - Structured key-value logging (variadic templates)
+   - 7 log levels: DEBUG, INFO, BATCH, IPSET, WARN, ERROR, CRASH
+   - Thread-safe file output + ANSI colored console
+   - Global macros for easy integration throughout codebase
 
-- synthetic_ml_output_injector: Validates ml-detector→firewall contract
-  * Generates threat events with ML analysis fields
-  * Tests firewall protobuf parsing under load
-  * Port 5572, achieves ~1.4K events/sec
+2. CrashDiagnostics (crash_diagnostics.hpp):
+   - SystemState with 17 atomic counters tracking all operations
+   - Signal handlers (SIGSEGV, SIGABRT, SIGFPE, SIGILL, SIGBUS)
+   - Automatic backtrace capture via execinfo.h
+   - Performance tracking macros (TRACK_OPERATION for microsecond timing)
+   - State dump functionality (DUMP_STATE_ON_ERROR)
+   - Counters: events_processed, events_dropped, ips_blocked, 
+     batches_flushed, ipset_successes/failures, zmq_recv_bytes, etc.
 
-Stress Test Report (Day 49 - Iteration 1-2):
-- Discovered firewall etcd registration bug (HIGH severity)
-- Established injector baseline: ~1.5K events/sec max throughput
-- Validated crypto-transport integration (ChaCha20+LZ4)
-- Contract compliance: Protobuf messages correctly formed
+INTEGRATION:
+Enhanced all critical components with comprehensive logging:
 
-Issues Found:
-1. [HIGH] Firewall crashes when etcd registration fails mid-startup
-2. [MEDIUM] Injector bottleneck: per-event crypto overhead
-3. [LOW] Insufficient logging visibility in firewall processing
+batch_processor.cpp:
+- Log every detection processed (IP, confidence, threat type)
+- Track batch assembly (N/threshold visibility)
+- Time every flush operation (microsecond precision)
+- Log ipset results with error messages
+- Automatic state dump on failures
 
-Next Actions (Day 50):
-- Add verbose logging to firewall (IP additions, batch operations)
-- Add crash diagnostics (exception context, stack traces)
-- Fix etcd registration bug
-- Re-run with detailed observability
+zmq_subscriber.cpp:
+- Log every ZMQ message (size, source)
+- Decrypt/decompress step visibility
+- Protobuf parse success/failure with details
+- Network transport metrics (bytes received)
 
-Documentation: docs/STRESS_TEST_FIREWALL.md
+main.cpp:
+- Lifecycle event logging (startup, shutdown, health checks)
+- Component initialization tracking
+- Periodic metrics export (every 30s)
+- Graceful shutdown with final statistics
 
-Branch: feature/contract-validation-142-features
-Refs: Day 49 Phase 1 Hardening
-"
+TECHNICAL FIXES:
+- Fixed DEBUG macro conflict (protobuf headers define DEBUG)
+  → Renamed enum values to LOG_DEBUG, LOG_INFO, etc.
+- Added missing diagnostic counters (events_dropped, zmq_recv_bytes)
+- Fixed IPSetResult<void> API usage (operator bool, get_error())
+- Corrected namespace declarations (mldefender::firewall::*)
 
-# Push
-git push origin feature/contract-validation-142-features
+BUILD:
+✅ Clean compilation (GCC 12, C++20)
+✅ All tests pass (firewall_tests)
+✅ Zero warnings with -Werror
+
+NEXT STEPS (Day 51):
+- Run C++ stress test with full observability enabled
+- Validate log output shows complete event trace
+- Identify crash location if failure occurs
+- Document performance baseline (events/sec, μs latency)
+
+Via Appia Quality: Fiat Lux - Build observability before optimization.
+Evidence-based debugging requires complete visibility.
+
+Files modified:
+- firewall-acl-agent/include/firewall_observability_logger.hpp (NEW - 250 lines)
+- firewall-acl-agent/include/crash_diagnostics.hpp (NEW - 200 lines)
+- firewall-acl-agent/src/core/batch_processor.cpp (enhanced logging)
+- firewall-acl-agent/src/api/zmq_subscriber.cpp (transport visibility)
+- firewall-acl-agent/src/main.cpp (lifecycle logging, namespace fixes)"

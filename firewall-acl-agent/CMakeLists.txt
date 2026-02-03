@@ -1,13 +1,13 @@
 #===----------------------------------------------------------------------===//
 # ML Defender - Firewall ACL Agent
-# CMakeLists.txt - Build Configuration
+# CMakeLists.txt - Build Configuration (Day 50 - Observability Enhanced)
 #===----------------------------------------------------------------------===//
 
 cmake_minimum_required(VERSION 3.20)
 
 project(firewall-acl-agent
         VERSION 1.0.0
-        DESCRIPTION "ML Defender - High-Performance Firewall ACL Agent"
+        DESCRIPTION "ML Defender - High-Performance Firewall ACL Agent (Day 50)"
         LANGUAGES CXX
 )
 
@@ -84,6 +84,18 @@ endif()
 find_package(Threads REQUIRED)
 
 # ============================================================================
+# Day 50: Backtrace Support for Crash Diagnostics
+# ============================================================================
+find_library(BACKTRACE_LIB backtrace)
+if(BACKTRACE_LIB)
+    message(STATUS "✅ Found backtrace library: ${BACKTRACE_LIB}")
+    set(HAVE_BACKTRACE TRUE)
+else()
+    message(STATUS "⚠️  backtrace library not found - using execinfo.h fallback")
+    set(HAVE_BACKTRACE FALSE)
+endif()
+
+# ============================================================================
 # crypto-transport Library
 # ============================================================================
 find_library(CRYPTO_TRANSPORT_LIB crypto_transport PATHS /usr/local/lib REQUIRED)
@@ -123,7 +135,7 @@ set(PROTO_SOURCES ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc)
 set(PROTO_HEADERS ${CMAKE_BINARY_DIR}/proto/network_security.pb.h)
 
 #===----------------------------------------------------------------------===//
-# Include Directories
+# Include Directories (Day 50: Enhanced)
 #===----------------------------------------------------------------------===//
 
 include_directories(
@@ -163,7 +175,7 @@ set(FIREWALL_MAIN_SOURCE
 )
 
 #===----------------------------------------------------------------------===//
-# Core Library
+# Core Library (Day 50: Enhanced)
 #===----------------------------------------------------------------------===//
 
 add_library(firewall_core STATIC
@@ -183,6 +195,12 @@ target_link_libraries(firewall_core
         ${CRYPTO_TRANSPORT_LIB}
 )
 
+# Day 50: Add backtrace library if available
+if(HAVE_BACKTRACE)
+    target_link_libraries(firewall_core PUBLIC ${BACKTRACE_LIB})
+    message(STATUS "✅ Linking backtrace library to firewall_core")
+endif()
+
 # etcd-client (custom library)
 if(HAVE_ETCD_CLIENT)
     target_link_libraries(firewall_core PUBLIC ${ETCD_CLIENT_LIB})
@@ -198,7 +216,7 @@ target_include_directories(firewall_core
 )
 
 #===----------------------------------------------------------------------===//
-# Main Executable
+# Main Executable (Day 50: Enhanced)
 #===----------------------------------------------------------------------===//
 
 add_executable(firewall-acl-agent
@@ -209,6 +227,10 @@ target_link_libraries(firewall-acl-agent
         PRIVATE
         firewall_core
 )
+
+# Day 50: Link additional libraries for crash diagnostics
+# Note: execinfo.h is provided by glibc, no additional linking needed on Linux
+# backtrace library is already linked via firewall_core
 
 #===----------------------------------------------------------------------===//
 # Installation
@@ -272,12 +294,13 @@ if(BUILD_TESTS)
 endif()
 
 #===----------------------------------------------------------------------===//
-# Build Summary
+# Build Summary (Day 50: Enhanced)
 #===----------------------------------------------------------------------===//
 
 message(STATUS "")
 message(STATUS "╔════════════════════════════════════════════════════════╗")
 message(STATUS "║  ML Defender - Firewall ACL Agent Configuration       ║")
+message(STATUS "║  Day 50: Comprehensive Observability Integration      ║")
 message(STATUS "╚════════════════════════════════════════════════════════╝")
 message(STATUS "")
 message(STATUS "Version:           ${PROJECT_VERSION}")
@@ -287,10 +310,22 @@ message(STATUS "CXX Flags:         ${CMAKE_CXX_FLAGS}")
 message(STATUS "")
 message(STATUS "✅ Components:")
 message(STATUS "  Logger:          IMPLEMENTED (async + payload storage)")
+message(STATUS "  Observability:   IMPLEMENTED (Day 50 - microsecond logging)")
+message(STATUS "  Crash Diag:      IMPLEMENTED (backtrace + state dumps)")
 message(STATUS "  Metrics:         TODO (unified system)")
 message(STATUS "  ACL Intelligence: TODO (Phase 2+)")
 message(STATUS "")
+message(STATUS "🔬 Day 50 Observability:")
+message(STATUS "  Headers:         firewall_observability_logger.hpp")
+message(STATUS "                   crash_diagnostics.hpp")
+message(STATUS "  Log Levels:      DEBUG, INFO, BATCH, IPSET, WARN, ERROR, CRASH")
+message(STATUS "  Precision:       Microsecond timestamps")
+message(STATUS "  Thread Safety:   Mutex-protected + atomic counters")
+message(STATUS "  Crash Handling:  Signal handlers with backtrace")
+message(STATUS "  Backtrace Lib:   ${HAVE_BACKTRACE}")
+message(STATUS "")
 message(STATUS "📊 Logging Output:")
+message(STATUS "  Observability:   /vagrant/logs/firewall-acl-agent/firewall_detailed.log")
 message(STATUS "  JSON metadata:   /vagrant/logs/blocked/TIMESTAMP.json")
 message(STATUS "  Protobuf payload: /vagrant/logs/blocked/TIMESTAMP.proto")
 message(STATUS "  Format:          Timestamp-based (unique, sortable)")
@@ -305,6 +340,7 @@ message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "")
 message(STATUS "⚡ Performance Target: 1M+ packets/sec DROP rate")
 message(STATUS "🎯 Design Philosophy: Via Appia Quality")
+message(STATUS "🔬 Day 50 Motto: Fiat Lux - Let there be light")
 message(STATUS "")
 message(STATUS "╚════════════════════════════════════════════════════════╝")
 message(STATUS "")

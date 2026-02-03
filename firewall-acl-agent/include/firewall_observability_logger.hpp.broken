@@ -1,0 +1,206 @@
+/**
+ * @file firewall_observability_logger.hpp
+ * @brief Comprehensive observability logging for firewall-acl-agent
+ * @date Day 50 - Stress Test Diagnostics
+ *
+ * Via Appia Principle: "Fiat Lux" - Build observability before optimization
+ *
+ * Usage:
+ *   #include "firewall_observability_logger.hpp"
+ *   FIREWALL_LOG_DEBUG("Processing IP", "ip", source_ip, "confidence", conf);
+ *   FIREWALL_LOG_BATCH("Flushing batch", "count", batch_size);
+ */
+
+#pragma once
+
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <mutex>
+#include <fstream>
+#include <ctime>
+#include <sys/time.h>
+
+namespace firewall::observability {
+
+/**
+ * @class ObservabilityLogger
+ * @brief Thread-safe logger with microsecond precision for diagnostic tracking
+ */
+class ObservabilityLogger {
+private:
+    std::mutex log_mutex_;
+    std::ofstream log_file_;
+    bool verbose_mode_;
+
+    static constexpr const char* RESET = "\033[0m";
+    static constexpr const char* RED = "\033[31m";
+    static constexpr const char* GREEN = "\033[32m";
+    static constexpr const char* YELLOW = "\033[33m";
+    static constexpr const char* BLUE = "\033[34m";
+    static constexpr const char* MAGENTA = "\033[35m";
+    static constexpr const char* CYAN = "\033[36m";
+
+public:
+    enum class Level {
+        DEBUG,   // Detailed diagnostic info
+        INFO,    // Normal operations
+        BATCH,   // Batch processing events
+        IPSET,   // IPSet operations
+        WARN,    // Warnings
+        ERROR,   // Errors
+        CRASH    // Fatal errors with backtrace
+    };
+
+    ObservabilityLogger(const std::string& log_path, bool verbose = true)
+        : verbose_mode_(verbose) {
+        log_file_.open(log_path, std::ios::app);
+        if (!log_file_.is_open()) {
+            std::cerr << "Failed to open log file: " << log_path << std::endl;
+        }
+    }
+
+    ~ObservabilityLogger() {
+        if (log_file_.is_open()) {
+            log_file_.close();
+        }
+    }
+
+    /**
+     * @brief Get high-precision timestamp with microseconds
+     */
+    static std::string get_timestamp() {
+        struct timeval tv;
+        gettimeofday(&tv, nullptr);
+
+        std::time_t now = tv.tv_sec;
+        std::tm* tm_info = std::localtime(&now);
+
+        std::ostringstream oss;
+        oss << std::put_time(tm_info, "%Y-%m-%d %H:%M:%S")
+            << '.' << std::setfill('0') << std::setw(6) << tv.tv_usec;
+        return oss.str();
+    }
+
+    /**
+     * @brief Get color code for log level
+     */
+    static const char* get_color(Level level) {
+        switch (level) {
+            case Level::DEBUG:  return CYAN;
+            case Level::INFO:   return GREEN;
+            case Level::BATCH:  return MAGENTA;
+            case Level::IPSET:  return BLUE;
+            case Level::WARN:   return YELLOW;
+            case Level::ERROR:  return RED;
+            case Level::CRASH:  return RED;
+            default:            return RESET;
+        }
+    }
+
+    /**
+     * @brief Get string representation of log level
+     */
+    static const char* level_str(Level level) {
+        switch (level) {
+            case Level::DEBUG:  return "DEBUG";
+            case Level::INFO:   return "INFO ";
+            case Level::BATCH:  return "BATCH";
+            case Level::IPSET:  return "IPSET";
+            case Level::WARN:   return "WARN ";
+            case Level::ERROR:  return "ERROR";
+            case Level::CRASH:  return "CRASH";
+            default:            return "UNKNOWN";
+        }
+    }
+
+    /**
+     * @brief Log message with variadic key-value pairs
+     */
+    template<typename... Args>
+    void log(Level level, const std::string& message, Args&&... args) {
+        // Skip DEBUG logs if not in verbose mode
+        if (level == Level::DEBUG && !verbose_mode_) {
+            return;
+        }
+
+        std::ostringstream oss;
+        oss << get_timestamp() << " [" << level_str(level) << "] " << message;
+
+        // Append key-value pairs
+        append_kvp(oss, std::forward<Args>(args)...);
+
+        std::string log_line = oss.str();
+
+        std::lock_guard<std::mutex> lock(log_mutex_);
+
+        // Console output with color
+        std::cout << get_color(level) << log_line << RESET << std::endl;
+
+        // File output without color
+        if (log_file_.is_open()) {
+            log_file_ << log_line << std::endl;
+            log_file_.flush(); // Ensure crash recovery
+        }
+    }
+
+private:
+    // Base case: no more arguments
+    void append_kvp(std::ostringstream& oss) {}
+
+    // Recursive case: append key-value pair
+    template<typename K, typename V, typename... Rest>
+    void append_kvp(std::ostringstream& oss, K&& key, V&& value, Rest&&... rest) {
+        oss << " | " << key << "=" << value;
+        append_kvp(oss, std::forward<Rest>(rest)...);
+    }
+};
+
+// Global logger instance (initialize in main.cpp)
+extern std::unique_ptr<ObservabilityLogger> g_logger;
+
+} // namespace firewall::observability
+
+// Convenience macros for logging
+#define FIREWALL_LOG_DEBUG(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::DEBUG, msg, ##__VA_ARGS__); \
+    }
+
+#define FIREWALL_LOG_INFO(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::INFO, msg, ##__VA_ARGS__); \
+    }
+
+#define FIREWALL_LOG_BATCH(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::BATCH, msg, ##__VA_ARGS__); \
+    }
+
+#define FIREWALL_LOG_IPSET(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::IPSET, msg, ##__VA_ARGS__); \
+    }
+
+#define FIREWALL_LOG_WARN(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::WARN, msg, ##__VA_ARGS__); \
+    }
+
+#define FIREWALL_LOG_ERROR(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::ERROR, msg, ##__VA_ARGS__); \
+    }
+
+#define FIREWALL_LOG_CRASH(msg, ...) \
+    if (firewall::observability::g_logger) { \
+        firewall::observability::g_logger->log( \
+            firewall::observability::ObservabilityLogger::Level::CRASH, msg, ##__VA_ARGS__); \
+    }
