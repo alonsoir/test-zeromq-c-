@@ -32,9 +32,21 @@ std::vector<uint8_t> compress(const std::vector<uint8_t>& data) {
         throw std::runtime_error("LZ4 compression failed");
     }
 
-    // Resize to actual compressed size
-    compressed.resize(compressed_size);
-    return compressed;
+    // ===================================================================
+    // FIX: Prepend 4-byte header with original size (big-endian)
+    // ===================================================================
+    std::vector<uint8_t> result;
+    result.reserve(4 + compressed_size);
+    
+    uint32_t original_size = static_cast<uint32_t>(data.size());
+    result.push_back((original_size >> 24) & 0xFF);
+    result.push_back((original_size >> 16) & 0xFF);
+    result.push_back((original_size >> 8) & 0xFF);
+    result.push_back(original_size & 0xFF);
+    
+    result.insert(result.end(), compressed.begin(), compressed.begin() + compressed_size);
+    
+    return result;
 }
 
 std::vector<uint8_t> decompress(const std::vector<uint8_t>& compressed_data,

@@ -256,23 +256,43 @@ server.Put("/v1/config/(.*)", [this](const httplib::Request& req, httplib::Respo
             std::cout << "[ETCD-SERVER] ✅ Descifrado: " << processed_data.size() << " bytes" << std::endl;
         }
 
-        // Step 2: Decompress if compressed (check size difference)
-            std::string original_size_header = req.get_header_value("X-Original-Size");
-            if (!original_size_header.empty()) {
-                size_t original_size = std::stoull(original_size_header);
+        // Step 2: Decompress if compressed (extract 4-byte header from crypto_transport format)
+        std::string original_size_header = req.get_header_value("X-Original-Size");
+        if (!original_size_header.empty()) {
+            size_t original_size = std::stoull(original_size_header);
 
-                // Only decompress if data was actually compressed (size < original)
-                if (processed_data.size() < original_size) {
-                    std::cout << "[ETCD-SERVER] 📦 Descomprimiendo datos (tamaño original: "
-                              << original_size << " bytes)..." << std::endl;
+            // Check if data has the 4-byte LZ4 header from crypto_transport::compress()
+            if (processed_data.size() >= 4) {
+                // Extract original size from 4-byte big-endian header
+                uint32_t header_size =
+                    (static_cast<uint32_t>(static_cast<uint8_t>(processed_data[0])) << 24) |
+                    (static_cast<uint32_t>(static_cast<uint8_t>(processed_data[1])) << 16) |
+                    (static_cast<uint32_t>(static_cast<uint8_t>(processed_data[2])) << 8) |
+                    static_cast<uint32_t>(static_cast<uint8_t>(processed_data[3]));
 
-                    processed_data = compression::decompress_lz4(processed_data, original_size);
-                    std::cout << "[ETCD-SERVER] ✅ Descomprimido: " << processed_data.size() << " bytes" << std::endl;
-                } else {
-                    std::cout << "[ETCD-SERVER] ℹ️  Datos no comprimidos (tamaño: "
-                              << processed_data.size() << " bytes)" << std::endl;
+                std::cout << "[ETCD-SERVER] 📦 Descomprimiendo datos..." << std::endl;
+                std::cout << "   Header size: " << header_size << " bytes" << std::endl;
+                std::cout << "   HTTP header size: " << original_size << " bytes" << std::endl;
+
+                // Verify header matches HTTP header
+                if (header_size != original_size) {
+                    std::cerr << "[ETCD-SERVER] ⚠️  Size mismatch: header=" << header_size
+                              << " vs HTTP=" << original_size << std::endl;
                 }
+
+                // Extract compressed data (skip 4-byte header)
+                std::string compressed_only = processed_data.substr(4);
+
+                std::cout << "[ETCD-SERVER] 📦 Decompressing " << compressed_only.size()
+                          << " bytes → " << original_size << " bytes" << std::endl;
+
+                processed_data = compression::decompress_lz4(compressed_only, original_size);
+                std::cout << "[ETCD-SERVER] ✅ Descomprimido: " << processed_data.size() << " bytes" << std::endl;
+            } else {
+                std::cout << "[ETCD-SERVER] ℹ️  Datos no comprimidos (tamaño: "
+                          << processed_data.size() << " bytes)" << std::endl;
             }
+        }
 
         // Step 3: Validate JSON
         auto parsed = json::parse(processed_data);

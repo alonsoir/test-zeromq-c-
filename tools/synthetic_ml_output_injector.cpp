@@ -137,6 +137,7 @@ public:
         }
 
         std::cout << "✅ [etcd] Retrieved encryption key (" << crypto_seed_.size() << " hex chars)\n";
+        std::cout << "🔑 DEBUG: Encryption key = " << crypto_seed_ << "\n";
 
         // Give ZMQ time to bind
         std::this_thread::sleep_for(std::chrono::milliseconds(500));

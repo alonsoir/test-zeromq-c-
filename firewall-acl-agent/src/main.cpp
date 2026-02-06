@@ -229,7 +229,9 @@ int main(int argc, char** argv) {
         mldefender::firewall::observability::g_logger =
             std::make_unique<mldefender::firewall::observability::ObservabilityLogger>(
                 log_path, enable_verbose);
-
+        // Initialize system state for crash diagnostics
+        mldefender::firewall::diagnostics::g_system_state =
+            std::make_unique<mldefender::firewall::diagnostics::SystemState>();
         FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
         FIREWALL_LOG_INFO("ML Defender - Firewall ACL Agent v1.0.0 (Day 50)");
         FIREWALL_LOG_INFO("High-Performance Packet DROP Agent");
@@ -559,6 +561,7 @@ int main(int argc, char** argv) {
 
         // Start ZMQ subscriber thread
         FIREWALL_LOG_INFO("Starting ZMQ subscriber thread");
+        mldefender::firewall::diagnostics::g_system_state->is_running.store(true);
         std::thread zmq_thread([&subscriber]() {
             subscriber.run();
         });
