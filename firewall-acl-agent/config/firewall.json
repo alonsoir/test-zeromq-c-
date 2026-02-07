@@ -119,7 +119,7 @@
   },
 
   "logging": {
-    "level": "info",
+    "level": "debug",
     "console": true,
     "syslog": false,
     "file": "/vagrant/logs/lab/firewall-agent.log",

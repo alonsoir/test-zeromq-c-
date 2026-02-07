@@ -70,6 +70,62 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
   endif()
 endif()
 
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  if(EXISTS "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector"
+         RPATH "")
+  endif()
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/vagrant/tools/build/synthetic_sniffer_injector")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/vagrant/tools/build" TYPE EXECUTABLE FILES "/vagrant/tools/build/synthetic_sniffer_injector")
+  if(EXISTS "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector"
+         OLD_RPATH "/vagrant/etcd-client/build:/usr/local/lib:"
+         NEW_RPATH "")
+    if(CMAKE_INSTALL_DO_STRIP)
+      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}/vagrant/tools/build/synthetic_sniffer_injector")
+    endif()
+  endif()
+endif()
+
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  if(EXISTS "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector"
+         RPATH "")
+  endif()
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/vagrant/tools/build/synthetic_ml_output_injector")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/vagrant/tools/build" TYPE EXECUTABLE FILES "/vagrant/tools/build/synthetic_ml_output_injector")
+  if(EXISTS "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector"
+         OLD_RPATH "/vagrant/etcd-client/build:/usr/local/lib:"
+         NEW_RPATH "")
+    if(CMAKE_INSTALL_DO_STRIP)
+      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}/vagrant/tools/build/synthetic_ml_output_injector")
+    endif()
+  endif()
+endif()
+
 if(CMAKE_INSTALL_COMPONENT)
   set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INSTALL_COMPONENT}.txt")
 else()

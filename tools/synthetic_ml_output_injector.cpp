@@ -1,4 +1,4 @@
-// tools/src/synthetic_ml_output_injector.cpp
+// tools/synthetic_ml_output_injector.cpp
 // Synthetic ML Detector → Firewall ACL Agent Event Generator
 // Generates NetworkSecurityEvent with ML analysis for firewall stress testing
 // AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)
