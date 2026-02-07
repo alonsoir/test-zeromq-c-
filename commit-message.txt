@@ -1,27 +1,26 @@
 cd /vagrant
 
-# Stage changes
-git add crypto-transport/src/compression.cpp
-git add etcd-server/src/etcd_server.cpp
+# Ver cambios
+git status
 
-# Commit
-git commit -m "fix(crypto): Add 4-byte header to LZ4 compression format
+# Commit del fix de etcd-client
+git add etcd-client/src/etcd_client.cpp
+git commit -m "Day 52: Fix etcd-client compression header extraction
 
-BREAKING CHANGE: Compression format now includes 4-byte big-endian header
+- Added 4-byte header extraction before decompression
+- Validates minimum size (4 bytes header + data)
+- Validates decompressed size sanity (<100MB)
+- Matches compress() format: [4-byte-size][compressed_data]
+- Backup created: etcd_client.cpp.backup.day52
 
-- crypto-transport: compress() now prepends [size_byte0-3][data]
-- etcd-server: decompress extracts header before LZ4 decompress
-- Fixes 'Invalid decompressed size' errors (4GB+ phantom sizes)
+Testing:
+- 200 events processed with 0 crypto/decompression errors
+- Pipeline validation: 7532 bytes → 3779 compressed → 3819 encrypted
+- Compression ratio: 50.1% (excellent for JSON)
 
-Tested:
-- 200 events: 0 errors, 100% success
-- 20K events: decompression stable, ipset failures under investigation
+Known issues discovered:
+- BatchProcessor uses hardcoded 'ml_defender_blacklist' ipset name
+- Logger writes to hardcoded path vs config path
+- Workaround: created missing ipset manually
 
-Components requiring verification:
-- ml-detector, sniffer, RAG (if using compression)
-- All stress test scripts
-
-Related: Day 51 compression header bug investigation"
-
-# Push
-git push origin main
+Results: 209 IPs blocked, 4 successful batch flushes"
