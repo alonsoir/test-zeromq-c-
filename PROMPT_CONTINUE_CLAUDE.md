@@ -1,589 +1,747 @@
-# Day 52 Continuity Prompt - Config-Driven Architecture & Stress Testing
+# Day 53 Continuity Prompt - HMAC-Based Log Integrity for RAG
 
-## 🎯 Session Summary
+## 🎯 Session Goals
 
-Day 52 achieved **production-ready stability** for firewall-acl-agent by eliminating hardcoded values and validating the complete pipeline under extreme stress. All components now read from config, the crypto pipeline is validated at scale, and we discovered critical capacity planning insights.
+Day 53 focuses on **preventing log poisoning attacks** against the RAG system by implementing HMAC-based integrity protection for all logs ingested by rag-ingester.
+
+**Context**: Day 52 validated the crypto pipeline (36K events, 0 errors) and achieved config-driven architecture. However, RAG logs are currently vulnerable to tampering and injection attacks.
 
 ---
 
-## ✅ COMPLETED - Day 52 Fixes
+## 🔐 SECURITY THREAT: Log Poisoning
 
-### 1. Logger Path from Config (Not Hardcoded)
-**Problem**: Logger was initialized BEFORE config loading with hardcoded path
-```cpp
-// OLD (Day 50):
-std::string log_path = "/vagrant/logs/firewall-acl-agent/firewall_detailed.log"; // HARDCODED
+### Attack Vectors
+
+**Current Vulnerability**:
+```
+ml-detector → /vagrant/logs/rag/ml_detector_events.jsonl (plaintext, NO integrity)
+firewall    → /vagrant/logs/lab/firewall-agent.log (plaintext, NO integrity)
 ```
 
-**Solution**: Moved logger initialization AFTER config loading
-```cpp
-// NEW (Day 52):
-std::string log_path = config.logging.file;  // FROM CONFIG
-// Now logs to: /vagrant/logs/lab/firewall-agent.log
+**Attacker with filesystem access can**:
+1. **Log Injection**: Add malicious lines → contaminate RAG → manipulate LLM responses
+2. **Log Modification**: Change existing lines → hide activity / create false narratives
+3. **Prompt Injection via Logs**: Inject LLM manipulation → arbitrary behavior
+4. **ML Poisoning**: Corrupt training data → degrade detection accuracy
+5. **Cover Tracks**: Delete/modify evidence of compromise
+
+### Why NOT ChaCha20 Encryption?
+
+| Issue | ChaCha20 (Confidentiality) | HMAC (Integrity) |
+|-------|---------------------------|------------------|
+| FAISS indexing | ❌ Cannot index ciphertext | ✅ Can index plaintext |
+| Detect tampering | ❌ Decrypts anything with key | ✅ HMAC mismatch detected |
+| Detect injection | ❌ New encrypted lines look valid | ✅ No valid HMAC = rejected |
+| Performance | Slower (~10μs) | Faster (~2μs) |
+| Auditability | ❌ Logs unreadable | ✅ Logs human-readable |
+| Key compromise | Reads everything | Only validates, cannot forge |
+
+**Conclusion**: HMAC provides integrity + authenticity while preserving FAISS compatibility.
+
+---
+
+## 🏗️ Day 53 Architecture
+
+### Secure Logging Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Component (ml-detector / firewall-acl-agent)                    │
+│ ├─ Generate log line (plaintext)                                │
+│ ├─ Retrieve HMAC key from etcd                                  │
+│ ├─ Compute HMAC-SHA256(log_line, hmac_key)                      │
+│ └─ Write: "log_line|HMAC:hex_value\n"                           │
+│    Example:                                                      │
+│    {"ip":"1.2.3.4","conf":0.95}|HMAC:a3f5c2d8e9b1...            │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ rag-ingester (runs as non-root user)                           │
+│ ├─ Read log file (permissions: 0400)                            │
+│ ├─ For each line:                                               │
+│ │   ├─ Split → (message, hmac_hex)                              │
+│ │   ├─ Compute expected_hmac = HMAC-SHA256(message, hmac_key)   │
+│ │   ├─ Constant-time compare: hmac_hex == expected_hmac?        │
+│ │   ├─ If VALID → parse and ingest to RAG                       │
+│ │   └─ If INVALID → REJECT + ALERT (tampering detected)         │
+│ ├─ Metrics: tampering_attempts_total                            │
+│ └─ Alerts: Slack/email on HMAC mismatch                         │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ RAG / FAISS                                                     │
+│ ├─ Contains ONLY validated logs (HMAC verified)                 │
+│ ├─ Plaintext indexable by FAISS                                 │
+│ └─ Protected against log poisoning ✅                           │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Modified**: `/vagrant/firewall-acl-agent/src/main.cpp`
-- Moved logger init after ConfigLoader::load_from_file()
-- Early initialization only does crash diagnostics
-- Logger gets path from `config.logging.file`
+---
 
-### 2. IPSets from Map (Eliminated Singleton Ambiguity)
-**Problem**: Config had BOTH `ipset` (singleton) and `ipsets` (map), causing duplication
+## 📋 Day 53 Implementation Plan
 
-**OLD Config**:
-```json
-{
-  "ipset": {
-    "set_name": "ml_defender_blacklist_test",  // DUPLICATE
-    ...
-  },
-  "ipsets": {
-    "blacklist": {
-      "set_name": "ml_defender_blacklist_test",  // DUPLICATE
-      ...
-    },
-    "whitelist": { ... }
-  }
+### Phase 1: Audit & Documentation (First Thing Morning)
+
+**CRITICAL**: Before implementing HMAC, audit current state to avoid breaking changes.
+
+```bash
+# 1. Audit ml-detector RAG logger
+cd /vagrant/ml-detector
+grep -r "rag" src/
+cat src/core/rag_logger.hpp
+cat src/core/rag_logger.cpp
+ls -la /vagrant/logs/rag/
+
+# 2. Audit rag-ingester parsers
+cd /vagrant/rag-ingester
+cat parsers/ml_detector_parser.py
+cat config/ingester_config.json
+ls -la parsers/
+
+# 3. Document current implementation
+# - How does ml-detector write RAG logs now?
+# - How does rag-ingester parse them?
+# - What format is expected?
+# - Any existing integrity checks?
+```
+
+**Deliverables**:
+- Document current ml-detector RAG logging implementation
+- Document current rag-ingester parsing logic
+- Identify breaking changes needed for HMAC
+- Create migration plan
+
+### Phase 2: firewall-acl-agent → rag-ingester → rag
+
+**Feature Branch**:
+```bash
+git checkout -b feature/rag-firewall-hmac-security
+```
+
+**Components to Modify**:
+
+#### 2.1: etcd-server - HMAC Key Management
+
+```cpp
+// etcd-server/src/main.cpp
+
+void initialize_hmac_keys() {
+    // Generate 32-byte HMAC keys
+    std::vector<uint8_t> firewall_hmac_key(32);
+    randombytes_buf(firewall_hmac_key.data(), 32);
+    
+    // Store in etcd
+    std::string key_hex = bytes_to_hex(firewall_hmac_key);
+    etcd_->Put("/secrets/firewall/log_hmac_key", key_hex);
+    
+    LOG_INFO("Generated HMAC key for firewall logs");
 }
 ```
 
-**Solution**: Removed `ipset` singleton, use ONLY `ipsets` map
-
-**NEW Config** (Day 52):
+**Config**:
 ```json
 {
-  "ipsets": {
-    "blacklist": {
-      "set_name": "ml_defender_blacklist_test",
-      "max_elements": 1000,
-      "timeout": 3600,
-      ...
-    },
-    "whitelist": {
-      "set_name": "ml_defender_whitelist",
-      ...
+  "secrets": {
+    "rotation_interval_hours": 168,  // Weekly rotation
+    "keys": {
+      "firewall_log_hmac": {
+        "path": "/secrets/firewall/log_hmac_key",
+        "length_bytes": 32,
+        "algorithm": "hmac-sha256"
+      }
     }
   }
 }
 ```
 
-**Modified**:
-- `/vagrant/firewall-acl-agent/config/firewall.json` - Removed `ipset` section
-- `/vagrant/firewall-acl-agent/src/main.cpp` - All references now use `config.ipsets.at("blacklist")`
+#### 2.2: firewall-acl-agent - SecureLogger
 
-### 3. BatchProcessor IPSet Names from Config
-**Problem**: BatchProcessor had hardcoded default ipset names in struct
+**New File**: `firewall-acl-agent/src/core/secure_logger.hpp`
 
-**OLD**:
 ```cpp
-struct BatchProcessorConfig {
-    std::string blacklist_ipset{"ml_defender_blacklist"};  // HARDCODED DEFAULT
-    std::string whitelist_ipset{"ml_defender_whitelist"};  // HARDCODED DEFAULT
+#include <openssl/hmac.h>
+
+class SecureLogger {
+private:
+    std::ofstream log_file_;
+    std::vector<uint8_t> hmac_key_;
+    
+    std::string compute_hmac(const std::string& message) {
+        unsigned char hmac[32];
+        HMAC(EVP_sha256(),
+             hmac_key_.data(), hmac_key_.size(),
+             (unsigned char*)message.c_str(), message.size(),
+             hmac, nullptr);
+        
+        return bytes_to_hex(hmac, 32);
+    }
+    
+public:
+    void initialize(const std::string& log_path, 
+                   const std::vector<uint8_t>& hmac_key) {
+        log_file_.open(log_path, std::ios::app);
+        hmac_key_ = hmac_key;
+    }
+    
+    void log_secure(const std::string& level,
+                   const std::string& message,
+                   const std::map<std::string, std::string>& context) {
+        // Build log line
+        std::string line = format_log_line(level, message, context);
+        
+        // Compute HMAC
+        std::string hmac = compute_hmac(line);
+        
+        // Write: line|HMAC:hex
+        log_file_ << line << "|HMAC:" << hmac << std::endl;
+    }
 };
 ```
 
-**Solution**: main.cpp now explicitly assigns from config:
+**Integration in main.cpp**:
 ```cpp
-BatchProcessorConfig batch_config;
-batch_config.blacklist_ipset = config.ipsets.at("blacklist").set_name;  // FROM CONFIG
-batch_config.whitelist_ipset = config.ipsets.at("whitelist").set_name;  // FROM CONFIG
+// firewall-acl-agent/src/main.cpp
+
+// Retrieve HMAC key from etcd
+std::string hmac_key_hex = etcd_client.get("/secrets/firewall/log_hmac_key");
+std::vector<uint8_t> hmac_key = hex_to_bytes(hmac_key_hex);
+
+// Initialize secure logger
+SecureLogger logger;
+logger.initialize(config.logging.file, hmac_key);
+
+// Log events with HMAC
+logger.log_secure("INFO", "IP blocked", {
+    {"ip", "1.2.3.4"},
+    {"confidence", "0.95"}
+});
 ```
 
-**Modified**: `/vagrant/firewall-acl-agent/src/main.cpp` lines ~545
-
-### 4. IPSet Creation Verification Phase
-**NEW**: After creating all ipsets, main.cpp now verifies they exist before proceeding
-
-```cpp
-// ═══════════════════════════════════════════════════════════════════════
-// Day 52: IPSet Creation Verification
-// ═══════════════════════════════════════════════════════════════════════
-for (const auto& [name, ipset_cfg] : config.ipsets) {
-    bool exists = ipset.set_exists(ipset_cfg.set_name);
-    if (!exists) {
-        FIREWALL_LOG_CRASH("IPSet verification failed", ...);
-        return 1;  // FAIL FAST
+**Config Update**:
+```json
+{
+  "logging": {
+    "file": "/vagrant/logs/lab/firewall-agent.log",
+    "level": "debug",
+    "integrity": {
+      "enabled": true,
+      "algorithm": "hmac-sha256",
+      "key_source": "etcd",
+      "key_path": "/secrets/firewall/log_hmac_key"
     }
+  }
 }
 ```
 
-Logs show:
-```
-[INFO] IPSet verification | logical_name=blacklist | set_name=ml_defender_blacklist_test | status=EXISTS
-[INFO] IPSet verification | logical_name=whitelist | set_name=ml_defender_whitelist | status=EXISTS
-[INFO] All ipsets verified successfully | count=2
+#### 2.3: rag-ingester - HMAC Validation
+
+**New File**: `rag-ingester/parsers/secure_firewall_parser.py`
+
+```python
+import hmac
+import hashlib
+from typing import Optional, Dict
+
+class SecureFirewallParser:
+    """Parse firewall logs with HMAC validation"""
+    
+    def __init__(self, hmac_key: bytes):
+        self.hmac_key = hmac_key
+        self.tampering_count = 0
+        self.valid_count = 0
+    
+    def verify_line(self, line: str) -> tuple[bool, str]:
+        """
+        Verify HMAC and extract message.
+        
+        Returns: (is_valid, message)
+        """
+        if "|HMAC:" not in line:
+            self.tampering_count += 1
+            return False, "Missing HMAC"
+        
+        # Split message and HMAC
+        message, hmac_hex = line.rsplit("|HMAC:", 1)
+        
+        # Compute expected HMAC
+        h = hmac.new(self.hmac_key, message.encode(), hashlib.sha256)
+        expected = h.hexdigest()
+        
+        # Constant-time comparison (prevent timing attacks)
+        if not hmac.compare_digest(hmac_hex.strip(), expected):
+            self.tampering_count += 1
+            return False, "HMAC mismatch"
+        
+        self.valid_count += 1
+        return True, message
+    
+    def parse_file(self, filepath: str) -> list:
+        """Parse entire file with HMAC validation"""
+        events = []
+        tampering_detected = []
+        
+        with open(filepath) as f:
+            for line_num, line in enumerate(f, 1):
+                is_valid, message = self.verify_line(line)
+                
+                if not is_valid:
+                    tampering_detected.append({
+                        'line_num': line_num,
+                        'reason': message,
+                        'content': line[:100]  # First 100 chars
+                    })
+                    continue
+                
+                # Parse validated message
+                event = self.parse_message(message)
+                if event:
+                    events.append(event)
+        
+        # Alert if tampering detected
+        if tampering_detected:
+            self.alert_security_team(tampering_detected)
+        
+        return events
+    
+    def parse_message(self, message: str) -> Optional[Dict]:
+        """Parse validated log line"""
+        # Standard firewall log parsing
+        # (existing logic from Day 52 backlog)
+        pass
+    
+    def alert_security_team(self, tampering_events: list):
+        """Send alert on log tampering"""
+        alert_message = f"""
+        🚨 SECURITY ALERT: Log Tampering Detected
+        
+        Component: firewall-acl-agent
+        Tampering events: {len(tampering_events)}
+        Details: {tampering_events[:5]}  # First 5
+        
+        Action required: Investigate potential security breach
+        """
+        
+        # Send to Slack/email
+        send_slack_alert(alert_message)
 ```
 
-### 5. Cleaned Logging Config (Eliminated Duplication)
-**Problem**: Logging configuration was duplicated in two places
-
-**OLD**:
+**Config Update**:
 ```json
 {
-  "logging": { "level": "debug", "file": "/vagrant/..." },
-  "operation": {
-    "log_directory": "/vagrant/...",        // DUPLICATE
-    "enable_debug_logging": true            // DUPLICATE
+  "parsers": {
+    "firewall-acl-agent": {
+      "class": "SecureFirewallParser",
+      "watch_path": "/vagrant/logs/lab/firewall-agent.log",
+      "hmac_validation": {
+        "enabled": true,
+        "key_source": "etcd",
+        "key_path": "/secrets/firewall/log_hmac_key",
+        "alert_on_tampering": true
+      }
+    }
   }
 }
 ```
 
-**Solution**: Single source of truth
-```json
-{
-  "logging": { "level": "debug", "file": "/vagrant/logs/lab/firewall-agent.log" },
-  "operation": {
-    "dry_run": false,
-    "simulate_block": true,
-    // log_directory REMOVED
-    // enable_debug_logging REMOVED
-  }
-}
-```
+#### 2.4: Testing & Validation
 
----
-
-## 🧪 STRESS TESTING RESULTS - 36,000 Events
-
-### Test Progression
-
-| Test | Events | Target Rate | Actual Rate | Duration | CPU  | Result |
-|------|--------|-------------|-------------|----------|------|--------|
-| 1    | 1,000  | 50/sec      | 42.6/sec    | 23.5s    | N/A  | ✅ PASS |
-| 2    | 5,000  | 100/sec     | 94.9/sec    | 52.7s    | N/A  | ✅ PASS |
-| 3    | 10,000 | 200/sec     | 176.1/sec   | 56.8s    | 41-45% | ✅ PASS |
-| 4    | 20,000 | 500/sec     | 364.9/sec   | 54.8s    | 49-54% | ✅ PASS |
-
-**Total**: 36,000 events in ~3 minutes
-
-### Final Metrics (Post-Test 4)
-```
-events_processed=35,362
-crypto_errors=0                    ← PERFECT: Encrypt/Decrypt/Compress/Decompress
-decompression_errors=0             ← PERFECT: LZ4 working flawlessly
-protobuf_parse_errors=0            ← PERFECT: Message parsing
-batches_flushed=118                ← Successfully flushed
-ipset_successes=118                ← First ~1000 IPs blocked
-ipset_failures=16,681              ← CAPACITY LIMIT HIT (not a bug)
-ips_blocked=991                    
-max_queue_depth=16,690             ← Queue backed up waiting for ipset space
-```
-
-### ✅ What Worked Perfectly
-- **Crypto pipeline**: 36K messages encrypted/decrypted with ZERO errors
-- **LZ4 compression**: ZERO decompression errors
-- **Protobuf parsing**: ZERO parse errors
-- **etcd integration**: Crypto seed exchange worked flawlessly
-- **System stability**: NO crashes despite extreme stress
-- **Resource usage**: Max 54% CPU, 127MB RAM (very efficient)
-- **Graceful degradation**: System stayed up, logged errors, maintained queue
-
-### 🚨 Capacity Bottleneck Discovered (NOT A BUG)
-
-**Root Cause**: IPSet configuration limits
-```json
-"ipsets": {
-  "blacklist": {
-    "max_elements": 1000,     ← Only 1000 IPs fit
-    "timeout": 3600,          ← 1 hour retention
-  }
-}
-```
-
-**What Happened**:
-1. Test 1 filled the ipset to 1000/1000 entries
-2. Tests 2-4 tried to add 35,000 MORE IPs
-3. IPSet rejected them (full)
-4. BatchProcessor logged failures correctly
-5. Queue backed up to 16,690 pending IPs
-6. **System did NOT crash** ✅
-
-**This is GOOD behavior**: Graceful degradation, proper error handling, no memory leaks.
-
----
-
-## 🏗️ ARCHITECTURAL INSIGHTS - Production Capacity Planning
-
-### The Dimensioning Problem
-**Question**: How big should `max_elements` be?
-
-**Answer**: Impossible to predict - depends on:
-- Attack size: 100 IPs vs 1M IPs (DDoS)
-- Attack duration: 5 min vs 3 days
-- Arrival rate: 10/sec vs 10K/sec
-- System RAM: 4GB vs 64GB
-
-### Formula
-```
-IPs_needed = (arrival_rate × timeout) + safety_margin
-
-Example (Test 4):
-  Rate: 364 IPs/sec
-  Timeout: 3600 sec
-  Needed: 364 × 3600 = 1,310,400 IPs
-
-With timeout=300 (5 min):
-  Needed: 364 × 300 = 109,200 IPs
-```
-
-### Industry Strategies
-
-**Fail2ban** (Simple):
-- Fixed capacity: 65,536 IPs
-- Timeout: 600 sec
-- Strategy: If full, stop adding (attackers not blocked)
-
-**CrowdSec** (Better):
-- Multi-tier ipsets by severity:
-  ```
-  ipset_critical  (timeout: 86400, size: 10K)   # 24h
-  ipset_high      (timeout: 3600,  size: 50K)   # 1h  
-  ipset_medium    (timeout: 600,   size: 100K)  # 10min
-  ipset_low       (timeout: 60,    size: 500K)  # 1min
-  ```
-- LRU eviction when full
-- SQLite persistence for forensics
-
-**CloudFlare** (Enterprise):
-- Multiple storage tiers:
-   1. In-memory ipset (fast, limited)
-   2. Disk-backed SQLite (slower, unlimited)
-   3. Distributed Redis cache
-- Score-based eviction: `score = confidence × recency × threat_level`
-
-### Proposed ML Defender Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│ Tier 1: IPSet (Kernel) - BLOCKING              │
-│ - Capacity: 100K IPs                           │
-│ - Timeout: 5-15 min                             │
-│ - Purpose: Active blocking (fast path)         │
-│ - Eviction: LRU when >80% full                 │
-└─────────────────────────────────────────────────┘
-                    ↓ (on eviction)
-┌─────────────────────────────────────────────────┐
-│ Tier 2: SQLite - FORENSICS                      │
-│ - Capacity: Unlimited                           │
-│ - Retention: 30 days                            │
-│ - Purpose: Historical analysis, retraining      │
-│ - Schema: (ip, first_seen, last_seen,           │
-│            block_count, confidence, packets)    │
-└─────────────────────────────────────────────────┘
-                    ↓ (daily aggregation)
-┌─────────────────────────────────────────────────┐
-│ Tier 3: Parquet Archive - LONG-TERM            │
-│ - Capacity: Infinite                            │
-│ - Retention: Forever                            │
-│ - Purpose: ML retraining, compliance            │
-│ - Format: Compressed Parquet                    │
-└─────────────────────────────────────────────────┘
-```
-
----
-
-## 🎯 RAG INTEGRATION DISCOVERY
-
-### Critical Insight: Firewall Logs ≠ ML Detector Logs
-
-**ml-detector** has:
-```
-- IP detected: 192.168.1.100
-- Confidence: 0.95
-- Attack type: DDoS
-- Features: [83 values]
-- Timestamp: when detected
-```
-❌ Does NOT know if IP was actually blocked
-❌ Does NOT know blocking duration
-❌ Does NOT know packets dropped
-
-**firewall-acl-agent** has:
-```
-- IP blocked: 192.168.1.100
-- Block start: 2026-02-08 07:35:10
-- Block end: 2026-02-08 07:40:10
-- Packets dropped: 1,523 (ipset counters)
-- Bytes dropped: 156,789
-- Eviction status: NO
-```
-✅ Ground truth of what happened
-✅ Feedback for ML retraining
-✅ Forensics for analysts
-
-### RAG Must Have BOTH
-
-**Use Cases Enabled**:
-
-1. **ML Efficacy Analysis**:
-   ```
-   Query: "What % of detections resulted in blocks?"
-   Needs: ml-detector + firewall logs
-   Answer: "98.5% successfully blocked, 1.5% failed (ipset full)"
-   ```
-
-2. **Forensic Investigation**:
-   ```
-   Query: "What happened to IP 10.0.0.50 on Feb 8?"
-   Needs: firewall logs
-   Answer: "Blocked 3 times, 45 min total, 2,341 packets dropped"
-   ```
-
-3. **False Positive Detection**:
-   ```
-   Query: "Were any internal IPs blocked by mistake?"
-   Needs: ml-detector (confidence) + firewall (confirmed block)
-   Answer: "3 internal IPs blocked with confidence <0.7 - review threshold"
-   ```
-
-4. **Recidivism Analysis**:
-   ```
-   Query: "Which IPs were unblocked but returned?"
-   Needs: firewall logs (block history)
-   Answer: "127 IPs returned within 24h - increase timeout"
-   ```
-
-### Proposed rag-ingester Enhancement
-```
-Watch Paths:
-  ✅ /vagrant/logs/lab/ml-detector*.log  (existing)
-  ✅ /vagrant/logs/lab/firewall-agent.log (NEW)
-
-Parsers:
-  - MLDetectorParser (existing)
-  - FirewallLogParser (NEW)
-  
-Cross-Reference:
-  - Link detection → block by (IP + timestamp ± 1min)
-  - Enrich: "Detection X led to Block Y"
-```
-
-**Benefit**: firewall-agent.log is plain text (not JSONL), avoids ml-detector's JSONL parsing bug.
-
----
-
-## 📁 Modified Files
-
-### Core Changes
-```
-/vagrant/firewall-acl-agent/src/main.cpp
-  - Moved logger initialization after config loading
-  - Changed all config.ipset → config.ipsets.at("blacklist")
-  - Added ipset verification phase
-  - Validate "blacklist" exists in config early
-  
-/vagrant/firewall-acl-agent/config/firewall.json
-  - Removed "ipset" singleton section
-  - Removed "operation.log_directory" (duplicate)
-  - Removed "operation.enable_debug_logging" (duplicate)
-  - Single source of truth: ipsets map + logging section
-```
-
-### Backups Created
-```
-/vagrant/firewall-acl-agent/src/main.cpp.backup.day52
-/vagrant/firewall-acl-agent/config/firewall.json.backup.day52
-```
-
----
-
-## 🧪 Validation Commands
-
-### Verify Config-Driven Behavior
 ```bash
-# 1. Log file in correct location
-ls -la /vagrant/logs/lab/firewall-agent.log
-# Should exist with recent timestamp
-
-# 2. NO hardcoded log path
-grep "firewall-acl-agent/firewall_detailed.log" /vagrant/logs/lab/firewall-agent.log
-# Should return nothing
-
-# 3. IPSets created from config
-sudo ipset list -n
-# Should show:
-#   ml_defender_blacklist_test
-#   ml_defender_whitelist
-
-# 4. Batch processor using config ipset names
-grep "Batch processor ipset configuration" /vagrant/logs/lab/firewall-agent.log
-# Should show:
-#   blacklist_ipset=ml_defender_blacklist_test
-#   whitelist_ipset=ml_defender_whitelist
-
-# 5. Verification phase logs
-grep "IPSet verification" /vagrant/logs/lab/firewall-agent.log
-# Should show verification of both ipsets
-```
-
-### Stress Test
-```bash
+# 1. Generate logs with HMAC
 cd /vagrant/tools/build
-./synthetic_ml_output_injector 1000 50
+./synthetic_ml_output_injector 100 10
 
-# Check for errors
-tail -20 /vagrant/logs/lab/firewall-agent.log | grep -E "crypto_errors|ipset_failures"
-# crypto_errors should be 0
+# 2. Verify HMAC format
+tail -5 /vagrant/logs/lab/firewall-agent.log
+# Should see: message|HMAC:a3f5c2d8...
+
+# 3. Test tampering detection
+echo "FAKE LOG LINE|HMAC:fakehash123" >> /vagrant/logs/lab/firewall-agent.log
+
+# 4. Run rag-ingester
+cd /vagrant/rag-ingester
+python3 ingest.py --source firewall
+
+# Expected output:
+# ✅ Parsed 100 valid lines
+# 🚨 ALERT: 1 tampering attempt detected
+# ✅ Rejected 1 invalid line
+
+# 5. Verify metrics
+grep "tampering_count" /vagrant/logs/rag-ingester.log
 ```
 
----
+**Acceptance Criteria**:
+- [ ] firewall-acl-agent writes logs with valid HMAC
+- [ ] rag-ingester validates HMAC before parsing
+- [ ] Tampering detection triggers alerts
+- [ ] Invalid lines rejected (not ingested to RAG)
+- [ ] Valid lines parsed correctly
+- [ ] Metrics: valid_count, tampering_count
+- [ ] Zero false positives (all legitimate logs pass)
 
-## 💡 Key Learnings
+### Phase 3: ml-detector → rag-ingester
 
-### 1. Via Appia Quality = Graceful Degradation
-System under extreme stress (16K queued IPs) did NOT crash:
-- ✅ Detected capacity limit
-- ✅ Logged errors properly
-- ✅ Maintained bounded queue
-- ✅ Kept processing new events
-- ✅ Stayed available for monitoring
+**Apply same pattern to ml-detector**:
+1. Add HMAC to existing RAG logger (`ml-detector/src/core/rag_logger.cpp`)
+2. Update rag-ingester ML detector parser
+3. Validate end-to-end
 
-### 2. Config is Law
-All hardcoded values eliminated:
-- Logger path from `config.logging.file`
-- IPSet names from `config.ipsets` map
-- No more duplicate/ambiguous config sections
-
-### 3. Testing Reveals Truth
-Stress testing at 364 IPs/sec revealed:
-- Crypto pipeline is production-ready (0 errors)
-- IPSet capacity planning is critical
-- Queue management works correctly
-- Need multi-tier storage for forensics
-
-### 4. RAG Needs Complete Picture
-firewall-acl-agent logs are ESSENTIAL for RAG:
-- Closes the loop: detection → action → outcome
-- Enables ML retraining with ground truth
-- Forensic analysis requires actual block data
-- Different info than ml-detector (complementary, not duplicate)
+**Defer to separate session** after firewall is validated.
 
 ---
 
-## 🚀 Next Session Priorities
+## 🧪 Testing Strategy
 
-### Immediate (Before Production)
-1. **Adjust IPSet Capacity**:
-   ```json
-   "max_elements": 100000,  // 100K IPs (from 1000)
-   "timeout": 300,          // 5 min (from 3600)
-   ```
+### Unit Tests
 
-2. **Add Capacity Monitoring**:
-   - Alert at 70% full
-   - Eviction at 85% full
-   - Emergency throttle at 95% full
+```cpp
+// firewall-acl-agent/tests/test_secure_logger.cpp
 
-### Backlog (Critical Features)
+TEST(SecureLogger, ComputesValidHMAC) {
+    std::vector<uint8_t> key(32, 0xAB);
+    SecureLogger logger;
+    logger.initialize("/tmp/test.log", key);
+    
+    std::string hmac = logger.compute_hmac("test message");
+    EXPECT_EQ(hmac.length(), 64);  // 32 bytes = 64 hex chars
+}
 
-**Priority 1: Multi-Tier Storage** (firewall-acl-agent)
-- SQLite backend for evicted IPs
-- Persistence for forensics and ML retraining
-- Unlimited capacity (disk-backed)
-- Query API: "Has this IP been seen before?"
+TEST(SecureLogger, DifferentMessagesProduceDifferentHMACs) {
+    std::vector<uint8_t> key(32, 0xAB);
+    SecureLogger logger;
+    
+    std::string hmac1 = logger.compute_hmac("message1");
+    std::string hmac2 = logger.compute_hmac("message2");
+    
+    EXPECT_NE(hmac1, hmac2);
+}
+```
 
-**Priority 2: Async Queue + Worker Pool** (firewall-acl-agent)
-- Replace synchronous batch processing
-- Worker pool for `ipset restore --exist`
-- Prevent queue backpressure
-- Target: 1K+ IPs/sec sustained
+```python
+# rag-ingester/tests/test_secure_parser.py
 
-**Priority 3: RAG Enhancement** (rag-ingester + rag)
-- Add FirewallLogParser to rag-ingester
-- Watch `/vagrant/logs/lab/firewall-agent.log`
-- Cross-reference detection → block events
-- Enable forensic queries
+def test_valid_hmac_passes():
+    key = b'A' * 32
+    parser = SecureFirewallParser(key)
+    
+    message = "test log line"
+    h = hmac.new(key, message.encode(), hashlib.sha256)
+    hmac_hex = h.hexdigest()
+    
+    line = f"{message}|HMAC:{hmac_hex}"
+    is_valid, extracted = parser.verify_line(line)
+    
+    assert is_valid == True
+    assert extracted == message
 
-**Priority 4: Runtime Config** (etcd-server + firewall-acl-agent)
-- IPSet capacity tunable via etcd
-- Timeout adjustable without restart
-- Eviction strategy configurable
+def test_invalid_hmac_rejected():
+    key = b'A' * 32
+    parser = SecureFirewallParser(key)
+    
+    line = "test log line|HMAC:fakehash123"
+    is_valid, reason = parser.verify_line(line)
+    
+    assert is_valid == False
+    assert "mismatch" in reason.lower()
 
----
+def test_missing_hmac_rejected():
+    key = b'A' * 32
+    parser = SecureFirewallParser(key)
+    
+    line = "test log line without HMAC"
+    is_valid, reason = parser.verify_line(line)
+    
+    assert is_valid == False
+    assert "missing" in reason.lower()
+```
 
-## 📊 Production Readiness Checklist
+### Integration Tests
 
-### ✅ Ready for Production
-- [x] Crypto pipeline (ChaCha20-Poly1305 + LZ4): 0 errors at 36K events
-- [x] Config-driven architecture (no hardcoding)
-- [x] IPSet verification on startup
-- [x] Graceful degradation under stress
-- [x] Proper error logging and metrics
-- [x] Resource efficiency (54% CPU max, 127MB RAM)
-- [x] etcd integration working
-
-### ⚠️ Needs Tuning Before Heavy Load
-- [ ] IPSet capacity adjusted for expected load
-- [ ] Multi-tier storage (SQLite) for unlimited capacity
-- [ ] Async queue + worker pool for high throughput
-- [ ] Monitoring/alerting for capacity thresholds
-
-### 📝 Nice to Have
-- [ ] RAG integration for firewall logs
-- [ ] Runtime config updates via etcd
-- [ ] Eviction strategies (LRU, LFU, score-based)
-- [ ] Parquet archival for long-term storage
-
----
-
-## 🎯 Commands for Next Developer
-
-### Start Clean Test
 ```bash
-# 1. Rebuild
-cd /vagrant/firewall-acl-agent/build
-make clean && make -j4
+# End-to-end tampering detection
 
-# 2. Start etcd-server (terminal 1)
+# 1. Start etcd-server
 cd /vagrant/etcd-server/build
 sudo ./etcd_server
 
-# 3. Start firewall-acl-agent (terminal 2)
+# 2. Start firewall-acl-agent
 cd /vagrant/firewall-acl-agent/build
 sudo ./firewall-acl-agent -c ../config/firewall.json
 
-# 4. Run test (terminal 3)
+# 3. Generate 1000 events
 cd /vagrant/tools/build
-./synthetic_ml_output_injector 1000 50
+./synthetic_ml_output_injector 1000 100
 
-# 5. Verify
-tail -50 /vagrant/logs/lab/firewall-agent.log | grep "System State Dump"
-sudo ipset list ml_defender_blacklist_test | head -10
+# 4. Inject tampering
+echo "MALICIOUS_IP|192.168.666.666|HMAC:fakehash" >> /vagrant/logs/lab/firewall-agent.log
+
+# 5. Run rag-ingester
+cd /vagrant/rag-ingester
+python3 ingest.py --source firewall
+
+# 6. Verify
+# ✅ 1000 valid events ingested
+# 🚨 1 tampering alert triggered
+# ✅ Malicious line NOT in RAG
+grep "tampering" /vagrant/logs/rag-ingester.log
 ```
 
-### Check for Config-Driven Behavior
+---
+
+## 📊 Success Metrics
+
+### Security
+- [ ] 0 false positives (legitimate logs pass)
+- [ ] 100% tampering detection (injected lines rejected)
+- [ ] Alerts triggered within 1 second of tampering
+- [ ] RAG contains ONLY validated logs
+
+### Performance
+- [ ] HMAC computation: <5 μs per line
+- [ ] HMAC validation: <5 μs per line
+- [ ] No noticeable impact on logging throughput
+- [ ] No noticeable impact on ingestion latency
+
+### Functionality
+- [ ] firewall logs parseable by rag-ingester
+- [ ] Cross-component queries work (detection ↔ block)
+- [ ] Timeline reconstruction functional
+- [ ] FAISS search quality unchanged (plaintext)
+
+---
+
+## 🚨 Critical Reminders
+
+### Security
+- **ALWAYS validate HMAC before parsing** — reject first, parse second
+- **Constant-time comparison** — prevent timing attacks
+- **Key rotation** — weekly rotation planned (future work)
+- **Separate user** — rag-ingester runs as non-root
+- **File permissions** — logs 0400 (read-only)
+
+### Implementation
+- **Audit first** — understand current state before changes
+- **Backwards compatibility** — support logs without HMAC during transition
+- **Metrics** — track tampering attempts, valid/invalid counts
+- **Alerts** — notify security team on suspicious activity
+
+### Testing
+- **Unit tests** — HMAC computation/validation logic
+- **Integration tests** — end-to-end tampering detection
+- **Performance tests** — no significant overhead
+- **Chaos tests** — wrong key, corrupted HMAC, network issues
+
+---
+
+## 📁 Files to Create/Modify
+
+### firewall-acl-agent
+```
+src/core/secure_logger.hpp          (NEW)
+src/core/secure_logger.cpp          (NEW)
+src/main.cpp                         (UPDATE: use SecureLogger)
+config/firewall.json                 (UPDATE: add integrity config)
+tests/test_secure_logger.cpp        (NEW)
+```
+
+### etcd-server
+```
+src/main.cpp                         (UPDATE: generate HMAC keys)
+config/etcd-server.json              (UPDATE: add secrets section)
+```
+
+### rag-ingester
+```
+parsers/secure_firewall_parser.py   (NEW)
+parsers/__init__.py                  (UPDATE: import SecureFirewallParser)
+config/ingester_config.json          (UPDATE: add hmac_validation)
+tests/test_secure_parser.py         (NEW)
+```
+
+---
+
+## 🎯 Session Workflow (Day 53)
+
+### Morning (2-3 hours)
 ```bash
-# Logger using config path
-grep "log_file=/vagrant/logs/lab/firewall-agent.log" /vagrant/logs/lab/firewall-agent.log
+# 1. Audit current state
+cd /vagrant
+git checkout main
+git pull origin main
 
-# Batch processor using config ipsets
-grep "blacklist_ipset=ml_defender_blacklist_test" /vagrant/logs/lab/firewall-agent.log
+# Review ml-detector RAG implementation
+cat ml-detector/src/core/rag_logger.hpp
+cat ml-detector/src/core/rag_logger.cpp
+tail -20 /vagrant/logs/rag/ml_detector_events.jsonl
 
-# No hardcoded paths
-! grep "firewall-acl-agent/firewall_detailed.log" /vagrant/logs/lab/firewall-agent.log
+# Review rag-ingester
+cat rag-ingester/parsers/ml_detector_parser.py
+cat rag-ingester/config/ingester_config.json
+
+# Document findings in audit.md
+```
+
+### Mid-day (3-4 hours)
+```bash
+# 2. Create feature branch
+git checkout -b feature/rag-firewall-hmac-security
+
+# 3. Implement HMAC in firewall-acl-agent
+# - Add SecureLogger
+# - Update main.cpp
+# - Update config
+
+# 4. Implement validation in rag-ingester
+# - Add SecureFirewallParser
+# - Update config
+# - Add tests
+```
+
+### Afternoon (2-3 hours)
+```bash
+# 5. Testing & validation
+# - Unit tests
+# - Integration tests
+# - Tampering detection tests
+# - Performance benchmarks
+
+# 6. Documentation
+# - Update BACKLOG.md
+# - Update README.md
+# - Write commit message
+
+# 7. Commit & push
+git add .
+git commit -F commit_message.txt
+git push origin feature/rag-firewall-hmac-security
 ```
 
 ---
 
-## 🏛️ Via Appia Quality Achieved
+## 📝 Commit Message Template
 
-Day 52 proves the system can handle production stress while maintaining:
-- **Correctness**: 0 crypto/parsing errors
-- **Resilience**: No crashes under extreme load
-- **Observability**: Complete logging and metrics
-- **Configurability**: All values from config (JSON is law)
-- **Maintainability**: Clean code, clear architecture
+```
+feat(security): HMAC-based log integrity for RAG system
 
-**The crypto pipeline is production-ready. The architecture is sound. The only remaining work is capacity optimization and forensic storage.**
+SUMMARY
+=======
+Implement HMAC-SHA256 integrity protection for firewall-acl-agent logs
+to prevent log poisoning attacks against the RAG system. Enables detection
+and rejection of tampered or injected log lines before ingestion.
+
+SECURITY THREAT
+===============
+Log poisoning attacks can:
+- Inject malicious content → contaminate RAG
+- Modify existing logs → hide malicious activity
+- Poison ML training data → degrade detection accuracy
+- Manipulate LLM responses → arbitrary behavior
+
+SOLUTION: HMAC-based Integrity
+===============================
+- firewall-acl-agent writes logs with HMAC-SHA256 signature
+- rag-ingester validates HMAC before parsing
+- Tampering detection triggers immediate alerts
+- Invalid lines rejected (never reach RAG/FAISS)
+- Plaintext logs remain indexable by FAISS
+
+CHANGES
+=======
+1. etcd-server: HMAC key generation and management
+   - Generate 32-byte HMAC key on startup
+   - Store at /secrets/firewall/log_hmac_key
+   - Weekly rotation planned (future work)
+
+2. firewall-acl-agent: SecureLogger implementation
+   - New: secure_logger.hpp/cpp
+   - Compute HMAC-SHA256 for each log line
+   - Write format: "message|HMAC:hex_value"
+   - Retrieve HMAC key from etcd
+
+3. rag-ingester: HMAC validation
+   - New: secure_firewall_parser.py
+   - Validate HMAC before parsing
+   - Constant-time comparison (prevent timing attacks)
+   - Alert on tampering: Slack/email
+   - Metrics: valid_count, tampering_count
+
+VALIDATION
+==========
+- Generated 1,000 firewall events with valid HMAC
+- Injected 10 malicious lines (invalid HMAC)
+- Result: 1,000 ingested, 10 rejected, 10 alerts triggered
+- Performance: <5μs HMAC overhead per line
+- Zero false positives
+
+SECURITY GUARANTEES
+===================
+✅ No log injection without valid HMAC
+✅ No log modification without detection
+✅ Tampering triggers immediate alerts
+✅ RAG contains only validated logs
+✅ ML retraining data integrity verified
+
+BACKWARDS COMPATIBILITY
+=======================
+- Transition mode: accept logs without HMAC (with warning)
+- Gradual rollout: enable HMAC validation after all components updated
+- Migration period: 1 week
+
+NEXT STEPS
+==========
+- Apply same HMAC pattern to ml-detector logs
+- Implement key rotation (weekly)
+- Add forensic logging (who/when/what)
+- Performance optimization (batch HMAC validation)
+
+Co-authored-by: Claude (Anthropic)
+```
 
 ---
 
-## 🔐 Current Encryption Key
-```
-8e5e0f3355cd0a6f65c7158848907fb9da66dea9a60b8acda40865a5766b78bf
-```
+## ✅ Day 53 Checklist
+
+### Pre-Session
+- [ ] Read this continuity prompt
+- [ ] Review Day 52 achievements (stress testing, config-driven)
+- [ ] Review rag-ingester/BACKLOG.md P1.1
+
+### Audit Phase
+- [ ] Document ml-detector RAG logger implementation
+- [ ] Document rag-ingester ML parser implementation
+- [ ] Identify breaking changes for HMAC
+- [ ] Create migration plan
+
+### Implementation Phase
+- [ ] Create feature branch: `feature/rag-firewall-hmac-security`
+- [ ] etcd-server: Generate HMAC keys
+- [ ] firewall-acl-agent: Implement SecureLogger
+- [ ] rag-ingester: Implement HMAC validation
+- [ ] Add unit tests (HMAC computation/validation)
+- [ ] Add integration tests (tampering detection)
+
+### Validation Phase
+- [ ] Generate 1K logs with valid HMAC
+- [ ] Inject 10 tampering attempts
+- [ ] Verify: 1K ingested, 10 rejected, 10 alerts
+- [ ] Benchmark: <5μs HMAC overhead
+- [ ] Zero false positives
+
+### Documentation Phase
+- [ ] Update firewall-acl-agent/BACKLOG.md
+- [ ] Update rag-ingester/BACKLOG.md
+- [ ] Update CLAUDE.md (mark Day 53 complete)
+- [ ] Write comprehensive commit message
+
+### Completion Phase
+- [ ] Commit all changes
+- [ ] Push to feature branch
+- [ ] Create Pull Request to main
+- [ ] Request review (if applicable)
 
 ---
 
-**Status**: firewall-acl-agent Day 52 - **PRODUCTION READY** ✅  
-**Next**: Capacity tuning + Multi-tier storage + RAG integration
+**Status**: Day 53 Ready  
+**Focus**: HMAC-based log integrity (firewall-acl-agent → rag-ingester)  
+**Defer**: ml-detector HMAC implementation (separate session)  
+**Via Appia Quality**: Secure by design, not by accident 🛡️
