@@ -1,14 +1,34 @@
 cmake_minimum_required(VERSION 3.16)
 project(common-rag-ingester VERSION 1.0.0 LANGUAGES CXX)
 
+# ============================================================================
+# C++20 STANDARD
+# ============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fsanitize=address")
+# ============================================================================
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
+# ============================================================================
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set CMAKE_CXX_FLAGS_RELEASE, CMAKE_CXX_FLAGS_DEBUG here
+# ⚠️  DO NOT set -O, -g, -march, -fsanitize flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
+
+# ============================================================================
+# FAISS Dependency
+# ============================================================================
 
 # Find FAISS manually (no pkg-config available)
 find_path(FAISS_INCLUDE_DIR
@@ -30,7 +50,10 @@ endif()
 message(STATUS "Found FAISS: ${FAISS_LIBRARY}")
 message(STATUS "FAISS include: ${FAISS_INCLUDE_DIR}")
 
+# ============================================================================
 # Library: common-rag-ingester
+# ============================================================================
+
 add_library(common-rag-ingester SHARED
         src/dimensionality_reducer.cpp
 )
@@ -49,14 +72,32 @@ target_link_libraries(common-rag-ingester
         pthread
 )
 
-# Set library properties
+# ============================================================================
+# COMPILER OPTIONS - Warnings Only
+# ============================================================================
+# ⚠️  Optimization flags (-O3, -g, -march, -fsanitize) are controlled by root Makefile
+# ⚠️  Only warnings are set here
+
+target_compile_options(common-rag-ingester PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+# ============================================================================
+# Library Properties
+# ============================================================================
+
 set_target_properties(common-rag-ingester PROPERTIES
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
         PUBLIC_HEADER include/dimensionality_reducer.hpp
 )
 
-# Installation rules
+# ============================================================================
+# Installation Rules
+# ============================================================================
+
 include(GNUInstallDirs)
 
 install(TARGETS common-rag-ingester
@@ -94,14 +135,21 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/common-rag-ingester
 )
 
-# Build summary
+# ============================================================================
+# Build Summary
+# ============================================================================
+
 message(STATUS "")
 message(STATUS "=== common-rag-ingester Configuration ===")
 message(STATUS "Version: ${PROJECT_VERSION}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
 message(STATUS "FAISS Include: ${FAISS_INCLUDE_DIR}")
 message(STATUS "FAISS Library: ${FAISS_LIBRARY}")
 message(STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "========================================")
 message(STATUS "")

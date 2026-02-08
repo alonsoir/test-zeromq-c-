@@ -1,0 +1,178 @@
+/**
+ * @file crash_diagnostics.hpp
+ * @brief Signal handlers and crash diagnostics for firewall-acl-agent
+ * @date Day 50 - Stress Test Crash Analysis
+ *
+ * Provides comprehensive crash handling with:
+ * - Stack backtrace on SIGSEGV/SIGABRT
+ * - Component state dump
+ * - Memory usage tracking
+ * - Event counter snapshots
+ */
+
+#pragma once
+
+#include "firewall_observability_logger.hpp"
+#include <csignal>
+#include <cstring>
+#include <execinfo.h>
+#include <unistd.h>
+#include <atomic>
+#include <sys/resource.h>
+
+namespace firewall::diagnostics {
+
+/**
+ * @struct SystemState
+ * @brief Snapshot of system state for crash analysis
+ */
+struct SystemState {
+    std::atomic<uint64_t> events_processed{0};
+    std::atomic<uint64_t> events_dropped{0};
+    std::atomic<uint64_t> batches_flushed{0};
+    std::atomic<uint64_t> ipset_successes{0};
+    std::atomic<uint64_t> ipset_failures{0};
+    std::atomic<uint64_t> zmq_recv_count{0};
+    std::atomic<uint64_t> zmq_recv_bytes{0};
+    std::atomic<bool> is_running{true};
+};
+
+// Global state tracker
+extern std::unique_ptr<SystemState> g_system_state;
+
+/**
+ * @brief Get memory usage in MB
+ */
+inline double get_memory_usage_mb() {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    return usage.ru_maxrss / 1024.0; // Convert KB to MB on Linux
+}
+
+/**
+ * @brief Dump system state to log
+ */
+inline void dump_state(const char* context) {
+    if (!g_system_state) return;
+
+    FIREWALL_LOG_CRASH("System State Dump",
+        "context", context,
+        "events_processed", g_system_state->events_processed.load(),
+        "events_dropped", g_system_state->events_dropped.load(),
+        "batches_flushed", g_system_state->batches_flushed.load(),
+        "ipset_successes", g_system_state->ipset_successes.load(),
+        "ipset_failures", g_system_state->ipset_failures.load(),
+        "zmq_recv_count", g_system_state->zmq_recv_count.load(),
+        "zmq_recv_bytes", g_system_state->zmq_recv_bytes.load(),
+        "memory_mb", get_memory_usage_mb());
+}
+
+/**
+ * @brief Print stack backtrace
+ */
+inline void print_backtrace(int signal_num) {
+    constexpr int MAX_FRAMES = 128;
+    void* buffer[MAX_FRAMES];
+
+    int frame_count = backtrace(buffer, MAX_FRAMES);
+    char** symbols = backtrace_symbols(buffer, frame_count);
+
+    FIREWALL_LOG_CRASH("Signal received", "signal", signal_num, "name", strsignal(signal_num));
+    FIREWALL_LOG_CRASH("Stack Backtrace", "frames", frame_count);
+
+    for (int i = 0; i < frame_count; ++i) {
+        FIREWALL_LOG_CRASH("Frame", "index", i, "symbol", symbols[i]);
+    }
+
+    free(symbols);
+}
+
+/**
+ * @brief Signal handler for crashes
+ */
+inline void crash_handler(int signal_num) {
+    // Avoid recursive crash handling
+    static std::atomic<bool> already_crashing{false};
+
+    if (already_crashing.exchange(true)) {
+        _exit(1); // Force exit if already handling a crash
+    }
+
+    FIREWALL_LOG_CRASH("=== CRASH DETECTED ===");
+
+    // Print backtrace
+    print_backtrace(signal_num);
+
+    // Dump system state
+    dump_state("crash_handler");
+
+    // Restore default handler and re-raise
+    signal(signal_num, SIG_DFL);
+    raise(signal_num);
+}
+
+/**
+ * @brief Initialize crash diagnostics
+ */
+inline void install_crash_handlers() {
+    // Initialize system state tracker
+    g_system_state = std::make_unique<SystemState>();
+
+    // Install signal handlers
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = crash_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESETHAND; // One-shot handler
+
+    sigaction(SIGSEGV, &sa, nullptr); // Segmentation fault
+    sigaction(SIGABRT, &sa, nullptr); // Abort signal
+    sigaction(SIGBUS, &sa, nullptr);  // Bus error
+    sigaction(SIGFPE, &sa, nullptr);  // Floating point exception
+    sigaction(SIGILL, &sa, nullptr);  // Illegal instruction
+
+    FIREWALL_LOG_INFO("Crash diagnostics installed");
+}
+
+/**
+ * @brief RAII wrapper for operation tracking
+ */
+class OperationTracker {
+private:
+    const char* operation_;
+    uint64_t start_time_;
+
+public:
+    explicit OperationTracker(const char* op)
+        : operation_(op)
+        , start_time_(std::chrono::steady_clock::now().time_since_epoch().count()) {
+        FIREWALL_LOG_DEBUG("Operation started", "name", operation_);
+    }
+
+    ~OperationTracker() {
+        uint64_t end_time = std::chrono::steady_clock::now().time_since_epoch().count();
+        uint64_t duration_ns = end_time - start_time_;
+        FIREWALL_LOG_DEBUG("Operation completed",
+            "name", operation_,
+            "duration_us", duration_ns / 1000);
+    }
+};
+
+} // namespace firewall::diagnostics
+
+// Convenience macros
+#define TRACK_OPERATION(name) \
+    firewall::diagnostics::OperationTracker __tracker_##__LINE__(name)
+
+#define INCREMENT_COUNTER(counter) \
+    if (firewall::diagnostics::g_system_state) { \
+        firewall::diagnostics::g_system_state->counter.fetch_add(1); \
+    }
+
+#define ADD_COUNTER(counter, value) \
+    if (firewall::diagnostics::g_system_state) { \
+        firewall::diagnostics::g_system_state->counter.fetch_add(value); \
+    }
+
+#define DUMP_STATE_ON_ERROR(context) \
+    firewall::diagnostics::dump_state(context)

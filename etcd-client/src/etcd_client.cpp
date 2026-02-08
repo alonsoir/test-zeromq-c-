@@ -204,14 +204,30 @@ struct EtcdClient::Impl {
         }
 
         // Step 2: Decompress (if compression was used)
+        // FIX Day 52: Extract 4-byte header before decompression
         if (config_.compression_enabled && original_size > 0) {
             try {
-                data_bytes = crypto_transport::decompress(data_bytes, original_size);
-                std::cout << "📦 Decompressed: " << data.size() << " → "
+                // Validate minimum size for header
+                if (data_bytes.size() < 4) {
+                    throw std::runtime_error("Compressed data too small for header");
+                }
+
+                // Extract 4-byte decompressed size (big-endian)
+                uint32_t decompressed_size =
+                    (data_bytes[0] << 24) | (data_bytes[1] << 16) |
+                    (data_bytes[2] << 8) | data_bytes[3];
+
+                std::cout << "📦 Decompression header: " << decompressed_size
+                          << " bytes (from " << (data_bytes.size() - 4) << " compressed)" << std::endl;
+
+                // Remove 4-byte header and decompress
+                std::vector<uint8_t> compressed_only(data_bytes.begin() + 4, data_bytes.end());
+                data_bytes = crypto_transport::decompress(compressed_only, decompressed_size);
+
+                std::cout << "📦 Decompressed: " << compressed_only.size() << " → "
                           << data_bytes.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Decompression failed: " << e.what() << std::endl;
-                throw;
             }
         }
 

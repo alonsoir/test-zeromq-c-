@@ -9,20 +9,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ============================================================================
-# BUILD TYPE
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
 # ============================================================================
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set CMAKE_BUILD_TYPE, CMAKE_CXX_FLAGS_RELEASE, CMAKE_CXX_FLAGS_DEBUG here
+# ⚠️  DO NOT set -O, -g, -march, -fsanitize flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-
-# ============================================================================
-# COMPILER FLAGS
-# ============================================================================
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 
 # ============================================================================
 # FIND DEPENDENCIES
@@ -55,7 +57,7 @@ set(PUBLIC_HEADERS
         include/crypto_transport/crypto.hpp
         include/crypto_transport/compression.hpp
         include/crypto_transport/utils.hpp
-        include/crypto_transport/crypto_manager.hpp  # ← DAY 27: ADDED
+        include/crypto_transport/crypto_manager.hpp
 )
 
 # ============================================================================
@@ -73,6 +75,23 @@ target_include_directories(crypto_transport
         ${LIBSODIUM_INCLUDE_DIRS}
         ${LZ4_INCLUDE_DIRS}
 )
+
+# ============================================================================
+# COMPILER OPTIONS - Warnings Only
+# ============================================================================
+# ⚠️  Optimization flags (-O3, -g, -march, -fsanitize) are controlled by root Makefile
+# ⚠️  Only warnings are set here
+
+target_compile_options(crypto_transport
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+# ============================================================================
+# Link Libraries
+# ============================================================================
 
 # Link libraries
 target_link_libraries(crypto_transport
@@ -102,12 +121,6 @@ install(FILES ${PUBLIC_HEADERS}
         DESTINATION include/crypto_transport
 )
 
-# Alternative: Install entire directory (if you prefer)
-# install(DIRECTORY include/crypto_transport
-#     DESTINATION include
-#     FILES_MATCHING PATTERN "*.hpp"
-# )
-
 # ============================================================================
 # TESTS (optional)
 # ============================================================================
@@ -133,6 +146,7 @@ message(STATUS "crypto-transport Library Configuration")
 message(STATUS "========================================")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
 message(STATUS "libsodium: ${LIBSODIUM_VERSION}")
 message(STATUS "LZ4: ${LZ4_VERSION}")
 message(STATUS "========================================")
@@ -144,4 +158,7 @@ message(STATUS "========================================")
 message(STATUS "Install destinations:")
 message(STATUS "  Library: ${CMAKE_INSTALL_PREFIX}/lib")
 message(STATUS "  Headers: ${CMAKE_INSTALL_PREFIX}/include/crypto_transport")
+message(STATUS "")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "========================================")

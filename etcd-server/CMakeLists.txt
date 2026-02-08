@@ -8,9 +8,25 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ============================================================================
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
+# ============================================================================
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set -O, -g, -march, -fsanitize flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
+
 message(STATUS "========================================")
 message(STATUS "etcd-server Configuration")
 message(STATUS "========================================")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 
 # ============================================================================
 # DEPENDENCIES
@@ -82,7 +98,6 @@ include_directories(
 # ============================================================================
 # SOURCES
 # ============================================================================
-# DAY 27: crypto_manager.cpp now wraps crypto-transport
 set(SOURCES
         src/main.cpp
         src/etcd_server.cpp
@@ -97,6 +112,20 @@ set(SOURCES
 add_executable(etcd-server ${SOURCES})
 
 # ============================================================================
+# COMPILER OPTIONS - Warnings Only
+# ============================================================================
+# ⚠️  Optimization flags (-O2, -O3, -g, -march, -fsanitize)
+# ⚠️  are controlled by root Makefile
+# ⚠️  Only warnings are set here
+
+target_compile_options(etcd-server
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+# ============================================================================
 # LINK LIBRARIES
 # ============================================================================
 target_link_libraries(etcd-server
@@ -105,7 +134,7 @@ target_link_libraries(etcd-server
         ssl
         crypto
         ${CRYPTO_TRANSPORT_LIB}
-        ${LIBSODIUM_LIBRARIES}      # ← CRITICAL: Add libsodium
+        ${LIBSODIUM_LIBRARIES}
         ${LZ4_LIBRARIES}
 )
 
@@ -121,23 +150,13 @@ target_include_directories(etcd-server
 )
 
 # ============================================================================
-# COMPILER OPTIONS
-# ============================================================================
-target_compile_options(etcd-server
-        PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        -O2
-)
-
-# ============================================================================
 # SUMMARY
 # ============================================================================
 message(STATUS "========================================")
 message(STATUS "Build Configuration:")
 message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  CXX Flags: ${CMAKE_CXX_FLAGS}")
 message(STATUS "========================================")
 message(STATUS "Dependencies:")
 message(STATUS "  crypto-transport: ${CRYPTO_TRANSPORT_LIB}")
@@ -148,4 +167,7 @@ message(STATUS "Sources:")
 foreach(src ${SOURCES})
     message(STATUS "  - ${src}")
 endforeach()
+message(STATUS "========================================")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "========================================")

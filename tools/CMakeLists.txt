@@ -6,14 +6,30 @@
 cmake_minimum_required(VERSION 3.20)
 project(ml-defender-tools VERSION 1.0.0 LANGUAGES CXX)
 
+# ============================================================================
+# C++20 STANDARD
+# ============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Compiler flags (same as ml-detector)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+# ============================================================================
+# COMPILER FLAGS - CONTROLLED BY ROOT MAKEFILE
+# ============================================================================
+# ⚠️  NO HARDCODED FLAGS - All flags come from root Makefile via CMAKE_CXX_FLAGS
+# ⚠️  DO NOT set CMAKE_CXX_FLAGS_DEBUG, CMAKE_CXX_FLAGS_RELEASE here
+# ⚠️  DO NOT set -O, -g, -march, -fsanitize flags here
+#
+# The root Makefile controls all optimization and sanitizer flags via:
+#   make PROFILE=production  → -O3 -march=native -DNDEBUG -flto
+#   make PROFILE=debug       → -g -O0 -fno-omit-frame-pointer
+#   make PROFILE=tsan        → -fsanitize=thread -g -O1
+#   make PROFILE=asan        → -fsanitize=address -g -O1
+# ============================================================================
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 
 # ============================================================================
 # Dependencies
@@ -39,7 +55,7 @@ find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
 
 # ============================================================================
-# System Libraries (SAME as ml-detector)
+# System Libraries
 # ============================================================================
 
 # etcd-client (from local build)
@@ -52,13 +68,6 @@ else()
     message(FATAL_ERROR "❌ etcd-client library not found at ${ETCD_CLIENT_LIB}
     Run: make etcd-client-build")
 endif()
-
-find_library(ETCD_CLIENT_LIB
-        NAMES etcd_client
-        PATHS /usr/local/lib /usr/lib /vagrant/etcd-client/build
-        REQUIRED
-)
-
 
 # crypto-transport (search /usr/local first, then local build)
 find_library(CRYPTO_TRANSPORT_LIB
@@ -104,12 +113,16 @@ include_directories(
 )
 
 # ============================================================================
-# 1. Synthetic Event Generator
+# Protobuf Sources
 # ============================================================================
 
 # Protobuf sources (compile directly, not as library)
 set(PROTO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf/network_security.pb.cc)
 set(PROTO_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf/network_security.pb.h)
+
+# ============================================================================
+# 1. Synthetic Event Generator
+# ============================================================================
 
 add_executable(generate_synthetic_events
         generate_synthetic_events.cpp
@@ -126,6 +139,95 @@ target_include_directories(generate_synthetic_events
         ${Protobuf_INCLUDE_DIRS}
         /usr/local/include
 )
+
+# ============================================================================
+# 2. Synthetic Sniffer Injector (sniffer → ml-detector)
+# ============================================================================
+
+add_executable(synthetic_sniffer_injector
+        synthetic_sniffer_injector.cpp
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(synthetic_sniffer_injector
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf
+        ${CMAKE_CURRENT_SOURCE_DIR}/../etcd-client/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../crypto-transport/include
+        ${Protobuf_INCLUDE_DIRS}
+)
+
+target_compile_options(synthetic_sniffer_injector
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+target_link_libraries(synthetic_sniffer_injector
+        PRIVATE
+        ${Protobuf_LIBRARIES}
+        ${CRYPTO_TRANSPORT_LIB}
+        ${ETCD_CLIENT_LIB}
+        zmq
+        Threads::Threads
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ${CURL_LIBRARIES}
+)
+
+# ============================================================================
+# 3. Synthetic ML Output Injector (ml-detector → firewall)
+# ============================================================================
+
+add_executable(synthetic_ml_output_injector
+        synthetic_ml_output_injector.cpp
+        ${PROTO_SOURCES}
+)
+
+target_include_directories(synthetic_ml_output_injector
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../protobuf
+        ${CMAKE_CURRENT_SOURCE_DIR}/../etcd-client/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../crypto-transport/include
+        ${Protobuf_INCLUDE_DIRS}
+)
+
+target_compile_options(synthetic_ml_output_injector
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+target_link_libraries(synthetic_ml_output_injector
+        PRIVATE
+        ${Protobuf_LIBRARIES}
+        ${CRYPTO_TRANSPORT_LIB}
+        ${ETCD_CLIENT_LIB}
+        zmq
+        Threads::Threads
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ${CURL_LIBRARIES}
+)
+
+# ============================================================================
+# COMPILER OPTIONS - Warnings Only
+# ============================================================================
+# ⚠️  Optimization flags (-O3, -g, -march, -fsanitize) are controlled by root Makefile
+# ⚠️  Only warnings are set here
+
+target_compile_options(generate_synthetic_events
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
+# ============================================================================
+# Link Libraries
+# ============================================================================
 
 target_link_libraries(generate_synthetic_events
         PRIVATE
@@ -144,7 +246,10 @@ target_link_libraries(generate_synthetic_events
 # Installation
 # ============================================================================
 
-install(TARGETS generate_synthetic_events
+install(TARGETS
+        generate_synthetic_events
+        synthetic_sniffer_injector
+        synthetic_ml_output_injector
         RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build
 )
 
@@ -158,7 +263,11 @@ message(STATUS "==========================================================")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
 message(STATUS "Protobuf: ${Protobuf_VERSION}")
 message(STATUS "crypto-transport: ${CRYPTO_TRANSPORT_LIB}")
 message(STATUS "etcd-client: ${ETCD_CLIENT_LIB}")
+message(STATUS "")
+message(STATUS "🎯 Single Source of Truth:")
+message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
 message(STATUS "==========================================================")
