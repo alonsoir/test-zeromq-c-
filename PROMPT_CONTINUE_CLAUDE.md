@@ -1,5 +1,24 @@
 # Day 53 Continuity Prompt - HMAC-Based Log Integrity for RAG
 
+## ⚠️ CRITICAL: AUDIT FIRST - NO ASSUMPTIONS
+
+**This prompt contains EXAMPLE code and structures that may NOT match reality.**
+
+**Before any implementation**:
+1. Audit actual rag-ingester state (may be empty, placeholder, or different structure)
+2. Audit actual ml-detector RAG logging (may not exist, may be different format)
+3. Document findings in `audit_day53.md`
+4. Adjust implementation plan based on ACTUAL state
+
+**DO NOT assume**:
+- rag-ingester has parsers/ directory
+- ml-detector writes RAG logs
+- Any specific file structure exists
+
+**START with discovery, then plan, then implement.**
+
+---
+
 ## 🎯 Session Goals
 
 Day 53 focuses on **preventing log poisoning attacks** against the RAG system by implementing HMAC-based integrity protection for all logs ingested by rag-ingester.
@@ -82,34 +101,41 @@ firewall    → /vagrant/logs/lab/firewall-agent.log (plaintext, NO integrity)
 
 ### Phase 1: Audit & Documentation (First Thing Morning)
 
-**CRITICAL**: Before implementing HMAC, audit current state to avoid breaking changes.
+**CRITICAL**: We DO NOT KNOW what exists in rag-ingester. First task is to discover the actual implementation.
 
 ```bash
-# 1. Audit ml-detector RAG logger
-cd /vagrant/ml-detector
-grep -r "rag" src/
-cat src/core/rag_logger.hpp
-cat src/core/rag_logger.cpp
-ls -la /vagrant/logs/rag/
-
-# 2. Audit rag-ingester parsers
+# 1. Discover rag-ingester structure
 cd /vagrant/rag-ingester
-cat parsers/ml_detector_parser.py
-cat config/ingester_config.json
-ls -la parsers/
+ls -la                          # What directories exist?
+find . -type f -name "*.py"     # What Python files exist?
+cat README.md 2>/dev/null       # Is there documentation?
+ls -la config/ 2>/dev/null      # What config files exist?
 
-# 3. Document current implementation
-# - How does ml-detector write RAG logs now?
-# - How does rag-ingester parse them?
-# - What format is expected?
-# - Any existing integrity checks?
+# 2. Discover ml-detector RAG logging
+cd /vagrant/ml-detector
+grep -r "rag" src/              # Where is RAG logging code?
+ls -la /vagrant/logs/rag/       # What log files exist?
+head -20 /vagrant/logs/rag/*.jsonl 2>/dev/null  # What format?
+
+# 3. Document ACTUAL implementation
+# Create: audit_day53.md with findings:
+# - What files/directories exist in rag-ingester?
+# - How does ml-detector write RAG logs? (if at all)
+# - What log format is used?
+# - How does rag-ingester work? (if implemented)
+# - What needs to be built from scratch?
 ```
 
+**Expected Findings** (UNKNOWN until audit):
+- rag-ingester might be: fully implemented, partially implemented, or placeholder
+- ml-detector RAG logging might be: working, broken, or non-existent
+- Log format might be: JSONL, plaintext, or something else
+- Parsing logic might be: Python scripts, config-driven, or manual
+
 **Deliverables**:
-- Document current ml-detector RAG logging implementation
-- Document current rag-ingester parsing logic
-- Identify breaking changes needed for HMAC
-- Create migration plan
+- `audit_day53.md`: Complete documentation of actual state
+- Decision: Build new vs modify existing
+- Implementation plan based on reality, not assumptions
 
 ### Phase 2: firewall-acl-agent → rag-ingester → rag
 
@@ -564,21 +590,27 @@ tests/test_secure_parser.py         (NEW)
 
 ### Morning (2-3 hours)
 ```bash
-# 1. Audit current state
+# 1. DISCOVERY PHASE - NO ASSUMPTIONS
 cd /vagrant
-git checkout main
-git pull origin main
 
-# Review ml-detector RAG implementation
-cat ml-detector/src/core/rag_logger.hpp
-cat ml-detector/src/core/rag_logger.cpp
-tail -20 /vagrant/logs/rag/ml_detector_events.jsonl
+# What exists in rag-ingester?
+ls -la rag-ingester/
+find rag-ingester/ -type f
+cat rag-ingester/README.md 2>/dev/null
 
-# Review rag-ingester
-cat rag-ingester/parsers/ml_detector_parser.py
-cat rag-ingester/config/ingester_config.json
+# What exists for ml-detector RAG?
+grep -r "rag" ml-detector/src/
+ls -la logs/rag/ 2>/dev/null
 
-# Document findings in audit.md
+# Document ACTUAL state in audit_day53.md
+# DO NOT assume structure exists
+# DO NOT assume parsers exist
+# DO NOT assume config format
+
+# Based on audit, decide:
+# - Build from scratch?
+# - Modify existing?
+# - Fix broken implementation?
 ```
 
 ### Mid-day (3-4 hours)
@@ -704,40 +736,42 @@ Co-authored-by: Claude (Anthropic)
 ### Pre-Session
 - [ ] Read this continuity prompt
 - [ ] Review Day 52 achievements (stress testing, config-driven)
-- [ ] Review rag-ingester/BACKLOG.md P1.1
+- [ ] **Remember: This prompt has EXAMPLES, not facts about current code**
 
-### Audit Phase
-- [ ] Document ml-detector RAG logger implementation
-- [ ] Document rag-ingester ML parser implementation
-- [ ] Identify breaking changes for HMAC
-- [ ] Create migration plan
+### Audit Phase (FIRST - MANDATORY)
+- [ ] Discover rag-ingester actual structure (`find`, `ls -la`)
+- [ ] Discover ml-detector RAG logging actual implementation
+- [ ] Document findings in `audit_day53.md`
+- [ ] List what exists vs what needs to be built
+- [ ] Revise implementation plan based on reality
 
-### Implementation Phase
+### Planning Phase (AFTER audit)
+- [ ] Decide: build from scratch vs modify existing
+- [ ] Identify actual files to create/modify (not guessed)
+- [ ] Plan migration path if existing code found
 - [ ] Create feature branch: `feature/rag-firewall-hmac-security`
+
+### Implementation Phase (AFTER planning)
 - [ ] etcd-server: Generate HMAC keys
 - [ ] firewall-acl-agent: Implement SecureLogger
-- [ ] rag-ingester: Implement HMAC validation
-- [ ] Add unit tests (HMAC computation/validation)
-- [ ] Add integration tests (tampering detection)
+- [ ] rag-ingester: Implement/modify HMAC validation (based on audit)
+- [ ] Add tests (structure depends on what was found)
 
 ### Validation Phase
 - [ ] Generate 1K logs with valid HMAC
 - [ ] Inject 10 tampering attempts
-- [ ] Verify: 1K ingested, 10 rejected, 10 alerts
+- [ ] Verify: valid ingested, invalid rejected, alerts triggered
 - [ ] Benchmark: <5μs HMAC overhead
-- [ ] Zero false positives
 
 ### Documentation Phase
-- [ ] Update firewall-acl-agent/BACKLOG.md
-- [ ] Update rag-ingester/BACKLOG.md
+- [ ] Update backlog files (based on actual implementation)
 - [ ] Update CLAUDE.md (mark Day 53 complete)
-- [ ] Write comprehensive commit message
+- [ ] Write commit message (reflecting what was actually done)
 
 ### Completion Phase
 - [ ] Commit all changes
 - [ ] Push to feature branch
 - [ ] Create Pull Request to main
-- [ ] Request review (if applicable)
 
 ---
 
