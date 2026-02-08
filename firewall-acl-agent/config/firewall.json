@@ -1,12 +1,12 @@
 {
-  "_comment": "ML Defender - Firewall ACL Agent Configuration - DAY 23 INTEGRATED",
-  "_version": "1.2.0",
-  "_updated": "2025-12-23 - Added transport (encryption/compression) for Day 23",
-  "_phase": "Day 23 - Pipeline Encryption & Compression Integration",
+  "_comment": "ML Defender - Firewall ACL Agent Configuration - DAY 52 FINAL",
+  "_version": "1.2.1",
+  "_updated": "2025-02-08 - Day 52: Removed ipset singleton (use ipsets map), removed duplicate logging",
+  "_phase": "Day 52 - Config Cleanup: Single source of truth",
 
   "component": {
     "name": "firewall-acl-agent",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "mode": "packet_filtering",
     "type": "firewall",
     "role": "pipeline_endpoint"
@@ -14,8 +14,6 @@
 
   "operation": {
     "dry_run": false,
-    "log_directory": "/vagrant/logs/lab",
-    "enable_debug_logging": true,
     "simulate_block": true,
     "validation_strictness": "high",
     "max_processing_delay_ms": 10
@@ -72,16 +70,30 @@
     "_comment": "Receives ENCRYPTED + COMPRESSED data from ml-detector on port 5572"
   },
 
-  "ipset": {
-    "set_name": "ml_defender_blacklist_test",
-    "set_type": "hash:ip",
-    "hash_size": 1024,
-    "max_elements": 1000,
-    "timeout": 3600,
-    "comment": "ML Defender TEST blocked IPs",
-    "family": "inet",
-    "create_if_missing": true,
-    "flush_on_startup": false
+  "_comment_ipsets": "DAY 52: Single source of truth - removed duplicate 'ipset' section",
+  "ipsets": {
+    "blacklist": {
+      "set_name": "ml_defender_blacklist_test",
+      "set_type": "hash:ip",
+      "hash_size": 1024,
+      "max_elements": 1000,
+      "timeout": 3600,
+      "comment": "ML Defender TEST blocked IPs",
+      "family": "inet",
+      "create_if_missing": true,
+      "flush_on_startup": false
+    },
+    "whitelist": {
+      "set_name": "ml_defender_whitelist",
+      "set_type": "hash:ip",
+      "hash_size": 512,
+      "max_elements": 500,
+      "timeout": 0,
+      "comment": "ML Defender whitelisted IPs",
+      "family": "inet",
+      "create_if_missing": true,
+      "flush_on_startup": false
+    }
   },
 
   "iptables": {
@@ -212,32 +224,13 @@
     "auto_start_test_mode": false
   },
 
-  "ipsets": {
-    "blacklist": {
-      "set_name": "ml_defender_blacklist_test",
-      "set_type": "hash:ip",
-      "hash_size": 1024,
-      "max_elements": 1000,
-      "timeout": 3600,
-      "comment": "ML Defender TEST blocked IPs",
-      "family": "inet",
-      "create_if_missing": true,
-      "flush_on_startup": false
-    },
-    "whitelist": {
-      "set_name": "ml_defender_whitelist",
-      "set_type": "hash:ip",
-      "hash_size": 512,
-      "max_elements": 500,
-      "timeout": 0,
-      "comment": "ML Defender whitelisted IPs",
-      "family": "inet",
-      "create_if_missing": true,
-      "flush_on_startup": false
-    }
-  },
-
   "_integration_notes": {
+    "day52_changes": [
+      "Removed 'ipset' singleton section (was duplicate of ipsets.blacklist)",
+      "Removed 'operation.log_directory' (duplicate of logging.file)",
+      "Removed 'operation.enable_debug_logging' (duplicate of logging.level)",
+      "Single source of truth: ipsets.blacklist and ipsets.whitelist"
+    ],
     "day23_changes": [
       "Added 'transport' section with decryption_only + decompression_only",
       "Updated 'etcd' section with crypto_token_path for decryption keys",
@@ -250,6 +243,11 @@
       "3. Decompress with LZ4",
       "4. Parse protobuf (PacketEvent)",
       "5. Apply IPTables/IPSet rules"
+    ],
+    "ipset_iptables_relationship": [
+      "ipset: Hash table data structure for storing IP lists (O(1) lookup)",
+      "iptables: Firewall engine that applies DROP rules using ipset lookup",
+      "Rule: iptables -A INPUT -m set --match-set ml_defender_blacklist_test src -j DROP"
     ],
     "dependencies": [
       "Requires: etcd-client library integration",

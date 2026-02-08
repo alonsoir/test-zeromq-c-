@@ -2,6 +2,7 @@
 // ML Defender - Firewall ACL Agent
 // main.cpp - High-Performance Packet DROP Agent with Full Observability
 // Day 50: Comprehensive diagnostics and crash analysis
+// Day 52: Config-driven logging, ipsets-only (no singleton ipset)
 //===----------------------------------------------------------------------===//
 
 #include <iostream>
@@ -90,7 +91,7 @@ void export_metrics(const FirewallAgentConfig& config,
 }
 
 //===----------------------------------------------------------------------===//
-// Health Checks (Enhanced for Day 50)
+// Health Checks (Enhanced for Day 50, Day 52: uses ipsets)
 //===----------------------------------------------------------------------===//
 
 bool perform_health_checks(const FirewallAgentConfig& config,
@@ -100,22 +101,25 @@ bool perform_health_checks(const FirewallAgentConfig& config,
     FIREWALL_LOG_INFO("Starting health checks");
     bool all_healthy = true;
 
+    // ✅ Day 52: Use ipsets.at("blacklist")
+    const auto& blacklist_ipset = config.ipsets.at("blacklist");
+
     // Check IPSet
-    bool ipset_exists = ipset.set_exists(config.ipset.set_name);
+    bool ipset_exists = ipset.set_exists(blacklist_ipset.set_name);
     if (!ipset_exists) {
         FIREWALL_LOG_ERROR("Health check failed: IPSet missing",
-            "ipset_name", config.ipset.set_name);
+            "ipset_name", blacklist_ipset.set_name);
         all_healthy = false;
     } else {
         FIREWALL_LOG_DEBUG("Health check passed: IPSet exists",
-            "ipset_name", config.ipset.set_name);
+            "ipset_name", blacklist_ipset.set_name);
     }
 
     // Check IPTables rule
     auto rules = iptables.list_rules("INPUT");
     bool rule_found = false;
     for (const auto& rule : rules) {
-        if (rule.find(config.ipset.set_name) != std::string::npos) {
+        if (rule.find(blacklist_ipset.set_name) != std::string::npos) {
             rule_found = true;
             break;
         }
@@ -123,7 +127,7 @@ bool perform_health_checks(const FirewallAgentConfig& config,
 
     if (!rule_found) {
         FIREWALL_LOG_ERROR("Health check failed: IPTables rule missing",
-            "ipset_name", config.ipset.set_name);
+            "ipset_name", blacklist_ipset.set_name);
         all_healthy = false;
     } else {
         FIREWALL_LOG_DEBUG("Health check passed: IPTables rule exists");
@@ -155,7 +159,7 @@ bool perform_health_checks(const FirewallAgentConfig& config,
 void print_usage(const char* program_name) {
     std::cout << "ML Defender - Firewall ACL Agent\n"
               << "High-Performance Packet DROP Agent (1M+ packets/sec)\n"
-              << "Day 50: Enhanced with comprehensive observability\n\n"
+              << "Day 52: Config-driven, ipsets-only (no singleton)\n\n"
               << "Usage: " << program_name << " [options]\n\n"
               << "Options:\n"
               << "  -c, --config <file>    Configuration file (required)\n"
@@ -165,23 +169,22 @@ void print_usage(const char* program_name) {
               << "  --quiet                Quiet mode (ERROR level only)\n"
               << "  -v, --version          Show version\n"
               << "  -h, --help             Show this help\n\n"
-              << "Day 50 Features:\n"
-              << "  • Comprehensive crash diagnostics with backtrace\n"
-              << "  • Microsecond-precision event logging\n"
-              << "  • Performance counters and metrics\n"
-              << "  • Automatic state dumps on errors\n"
+              << "Day 52 Features:\n"
+              << "  • Log path from config.logging.file\n"
+              << "  • IPSet names from config.ipsets (no singleton)\n"
+              << "  • IPSet creation verification\n"
               << std::endl;
 }
 
 void print_version() {
-    std::cout << "ML Defender - Firewall ACL Agent v1.0.0 (Day 50)\n"
+    std::cout << "ML Defender - Firewall ACL Agent v1.0.0 (Day 52)\n"
               << "Via Appia Quality: Built to last decades\n"
-              << "Enhanced: Comprehensive observability and diagnostics\n"
+              << "Enhanced: Config-driven, ipsets-only\n"
               << std::endl;
 }
 
 //===----------------------------------------------------------------------===//
-// Main Entry Point (Day 50 Enhanced)
+// Main Entry Point (Day 52 Enhanced)
 //===----------------------------------------------------------------------===//
 
 int main(int argc, char** argv) {
@@ -217,23 +220,84 @@ int main(int argc, char** argv) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Day 50: Initialize Observability Infrastructure
+    // Day 52: Early initialization (crash diagnostics only, logger after config)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    try {
+        // Initialize system state for crash diagnostics (before config loading)
+        mldefender::firewall::diagnostics::g_system_state =
+            std::make_unique<mldefender::firewall::diagnostics::SystemState>();
+
+        // Install crash diagnostics early
+        mldefender::firewall::diagnostics::install_crash_handlers();
+
+    } catch (const std::exception& e) {
+        std::cerr << "[FATAL] Failed to initialize crash diagnostics: " << e.what() << std::endl;
+        return 1;
+    }
+
+    std::cout << "╔════════════════════════════════════════════════════════╗\n"
+              << "║  ML Defender - Firewall ACL Agent (Day 52)            ║\n"
+              << "║  High-Performance Packet DROP Agent                   ║\n"
+              << "║  Target: 1M+ packets/sec                               ║\n"
+              << "║  Config-Driven: ipsets-only (no singleton)            ║\n"
+              << "╚════════════════════════════════════════════════════════╝\n"
+              << std::endl;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Configuration Loading (Day 52: Before logger init)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
+    FirewallAgentConfig config;
+
+    try {
+        std::cout << "[INFO] Loading configuration from: " << config_path << std::endl;
+
+        config = ConfigLoader::load_from_file(config_path);
+
+        std::cout << "[INFO] Configuration loaded successfully" << std::endl;
+        std::cout << "[INFO] Dry-run mode: " << (config.operation.dry_run ? "ENABLED" : "DISABLED") << std::endl;
+
+        // Show DRY-RUN status prominently
+        if (config.operation.dry_run) {
+            std::cout << "\n╔════════════════════════════════════════════════════════╗\n"
+                      << "║  🔍 DRY-RUN MODE ENABLED 🔍                           ║\n"
+                      << "║  No actual firewall rules will be modified            ║\n"
+                      << "╚════════════════════════════════════════════════════════╝\n"
+                      << std::endl;
+        }
+
+        // ✅ Day 52: Validate required ipsets exist in config
+        if (config.ipsets.count("blacklist") == 0) {
+            std::cerr << "[FATAL] Configuration error: 'ipsets.blacklist' is required" << std::endl;
+            return 1;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "[FATAL] Failed to load configuration: " << e.what() << std::endl;
+        return 1;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Day 52: Initialize Logger with Config Path
     // ═══════════════════════════════════════════════════════════════════════
 
     try {
         // Determine log level
         bool enable_verbose = verbose && !quiet;  // Verbose overrides quiet
 
-        // Initialize logger
-        std::string log_path = "/vagrant/logs/firewall-acl-agent/firewall_detailed.log";
+        // ✅ Day 52: Use log path from config
+        std::string log_path = config.logging.file;
+
+        std::cout << "[INFO] Initializing logger: " << log_path << std::endl;
+
         mldefender::firewall::observability::g_logger =
             std::make_unique<mldefender::firewall::observability::ObservabilityLogger>(
                 log_path, enable_verbose);
-        // Initialize system state for crash diagnostics
-        mldefender::firewall::diagnostics::g_system_state =
-            std::make_unique<mldefender::firewall::diagnostics::SystemState>();
+
         FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
-        FIREWALL_LOG_INFO("ML Defender - Firewall ACL Agent v1.0.0 (Day 50)");
+        FIREWALL_LOG_INFO("ML Defender - Firewall ACL Agent v1.0.0 (Day 52)");
         FIREWALL_LOG_INFO("High-Performance Packet DROP Agent");
         FIREWALL_LOG_INFO("Via Appia Quality: Built to last decades");
         FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
@@ -243,90 +307,51 @@ int main(int argc, char** argv) {
             "verbose_mode", enable_verbose,
             "config_path", config_path);
 
-        // Install crash diagnostics
-        mldefender::firewall::diagnostics::install_crash_handlers();
-
     } catch (const std::exception& e) {
-        std::cerr << "[FATAL] Failed to initialize observability: " << e.what() << std::endl;
+        std::cerr << "[FATAL] Failed to initialize logger: " << e.what() << std::endl;
         return 1;
     }
 
-    std::cout << "╔════════════════════════════════════════════════════════╗\n"
-              << "║  ML Defender - Firewall ACL Agent (Day 50)            ║\n"
-              << "║  High-Performance Packet DROP Agent                   ║\n"
-              << "║  Target: 1M+ packets/sec                               ║\n"
-              << "║  Enhanced: Comprehensive Observability                ║\n"
-              << "╚════════════════════════════════════════════════════════╝\n"
-              << std::endl;
-
     // ═══════════════════════════════════════════════════════════════════════
-    // Configuration Loading
+    // Configuration Summary (Day 52: Now with logger available)
     // ═══════════════════════════════════════════════════════════════════════
 
-    std::unique_ptr<mldefender::firewall::EtcdClient> etcd_client;
-    FirewallAgentConfig config;
+    ConfigLoader::log_config_summary(config);
 
-    try {
-        FIREWALL_LOG_INFO("Loading configuration", "path", config_path);
+    // ═══════════════════════════════════════════════════════════════════════
+    // ETCD Integration (Day 50: Fixed path bug)
+    // ═══════════════════════════════════════════════════════════════════════
 
-        config = ConfigLoader::load_from_file(config_path);
+    if (config.etcd.enabled) {
+        FIREWALL_LOG_INFO("etcd integration enabled",
+            "endpoint", config.etcd.endpoints[0]);
 
-        FIREWALL_LOG_INFO("Configuration loaded successfully",
-            "config_file", config_path,
-            "dry_run", config.operation.dry_run);
+        std::string etcd_endpoint = config.etcd.endpoints[0];
 
-        // Show DRY-RUN status prominently
-        if (config.operation.dry_run) {
-            FIREWALL_LOG_WARN("DRY-RUN MODE ENABLED - No actual firewall modifications");
-            std::cout << "\n╔════════════════════════════════════════════════════════╗\n"
-                      << "║  🔍 DRY-RUN MODE ENABLED 🔍                           ║\n"
-                      << "║  No actual firewall rules will be modified            ║\n"
-                      << "╚════════════════════════════════════════════════════════╝\n"
-                      << std::endl;
-        }
+        try {
+            etcd_client = std::make_unique<mldefender::firewall::EtcdClient>(
+                etcd_endpoint,
+                "firewall-acl-agent"
+            );
 
-        ConfigLoader::log_config_summary(config);
-
-        // ═══════════════════════════════════════════════════════════════════════
-        // ETCD Integration (Day 50: Fixed path bug)
-        // ═══════════════════════════════════════════════════════════════════════
-
-        if (config.etcd.enabled) {
-            FIREWALL_LOG_INFO("etcd integration enabled",
-                "endpoint", config.etcd.endpoints[0]);
-
-            std::string etcd_endpoint = config.etcd.endpoints[0];
-
-            try {
-                etcd_client = std::make_unique<mldefender::firewall::EtcdClient>(
-                    etcd_endpoint,
-                    "firewall-acl-agent"
-                );
-
-                if (!etcd_client->initialize()) {
-                    FIREWALL_LOG_WARN("etcd initialization failed - continuing without etcd");
-                    etcd_client.reset();
-                } else if (!etcd_client->registerService()) {
-                    FIREWALL_LOG_WARN("etcd service registration failed - continuing without etcd");
-                    etcd_client.reset();
-                } else {
-                    FIREWALL_LOG_INFO("etcd registration successful",
-                        "service", "firewall-acl-agent",
-                        "endpoint", etcd_endpoint);
-                }
-            } catch (const std::exception& e) {
-                FIREWALL_LOG_ERROR("etcd client exception",
-                    "error", e.what());
+            if (!etcd_client->initialize()) {
+                FIREWALL_LOG_WARN("etcd initialization failed - continuing without etcd");
                 etcd_client.reset();
+            } else if (!etcd_client->registerService()) {
+                FIREWALL_LOG_WARN("etcd service registration failed - continuing without etcd");
+                etcd_client.reset();
+            } else {
+                FIREWALL_LOG_INFO("etcd registration successful",
+                    "service", "firewall-acl-agent",
+                    "endpoint", etcd_endpoint);
             }
-        } else {
-            FIREWALL_LOG_INFO("etcd integration disabled in configuration");
+        } catch (const std::exception& e) {
+            FIREWALL_LOG_ERROR("etcd client exception",
+                "error", e.what());
+            etcd_client.reset();
         }
-
-    } catch (const std::exception& e) {
-        FIREWALL_LOG_CRASH("Configuration loading failed", "error", e.what());
-        std::cerr << "[ERROR] Failed to load configuration: " << e.what() << std::endl;
-        return 1;
+    } else {
+        FIREWALL_LOG_INFO("etcd integration disabled in configuration");
     }
 
     FIREWALL_LOG_DEBUG("Configuration phase completed successfully");
@@ -352,99 +377,95 @@ int main(int argc, char** argv) {
         "dry_run", config.operation.dry_run);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Component Initialization (Day 50: Enhanced with logging)
+    // Component Initialization (Day 52: ipsets-only, enhanced verification)
     // ═══════════════════════════════════════════════════════════════════════
 
     try {
         FIREWALL_LOG_INFO("Starting component initialization phase");
 
         // ───────────────────────────────────────────────────────────────────
-        // IPSet Configuration
+        // IPSet Configuration (Day 52: All from ipsets map)
         // ───────────────────────────────────────────────────────────────────
-
-        FIREWALL_LOG_INFO("Configuring IPSet",
-            "set_name", config.ipset.set_name,
-            "hash_size", config.ipset.hash_size,
-            "max_elements", config.ipset.max_elements,
-            "timeout", config.ipset.timeout);
-
-        IPSetConfig ipset_config;
-        ipset_config.name = config.ipset.set_name;
-        ipset_config.type = IPSetType::HASH_IP;
-        ipset_config.family = IPSetFamily::INET;
-        ipset_config.hashsize = config.ipset.hash_size;
-        ipset_config.maxelem = config.ipset.max_elements;
-        ipset_config.timeout = config.ipset.timeout;
-        ipset_config.counters = true;
-        ipset_config.comment = !config.ipset.comment.empty();
 
         FIREWALL_LOG_INFO("Initializing IPSet wrapper");
         IPSetWrapper ipset;
         ipset.set_dry_run(config.operation.dry_run);
 
-        // Create primary ipset
-        if (!ipset.set_exists(config.ipset.set_name)) {
-            FIREWALL_LOG_INFO("Creating primary ipset", "name", config.ipset.set_name);
-
-            if (!ipset.create_set(ipset_config)) {
-                FIREWALL_LOG_ERROR("Failed to create primary ipset",
-                    "name", config.ipset.set_name);
-                DUMP_STATE_ON_ERROR("ipset_creation_failed");
-                std::cerr << "[ERROR] Failed to create ipset" << std::endl;
-                return 1;
-            }
-
-            FIREWALL_LOG_INFO("Primary ipset created successfully",
-                "name", config.ipset.set_name);
-        } else {
-            FIREWALL_LOG_INFO("Primary ipset already exists",
-                "name", config.ipset.set_name);
-        }
-
-        // Create additional ipsets
+        // Create all ipsets from config.ipsets map
         if (!config.ipsets.empty()) {
-            FIREWALL_LOG_INFO("Processing additional ipsets",
+            FIREWALL_LOG_INFO("Processing ipsets",
                 "count", config.ipsets.size());
 
             for (const auto& [name, ipset_cfg] : config.ipsets) {
                 if (!ipset.set_exists(ipset_cfg.set_name)) {
-                    FIREWALL_LOG_INFO("Creating additional ipset",
+                    FIREWALL_LOG_INFO("Creating ipset",
                         "logical_name", name,
                         "set_name", ipset_cfg.set_name,
                         "timeout", ipset_cfg.timeout);
 
-                    IPSetConfig additional_config;
-                    additional_config.name = ipset_cfg.set_name;
-                    additional_config.type = IPSetType::HASH_IP;
-                    additional_config.family = IPSetFamily::INET;
-                    additional_config.hashsize = ipset_cfg.hash_size;
-                    additional_config.maxelem = ipset_cfg.max_elements;
-                    additional_config.timeout = ipset_cfg.timeout;
-                    additional_config.counters = true;
-                    additional_config.comment = !ipset_cfg.comment.empty();
+                    IPSetConfig ipset_config;
+                    ipset_config.name = ipset_cfg.set_name;
+                    ipset_config.type = IPSetType::HASH_IP;
+                    ipset_config.family = IPSetFamily::INET;
+                    ipset_config.hashsize = ipset_cfg.hash_size;
+                    ipset_config.maxelem = ipset_cfg.max_elements;
+                    ipset_config.timeout = ipset_cfg.timeout;
+                    ipset_config.counters = true;
+                    ipset_config.comment = !ipset_cfg.comment.empty();
 
-                    if (!ipset.create_set(additional_config)) {
-                        FIREWALL_LOG_ERROR("Failed to create additional ipset",
+                    if (!ipset.create_set(ipset_config)) {
+                        FIREWALL_LOG_ERROR("Failed to create ipset",
                             "logical_name", name,
                             "set_name", ipset_cfg.set_name);
-                        DUMP_STATE_ON_ERROR("additional_ipset_creation_failed");
+                        DUMP_STATE_ON_ERROR("ipset_creation_failed");
                         return 1;
                     }
 
-                    FIREWALL_LOG_INFO("Additional ipset created",
+                    FIREWALL_LOG_INFO("IPSet created successfully",
                         "logical_name", name,
                         "set_name", ipset_cfg.set_name);
                 } else {
-                    FIREWALL_LOG_DEBUG("Additional ipset already exists",
+                    FIREWALL_LOG_DEBUG("IPSet already exists",
                         "logical_name", name,
                         "set_name", ipset_cfg.set_name);
                 }
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════════════
+        // Day 52: IPSet Creation Verification
+        // ═══════════════════════════════════════════════════════════════════════
+
+        FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
+        FIREWALL_LOG_INFO("IPSet Creation Verification (Day 52)");
+        FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
+
+        // Verify all ipsets
+        for (const auto& [name, ipset_cfg] : config.ipsets) {
+            bool exists = ipset.set_exists(ipset_cfg.set_name);
+            FIREWALL_LOG_INFO("IPSet verification",
+                "logical_name", name,
+                "set_name", ipset_cfg.set_name,
+                "status", exists ? "EXISTS" : "MISSING");
+
+            if (!exists) {
+                FIREWALL_LOG_CRASH("IPSet verification failed",
+                    "logical_name", name,
+                    "set_name", ipset_cfg.set_name);
+                std::cerr << "[FATAL] IPSet does not exist: " << ipset_cfg.set_name << std::endl;
+                return 1;
+            }
+        }
+
+        FIREWALL_LOG_INFO("All ipsets verified successfully",
+            "count", config.ipsets.size());
+        FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
+
         // ───────────────────────────────────────────────────────────────────
-        // IPTables Configuration
+        // IPTables Configuration (Day 52: uses ipsets.at("blacklist"))
         // ───────────────────────────────────────────────────────────────────
+
+        const auto& blacklist_ipset = config.ipsets.at("blacklist");
 
         FIREWALL_LOG_INFO("Configuring IPTables",
             "chain", config.iptables.chain_name,
@@ -452,7 +473,7 @@ int main(int argc, char** argv) {
 
         FirewallConfig firewall_config;
         firewall_config.blacklist_chain = config.iptables.chain_name;
-        firewall_config.blacklist_ipset = config.ipset.set_name;
+        firewall_config.blacklist_ipset = blacklist_ipset.set_name;  // ✅ Day 52
 
         if (config.ipsets.count("whitelist") > 0) {
             firewall_config.whitelist_ipset = config.ipsets.at("whitelist").set_name;
@@ -481,7 +502,7 @@ int main(int argc, char** argv) {
         FIREWALL_LOG_INFO("IPTables rules configured successfully");
 
         // ───────────────────────────────────────────────────────────────────
-        // Batch Processor Configuration
+        // Batch Processor Configuration (Day 52: IPSet names from ipsets)
         // ───────────────────────────────────────────────────────────────────
 
         FIREWALL_LOG_INFO("Configuring batch processor",
@@ -495,6 +516,16 @@ int main(int argc, char** argv) {
         batch_config.batch_time_threshold = std::chrono::milliseconds(config.batch_processor.batch_time_threshold_ms);
         batch_config.max_pending_ips = config.batch_processor.max_pending_ips;
         batch_config.confidence_threshold = config.batch_processor.min_confidence;
+
+        // ✅ Day 52: Assign ipset names from ipsets map
+        batch_config.blacklist_ipset = blacklist_ipset.set_name;
+        if (config.ipsets.count("whitelist") > 0) {
+            batch_config.whitelist_ipset = config.ipsets.at("whitelist").set_name;
+        }
+
+        FIREWALL_LOG_INFO("Batch processor ipset configuration",
+            "blacklist_ipset", batch_config.blacklist_ipset,
+            "whitelist_ipset", batch_config.whitelist_ipset);
 
         FIREWALL_LOG_INFO("Initializing batch processor");
         BatchProcessor processor(ipset, batch_config);
@@ -585,7 +616,7 @@ int main(int argc, char** argv) {
         FIREWALL_LOG_INFO("Configuration summary",
             "zmq_endpoint", config.zmq.endpoint,
             "topic_filter", config.zmq.topic.empty() ? "(all)" : config.zmq.topic,
-            "ipset_name", config.ipset.set_name,
+            "blacklist_ipset", blacklist_ipset.set_name,
             "dry_run", config.operation.dry_run);
 
         std::cout << "\n[RUNNING] Firewall ACL Agent is now active\n"
