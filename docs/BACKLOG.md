@@ -141,3 +141,151 @@ Next Integration: rag-ingester EventLoader HMAC validation
 **Tests**: 32/32 passing (24 unit + 8 integration) ✅  
 **Quality**: Via Appia maintained 🏛️  
 **Next**: Documentation + FASE 3 planning (rag-ingester HMAC validation)
+
+---
+
+## 🔐 SECURITY ROADMAP - HMAC Enhancements
+
+### **FASE 3 - rag-ingester HMAC Validation (Day 54-55)**
+**Status:** ⏳ PLANNED
+**Priority:** HIGH (completa Day 53 infrastructure)
+
+**Objectives:**
+- [ ] EventLoader validates HMAC before decryption
+- [ ] Reject tampered logs with metrics
+- [ ] Integration with existing etcd-client HMAC utilities
+- [ ] End-to-end tests (tampered files detection)
+
+**Deliverables:**
+- Modified: rag-ingester/src/event_loader.cpp
+- New: tests/test_hmac_validation.cpp
+- Metrics: hmac_validation_success/failed
+- Tests: 10+ scenarios (valid/invalid/tampered)
+
+**Dependencies:**
+- ✅ Day 53 FASE 1+2 complete
+
+---
+
+### **FASE 4 - Grace Period + Key Versioning (Day 56-57)**
+**Status:** 📋 BACKLOG
+**Priority:** MEDIUM (production hardening)
+
+**Problem Statement:**
+Logs in transit may have HMAC signed with previous key version.
+Without grace period, legitimate logs rejected after rotation.
+
+**Solution Design (Validated by Grok):**
+
+**Configuration (config/etcd-server.json):**
+```json
+{
+  "secrets": {
+    "hmac": {
+      "grace_period_seconds": 86400,    // 24h grace for old keys
+      "max_previous_keys": 5,           // Security limit
+      "auto_rotate_interval_seconds": 0 // Future: auto-rotation
+    }
+  }
+}
+```
+
+**Implementation:**
+- [ ] KeyVersion struct (version, key, timestamp, is_current)
+- [ ] SecretsManager stores deque<KeyVersion> per key path
+- [ ] Automatic pruning (remove keys older than grace_period)
+- [ ] New endpoint: GET /secrets/*/versions (list valid versions)
+- [ ] Log metadata includes hmac_version
+- [ ] Validator tries: current → previous (within grace)
+
+**Components Modified:**
+- etcd-server: SecretsManager versioning + pruning
+- etcd-client: get_hmac_key_by_version()
+- sniffer/ml-detector: Include hmac_version in metadata
+- rag-ingester: Validate with version support
+
+**Metrics Added:**
+- hmac_key_current_version (gauge)
+- hmac_key_previous_count (gauge)
+- hmac_validation_success_current (counter)
+- hmac_validation_success_previous (counter)
+- hmac_validation_failed_expired (counter)
+
+**Tests Required:**
+- [ ] Key rotation with grace period
+- [ ] Validation with previous key (within grace)
+- [ ] Rejection of expired key (outside grace)
+- [ ] Pruning after grace_period expires
+- [ ] max_previous_keys enforcement
+
+**Via Appia Quality:**
+- Configurable (no hardcoded grace periods)
+- Incremental (FASE 3 first, FASE 4 after)
+- Evidence-based (metrics prove grace period works)
+
+**Estimated Effort:** 2-3 days
+**Blocking:** None (FASE 3 works without it)
+**Value:** Production-ready key rotation
+
+---
+
+### **FASE 5 - Auto-Rotation (Future)**
+**Status:** 💡 IDEA
+**Priority:** LOW (nice-to-have)
+
+**Features:**
+- Scheduled automatic key rotation
+- Pre-rotation alerts
+- Audit log (who rotated, when, why)
+- Rollback capability
+
+**Blocked by:** FASE 4 complete
+
+### **FASE 3 - rag-ingester HMAC Validation (Day 54-55)**
+**Status:** ⏳ PLANNED
+**Priority:** HIGH (completa Day 53 infrastructure)
+**Design Validation:** ✅ Consenso Grok + Gemini + Claude (9 Feb 2026)
+
+**Objectives:**
+- [ ] EventLoader validates HMAC before decryption
+- [ ] **Forward-compatible JSON format with hmac.version field** ← NUEVO
+- [ ] Reject tampered logs with metrics
+- [ ] Integration with existing etcd-client HMAC utilities
+- [ ] End-to-end tests (tampered files detection)
+
+**Design Decision (Gemini Insight):**
+Include `hmac.version` in metadata NOW (FASE 3), even if always 1.
+Prevents refactoring when FASE 4 (grace period) activates version lookup.
+
+**JSON Format:**
+```json
+{
+  "timestamp": 1707494400000,
+  "hmac": {
+    "version": 1,                    // Include now, use in FASE 4
+    "signature": "a3f5c2d8...",
+    "algorithm": "hmac-sha256"
+  },
+  "payload": { ... }
+}
+```
+
+**FASE 4 Impact:** Only ~5 lines change (version lookup instead of current-only)
+
+**Deliverables:**
+- Modified: rag-ingester/src/event_loader.cpp
+- Modified: etcd-client (add get_current_hmac_key_and_version())
+- New: tests/test_hmac_validation.cpp
+- Metrics: hmac_validation_success/failed
+- Tests: 10+ scenarios (valid/invalid/tampered)
+
+**Dependencies:**
+- ✅ Day 53 FASE 1+2 complete
+
+**Estimated Effort:** 1-2 days
+
+**Critical Design Note (Qwen):**
+Validate HMAC BEFORE decryption to:
+- Reject tampered logs without wasting CPU
+- Detect tampering attempts early (security alert)
+- Metrics: tampering_attempts counter (atomic)
