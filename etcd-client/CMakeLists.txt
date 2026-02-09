@@ -66,6 +66,7 @@ target_include_directories(etcd_client
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         /usr/local/include  # For crypto-transport headers
+        ${OPENSSL_INCLUDE_DIR}
 )
 
 # ============================================================================
@@ -84,9 +85,14 @@ target_compile_options(etcd_client
 # ============================================================================
 # Link Libraries
 # ============================================================================
+# Find OpenSSL (for HMAC - Day 53)
+find_package(OpenSSL REQUIRED)
+
 target_link_libraries(etcd_client
         PRIVATE
         ${CRYPTO_TRANSPORT_LIB}
+        OpenSSL::SSL
+        OpenSSL::Crypto
 )
 
 # Add nlohmann_json if found

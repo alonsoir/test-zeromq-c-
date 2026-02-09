@@ -5,12 +5,19 @@
 #include <thread>
 #include <atomic>
 #include <unordered_map>
+
+// Forward declaration for SecretsManager
+namespace etcd {
+    class SecretsManager;
+}
+
 //etcd-server/include/etcd_server/etcd_server.hpp
 class ComponentRegistry;
 
 class EtcdServer {
 private:
     std::unique_ptr<ComponentRegistry> component_registry_;
+    etcd::SecretsManager* secrets_manager_ = nullptr;  // Non-owning pointer
     std::atomic<bool> running_{false};
     int port_;
     std::thread server_thread_;
@@ -19,6 +26,9 @@ public:
     EtcdServer(int port = 2379);
     ~EtcdServer();
 
+    void set_secrets_manager(etcd::SecretsManager* manager) {
+        secrets_manager_ = manager;
+    }
     bool initialize();
     void start();
     void stop();

@@ -10,6 +10,10 @@
 #include <thread>
 #include <atomic>
 #include <csignal>
+#include <openssl/hmac.h>
+#include <openssl/evp.h>
+#include <iomanip>
+#include <sstream>
 
 using json = nlohmann::json;
 
@@ -785,6 +789,135 @@ std::string EtcdClient::get_encryption_key() const {
         return crypto_transport::bytes_to_hex(pImpl->encryption_key_);
     }
     return "";
+}
+
+// ============================================================================
+// HMAC Utilities (Day 53 - Log Integrity)
+// ============================================================================
+
+std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& key_path) {
+    try {
+        std::lock_guard<std::mutex> lock(pImpl->mutex_);
+
+        if (!pImpl->connected_) {
+            std::cerr << "❌ [etcd-client] Not connected to etcd-server" << std::endl;
+            return std::nullopt;
+        }
+
+        // Construct URL: http://host:port/secrets/rag/log_hmac_key
+        std::string url = "http://" + pImpl->config_.host + ":" +
+                         std::to_string(pImpl->config_.port) + key_path;
+
+        // Make HTTP GET request
+        auto response = http::get(
+            pImpl->config_.host,
+            pImpl->config_.port,
+            key_path,
+            pImpl->config_.timeout_seconds,
+            pImpl->config_.max_retry_attempts,
+            pImpl->config_.retry_backoff_seconds
+        );
+
+        if (!response.success) {
+            std::cerr << "❌ [etcd-client] Failed to retrieve HMAC key from " << key_path << std::endl;
+            return std::nullopt;
+        }
+
+        if (response.status_code != 200) {
+            std::cerr << "❌ [etcd-client] HTTP " << response.status_code << " retrieving HMAC key" << std::endl;
+            return std::nullopt;
+        }
+
+        // Parse JSON response: {"key": "hex_encoded_key"}
+        try {
+            auto json_response = nlohmann::json::parse(response.body);
+
+            if (!json_response.contains("key")) {
+                std::cerr << "❌ [etcd-client] Response missing 'key' field" << std::endl;
+                return std::nullopt;
+            }
+
+            std::string key_hex = json_response["key"];
+
+            // Convert hex to bytes
+            std::vector<uint8_t> key_bytes = hex_to_bytes(key_hex);
+
+            std::cout << "🔑 [etcd-client] Retrieved HMAC key from " << key_path
+                      << " (" << key_bytes.size() << " bytes)" << std::endl;
+
+            return key_bytes;
+
+        } catch (const nlohmann::json::exception& e) {
+            std::cerr << "❌ [etcd-client] JSON parse error: " << e.what() << std::endl;
+            return std::nullopt;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "❌ [etcd-client] Exception in get_hmac_key(): " << e.what() << std::endl;
+        return std::nullopt;
+    }
+}
+
+std::string EtcdClient::compute_hmac_sha256(const std::string& data,
+                                           const std::vector<uint8_t>& key) {
+    unsigned char hmac_result[EVP_MAX_MD_SIZE];
+    unsigned int hmac_len = 0;
+
+    HMAC(EVP_sha256(),
+         key.data(), key.size(),
+         reinterpret_cast<const unsigned char*>(data.data()), data.size(),
+         hmac_result, &hmac_len);
+
+    // Convert to hex
+    std::vector<uint8_t> hmac_bytes(hmac_result, hmac_result + hmac_len);
+    return bytes_to_hex(hmac_bytes);
+}
+
+bool EtcdClient::validate_hmac_sha256(const std::string& data,
+                                      const std::string& hmac_hex,
+                                      const std::vector<uint8_t>& key) {
+    // Compute expected HMAC
+    std::string computed_hmac = compute_hmac_sha256(data, key);
+
+    // Constant-time comparison (prevent timing attacks)
+    if (computed_hmac.length() != hmac_hex.length()) {
+        return false;
+    }
+
+    unsigned char result = 0;
+    for (size_t i = 0; i < computed_hmac.length(); ++i) {
+        result |= static_cast<unsigned char>(computed_hmac[i] ^ hmac_hex[i]);
+    }
+
+    return result == 0;
+}
+
+std::string EtcdClient::bytes_to_hex(const std::vector<uint8_t>& data) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+
+    for (uint8_t byte : data) {
+        oss << std::setw(2) << static_cast<int>(byte);
+    }
+
+    return oss.str();
+}
+
+std::vector<uint8_t> EtcdClient::hex_to_bytes(const std::string& hex_string) {
+    if (hex_string.length() % 2 != 0) {
+        throw std::invalid_argument("Hex string must have even length");
+    }
+
+    std::vector<uint8_t> bytes;
+    bytes.reserve(hex_string.length() / 2);
+
+    for (size_t i = 0; i < hex_string.length(); i += 2) {
+        std::string byte_str = hex_string.substr(i, 2);
+        uint8_t byte = static_cast<uint8_t>(std::stoi(byte_str, nullptr, 16));
+        bytes.push_back(byte);
+    }
+
+    return bytes;
 }
 
 } // namespace etcd_client

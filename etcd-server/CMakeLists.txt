@@ -35,11 +35,24 @@ find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 
 # ============================================================================
-# LIBSODIUM (for crypto_manager.cpp direct usage)
+# OPENSSL (for HMAC-SHA256 in tests)
+# ============================================================================
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+    message(STATUS "✅ OpenSSL found - HMAC support enabled")
+    message(STATUS "   Version: ${OPENSSL_VERSION}")
+    message(STATUS "   Include: ${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "   Libraries: ${OPENSSL_LIBRARIES}")
+else()
+    message(FATAL_ERROR "OpenSSL not found - Install: sudo apt-get install libssl-dev")
+endif()
+
+# ============================================================================
+# LIBSODIUM (for crypto_manager.cpp direct usage + random number generation)
 # ============================================================================
 pkg_check_modules(LIBSODIUM REQUIRED libsodium)
 if(LIBSODIUM_FOUND)
-    message(STATUS "✅ libsodium found - Using ChaCha20-Poly1305")
+    message(STATUS "✅ libsodium found - Using ChaCha20-Poly1305 + randombytes")
 else()
     message(FATAL_ERROR "libsodium not found - Install: sudo apt-get install libsodium-dev")
 endif()
@@ -92,11 +105,12 @@ include_directories(
         ${CRYPTO_TRANSPORT_INCLUDE_DIR}
         ${LIBSODIUM_INCLUDE_DIRS}
         ${LZ4_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}
         /usr/local/include
 )
 
 # ============================================================================
-# SOURCES
+# SOURCES (Day 53: Added secrets_manager.cpp)
 # ============================================================================
 set(SOURCES
         src/main.cpp
@@ -104,6 +118,7 @@ set(SOURCES
         src/component_registry.cpp
         src/crypto_manager.cpp
         src/compression_lz4.cpp
+        src/secrets_manager.cpp
 )
 
 # ============================================================================
@@ -131,8 +146,8 @@ target_compile_options(etcd-server
 target_link_libraries(etcd-server
         PRIVATE
         Threads::Threads
-        ssl
-        crypto
+        OpenSSL::SSL
+        OpenSSL::Crypto
         ${CRYPTO_TRANSPORT_LIB}
         ${LIBSODIUM_LIBRARIES}
         ${LZ4_LIBRARIES}
@@ -147,7 +162,66 @@ target_include_directories(etcd-server
         ${CRYPTO_TRANSPORT_INCLUDE_DIR}
         ${LIBSODIUM_INCLUDE_DIRS}
         ${LZ4_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}
 )
+
+# ============================================================================
+# TESTS (Day 53: Added SecretsManager tests)
+# ============================================================================
+option(BUILD_TESTS "Build test executables" ON)
+
+if(BUILD_TESTS)
+    message(STATUS "========================================")
+    message(STATUS "Building Tests")
+    message(STATUS "========================================")
+
+    # Test 1: SecretsManager Unit Tests
+    add_executable(test_secrets_manager
+            tests/test_secrets_manager.cpp
+            src/secrets_manager.cpp
+    )
+
+    target_include_directories(test_secrets_manager
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${LIBSODIUM_INCLUDE_DIRS}
+            ${OPENSSL_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_secrets_manager
+            PRIVATE
+            Threads::Threads
+            ${LIBSODIUM_LIBRARIES}
+            OpenSSL::SSL
+            OpenSSL::Crypto
+    )
+
+    # Test 2: HMAC Integration Tests
+    add_executable(test_hmac_integration
+            tests/test_hmac_integration.cpp
+            src/secrets_manager.cpp
+    )
+
+    target_include_directories(test_hmac_integration
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${LIBSODIUM_INCLUDE_DIRS}
+            ${OPENSSL_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_hmac_integration
+            PRIVATE
+            Threads::Threads
+            ${LIBSODIUM_LIBRARIES}
+            OpenSSL::SSL
+            OpenSSL::Crypto
+    )
+
+    message(STATUS "✅ Test executables configured:")
+    message(STATUS "   - test_secrets_manager")
+    message(STATUS "   - test_hmac_integration")
+    message(STATUS "========================================")
+endif()
 
 # ============================================================================
 # SUMMARY
@@ -162,6 +236,7 @@ message(STATUS "Dependencies:")
 message(STATUS "  crypto-transport: ${CRYPTO_TRANSPORT_LIB}")
 message(STATUS "  libsodium: ${LIBSODIUM_LIBRARIES}")
 message(STATUS "  LZ4: ${LZ4_LIBRARIES}")
+message(STATUS "  OpenSSL: ${OPENSSL_LIBRARIES}")
 message(STATUS "========================================")
 message(STATUS "Sources:")
 foreach(src ${SOURCES})

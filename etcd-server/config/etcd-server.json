@@ -23,5 +23,42 @@
   "security": {
     "encryption_enabled": true,
     "compression_enabled": true
+  },
+  "secrets": {
+    "_comment": "Day 53: HMAC secrets management for log integrity",
+    "enabled": true,
+    "default_key_length_bytes": 32,
+    "rotation_interval_hours": 168,
+    "auto_generate_on_startup": true,
+    "storage": {
+      "_comment": "Future: Persistent storage path for secrets (not implemented yet)",
+      "path": "/var/lib/etcd-server/secrets",
+      "encryption": "aes-256-gcm"
+    },
+    "keys": {
+      "_comment": "Default keys auto-generated on startup",
+      "rag_log_hmac": {
+        "path": "/secrets/rag/log_hmac_key",
+        "algorithm": "hmac-sha256",
+        "purpose": "HMAC validation for RAG log files",
+        "rotation_enabled": true
+      },
+      "ml_detector_hmac": {
+        "_comment": "Future: HMAC for ml-detector outputs",
+        "path": "/secrets/ml-detector/log_hmac_key",
+        "algorithm": "hmac-sha256",
+        "purpose": "HMAC validation for ML detector event logs",
+        "rotation_enabled": true,
+        "auto_generate": false
+      },
+      "firewall_hmac": {
+        "_comment": "Future: HMAC for firewall logs",
+        "path": "/secrets/firewall/log_hmac_key",
+        "algorithm": "hmac-sha256",
+        "purpose": "HMAC validation for firewall ACL agent logs",
+        "rotation_enabled": true,
+        "auto_generate": false
+      }
+    }
   }
 }
