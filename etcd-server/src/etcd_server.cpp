@@ -227,7 +227,7 @@ void EtcdServer::run_server() {
                 res.set_content(response.dump(), "application/json");
             } else {
                 res.status = 400;
-                res.set_content(R"({"status": "error", "message": "Error actualizando configuración"})", "application/json");
+                res.set_content(R"({"status", "error", "message": "Error actualizando configuración"})", "application/json");
             }
         } catch (const std::exception& e) {
             res.status = 400;
@@ -423,42 +423,20 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
     });
 
     // ============================================================================
-// SECRETS ENDPOINTS (Day 53 - HMAC Support)
-// ============================================================================
-// Añadir DESPUÉS del endpoint /info y ANTES de server.listen()
+    // SECRETS ENDPOINTS (Day 54 - COMMENTED OUT)
+    // TODO Day 55: Re-enable when SecretsManager is properly integrated
+    // ============================================================================
 
     // Endpoint: GET /secrets/keys - List all secret keys
     server.Get("/secrets/keys", [this](const httplib::Request& /*req*/, httplib::Response& res) {
         std::cout << "[ETCD-SERVER] 🔑 GET /secrets/keys solicitado" << std::endl;
 
-        if (!secrets_manager_) {
-            res.status = 503;
-            json error = {
-                {"status", "error"},
-                {"message", "SecretsManager not initialized"}
-            };
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
-
-        try {
-            auto keys = secrets_manager_->list_keys();
-            json response = {
-                {"status", "success"},
-                {"count", keys.size()},
-                {"keys", keys}
-            };
-            res.set_content(response.dump(), "application/json");
-            std::cout << "[ETCD-SERVER] 📋 Listed " << keys.size() << " secret keys" << std::endl;
-        } catch (const std::exception& e) {
-            res.status = 500;
-            json error = {
-                {"status", "error"},
-                {"message", "Failed to list keys"},
-                {"details", e.what()}
-            };
-            res.set_content(error.dump(), "application/json");
-        }
+        // TODO Day 55: Re-enable when SecretsManager integrated
+        json response = {
+            {"status", "not_implemented"},
+            {"message", "SecretsManager endpoints pending integration (Day 55)"}
+        };
+        res.set_content(response.dump(), "application/json");
     });
 
     // Endpoint: GET /secrets/* - Get specific secret key (hex-encoded)
@@ -466,52 +444,12 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
         std::string key_path = "/secrets/" + req.matches[1].str();
         std::cout << "[ETCD-SERVER] 🔑 GET " << key_path << " solicitado" << std::endl;
 
-        if (!secrets_manager_) {
-            res.status = 503;
-            json error = {
-                {"status", "error"},
-                {"message", "SecretsManager not initialized"}
-            };
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
-
-        try {
-            auto key_opt = secrets_manager_->get_key(key_path);
-
-            if (!key_opt.has_value()) {
-                res.status = 404;
-                json error = {
-                    {"status", "error"},
-                    {"message", "Key not found: " + key_path}
-                };
-                res.set_content(error.dump(), "application/json");
-                std::cout << "[ETCD-SERVER] ❌ Key not found: " << key_path << std::endl;
-                return;
-            }
-
-            // Convert key to hex
-            std::string key_hex = etcd::SecretsManager::key_to_hex(*key_opt);
-
-            json response = {
-                {"status", "success"},
-                {"path", key_path},
-                {"key", key_hex},
-                {"length", key_opt->size()}
-            };
-            res.set_content(response.dump(), "application/json");
-            std::cout << "[ETCD-SERVER] ✅ Returned key: " << key_path
-                      << " (" << key_opt->size() << " bytes)" << std::endl;
-
-        } catch (const std::exception& e) {
-            res.status = 500;
-            json error = {
-                {"status", "error"},
-                {"message", "Failed to retrieve key"},
-                {"details", e.what()}
-            };
-            res.set_content(error.dump(), "application/json");
-        }
+        // TODO Day 55: Re-enable when SecretsManager integrated
+        json response = {
+            {"status", "not_implemented"},
+            {"message", "SecretsManager endpoints pending integration (Day 55)"}
+        };
+        res.set_content(response.dump(), "application/json");
     });
 
     // Endpoint: POST /secrets/rotate/* - Rotate a secret key
@@ -519,47 +457,12 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
         std::string key_path = "/secrets/" + req.matches[1].str();
         std::cout << "[ETCD-SERVER] 🔄 POST /secrets/rotate/" << req.matches[1].str() << std::endl;
 
-        if (!secrets_manager_) {
-            res.status = 503;
-            json error = {
-                {"status", "error"},
-                {"message", "SecretsManager not initialized"}
-            };
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
-
-        try {
-            if (secrets_manager_->rotate_key(key_path)) {
-                auto metadata = secrets_manager_->get_key_metadata(key_path);
-
-                json response = {
-                    {"status", "success"},
-                    {"message", "Key rotated successfully"},
-                    {"path", key_path},
-                    {"rotation_count", metadata.has_value() ? metadata->rotation_count : 0}
-                };
-                res.set_content(response.dump(), "application/json");
-                std::cout << "[ETCD-SERVER] ✅ Key rotated: " << key_path << std::endl;
-            } else {
-                res.status = 404;
-                json error = {
-                    {"status", "error"},
-                    {"message", "Key not found or rotation failed: " + key_path}
-                };
-                res.set_content(error.dump(), "application/json");
-                std::cout << "[ETCD-SERVER] ❌ Key rotation failed: " << key_path << std::endl;
-            }
-
-        } catch (const std::exception& e) {
-            res.status = 500;
-            json error = {
-                {"status", "error"},
-                {"message", "Failed to rotate key"},
-                {"details", e.what()}
-            };
-            res.set_content(error.dump(), "application/json");
-        }
+        // TODO Day 55: Re-enable when SecretsManager integrated
+        json response = {
+            {"status", "not_implemented"},
+            {"message", "SecretsManager endpoints pending integration (Day 55)"}
+        };
+        res.set_content(response.dump(), "application/json");
     });
 
     std::cout << "[ETCD-SERVER] 🌐 Iniciando servidor HTTP en 0.0.0.0:" << port_ << std::endl;

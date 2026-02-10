@@ -25,10 +25,11 @@
     "compression_enabled": true
   },
   "secrets": {
-    "_comment": "Day 53: HMAC secrets management for log integrity",
+    "_comment": "Day 53-54: HMAC secrets management for log integrity",
     "enabled": true,
     "default_key_length_bytes": 32,
     "rotation_interval_hours": 168,
+    "grace_period_seconds": 300,
     "auto_generate_on_startup": true,
     "storage": {
       "_comment": "Future: Persistent storage path for secrets (not implemented yet)",
@@ -36,7 +37,7 @@
       "encryption": "aes-256-gcm"
     },
     "keys": {
-      "_comment": "Default keys auto-generated on startup",
+      "_comment": "Default keys auto-generated on startup. Grace period applies to ALL keys system-wide.",
       "rag_log_hmac": {
         "path": "/secrets/rag/log_hmac_key",
         "algorithm": "hmac-sha256",
