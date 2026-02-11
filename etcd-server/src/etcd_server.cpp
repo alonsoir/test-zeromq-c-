@@ -423,47 +423,175 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
     });
 
     // ============================================================================
-    // SECRETS ENDPOINTS (Day 54 - COMMENTED OUT)
-    // TODO Day 55: Re-enable when SecretsManager is properly integrated
-    // ============================================================================
+// SECRETS ENDPOINTS (Day 55 - ACTIVE)
+// ============================================================================
 
-    // Endpoint: GET /secrets/keys - List all secret keys
-    server.Get("/secrets/keys", [this](const httplib::Request& /*req*/, httplib::Response& res) {
-        std::cout << "[ETCD-SERVER] 🔑 GET /secrets/keys solicitado" << std::endl;
+// Endpoint: GET /secrets/keys - List all components with HMAC keys
+server.Get("/secrets/keys", [this](const httplib::Request& /*req*/, httplib::Response& res) {
+    std::cout << "[ETCD-SERVER] 🔑 GET /secrets/keys solicitado" << std::endl;
 
-        // TODO Day 55: Re-enable when SecretsManager integrated
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    // TODO Day 56: Implementar listado de todos los componentes
+    // Por ahora devolvemos instrucciones de uso
+    json response = {
+        {"status", "success"},
+        {"message", "Use GET /secrets/{component} to get active key"},
+        {"endpoints", {
+            {"get_key", "GET /secrets/{component}"},
+            {"rotate_key", "POST /secrets/rotate/{component}"},
+            {"valid_keys", "GET /secrets/valid/{component}"}
+        }}
+    };
+    res.set_content(response.dump(), "application/json");
+});
+
+// Endpoint: GET /secrets/{component} - Get active HMAC key (hex-encoded)
+server.Get(R"(/secrets/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    std::cout << "[ETCD-SERVER] 🔑 GET /secrets/" << component << " solicitado" << std::endl;
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    try {
+        auto key = secrets_manager_->get_hmac_key(component);
+
         json response = {
-            {"status", "not_implemented"},
-            {"message", "SecretsManager endpoints pending integration (Day 55)"}
+            {"status", "success"},
+            {"component", component},
+            {"key", key.key_data},  // Hex-encoded
+            {"created_at", secrets_manager_->format_time(key.created_at)},
+            {"is_active", key.is_active}
         };
         res.set_content(response.dump(), "application/json");
-    });
 
-    // Endpoint: GET /secrets/* - Get specific secret key (hex-encoded)
-    server.Get(R"(/secrets/(.+))", [this](const httplib::Request& req, httplib::Response& res) {
-        std::string key_path = "/secrets/" + req.matches[1].str();
-        std::cout << "[ETCD-SERVER] 🔑 GET " << key_path << " solicitado" << std::endl;
+        std::cout << "[ETCD-SERVER] ✅ Devuelta clave activa para: " << component << std::endl;
 
-        // TODO Day 55: Re-enable when SecretsManager integrated
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"message", "Error retrieving HMAC key"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+        std::cerr << "[ETCD-SERVER] ❌ Error en GET /secrets/" << component << ": " << e.what() << std::endl;
+    }
+});
+
+// Endpoint: POST /secrets/rotate/{component} - Rotate HMAC key with grace period
+server.Post(R"(/secrets/rotate/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    std::cout << "[ETCD-SERVER] 🔄 POST /secrets/rotate/" << component << std::endl;
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    try {
+        auto new_key = secrets_manager_->rotate_hmac_key(component);
+        auto valid_keys = secrets_manager_->get_valid_keys(component);
+
         json response = {
-            {"status", "not_implemented"},
-            {"message", "SecretsManager endpoints pending integration (Day 55)"}
+            {"status", "success"},
+            {"component", component},
+            {"new_key", {
+                {"key", new_key.key_data},
+                {"created_at", secrets_manager_->format_time(new_key.created_at)},
+                {"is_active", true}
+            }},
+            {"valid_keys_count", valid_keys.size()},
+            {"grace_period_seconds", secrets_manager_->get_grace_period_seconds()},
+            {"message", "Old key valid for " + std::to_string(secrets_manager_->get_grace_period_seconds()) + " seconds"}
         };
         res.set_content(response.dump(), "application/json");
-    });
 
-    // Endpoint: POST /secrets/rotate/* - Rotate a secret key
-    server.Post(R"(/secrets/rotate/(.+))", [this](const httplib::Request& req, httplib::Response& res) {
-        std::string key_path = "/secrets/" + req.matches[1].str();
-        std::cout << "[ETCD-SERVER] 🔄 POST /secrets/rotate/" << req.matches[1].str() << std::endl;
+        std::cout << "[ETCD-SERVER] ✅ Rotación completada para: " << component
+                  << " (" << valid_keys.size() << " claves válidas)" << std::endl;
 
-        // TODO Day 55: Re-enable when SecretsManager integrated
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"message", "Error rotating HMAC key"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+        std::cerr << "[ETCD-SERVER] ❌ Error en POST /secrets/rotate/" << component << ": " << e.what() << std::endl;
+    }
+});
+
+// Endpoint: GET /secrets/valid/{component} - Get all valid keys (active + grace period)
+server.Get(R"(/secrets/valid/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    std::cout << "[ETCD-SERVER] 🔑 GET /secrets/valid/" << component << " solicitado" << std::endl;
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    try {
+        auto valid_keys = secrets_manager_->get_valid_keys(component);
+
+        json keys_array = json::array();
+        for (const auto& key : valid_keys) {
+            keys_array.push_back({
+                {"key", key.key_data},
+                {"created_at", secrets_manager_->format_time(key.created_at)},
+                {"expires_at", secrets_manager_->format_time(key.expires_at)},
+                {"is_active", key.is_active}
+            });
+        }
+
         json response = {
-            {"status", "not_implemented"},
-            {"message", "SecretsManager endpoints pending integration (Day 55)"}
+            {"status", "success"},
+            {"component", component},
+            {"valid_keys_count", valid_keys.size()},
+            {"keys", keys_array}
         };
         res.set_content(response.dump(), "application/json");
-    });
+
+        std::cout << "[ETCD-SERVER] ✅ Devueltas " << valid_keys.size() << " claves válidas para: " << component << std::endl;
+
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"message", "Error retrieving valid keys"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+        std::cerr << "[ETCD-SERVER] ❌ Error en GET /secrets/valid/" << component << ": " << e.what() << std::endl;
+    }
+});
 
     std::cout << "[ETCD-SERVER] 🌐 Iniciando servidor HTTP en 0.0.0.0:" << port_ << std::endl;
 

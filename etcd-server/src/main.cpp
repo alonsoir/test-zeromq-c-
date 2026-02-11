@@ -64,7 +64,7 @@ int main() {
         // Esto puede causar incompatibilidad de tipos
         // TODO Day 55: Actualizar EtcdServer para aceptar etcd_server::SecretsManager
         // Por ahora, comentamos esta línea para que compile
-        // g_server->set_secrets_manager(g_secrets_manager.get());
+        g_server->set_secrets_manager(g_secrets_manager.get());
 
         if (!g_server->initialize()) {
             std::cerr << "❌ Error inicializando etcd-server" << std::endl;

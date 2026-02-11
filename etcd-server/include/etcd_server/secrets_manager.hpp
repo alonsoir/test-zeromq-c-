@@ -137,6 +137,11 @@ public:
      */
     int get_grace_period_seconds() const { return grace_period_seconds_; }
 
+	/**
+     * @brief Format time_point to ISO8601 string
+     */
+    std::string format_time(std::chrono::system_clock::time_point tp);
+
 private:
     std::shared_ptr<spdlog::logger> logger_;
 
@@ -158,11 +163,6 @@ private:
      * @brief Generate random bytes for key material
      */
     std::vector<uint8_t> generate_random_bytes(size_t length);
-
-    /**
-     * @brief Format time_point to ISO8601 string
-     */
-    std::string format_time(std::chrono::system_clock::time_point tp);
 
     /**
      * @brief Parse ISO8601 string to time_point

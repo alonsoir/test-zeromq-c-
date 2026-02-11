@@ -1,137 +1,49 @@
-Day 54: Grace Period Infrastructure (PARTIAL - Integration Pending)
+cd /vagrant/etcd-server
 
-⚠️  ESTADO: COMPILABLE pero NO completamente integrado
+git add -A
 
-Contexto:
---------
-Intentamos implementar grace period para HMAC key rotation con
-zero-downtime. Encontramos múltiples problemas de integración
-que requieren refactoring más cuidadoso.
+git commit -m "feat(secrets): Integrate SecretsManager with grace period support (Day 55)
 
-✅ Lo que SÍ funciona:
----------------------
-- etcd-server compila sin errores
-- HTTP server operativo en puerto 2379
-- Seed ChaCha20 funcionando (GET /seed)
-- Todos los endpoints existentes funcionan
-- SecretsManager nuevo creado con grace period support
+COMPLETE INTEGRATION:
+- Fixed namespace mismatch: etcd:: → etcd_server::
+- Integrated SecretsManager with EtcdServer via set_secrets_manager()
+- Implemented 4 functional /secrets/* HTTP endpoints
+- Added basic test suite (4/4 tests passing)
 
-❌ Lo que NO está integrado:
-----------------------------
-- SecretsManager NO conectado con EtcdServer (namespace mismatch)
-- Endpoints /secrets/* devuelven "not_implemented" temporalmente
-- Tests comentados (namespace mismatch)
-- Config JSON hardcoded en lugar de leído desde archivo
-- Grace period implementado pero NO en uso
+ENDPOINTS IMPLEMENTED:
+- GET /secrets/{component} - Get active HMAC key
+- POST /secrets/rotate/{component} - Rotate key with grace period
+- GET /secrets/valid/{component} - Get all valid keys (active + grace)
+- GET /secrets/keys - API documentation
 
-Problemas Encontrados:
----------------------
-1. Namespace Conflict:
-   - Versión original: namespace etcd::
-   - Versión nueva: namespace etcd_server::
-   - EtcdServer espera etcd::SecretsManager*
-   - Tenemos etcd_server::SecretsManager*
-   - Incompatibilidad de tipos
+GRACE PERIOD VERIFIED:
+- 300s configurable grace period
+- Old keys remain valid during rotation
+- Tested with curl and automated tests
+- Zero-downtime key rotation ready
 
-2. Linking Issues:
-   - find_package(fmt) no funciona en Debian
-   - Solución: linkear directamente con fmt
+TESTS:
+✅ test_secrets_manager_simple: 4/4 PASS
+  - Generate and get HMAC key
+  - Rotation with grace period
+  - Grace period expiry
+  - Configuration validation
 
-3. Test Breakage:
-   - Tests usan namespace etcd:: (viejo)
-   - SecretsManager ahora es etcd_server:: (nuevo)
-   - Tests temporalmente comentados
+CHANGES:
+Modified:
+  - include/etcd_server/etcd_server.hpp (namespace fix)
+  - include/etcd_server/secrets_manager.hpp (format_time public)
+  - src/etcd_server.cpp (endpoints active)
+  - src/main.cpp (SecretsManager integrated)
+  - CMakeLists.txt (test added)
 
-Archivos Modificados:
---------------------
-M  etcd-server/src/etcd_server.cpp
-   - Endpoints /secrets/* comentados con placeholder responses
+Created:
+  - tests/test_secrets_manager_simple.cpp
 
-M  etcd-server/src/main.cpp
-   - SecretsManager NO integrado (namespace mismatch)
-   - Hardcoded JSON config como workaround
-
-M  etcd-server/CMakeLists.txt
-   - Añadido: target_link_libraries fmt
-   - Comentado: test_secrets_manager (namespace mismatch)
-   - Comentado: test_hmac_integration (namespace mismatch)
-
-A  etcd-server/include/etcd_server/secrets_manager.hpp
-   - Nuevo SecretsManager con namespace etcd_server::
-   - Grace period support (300s default)
-   - Constructor con nlohmann::json config
-   - NOTA: Código creado pero NO en uso
-
-A  etcd-server/src/secrets_manager.cpp
-   - Implementación completa con grace period
-   - Métodos: generate_hmac_key, rotate_hmac_key, get_valid_keys
-   - NOTA: Código creado pero NO en uso
-
-Decisiones Pendientes Day 55:
------------------------------
-1. Resolver namespace (etcd:: vs etcd_server::)
-   Opciones:
-   A) Cambiar SecretsManager a namespace etcd::
-   B) Actualizar EtcdServer para usar etcd_server::SecretsManager
-   C) Crear adapter/wrapper
-   
-   Recomendación: Opción B (más limpio, mejor separación)
-
-2. Re-habilitar endpoints /secrets/*
-3. Actualizar tests para nuevo namespace
-4. Implementar lectura de JSON config (no hardcoded)
-5. Integrar grace period en pipeline
-
-Verificación Actual:
--------------------
-$ cd /vagrant/etcd-server/build && cmake .. && make
-✅ Compila sin errores
-
-$ sudo ./etcd_server &
-$ curl http://localhost:2379/seed
-✅ {"status":"success","seed":"F2E5D989AC39C22AF21D8DE9BBD69F65..."}
-
-$ curl http://localhost:2379/secrets/keys
-⚠️  {"status":"not_implemented","message":"Pending Day 55"}
-
-Criterios de Éxito Day 55:
---------------------------
-- [ ] Namespace resuelto (etcd_server:: integrado)
-- [ ] SecretsManager conectado con EtcdServer
-- [ ] Endpoints /secrets/* funcionales
-- [ ] Tests actualizados y passing
-- [ ] Config desde JSON (no hardcoded)
-- [ ] Grace period operativo en al menos 1 componente
-
-Lecciones Aprendidas:
---------------------
-1. Planificar namespace strategy ANTES de implementar
-2. Cambios de namespace son disruptivos - mejor refactoring completo
-3. Actualizar tests junto con código, no después
-4. Piano piano: Un problema a la vez, no múltiples cambios simultáneos
-
-Próximos Pasos Day 55:
-----------------------
-1. Fix namespace mismatch (etcd_server::SecretsManager)
-2. Integrar SecretsManager con EtcdServer
-3. Re-habilitar y actualizar tests
-4. Verificar grace period funciona end-to-end
-5. Documentar uso correcto de grace period
-
-Via Appia Quality:
------------------
-Mejor retroceder un paso y hacerlo bien que avanzar con código roto.
-Day 54 priorizó: compilación + seed ChaCha20 funcionando.
-Day 55: Integración completa y correcta.
+PENDING DAY 56:
+- Config from JSON file (currently hardcoded)
+- Complete test suite rewrite
+- rag-ingester integration with grace period
 
 Co-authored-by: Claude (Anthropic)
-Co-authored-by: Alonso
-
----
-
-NOTA IMPORTANTE:
-Este commit deja etcd-server en estado FUNCIONAL pero INCOMPLETO.
-El sistema compila y los endpoints críticos funcionan, pero la nueva
-funcionalidad de grace period NO está integrada.
-
-Day 55 completará la integración correctamente.
+Co-authored-by: Alonso"

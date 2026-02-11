@@ -221,6 +221,25 @@ if(BUILD_TESTS)
     #         OpenSSL::Crypto
     # )
 
+    # Test: SecretsManager Basic (Day 55)
+    add_executable(test_secrets_manager_simple
+            tests/test_secrets_manager_simple.cpp
+            src/secrets_manager.cpp
+    )
+
+    target_include_directories(test_secrets_manager_simple
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${OPENSSL_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_secrets_manager_simple
+            PRIVATE
+            Threads::Threads
+            OpenSSL::SSL
+            OpenSSL::Crypto
+            fmt
+    )
     # target_include_directories(test_hmac_integration
     #         PRIVATE
     #         ${CMAKE_CURRENT_SOURCE_DIR}/include
