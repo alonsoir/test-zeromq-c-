@@ -35,14 +35,14 @@ int main() {
         std::cout << "  Initializing SecretsManager (Day 54)" << std::endl;
         std::cout << "═══════════════════════════════════════════════════════" << std::endl;
 
-        // Crear config JSON (hardcoded por ahora, Day 55: leer de archivo)
         nlohmann::json config = {
-            {"secrets", {
-                {"grace_period_seconds", 300},
-                {"rotation_interval_hours", 168},
-                {"default_key_length_bytes", 32}
-            }}
-        };
+    		{"secrets", {
+        	{"grace_period_seconds", 300},
+        	{"rotation_interval_hours", 168},
+        	{"default_key_length_bytes", 32},
+        	{"min_rotation_interval_seconds", 300}  // AÑADIR (ADR-004)
+    	}}
+		};
 
         g_secrets_manager = std::make_shared<etcd_server::SecretsManager>(config);
 

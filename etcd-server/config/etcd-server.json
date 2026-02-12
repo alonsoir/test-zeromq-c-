@@ -25,11 +25,12 @@
     "compression_enabled": true
   },
   "secrets": {
-    "_comment": "Day 53-54: HMAC secrets management for log integrity",
+    "_comment": "Day 56: HMAC secrets management for log integrity",
     "enabled": true,
     "default_key_length_bytes": 32,
     "rotation_interval_hours": 168,
     "grace_period_seconds": 300,
+    "min_rotation_interval_seconds": 300,
     "auto_generate_on_startup": true,
     "storage": {
       "_comment": "Future: Persistent storage path for secrets (not implemented yet)",

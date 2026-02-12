@@ -12,23 +12,32 @@
 
 namespace etcd_server {
 
-SecretsManager::SecretsManager(const nlohmann::json& config)
-    : logger_(spdlog::get("etcd_server") ? spdlog::get("etcd_server") : spdlog::default_logger()),
-      grace_period_seconds_(config["secrets"]["grace_period_seconds"].get<int>()),
-      rotation_interval_hours_(config["secrets"]["rotation_interval_hours"].get<int>()),
-      default_key_length_bytes_(config["secrets"]["default_key_length_bytes"].get<int>())
-{
-    // Validate grace period
-    if (grace_period_seconds_ <= 0) {
-        logger_->warn("Invalid grace_period_seconds: {}, using default: 300s",
-                      grace_period_seconds_);
-        const_cast<int&>(grace_period_seconds_) = 300;
-    }
+    SecretsManager::SecretsManager(const nlohmann::json& config)
+        : logger_(spdlog::get("etcd_server") ? spdlog::get("etcd_server") : spdlog::default_logger()),
+          grace_period_seconds_(config["secrets"]["grace_period_seconds"].get<int>()),
+          rotation_interval_hours_(config["secrets"]["rotation_interval_hours"].get<int>()),
+          default_key_length_bytes_(config["secrets"]["default_key_length_bytes"].get<int>()),
+          min_rotation_interval_seconds_(config["secrets"]["min_rotation_interval_seconds"].get<int>())
+    {
+        // Validación CRÍTICA (ADR-004)
+        if (min_rotation_interval_seconds_ < grace_period_seconds_) {
+            logger_->critical("UNSAFE CONFIG: min_rotation_interval ({}) < grace_period ({}) - Risk of key accumulation!",
+                              min_rotation_interval_seconds_, grace_period_seconds_);
+            throw std::runtime_error("Invalid config: min_rotation_interval must be >= grace_period");
+        }
 
-    logger_->info("SecretsManager initialized from JSON config:");
-    logger_->info("  - Grace period: {}s (system-wide)", grace_period_seconds_);
-    logger_->info("  - Rotation interval: {}h", rotation_interval_hours_);
-    logger_->info("  - Default key length: {} bytes", default_key_length_bytes_);
+        // Validate grace period
+        if (grace_period_seconds_ <= 0) {
+            logger_->warn("Invalid grace_period_seconds: {}, using default: 300s",
+                          grace_period_seconds_);
+            const_cast<int&>(grace_period_seconds_) = 300;
+        }
+
+        logger_->info("SecretsManager initialized from JSON config:");
+        logger_->info("  - Grace period: {}s (system-wide)", grace_period_seconds_);
+        logger_->info("  - min_rotation_interval_seconds: {}s (system-wide)", min_rotation_interval_seconds_);
+        logger_->info("  - Rotation interval: {}h", rotation_interval_hours_);
+        logger_->info("  - Default key length: {} bytes", default_key_length_bytes_);
 }
 
 HMACKey SecretsManager::generate_hmac_key(const std::string& component) {
@@ -57,10 +66,28 @@ HMACKey SecretsManager::generate_hmac_key(const std::string& component) {
     return key;
 }
 
-HMACKey SecretsManager::rotate_hmac_key(const std::string& component) {
+HMACKey SecretsManager::rotate_hmac_key(const std::string& component, bool force) {
     auto now = std::chrono::system_clock::now();
 
-    logger_->info("Rotating HMAC key for component: {}", component);
+    logger_->info("Rotation requested for component: {} (force={})", component, force);
+
+    // ADR-004: Cooldown enforcement
+    if (!force && last_rotation_.count(component)) {
+        auto elapsed = now - last_rotation_[component];
+        auto min_interval = std::chrono::seconds(min_rotation_interval_seconds_);
+
+        if (elapsed < min_interval) {
+            auto remaining = std::chrono::duration_cast<std::chrono::seconds>(min_interval - elapsed);
+            logger_->warn("Rotation REJECTED for {} - cooldown active ({}s remaining)",
+                          component, remaining.count());
+            throw std::runtime_error("Rotation too soon, retry in " +
+                                     std::to_string(remaining.count()) + "s");
+        }
+    }
+
+    if (force) {
+        logger_->warn("EMERGENCY rotation for {} (force=true) - cooldown bypassed", component);
+    }
 
     // Get current active key (if exists)
     auto existing_keys = list_hmac_keys(component);
@@ -84,6 +111,9 @@ HMACKey SecretsManager::rotate_hmac_key(const std::string& component) {
 
     // Generate new active key
     auto new_key = generate_hmac_key(component);
+
+    // Update last rotation timestamp
+    last_rotation_[component] = now;
 
     logger_->info("Key rotation complete for {}: old key valid until {}",
                   component,

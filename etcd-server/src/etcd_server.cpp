@@ -498,7 +498,10 @@ server.Get(R"(/secrets/([^/]+))", [this](const httplib::Request& req, httplib::R
 // Endpoint: POST /secrets/rotate/{component} - Rotate HMAC key with grace period
 server.Post(R"(/secrets/rotate/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
     std::string component = req.matches[1];
-    std::cout << "[ETCD-SERVER] 🔄 POST /secrets/rotate/" << component << std::endl;
+    bool force = req.has_param("force") && req.get_param_value("force") == "true";
+
+    std::cout << "[ETCD-SERVER] 🔄 POST /secrets/rotate/" << component
+              << (force ? " (FORCE)" : "") << std::endl;
 
     if (!secrets_manager_) {
         res.status = 503;
@@ -511,7 +514,7 @@ server.Post(R"(/secrets/rotate/([^/]+))", [this](const httplib::Request& req, ht
     }
 
     try {
-        auto new_key = secrets_manager_->rotate_hmac_key(component);
+        auto new_key = secrets_manager_->rotate_hmac_key(component, force);
         auto valid_keys = secrets_manager_->get_valid_keys(component);
 
         json response = {
@@ -524,22 +527,47 @@ server.Post(R"(/secrets/rotate/([^/]+))", [this](const httplib::Request& req, ht
             }},
             {"valid_keys_count", valid_keys.size()},
             {"grace_period_seconds", secrets_manager_->get_grace_period_seconds()},
-            {"message", "Old key valid for " + std::to_string(secrets_manager_->get_grace_period_seconds()) + " seconds"}
+            {"message", "Old key valid for " + std::to_string(secrets_manager_->get_grace_period_seconds()) + " seconds"},
+            {"forced", force}
         };
         res.set_content(response.dump(), "application/json");
 
         std::cout << "[ETCD-SERVER] ✅ Rotación completada para: " << component
                   << " (" << valid_keys.size() << " claves válidas)" << std::endl;
 
-    } catch (const std::exception& e) {
-        res.status = 500;
-        json error = {
-            {"status", "error"},
-            {"message", "Error rotating HMAC key"},
-            {"details", e.what()}
-        };
-        res.set_content(error.dump(), "application/json");
-        std::cerr << "[ETCD-SERVER] ❌ Error en POST /secrets/rotate/" << component << ": " << e.what() << std::endl;
+    } catch (const std::runtime_error& e) {
+        // Check if it's a cooldown violation
+        std::string error_msg(e.what());
+        if (error_msg.find("Rotation too soon") != std::string::npos) {
+            // Extract retry seconds from message
+            size_t pos = error_msg.find("retry in ");
+            int retry_seconds = 240;  // default
+            if (pos != std::string::npos) {
+                retry_seconds = std::stoi(error_msg.substr(pos + 9));
+            }
+
+            res.status = 429;  // Too Many Requests
+            json error = {
+                {"status", "error"},
+                {"message", "Rotation cooldown active"},
+                {"details", error_msg},
+                {"retry_after_seconds", retry_seconds}
+            };
+            res.set_header("Retry-After", std::to_string(retry_seconds));
+            res.set_content(error.dump(), "application/json");
+
+            std::cout << "[ETCD-SERVER] ⏳ Rotación rechazada (cooldown): " << component << std::endl;
+        } else {
+            // Other runtime errors
+            res.status = 500;
+            json error = {
+                {"status", "error"},
+                {"message", "Error rotating HMAC key"},
+                {"details", e.what()}
+            };
+            res.set_content(error.dump(), "application/json");
+            std::cerr << "[ETCD-SERVER] ❌ Error en POST /secrets/rotate/" << component << ": " << e.what() << std::endl;
+        }
     }
 });
 

@@ -66,6 +66,8 @@ public:
 
         // Day 54: AÑADIR ESTA LÍNEA
         int grace_period_seconds = 300;
+		// Day 56: Cooldown window (ADR-004)
+    	int min_rotation_interval_seconds = 300;
     };
 
     explicit SecretsManager(const nlohmann::json& config);
@@ -79,16 +81,20 @@ public:
     HMACKey generate_hmac_key(const std::string& component);
 
     /**
-     * @brief Rotate HMAC key with grace period
-     *
-     * Old key marked with:
-     * - is_active = false
-     * - expires_at = now + grace_period_seconds
-     *
-     * @param component Component name
-     * @return HMACKey New active key
-     */
-    HMACKey rotate_hmac_key(const std::string& component);
+ 	* @brief Rotate HMAC key with grace period and cooldown enforcement
+ 	*
+ 	* Old key marked with:
+ 	* - is_active = false
+ 	* - expires_at = now + grace_period_seconds
+ 	*
+ 	* Cooldown: Rotation rejected if last rotation < min_rotation_interval_seconds ago
+ 	*
+ 	* @param component Component name
+ 	* @param force Emergency override (bypasses cooldown, requires logging)
+ 	* @return HMACKey New active key
+ 	* @throws std::runtime_error if cooldown not elapsed and force=false
+ 	*/
+	HMACKey rotate_hmac_key(const std::string& component, bool force = false);
 
     /**
      * @brief Get current active key for component
@@ -149,10 +155,14 @@ private:
     const int grace_period_seconds_;       // System-wide grace period
     const int rotation_interval_hours_;
     const int default_key_length_bytes_;
+    const int min_rotation_interval_seconds_;
+
 
     // In-memory storage (TODO Day 55: Integrate with actual etcd)
     std::map<std::string, std::vector<HMACKey>> keys_storage_;
     std::mutex storage_mutex_;
+    std::map<std::string, std::chrono::system_clock::time_point> last_rotation_;
+
 
     /**
      * @brief Store key in memory (TODO: Replace with etcd)

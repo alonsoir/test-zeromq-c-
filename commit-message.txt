@@ -1,49 +1,75 @@
+---
+
+## Commit Message Day 56
+
+```bash
 cd /vagrant/etcd-server
 
 git add -A
 
-git commit -m "feat(secrets): Integrate SecretsManager with grace period support (Day 55)
+git commit -m "feat(secrets): Add cooldown window enforcement (ADR-004)
 
-COMPLETE INTEGRATION:
-- Fixed namespace mismatch: etcd:: → etcd_server::
-- Integrated SecretsManager with EtcdServer via set_secrets_manager()
-- Implemented 4 functional /secrets/* HTTP endpoints
-- Added basic test suite (4/4 tests passing)
+COMPLETE ADR-004 IMPLEMENTATION:
+- Cooldown = grace period (300s) guarantees max 2 concurrent keys
+- HTTP 429 + Retry-After header for premature rotations
+- Emergency override via ?force=true (bypasses cooldown)
+- Strict validation: min_rotation_interval >= grace_period
 
-ENDPOINTS IMPLEMENTED:
-- GET /secrets/{component} - Get active HMAC key
-- POST /secrets/rotate/{component} - Rotate key with grace period
-- GET /secrets/valid/{component} - Get all valid keys (active + grace)
-- GET /secrets/keys - API documentation
+ENDPOINTS:
+- POST /secrets/rotate/{component}?force=true
+  → 200 OK (normal rotation)
+  → 429 Too Many Requests (cooldown active)
 
-GRACE PERIOD VERIFIED:
-- 300s configurable grace period
-- Old keys remain valid during rotation
-- Tested with curl and automated tests
-- Zero-downtime key rotation ready
+TESTING:
+✅ 5/5 unit tests passing
+✅ 4/4 HTTP integration tests verified
+✅ Logs confirm correct behavior:
+  - Rotation rejected (cooldown: 291s remaining)
+  - EMERGENCY rotation (force=true, cooldown bypassed)
 
-TESTS:
-✅ test_secrets_manager_simple: 4/4 PASS
-  - Generate and get HMAC key
-  - Rotation with grace period
-  - Grace period expiry
-  - Configuration validation
+ADR-004 DOCUMENTATION:
+- ~700 lines, academic format for future papers
+- Full Council of Sabios interaction history
+- ASCII art diagrams (key lifecycle, decision flow)
+- Complete empirical evidence (test logs, HTTP traces)
+- Known limitations documented (persistence, distributed coordination)
+- Future work outlined (MFA, persistent storage)
 
 CHANGES:
 Modified:
-  - include/etcd_server/etcd_server.hpp (namespace fix)
-  - include/etcd_server/secrets_manager.hpp (format_time public)
-  - src/etcd_server.cpp (endpoints active)
-  - src/main.cpp (SecretsManager integrated)
-  - CMakeLists.txt (test added)
-
-Created:
+  - include/etcd_server/secrets_manager.hpp
+  - src/secrets_manager.cpp
+  - src/etcd_server.cpp
+  - src/main.cpp
   - tests/test_secrets_manager_simple.cpp
 
-PENDING DAY 56:
-- Config from JSON file (currently hardcoded)
-- Complete test suite rewrite
-- rag-ingester integration with grace period
+Created:
+  - docs/adr/ADR-004-key-rotation-cooldown.md
+
+COUNCIL CONSENSUS:
+✅ DeepSeek (mathematical proof, NIST compliance)
+✅ Claude (HTTP semantics, logging, force=true)
+✅ Gemini (thread safety, forensics)
+✅ ChatGPT (simplicity, diagrams)
+✅ Alonso (final decision: piano piano, max 2 keys)
+
+KNOWN LIMITATIONS (to be addressed Day 57+):
+- No persistence of last_rotation_ (in-memory only)
+- No distributed coordination (single-server only)
+- Emergency override audit trail not centralized
+
+NEXT STEPS (Day 57):
+- Verify etcd-client HMAC support
+- Configure etcd_server.json for all components
+- Integrate firewall-acl-agent → rag-ingester (first HMAC dupla)
+- Implement CSV encryption + HMAC in firewall-acl-agent
+
+Via Appia Quality: Piano piano - cada piedra en su lugar.
 
 Co-authored-by: Claude (Anthropic)
-Co-authored-by: Alonso"
+Co-authored-by: DeepSeek
+Co-authored-by: Gemini (Google)
+Co-authored-by: ChatGPT (OpenAI)
+Co-authored-by: Qwen (Alibaba)
+Co-authored-by: Alonso "
+```
