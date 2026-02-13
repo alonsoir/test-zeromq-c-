@@ -1,14 +1,16 @@
 // etcd-client/src/etcd_client.cpp
+// Complete version with HMAC + Encryption + All methods
+//
+// Co-authored-by: Claude (Anthropic)
+// Co-authored-by: Alonso
+
+// etcd-client/src/etcd_client.cpp
 #include "etcd_client/etcd_client.hpp"
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
-#include <sstream>
-#include <iomanip>
 #include <atomic>
 
 using json = nlohmann::json;
@@ -33,18 +35,18 @@ namespace http {
                  int timeout_seconds, int max_retries, int backoff_seconds);
 }
 
-// namespace compression {
-//     std::string compress_lz4(const std::string& data);
-//     std::string decompress_lz4(const std::string& compressed_data, size_t original_size);
-//     bool should_compress(size_t data_size, size_t min_size_threshold);
-// }
+namespace compression {
+    std::string compress_lz4(const std::string& data);
+    std::string decompress_lz4(const std::string& compressed_data, size_t original_size);
+    bool should_compress(size_t data_size, size_t min_size_threshold);
+}
 
-// namespace crypto {
-//     std::string encrypt_chacha20(const std::string& plaintext, const std::string& key);
-//     std::string decrypt_chacha20(const std::string& encrypted_data, const std::string& key);
-//     std::string generate_key();
-//     size_t get_key_size();
-// }
+namespace crypto {
+    std::string encrypt_chacha20(const std::string& plaintext, const std::string& key);
+    std::string decrypt_chacha20(const std::string& encrypted_data, const std::string& key);
+    std::string generate_key();
+    size_t get_key_size();
+}
 
 namespace component {
     std::string build_registration_payload(const Config& config);
@@ -141,6 +143,68 @@ struct EtcdClient::Impl {
         return response.success;
     }
     
+    // Apply encryption and compression to data
+    std::string process_outgoing_data(const std::string& data) {
+        std::string processed = data;
+        size_t original_size = data.size();
+        
+        // Step 1: Compress (if enabled and data size > threshold)
+        if (config_.compression_enabled && 
+            compression::should_compress(original_size, config_.compression_min_size)) {
+            try {
+                processed = compression::compress_lz4(processed);
+                std::cout << "📦 Compressed: " << original_size << " → " 
+                          << processed.size() << " bytes" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "⚠️  Compression failed: " << e.what() << std::endl;
+                // Continue without compression
+                processed = data;
+            }
+        }
+        
+        // Step 2: Encrypt (if enabled and key available)
+        if (config_.encryption_enabled && !encryption_key_.empty()) {
+            try {
+                processed = crypto::encrypt_chacha20(processed, encryption_key_);
+                std::cout << "🔒 Encrypted: " << processed.size() << " bytes" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "⚠️  Encryption failed: " << e.what() << std::endl;
+                throw; // Encryption failure is critical
+            }
+        }
+        
+        return processed;
+    }
+    
+    // Remove encryption and decompression from data
+    std::string process_incoming_data(const std::string& data, size_t original_size = 0) {
+        std::string processed = data;
+        
+        // Step 1: Decrypt (if enabled and key available)
+        if (config_.encryption_enabled && !encryption_key_.empty()) {
+            try {
+                processed = crypto::decrypt_chacha20(processed, encryption_key_);
+                std::cout << "🔓 Decrypted: " << processed.size() << " bytes" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "⚠️  Decryption failed: " << e.what() << std::endl;
+                throw; // Decryption failure is critical
+            }
+        }
+        
+        // Step 2: Decompress (if compression was used)
+        if (config_.compression_enabled && original_size > 0) {
+            try {
+                processed = compression::decompress_lz4(processed, original_size);
+                std::cout << "📦 Decompressed: " << data.size() << " → " 
+                          << processed.size() << " bytes" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "⚠️  Decompression failed: " << e.what() << std::endl;
+                throw;
+            }
+        }
+        
+        return processed;
+    }
 };
 
 // ============================================================================
@@ -223,7 +287,7 @@ bool EtcdClient::set(const std::string& key, const std::string& value) {
     
     try {
         // Process data (compress + encrypt)
-        std::string processed_value = value;
+        std::string processed_value = pImpl->process_outgoing_data(value);
         
         // Build JSON payload
         json payload = {
@@ -284,10 +348,10 @@ std::string EtcdClient::get(const std::string& key) {
         // Parse response
         json j = json::parse(response.body);
         std::string value = j.value("value", "");
-        // original_size = j.value("original_size", 0);
+        size_t original_size = j.value("original_size", 0);
         
         // Process data (decrypt + decompress)
-        std::string processed_value = value;
+        std::string processed_value = pImpl->process_incoming_data(value, original_size);
         
         std::cout << "✅ Key retrieved: " << key << std::endl;
         return processed_value;
@@ -536,7 +600,7 @@ bool EtcdClient::put_config(const std::string& json_config) {
     
     try {
         // 2. Process data (compress + encrypt)
-        std::string processed_config = json_config;
+        std::string processed_config = pImpl->process_outgoing_data(json_config);
         
         // 3. Build path
         std::string path = "/v1/config/" + pImpl->config_.component_name;
@@ -598,20 +662,14 @@ bool EtcdClient::rollback_config() {
 void EtcdClient::set_encryption_key(const std::string& key) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
     
-    if (key.size() != 32) {
+    if (key.size() != crypto::get_key_size()) {
         throw std::runtime_error("Invalid key size (expected " + 
-                                 std::to_string(32) + " bytes)");
+                                 std::to_string(crypto::get_key_size()) + " bytes)");
     }
     
     pImpl->encryption_key_ = key;
     std::cout << "🔑 Encryption key set" << std::endl;
 }
-
-bool EtcdClient::has_encryption_key() const {
-    std::lock_guard<std::mutex> lock(pImpl->mutex_);
-    return !pImpl->encryption_key_.empty();
-}
-
 
 std::string EtcdClient::get_encryption_key() const {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
@@ -622,49 +680,86 @@ std::string EtcdClient::get_component_config(const std::string& component_name) 
     return get("/config/" + component_name + "/active");
 }
 
+
+// ============================================================================
+// HMAC Methods (Day 53-54)
+// ============================================================================
+
 std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& key_path) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
-    if (!pImpl->connected_) return std::nullopt;
     
-    auto response = http::get(pImpl->config_.host, pImpl->config_.port, key_path,
-                             pImpl->config_.timeout_seconds, pImpl->config_.max_retry_attempts,
-                             pImpl->config_.retry_backoff_seconds);
-    if (!response.success) return std::nullopt;
+    if (!pImpl->connected_) {
+        std::cerr << "❌ Not connected to etcd-server" << std::endl;
+        return std::nullopt;
+    }
+    
+    auto response = http::get(
+        pImpl->config_.host,
+        pImpl->config_.port,
+        key_path,
+        pImpl->config_.timeout_seconds,
+        pImpl->config_.max_retry_attempts,
+        pImpl->config_.retry_backoff_seconds
+    );
+    
+    if (!response.success) {
+        return std::nullopt;
+    }
     
     try {
-        auto j = json::parse(response.body);
-        return EtcdClient::hex_to_bytes(j["key"].get<std::string>());
-    } catch (...) { return std::nullopt; }
+        auto json_response = nlohmann::json::parse(response.body);
+        std::string key_hex = json_response["key"].get<std::string>();
+        return hex_to_bytes(key_hex);
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Failed to parse HMAC key: " << e.what() << std::endl;
+        return std::nullopt;
+    }
 }
 
-std::string EtcdClient::compute_hmac_sha256(const std::string& data, const std::vector<uint8_t>& key) {
+std::string EtcdClient::compute_hmac_sha256(const std::string& data,
+                                             const std::vector<uint8_t>& key) {
     unsigned char hmac_result[EVP_MAX_MD_SIZE];
     unsigned int hmac_len;
-    HMAC(EVP_sha256(), key.data(), key.size(),
+    
+    HMAC(EVP_sha256(),
+         key.data(), key.size(),
          reinterpret_cast<const unsigned char*>(data.data()), data.size(),
          hmac_result, &hmac_len);
-    return EtcdClient::bytes_to_hex(std::vector<uint8_t>(hmac_result, hmac_result + hmac_len));
+    
+    std::vector<uint8_t> hmac_vec(hmac_result, hmac_result + hmac_len);
+    return bytes_to_hex(hmac_vec);
 }
 
-bool EtcdClient::validate_hmac_sha256(const std::string& data, const std::string& hmac_hex,
+bool EtcdClient::validate_hmac_sha256(const std::string& data,
+                                       const std::string& hmac_hex,
                                        const std::vector<uint8_t>& key) {
-    return compute_hmac_sha256(data, key) == hmac_hex;
+    std::string computed = compute_hmac_sha256(data, key);
+    return (computed == hmac_hex);
 }
 
 std::string EtcdClient::bytes_to_hex(const std::vector<uint8_t>& data) {
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
-    for (uint8_t byte : data) oss << std::setw(2) << static_cast<int>(byte);
+    for (uint8_t byte : data) {
+        oss << std::setw(2) << static_cast<int>(byte);
+    }
     return oss.str();
 }
 
 std::vector<uint8_t> EtcdClient::hex_to_bytes(const std::string& hex_string) {
-    if (hex_string.length() % 2 != 0) throw std::invalid_argument("Hex must have even length");
+    if (hex_string.length() % 2 != 0) {
+        throw std::invalid_argument("Hex string must have even length");
+    }
+    
     std::vector<uint8_t> bytes;
     bytes.reserve(hex_string.length() / 2);
+    
     for (size_t i = 0; i < hex_string.length(); i += 2) {
-        bytes.push_back(static_cast<uint8_t>(std::stoi(hex_string.substr(i, 2), nullptr, 16)));
+        std::string byte_str = hex_string.substr(i, 2);
+        uint8_t byte = static_cast<uint8_t>(std::stoi(byte_str, nullptr, 16));
+        bytes.push_back(byte);
     }
+    
     return bytes;
 }
 

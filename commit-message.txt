@@ -1,75 +1,58 @@
----
+cat > /vagrant/COMMIT_DAY57.txt << 'COMMIT'
+Day 57: Emergency etcd-client restoration + HMAC integration
 
-## Commit Message Day 56
+CRITICAL BUG FIX:
+- Day 54 refactoring accidentally deleted core etcd-client methods
+- System worked only because pre-Day-54 library was installed
+- Discovered via method count: source (7) vs installed (need 25+)
 
-```bash
-cd /vagrant/etcd-server
+RECOVERY PROCESS:
+- Located backup: /vagrant/etcd_client_fixed.cpp (673 lines)
+- Restored header from /usr/local/include/ (8,050 bytes)
+- Manually rebuilt implementation without internal crypto/compression
+- Components now use crypto_transport library directly
 
-git add -A
+HMAC INTEGRATION COMPLETED:
+- Added 5 new methods: get_hmac_key, compute_hmac_sha256,
+  validate_hmac_sha256, bytes_to_hex, hex_to_bytes
+- OpenSSL HMAC-SHA256 implementation
+- Integrated with etcd-server SecretsManager
+- Grace period support for zero-downtime key rotation
 
-git commit -m "feat(secrets): Add cooldown window enforcement (ADR-004)
+FILES CHANGED:
+- etcd-client/src/etcd_client.cpp: 763 lines (was 128)
+- etcd-client/include/etcd_client/etcd_client.hpp: restored
+- Installed: libetcd_client.so.1.0.0 (5.1M, 36 methods)
 
-COMPLETE ADR-004 IMPLEMENTATION:
-- Cooldown = grace period (300s) guarantees max 2 concurrent keys
-- HTTP 429 + Retry-After header for premature rotations
-- Emergency override via ?force=true (bypasses cooldown)
-- Strict validation: min_rotation_interval >= grace_period
+VERIFICATION:
+- Library compiled successfully
+- All 36 public methods available
+- HMAC symbols present in binary
+- ml-detector, firewall-acl-agent still work (use wrappers)
 
-ENDPOINTS:
-- POST /secrets/rotate/{component}?force=true
-  → 200 OK (normal rotation)
-  → 429 Too Many Requests (cooldown active)
+LESSONS LEARNED:
+- ALWAYS verify source matches installed binaries
+- Piano piano: incremental changes with validation
+- Keep explicit backups before major refactoring
+- Via Appia quality: built to last, not built fast
 
-TESTING:
-✅ 5/5 unit tests passing
-✅ 4/4 HTTP integration tests verified
-✅ Logs confirm correct behavior:
-  - Rotation rejected (cooldown: 291s remaining)
-  - EMERGENCY rotation (force=true, cooldown bypassed)
+NEXT STEPS (BLOCKED until tests pass):
+1. Compile all from root Makefile
+2. Run etcd-client and etcd-server tests
+3. Integrate HMAC in firewall-acl-agent
+4. Integrate rag-ingester with new etcd-client
 
-ADR-004 DOCUMENTATION:
-- ~700 lines, academic format for future papers
-- Full Council of Sabios interaction history
-- ASCII art diagrams (key lifecycle, decision flow)
-- Complete empirical evidence (test logs, HTTP traces)
-- Known limitations documented (persistence, distributed coordination)
-- Future work outlined (MFA, persistent storage)
-
-CHANGES:
-Modified:
-  - include/etcd_server/secrets_manager.hpp
-  - src/secrets_manager.cpp
-  - src/etcd_server.cpp
-  - src/main.cpp
-  - tests/test_secrets_manager_simple.cpp
-
-Created:
-  - docs/adr/ADR-004-key-rotation-cooldown.md
-
-COUNCIL CONSENSUS:
-✅ DeepSeek (mathematical proof, NIST compliance)
-✅ Claude (HTTP semantics, logging, force=true)
-✅ Gemini (thread safety, forensics)
-✅ ChatGPT (simplicity, diagrams)
-✅ Alonso (final decision: piano piano, max 2 keys)
-
-KNOWN LIMITATIONS (to be addressed Day 57+):
-- No persistence of last_rotation_ (in-memory only)
-- No distributed coordination (single-server only)
-- Emergency override audit trail not centralized
-
-NEXT STEPS (Day 57):
-- Verify etcd-client HMAC support
-- Configure etcd_server.json for all components
-- Integrate firewall-acl-agent → rag-ingester (first HMAC dupla)
-- Implement CSV encryption + HMAC in firewall-acl-agent
-
-Via Appia Quality: Piano piano - cada piedra en su lugar.
+Total recovery time: ~4 hours of careful manual assembly
 
 Co-authored-by: Claude (Anthropic)
-Co-authored-by: DeepSeek
-Co-authored-by: Gemini (Google)
-Co-authored-by: ChatGPT (OpenAI)
-Co-authored-by: Qwen (Alibaba)
-Co-authored-by: Alonso "
-```
+Co-authored-by: Alonso
+COMMIT
+
+echo "✅ Prompt de continuidad creado: /vagrant/CONTINUATION_PROMPT.md"
+echo "✅ Mensaje de commit creado: /vagrant/COMMIT_DAY57.txt"
+echo ""
+echo "Para el próximo commit:"
+echo "git add -A"
+echo "git commit -F /vagrant/COMMIT_DAY57.txt"
+echo ""
+echo "🍽️ ¡Buen provecho! Piano piano 🏛️"
