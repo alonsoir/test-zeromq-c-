@@ -129,6 +129,19 @@ etcd-server/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/build
 .PHONY : etcd-server/fast
 
+#=============================================================================
+# Target rules for targets named test_secrets_manager_simple
+
+# Build rule for target.
+test_secrets_manager_simple: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_secrets_manager_simple
+.PHONY : test_secrets_manager_simple
+
+# fast build rule for target.
+test_secrets_manager_simple/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/build
+.PHONY : test_secrets_manager_simple/fast
+
 src/component_registry.o: src/component_registry.cpp.o
 .PHONY : src/component_registry.o
 
@@ -249,6 +262,57 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/secrets_manager.o: src/secrets_manager.cpp.o
+.PHONY : src/secrets_manager.o
+
+# target to build an object file
+src/secrets_manager.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.o
+.PHONY : src/secrets_manager.cpp.o
+
+src/secrets_manager.i: src/secrets_manager.cpp.i
+.PHONY : src/secrets_manager.i
+
+# target to preprocess a source file
+src/secrets_manager.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.i
+.PHONY : src/secrets_manager.cpp.i
+
+src/secrets_manager.s: src/secrets_manager.cpp.s
+.PHONY : src/secrets_manager.s
+
+# target to generate assembly for a file
+src/secrets_manager.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.s
+.PHONY : src/secrets_manager.cpp.s
+
+tests/test_secrets_manager_simple.o: tests/test_secrets_manager_simple.cpp.o
+.PHONY : tests/test_secrets_manager_simple.o
+
+# target to build an object file
+tests/test_secrets_manager_simple.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/tests/test_secrets_manager_simple.cpp.o
+.PHONY : tests/test_secrets_manager_simple.cpp.o
+
+tests/test_secrets_manager_simple.i: tests/test_secrets_manager_simple.cpp.i
+.PHONY : tests/test_secrets_manager_simple.i
+
+# target to preprocess a source file
+tests/test_secrets_manager_simple.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/tests/test_secrets_manager_simple.cpp.i
+.PHONY : tests/test_secrets_manager_simple.cpp.i
+
+tests/test_secrets_manager_simple.s: tests/test_secrets_manager_simple.cpp.s
+.PHONY : tests/test_secrets_manager_simple.s
+
+# target to generate assembly for a file
+tests/test_secrets_manager_simple.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/tests/test_secrets_manager_simple.cpp.s
+.PHONY : tests/test_secrets_manager_simple.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -258,6 +322,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... etcd-server"
+	@echo "... test_secrets_manager_simple"
 	@echo "... src/component_registry.o"
 	@echo "... src/component_registry.i"
 	@echo "... src/component_registry.s"
@@ -273,6 +338,12 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/secrets_manager.o"
+	@echo "... src/secrets_manager.i"
+	@echo "... src/secrets_manager.s"
+	@echo "... tests/test_secrets_manager_simple.o"
+	@echo "... tests/test_secrets_manager_simple.i"
+	@echo "... tests/test_secrets_manager_simple.s"
 .PHONY : help
 
 

@@ -241,4 +241,101 @@ private:
     std::unique_ptr<Impl> pImpl;
 };
 
+// ============================================================================
+// HTTP Client Namespace (Internal - used by library implementation)
+// ============================================================================
+// These functions are used internally by the etcd_client library for
+// communication with etcd-server. They are exposed here because some tests
+// need direct access to them.
+// ============================================================================
+
+namespace http {
+
+/**
+ * @brief HTTP Response structure
+ */
+struct Response {
+    int status_code = 0;
+    std::string body;
+    bool success = false;
+};
+
+/**
+ * @brief Perform HTTP POST with retry logic
+ * @param host Server hostname/IP
+ * @param port Server port
+ * @param path Request path
+ * @param body Request body
+ * @param timeout_seconds Connection timeout
+ * @param max_retries Maximum retry attempts
+ * @param backoff_seconds Delay between retries
+ * @return Response structure
+ */
+Response post(const std::string& host,
+              int port,
+              const std::string& path,
+              const std::string& body,
+              int timeout_seconds = 5,
+              int max_retries = 3,
+              int backoff_seconds = 2);
+
+/**
+ * @brief Perform HTTP GET with retry logic
+ * @param host Server hostname/IP
+ * @param port Server port
+ * @param path Request path
+ * @param timeout_seconds Connection timeout
+ * @param max_retries Maximum retry attempts
+ * @param backoff_seconds Delay between retries
+ * @return Response structure
+ */
+Response get(const std::string& host,
+             int port,
+             const std::string& path,
+             int timeout_seconds = 5,
+             int max_retries = 3,
+             int backoff_seconds = 2);
+
+/**
+ * @brief Perform HTTP PUT with retry logic
+ * @param host Server hostname/IP
+ * @param port Server port
+ * @param path Request path
+ * @param body Request body
+ * @param content_type Content-Type header value
+ * @param timeout_seconds Connection timeout
+ * @param max_retries Maximum retry attempts
+ * @param backoff_seconds Delay between retries
+ * @param original_size Original uncompressed size (for X-Original-Size header)
+ * @return Response structure
+ */
+Response put(const std::string& host,
+             int port,
+             const std::string& path,
+             const std::string& body,
+             const std::string& content_type,
+             int timeout_seconds,
+             int max_retries,
+             int backoff_seconds,
+             size_t original_size = 0);
+
+/**
+ * @brief Perform HTTP DELETE with retry logic
+ * @param host Server hostname/IP
+ * @param port Server port
+ * @param path Request path
+ * @param timeout_seconds Connection timeout
+ * @param max_retries Maximum retry attempts
+ * @param backoff_seconds Delay between retries
+ * @return Response structure
+ */
+Response del(const std::string& host,
+             int port,
+             const std::string& path,
+             int timeout_seconds = 5,
+             int max_retries = 3,
+             int backoff_seconds = 2);
+
+} // namespace http
+
 } // namespace etcd_client

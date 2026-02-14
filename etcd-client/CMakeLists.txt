@@ -43,6 +43,9 @@ if(NOT nlohmann_json_FOUND)
     message(STATUS "nlohmann_json not found via find_package, will use system headers")
 endif()
 
+# Find OpenSSL (for HMAC - Day 53)
+find_package(OpenSSL REQUIRED)
+
 # ============================================================================
 # Sources
 # ============================================================================
@@ -85,9 +88,6 @@ target_compile_options(etcd_client
 # ============================================================================
 # Link Libraries
 # ============================================================================
-# Find OpenSSL (for HMAC - Day 53)
-find_package(OpenSSL REQUIRED)
-
 target_link_libraries(etcd_client
         PRIVATE
         ${CRYPTO_TRANSPORT_LIB}
@@ -124,52 +124,11 @@ install(DIRECTORY include/etcd_client
         FILES_MATCHING PATTERN "*.hpp"
 )
 
-# periodo de gracia
-add_executable(test_etcd_client_hmac_grace_period
-        tests/test_etcd_client_hmac_grace_period.cpp
-        src/etcd_client.cpp
-)
-
-target_include_directories(test_etcd_client_hmac_grace_period
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-)
-
-target_link_libraries(test_etcd_client_hmac_grace_period
-        PRIVATE
-        GTest::gtest
-        GTest::gtest_main
-        spdlog::spdlog
-        OpenSSL::SSL
-        OpenSSL::Crypto
-)
-
-# Add to test suite
-add_test(NAME EtcdClientHMACGracePeriod COMMAND test_etcd_client_hmac_grace_period)
-
 # ============================================================================
-# Notes:
+# Tests (ALWAYS enabled - tests must pass)
 # ============================================================================
-#
-# This adds a new test executable for HMAC validation with grace period.
-#
-# Dependencies:
-# - GTest (already in your project)
-# - spdlog (already in your project)
-# - OpenSSL (for HMAC_SHA256)
-#
-# Make sure OpenSSL is found earlier in your CMakeLists.txt with:
-# find_package(OpenSSL REQUIRED)
-
-# ============================================================================
-# Tests (optional)
-# ============================================================================
-option(BUILD_TESTS "Build tests" ON)
-
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+enable_testing()
+add_subdirectory(tests)
 
 # ============================================================================
 # Configuration Summary

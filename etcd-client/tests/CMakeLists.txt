@@ -89,6 +89,21 @@ target_include_directories(test_hmac_integration_client
         ${CMAKE_SOURCE_DIR}/include
 )
 
+# Test: HMAC Grace Period (Day 57 - HMAC key rotation with grace period)
+# NOTE: This test uses GTest which we don't have installed. Disabled for now.
+# TODO: Rewrite without GTest or install GTest properly
+# add_executable(test_etcd_client_hmac_grace_period test_etcd_client_hmac_grace_period.cpp)
+# target_link_libraries(test_etcd_client_hmac_grace_period
+#         PRIVATE
+#         etcd_client
+#         OpenSSL::SSL
+#         OpenSSL::Crypto
+# )
+# target_include_directories(test_etcd_client_hmac_grace_period
+#         PRIVATE
+#         ${CMAKE_SOURCE_DIR}/include
+# )
+
 # ============================================================================
 # CTEST REGISTRATION
 # ============================================================================
@@ -98,6 +113,7 @@ add_test(NAME compression COMMAND test_compression)
 add_test(NAME encryption COMMAND test_encryption)
 add_test(NAME pipeline COMMAND test_pipeline)
 add_test(NAME hmac_client COMMAND test_hmac_client)
+# add_test(NAME hmac_grace_period COMMAND test_etcd_client_hmac_grace_period)  # Disabled - requires GTest
 
 # Note: test_hmac_integration_client requires etcd-server running,
 # so we don't add it to CTest by default. Run manually:
@@ -117,6 +133,7 @@ message(STATUS "  - test_pipeline (crypto-transport)")
 message(STATUS "  - test_put_config_integration (etcd_client)")
 message(STATUS "  - test_hmac_client (Day 53 - HMAC unit tests)")
 message(STATUS "  - test_hmac_integration_client (Day 53 - requires etcd-server)")
+message(STATUS "  ⚠️  test_etcd_client_hmac_grace_period (DISABLED - requires GTest)")
 message(STATUS "========================================")
 message(STATUS "OpenSSL: ${OPENSSL_VERSION}")
 message(STATUS "========================================")
