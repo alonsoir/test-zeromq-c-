@@ -389,6 +389,30 @@ Alonso collaborates with multiple AI models:
 
 ---
 
+### Critical Recommendations from Consejo de Sabios
+
+**Security (ChatGPT):**
+- HMAC key caching con TTL (5 min)
+- Manejo explícito de `get_hmac_key()` failures
+- **CRÍTICO:** rag-ingester DEBE validar HMAC (no solo producir)
+
+**Architecture (GROK):**
+- CSV header consistente entre componentes (shared header file)
+- Test de tampering obligatorio
+- Makefile target: `make verify-hmac`
+- Watcher para rotación de claves en runtime
+
+**Operations (Gemini):**
+- ML training scripts actualizados para CSV
+- Secret management: NUNCA loguear claves HMAC
+- Verificar compatibilidad con pipelines existentes
+
+**Implementation (Qwen):**
+- Checklist expandido con 17 pasos
+- Error handling: fail-loud si HMAC no disponible
+- Test manual con `tail -f` para verificación visual
+
+
 ## Contact & Philosophy
 
 **Developer:** Alonso (Extremadura, Spain)

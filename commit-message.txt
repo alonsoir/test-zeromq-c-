@@ -1,10 +1,9 @@
-git add -A
-git commit -m "feat(day-58): Fix crypto-transport LZ4 bug, add HMAC integration to firewall
+git commit -m "feat(day-58): Fix crypto-transport LZ4 + HMAC integration prep
 
 Priority 1: crypto-transport LZ4 Bug - FIXED ✅
 - Remove redundant 4-byte header from compress()
 - API already requires caller to pass original_size
-- compress(): now returns pure LZ4 data (no header)
+- compress(): returns pure LZ4 data (no header)
 - decompress(): simplified, no header parsing needed
 - All tests passing: test_compression (10/10), test_integration (7/7)
 - Lesson: Redundancy != Security, simple APIs are better
@@ -26,16 +25,23 @@ Architectural Decisions:
 - Batch processing: Timeseries-style, atomic operations only
 - Configurable paths: High availability support (multiple producers)
 
+Consejo de Sabios Recommendations (Day 59):
+- ChatGPT: HMAC key caching with TTL, validation in rag-ingester
+- GROK: Consistent CSV headers, tampering tests, verify-hmac target
+- Gemini: ML training compatibility, secret management
+- Qwen: 17-step checklist, fail-loud on HMAC errors
+
 Files Modified:
-- crypto-transport/src/compression.cpp (LZ4 fix)
-- Makefile (verify-encryption fix)
-- firewall-acl-agent/include/firewall/etcd_client.hpp (HMAC methods)
-- firewall-acl-agent/src/core/etcd_client.cpp (HMAC implementation)
-- firewall-acl-agent/include/firewall/logger.hpp (CSV+HMAC support)
-- firewall-acl-agent/src/core/logger.cpp (CSV+HMAC implementation)
-- firewall-acl-agent/CMakeLists.txt (OpenSSL linkage)
+- crypto-transport/src/compression.cpp
+- Makefile
+- firewall-acl-agent/include/firewall/etcd_client.hpp
+- firewall-acl-agent/src/core/etcd_client.cpp
+- firewall-acl-agent/include/firewall/logger.hpp
+- firewall-acl-agent/src/core/logger.cpp
+- firewall-acl-agent/CMakeLists.txt
 
 Next: Day 59 - Complete HMAC integration, migrate ml-detector to CSV
 
 Via Appia Quality: Piano piano 🏛️
-Co-authored-by: Claude (Anthropic)"
+Co-authored-by: Claude (Anthropic)
+Reviewed-by: ChatGPT, GROK, Gemini, Qwen (Consejo de Sabios)"
