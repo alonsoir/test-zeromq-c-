@@ -72,6 +72,25 @@ struct BlockedEvent {
           packets_per_sec(0), bytes_per_sec(0), flow_duration_ms(0) {}
 };
 
+    // ============================================================================
+    // CSV + HMAC Support (Day 58 - Pioneer Pattern)
+    // ============================================================================
+
+    /**
+     * @brief CSV log entry with HMAC signature
+     *
+     * Format: timestamp_ms,src_ip,dst_ip,threat_type,action,confidence,hmac_sig
+     * Example: 1739548800000,192.168.1.100,10.0.0.50,DDOS_ATTACK,BLOCK,0.95,a3f5c2d8...
+     */
+    struct CSVLogEntry {
+        uint64_t timestamp_ms;
+        std::string src_ip;
+        std::string dst_ip;
+        std::string threat_type;
+        std::string action;
+        double confidence;
+        std::string hmac_signature;  // 64-char hex
+    };
 //===----------------------------------------------------------------------===//
 // Firewall Logger - Asynchronous Writer
 //===----------------------------------------------------------------------===//
@@ -109,6 +128,22 @@ public:
      * @return true if queued, false if queue full
      */
     bool log_blocked_event(const BlockedEvent& event);
+
+    /**
+     * @brief Append CSV log with HMAC signature (Day 58 - synchronous, simple)
+     *
+     * Writes to: output_dir/firewall_blocks.csv
+     * Format: timestamp,src_ip,dst_ip,threat_type,action,confidence,hmac
+     *
+     * @param event Event to log
+     * @param hmac_key HMAC key (32 bytes) from etcd-server
+     * @return true on success
+     *
+     * Note: This is synchronous (not queued) - for pioneer pattern simplicity.
+     *       Can be optimized to async later if needed.
+     */
+    bool append_csv_log(const BlockedEvent& event,
+                       const std::vector<uint8_t>& hmac_key);
 
     /**
      * Get current queue size (for monitoring)
@@ -191,6 +226,21 @@ private:
      * Ensure output directory exists
      */
     bool ensure_directory_exists(const std::string& path);
+
+    /**
+     * @brief Generate CSV line from event (without HMAC)
+     * @return CSV line ready for HMAC computation
+     */
+    std::string generate_csv_line(const BlockedEvent& event);
+
+    /**
+     * @brief Compute HMAC-SHA256 for CSV line
+     * @param csv_line CSV line without HMAC
+     * @param key HMAC key
+     * @return HMAC signature as hex string (64 chars)
+     */
+    std::string compute_hmac_for_csv(const std::string& csv_line,
+                                     const std::vector<uint8_t>& key);
 };
 
 //===----------------------------------------------------------------------===//

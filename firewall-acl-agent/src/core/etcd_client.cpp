@@ -3,6 +3,8 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
+#include <optional>
+#include <vector>
 
 namespace mldefender::firewall {
 
@@ -145,7 +147,7 @@ std::string EtcdClient::get_crypto_seed() const {
         return "";
     }
 
-    std::string seed = pImpl->client_->get_encryption_key();
+std::string seed = pImpl->client_->get_encryption_key();
 
     if (seed.empty()) {
         std::cerr << "❌ [firewall-acl-agent] Failed to get crypto seed from etcd" << std::endl;
@@ -156,4 +158,46 @@ std::string EtcdClient::get_crypto_seed() const {
 
     return seed;
 }
+
+
+    // ============================================================================
+    // HMAC Methods (Day 58 - Pioneer Pattern)
+    // ============================================================================
+
+std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& key_path) {
+    if (!pImpl->client_) {
+        std::cerr << "❌ [firewall-acl-agent] get_hmac_key() called before initialize()" << std::endl;
+        return std::nullopt;
+    }
+
+    auto key = pImpl->client_->get_hmac_key(key_path);
+
+    if (key) {
+        std::cout << "🔑 [firewall-acl-agent] Retrieved HMAC key from: " << key_path
+                  << " (" << key->size() << " bytes)" << std::endl;
+    } else {
+        std::cerr << "⚠️ [firewall-acl-agent] HMAC key not found: " << key_path << std::endl;
+    }
+
+    return key;
+}
+
+std::string EtcdClient::compute_hmac_sha256(const std::string& data,
+                                                const std::vector<uint8_t>& key) {
+    if (!pImpl->client_) {
+        std::cerr << "❌ [firewall-acl-agent] compute_hmac_sha256() called before initialize()" << std::endl;
+        return "";
+    }
+
+    return pImpl->client_->compute_hmac_sha256(data, key);
+}
+
+std::string EtcdClient::bytes_to_hex(const std::vector<uint8_t>& bytes) {
+    if (!pImpl->client_) {
+        return "";
+    }
+
+    return pImpl->client_->bytes_to_hex(bytes);
+}
+
 } // namespace mldefender::firewall

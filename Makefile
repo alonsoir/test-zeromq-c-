@@ -638,13 +638,13 @@ verify-encryption:
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "1️⃣  Sniffer config:"
-	@vagrant ssh -c "jq '.encryption_enabled, .compression_enabled' /vagrant/sniffer/config/sniffer.json 2>/dev/null || echo '   ⚠️  Config not found'"
+	@vagrant ssh -c "jq '.transport.encryption.enabled, .transport.compression.enabled' /vagrant/sniffer/config/sniffer.json 2>/dev/null || echo '   ⚠️  Config not found'"
 	@echo ""
 	@echo "2️⃣  ML Detector config:"
-	@vagrant ssh -c "jq '.encryption_enabled, .compression_enabled' /vagrant/ml-detector/config/ml_detector_config.json 2>/dev/null || echo '   ⚠️  Config not found'"
+	@vagrant ssh -c "jq '.transport.encryption.enabled, .transport.compression.enabled' /vagrant/ml-detector/config/ml_detector_config.json 2>/dev/null || echo '   ⚠️  Config not found'"
 	@echo ""
 	@echo "3️⃣  Firewall config:"
-	@vagrant ssh -c "jq '.encryption_enabled, .compression_enabled' /vagrant/firewall-acl-agent/config/firewall.json 2>/dev/null || echo '   ⚠️  Config not found'"
+	@vagrant ssh -c "jq '.transport.encryption.enabled, .transport.compression.enabled' /vagrant/firewall-acl-agent/config/firewall.json 2>/dev/null || echo '   ⚠️  Config not found'"
 	@echo ""
 
 verify-pipeline-config: verify-etcd-linkage verify-encryption

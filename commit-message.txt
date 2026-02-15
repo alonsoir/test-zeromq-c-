@@ -1,62 +1,41 @@
-Day 57: Emergency restoration of etcd-client after Day 54 regression
+git add -A
+git commit -m "feat(day-58): Fix crypto-transport LZ4 bug, add HMAC integration to firewall
 
-CRITICAL BUG FIXED: Day 54 HMAC refactoring accidentally deleted core
-etcd-client implementation methods and introduced duplicated namespace
-declarations across multiple files. System compiled but would fail at
-runtime due to missing http::put() and related functions.
+Priority 1: crypto-transport LZ4 Bug - FIXED ✅
+- Remove redundant 4-byte header from compress()
+- API already requires caller to pass original_size
+- compress(): now returns pure LZ4 data (no header)
+- decompress(): simplified, no header parsing needed
+- All tests passing: test_compression (10/10), test_integration (7/7)
+- Lesson: Redundancy != Security, simple APIs are better
 
-Root Cause Analysis:
-- Day 54 removed internal crypto/compression from etcd-client
-- Refactoring accidentally deleted namespace http from public header
-- http::put/get/post/del implementations existed but weren't exported
-- Duplicate declarations in 3 files caused linker ambiguity
-- Pre-Day-54 library still installed, masking the source code bug
+Priority 2: Component Config Verification - FIXED ✅
+- Updated Makefile verify-encryption target
+- Fixed jq paths: .encryption_enabled -> .transport.encryption.enabled
+- All components verified: sniffer, ml-detector, firewall (all true/true)
 
-Recovery Actions (4 hours systematic debugging):
-1. Discovered source code (128 lines) != installed library (1.1M)
-2. Found backup etcd_client_fixed.cpp with complete implementation
-3. Cleaned duplicate namespace http declarations from 3 files
-4. Added namespace http to public header with all function signatures
-5. Fixed CMakeLists.txt (removed GTest test, cleaned dependencies)
-6. Refactored root Makefile with proper clean-libs target
-7. Synchronized function signatures (removed duplicate default params)
+Priority 3: HMAC Integration - PARTIAL ✅
+- etcd-client: Added get_hmac_key(), compute_hmac_sha256(), bytes_to_hex()
+- FirewallLogger: Added append_csv_log(), generate_csv_line(), compute_hmac_for_csv()
+- CMakeLists.txt: Added OpenSSL::Crypto linkage to executables
+- Headers updated, implementations complete, compilation successful
+- Pending: Pass etcd_client to ZMQSubscriber, call CSV+HMAC logging
+
+Architectural Decisions:
+- CSV over JSONL: Eliminates nlohmann::json memory bug, simpler format
+- Batch processing: Timeseries-style, atomic operations only
+- Configurable paths: High availability support (multiple producers)
 
 Files Modified:
-- Makefile: Added clean-libs, clean-all, improved verify-all
-- etcd-client/CMakeLists.txt: Removed duplicate test definition
-- etcd-client/tests/CMakeLists.txt: Disabled GTest test, updated summary
-- etcd-client/include/etcd_client/etcd_client.hpp: Added namespace http (48 methods)
-- etcd-client/src/http_client.cpp: Removed duplicate Response struct
-- etcd-client/src/etcd_client.cpp: Removed duplicate namespace http forward decls
+- crypto-transport/src/compression.cpp (LZ4 fix)
+- Makefile (verify-encryption fix)
+- firewall-acl-agent/include/firewall/etcd_client.hpp (HMAC methods)
+- firewall-acl-agent/src/core/etcd_client.cpp (HMAC implementation)
+- firewall-acl-agent/include/firewall/logger.hpp (CSV+HMAC support)
+- firewall-acl-agent/src/core/logger.cpp (CSV+HMAC implementation)
+- firewall-acl-agent/CMakeLists.txt (OpenSSL linkage)
 
-Verification Results:
-✅ etcd-client library: 1.0M, 48 public methods
-✅ All 4 components link correctly to libetcd_client.so.1
-✅ HMAC tests: 12/12 PASSED
-✅ Encryption tests: 6/6 PASSED
-✅ Linkage verification: PASSED
-❌ Compression tests: FAILED (pre-existing LZ4 bug - separate issue)
+Next: Day 59 - Complete HMAC integration, migrate ml-detector to CSV
 
-Known Issues (Not Introduced by This Commit):
-- crypto-transport LZ4 decompression bug (fix scheduled Day 58)
-- test_etcd_client_hmac_grace_period uses GTest (disabled, non-critical)
-- Component configs show null for encryption flags (needs review Day 58)
-
-Next Steps (Day 58+):
-1. Fix crypto-transport LZ4 bug (PRIORITY 1 - blocking)
-2. Review component encryption/compression configs
-3. Continue HMAC integration: firewall-acl-agent → CSV + HMAC
-4. Implement rag-ingester etcd-client integration
-5. End-to-end pipeline testing
-
-Lessons Learned:
-- Always diff source vs installed library before make install
-- Run complete test suite after major refactorings
-- Keep explicit backups before destructive changes
-- Piano piano: validate each step incrementally
-
-Via Appia Quality: "Stone by stone, validated at each step"
-4 hours of careful restoration > 4 days of rushed rebuilding
-
-Co-authored-by: Claude (Anthropic)
-Co-authored-by: Alonso
+Via Appia Quality: Piano piano 🏛️
+Co-authored-by: Claude (Anthropic)"

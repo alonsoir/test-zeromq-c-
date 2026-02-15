@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -43,6 +45,29 @@ namespace mldefender::firewall {
         * @return Crypto seed in hex format (64 chars)
         */
         std::string get_crypto_seed() const;
+
+        /**
+     * @brief Get HMAC key from etcd-server (Day 58)
+     * @param key_path Path to key in etcd (e.g., "/secrets/firewall/log_hmac_key")
+     * @return HMAC key as bytes (32 bytes), or nullopt if not found
+     */
+        std::optional<std::vector<uint8_t>> get_hmac_key(const std::string& key_path);
+
+        /**
+         * @brief Compute HMAC-SHA256 signature (Day 58)
+         * @param data Data to sign (e.g., CSV line)
+         * @param key HMAC key (32 bytes)
+         * @return HMAC signature as hex string (64 chars)
+         */
+        std::string compute_hmac_sha256(const std::string& data,
+                                        const std::vector<uint8_t>& key);
+
+        /**
+         * @brief Convert bytes to hex string (Day 58)
+         * @param bytes Binary data
+         * @return Hex-encoded string
+         */
+        std::string bytes_to_hex(const std::vector<uint8_t>& bytes);
 
     private:
         struct Impl;

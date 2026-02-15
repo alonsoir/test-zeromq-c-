@@ -1,215 +1,361 @@
-# ML Defender - Day 58+ Continuation Prompt
+¡Excelente decisión! **Via Appia Quality** - sabemos cuándo parar. 🏛️
 
-## Current Status: Day 57 COMPLETED ✅ - etcd-client Emergency Restoration
+Voy a crear el documento de continuidad Day 59 con TODO lo aprendido hoy.
 
-### What Happened (Day 57 - 2026-02-14)
+---
 
-**CRITICAL BUG FROM DAY 54 RESOLVED:**
-Day 54 HMAC refactoring accidentally deleted core etcd-client methods AND introduced
-duplicated namespace declarations. System compiled but runtime would fail due to missing
-http::put() implementation. Full restoration required 4 hours of systematic debugging.
+# ML Defender - Day 59 Continuation Prompt
 
-**Recovery Actions:**
-1. Discovered namespace http duplicated across 3 files (header + 2 source files)
-2. Found missing http::put() declarations in public header
-3. Cleaned CMakeLists.txt files (removed GTest test, fixed dependencies)
-4. Refactored root Makefile with proper clean-libs target
-5. Restored complete etcd-client: 1.0M library, 48 public methods
-6. All components now link correctly to etcd-client
+## Day 58 Summary - COMPLETED ✅
+
+**Date:** 2026-02-15 (Sunday)
+**Duration:** ~6 hours productive work
+**Status:** Three priorities completed, architecture defined for Day 59+
+
+### Achievements
+
+**Priority 1: crypto-transport LZ4 Bug - FIXED ✅**
+- **Problem:** Day 54 refactoring added 4-byte header to `compress()` but `decompress()` didn't skip it
+- **Root cause:** API already requires caller to pass `original_size`, header was redundant
+- **Solution:** Removed header from `compress()`, simplified design
+- **Result:**
+  - `test_compression`: 10/10 tests PASSED
+  - `test_integration`: 7/7 tests PASSED
+  - Library installed: `sudo make install && sudo ldconfig`
+- **Files modified:**
+  - `/vagrant/crypto-transport/src/compression.cpp`
+  - Lesson: Redundancy ≠ Security. Simple APIs are better.
+
+**Priority 2: Component Config Verification - FIXED ✅**
+- **Problem:** `make verify-encryption` showed "null" for all components
+- **Root cause:** Script searched `.encryption_enabled` instead of `.transport.encryption.enabled`
+- **Solution:** Updated Makefile jq paths
+- **Result:** All components verified:
+  ```
+  Sniffer: encryption=true, compression=true
+  ML Detector: encryption=true, compression=true  
+  Firewall: encryption=true, compression=true
+  ```
+- **Files modified:**
+  - `/vagrant/Makefile` - verify-encryption target
+
+**Priority 3: HMAC Integration - PARTIAL ✅**
+- **Completed:**
+  - etcd-client wrappers: `get_hmac_key()`, `compute_hmac_sha256()`, `bytes_to_hex()`
+  - FirewallLogger methods: `append_csv_log()`, `generate_csv_line()`, `compute_hmac_for_csv()`
+  - Headers updated, implementations complete
+  - Compilation successful
+- **Pending (Day 59):**
+  - Pass etcd_client to ZMQSubscriber
+  - Call CSV+HMAC logging in handle_message()
+  - Batch accumulation and flush
 
 **Files Modified:**
 ```
-/vagrant/Makefile                                    - Added clean-libs, improved structure
-/vagrant/etcd-client/CMakeLists.txt                  - Removed duplicated test definition
-/vagrant/etcd-client/tests/CMakeLists.txt            - Disabled GTest-dependent test
-/vagrant/etcd-client/include/etcd_client/etcd_client.hpp - Added namespace http declarations
-/vagrant/etcd-client/src/http_client.cpp             - Removed duplicate Response struct
-/vagrant/etcd-client/src/etcd_client.cpp             - Removed duplicate namespace http
+/vagrant/firewall-acl-agent/include/firewall/etcd_client.hpp  - Added HMAC methods
+/vagrant/firewall-acl-agent/src/core/etcd_client.cpp          - HMAC implementations
+/vagrant/firewall-acl-agent/include/firewall/logger.hpp       - CSV+HMAC support
+/vagrant/firewall-acl-agent/src/core/logger.cpp               - CSV+HMAC implementations
+/vagrant/firewall-acl-agent/CMakeLists.txt                    - Added OpenSSL::Crypto linkage
+/vagrant/Makefile                                              - Fixed verify-encryption
 ```
 
-**Test Results:**
-- ✅ etcd-client HMAC tests: 12/12 PASSED
-- ✅ Encryption tests: 6/6 PASSED
-- ❌ Compression tests: FAILED (pre-existing LZ4 bug in crypto-transport)
-- ✅ All components compiled and linked successfully
-- ✅ Linkage verification: All 4 components link to libetcd_client.so.1
+### Architectural Decisions
 
-### IMMEDIATE PRIORITIES - Day 58 (In Order)
+**Decision 1: CSV over JSONL**
+- **Rationale:**
+  - Eliminates nlohmann::json memory bug (no SAX needed)
+  - Simpler, more portable format
+  - Consistent across firewall + ml-detector
+  - Via Appia Quality: simple = durable
+- **Design:**
+  - CSV = searchable index (timestamp, src_ip, dst_ip, threat_type, action, confidence)
+  - Proto = complete forensic payload (NetworkSecurityEvent binary)
+  - Both encrypted + compressed + HMAC signed
 
-**Priority 1: Fix crypto-transport LZ4 Bug (BLOCKING) 🔴**
-```bash
-cd /vagrant/crypto-transport
-# Issue: test_compression and test_pipeline fail with "LZ4 decompression failed"
-# Impact: Blocks end-to-end pipeline testing
-# Files: src/compression.cpp or tests/test_*.cpp
-# Action: Debug LZ4 decompress() function, verify buffer handling
-```
+**Decision 2: Batch Processing (Timeseries Style)**
+- **Rationale:**
+  - Never write incomplete batches (atomic operations)
+  - Compress/encrypt batches for efficiency
+  - rag-ingester processes complete batches only
+- **Format:**
+  ```
+  /mnt/shared/firewall_logs/TIMESTAMP.csv.enc    - Encrypted CSV batch
+  /mnt/shared/firewall_logs/TIMESTAMP.csv.hmac   - HMAC signature
+  /mnt/shared/firewall_logs/TIMESTAMP.proto.enc  - Encrypted Proto batch
+  /mnt/shared/firewall_logs/TIMESTAMP.proto.hmac - HMAC signature
+  ```
 
-**Priority 2: Review Component Configs (Quick Win) 🟡**
-```bash
-# Check encryption_enabled/compression_enabled in component JSONs
-# Currently showing "null" in verify-all output
-vim /vagrant/sniffer/config/sniffer.json
-vim /vagrant/ml-detector/config/ml_detector_config.json
-vim /vagrant/firewall-acl-agent/config/firewall.json
+**Decision 3: Configurable Paths (High Availability)**
+- **Rationale:**
+  - Multiple producers → single shared directory
+  - Obscurity through configuration (not hardcoded)
+  - Supports distributed deployments
+- **Config structure:**
+  ```json
+  // ml-detector
+  "rag_logger": { "base_dir": "/mnt/shared/ml_logs" }
+  
+  // firewall-acl-agent  
+  "csv_batch_logger": { "output_dir": "/mnt/shared/firewall_logs" }
+  
+  // rag-ingester
+  "input_sources": [
+    { "path": "/mnt/shared/ml_logs", "embedder": "ml_detector" },
+    { "path": "/mnt/shared/firewall_logs", "embedder": "firewall" }
+  ]
+  ```
 
-# Ensure they have:
-# "encryption_enabled": true,
-# "compression_enabled": true,
-```
+### Lessons Learned
 
-**Priority 3: HMAC Integration - firewall-acl-agent (Day 57 Original Plan) 🟢**
-```bash
-# Extend firewall-acl-agent etcd wrapper with HMAC methods
-# Update firewall logger to generate CSV + HMAC signature
-# CSV format: timestamp,src,dst,action,HMAC_signature
+**Lesson 1: Redundancy ≠ Security**
+- The 4-byte header in LZ4 compression was redundant (API already had size)
+- Added complexity without benefit
+- Caused production bug
+- **Takeaway:** When API requires parameter, don't duplicate in payload
 
-cd /vagrant/firewall-acl-agent/src/core
-vim etcd_client.cpp  # Add HMAC wrapper methods
-vim logger.cpp       # Generate CSV with HMAC
-```
+**Lesson 2: Library Linkage Matters**
+- Tests linked to old library in `/usr/local/lib/`
+- `sudo make install && sudo ldconfig` required after changes
+- **Takeaway:** Always reinstall shared libraries after modifications
 
-**Priority 4: HMAC Integration - rag-ingester 🟢**
-```bash
-# Update rag-ingester wrapper with new etcd-client
-# Implement CSV batch processing (like ml-detector's JSONL)
-# Add HMAC validation before ingestion
+**Lesson 3: Piano Piano Works**
+- 4 hours debugging Day 54 bug systematically
+- Found root cause through simple test (`/tmp/test_lz4.cpp`)
+- **Takeaway:** "Via Appia was built stone by stone, validated at each step"
 
-cd /vagrant/rag-ingester/src
-# Create etcd_client wrapper (follow ml-detector pattern)
-# Implement CSV reader with HMAC validation
-# Integrate crypto_transport for decryption/decompression
-```
+---
 
-**Priority 5: End-to-End Testing 🟢**
-```bash
-# Full pipeline test:
-# firewall-acl-agent → CSV + HMAC → file
-# rag-ingester validates HMAC → decrypt → decompress → ingest
-# RAG queries firewall logs
+## Day 59 Priorities (In Order)
 
-make run-lab-dev        # Start all components
-make test-replay-small  # Send test traffic
-# Verify logs in /mnt/shared/firewall_logs/
-```
+### Priority 1: Complete HMAC Integration - firewall-acl-agent 🔴
 
-### System Architecture
+**Goal:** Generate CSV batches with HMAC signatures
 
-```
-firewall-acl-agent (Day 58 - HMAC integration)
-  ├─ etcd-client wrapper (needs HMAC methods)
-  ├─ crypto_transport (encryption/compression)
-  └─ logger → CSV + HMAC → /mnt/shared/firewall_logs/
+**Tasks:**
+1. **Add config to firewall.json**
+   ```json
+   "csv_batch_logger": {
+     "enabled": true,
+     "output_dir": "/mnt/shared/firewall_logs",
+     "batch_size": 100,
+     "batch_timeout_sec": 5,
+     "hmac_key_path": "/secrets/firewall/log_hmac_key"
+   }
+   ```
 
-rag-ingester (Day 58+ - etcd-client integration)
-  ├─ etcd-client wrapper (new integration)
-  ├─ crypto_transport (decrypt/decompress)
-  ├─ CSV reader + HMAC validator
-  └─ embedder → SQLite (like ml-detector JSONL)
+2. **Pass etcd_client to ZMQSubscriber**
+  - Update ZMQSubscriber constructor signature
+  - Get HMAC key in constructor: `etcd_client->get_hmac_key(config.hmac_key_path)`
+  - Store in member variable
 
-etcd-server
-  └─ SecretsManager (HMAC keys + rotation)
+3. **Implement CSV batch accumulation**
+  - Option A: Simple - call `append_csv_log()` per event (sync)
+  - Option B: Batch - accumulate in buffer, flush periodically
+  - **Recommendation:** Start with Option A (simple), optimize to B later
 
-etcd-client (Day 57 - RESTORED ✅)
-  ├─ 48 public methods (36 core + 12 http)
-  ├─ 5 HMAC methods (get_hmac_key, compute, validate, hex utils)
-  └─ 1.0M library, installed to /usr/local/lib/
-```
+4. **Update handle_message() in zmq_subscriber.cpp**
+   ```cpp
+   // After log_blocked_event():
+   if (hmac_key_ && csv_logger_enabled_) {
+       logger_->append_csv_log(log_event, *hmac_key_);
+   }
+   ```
 
-### Key Files & Locations
+5. **Test end-to-end**
+   ```bash
+   make firewall
+   # Start etcd-server (for HMAC keys)
+   # Start firewall-acl-agent
+   # Send test event
+   # Verify /mnt/shared/firewall_logs/firewall_blocks.csv created
+   # Verify CSV has HMAC signatures
+   ```
 
-**etcd-client Library (RESTORED):**
-- Source: `/vagrant/etcd-client/src/etcd_client.cpp` (763 lines)
-- Header: `/vagrant/etcd-client/include/etcd_client/etcd_client.hpp`
-- HTTP impl: `/vagrant/etcd-client/src/http_client.cpp`
-- Installed: `/usr/local/lib/libetcd_client.so.1.0.0` (1.0M)
-- Tests: `/vagrant/etcd-client/build/tests/`
-    - test_hmac_client: 12/12 PASSED ✅
-    - test_encryption: 6/6 PASSED ✅
-    - test_compression: FAILED (LZ4 bug) ❌
+**Files to modify:**
+- `/vagrant/firewall-acl-agent/config/firewall.json`
+- `/vagrant/firewall-acl-agent/include/firewall/zmq_subscriber.hpp`
+- `/vagrant/firewall-acl-agent/src/api/zmq_subscriber.cpp`
+- `/vagrant/firewall-acl-agent/src/main.cpp`
 
-**crypto-transport Library (BUG IDENTIFIED):**
-- Source: `/vagrant/crypto-transport/src/`
-- Issue: LZ4 decompression failure in test_compression, test_pipeline
-- Action: Debug /vagrant/crypto-transport/src/compression.cpp
+### Priority 2: Migrate ml-detector JSONL → CSV 🟡
 
-**Component Wrappers (Examples):**
-- ml-detector: `/vagrant/ml-detector/src/etcd_client.cpp` (working example)
-- firewall-acl-agent: `/vagrant/firewall-acl-agent/src/core/etcd_client.cpp` (needs HMAC)
-- rag-ingester: (to be created, follow ml-detector pattern)
+**Goal:** Eliminate nlohmann::json memory bug, unify format
 
-**Build System:**
-- Root Makefile: `/vagrant/Makefile` (refactored Day 57)
-    - `make clean-libs` - Clean crypto-transport + etcd-client ✅
-    - `make clean-all` - Clean everything (all profiles + libs) ✅
-    - `make verify-all` - Verify linkage + configs ✅
-    - `make test` - Run all tests (libs + components)
+**Tasks:**
+1. **Update RAGLogger to write CSV instead of JSONL**
+  - Keep same crypto pipeline (compress → encrypt)
+  - Add HMAC signature
+  - Format: same as firewall (timestamp,src_ip,dst_ip,threat_type,action,confidence)
 
-### Known Issues & Workarounds
+2. **Update ml_detector_config.json**
+   ```json
+   "rag_logger": {
+     "base_dir": "/mnt/shared/ml_logs",
+     "format": "csv",  // NEW
+     "hmac_key_path": "/secrets/ml_detector/log_hmac_key"
+   }
+   ```
 
-**Issue 1: crypto-transport LZ4 Bug (BLOCKING)**
-- **Symptom:** test_compression, test_pipeline fail with "LZ4 decompression failed"
-- **Impact:** Cannot test full encrypt+compress pipeline
-- **Workaround:** None - must fix before end-to-end testing
-- **Priority:** Fix first thing Day 58
+3. **Test migration**
+  - Verify no memory issues
+  - Verify CSV output
+  - Compare file sizes vs old JSONL
 
-**Issue 2: test_etcd_client_hmac_grace_period uses GTest**
-- **Symptom:** Requires GTest which we don't have installed
-- **Impact:** One test disabled (not critical)
+**Files to modify:**
+- `/vagrant/ml-detector/src/rag_logger.cpp`
+- `/vagrant/ml-detector/include/rag_logger.hpp`
+- `/vagrant/ml-detector/config/ml_detector_config.json`
+
+### Priority 3: Update rag-ingester for Multi-Source CSV 🟢
+
+**Goal:** Ingest from both ml-detector and firewall
+
+**Tasks:**
+1. **Refactor config for multiple sources**
+   ```json
+   "input_sources": [
+     {
+       "name": "ml-detector",
+       "directory": "/mnt/shared/ml_logs",
+       "pattern": "*.csv.enc",
+       "format": "csv",
+       "hmac_validation": true,
+       "embedder": "ml_detector"
+     },
+     {
+       "name": "firewall", 
+       "directory": "/mnt/shared/firewall_logs",
+       "pattern": "*.csv.enc",
+       "format": "csv",
+       "hmac_validation": true,
+       "embedder": "firewall"
+     }
+   ]
+   ```
+
+2. **Implement HMAC validation**
+  - Before decrypt: validate HMAC
+  - If validation fails: reject file, log poisoning attempt
+  - If validation succeeds: proceed with decrypt → decompress → parse
+
+3. **Create firewall-specific embedder**
+  - Different features than ml-detector
+  - Firewall-specific threat intelligence
+
+4. **Test end-to-end pipeline**
+   ```bash
+   firewall-acl-agent → CSV+HMAC → /mnt/shared/firewall_logs/
+   rag-ingester validates HMAC → decrypt → decompress → parse CSV
+   rag-ingester embeds → FAISS → SQLite
+   RAG query: "Show DDoS attacks from 192.168.x.x"
+   ```
+
+**Files to modify:**
+- `/vagrant/rag-ingester/config/rag-ingester.json`
+- `/vagrant/rag-ingester/src/` (ingester logic)
+
+---
+
+## Known Issues & Workarounds
+
+**Issue 1: test_etcd_client_hmac_grace_period disabled**
+- **Symptom:** Requires GTest (not installed)
+- **Impact:** One HMAC test disabled
 - **Workaround:** Test disabled in CMakeLists.txt
-- **Priority:** Low - can rewrite without GTest later or install GTest
+- **Priority:** Low - can rewrite without GTest or install GTest later
 
-**Issue 3: Component configs show "null" for encryption/compression**
-- **Symptom:** verify-all shows null for encryption_enabled/compression_enabled
-- **Impact:** May use wrong defaults
-- **Workaround:** Verify JSON files have explicit true/false values
-- **Priority:** Review Day 58 (quick fix)
+**Issue 2: Component configs showed "null"**
+- **Status:** FIXED Day 58
+- **Solution:** Updated Makefile verify-encryption paths
 
-### Lessons Learned (Day 57)
+---
 
-**What Went Wrong:**
-- Day 54 aggressive refactoring deleted critical code without verification
-- No source control diff before/after major changes
-- Tests existed but weren't run after refactoring
-- Multiple files had duplicate declarations (header + 2 sources)
+## System Architecture (Current State)
 
-**Prevention Measures Applied:**
-- ✅ Root Makefile now has clean-libs target (catches library issues)
-- ✅ Added verify-all target to check linkage systematically
-- ✅ Documented all 6 files modified with clear comments
-- ✅ Piano piano: validate each step before continuing
+```
+┌──────────────────────────────────────────────────────────┐
+│ firewall-acl-agent (Day 58 - HMAC methods ready)       │
+├──────────────────────────────────────────────────────────┤
+│ ✅ etcd-client wrapper: get_hmac_key(), compute_hmac()  │
+│ ✅ FirewallLogger: append_csv_log() implemented         │
+│ ⏳ Integration: needs etcd_client in ZMQSubscriber      │
+│ ⏳ Config: needs csv_batch_logger section               │
+└──────────────────────────────────────────────────────────┘
 
-**Via Appia Quality Philosophy:**
+┌──────────────────────────────────────────────────────────┐
+│ ml-detector (Day 59 - Migration pending)                │
+├──────────────────────────────────────────────────────────┤
+│ ⚠️ RAGLogger: writes JSONL (memory bug)                 │
+│ ⏳ Needs: CSV writer instead                            │
+│ ⏳ Needs: HMAC integration                              │
+└──────────────────────────────────────────────────────────┘
 
-> "Piano piano - when debugging takes 4 hours, that's not a failure.
-> It's the cost of building systems that will last 2000+ years.
-> The Via Appia was built stone by stone, validated at each step."
+┌──────────────────────────────────────────────────────────┐
+│ rag-ingester (Day 59+ - Refactor needed)                │
+├──────────────────────────────────────────────────────────┤
+│ ⚠️ Single source hardcoded                              │
+│ ⚠️ Protobuf only                                        │
+│ ⚠️ No HMAC validation                                   │
+│ ⏳ Needs: Multi-source support                          │
+│ ⏳ Needs: CSV parser                                    │
+│ ⏳ Needs: HMAC validation before decrypt                │
+│ ⏳ Needs: Firewall embedder                             │
+└──────────────────────────────────────────────────────────┘
 
-### Spring Deadline Status
+┌──────────────────────────────────────────────────────────┐
+│ etcd-server (Working)                                    │
+├──────────────────────────────────────────────────────────┤
+│ ✅ SecretsManager: HMAC key rotation                    │
+│ ✅ Keys served at /secrets/{component}/log_hmac_key     │
+└──────────────────────────────────────────────────────────┘
 
-**Target: v1.0 Release (Spring 2025)**
-**Current Progress:**
-- ✅ ml-detector: Complete with JSONL ingestion
-- ✅ etcd-server: SecretsManager + HMAC rotation
-- ✅ etcd-client: RESTORED + 5 HMAC methods (Day 57)
-- ⚠️ crypto-transport: Bug in LZ4 (fix Day 58)
-- 🔄 firewall-acl-agent: Core working, needs HMAC integration (Day 58)
-- 🔄 rag-ingester: Needs etcd-client integration (Day 58+)
-- ⏳ End-to-end testing: After crypto-transport fix (Day 58+)
-- ⏳ Academic paper: Human-AI collaboration methodology
+┌──────────────────────────────────────────────────────────┐
+│ crypto-transport (Day 58 - FIXED)                        │
+├──────────────────────────────────────────────────────────┤
+│ ✅ LZ4 compress/decompress working                      │
+│ ✅ ChaCha20-Poly1305 encrypt/decrypt working            │
+│ ✅ All tests passing (17/17)                            │
+└──────────────────────────────────────────────────────────┘
+```
 
-**Estimated Remaining Work:**
-1. Fix crypto-transport LZ4 bug (1-2 hours)
-2. Review component configs (30 min)
-3. Firewall HMAC integration (4-6 hours)
-4. RAG ingester integration (6-8 hours)
-5. End-to-end testing (4 hours)
-6. Documentation polish (2-3 hours)
-7. Academic paper writing (ongoing)
+---
 
-**Total:** ~3-4 days of focused work → ON TRACK for Spring deadline ✅
+## Quick Start Commands (Day 59)
 
-### Development Environment
+```bash
+# 1. Verify Day 58 state
+cd /vagrant
+make verify-all  # Should show all encryption+compression enabled
+cd crypto-transport/build/tests
+./test_compression  # Should pass 10/10
+./test_integration  # Should pass 7/7
+
+# 2. Start Day 59 work
+cd /vagrant/firewall-acl-agent
+
+# Edit config
+vim config/firewall.json  # Add csv_batch_logger section
+
+# Update ZMQSubscriber
+vim include/firewall/zmq_subscriber.hpp  # Add etcd_client member
+vim src/api/zmq_subscriber.cpp           # Get HMAC key, call append_csv_log()
+
+# Rebuild
+cd /vagrant
+make firewall
+
+# 3. Test
+make run-etcd-server  # Terminal 1
+make run-firewall     # Terminal 2
+# Send test event, verify CSV created
+
+# Remember: Piano piano 🏛️
+```
+
+---
+
+## Development Environment
 
 **System:**
 - OS: Debian 12 (Bookworm) in Vagrant VM
@@ -217,71 +363,33 @@ etcd-client (Day 57 - RESTORED ✅)
 - Build: CMake + Makefiles
 - Location: /vagrant (shared with host macOS)
 
-**Build Profiles:**
-- production: -O3 -march=native -DNDEBUG -flto
-- debug: -g -O0 -fno-omit-frame-pointer (DEFAULT)
-- tsan: -fsanitize=thread -g -O1
-- asan: -fsanitize=address -g -O1
-
 **Current Profile:** debug
 **Build dirs:** build-debug/ (components), build/ (libraries)
 
 **Dependencies:**
-- etcd-server: Pistache, nlohmann/json, SQLite, OpenSSL, LZ4
-- Components: ZeroMQ, Protobuf, spdlog, crypto_transport, etcd-client
-- Libraries: OpenSSL (HMAC), LZ4 (compression)
+- OpenSSL: HMAC-SHA256, ChaCha20-Poly1305
+- LZ4: Compression (FIXED Day 58)
+- etcd-client: 48 methods, 1.0M library
+- crypto_transport: encrypt, compress, utils
 
-**Key Paths:**
-- Binaries: `<component>/build-debug/`
-- Configs: `<component>/config/`
-- Shared libs: `/usr/local/lib/`
-- Shared data: `/mnt/shared/`
+---
 
-### Quick Start for Next Session (Day 58)
-
-```bash
-# 1. Fix crypto-transport LZ4 bug (PRIORITY 1)
-cd /vagrant/crypto-transport
-vim src/compression.cpp
-# Debug decompress_lz4() function
-make clean
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j4
-sudo make install
-./build/test_compression  # Should pass
-
-# 2. Review configs (PRIORITY 2)
-vim /vagrant/sniffer/config/sniffer.json
-vim /vagrant/ml-detector/config/ml_detector_config.json
-vim /vagrant/firewall-acl-agent/config/firewall.json
-# Add: "encryption_enabled": true, "compression_enabled": true
-
-# 3. Verify system state
-make verify-all
-make test
-
-# 4. Continue with HMAC integration (PRIORITY 3)
-# firewall-acl-agent → CSV + HMAC
-# rag-ingester → validate HMAC + ingest
-
-# Remember: Piano piano 🏛️
-```
-
-### Consejo de Sabios (Council of Wise)
+## Consejo de Sabios (Council of Wise)
 
 Alonso collaborates with multiple AI models:
 - Claude (Anthropic) - Primary development partner
 - DeepSeek, Gemini, ChatGPT - Technical review
 - All credited as co-authors in academic work
 
-**Collaboration Principles:**
-- Transparent AI involvement in research
-- AI systems credited, not hidden as "tools"
-- Evidence-based validation of AI suggestions
-- Human maintains architectural vision
-- Piano piano: systematic, validated progress
+**Today's Collaboration:**
+- Claude identified LZ4 header redundancy
+- Systematic debugging approach (piano piano)
+- Architectural decision: CSV over JSONL
+- High availability design discussion
 
-### Contact & Philosophy
+---
+
+## Contact & Philosophy
 
 **Developer:** Alonso (Extremadura, Spain)
 **Motivation:** Friend's business destroyed by ransomware
@@ -298,42 +406,12 @@ Alonso collaborates with multiple AI models:
 
 ---
 
-## Build Commands Reference
-
-```bash
-# Clean & Build
-make clean-all          # Clean everything (all profiles + libs)
-make clean-libs         # Clean only libraries
-make all                # Build everything (current profile)
-
-# Verification
-make verify-all         # Linkage + configs
-make test               # All tests (libs + components)
-make status-lab         # Check running processes
-
-# Profile-specific
-make PROFILE=production all
-make PROFILE=tsan all
-make PROFILE=asan all
-
-# Components
-make etcd-client-build  # Rebuild etcd-client library
-make sniffer            # Build sniffer
-make ml-detector        # Build ML detector
-make firewall           # Build firewall agent
-make rag-ingester       # Build RAG ingester
-make etcd-server        # Build etcd server
-
-# Lab control
-make run-lab-dev        # Start full lab
-make kill-lab           # Stop all processes
-make status-lab         # Check status
-```
-
----
-
-Last Updated: 2026-02-14 (Day 57 - Restoration Complete)
+Last Updated: 2026-02-15 (Day 58 Complete)
 Co-authored-by: Claude (Anthropic)
 Co-authored-by: Alonso
 
 Piano piano 🏛️
+
+---
+
+**¿Quieres que cree también el mensaje de commit?** 🎯

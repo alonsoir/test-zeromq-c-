@@ -12,8 +12,9 @@
 #include <iomanip>
 #include <filesystem>
 #include <ctime>
-
 #include <json/json.h>
+#include <openssl/hmac.h>
+#include <openssl/evp.h>
 
 namespace fs = std::filesystem;
 
@@ -386,6 +387,84 @@ BlockedEvent create_blocked_event_from_proto(
     event.payload = std::make_shared<protobuf::NetworkSecurityEvent>(proto_event);
 
     return event;
+}
+
+    //===----------------------------------------------------------------------===//
+// CSV + HMAC Support (Day 58 - Pioneer Pattern)
+//===----------------------------------------------------------------------===//
+
+bool FirewallLogger::append_csv_log(const BlockedEvent& event,
+                                    const std::vector<uint8_t>& hmac_key) {
+    if (hmac_key.size() != 32) {
+        std::cerr << "[FirewallLogger] Invalid HMAC key size: "
+                  << hmac_key.size() << " (expected 32)" << std::endl;
+        return false;
+    }
+
+    // Generate CSV line (without HMAC)
+    std::string csv_line = generate_csv_line(event);
+
+    // Compute HMAC signature
+    std::string hmac_sig = compute_hmac_for_csv(csv_line, hmac_key);
+    if (hmac_sig.empty()) {
+        std::cerr << "[FirewallLogger] Failed to compute HMAC signature" << std::endl;
+        return false;
+    }
+
+    // Append HMAC to line
+    std::string full_line = csv_line + "," + hmac_sig;
+
+    // Write to CSV file (append mode)
+    std::string csv_path = output_dir_ + "/firewall_blocks.csv";
+    std::ofstream csv_file(csv_path, std::ios::app);
+    if (!csv_file) {
+        std::cerr << "[FirewallLogger] Failed to open CSV file: " << csv_path << std::endl;
+        return false;
+    }
+
+    csv_file << full_line << "\n";
+    csv_file.close();
+
+    return true;
+}
+
+std::string FirewallLogger::generate_csv_line(const BlockedEvent& event) {
+    std::ostringstream oss;
+
+    // Format: timestamp_ms,src_ip,dst_ip,threat_type,action,confidence
+    oss << event.timestamp_ms << ","
+        << event.src_ip << ","
+        << event.dst_ip << ","
+        << event.threat_type << ","
+        << event.action << ","
+        << std::fixed << std::setprecision(4) << event.confidence;
+
+    return oss.str();
+}
+
+std::string FirewallLogger::compute_hmac_for_csv(const std::string& csv_line,
+                                                 const std::vector<uint8_t>& key) {
+    if (key.size() != 32) {
+        return "";
+    }
+
+    // Compute HMAC-SHA256
+    unsigned char hmac_result[EVP_MAX_MD_SIZE];
+    unsigned int hmac_len = 0;
+
+    HMAC(EVP_sha256(),
+         key.data(), key.size(),
+         reinterpret_cast<const unsigned char*>(csv_line.data()), csv_line.size(),
+         hmac_result, &hmac_len);
+
+    // Convert to hex string
+    std::ostringstream hex_stream;
+    hex_stream << std::hex << std::setfill('0');
+    for (unsigned int i = 0; i < hmac_len; ++i) {
+        hex_stream << std::setw(2) << static_cast<int>(hmac_result[i]);
+    }
+
+    return hex_stream.str();
 }
 
 } // namespace firewall
