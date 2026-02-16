@@ -1,9 +1,12 @@
 #pragma once
+#ifndef FIREWALL_ETCD_CLIENT_HPP
+#define FIREWALL_ETCD_CLIENT_HPP
 
+#include <etcd_client/etcd_client.hpp>  // ✅ Day 59: For ServicePaths
+#include <string>
+#include <memory>
 #include <optional>
 #include <vector>
-#include <memory>
-#include <string>
 
 namespace mldefender::firewall {
 
@@ -69,9 +72,23 @@ namespace mldefender::firewall {
          */
         std::string bytes_to_hex(const std::vector<uint8_t>& bytes);
 
+        // ============================================================================
+        // Day 59: Service Discovery
+        // ============================================================================
+
+        /**
+         * @brief Get service discovery paths from etcd-server
+         *
+         * Returns paths where this component should find HMAC keys, crypto tokens, etc.
+         * These paths are received during component registration and owned by etcd-server.
+         *
+         * @return ServicePaths structure with paths, or invalid paths if not registered
+         */
+        etcd_client::ServicePaths get_service_paths() const;
     private:
         struct Impl;
         std::unique_ptr<Impl> pImpl;
     };
 
 } // namespace mldefender::firewall
+#endif

@@ -36,7 +36,8 @@ struct EtcdClient::Impl {
     std::string encryption_key_;
     bool connected_ = false;
     mutable std::mutex mutex_;
-
+    // Day 59: Service discovery paths from etcd-server
+    ServicePaths service_paths_;
     // Heartbeat thread
     std::thread heartbeat_thread_;
     std::atomic<bool> heartbeat_running_{false};
@@ -366,6 +367,34 @@ bool EtcdClient::register_component() {
     if (response.success) {
         std::cout << "✅ Component registered: " << pImpl->config_.component_name << std::endl;
 
+        // Day 59: Parse service discovery paths from registration response
+        try {
+            auto j = json::parse(response.body);
+
+            if (j.contains("paths") && j["paths"].is_object()) {
+                const auto& paths = j["paths"];
+                pImpl->service_paths_.hmac_key = paths.value("hmac_key", "");
+                pImpl->service_paths_.crypto_token = paths.value("crypto_token", "");
+                pImpl->service_paths_.config = paths.value("config", "");
+
+                std::cout << "🗺️  Service discovery paths received:" << std::endl;
+                std::cout << "   - HMAC key: " << pImpl->service_paths_.hmac_key << std::endl;
+                std::cout << "   - Crypto token: " << pImpl->service_paths_.crypto_token << std::endl;
+                std::cout << "   - Config: " << pImpl->service_paths_.config << std::endl;
+            } else {
+                std::cerr << "⚠️  No service paths in registration response" << std::endl;
+            }
+
+            // Also extract encryption key if present
+            if (j.contains("encryption_key")) {
+                pImpl->encryption_key_ = j["encryption_key"].get<std::string>();
+                std::cout << "🔑 Encryption key received" << std::endl;
+            }
+
+        } catch (const std::exception& e) {
+            std::cerr << "⚠️  Failed to parse registration response: " << e.what() << std::endl;
+        }
+
         // Start heartbeat thread
         pImpl->mutex_.unlock();
         pImpl->start_heartbeat_thread();
@@ -608,6 +637,10 @@ std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& 
     } catch (...) { return std::nullopt; }
 }
 
+ServicePaths EtcdClient::get_service_paths() const {
+    std::lock_guard<std::mutex> lock(pImpl->mutex_);
+    return pImpl->service_paths_;
+}
 std::string EtcdClient::compute_hmac_sha256(const std::string& data, const std::vector<uint8_t>& key) {
     unsigned char hmac_result[EVP_MAX_MD_SIZE];
     unsigned int hmac_len;

@@ -19,6 +19,18 @@ struct ComponentInfo {
     std::string metadata_json;    // Additional metadata as JSON string
 };
 
+// Service discovery paths (Day 59 - Service Discovery)
+// etcd-server owns path topology and tells components where to find resources
+struct ServicePaths {
+    std::string hmac_key;      // e.g., "/secrets/firewall"
+    std::string crypto_token;  // e.g., "/crypto/firewall/tokens"
+    std::string config;        // e.g., "/config/firewall"
+
+    // Helper to check if paths were received from etcd-server
+    bool is_valid() const {
+        return !hmac_key.empty() && !crypto_token.empty() && !config.empty();
+    }
+};
 // Configuration structure (loaded from JSON)
 struct Config {
     // Server settings
@@ -110,6 +122,10 @@ public:
 
     // List all registered components
     std::vector<ComponentInfo> list_components();
+
+    // Get service paths (returned by etcd-server during registration)
+    // Returns paths where this component should find HMAC keys, crypto tokens, etc.
+    ServicePaths get_service_paths() const;
 
     // ========================================================================
     // Config Management (Master + Active copies for rollback)

@@ -588,7 +588,10 @@ int main(int argc, char** argv) {
         }
 
         FIREWALL_LOG_INFO("Initializing ZMQ subscriber");
-        ZMQSubscriber subscriber(processor, zmq_config);
+        ZMQSubscriber subscriber(processor, zmq_config, etcd_client.get());
+
+        FIREWALL_LOG_INFO("ZMQ subscriber created",
+            "etcd_integration", etcd_client ? "ENABLED" : "DISABLED");
 
         // Start ZMQ subscriber thread
         FIREWALL_LOG_INFO("Starting ZMQ subscriber thread");

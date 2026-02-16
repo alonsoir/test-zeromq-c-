@@ -119,6 +119,19 @@ add_test(NAME hmac_client COMMAND test_hmac_client)
 # so we don't add it to CTest by default. Run manually:
 #   ./test_hmac_integration_client
 
+# Test: Service Discovery (Day 59 - Service Discovery Paths)
+add_executable(test_service_discovery test_service_discovery.cpp)
+target_link_libraries(test_service_discovery
+        PRIVATE
+        etcd_client
+        OpenSSL::SSL
+        OpenSSL::Crypto
+)
+target_include_directories(test_service_discovery
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
 # ============================================================================
 # BUILD SUMMARY
 # ============================================================================
@@ -133,6 +146,7 @@ message(STATUS "  - test_pipeline (crypto-transport)")
 message(STATUS "  - test_put_config_integration (etcd_client)")
 message(STATUS "  - test_hmac_client (Day 53 - HMAC unit tests)")
 message(STATUS "  - test_hmac_integration_client (Day 53 - requires etcd-server)")
+message(STATUS "  - test_service_discovery (Day 59 - requires etcd-server)")
 message(STATUS "  ⚠️  test_etcd_client_hmac_grace_period (DISABLED - requires GTest)")
 message(STATUS "========================================")
 message(STATUS "OpenSSL: ${OPENSSL_VERSION}")

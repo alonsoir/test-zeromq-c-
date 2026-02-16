@@ -33,12 +33,16 @@ namespace {
 // LIFECYCLE (Day 50: Enhanced with observability)
 //==============================================================================
 
-ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
-    : processor_(processor)
-    , config_(config)
-    , running_(false)
-    , current_reconnect_interval_ms_(config.reconnect_interval_ms)
-{
+ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor,
+                                 const Config& config,
+                                 EtcdClient* etcd_client)
+        : processor_(processor)
+        , config_(config)
+        , running_(false)
+        , current_reconnect_interval_ms_(config.reconnect_interval_ms)
+        , etcd_client_(etcd_client)  // ✅ Day 59: Store etcd client
+        , hmac_key_(std::nullopt)     // ✅ Day 59: Initialize as empty
+    {
     FIREWALL_LOG_INFO("Initializing ZMQ Subscriber",
         "endpoint", config.endpoint,
         "topic", config.topic,
@@ -62,6 +66,41 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor, const Config& config)
             config_.log_queue_size
         );
         logger_->start();
+
+        // ✅ Day 59: Retrieve HMAC key from etcd if available
+        // ✅ Day 59: Retrieve HMAC key from etcd if available
+        if (etcd_client_) {
+            try {
+                // Get service discovery paths from etcd-server
+                auto paths = etcd_client_->get_service_paths();
+
+                if (!paths.is_valid()) {
+                    FIREWALL_LOG_ERROR("Service discovery paths not available from etcd-server");
+                    throw std::runtime_error("Missing service discovery paths");
+                }
+
+                FIREWALL_LOG_INFO("Using service discovery path for HMAC key",
+                    "path", paths.hmac_key);
+
+                auto key_result = etcd_client_->get_hmac_key(paths.hmac_key);
+
+                if (key_result.has_value()) {
+                    hmac_key_ = key_result;
+                    FIREWALL_LOG_INFO("HMAC key retrieved from etcd",
+                        "key_path", paths.hmac_key,
+                        "key_size_bytes", hmac_key_->size());
+                } else {
+                    FIREWALL_LOG_WARN("HMAC key not found in etcd, CSV signing disabled",
+                        "key_path", paths.hmac_key);
+                }
+
+            } catch (const std::exception& e) {
+                FIREWALL_LOG_ERROR("Failed to retrieve HMAC key from etcd",
+                    "error", e.what());
+            }
+        } else {
+            FIREWALL_LOG_WARN("No etcd client provided, CSV signing disabled");
+        }
 
         FIREWALL_LOG_INFO("Firewall logger initialized",
             "log_directory", config_.log_directory,
@@ -642,6 +681,33 @@ void ZMQSubscriber::handle_message(const void* msg_data, size_t msg_size) {
             "error", e.what(),
             "source_ip", nf.source_ip());
         DUMP_STATE_ON_ERROR("logging_error");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 8 - Append to CSV log with HMAC signature (Day 59)
+    // ═══════════════════════════════════════════════════════════════════
+
+    if (hmac_key_.has_value()) {
+        try {
+            TRACK_OPERATION("append_csv_log");
+
+            BlockedEvent log_event = create_blocked_event_from_proto(
+                event,
+                "BLOCKED",
+                ipset_name,
+                timeout_sec
+            );
+
+            logger_->append_csv_log(log_event, hmac_key_.value());
+
+            FIREWALL_LOG_DEBUG("CSV log entry appended with HMAC",
+                "source_ip", nf.source_ip());
+
+        } catch (const std::exception& e) {
+            FIREWALL_LOG_ERROR("Error appending CSV log",
+                "error", e.what(),
+                "source_ip", nf.source_ip());
+        }
     }
 }
 

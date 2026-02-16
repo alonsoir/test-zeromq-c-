@@ -39,15 +39,17 @@
 #define FIREWALL_ZMQ_SUBSCRIBER_HPP
 
 #include "firewall/batch_processor.hpp"
-#include "firewall/logger.hpp"  // ✅ AÑADIDO
+#include "firewall/logger.hpp"
+#include "firewall/etcd_client.hpp"
 #include "network_security.pb.h"
 #include <zmq.hpp>
 #include <string>
 #include <memory>
 #include <atomic>
 #include <chrono>
-#include <lz4.h>           // Day 23: LZ4 decompression
-#include <openssl/evp.h>   // Day 23: ChaCha20-Poly1305 decryption
+#include <optional>
+#include <lz4.h>
+#include <openssl/evp.h>
 
 namespace mldefender {
 namespace firewall {
@@ -168,12 +170,14 @@ public:
      *
      * @param processor BatchProcessor to send detections to
      * @param config ZMQ configuration
+     * @param etcd_client For HMAC keys and seed
      *
      * @throws zmq::error_t if ZMQ context creation fails
      * @throws std::runtime_error if logger initialization fails
      */
-    ZMQSubscriber(BatchProcessor& processor, const Config& config);
-
+    ZMQSubscriber(BatchProcessor& processor,
+                      const Config& config,
+                      EtcdClient* etcd_client = nullptr);
     /**
      * @brief Destructor - ensures graceful shutdown
      */
@@ -342,6 +346,9 @@ private:
 
     // ✅ AÑADIDO: Logger for blocked events
     std::unique_ptr<FirewallLogger> logger_;
+    // ✅ Day 59: HMAC integration
+    EtcdClient* etcd_client_;  ///< etcd client for HMAC key retrieval (not owned)
+    std::optional<std::vector<uint8_t>> hmac_key_;  ///< HMAC key for CSV signing
 };
 
 } // namespace firewall

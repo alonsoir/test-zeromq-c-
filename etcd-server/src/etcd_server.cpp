@@ -78,11 +78,23 @@ void EtcdServer::run_server() {
             std::string component_name = json_body["component"];
 
             if (component_registry_->register_component(component_name, req.body)) {
+                // Extract component short name (e.g., "firewall-acl-agent" -> "firewall")
+                std::string short_name = component_name;
+                size_t dash_pos = component_name.find('-');
+                if (dash_pos != std::string::npos) {
+                    short_name = component_name.substr(0, dash_pos);
+                }
+
                 json response = {
                     {"status", "success"},
                     {"message", "Componente registrado correctamente"},
                     {"component", component_name},
-                    {"encryption_key", component_registry_->get_encryption_key()}
+                    {"encryption_key", component_registry_->get_encryption_key()},
+                    {"paths", {
+                        {"hmac_key", "/secrets/" + short_name},
+                        {"crypto_token", "/crypto/" + short_name + "/tokens"},
+                        {"config", "/config/" + short_name}
+                    }}
                 };
                 res.set_content(response.dump(), "application/json");
             } else {
