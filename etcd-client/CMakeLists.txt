@@ -33,6 +33,7 @@ find_package(PkgConfig REQUIRED)
 
 # Find crypto-transport library (our new dependency)
 find_library(CRYPTO_TRANSPORT_LIB crypto_transport PATHS /usr/local/lib REQUIRED)
+set(CRYPTO_TRANSPORT_INCLUDE /vagrant/crypto-transport/include)
 if(NOT CRYPTO_TRANSPORT_LIB)
     message(FATAL_ERROR "crypto-transport library not found. Install it first from /vagrant/crypto-transport")
 endif()
@@ -68,7 +69,7 @@ target_include_directories(etcd_client
         $<INSTALL_INTERFACE:include>
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        /usr/local/include  # For crypto-transport headers
+        ${CRYPTO_TRANSPORT_INCLUDE}
         ${OPENSSL_INCLUDE_DIR}
 )
 

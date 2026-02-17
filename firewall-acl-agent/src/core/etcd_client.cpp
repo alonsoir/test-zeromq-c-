@@ -132,7 +132,7 @@ bool EtcdClient::registerService() {
     // Subir config completo con put_config() (automáticamente cifrado+comprimido)
     if (!pImpl->client_->put_config(full_config.dump(2))) {
         std::cerr << "⚠️  [firewall-acl-agent] Failed to upload config (non-fatal, continuing)" << std::endl;
-        // Continue anyway - config upload is optional for Day 59 testing
+		return false;
     }
 
     std::cout << "✅ [firewall-acl-agent] Service registered successfully" << std::endl;

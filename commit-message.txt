@@ -1,70 +1,27 @@
-git add -A
-git commit -m "Day 59: Implement Service Discovery architecture
+## Commit Message
+```
+feat(day-60): Fix etcd-client PUT config encryption pipeline (PARTIAL)
 
-Achievements:
-- Implemented full service discovery pattern for etcd topology
-- etcd-server now owns and distributes resource paths to components
-- Components no longer hardcode paths (Single Source of Truth)
-- HMAC key retrieval working via discovered paths
+COMPLETED:
+- Implemented process_outgoing_data() in etcd-client
+- Fixed hex→binary encryption key conversion
+- Verified end-to-end encrypted+compressed config upload
+- firewall-acl-agent successfully uploads 8KB config (49% compression)
 
-Technical Implementation:
+PENDING (Day 61):
+- CSV logger path not applied correctly
+- Needs debug: config.operation.log_directory flow to FirewallLogger
+- Verify CSV writes to /vagrant/logs/firewall_logs
 
-1. etcd-server (Service Discovery Provider):
-   - Extended POST /register to return service discovery paths
-   - Paths include: /secrets/{component}, /crypto/{component}/tokens, /config/{component}
-   - Component name extraction logic (e.g., 'firewall-acl-agent' -> 'firewall')
+Files modified:
+- etcd-client/CMakeLists.txt: Fixed CRYPTO_TRANSPORT_INCLUDE path
+- etcd-client/src/etcd_client.cpp: Added process_outgoing_data()
+- firewall-acl-agent/src/core/config_loader.cpp: Read csv_batch_logger from root
+- firewall-acl-agent/src/core/etcd_client.cpp: Cleaned error messages
 
-2. etcd-client (Service Discovery Consumer):
-   - Added ServicePaths struct to store discovered paths
-   - Extended register_component() to parse paths from registration response
-   - Added get_service_paths() method to expose paths to consumers
-   - Test suite validates end-to-end discovery flow
-
-3. firewall-acl-agent (First Consumer):
-   - Modified to use service discovery instead of hardcoded paths
-   - HMAC key retrieval now uses discovered path /secrets/firewall
-   - Removed hmac_key_path from firewall.json config
-   - Successfully retrieves 32-byte HMAC key from etcd-server
-
-Test Results:
-- test_service_discovery: ✅ ALL TESTS PASSED
-- Service discovery end-to-end: ✅ WORKING
-  * Registration returns paths
-  * Paths stored correctly
-  * HMAC key retrieved using discovered path
-  * Format validation passing
-
-Files Modified:
-- etcd-server/src/etcd_server.cpp (service discovery response)
-- etcd-client/include/etcd_client/etcd_client.hpp (ServicePaths struct)
-- etcd-client/src/etcd_client.cpp (parse and store paths)
-- etcd-client/tests/test_service_discovery.cpp (NEW - comprehensive test)
-- etcd-client/tests/CMakeLists.txt (added new test)
-- firewall-acl-agent/include/firewall/etcd_client.hpp (wrapper for get_service_paths)
-- firewall-acl-agent/src/core/etcd_client.cpp (wrapper implementation + temp workaround)
-- firewall-acl-agent/src/api/zmq_subscriber.cpp (use service discovery)
-- firewall-acl-agent/config/firewall.json (removed hardcoded paths)
-
-Bug Discovered (Day 60 Priority):
-- ChaCha20 decryption fails when firewall uploads config to etcd-server
-- Error: 'ChaCha20 decryption failed (wrong key or corrupted data)'
-- Hypothesis: May relate to Day 58 LZ4 header removal
-- Temporary workaround applied in registerService() (MUST REVERT Day 60)
-
-Architectural Benefits:
-- Single Source of Truth: etcd-server controls all resource paths
-- Flexibility: Can change path conventions without recompiling components
-- No hardcoding: Components are location-agnostic
-- Via Appia Quality: Proper separation of concerns
-
-Day 60 Priorities:
-1. Fix PUT config decryption bug (trace crypto pipeline)
-2. Revert temporary workaround (restore proper error handling)
-3. Migrate ml-detector from JSONL to CSV
-4. Implement rag-ingester multi-source CSV ingestion
-
-Via Appia was built with stones from different quarries.
-Uniformity came later, but the foundation was solid from day one.
-
-Co-authored-by: Claude (Anthropic)
-Piano piano 🏛️"
+Test results:
+✅ Compression: 8258→4213 bytes (49%)
+✅ Encryption: +40 bytes (nonce+MAC)
+✅ Server decrypt/decompress: SUCCESS
+✅ HMAC key retrieval: SUCCESS
+Co-authored-by: Claude <claude@anthropic.com>

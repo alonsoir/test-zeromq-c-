@@ -1,297 +1,161 @@
-# ML Defender - Day 59 Continuation Prompt
+# ML Defender - Day 60 Continuation (Incomplete)
 
-## Day 59 Summary - COMPLETADO ✅
+## Day 60 Summary - PARCIALMENTE COMPLETADO ⏳
 
-**Date:** 2026-02-16 (Monday)
-**Duration:** ~3 hours productive work
-**Status:** Service Discovery implemented, one bug discovered
+**Date:** 2026-02-17 (Tuesday)
+**Status:** Major bug fixed, CSV logging path issue pending
 
-### Achievements
+### Achievements ✅
 
-**Priority 1: Service Discovery Architecture - COMPLETED ✅**
+**Priority 1: PUT Config Decryption Bug - FIXED**
 
-**Problem identified:** Components hardcoded paths to etcd resources (HMAC keys, crypto tokens, config)
-- firewall.json: `"hmac_key_path": "/secrets/firewall/log_hmac_key"` ❌
-- Violates Single Source of Truth principle
-- Changes to path topology require recompiling all components
+**Root Cause:** Refactorización incompleta en etcd-client
+- `put_config()` llamaba a `process_outgoing_data()`
+- Pero `process_outgoing_data()` NO EXISTÍA
+- Cliente enviaba JSON plano marcado como `application/octet-stream`
+- Servidor intentaba descifrar JSON plano → ChaCha20 error
 
-**Solution implemented:** etcd-server owns path topology, tells components via service discovery
-- etcd-server extended POST /register to return paths:
-```json
-  {
-    "status": "registered",
-    "paths": {
-      "hmac_key": "/secrets/firewall",
-      "crypto_token": "/crypto/firewall/tokens",
-      "config": "/config/firewall"
-    }
-  }
+**Solution Implemented:**
+1. ✅ Implementado `process_outgoing_data()` en `etcd_client.cpp`
+2. ✅ Conversión hex→binary de encryption key (64 chars → 32 bytes)
+3. ✅ Compresión con `compress_with_size()` (header de 4 bytes)
+4. ✅ Cifrado con ChaCha20-Poly1305
+5. ✅ Content-Type dinámico según config
+
+**Test Results:**
 ```
-- etcd-client extended with `ServicePaths` struct and `get_service_paths()` method
-- firewall-acl-agent modified to use discovered paths instead of hardcoded values
+✅ Compresión: 8258 → 4213 bytes (49% reducción)
+✅ Cifrado: 4213 → 4253 bytes (+40 bytes nonce+MAC)
+✅ Servidor descifra correctamente
+✅ Servidor descomprime correctamente
+✅ Config llega intacta
+```
 
 **Files Modified:**
 ```
-etcd-server/src/etcd_server.cpp                      - Added paths to registration response
-etcd-client/include/etcd_client/etcd_client.hpp      - Added ServicePaths struct
-etcd-client/src/etcd_client.cpp                      - Parse and store paths from registration
-etcd-client/tests/test_service_discovery.cpp         - NEW: End-to-end test
-etcd-client/tests/CMakeLists.txt                     - Added new test
-firewall-acl-agent/include/firewall/etcd_client.hpp  - Added get_service_paths() wrapper
-firewall-acl-agent/src/core/etcd_client.cpp          - Implemented wrapper, temporary workaround
-firewall-acl-agent/src/api/zmq_subscriber.cpp        - Use service discovery for HMAC key
-firewall-acl-agent/config/firewall.json              - Removed hmac_key_path (etcd owns it)
+etcd-client/CMakeLists.txt                    - Fixed CRYPTO_TRANSPORT_INCLUDE path
+etcd-client/src/etcd_client.cpp               - Added process_outgoing_data()
+firewall-acl-agent/src/core/etcd_client.cpp   - Cleaned up error messages
+firewall-acl-agent/src/core/config_loader.cpp - Read csv_batch_logger from root JSON
 ```
-
-**Test Results:**
-```bash
-$ ./test_service_discovery
-========================================
-✅ All service discovery tests PASSED
-========================================
-
-$ make run-firewall
-🗺️  Service discovery paths received:
-   - HMAC key: /secrets/firewall
-   - Crypto token: /crypto/firewall/tokens
-   - Config: /config/firewall
-🔑 Retrieved HMAC key from: /secrets/firewall (32 bytes)
-```
-
-**Architectural Benefits:**
-- ✅ Single source of truth: etcd-server controls all paths
-- ✅ Flexibility: change `/secrets/*` convention without recompiling components
-- ✅ No hardcoding in components
-- ✅ Via Appia Quality: proper separation of concerns
 
 ---
 
-### Bug Discovered (Day 60 Priority)
+### Pending Issues ⏳
 
-**Symptom:** ChaCha20 decryption fails when firewall uploads config to etcd-server
-```
-[CRYPTO] ❌ Error descifrando: ChaCha20 decryption failed (wrong key or corrupted data)
-```
+**Priority 1: CSV Logger Path Not Applied Correctly**
 
-**Context:**
-- firewall-acl-agent → `PUT /v1/config/firewall-acl-agent` (8258 bytes)
-- etcd-server receives encrypted data
-- Decryption fails with wrong key error
+**Symptom:**
+- Config loader READS correct path: `[CONFIG] CSV logger output_dir: /vagrant/logs/firewall_logs`
+- But FirewallLogger likely initializes with WRONG path
+- CSV logs probably writing to `/vagrant/firewall-acl-agent/build/logs` (default)
+
+**Next Steps (Day 61):**
+1. Debug where `config.operation.log_directory` flows to `ZMQSubscriber::Config`
+2. Add logs in `ZMQSubscriber` constructor to verify path received
+3. Verify `FirewallLogger` initialization path
+4. Send malicious traffic to trigger CSV writes
+5. Verify `.csv` + `.csv.hmac` files appear in correct directory
 
 **Hypothesis:**
-- May be related to Day 58 LZ4 change (removed 4-byte header)
-- Possible key mismatch between client encryption and server decryption
-- Need to trace crypto pipeline: compress → encrypt (client) vs decrypt → decompress (server)
-
-**Temporary Workaround Applied (MUST REVERT Day 60):**
-- Modified `firewall-acl-agent/src/core/etcd_client.cpp::registerService()`
-- Changed `return false;` to continue on PUT failure
-- **CRITICAL:** This is unsafe - component MUST abort if config upload fails
-- Only applied to validate Day 59 service discovery work
-
-**Files with temporary changes:**
-```
-firewall-acl-agent/src/core/etcd_client.cpp  - Line ~130 (REVERT THIS)
-```
+- `config_loader.cpp` sets `config.operation.log_directory` correctly
+- But `main.cpp` or intermediate code overwrites it with default
+- OR config flows through different path that doesn't read `operation.log_directory`
 
 ---
 
-## Day 60 Priorities (In Order)
+## System State (Current)
 
-### Priority 1: Fix PUT Config Decryption Bug 🔴
+**etcd-client:**
+- ✅ `process_outgoing_data()` works (compress + encrypt)
+- ✅ Hex→binary conversion works
+- ✅ PUT config end-to-end validated
+- ⚠️  Needs cleanup: remove DEBUG logs
 
-**Goal:** Resolve ChaCha20 decryption failure in config upload
+**firewall-acl-agent:**
+- ✅ Registers with etcd (encrypted+compressed config)
+- ✅ Obtains HMAC key via service discovery
+- ✅ Obtains crypto seed
+- ✅ `append_csv_log()` exists and is called
+- ❌ CSV logs likely writing to wrong directory
+- ⏳ Needs verification with actual malicious traffic
 
-**Investigation Steps:**
-1. **Trace encryption pipeline in etcd-client**
-  - Check `put_config()` in etcd-client/src/etcd_client.cpp
-  - Verify compress → encrypt order
-  - Check if LZ4 header change (Day 58) affects encryption
-
-2. **Trace decryption pipeline in etcd-server**
-  - Check `PUT /v1/config/*` handler in etcd_server.cpp
-  - Verify decrypt → decompress order
-  - Check if server expects 4-byte LZ4 header
-
-3. **Compare keys**
-  - Firewall encrypts with: `encryption_key_` from registration
-  - Server decrypts with: `crypto_manager_->decrypt()`
-  - Verify both use same key from registration response
-
-4. **Hypothesis testing**
-  - If related to LZ4: check if server expects header client no longer sends
-  - If key mismatch: verify registration response key == decryption key
-  - Add debug logging to see exact bytes encrypted vs decrypted
-
-5. **Fix and validate**
-  - Apply fix to correct component
-  - Test with `make run-firewall`
-  - Verify config uploads successfully
-
-**Success Criteria:**
-```
-✅ [firewall-acl-agent] Config uploaded encrypted + compressed
-[ETCD-SERVER] ✅ Config saved for: firewall-acl-agent
-```
-
-### Priority 2: Revert Temporary Workaround 🟡
-
-**Goal:** Restore proper error handling
-
-**Tasks:**
-1. Revert change in `firewall-acl-agent/src/core/etcd_client.cpp`
-2. Restore original behavior: abort if PUT config fails
-3. Verify firewall stops correctly on upload failure
-4. Test that successful upload allows firewall to continue
-
-**File to revert:**
-```cpp
-// firewall-acl-agent/src/core/etcd_client.cpp line ~130
-// REVERT TO:
-if (!pImpl->client_->put_config(full_config.dump(2))) {
-    std::cerr << "❌ [firewall-acl-agent] Failed to upload config" << std::endl;
-    return false;  // ✅ CORRECT: abort on failure
-}
-```
-
-### Priority 3: ml-detector JSONL → CSV Migration 🟢
-
-**Goal:** Eliminate nlohmann::json memory bug, unify format with firewall
-
-**Tasks:**
-1. Update RAGLogger to write CSV instead of JSONL
-2. Add HMAC signing to CSV batches
-3. Update ml_detector_config.json with csv_batch_logger section
-4. Test migration and verify no memory issues
-
-### Priority 4: rag-ingester Multi-Source CSV 🟢
-
-**Goal:** Ingest CSV logs from both firewall and ml-detector
-
-**Tasks:**
-1. Refactor config for multiple input sources
-2. Implement HMAC validation before decrypt
-3. Create firewall-specific embedder
-4. Test end-to-end pipeline
+**etcd-server:**
+- ✅ Receives encrypted+compressed configs
+- ✅ Decrypts correctly
+- ✅ Decompresses correctly
+- ✅ Stores configs
+- ✅ Provides HMAC keys via `/secrets/{component}`
 
 ---
 
-## Lessons Learned
-
-**Lesson 1: Service Discovery > Hardcoding**
-- Hardcoded paths create coupling and fragility
-- Service discovery enables centralized control
-- **Takeaway:** etcd-server is authority for topology, components are consumers
-
-**Lesson 2: Incremental Testing Reveals Issues**
-- Bug appeared when testing end-to-end integration
-- Service discovery worked independently of encryption bug
-- **Takeaway:** Layer validation catches bugs at right abstraction level
-
-**Lesson 3: Temporary Workarounds Need Documentation**
-- Applied unsafe workaround to validate other work
-- Clearly marked as MUST REVERT with context
-- **Takeaway:** Technical debt requires explicit tracking
-
-**Lesson 4: Piano Piano Works**
-- Day 58: Fixed LZ4 bug
-- Day 59: Implemented service discovery
-- Day 60: Will fix encryption bug discovered today
-- **Takeaway:** "Rome wasn't debugged in a day"
-
----
-
-## System Architecture (Current State)
-```
-┌──────────────────────────────────────────────────────────┐
-│ etcd-server (Day 59 - Service Discovery)                │
-├──────────────────────────────────────────────────────────┤
-│ ✅ POST /register returns service discovery paths       │
-│ ✅ SecretsManager generates HMAC keys on-demand         │
-│ ✅ GET /secrets/{component} returns active key          │
-│ ⚠️  PUT /v1/config/* has decryption bug (Day 60)        │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ etcd-client (Day 59 - Service Discovery)                │
-├──────────────────────────────────────────────────────────┤
-│ ✅ ServicePaths struct stores discovered paths          │
-│ ✅ register_component() parses paths from response      │
-│ ✅ get_service_paths() returns paths to components      │
-│ ✅ get_hmac_key() fetches keys using discovered paths   │
-│ ⚠️  put_config() has encryption bug (Day 60)            │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ firewall-acl-agent (Day 59 - Partial)                   │
-├──────────────────────────────────────────────────────────┤
-│ ✅ Uses service discovery for HMAC key path             │
-│ ✅ No hardcoded paths in code                           │
-│ ✅ HMAC key retrieved: 32 bytes from /secrets/firewall  │
-│ ⏳ CSV logging ready but not tested (needs ml input)    │
-│ ⚠️  Temporary workaround in registerService() (REVERT)  │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ ml-detector (Day 59 - Not started)                      │
-├──────────────────────────────────────────────────────────┤
-│ ⚠️  Still uses JSONL (memory bug exists)                │
-│ ⏳ Needs: CSV migration (Priority 3)                    │
-│ ⏳ Needs: Service discovery integration                 │
-└──────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────┐
-│ rag-ingester (Day 59 - Not started)                     │
-├──────────────────────────────────────────────────────────┤
-│ ⚠️  Single source hardcoded                             │
-│ ⏳ Needs: Multi-source CSV support (Priority 4)         │
-│ ⏳ Needs: HMAC validation                               │
-└──────────────────────────────────────────────────────────┘
-```
-
----
-
-## Quick Start Commands (Day 60)
+## Quick Start Commands (Day 61)
 ```bash
-# 1. Start etcd-server
-cd /vagrant/etcd-server/build
-./etcd-server
+# 1. Debug logger path
+cd /vagrant/firewall-acl-agent/src/api
+grep -A 10 "logger_ = std::make_unique" zmq_subscriber.cpp
 
-# 2. Test service discovery (should pass)
-cd /vagrant/etcd-client/build/tests
-./test_service_discovery
+# 2. Add debug log in ZMQSubscriber constructor
+# Show what log_directory value is received
 
-# 3. Debug PUT config bug
-cd /vagrant
-make run-firewall
-# Observe decryption error, trace crypto pipeline
+# 3. Check where CSV actually writes
+# Send test traffic, find where .csv appears
 
-# 4. After fix, verify end-to-end
-make run-firewall
-# Should see: ✅ Config uploaded encrypted + compressed
+# 4. Verify flow: config_loader → main → ZMQSubscriber
+cd /vagrant/firewall-acl-agent/src
+grep -r "log_directory" main.cpp
 
 # Remember: Piano piano 🏛️
 ```
 
 ---
 
-## Contact & Philosophy
+## Lessons Learned
 
-**Developer:** Alonso (Extremadura, Spain)
-**Motivation:** Friend's business destroyed by ransomware
-**Vision:** Democratize enterprise-grade security for SMBs
-**License:** Open source (TBD)
+**Lesson 1: Shared Library Hell**
+- Tests used old `/usr/local/lib/libetcd_client.so`
+- New code in `/vagrant/etcd-client/build/libetcd_client.so` ignored
+- **Solution:** Always use `LD_LIBRARY_PATH` in tests or reinstall via root Makefile
 
-**Core Values:**
-- Via Appia Quality (built to last decades)
-- Scientific honesty over marketing hype
-- Evidence-based validation
-- Piano piano: stone by stone, validated at each step
+**Lesson 2: Root JSON vs Sections**
+- `csv_batch_logger` at root level, not in `operation`
+- `parse_operation()` only sees `operation` section
+- **Solution:** Read root-level configs in `load_from_file()`, not section parsers
+
+**Lesson 3: Config Flow Complexity**
+- Config loader → FirewallAgentConfig → main.cpp → multiple initializers
+- Easy to lose values in translations
+- **Solution:** Add debug logs at each handoff point
+
+**Lesson 4: Incremental Compilation Traps**
+- Changed code, but `.o` didn't recompile
+- **Solution:** `make clean` or delete specific `.o` when in doubt
 
 ---
 
-Last Updated: 2026-02-16 (Day 59 Complete)
+## Architecture Decisions
+
+**Why compress_with_size() with 4-byte header?**
+- Server needs exact original size for LZ4 decompression
+- Header provides size without guessing
+- Only 4 bytes overhead (negligible)
+- Via Appia Quality: explicit > implicit
+
+**Why hex→binary conversion in client?**
+- Server sends keys as hex strings (JSON-safe)
+- Crypto functions need binary bytes
+- Conversion at point of use (client)
+- Server stays simple (just stores hex)
+
+---
+
+Last Updated: 2026-02-17 22:00 (Day 60 Incomplete)
 Co-authored-by: Claude (Anthropic)
 Co-authored-by: Alonso
 
 Piano piano 🏛️
+```
+
+---
+
+

@@ -10,6 +10,8 @@
 #include <sstream>
 #include <iomanip>
 #include <atomic>
+// Day 60: Crypto + Compression for put_config()
+#include "crypto_transport/crypto_manager.hpp"  // ← Solo este
 
 using json = nlohmann::json;
 
@@ -112,6 +114,47 @@ struct EtcdClient::Impl {
         return response.success;
     }
 
+	// Day 60: Apply encryption and compression to outgoing data
+std::string process_outgoing_data(const std::string& data) {
+
+    std::string processed = data;
+    size_t original_size = data.size();
+
+    // Create CryptoManager with encryption key
+    if (!encryption_key_.empty()) {
+        // Convert hex key (64 chars) to binary key (32 bytes)
+        auto key_bytes = EtcdClient::hex_to_bytes(encryption_key_);
+        std::string binary_key(key_bytes.begin(), key_bytes.end());
+
+        crypto::CryptoManager crypto_mgr(binary_key);
+
+        // Step 1: Compress (if enabled and size > threshold)
+        if (config_.compression_enabled &&
+            original_size > static_cast<size_t>(config_.compression_min_size)) {
+            try {
+				processed = crypto_mgr.compress_with_size(processed);
+                std::cout << "📦 Compressed: " << original_size << " → "
+                          << processed.size() << " bytes" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "⚠️  Compression failed: " << e.what() << std::endl;
+                processed = data; // Continue without compression
+            }
+        }
+
+        // Step 2: Encrypt (if enabled)
+        if (config_.encryption_enabled) {
+            try {
+                processed = crypto_mgr.encrypt(processed);
+                std::cout << "🔒 Encrypted: " << processed.size() << " bytes" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "⚠️  Encryption failed: " << e.what() << std::endl;
+                throw; // Encryption failure is critical
+            }
+        }
+    }
+
+    return processed;
+}
 };
 
 // ============================================================================
@@ -534,8 +577,15 @@ bool EtcdClient::put_config(const std::string& json_config) {
     }
 
     try {
-        // 2. Process data (compress + encrypt)
-        std::string processed_config = json_config;
+    	// 2. Process data (compress + encrypt)
+    	size_t original_size = json_config.size();
+    	std::string processed_config = pImpl->process_outgoing_data(json_config);
+
+    	// 3. Determine Content-Type
+    	std::string content_type = "application/json";
+    	if (pImpl->config_.encryption_enabled || pImpl->config_.compression_enabled) {
+        	content_type = "application/octet-stream";
+    	}
 
         // 3. Build path
         std::string path = "/v1/config/" + pImpl->config_.component_name;
@@ -547,16 +597,16 @@ bool EtcdClient::put_config(const std::string& json_config) {
 
         // 4. Send PUT request (9 parameters - original_size will use default = 0)
         auto response = http::put(
-            pImpl->config_.host,
-            pImpl->config_.port,
-            path,
-            processed_config,
-            "application/octet-stream",
-            pImpl->config_.timeout_seconds,
-            pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
-            // original_size omitted, uses default value = 0 from header
-        );
+    		pImpl->config_.host,
+    		pImpl->config_.port,
+    		path,
+    		processed_config,
+    		content_type,  // ← Ya no hardcoded
+    		pImpl->config_.timeout_seconds,
+    		pImpl->config_.max_retry_attempts,
+    		pImpl->config_.retry_backoff_seconds,
+    		original_size  // ← Añadir este parámetro
+			);
 
         // 5. Check response
         if (!response.success) {
