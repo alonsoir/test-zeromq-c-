@@ -454,6 +454,19 @@ All AI contributions are explicitly acknowledged in code comments and commit mes
 
 ---
 
+## Attribution
+
+This project is authored by Alonso Manzanedo and was developed with
+AI assistance from Claude (Anthropic). For details on the collaboration
+methodology and all acknowledgments, see:
+
+- [AUTHORS.md](AUTHORS.md) - Copyright and ownership
+- [ATTRIBUTION.md](ATTRIBUTION.md) - Full acknowledgments and methodology
+- [LICENSE](LICENSE) - MIT License terms
+```
+
+---
+
 ## 🗺️ Project Status
 
 **Current Phase**: Day 52 - Production-ready core, capacity optimization needed
