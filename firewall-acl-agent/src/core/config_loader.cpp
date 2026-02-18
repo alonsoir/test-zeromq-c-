@@ -142,17 +142,11 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
         config.transport = parse_transport(root["transport"]);
     }
 
-    // ✅ Day 60: Override log_directory with CSV batch logger output_dir
-    // This is read from ROOT level, not from operation section
+    // ✅ Day 61: CSV batch logger config (proper parser)
     if (root.isMember("csv_batch_logger")) {
-        const auto& csv_config = root["csv_batch_logger"];
-
-        if (csv_config.isMember("enabled") && csv_config["enabled"].asBool()) {
-            if (csv_config.isMember("output_dir")) {
-                config.operation.log_directory = csv_config["output_dir"].asString();
-                std::cout << "[CONFIG] CSV logger output_dir: " << config.operation.log_directory << std::endl;
-            }
-        }
+        config.csv_batch_logger = parse_csv_batch_logger(root["csv_batch_logger"]);
+        std::cout << "[CONFIG] CSV batch logger output_dir: "
+                  << config.csv_batch_logger.output_dir << std::endl;
     }
 
     // Validate configuration
@@ -409,6 +403,18 @@ TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
         config.encryption.fallback_mode = get_optional<std::string>(enc, "fallback_mode", "compressed_only");
     }
 
+    return config;
+}
+//===----------------------------------------------------------------------===//
+// CSV Batch Logger Parser (Day 59)
+//===----------------------------------------------------------------------===//
+
+CsvBatchLoggerConfig ConfigLoader::parse_csv_batch_logger(const Json::Value& json) {
+    CsvBatchLoggerConfig config;
+    config.enabled      = get_optional<bool>(json, "enabled", false);
+    config.output_dir   = get_optional<std::string>(json, "output_dir", "/vagrant/logs/firewall_logs");
+    config.batch_size   = get_optional<int>(json, "batch_size", 100);
+    config.batch_timeout_sec = get_optional<int>(json, "batch_timeout_sec", 5);
     return config;
 }
 

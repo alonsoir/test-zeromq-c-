@@ -1,27 +1,25 @@
-## Commit Message
+---
+
+### Commit
 ```
-feat(day-60): Fix etcd-client PUT config encryption pipeline (PARTIAL)
+git add firewall-acl-agent/include/firewall/config_loader.hpp \
+firewall-acl-agent/src/core/config_loader.cpp \
+firewall-acl-agent/src/core/main.cpp \
+tools/synthetic_ml_output_injector.cpp
 
-COMPLETED:
-- Implemented process_outgoing_data() in etcd-client
-- Fixed hex→binary encryption key conversion
-- Verified end-to-end encrypted+compressed config upload
-- firewall-acl-agent successfully uploads 8KB config (49% compression)
+git commit -m "fix(firewall-acl-agent): connect csv_batch_logger output_dir to ZMQSubscriber
 
-PENDING (Day 61):
-- CSV logger path not applied correctly
-- Needs debug: config.operation.log_directory flow to FirewallLogger
-- Verify CSV writes to /vagrant/logs/firewall_logs
+- Add CsvBatchLoggerConfig struct to config_loader.hpp
+- Implement parse_csv_batch_logger() in config_loader.cpp
+- Wire zmq_config.log_directory = config.csv_batch_logger.output_dir in main.cpp
+- Remove inline Day-60 csv path hack, replaced by proper parser
+- Fix synthetic injector: migrate from compress() to CryptoManager::compress_with_size()
+- Fix synthetic injector: correct hex->bytes->string key conversion for CryptoManager
+- Verified: CSV+HMAC entries writing to /vagrant/logs/firewall_logs/firewall_blocks.csv
 
-Files modified:
-- etcd-client/CMakeLists.txt: Fixed CRYPTO_TRANSPORT_INCLUDE path
-- etcd-client/src/etcd_client.cpp: Added process_outgoing_data()
-- firewall-acl-agent/src/core/config_loader.cpp: Read csv_batch_logger from root
-- firewall-acl-agent/src/core/etcd_client.cpp: Cleaned error messages
+CSV format: timestamp_ns,src_ip,dst_ip,threat_type,action,confidence,hmac_sha256
+Next: remove JSON+proto log generator (memory bug), enforce JSON-is-LAW in config structs
 
-Test results:
-✅ Compression: 8258→4213 bytes (49%)
-✅ Encryption: +40 bytes (nonce+MAC)
-✅ Server decrypt/decompress: SUCCESS
-✅ HMAC key retrieval: SUCCESS
-Co-authored-by: Claude <claude@anthropic.com>
+Co-authored-by: Claude (Anthropic)
+Co-authored-by: Alonso Isidoro Roman
+Piano piano 🏛️"

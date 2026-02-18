@@ -171,15 +171,14 @@ public:
                 continue;
             }
 
-            // Convert to bytes
-            std::vector<uint8_t> data(serialized.begin(), serialized.end());
+            // Hex → bytes → string para CryptoManager
+            auto key_bytes = crypto_transport::hex_to_bytes(crypto_seed_);
+            std::string key_str(key_bytes.begin(), key_bytes.end());
+            crypto::CryptoManager crypto_mgr(key_str);
 
-            // Compress (LZ4 with 4-byte header)
-            auto compressed = crypto_transport::compress(data);
-
-            // Encrypt (ChaCha20-Poly1305)
-            auto key = crypto_transport::hex_to_bytes(crypto_seed_);
-            auto encrypted = crypto_transport::encrypt(compressed, key);
+            auto compressed_str = crypto_mgr.compress_with_size(serialized);
+            auto encrypted_str = crypto_mgr.encrypt(compressed_str);
+            std::vector<uint8_t> encrypted(encrypted_str.begin(), encrypted_str.end());
 
             // Send via ZMQ
             zmq::message_t msg(encrypted.data(), encrypted.size());
