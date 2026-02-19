@@ -293,7 +293,8 @@ Response post(const std::string& host,
               const std::string& body,
               int timeout_seconds = 5,
               int max_retries = 3,
-              int backoff_seconds = 2);
+              int backoff_seconds = 2,
+              const std::string& component_name = "");
 
 /**
  * @brief Perform HTTP GET with retry logic
@@ -310,7 +311,8 @@ Response get(const std::string& host,
              const std::string& path,
              int timeout_seconds = 5,
              int max_retries = 3,
-             int backoff_seconds = 2);
+             int backoff_seconds = 2,
+              const std::string& component_name = "");
 
 /**
  * @brief Perform HTTP PUT with retry logic
@@ -333,7 +335,8 @@ Response put(const std::string& host,
              int timeout_seconds,
              int max_retries,
              int backoff_seconds,
-             size_t original_size = 0);
+             size_t original_size = 0,
+             const std::string& component_name = "");
 
 /**
  * @brief Perform HTTP DELETE with retry logic
@@ -350,7 +353,8 @@ Response del(const std::string& host,
              const std::string& path,
              int timeout_seconds = 5,
              int max_retries = 3,
-             int backoff_seconds = 2);
+             int backoff_seconds = 2,
+              const std::string& component_name = "");
 
 } // namespace http
 

@@ -104,11 +104,12 @@ struct EtcdClient::Impl {
         auto response = http::post(
             config_.host,
             config_.port,
-            "/heartbeat",
+            "/v1/heartbeat/" + config_.component_name,
             payload,
             config_.timeout_seconds,
             1, // Single attempt for heartbeat
-            0
+            0,
+            config_.component_name
         );
 
         return response.success;
@@ -194,7 +195,8 @@ bool EtcdClient::connect() {
         "/health",
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     pImpl->connected_ = response.success;
@@ -254,7 +256,8 @@ bool EtcdClient::set(const std::string& key, const std::string& value) {
             payload.dump(),
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            pImpl->config_.component_name
         );
 
         if (response.success) {
@@ -287,7 +290,8 @@ std::string EtcdClient::get(const std::string& key) {
             "/kv/get?key=" + key,
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            pImpl->config_.component_name
         );
 
         if (!response.success) {
@@ -326,7 +330,8 @@ bool EtcdClient::del(const std::string& key) {
         "/kv/delete?key=" + key,
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -360,7 +365,8 @@ std::vector<std::string> EtcdClient::list_keys(const std::string& prefix) {
             path,
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            pImpl->config_.component_name
         );
 
         if (response.success) {
@@ -404,7 +410,8 @@ bool EtcdClient::register_component() {
         payload,
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -472,7 +479,8 @@ bool EtcdClient::unregister_component() {
         payload,
         pImpl->config_.timeout_seconds,
         1, // Single attempt
-        0
+        0,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -505,7 +513,8 @@ ComponentInfo EtcdClient::get_component_info(const std::string& name) {
         "/component?name=" + name,
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -531,7 +540,8 @@ std::vector<ComponentInfo> EtcdClient::list_components() {
         "/components",
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -678,7 +688,8 @@ std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& 
 
     auto response = http::get(pImpl->config_.host, pImpl->config_.port, key_path,
                              pImpl->config_.timeout_seconds, pImpl->config_.max_retry_attempts,
-                             pImpl->config_.retry_backoff_seconds);
+                             pImpl->config_.retry_backoff_seconds,
+                             pImpl->config_.component_name);
     if (!response.success) return std::nullopt;
 
     try {
