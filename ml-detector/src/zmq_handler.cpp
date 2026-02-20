@@ -1,3 +1,5 @@
+#include "csv_event_writer.hpp"
+#include <filesystem>
 #include <reason_codes.hpp>
 #include "zmq_handler.hpp"
 #include "rag_logger.hpp"
@@ -21,7 +23,8 @@ ZMQHandler::ZMQHandler(
     std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
     std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
     std::shared_ptr<ml_defender::InternalDetector> internal_detector,
-    std::shared_ptr<crypto::CryptoManager> crypto_manager  // 🎯 DAY 27: NEW
+    std::shared_ptr<crypto::CryptoManager> crypto_manager,  // 🎯 DAY 27: NEW
+    std::string hmac_key_hex  // Day 63
 )
     : config_(config)
     , context_(1)  // 1 IO thread
@@ -32,6 +35,7 @@ ZMQHandler::ZMQHandler(
     , internal_detector_(internal_detector)
     , extractor_(extractor)
     , crypto_manager_(crypto_manager)  // 🎯 DAY 27: NEW
+    , hmac_key_hex_(std::move(hmac_key_hex))
     , running_(false)
     , logger_(spdlog::get("ml-detector"))
     , last_stats_report_(std::chrono::steady_clock::now())
@@ -122,6 +126,35 @@ ZMQHandler::ZMQHandler(
         logger_->error("❌ Failed to initialize RAG Logger: {}", e.what());
         logger_->warn("⚠️  Continuing without RAG logging");
         rag_logger_ = nullptr;
+    }
+    // Day 63: Initialize CsvEventWriter if HMAC key available
+    if (rag_logger_ && !hmac_key_hex_.empty()) {
+        try {
+            std::string csv_dir = "/vagrant/logs/ml-detector/events";
+            std::filesystem::create_directories(csv_dir);
+
+            ml_defender::CsvEventWriterConfig csv_cfg;
+            csv_cfg.base_dir            = csv_dir;
+            csv_cfg.hmac_key_hex        = hmac_key_hex_;
+            csv_cfg.max_events_per_file = 10000;
+            csv_cfg.min_score_threshold = 0.5f;
+
+            auto csv_writer = std::make_unique<ml_defender::CsvEventWriter>(
+                csv_cfg, logger_);
+
+            rag_logger_->set_csv_writer(std::move(csv_writer));
+
+            logger_->info("✅ CsvEventWriter initialized");
+            logger_->info("   Output: {}/YYYY-MM-DD.csv", csv_dir);
+            logger_->info("   Columns: {} (14 meta + 105 features + 1 hmac)",
+                         ml_defender::CSV_TOTAL_COLS);
+
+        } catch (const std::exception& e) {
+            logger_->error("❌ Failed to initialize CsvEventWriter: {}", e.what());
+            logger_->warn("⚠️  Continuing without CSV output");
+        }
+    } else if (hmac_key_hex_.empty()) {
+        logger_->warn("⚠️  CsvEventWriter disabled — no HMAC key available");
     }
 }
 

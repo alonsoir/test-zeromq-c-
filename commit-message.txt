@@ -1,29 +1,75 @@
-git add -A
-git commit -m "feat(day-62): Contextual HTTP logging + heartbeat path fix
+feat(ml-detector): add CSV event writer for RAG ingester pipeline
 
-Fixes:
-- etcd-client: heartbeat path /heartbeat -> /v1/heartbeat/{component_name}
+Day 63 — Via Appia Quality
 
-Logging (etcd-client/http_client.cpp):
-- [HTTP→] before each request: method, host:port, path, ts ISO8601, component
-- [HTTP←] after response: status, path, duration_us, component
-- X-Component-Name and X-Request-Timestamp headers on all requests
-- Helper iso8601_now() and duration_us()
+Add standardized CSV output from ml-detector as primary ingestion
+format for rag-ingester, replacing encrypted .pb.enc artifacts for
+RAG historical analysis.
 
-Logging (etcd-server/etcd_server.cpp):
-- [ETCD←] on every handler: method, path, status, component, client_ts, server_ts
-- Helper server_iso8601_now() and log_request()
-- Fixed /*req*/ -> req in handlers that now need the request object
+Architecture decision: two independent CSV pipelines
+- ml-detector/events/YYYY-MM-DD.csv  → 120 cols (14 meta + 105 features + HMAC)
+- firewall/events/firewall_blocks.csv → 7 cols (decision summary)
+Each pipeline has its own embedder and FAISS index in rag-ingester.
+Rationale: separation of concerns, each component owns its contract.
 
-Result:
-- Full client<->server correlation via timestamps (typically 1-2ms delta)
-- component_name visible on both sides of every HTTP exchange
+New files:
+- src/csv_event_writer.cpp
+- include/csv_event_writer.hpp
+  120-column CSV writer with HMAC-SHA256 per-row integrity.
+  Mirrors EventLoader::extract_features() contract exactly (105 floats).
+  Daily rotation + size-based rotation. No ChaCha20 encryption —
+  durability over key rotation lifetime (documented limitation of
+  open-source version; enterprise will add at-rest encryption).
 
-Debt noted:
-- status: active hardcoded in heartbeat payload
-- Duplicate component.name registration not rejected by etcd-server
-- etcd-server does not start from Makefile
-- Per-component etcd_client config (currently shared)
+Modified files:
+- include/rag_logger.hpp
+  Forward declaration of CsvEventWriter. Add set_csv_writer() method.
+  CsvEventWriter is optional — nullptr = silent skip, zero impact on
+  existing JSONL/artifact pipeline.
+- src/rag_logger.cpp
+  Include csv_event_writer.hpp. Implement set_csv_writer().
+  Call csv_writer_->write_event(event) in log_event() after
+  save_artifacts(). CSV failure never affects JSONL success.
+- include/etcd_client.hpp
+  Add get_hmac_key() to PIMPL interface.
+  Calls GET /secrets/ml-detector — one HMAC key per component,
+  already supported by etcd-server SecretsManager.
+- src/etcd_client.cpp
+  Implement get_hmac_key() in Impl using component_name_ member.
+- include/zmq_handler.hpp
+  Add hmac_key_hex parameter to constructor (default "").
+  Add hmac_key_hex_ private member.
+- src/zmq_handler.cpp
+  Accept hmac_key_hex in constructor. Build CsvEventWriter after
+  RAGLogger initialization. Graceful degradation if key unavailable.
+- src/main.cpp
+  Call etcd_client->get_hmac_key() after crypto_manager init.
+  Pass hmac_key_hex to ZMQHandler constructor.
+- CMakeLists.txt
+  Add src/csv_event_writer.cpp to SOURCES.
+  Add find_package(OpenSSL) + OpenSSL::Crypto to link libraries.
 
-Co-authored-by: Claude (Anthropic)
-Piano piano 🏛️"
+Key findings from RAG pipeline audit:
+- IngesterService::run() was a stub — real pipeline lives in main.cpp
+- FAISS indices were empty (45 bytes each) — never processed real data
+- Synthetic .pb.enc artifacts unreadable: ChaCha20 key rotated since Jan 24
+- This confirms CSV-first approach: no key expiry, durable for RAG history
+- rag-local does not exist yet — to be built in upcoming days
+- SimpleEmbedder INPUT_DIM=105 is correct (65 basic + 40 embedded)
+
+Pending Day 64:
+- Compile and verify ml-detector with all patches applied
+- Tests: test_csv_event_writer, test_etcd_client_hmac,
+         test_csv_feature_extraction
+- Verify batch compression config in ml_detector_config.json
+- Verify post-processing TTL/delete policy in JSON contract
+- Design CsvEventLoader in rag-ingester
+- FirewallCsvLoader for firewall_blocks.csv
+
+Deuda técnica anotada (no tocar):
+- status: "active" hardcodeado en heartbeat payload
+- etcd-server debe rechazar component.name duplicado
+- etcd-server no arranca desde Makefile raíz
+- rag-local: por construir
+
+Co-authored-by: Claude (Anthropic) <claude@anthropic.com>

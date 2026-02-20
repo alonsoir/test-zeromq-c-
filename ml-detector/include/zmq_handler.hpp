@@ -49,7 +49,8 @@ public:
         std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
         std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
         std::shared_ptr<ml_defender::InternalDetector> internal_detector,
-        std::shared_ptr<crypto::CryptoManager> crypto_manager  // 🎯 DAY 27: NEW
+        std::shared_ptr<crypto::CryptoManager> crypto_manager,  // 🎯 DAY 27: NEW
+        std::string hmac_key_hex = ""   // Day 63: CSV integrity key from etcd
     );
 
     ~ZMQHandler();
@@ -114,6 +115,8 @@ private:
     std::thread memory_monitor_thread_;
     std::atomic<bool> memory_monitor_running_{false};
     std::atomic<double> current_memory_mb_{0.0};
+
+    std::string hmac_key_hex_;  // Day 63: stored for CsvEventWriter init
 };
 
 } // namespace ml_detector

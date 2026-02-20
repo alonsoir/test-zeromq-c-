@@ -205,6 +205,7 @@ set(SOURCES
         src/traffic_detector.cpp
         src/internal_detector.cpp
         src/etcd_client.cpp
+        src/csv_event_writer.cpp
         ${PROTO_SOURCES}
 )
 
@@ -330,6 +331,9 @@ target_include_directories(ml-detector PRIVATE
         ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
 )
 
+find_package(OpenSSL REQUIRED)
+message(STATUS "Found OpenSSL: ${OPENSSL_VERSION}")
+
 # ============================================================================
 # LINK LIBRARIES
 # ============================================================================
@@ -342,6 +346,8 @@ target_link_libraries(ml-detector PRIVATE
         nlohmann_json::nlohmann_json
         ${ETCD_CLIENT_LIB}
         ${CRYPTO_TRANSPORT_LIB}
+        OpenSSL::SSL          # Day 63: HMAC-SHA256 para CsvEventWriter
+        OpenSSL::Crypto       # Day 63
 )
 
 # nlohmann/json

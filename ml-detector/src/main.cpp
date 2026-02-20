@@ -448,6 +448,19 @@ int main(int argc, char* argv[]) {
         auto feature_extractor = std::make_shared<FeatureExtractor>();
         log->info("✅ Feature Extractor initialized");
 
+        // Day 63: Get HMAC key for CSV integrity
+        std::string hmac_key_hex;
+        {
+            std::string key = etcd_client->get_hmac_key();
+            if (key.size() == 64) {
+                hmac_key_hex = key;
+                log->info("✅ [csv] HMAC key retrieved ({} chars)", key.size());
+            } else {
+                log->warn("⚠️  [csv] HMAC key not available — CSV output disabled");
+                log->warn("   etcd-server SecretsManager may not have key for ml-detector");
+            }
+        }
+
         // ═══════════════════════════════════════════════════════════════════════
         // 7. Create and start ZMQ Handler (with crypto_manager)
         // ═══════════════════════════════════════════════════════════════════════
@@ -476,7 +489,8 @@ int main(int argc, char* argv[]) {
             ransomware_detector,
             traffic_detector,
             internal_detector,
-            crypto_manager  // 🎯 DAY 27: NEW PARAMETER
+            crypto_manager,  // 🎯 DAY 27: NEW PARAMETER
+            hmac_key_hex       // Day 63: CSV HMAC key
         );
 
         zmq_handler.start();

@@ -8,6 +8,7 @@
 // - Eliminates race conditions on current_date_, current_log_, events_in_current_file_
 
 #include "rag_logger.hpp"
+#include "csv_event_writer.hpp"
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -54,6 +55,13 @@ RAGLogger::~RAGLogger() {
     logger_->info("   Divergent events: {}", divergent_events_.load());
 }
 
+void RAGLogger::set_csv_writer(std::unique_ptr<CsvEventWriter> writer) {
+        csv_writer_ = std::move(writer);
+        logger_->info("[RAGLogger] CsvEventWriter attached — CSV output active");
+        logger_->info("[RAGLogger]   Output: {}/YYYY-MM-DD.csv",
+                      csv_writer_ ? "/vagrant/logs/ml-detector/events" : "n/a");
+}
+
 // ============================================================================
 // Main Public Interface
 // ============================================================================
@@ -86,7 +94,11 @@ bool RAGLogger::log_event(const protobuf::NetworkSecurityEvent& event,
             if (config_.save_protobuf_artifacts || config_.save_json_artifacts) {
                 save_artifacts(event, json_record);
             }
-
+            if (csv_writer_) {
+                csv_writer_->write_event(event);
+                // Note: write_event() has its own error handling and logging.
+                // A CSV write failure never affects JSONL success.
+            }
             // FIX: Removed check_rotation() call here - now happens inside write_jsonl()
         }
 
