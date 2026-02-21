@@ -235,6 +235,37 @@ Pipeline Security:
 
 ---
 
+### ENT-5 — Integración Threat Intelligence (MISP)
+**Prioridad:** ALTA enterprise
+**Descripción:** Correlación de eventos con IOCs globales
+
+- [ ] Integración con MISP (open source) via API REST
+- [ ] Consulta automática por src_ip/dst_ip en cada evento MALICIOUS
+- [ ] Si hay match: elevar nivel de confianza del evento + enriquecer con contexto MISP
+- [ ] Cache local de IOCs (TTL configurable) para no saturar MISP en eventos de alto volumen
+- [ ] Feeds prioritarios: CERTs europeos, listas negras de ransomware conocido
+- [ ] Integración en el proto NetworkSecurityEvent: campo threat_intel_context
+- [ ] Compatible con OpenCTI como alternativa a MISP (misma API STIX/TAXII)
+- [ ] Community: GeoLite2 (MaxMind gratuito) para geolocalización básica
+- [ ] Enterprise: GeoIP2 de pago — precisión + ASN + tipo de conexión
+  (datacenter vs residencial cambia el análisis de un evento radicalmente)
+- **Principio:** exportar hacia SIEMs comerciales (Splunk, QRadar) via syslog/API,
+  nunca depender de ellos — contradice la filosofía de democratizar seguridad enterprise
+- **Valor inmediato:** convierte el sistema de reactivo a proactivo —
+  una IP en lista negra de 50 CERTs europeos pasa de "sospechoso" a "confirmado"
+
+### ENT-6 — Observabilidad OpenTelemetry + Grafana
+**Prioridad:** MEDIA enterprise
+**Descripción:** Exportar métricas internas en formato estándar OTEL
+
+- [ ] Exportar métricas del pipeline (sniffer→ml-detector→rag-ingester) en formato OTEL
+- [ ] Permite integración en el stack de observabilidad existente del cliente enterprise
+- [ ] Dashboards Grafana predefinidos (latencia, throughput, eventos/seg, HMAC failures)
+- [ ] Alertas: anomalías en volumen de eventos, fallos de HMAC, rotación de claves
+- [ ] No construir dashboards propios desde cero — Grafana ya existe y es el estándar
+
+---
+
 ## 🔑 Decisiones de diseño consolidadas
 
 | Decisión | Resolución |
