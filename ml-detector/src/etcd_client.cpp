@@ -1,6 +1,8 @@
 #include "etcd_client.hpp"
 #include <etcd_client/etcd_client.hpp>
 #include <nlohmann/json.hpp>
+#include <sstream>
+#include <iomanip>
 #include <fstream>
 #include <iostream>
 
@@ -53,7 +55,30 @@ struct EtcdClient::Impl {
 
         std::cout << "📡 [ml-detector] Parsed endpoint: " << host_ << ":" << port_ << std::endl;
     }
-};
+
+    std::string get_hmac_key() {
+        if (!client_) {
+            std::cerr << "[etcd] Client not initialized" << std::endl;
+            return "";
+        }
+        std::string key_path = "/secrets/" + component_name_;
+        auto result = client_->get_hmac_key(key_path);
+        if (!result.has_value() || result->empty()) {
+            std::cerr << "[etcd] Failed to get HMAC key from " << key_path << std::endl;
+            return "";
+        }
+        // Convertir vector<uint8_t> a hex string
+        std::ostringstream hex;
+        hex << std::hex << std::setfill('0');
+        for (uint8_t b : result.value()) {
+            hex << std::setw(2) << static_cast<unsigned int>(b);
+        }
+        std::string key_hex = hex.str();
+        std::cout << "[etcd] HMAC key received for " << key_path
+                  << " (" << key_hex.size() << " chars)" << std::endl;
+        return key_hex;
+    }
+};  // ← cierre de struct Impl
 
 // ============================================================================
 // Implementación pública del Adapter
@@ -159,43 +184,6 @@ std::string EtcdClient::get_encryption_seed() const {
     }
 
     return seed;
-}
-
-    std::string get_hmac_key() {
-    // Path: /secrets/{short_component_name}
-    // Equivale a /secrets/ml-detector para component_name = "ml-detector"
-    std::string path = "/secrets/" + short_name_;  // mismo short_name_ que usa /register
-
-    httplib::Client cli(host_, port_);
-    cli.set_connection_timeout(5);
-
-    auto res = cli.Get(path.c_str());
-
-    if (!res || res->status != 200) {
-        std::cerr << "[etcd] Failed to get HMAC key from " << path
-                  << " status=" << (res ? res->status : -1) << std::endl;
-        return "";
-    }
-
-    try {
-        auto j = nlohmann::json::parse(res->body);
-        // etcd-server returns: {"key_hex": "...", "component": "...", ...}
-        if (j.contains("key_hex")) {
-            std::string key_hex = j["key_hex"].get<std::string>();
-            std::cout << "[etcd] HMAC key received for " << path
-                      << " (" << key_hex.size() << " chars)" << std::endl;
-            return key_hex;
-        }
-        // Fallback: some versions return "key" directly
-        if (j.contains("key")) {
-            return j["key"].get<std::string>();
-        }
-        std::cerr << "[etcd] Unexpected HMAC key response format" << std::endl;
-        return "";
-    } catch (const std::exception& e) {
-        std::cerr << "[etcd] Failed to parse HMAC key response: " << e.what() << std::endl;
-        return "";
-    }
 }
 
 std::string EtcdClient::get_hmac_key() const {

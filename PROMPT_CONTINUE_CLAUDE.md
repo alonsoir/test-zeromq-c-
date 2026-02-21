@@ -1,194 +1,103 @@
-## Resumen Day 63 — Estado al cierre
-Alonso: He aplicado lo mejor que he podido todos los cambios descritos en Ml detector patches day63
-Habría que revisarlos. Necesitamos tests para ello. No se ha modificado nada tests/CMakelists.txt
+# Day 65 — Prompt de Continuidad
+## ML Defender (aegisIDS) — Via Appia Quality
 
-Ml detector patches day63.md
+### Estado al inicio de Day 65
 
-// ================================================================
-// PATCH 1: include/etcd_client.hpp
-// Añadir get_hmac_key() a la interfaz PIMPL
-// ================================================================
-// En la clase EtcdClient, después de get_encryption_seed(), añadir:
+**Day 64 completado:**
+- `tests/CMakeLists.txt` recreado (se había perdido) — cubre unit/ e integration/
+- `etcd_client.cpp` parcheado: `get_hmac_key()` movido dentro de `struct Impl`, usa `client_->get_hmac_key(key_path)` de la API de etcd-client (vector<uint8_t> → hex string)
+- Tres tests nuevos en `tests/integration/`:
+    - `test_csv_event_writer.cpp` — 127 columnas, HMAC, filtrado, rotación, zero-fill, concurrencia
+    - `test_csv_feature_extraction.cpp` — contrato proto↔CSV, reproducibilidad, parseabilidad numérica
+    - `test_etcd_client_hmac.cpp` — mock httplib server, rutas de error, constructor real `EtcdClient(endpoint, component)`
+- Compilan: `ml-detector` ✅, `test_csv_feature_extraction` ✅, `test_csv_event_writer` ✅
+- Pendiente: `test_etcd_client_hmac` — falta `/usr/local/include` en CMakeLists (ahí está `httplib.h`)
 
-        /**
-         * @brief Get HMAC key for CSV integrity from etcd-server
-         *
-         * Calls GET /secrets/ml-detector — returns 64-char hex key (32 bytes).
-         * Called once at startup, stored in CsvEventWriter.
-         *
-         * @return 64-char hex string, empty string on failure
-         */
-        std::string get_hmac_key() const;
+**Schema CSV 127 columnas (FEATURE_SCHEMA.md):**
+- S1 cols 0–13: metadata evento
+- S2 cols 14–75: NetworkFeatures del sniffer (62 campos proto)
+- S3 cols 76–115: 4 detectores embedded × 10 features cada uno
+- S4 cols 116–125: decisiones ML (5 modelos × prediction+confidence)
+- S5 col 126: HMAC-SHA256 hex (64 chars)
 
+---
 
-// ================================================================
-// PATCH 2: src/etcd_client.cpp
-// Implementar get_hmac_key() en el Impl
-// ================================================================
-// El patrón es idéntico a get_encryption_seed() pero llama a /secrets/{component}.
-// Añadir al final de etcd_client.cpp, fuera del namespace de Impl:
+### Plan Day 65 — en orden
 
-std::string EtcdClient::get_hmac_key() const {
-return pImpl->get_hmac_key();
-}
+**1. Cerrar test_etcd_client_hmac**
+En `tests/CMakeLists.txt`, bloque de `test_etcd_client_hmac`, añadir:
+```cmake
+target_include_directories(test_etcd_client_hmac PRIVATE
+    /usr/local/include   # httplib.h para MockEtcdServer
+)
+```
+Compilar y verificar que los 8 tests del mock pasan.
 
-// Y dentro de struct Impl, añadir el método:
-// (buscar donde está get_encryption_seed() en Impl y añadir después)
+**2. Correr todos los tests CSV**
+```bash
+cd /vagrant/ml-detector/build-debug
+ctest -R "csv|hmac" -V 2>&1 | tail -40
+```
+Documentar resultados. Si algún test falla, debuggear antes de continuar.
 
-std::string get_hmac_key() {
-// Path: /secrets/{short_component_name}
-// Equivale a /secrets/ml-detector para component_name = "ml-detector"
-std::string path = "/secrets/" + short_name_;  // mismo short_name_ que usa /register
+**3. Verificación end-to-end con inyector**
+- Lanzar el inyector de eventos sintéticos existente
+- Verificar que ml-detector produce `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
+- Comprobar: `wc -l` del CSV, `awk -F',' '{print NF}' | sort -u` = 127
+- Comprobar HMAC de la primera línea manualmente con OpenSSL
 
-    httplib::Client cli(host_, port_);
-    cli.set_connection_timeout(5);
+**4. Lanzar sistema completo sniffer→ml-detector**
+- Arrancar sniffer-eBPF + etcd-server + ml-detector
+- Capturar tráfico real 5-10 minutos
+- Comparar CSV producido vs JSONL del mismo período:
+    - Mismos event_ids
+    - Campos S1 coinciden entre CSV col 1 y JSONL `event_id`
+    - NetworkFeatures S2 vs campos JSONL correspondientes
 
-    auto res = cli.Get(path.c_str());
+**5. Evaluación y decisión de dirección**
+Una vez validado el pipeline CSV:
 
-    if (!res || res->status != 200) {
-        std::cerr << "[etcd] Failed to get HMAC key from " << path
-                  << " status=" << (res ? res->status : -1) << std::endl;
-        return "";
-    }
+**Ruta A — rag-ingester con CSV:**
+- Diseñar `CsvEventLoader` en rag-ingester: parsea 127 cols, reconstruye vector features (cols 14-115, 102 features)
+- Adaptar `simple-embedder` para consumir CSV en lugar de JSONL
+- Adaptar salida FAISS/SQLite
+- Validar que `rag-local` puede consultar con datos CSV como origen
+- Una vez validado: desactivar generación JSONL en ml-detector (eliminar dependencia de librería json que causaba fugas de memoria)
 
-    try {
-        auto j = nlohmann::json::parse(res->body);
-        // etcd-server returns: {"key_hex": "...", "component": "...", ...}
-        if (j.contains("key_hex")) {
-            std::string key_hex = j["key_hex"].get<std::string>();
-            std::cout << "[etcd] HMAC key received for " << path
-                      << " (" << key_hex.size() << " chars)" << std::endl;
-            return key_hex;
-        }
-        // Fallback: some versions return "key" directly
-        if (j.contains("key")) {
-            return j["key"].get<std::string>();
-        }
-        std::cerr << "[etcd] Unexpected HMAC key response format" << std::endl;
-        return "";
-    } catch (const std::exception& e) {
-        std::cerr << "[etcd] Failed to parse HMAC key response: " << e.what() << std::endl;
-        return "";
-    }
-}
+**Ruta B — firewall-acl-agent:**
+Replicar lo hecho en ml-detector (CSV schema + HMAC) para firewall-acl-agent.
+Misma arquitectura: CsvEventWriter, etcd para HMAC key, tests equivalentes.
 
+**Decisión:** hacer Ruta A primero (valor inmediato: RAG sobre datos reales), luego Ruta B.
 
-// ================================================================
-// PATCH 3: include/zmq_handler.hpp
-// Añadir hmac_key_hex al constructor
-// ================================================================
-// En la declaración del constructor ZMQHandler, añadir último parámetro:
+---
 
-    ZMQHandler(
-        const DetectorConfig& config,
-        std::shared_ptr<ONNXModel> level1_model,
-        std::shared_ptr<FeatureExtractor> extractor,
-        std::shared_ptr<ml_defender::DDoSDetector> ddos_detector,
-        std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
-        std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
-        std::shared_ptr<ml_defender::InternalDetector> internal_detector,
-        std::shared_ptr<crypto::CryptoManager> crypto_manager,
-        std::string hmac_key_hex = ""   // Day 63: CSV integrity key from etcd
-    );
+### Ficheros clave de referencia
 
+```
+ml-detector/
+  src/
+    etcd_client.cpp          # PIMPL adapter — get_hmac_key() dentro de Impl
+    csv_event_writer.cpp     # CsvEventWriter — 127 cols + HMAC
+    csv_event_writer.hpp     # Constantes: CSV_TOTAL_COLS=127, CSV_FEATURE_COLS=102
+  tests/
+    CMakeLists.txt           # Recreado Day 64
+    integration/
+      test_csv_event_writer.cpp
+      test_csv_feature_extraction.cpp
+      test_etcd_client_hmac.cpp    # Pendiente: añadir /usr/local/include
 
-// ================================================================
-// PATCH 4: src/zmq_handler.cpp
-// ================================================================
+etcd-client/include/etcd_client/etcd_client.hpp
+  # API relevante:
+  # std::optional<std::vector<uint8_t>> get_hmac_key(const std::string& key_path)
+  # httplib.h está en /usr/local/include/httplib.h
+```
 
-// ── 4a: Añadir include al principio ─────────────────────────────
-#include "csv_event_writer.hpp"
-#include <filesystem>
+### Notas técnicas
 
-// ── 4b: Añadir parámetro al constructor ─────────────────────────
-// En la firma del constructor (línea ~17), añadir:
-std::string hmac_key_hex  // Day 63
-// En la lista de inicialización, añadir:
-, hmac_key_hex_(std::move(hmac_key_hex))
-
-// ── 4c: En el cuerpo del constructor, después de inicializar
-//        rag_logger_ (línea ~115), añadir:
-
-    // Day 63: Initialize CsvEventWriter if HMAC key available
-    if (rag_logger_ && !hmac_key_hex_.empty()) {
-        try {
-            std::string csv_dir = "/vagrant/logs/ml-detector/events";
-            std::filesystem::create_directories(csv_dir);
-
-            ml_defender::CsvEventWriterConfig csv_cfg;
-            csv_cfg.base_dir            = csv_dir;
-            csv_cfg.hmac_key_hex        = hmac_key_hex_;
-            csv_cfg.max_events_per_file = 10000;
-            csv_cfg.min_score_threshold = 0.5f;
-
-            auto csv_writer = std::make_unique<ml_defender::CsvEventWriter>(
-                csv_cfg, logger_);
-
-            rag_logger_->set_csv_writer(std::move(csv_writer));
-
-            logger_->info("✅ CsvEventWriter initialized");
-            logger_->info("   Output: {}/YYYY-MM-DD.csv", csv_dir);
-            logger_->info("   Columns: {} (14 meta + 105 features + 1 hmac)",
-                         ml_defender::CSV_TOTAL_COLS);
-
-        } catch (const std::exception& e) {
-            logger_->error("❌ Failed to initialize CsvEventWriter: {}", e.what());
-            logger_->warn("⚠️  Continuing without CSV output");
-        }
-    } else if (hmac_key_hex_.empty()) {
-        logger_->warn("⚠️  CsvEventWriter disabled — no HMAC key available");
-    }
-
-// ── 4d: Añadir hmac_key_hex_ como miembro privado en zmq_handler.hpp ──
-std::string hmac_key_hex_;  // Day 63: stored for CsvEventWriter init
-
-
-// ================================================================
-// PATCH 5: src/main.cpp
-// Obtener HMAC key y pasarla al ZMQHandler
-// ================================================================
-// Después del bloque donde se crea crypto_manager (~línea 150),
-// justo antes de construir ZMQHandler, añadir:
-
-        // Day 63: Get HMAC key for CSV integrity
-        std::string hmac_key_hex;
-        {
-            std::string key = etcd_client->get_hmac_key();
-            if (key.size() == 64) {
-                hmac_key_hex = key;
-                log->info("✅ [csv] HMAC key retrieved ({} chars)", key.size());
-            } else {
-                log->warn("⚠️  [csv] HMAC key not available — CSV output disabled");
-                log->warn("   etcd-server SecretsManager may not have key for ml-detector");
-            }
-        }
-
-// Y en la construcción de ZMQHandler, añadir el parámetro final:
-ZMQHandler zmq_handler(
-config,
-model,
-feature_extractor,
-ddos_detector,
-ransomware_detector,
-traffic_detector,
-internal_detector,
-crypto_manager,
-hmac_key_hex       // Day 63: CSV HMAC key
-);
-
-**Completado:**
-- Diagnóstico completo del pipeline rag-ingester — `IngesterService` era stub, el pipeline real está en `main.cpp`, FAISS vacío por clave rotada
-- Decisión arquitectural: dos CSVs independientes, dos embedders, dos índices FAISS
-- `csv_event_writer.hpp/cpp` — writer completo, 120 columnas, HMAC-SHA256, rotación diaria
-- `rag_logger.hpp` actualizado con `set_csv_writer()`
-- 5 patches documentados para ml-detector (etcd_client, zmq_handler, main.cpp)
-- Corrección identificada: `short_name_` → `component_name_` en Patch 2
-
-**Pendiente Day 64:**
-1. Aplicar los 5 patches en ml-detector
-2. Compilar y verificar que arranca limpio
-3. Tests: `test_csv_event_writer`, `test_etcd_client_hmac`, `test_csv_feature_extraction`
-4. Verificar end-to-end: ml-detector produce CSV → `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
-5. Diseñar `CsvEventLoader` en rag-ingester para consumir ese CSV
-
-Piano piano 🏛️
+- `test_detectors` excluido de ctest (tiene su propio main() con benchmarks)
+- `test_ransomware_detector_integration` deshabilitado (AND FALSE) — errores de namespace preexistentes
+- HMAC test key para tests: `"0000000000000000000000000000000000000000000000000000000000000000"` (64 zeros)
+- `CSV_SCHEMA_VERSION = "1.0"` — documentado en FEATURE_SCHEMA.md
+- Zero-fill policy: campos proto ausentes → "0" (numérico) o "" (string)
+- S4 positional indexing: level2[0]=DDoS, level2[1]=Ransomware, level3[0]=Traffic, level3[1]=Internal

@@ -1,75 +1,41 @@
-feat(ml-detector): add CSV event writer for RAG ingester pipeline
+git add ml-detector/tests/CMakeLists.txt \
+        ml-detector/tests/integration/test_csv_event_writer.cpp \
+        ml-detector/tests/integration/test_csv_feature_extraction.cpp \
+        ml-detector/tests/integration/test_etcd_client_hmac.cpp \
+        ml-detector/src/etcd_client.cpp \
+        ml-detector/CMakeLists.txt
 
-Day 63 — Via Appia Quality
+git commit -m "day64: recreate test suite + CSV pipeline tests + etcd_client patch
 
-Add standardized CSV output from ml-detector as primary ingestion
-format for rag-ingester, replacing encrypted .pb.enc artifacts for
-RAG historical analysis.
+- tests/CMakeLists.txt: recreated (was lost); covers all unit/ and
+  integration/ targets; test_detectors excluded from ctest (standalone
+  benchmark); test_ransomware_detector_integration disabled (AND FALSE,
+  preexisting namespace errors)
 
-Architecture decision: two independent CSV pipelines
-- ml-detector/events/YYYY-MM-DD.csv  → 120 cols (14 meta + 105 features + HMAC)
-- firewall/events/firewall_blocks.csv → 7 cols (decision summary)
-Each pipeline has its own embedder and FAISS index in rag-ingester.
-Rationale: separation of concerns, each component owns its contract.
+- tests/integration/test_csv_event_writer.cpp: 127-column schema
+  validation, HMAC-SHA256 verification, score threshold filtering,
+  file rotation, zero-fill for absent proto sub-messages, concurrency
+  smoke test
 
-New files:
-- src/csv_event_writer.cpp
-- include/csv_event_writer.hpp
-  120-column CSV writer with HMAC-SHA256 per-row integrity.
-  Mirrors EventLoader::extract_features() contract exactly (105 floats).
-  Daily rotation + size-based rotation. No ChaCha20 encryption —
-  durability over key rotation lifetime (documented limitation of
-  open-source version; enterprise will add at-rest encryption).
+- tests/integration/test_csv_feature_extraction.cpp: living contract
+  between network_security.proto and FEATURE_SCHEMA.md; verifies all
+  proto field accessors compile, section column counts, reproducibility,
+  numeric parseability
 
-Modified files:
-- include/rag_logger.hpp
-  Forward declaration of CsvEventWriter. Add set_csv_writer() method.
-  CsvEventWriter is optional — nullptr = silent skip, zero impact on
-  existing JSONL/artifact pipeline.
-- src/rag_logger.cpp
-  Include csv_event_writer.hpp. Implement set_csv_writer().
-  Call csv_writer_->write_event(event) in log_event() after
-  save_artifacts(). CSV failure never affects JSONL success.
-- include/etcd_client.hpp
-  Add get_hmac_key() to PIMPL interface.
-  Calls GET /secrets/ml-detector — one HMAC key per component,
-  already supported by etcd-server SecretsManager.
-- src/etcd_client.cpp
-  Implement get_hmac_key() in Impl using component_name_ member.
-- include/zmq_handler.hpp
-  Add hmac_key_hex parameter to constructor (default "").
-  Add hmac_key_hex_ private member.
-- src/zmq_handler.cpp
-  Accept hmac_key_hex in constructor. Build CsvEventWriter after
-  RAGLogger initialization. Graceful degradation if key unavailable.
-- src/main.cpp
-  Call etcd_client->get_hmac_key() after crypto_manager init.
-  Pass hmac_key_hex to ZMQHandler constructor.
-- CMakeLists.txt
-  Add src/csv_event_writer.cpp to SOURCES.
-  Add find_package(OpenSSL) + OpenSSL::Crypto to link libraries.
+- tests/integration/test_etcd_client_hmac.cpp: mock httplib server
+  tests for get_hmac_key() — happy path, 404/500 error paths, malformed
+  JSON, connection refused; uses real constructor EtcdClient(endpoint,
+  component); pending: /usr/local/include in CMakeLists for httplib.h
 
-Key findings from RAG pipeline audit:
-- IngesterService::run() was a stub — real pipeline lives in main.cpp
-- FAISS indices were empty (45 bytes each) — never processed real data
-- Synthetic .pb.enc artifacts unreadable: ChaCha20 key rotated since Jan 24
-- This confirms CSV-first approach: no key expiry, durable for RAG history
-- rag-local does not exist yet — to be built in upcoming days
-- SimpleEmbedder INPUT_DIM=105 is correct (65 basic + 40 embedded)
+- src/etcd_client.cpp: move get_hmac_key() inside struct Impl (was
+  accidentally placed as a free function); use client_->get_hmac_key()
+  from etcd-client API (vector<uint8_t> -> hex string); add sstream +
+  iomanip includes; fix missing }; closing Impl
 
-Pending Day 64:
-- Compile and verify ml-detector with all patches applied
-- Tests: test_csv_event_writer, test_etcd_client_hmac,
-         test_csv_feature_extraction
-- Verify batch compression config in ml_detector_config.json
-- Verify post-processing TTL/delete policy in JSON contract
-- Design CsvEventLoader in rag-ingester
-- FirewallCsvLoader for firewall_blocks.csv
+- ml-detector/CMakeLists.txt: replace inline BUILD_TESTS blocks with
+  add_subdirectory(tests)
 
-Deuda técnica anotada (no tocar):
-- status: "active" hardcodeado en heartbeat payload
-- etcd-server debe rechazar component.name duplicado
-- etcd-server no arranca desde Makefile raíz
-- rag-local: por construir
+Compiles clean: ml-detector, test_csv_feature_extraction,
+test_csv_event_writer. test_etcd_client_hmac pending include path fix.
 
-Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
+Co-authored-by: Claude (Anthropic)"
