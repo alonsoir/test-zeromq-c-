@@ -1,291 +1,253 @@
-# 📋 Day 53 COMPLETE - BACKLOG UPDATED
-
-## ✅ Day 53 - HMAC Infrastructure (Log Integrity) COMPLETE (9 Febrero 2026)
-
-### **Achievement: Military-Grade Log Integrity Protection**
-
-**HMAC Infrastructure Implemented:**
-```
-FASE 1 - etcd-server:         100% ✅ (SecretsManager + HTTP endpoints)
-FASE 2 - etcd-client:         100% ✅ (HMAC utilities)
-Unit Tests:                   24/24 ✅ (12 + 12)
-Integration Tests:            8/8 ✅ (4 + 4)
-HTTP Endpoints:               3/3 ✅
-Key Rotation Support:         100% ✅
-```
-
-**Components Enhanced:**
-
-**1. etcd-server (SecretsManager):**
-- ✅ HMAC-SHA256 key generation (libsodium)
-- ✅ Thread-safe key storage (mutex-protected)
-- ✅ Auto-generation on startup (/secrets/rag/log_hmac_key)
-- ✅ Key rotation with version tracking
-- ✅ Hex encoding utilities
-- ✅ Statistics tracking (keys generated/rotated/accessed)
-- ✅ HTTP endpoints: GET /secrets/keys, GET /secrets/*, POST /secrets/rotate/*
-
-**2. etcd-client (HMAC Utilities):**
-- ✅ get_hmac_key() - Retrieve from etcd-server
-- ✅ compute_hmac_sha256() - HMAC generation (OpenSSL)
-- ✅ validate_hmac_sha256() - Constant-time validation
-- ✅ bytes_to_hex() / hex_to_bytes() - Conversion utilities
-- ✅ All components inheriting etcd-client get HMAC support automatically
-
-**Test Coverage:**
-| Component | Unit Tests | Integration Tests | Coverage |
-|-----------|------------|-------------------|----------|
-| etcd-server SecretsManager | 12/12 ✅ | 4/4 ✅ | 100% |
-| etcd-client HMAC | 12/12 ✅ | 4/4 ✅ | 100% |
-| **TOTAL** | **24/24** ✅ | **8/8** ✅ | **100%** |
-
-**Files Modified/Created: 16**
-
-*etcd-server:*
-- include/etcd_server/secrets_manager.hpp (new)
-- src/secrets_manager.cpp (new)
-- src/main.cpp (modified - initialize SecretsManager)
-- src/etcd_server.cpp (modified - 3 HTTP endpoints + include)
-- include/etcd_server/etcd_server.hpp (modified - SecretsManager pointer)
-- config/etcd-server.json (modified - secrets config)
-- CMakeLists.txt (modified - OpenSSL dependency)
-- tests/test_secrets_manager.cpp (new)
-- tests/test_hmac_integration.cpp (new)
-- tests/CMakeLists.txt (modified - HMAC tests)
-
-*etcd-client:*
-- include/etcd_client/etcd_client.hpp (modified - HMAC section)
-- src/etcd_client.cpp (modified - HMAC implementations + OpenSSL includes)
-- CMakeLists.txt (modified - OpenSSL dependency + include dirs)
-- tests/test_hmac_client.cpp (new)
-- tests/test_hmac_integration_client.cpp (new)
-- tests/CMakeLists.txt (modified - HMAC tests)
-
-**Security Features:**
-- ✅ 32-byte HMAC-SHA256 keys (256-bit security)
-- ✅ Constant-time HMAC validation (timing attack prevention)
-- ✅ Secure key generation (libsodium random)
-- ✅ Secure key deletion (sodium_memzero)
-- ✅ Key rotation with audit trail
-- ✅ Thread-safe operations
-
-**Integration Points:**
-```
-ALL components using etcd-client now have HMAC support:
-- ml-detector ✅ (can generate HMAC for detections)
-- sniffer ✅ (can generate HMAC for logs)
-- rag-ingester ✅ (ready for HMAC validation - FASE 3)
-- firewall-acl-agent ✅ (can validate HMAC for rules)
-```
-
-**Via Appia Quality:**
-- ✅ Piano piano approach (3 phases, complete one before next)
-- ✅ Comprehensive testing (24 unit + 8 integration tests)
-- ✅ Evidence-based (all tests passing, curl validation)
-- ✅ Foundation solidified (library-level integration)
-
-**Next Phase:**
-- [ ] FASE 3: rag-ingester EventLoader HMAC validation
-- [ ] End-to-end pipeline with HMAC protection
-- [ ] Tampering detection + metrics + alerting
+# ML Defender (aegisIDS) — BACKLOG
+## Via Appia Quality 🏛️
 
 ---
 
-## 🎯 UPDATED PRIORITIES
+## ✅ COMPLETADO
 
-### **Day 54 (10 Febrero 2026):**
+### Day 53 (9 Feb 2026) — HMAC Infrastructure
+- etcd-server: SecretsManager + HTTP endpoints (/secrets/keys, /secrets/*, /secrets/rotate/*)
+- etcd-client: get_hmac_key(), compute_hmac_sha256(), validate_hmac_sha256(), bytes_to_hex()/hex_to_bytes()
+- Tests: 24 unit + 8 integration = 32/32 ✅
+- Seguridad: 32-byte keys, constant-time validation, libsodium, key rotation con audit trail
 
-**Morning:**
-1. [ ] Git commit + push (HMAC infrastructure - Day 53)
-2. [ ] Documentation update (DAY53_SUMMARY.md, HMAC_ARCHITECTURE.md)
-3. [ ] Audit integration points (verify all components can use HMAC)
-
-**Afternoon (Choose one):**
-- **Option A:** FASE 3 - rag-ingester HMAC validation
-- **Option B:** Stress test HMAC performance (throughput measurement)
-- **Option C:** Security audit (review constant-time, key storage)
-
----
-
-## 📊 ML Defender Status - Updated
-```
-Foundation (ISSUE-003):        ████████████████████ 100% ✅
-Thread-Safety (TSAN):          ████████████████████ 100% ✅
-Contract Validation:           ████████████████████ 100% ✅
-Build System Refactoring:      ████████████████████ 100% ✅
-HMAC Infrastructure:           ████████████████████ 100% ✅ (NEW - Day 53)
-Documentation:                 ████████░░░░░░░░░░░░  45% 🟡
-
-Critical Path Complete:
-
-✅ Day 43-47: ShardedFlowManager + Tests
-✅ Day 48: Build system refactoring + TSAN baseline
-✅ Day 49-52: [previous work]
-✅ Day 53: HMAC Infrastructure (FASE 1 + FASE 2) ← NEW
-⏳ Day 54: Documentation + FASE 3 planning
-⏳ Day 55+: rag-ingester HMAC validation (FASE 3)
-
-
-Pipeline Security Status:
-├─ Crypto-Transport:     ✅ ChaCha20-Poly1305 + LZ4
-├─ HMAC Infrastructure:  ✅ SHA256 key management
-├─ etcd-server:          ✅ SecretsManager + HTTP
-├─ etcd-client:          ✅ HMAC utilities
-└─ Integration:          🔄 Ready (all components supported)
-
-Next Integration: rag-ingester EventLoader HMAC validation
-```
-
-**Status**: Day 53 COMPLETE ✅  
-**Commit**: READY (16 files modified/created)  
-**Tests**: 32/32 passing (24 unit + 8 integration) ✅  
-**Quality**: Via Appia maintained 🏛️  
-**Next**: Documentation + FASE 3 planning (rag-ingester HMAC validation)
+### Day 64 (21 Feb 2026) — CSV Pipeline + Test Suite
+- `tests/CMakeLists.txt` recreado — cubre unit/ e integration/
+- `etcd_client.cpp` parcheado: `get_hmac_key()` dentro de `struct Impl`, usa API etcd-client
+- CSV schema 127 columnas definido y documentado (FEATURE_SCHEMA.md)
+- `test_csv_event_writer`: 127 cols, HMAC, rotación, zero-fill, concurrencia ✅
+- `test_csv_feature_extraction`: contrato proto↔CSV, reproducibilidad ✅
+- `test_etcd_client_hmac`: mock httplib, happy path + errores (pending include path)
+- `ml-detector/CMakeLists.txt`: `add_subdirectory(tests)` — estructura limpia
+- Decisiones de diseño: CSV sin cifrado, compresión gzip/lz4, retención configurable,
+  pipeline L2 con anonimización offline previa al fine-tuning
 
 ---
 
-## 🔐 SECURITY ROADMAP - HMAC Enhancements
+## 🔄 EN CURSO / INMEDIATO
 
-### **FASE 3 - rag-ingester HMAC Validation (Day 54-55)**
-**Status:** ⏳ PLANNED
-**Priority:** HIGH (completa Day 53 infrastructure)
+### Day 65 — Cierre CSV pipeline + verificación E2E
 
-**Objectives:**
-- [ ] EventLoader validates HMAC before decryption
-- [ ] Reject tampered logs with metrics
-- [ ] Integration with existing etcd-client HMAC utilities
-- [ ] End-to-end tests (tampered files detection)
+**1. Cerrar test_etcd_client_hmac** (30 min)
+```cmake
+target_include_directories(test_etcd_client_hmac PRIVATE /usr/local/include)
+```
 
-**Deliverables:**
-- Modified: rag-ingester/src/event_loader.cpp
-- New: tests/test_hmac_validation.cpp
-- Metrics: hmac_validation_success/failed
-- Tests: 10+ scenarios (valid/invalid/tampered)
+**2. Correr todos los tests CSV**
+```bash
+ctest -R "csv|hmac" -V
+```
 
-**Dependencies:**
-- ✅ Day 53 FASE 1+2 complete
+**3. Verificación E2E con inyector sintético**
+- Confirmar que ml-detector produce CSV 127 cols
+- ⚠️ CRÍTICO: verificar si S2 (NetworkFeatures) llega poblada o a cero
+  → Si S2 = cero, el vector útil para FAISS es solo 40 features (S3)
+  → Esto condiciona el diseño de CsvEventLoader
+
+**4. Sistema completo sniffer→ml-detector con tráfico real**
+- Comparar CSV vs JSONL del mismo período (mismos event_ids, campos S1, S2)
 
 ---
 
-### **FASE 4 - Grace Period + Key Versioning (Day 56-57)**
-**Status:** 📋 BACKLOG
-**Priority:** MEDIUM (production hardening)
+## 📋 BACKLOG — COMMUNITY
 
-**Problem Statement:**
-Logs in transit may have HMAC signed with previous key version.
-Without grace period, legitimate logs rejected after rotation.
+### FASE 3 — rag-ingester HMAC validation
+**Prioridad:** ALTA — completa la infraestructura del Day 53
+**Estimación:** 1-2 días
 
-**Solution Design (Validated by Grok):**
+- [ ] EventLoader valida HMAC antes de descifrar (reject early, save CPU)
+- [ ] Formato JSON forward-compatible con `hmac.version` (preparado para FASE 4)
+- [ ] Métricas: hmac_validation_success/failed, tampering_attempts (atomic counter)
+- [ ] Tests: 10+ escenarios (valid/invalid/tampered/expired)
+- Ficheros: rag-ingester/src/event_loader.cpp, tests/test_hmac_validation.cpp
 
-**Configuration (config/etcd-server.json):**
-```json
-{
-  "secrets": {
-    "hmac": {
-      "grace_period_seconds": 86400,    // 24h grace for old keys
-      "max_previous_keys": 5,           // Security limit
-      "auto_rotate_interval_seconds": 0 // Future: auto-rotation
-    }
-  }
-}
+### CsvEventLoader — rag-ingester
+**Prioridad:** ALTA — prerequisito para desactivar JSONL
+**Estimación:** 2-3 días
+**Prerequisito:** verificación E2E Day 65 (confirmar que S2 llega poblado)
+
+- [ ] Parsear 127 cols, verificar HMAC por fila, reconstruir vector 102 features (S2+S3)
+- [ ] Descompresión gzip/lz4 antes de parsear
+- [ ] Batch embedding hacia FAISS/SQLite
+- [ ] Watcher de directorio: detecta nuevos CSV diarios automáticamente
+
+### simple-embedder — adaptación CSV
+**Prioridad:** ALTA
+**Prerequisito:** CsvEventLoader funcionando
+
+- [ ] Consumir CSV en lugar de JSONL como input
+- [ ] Validar que rag-local puede consultar con datos CSV como origen
+- [ ] Una vez validado: desactivar generación JSONL en ml-detector
+  (elimina dependencia de librería json que causaba fugas de memoria)
+
+### CsvRetentionManager
+**Prioridad:** MEDIA
+**Estimación:** 1 día
+
+```cpp
+struct CsvRetentionConfig {
+    uint32_t compress_after_hours       = 1;    // gzip al rotar
+    uint32_t move_to_archive_after_days = 7;    // tras indexar en FAISS
+    std::string archive_path = "/data/ml-defender/archive/";
+    bool delete_after_archive = false;          // NUNCA en producción
+};
 ```
+- archive_path configurable desde etcd
+- Proceso de rotación: ACTIVO → L1-CONSUMIDO → L2-ARCHIVO
 
-**Implementation:**
+### FASE 4 — Grace Period + Key Versioning
+**Prioridad:** MEDIA — producción hardening
+**Estimación:** 2-3 días
+**Prerequisito:** FASE 3 completa
+
 - [ ] KeyVersion struct (version, key, timestamp, is_current)
-- [ ] SecretsManager stores deque<KeyVersion> per key path
-- [ ] Automatic pruning (remove keys older than grace_period)
-- [ ] New endpoint: GET /secrets/*/versions (list valid versions)
-- [ ] Log metadata includes hmac_version
-- [ ] Validator tries: current → previous (within grace)
+- [ ] SecretsManager: deque<KeyVersion> por key path + pruning automático
+- [ ] Endpoint: GET /secrets/*/versions
+- [ ] Validador: prueba current → previous (dentro de grace period)
+- [ ] Config: grace_period_seconds=86400, max_previous_keys=5
+- [ ] Métricas: hmac_key_current_version, hmac_validation_success_previous,
+  hmac_validation_failed_expired
 
-**Components Modified:**
-- etcd-server: SecretsManager versioning + pruning
-- etcd-client: get_hmac_key_by_version()
-- sniffer/ml-detector: Include hmac_version in metadata
-- rag-ingester: Validate with version support
+### firewall-acl-agent — CSV pipeline
+**Prioridad:** MEDIA
+**Prerequisito:** Ruta A (rag-ingester CSV) validada con ml-detector
 
-**Metrics Added:**
-- hmac_key_current_version (gauge)
-- hmac_key_previous_count (gauge)
-- hmac_validation_success_current (counter)
-- hmac_validation_success_previous (counter)
-- hmac_validation_failed_expired (counter)
+- [ ] Replicar CsvEventWriter de ml-detector para firewall-acl-agent
+- [ ] Schema CSV propio (diferente al de ml-detector)
+- [ ] HMAC + retención + compresión — misma arquitectura
+- [ ] Tests equivalentes a los de ml-detector
 
-**Tests Required:**
-- [ ] Key rotation with grace period
-- [ ] Validation with previous key (within grace)
-- [ ] Rejection of expired key (outside grace)
-- [ ] Pruning after grace_period expires
-- [ ] max_previous_keys enforcement
+### rag-local — comandos adicionales
+**Prioridad:** MEDIA
+**Estimación:** 2-3 días
 
-**Via Appia Quality:**
-- Configurable (no hardcoded grace periods)
-- Incremental (FASE 3 first, FASE 4 after)
-- Evidence-based (metrics prove grace period works)
+- [ ] Generar informes PDF desde consultas RAG
+- [ ] Geolocalización GeoIP de eventos concretos (integración MaxMind o similar)
+- [ ] Exportar resultados de consultas a CSV/JSON
+- [ ] Historial de consultas con timestamps
 
-**Estimated Effort:** 2-3 days
-**Blocking:** None (FASE 3 works without it)
-**Value:** Production-ready key rotation
+### FASE 5 — Auto-Rotation de claves HMAC
+**Prioridad:** BAJA
+**Prerequisito:** FASE 4 completa
+
+- [ ] Rotación automática programada
+- [ ] Pre-rotation alerts
+- [ ] Audit log (quién rotó, cuándo, por qué)
+- [ ] Rollback capability
 
 ---
 
-### **FASE 5 - Auto-Rotation (Future)**
-**Status:** 💡 IDEA
-**Priority:** LOW (nice-to-have)
+## 🏢 BACKLOG — ENTERPRISE
 
-**Features:**
-- Scheduled automatic key rotation
-- Pre-rotation alerts
-- Audit log (who rotated, when, why)
-- Rollback capability
+### ENT-1 — Entrenamiento Caché L2 (Fine-tuning LLM)
+**Prioridad:** ALTA enterprise
+**Componentes:** ml-detector + firewall-acl-agent
 
-**Blocked by:** FASE 4 complete
-
-### **FASE 3 - rag-ingester HMAC Validation (Day 54-55)**
-**Status:** ⏳ PLANNED
-**Priority:** HIGH (completa Day 53 infrastructure)
-**Design Validation:** ✅ Consenso Grok + Gemini + Claude (9 Feb 2026)
-
-**Objectives:**
-- [ ] EventLoader validates HMAC before decryption
-- [ ] **Forward-compatible JSON format with hmac.version field** ← NUEVO
-- [ ] Reject tampered logs with metrics
-- [ ] Integration with existing etcd-client HMAC utilities
-- [ ] End-to-end tests (tampered files detection)
-
-**Design Decision (Gemini Insight):**
-Include `hmac.version` in metadata NOW (FASE 3), even if always 1.
-Prevents refactoring when FASE 4 (grace period) activates version lookup.
-
-**JSON Format:**
-```json
-{
-  "timestamp": 1707494400000,
-  "hmac": {
-    "version": 1,                    // Include now, use in FASE 4
-    "signature": "a3f5c2d8...",
-    "algorithm": "hmac-sha256"
-  },
-  "payload": { ... }
-}
+Pipeline de datos confirmado:
+```
+[ACUMULACIÓN]     →    [ANONIMIZACIÓN]    →    [ENTRENAMIENTO]
+CSV comprimidos        proceso offline         dataset limpio
+en archive/            - elimina IPs, MACs     para fine-tuning
+sin transformar        - puertos sensibles      del LLM
+                       - normaliza timestamps
+                       (GDPR / ENS España)
 ```
 
-**FASE 4 Impact:** Only ~5 lines change (version lookup instead of current-only)
+- [ ] Acumulador: mover CSV a cold storage tras consumo L1 (CsvRetentionManager)
+- [ ] Anonimizador offline: pipeline separado, configurable por normativa
+    - Campos a anonimizar: src_ip, dst_ip, src_port (en algunos contextos), timestamps
+    - Pseudonimización reversible vs. anonimización irreversible (decisión legal)
+- [ ] Dataset builder: transforma CSV anonimizados en formato fine-tuning
+- [ ] Pipeline de entrenamiento: compatible con LLM local (llama.cpp / vLLM)
+- [ ] Origen de datos: ml-detector + firewall-acl-agent (ambos)
+- **Principio:** raw primero, anonimizar después — nunca al revés
 
-**Deliverables:**
-- Modified: rag-ingester/src/event_loader.cpp
-- Modified: etcd-client (add get_current_hmac_key_and_version())
-- New: tests/test_hmac_validation.cpp
-- Metrics: hmac_validation_success/failed
-- Tests: 10+ scenarios (valid/invalid/tampered)
+### ENT-2 — Watcher de Configuración en Runtime
+**Prioridad:** ALTA enterprise
+**Descripción:** Cambiar comportamiento del pipeline sin reiniciar
 
-**Dependencies:**
-- ✅ Day 53 FASE 1+2 complete
+- [ ] Watcher sobre etcd-server que monitoriza cambios en los JSON de configuración
+- [ ] Hot-reload de parámetros: umbrales ML, retención CSV, rutas de archivo
+- [ ] Notificación a componentes activos via ZeroMQ o señal interna
+- [ ] Validación del nuevo JSON antes de aplicar (rollback si inválido)
+- [ ] Audit log de cambios de configuración (quién, cuándo, qué cambió)
+- [ ] Tests: cambio en runtime sin pérdida de eventos en curso
 
-**Estimated Effort:** 1-2 days
+### ENT-3 — SecureBusNode (Cifrado sin etcd)
+**Prioridad:** ALTA enterprise
+**Referencia:** `docs/enterprise/ML Defender Enterprise Security Module: SecureBusNode.md`
+**Descripción:** Cifrado independiente de etcd-server y etcd-client
 
-**Critical Design Note (Qwen):**
-Validate HMAC BEFORE decryption to:
-- Reject tampered logs without wasting CPU
-- Detect tampering attempts early (security alert)
-- Metrics: tampering_attempts counter (atomic)
+- [ ] Implementar SecureBusNode según especificación del documento
+- [ ] Soporte para USB encrypted storage como origen de clave raíz
+- [ ] Soporte para Hardware Security Modules (HSM)
+- [ ] Detección y recuperación ante compromiso de clave raíz
+- [ ] Compatible con el resto del pipeline (CSV, ZeroMQ, FAISS)
+- [ ] Tests de seguridad: escenarios de compromiso + recuperación
+
+### ENT-4 — rag-world (Telemetría Global Federada)
+**Prioridad:** MEDIA enterprise
+**Descripción:** Agregador global de rag-local distribuidos
+
+```
+[Instalación A]    [Instalación B]    [Instalación C]
+  rag-local  ──┐     rag-local  ──┤     rag-local  ──┐
+               ↓                  ↓                  ↓
+          ┌─────────────────────────────────────────┐
+          │              rag-world                   │
+          │   telemetría global + caché L2 global    │
+          └─────────────────────────────────────────┘
+```
+
+- [ ] rag-world: agregador que habla con múltiples rag-local
+- [ ] Protocolo de telemetría: qué datos se comparten (anonimizados siempre)
+- [ ] Caché L2 global: beneficio compartido de lo que ha visto cada instalación
+- [ ] Privacy-preserving: ninguna instalación expone datos sin anonimizar
+- [ ] Federación opt-in: cada instalación decide si participar
+- [ ] Dataset global para fine-tuning: más rico que cualquier dataset local
+- [ ] Gobernanza: quién administra rag-world, SLA, retención global
+
+---
+
+## 📊 Estado global del proyecto
+
+```
+Foundation + Thread-Safety:       ████████████████████ 100% ✅
+Contract Validation:              ████████████████████ 100% ✅
+Build System:                     ████████████████████ 100% ✅
+HMAC Infrastructure (F1+F2):      ████████████████████ 100% ✅
+CSV Pipeline (ml-detector):       ████████████████░░░░  80% 🟡 (E2E pendiente)
+Test Suite:                       ████████████████░░░░  80% 🟡 (httplib pending)
+FASE 3 rag-ingester HMAC:         ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+CsvEventLoader rag-ingester:      ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+simple-embedder CSV:              ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+firewall-acl-agent CSV:           ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+rag-local (community):            ████░░░░░░░░░░░░░░░░  20% 🟡
+rag-world (enterprise):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+
+Pipeline Security:
+├─ Crypto-Transport:   ✅ ChaCha20-Poly1305 + LZ4
+├─ HMAC (F1+F2):       ✅ SHA256 key management
+├─ CSV Integrity:      ✅ HMAC por fila en producción
+├─ FASE 3 HMAC:        ⏳ rag-ingester validation
+└─ SecureBusNode:      ⏳ enterprise only
+```
+
+---
+
+## 🔑 Decisiones de diseño consolidadas
+
+| Decisión | Resolución |
+|----------|------------|
+| CSV cifrado | ❌ No — sin cifrado, con HMAC por fila |
+| CSV compresión | ✅ gzip (archivo) / lz4 (streaming caliente) |
+| CSV retención | Configurable desde etcd, nunca borrar en producción |
+| Raw vs anonimizado | Acumular raw, anonimizar offline antes de L2 |
+| JSONL deprecación | Tras validar CSV E2E — desactivar para eliminar fuga de memoria |
+| S2 NetworkFeatures | ⚠️ Verificar en E2E si llegan poblados (condiciona CsvEventLoader) |
+| FASE 4 Grace Period | Preparar hmac.version en FASE 3 para facilitar migración |
+| SecureBusNode | Enterprise only — ver doc specs |
+
+---
+*Última actualización: Day 64 — 21 Feb 2026*
+*Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
