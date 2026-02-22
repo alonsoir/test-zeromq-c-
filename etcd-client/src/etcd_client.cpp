@@ -694,7 +694,15 @@ std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& 
 
     try {
         auto j = json::parse(response.body);
-        return EtcdClient::hex_to_bytes(j["key"].get<std::string>());
+        std::string key_hex;
+        if (j.contains("key_hex") && j["key_hex"].is_string()) {
+            key_hex = j["key_hex"].get<std::string>();
+        } else if (j.contains("key") && j["key"].is_string()) {
+            key_hex = j["key"].get<std::string>();
+        } else {
+            return std::nullopt;
+        }
+        return EtcdClient::hex_to_bytes(key_hex);
     } catch (...) { return std::nullopt; }
 }
 

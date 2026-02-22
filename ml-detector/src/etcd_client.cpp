@@ -30,10 +30,11 @@ struct EtcdClient::Impl {
         config.component_name = component_name;
         config.host = host_;
         config.port = port_;
-        config.encryption_enabled = true;
-        config.compression_enabled = true;
+        config.encryption_enabled = (endpoint.find("http://") != 0);
+        config.compression_enabled = false;
 
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
+        client_->connect();
     }
 
     void parseEndpoint(const std::string& endpoint) {

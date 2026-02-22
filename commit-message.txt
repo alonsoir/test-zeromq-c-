@@ -1,41 +1,28 @@
-git add ml-detector/tests/CMakeLists.txt \
-        ml-detector/tests/integration/test_csv_event_writer.cpp \
-        ml-detector/tests/integration/test_csv_feature_extraction.cpp \
-        ml-detector/tests/integration/test_etcd_client_hmac.cpp \
-        ml-detector/src/etcd_client.cpp \
-        ml-detector/CMakeLists.txt
+cd /vagrant
+git add \
+  ml-detector/src/csv_event_writer.cpp \
+  ml-detector/src/etcd_client.cpp \
+  ml-detector/tests/CMakeLists.txt \
+  ml-detector/tests/integration/test_etcd_client_hmac.cpp \
+  etcd-client/src/etcd_client.cpp \
+  tools/synthetic_sniffer_injector.cpp \
+  tools/CMakeLists.txt
 
-git commit -m "day64: recreate test suite + CSV pipeline tests + etcd_client patch
+git commit -m "Day 65: CSV+HMAC suite verde (3/3), pipeline ZMQ inyector corregido
 
-- tests/CMakeLists.txt: recreated (was lost); covers all unit/ and
-  integration/ targets; test_detectors excluded from ctest (standalone
-  benchmark); test_ransomware_detector_integration disabled (AND FALSE,
-  preexisting namespace errors)
+- csv_event_writer: fix boundary condition threshold (<= en lugar de <)
+- etcd_client (ml-detector): auto-connect, encryption dinámica, compression=false
+- etcd-client library: get_hmac_key() acepta key_hex con prioridad sobre key
+- test_etcd_client_hmac: MockEtcdServer reescrito con raw sockets (ODR fix httplib)
+- synthetic_sniffer_injector: PUSH+bind, component cpp_evolutionary_sniffer,
+  CryptoManager compress_with_size+encrypt pipeline
+- tools/CMakeLists: csv_event_writer añadido a generate_synthetic_events
 
-- tests/integration/test_csv_event_writer.cpp: 127-column schema
-  validation, HMAC-SHA256 verification, score threshold filtering,
-  file rotation, zero-fill for absent proto sub-messages, concurrency
-  smoke test
+Pendiente Day 66: hardcoded min_score_threshold en zmq_handler.cpp l.140,
+ajuste features inyector para scores > threshold, verificación CSV end-to-end.
 
-- tests/integration/test_csv_feature_extraction.cpp: living contract
-  between network_security.proto and FEATURE_SCHEMA.md; verifies all
-  proto field accessors compile, section column counts, reproducibility,
-  numeric parseability
+Política arquitectural establecida: el JSON es la ley. Si un parámetro
+requerido no está en el JSON, el componente NO arranca — error explícito,
+sin defaults silenciosos, sin fallbacks encubiertos.
 
-- tests/integration/test_etcd_client_hmac.cpp: mock httplib server
-  tests for get_hmac_key() — happy path, 404/500 error paths, malformed
-  JSON, connection refused; uses real constructor EtcdClient(endpoint,
-  component); pending: /usr/local/include in CMakeLists for httplib.h
-
-- src/etcd_client.cpp: move get_hmac_key() inside struct Impl (was
-  accidentally placed as a free function); use client_->get_hmac_key()
-  from etcd-client API (vector<uint8_t> -> hex string); add sstream +
-  iomanip includes; fix missing }; closing Impl
-
-- ml-detector/CMakeLists.txt: replace inline BUILD_TESTS blocks with
-  add_subdirectory(tests)
-
-Compiles clean: ml-detector, test_csv_feature_extraction,
-test_csv_event_writer. test_etcd_client_hmac pending include path fix.
-
-Co-authored-by: Claude (Anthropic)"
+Authors: Alonso Isidoro Roman + Claude (Anthropic)"

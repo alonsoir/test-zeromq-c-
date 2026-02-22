@@ -272,6 +272,30 @@ synthetic_sniffer_injector.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/synthetic_sniffer_injector.dir/build.make CMakeFiles/synthetic_sniffer_injector.dir/synthetic_sniffer_injector.cpp.s
 .PHONY : synthetic_sniffer_injector.cpp.s
 
+vagrant/ml-detector/src/csv_event_writer.o: vagrant/ml-detector/src/csv_event_writer.cpp.o
+.PHONY : vagrant/ml-detector/src/csv_event_writer.o
+
+# target to build an object file
+vagrant/ml-detector/src/csv_event_writer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/vagrant/ml-detector/src/csv_event_writer.cpp.o
+.PHONY : vagrant/ml-detector/src/csv_event_writer.cpp.o
+
+vagrant/ml-detector/src/csv_event_writer.i: vagrant/ml-detector/src/csv_event_writer.cpp.i
+.PHONY : vagrant/ml-detector/src/csv_event_writer.i
+
+# target to preprocess a source file
+vagrant/ml-detector/src/csv_event_writer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/vagrant/ml-detector/src/csv_event_writer.cpp.i
+.PHONY : vagrant/ml-detector/src/csv_event_writer.cpp.i
+
+vagrant/ml-detector/src/csv_event_writer.s: vagrant/ml-detector/src/csv_event_writer.cpp.s
+.PHONY : vagrant/ml-detector/src/csv_event_writer.s
+
+# target to generate assembly for a file
+vagrant/ml-detector/src/csv_event_writer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_synthetic_events.dir/build.make CMakeFiles/generate_synthetic_events.dir/vagrant/ml-detector/src/csv_event_writer.cpp.s
+.PHONY : vagrant/ml-detector/src/csv_event_writer.cpp.s
+
 vagrant/ml-detector/src/etcd_client.o: vagrant/ml-detector/src/etcd_client.cpp.o
 .PHONY : vagrant/ml-detector/src/etcd_client.o
 
@@ -374,6 +398,9 @@ help:
 	@echo "... synthetic_sniffer_injector.o"
 	@echo "... synthetic_sniffer_injector.i"
 	@echo "... synthetic_sniffer_injector.s"
+	@echo "... vagrant/ml-detector/src/csv_event_writer.o"
+	@echo "... vagrant/ml-detector/src/csv_event_writer.i"
+	@echo "... vagrant/ml-detector/src/csv_event_writer.s"
 	@echo "... vagrant/ml-detector/src/etcd_client.o"
 	@echo "... vagrant/ml-detector/src/etcd_client.i"
 	@echo "... vagrant/ml-detector/src/etcd_client.s"

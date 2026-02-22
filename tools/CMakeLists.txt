@@ -128,6 +128,7 @@ add_executable(generate_synthetic_events
         generate_synthetic_events.cpp
         ${PROTO_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/../ml-detector/src/rag_logger.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../ml-detector/src/csv_event_writer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../ml-detector/src/etcd_client.cpp
 )
 

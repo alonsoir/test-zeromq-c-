@@ -134,7 +134,7 @@ CsvEventWriter::~CsvEventWriter() {
 
 bool CsvEventWriter::write_event(const protobuf::NetworkSecurityEvent& event) {
     // Score filter — applied outside the lock for performance
-    if (static_cast<float>(event.overall_threat_score()) <
+    if (static_cast<float>(event.overall_threat_score()) <=
         config_.min_score_threshold) {
         events_skipped_.fetch_add(1, std::memory_order_relaxed);
         return false;

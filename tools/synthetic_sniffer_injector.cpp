@@ -18,6 +18,7 @@
 // Crypto-transport
 #include <crypto_transport/crypto_manager.hpp>
 #include <crypto_transport/utils.hpp>
+#include <crypto_transport/crypto_manager.hpp>
 
 // etcd-client
 #include <etcd_client/etcd_client.hpp>
@@ -27,9 +28,10 @@ namespace fs = std::filesystem;
 class SyntheticSnifferInjector {
 private:
     zmq::context_t zmq_ctx_;
-    zmq::socket_t publisher_;
+    zmq::socket_t publisher_;  // PUSH → ml-detector PULL
     std::unique_ptr<etcd_client::EtcdClient> etcd_client_;
     std::string crypto_seed_;
+    std::unique_ptr<crypto::CryptoManager> crypto_manager_;
     std::mt19937 rng_;
 
     // Random generators
@@ -63,6 +65,7 @@ private:
         event.set_event_id("synthetic-" + std::to_string(event_id));
         auto* timestamp = event.mutable_event_timestamp();
         auto now = std::chrono::system_clock::now();
+        event.set_overall_threat_score(0.9f);  // synthetic — fuerza escritura en CSV
         auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
         timestamp->set_seconds(seconds.count());
 
@@ -264,7 +267,7 @@ public:
     public:
     SyntheticSnifferInjector(const std::string& etcd_endpoint = "localhost:2379")
         : zmq_ctx_(1)
-        , publisher_(zmq_ctx_, zmq::socket_type::pub)
+        , publisher_(zmq_ctx_, zmq::socket_type::push)
         , rng_(std::random_device{}())
     {
         // Bind to ml-detector input port
@@ -286,7 +289,7 @@ public:
         etcd_config.host = host;
         etcd_config.port = port;
         etcd_config.timeout_seconds = 5;
-        etcd_config.component_name = "synthetic-sniffer";
+        etcd_config.component_name = "cpp_evolutionary_sniffer";
         etcd_config.encryption_enabled = true;
         etcd_config.heartbeat_enabled = true;
 
@@ -311,6 +314,10 @@ public:
         }
 
         std::cout << "✅ [etcd] Retrieved encryption key (" << crypto_seed_.size() << " hex chars)\n";
+        // CryptoManager espera 32 bytes binarios, no hex string
+        auto key_bytes = crypto_transport::hex_to_bytes(crypto_seed_);
+        std::string key_str(key_bytes.begin(), key_bytes.end());
+        crypto_manager_ = std::make_unique<crypto::CryptoManager>(key_str);
 
         // Give ZMQ time to bind
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -345,17 +352,11 @@ public:
             }
 
             // Convert to bytes
-            std::vector<uint8_t> data(serialized.begin(), serialized.end());
-
-            // Compress (LZ4 with 4-byte header)
-            auto compressed = crypto_transport::compress(data);
-
-            // Encrypt (ChaCha20-Poly1305)
-            auto key = crypto_transport::hex_to_bytes(crypto_seed_);
-            auto encrypted = crypto_transport::encrypt(compressed, key);
-
+            // compress_with_size + encrypt — mismo pipeline que ml-detector
+            auto compressed_str = crypto_manager_->compress_with_size(serialized);
+            auto encrypted_str = crypto_manager_->encrypt(compressed_str);
             // Send via ZMQ
-            zmq::message_t msg(encrypted.data(), encrypted.size());
+            zmq::message_t msg(encrypted_str.data(), encrypted_str.size());
             publisher_.send(msg, zmq::send_flags::dontwait);
 
             sent++;
