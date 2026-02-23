@@ -410,5 +410,16 @@
     "flush_interval_seconds": 1,
     "include_artifacts": true,
     "artifact_format": "protobuf"
+  },
+  "csv_writer": {
+    "base_dir": "/vagrant/logs/ml-detector/events",
+    "min_score_threshold": 0.5,
+    "max_events_per_file": 10000
+  },
+  "scoring": {
+    "divergence_warn_threshold": 0.30,
+    "divergence_high_threshold": 0.40,
+    "malicious_threshold": 0.70,
+    "requires_rag_threshold": 0.85
   }
 }

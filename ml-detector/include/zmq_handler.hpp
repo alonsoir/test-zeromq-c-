@@ -10,7 +10,6 @@
 
 #include "feature_extractor.hpp"
 
-// ✅ INCLUDES CORRECTOS (ml_defender/ no ml/)
 #include "ml_defender/ransomware_detector.hpp"
 #include "config_loader.hpp"
 #include "onnx_model.hpp"
@@ -25,6 +24,9 @@
 
 // 🎯 DAY 27: Crypto-Transport Integration
 #include <crypto_transport/crypto_manager.hpp>
+
+// Day 63: CSV Event Writer
+#include "csv_event_writer.hpp"
 
 namespace ml_detector {
 
@@ -49,7 +51,7 @@ public:
         std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
         std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
         std::shared_ptr<ml_defender::InternalDetector> internal_detector,
-        std::shared_ptr<crypto::CryptoManager> crypto_manager,  // 🎯 DAY 27: NEW
+        std::shared_ptr<crypto::CryptoManager> crypto_manager,
         std::string hmac_key_hex = ""   // Day 63: CSV integrity key from etcd
     );
 
@@ -110,6 +112,9 @@ private:
     std::unique_ptr<ml_defender::RAGLogger> rag_logger_;
     uint64_t events_processed_total_{0};
     std::chrono::system_clock::time_point start_time_;
+
+    // Day 66: CsvEventWriter standalone (activo aunque RAG Logger falle)
+    std::unique_ptr<ml_defender::CsvEventWriter> csv_writer_;
 
     // Memory monitoring thread
     std::thread memory_monitor_thread_;

@@ -31,7 +31,7 @@ struct EtcdClient::Impl {
         config.host = host_;
         config.port = port_;
         config.encryption_enabled = (endpoint.find("http://") != 0);
-        config.compression_enabled = false;
+        config.compression_enabled = true;
 
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
         client_->connect();

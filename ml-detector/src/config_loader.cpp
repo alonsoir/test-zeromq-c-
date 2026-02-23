@@ -446,7 +446,28 @@ DetectorConfig ConfigLoader::load() {
         config.performance.enable_avx2 = get_required<bool>(perf, "enable_avx2", "performance");
         config.performance.cache_line_size = get_required<int>(perf, "cache_line_size", "performance");
     }
-    
+
+    // ========================================
+    // CSV Writer (Day 66)
+    // ========================================
+    {
+        auto& csv = json_["csv_writer"];
+        config.csv_writer.base_dir = get_required<std::string>(csv, "base_dir", "csv_writer");
+        config.csv_writer.min_score_threshold = get_required<float>(csv, "min_score_threshold", "csv_writer");
+        config.csv_writer.max_events_per_file = get_required<int>(csv, "max_events_per_file", "csv_writer");
+    }
+
+    // ========================================
+    // Scoring thresholds (Day 66)
+    // ========================================
+    {
+        auto& sc = json_["scoring"];
+        config.scoring.divergence_warn_threshold = get_required<float>(sc, "divergence_warn_threshold", "scoring");
+        config.scoring.divergence_high_threshold = get_required<float>(sc, "divergence_high_threshold", "scoring");
+        config.scoring.malicious_threshold       = get_required<float>(sc, "malicious_threshold",       "scoring");
+        config.scoring.requires_rag_threshold    = get_required<float>(sc, "requires_rag_threshold",    "scoring");
+    }
+
     return config;
 }
 

@@ -1,28 +1,17 @@
-cd /vagrant
-git add \
-  ml-detector/src/csv_event_writer.cpp \
-  ml-detector/src/etcd_client.cpp \
-  ml-detector/tests/CMakeLists.txt \
-  ml-detector/tests/integration/test_etcd_client_hmac.cpp \
-  etcd-client/src/etcd_client.cpp \
-  tools/synthetic_sniffer_injector.cpp \
-  tools/CMakeLists.txt
+---
 
-git commit -m "Day 65: CSV+HMAC suite verde (3/3), pipeline ZMQ inyector corregido
+### Commit para hoy
 
-- csv_event_writer: fix boundary condition threshold (<= en lugar de <)
-- etcd_client (ml-detector): auto-connect, encryption dinámica, compression=false
-- etcd-client library: get_hmac_key() acepta key_hex con prioridad sobre key
-- test_etcd_client_hmac: MockEtcdServer reescrito con raw sockets (ODR fix httplib)
-- synthetic_sniffer_injector: PUSH+bind, component cpp_evolutionary_sniffer,
-  CryptoManager compress_with_size+encrypt pipeline
-- tools/CMakeLists: csv_event_writer añadido a generate_synthetic_events
+```
+Day 66: hardcoded audit 34/34, CSV end-to-end verified (127 cols, HMAC ok)
 
-Pendiente Day 66: hardcoded min_score_threshold en zmq_handler.cpp l.140,
-ajuste features inyector para scores > threshold, verificación CSV end-to-end.
+- config: csv_writer + scoring sections, DetectorConfig structs + loader
+- zmq_handler: CsvEventWriter standalone, decoupled from RAG Logger
+- zmq_handler: all thresholds/paths from JSON (no magic numbers)
+- synthetic_injector: --attack mode (DDoS signature + forced fast score)
+- synthetic_injector: remove dead general_attack_features loop
+- etcd_client: revert compression_enabled=false (broke config upload)
 
-Política arquitectural establecida: el JSON es la ley. Si un parámetro
-requerido no está en el JSON, el componente NO arranca — error explícito,
-sin defaults silenciosos, sin fallbacks encubiertos.
-
-Authors: Alonso Isidoro Roman + Claude (Anthropic)"
+CSV pipeline: 49 events written, 127 cols, HMAC verified
+Next: --ransomware mode, RAG Logger diagnosis, rag-ingester Ruta A
+```
