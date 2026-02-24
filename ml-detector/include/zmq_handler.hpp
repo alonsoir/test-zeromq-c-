@@ -114,7 +114,7 @@ private:
     std::chrono::system_clock::time_point start_time_;
 
     // Day 66: CsvEventWriter standalone (activo aunque RAG Logger falle)
-    std::unique_ptr<ml_defender::CsvEventWriter> csv_writer_;
+    std::shared_ptr<ml_defender::CsvEventWriter> csv_writer_;
 
     // Memory monitoring thread
     std::thread memory_monitor_thread_;

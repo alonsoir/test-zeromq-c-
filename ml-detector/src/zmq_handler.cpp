@@ -121,7 +121,7 @@ ZMQHandler::ZMQHandler(
             csv_cfg.max_events_per_file = config_.csv_writer.max_events_per_file;
             csv_cfg.min_score_threshold = config_.csv_writer.min_score_threshold;
 
-            csv_writer_ = std::make_unique<ml_defender::CsvEventWriter>(csv_cfg, logger_);
+			csv_writer_ = std::make_shared<ml_defender::CsvEventWriter>(csv_cfg, logger_);
 
             logger_->info("✅ CsvEventWriter initialized (standalone)");
             logger_->info("   Output: {}/YYYY-MM-DD.csv", csv_dir);
@@ -147,8 +147,10 @@ ZMQHandler::ZMQHandler(
             logger_,
             crypto_manager_
         );
-        logger_->info("✅ RAG Logger initialized successfully (encrypted artifacts enabled)");
-
+		logger_->info("✅ RAG Logger initialized successfully (encrypted artifacts enabled)");
+		if (csv_writer_) {
+    		rag_logger_->set_csv_writer(csv_writer_);
+		}
         // Si RAG Logger está disponible, comparte el csv_writer con él
         // Nota: RAG Logger no toma ownership — csv_writer_ sigue siendo el owner
         // Se pasa una referencia lógica; RAG Logger escribe a través de él

@@ -1,17 +1,59 @@
----
+cd /vagrant && git add \
+  tools/synthetic_sniffer_injector.cpp \
+  ml-detector/include/config_loader.hpp \
+  ml-detector/include/zmq_handler.hpp \
+  ml-detector/src/zmq_handler.cpp \
+  ml-detector/src/rag_logger.cpp \
+  ml-detector/include/rag_logger.hpp \
+  rag-ingester/include/csv_file_watcher.hpp \
+  rag-ingester/src/csv_file_watcher.cpp \
+  rag-ingester/include/csv_event_loader.hpp \
+  rag-ingester/src/csv_event_loader.cpp \
+  rag-ingester/CMakeLists.txt \
+  rag-ingester/tests/CMakeLists.txt \
+  rag-ingester/tests/test_csv_file_watcher.cpp \
+  rag-ingester/tests/test_csv_event_loader.cpp \
+  rag-ingester/tests/test_file_watcher.cpp
 
-### Commit para hoy
+git commit -m "feat(day67): ransomware injector, CSV writer fix, CsvFileWatcher+CsvEventLoader
 
-```
-Day 66: hardcoded audit 34/34, CSV end-to-end verified (127 cols, HMAC ok)
+Day 67 — Via Appia Quality
 
-- config: csv_writer + scoring sections, DetectorConfig structs + loader
-- zmq_handler: CsvEventWriter standalone, decoupled from RAG Logger
-- zmq_handler: all thresholds/paths from JSON (no magic numbers)
-- synthetic_injector: --attack mode (DDoS signature + forced fast score)
-- synthetic_injector: remove dead general_attack_features loop
-- etcd_client: revert compression_enabled=false (broke config upload)
+## Fixes
+- zmq_handler: csv_writer_ unique_ptr→shared_ptr + set_csv_writer() call missing
+  Root cause: rag_logger_ non-null blocked standalone CSV path, set_csv_writer()
+  never called → CSV empty. Fix: shared ownership, explicit attach after RAG init.
+- rag_logger: set_csv_writer() signature unique_ptr→shared_ptr
+- test_file_watcher: setup/teardown per-test (leftover .pb files broke pattern test)
 
-CSV pipeline: 49 events written, 127 cols, HMAC verified
-Next: --ransomware mode, RAG Logger diagnosis, rag-ingester Ruta A
-```
+## Features
+- tools: synthetic_sniffer_injector --ransomware mode
+  Signature: entropy 7-8, io_intensity 0.85-1.0, file_operations 0.90-1.0
+  ransomware20: rdp_failed_auth 10-50, smb_connection_diversity 20-50
+  syn_without_ack_ratio ~0 (TCP completo, contrario al DDoS SYN flood)
+  Destination ports: SMB(445)/RDP(3389) vs HTTPS(443) del DDoS
+- rag-ingester: CsvFileWatcher — inotify IN_MODIFY + byte offset (tail semantics)
+  Handles daily rotation via IN_CREATE on parent dir
+  Independent inotify_fd from FileWatcher — no shared state
+- rag-ingester: CsvEventLoader — 127-column CSV parser + HMAC-SHA256 verification
+  Reuses Event+EngineVerdict structs from event_loader.hpp
+  Sections: S1 metadata, S2 62-feature vector, S4 ML decisions + verdicts
+  Stats: parsed_ok, hmac_failures, parse_errors, column_errors
+
+## Verified
+- CSV: 50 lines, 127 cols, HMAC intact (ransomware mode)
+- JSONL: 100 lines valid JSON (RAG Logger)
+- ctest 4/4: config_parser, file_watcher, csv_file_watcher, csv_event_loader
+
+## Investigation
+- etcd compression: channels already separated (ZMQ uses crypto_manager_ directly,
+  etcd upload uses etcd_client Config.compression_enabled). No action required.
+  Day 65/66 regression was isolated, Day 66 revert was correct.
+
+## Backlog
+- firewall-acl-agent: hardcoded values audit (same pattern as zmq_handler Day 66)
+- rag-ingester: wire CsvFileWatcher+CsvEventLoader into IngesterService
+- rag-ingester: SQLite WAL mode for streaming inserts
+- synthetic_sniffer_injector: trace_id when available
+
+AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)"

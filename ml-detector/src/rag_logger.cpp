@@ -55,8 +55,8 @@ RAGLogger::~RAGLogger() {
     logger_->info("   Divergent events: {}", divergent_events_.load());
 }
 
-void RAGLogger::set_csv_writer(std::unique_ptr<CsvEventWriter> writer) {
-        csv_writer_ = std::move(writer);
+void RAGLogger::set_csv_writer(std::shared_ptr<CsvEventWriter> writer) {
+        csv_writer_ = writer;
         logger_->info("[RAGLogger] CsvEventWriter attached — CSV output active");
         logger_->info("[RAGLogger]   Output: {}/YYYY-MM-DD.csv",
                       csv_writer_ ? "/vagrant/logs/ml-detector/events" : "n/a");

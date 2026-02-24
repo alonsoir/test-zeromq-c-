@@ -92,7 +92,7 @@ public:
 
     // Day 63: Attach CSV writer (called from main.cpp after etcd key retrieval)
     // Optional — if not set, CSV output is silently skipped.
-    void set_csv_writer(std::unique_ptr<CsvEventWriter> writer);
+    void set_csv_writer(std::shared_ptr<CsvEventWriter> writer);
 
 private:
     RAGLoggerConfig config_;
@@ -112,7 +112,7 @@ private:
     mutable std::mutex mutex_;
 
     // Day 63: Optional CSV writer — nullptr if not configured
-    std::unique_ptr<CsvEventWriter> csv_writer_;
+    std::shared_ptr<CsvEventWriter> csv_writer_;
 
     bool should_log_event(const protobuf::NetworkSecurityEvent& event) const;
     nlohmann::json build_json_record(const protobuf::NetworkSecurityEvent& event,
