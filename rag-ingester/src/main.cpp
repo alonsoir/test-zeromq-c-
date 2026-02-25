@@ -17,6 +17,8 @@
 #include "common/config_parser.hpp"
 #include "file_watcher.hpp"
 #include "event_loader.hpp"
+#include "csv_file_watcher.hpp"
+#include "csv_event_loader.hpp"
 #include "embedders/simple_embedder.hpp"
 #include "indexers/multi_index_manager.hpp"
 
@@ -316,6 +318,75 @@ int main(int argc, char* argv[]) {
         // 7. Start watching
         // ====================================================================
         watcher.start(callback);
+
+    // ====================================================================
+    // Day 68: CSV streaming path (CsvFileWatcher + CsvEventLoader)
+    // ====================================================================
+    std::shared_ptr<rag_ingester::CsvEventLoader> csv_loader;
+    std::unique_ptr<rag_ingester::CsvFileWatcher> csv_watcher;
+
+    if (!config.ingester.input.csv_source_path.empty()) {
+        spdlog::info("Initializing CSV streaming path...");
+        spdlog::info("  CSV source: {}", config.ingester.input.csv_source_path);
+
+        rag_ingester::CsvEventLoaderConfig csv_cfg;
+        csv_cfg.hmac_key_hex = config.ingester.input.csv_hmac_key_hex;
+        csv_cfg.verify_hmac  = !csv_cfg.hmac_key_hex.empty();
+
+        csv_loader = std::make_shared<rag_ingester::CsvEventLoader>(csv_cfg);
+
+        csv_watcher = std::make_unique<rag_ingester::CsvFileWatcher>(
+            config.ingester.input.csv_source_path,
+            false,
+            500
+        );
+
+        csv_watcher->start([&, csv_loader](const std::string& line, uint64_t lineno) {
+            auto result = csv_loader->parse(line, lineno);
+
+            if (result.status != rag_ingester::CsvParseStatus::OK) {
+                spdlog::warn("CSV line {} rejected: {}", lineno, result.error);
+                events_failed++;
+                return;
+            }
+
+            auto& event = result.event;
+
+            // Zero-pad 62→105: S2 raw features; ceros no contribuyen
+            // a la proyeccion aleatoria de SimpleEmbedder (ADR: Day 68)
+            if (event.features.size() < rag_ingester::SimpleEmbedder::INPUT_DIM) {
+                event.features.resize(rag_ingester::SimpleEmbedder::INPUT_DIM, 0.0f);
+            }
+
+            try {
+                auto attack_emb = embedder.embed_attack(event);
+                index_manager.add_entity_malicious(attack_emb);
+                vectors_indexed++;
+
+                metadata_db->insert_event(
+                    vectors_indexed - 1,
+                    event.event_id,
+                    event.final_class,
+                    event.discrepancy_score
+                );
+
+                events_processed++;
+
+                spdlog::debug("CSV event indexed: id={}, class={}, conf={:.3f}, line={}",
+                              event.event_id, event.final_class, event.confidence, lineno);
+
+            } catch (const std::exception& e) {
+                events_failed++;
+                spdlog::error("CSV event indexing failed (line {}): {}", lineno, e.what());
+            }
+        });
+
+        spdlog::info("✅ CSV watcher started");
+
+    } else {
+        spdlog::info("CSV streaming disabled (csv_source_path not set)");
+    }
+
         spdlog::info("✅ RAG Ingester ready and waiting for events");
         spdlog::info("   Indices will be saved every {} events", SAVE_INTERVAL);
 
@@ -344,6 +415,13 @@ int main(int argc, char* argv[]) {
                 spdlog::info("  Bytes processed: {}", stats.bytes_processed);
                 spdlog::info("  Partial features: {}", stats.partial_feature_count);
 
+
+                if (csv_loader) {
+                    auto cs = csv_loader->get_stats();
+                    spdlog::info("  CSV lines detected: {}", csv_watcher->lines_detected());
+                    spdlog::info("  CSV parsed_ok={} hmac_fail={} parse_err={}",
+                                 cs.parsed_ok, cs.hmac_failures, cs.parse_errors);
+                }
                 last_stats = now;
             }
         }
@@ -353,6 +431,7 @@ int main(int argc, char* argv[]) {
         // ====================================================================
         spdlog::info("Shutting down...");
         watcher.stop();
+        if (csv_watcher) { csv_watcher->stop(); spdlog::info("CSV watcher stopped"); }
 
         // Save final state to disk
         spdlog::info("🔒 Saving final state to disk...");

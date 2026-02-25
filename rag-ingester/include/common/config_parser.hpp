@@ -19,6 +19,9 @@ struct InputConfig {
     bool encrypted;
     bool compressed;
     bool delete_after_process;
+    // Day 68: CSV streaming path
+    std::string csv_source_path;   // abs path al CSV de ml-detector ("" = disabled)
+    std::string csv_hmac_key_hex;  // 64-char hex key HMAC-SHA256    ("" = sin verify)
 };
 
 struct ThreadingConfig {

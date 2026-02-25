@@ -45,6 +45,11 @@ void ConfigParser::from_json(const nlohmann::json& j, Config& config) {
     config.ingester.input.encrypted = j["ingester"]["input"]["encrypted"];
     config.ingester.input.compressed = j["ingester"]["input"]["compressed"];
     config.ingester.input.delete_after_process = j["ingester"]["input"]["delete_after_process"];
+    // Day 68: CSV fields — opcionales, default ""
+    config.ingester.input.csv_source_path =
+        j["ingester"]["input"].value("csv_source_path", "");
+    config.ingester.input.csv_hmac_key_hex =
+        j["ingester"]["input"].value("csv_hmac_key_hex", "");
     
     // Threading
     config.ingester.threading.mode = j["ingester"]["threading"]["mode"];

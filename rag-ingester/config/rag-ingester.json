@@ -18,7 +18,9 @@
       "pattern": "*.pb.enc",
       "encrypted": true,
       "compressed": true,
-      "delete_after_process": false
+      "delete_after_process": false,
+      "csv_source_path":  "/vagrant/logs/ml-detector/events.csv",
+      "csv_hmac_key_hex": ""
     },
     
     "threading": {
