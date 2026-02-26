@@ -75,45 +75,93 @@ void MetadataDB::create_schema() {
     std::cout << "✅ Metadata schema ready" << std::endl;
 }
 
-void MetadataDB::insert_event(
-    size_t faiss_idx,
-    const std::string& event_id,
-    const std::string& classification,
-    float discrepancy_score
-) {
-    const char* sql = R"(
-        INSERT OR REPLACE INTO events
-        (faiss_idx, event_id, classification, discrepancy_score, timestamp)
-        VALUES (?, ?, ?, ?, ?)
-    )";
+    void MetadataDB::insert_event(int64_t faiss_idx,
+                                  const std::string& event_id,
+                                  const std::string& classification,
+                                  float              discrepancy_score,
+                                  const std::string& trace_id,
+                                  const std::string& source_ip,
+                                  const std::string& dest_ip,
+                                  uint64_t           timestamp_ms,
+                                  const std::string& pb_artifact_path)
+{
+    const char* sql =
+        "INSERT INTO events "
+        "(faiss_idx, event_id, classification, discrepancy_score, "
+        " trace_id, source_ip, dest_ip, timestamp_ms, pb_artifact_path) "
+        "VALUES (?,?,?,?,?,?,?,?,?);";
 
     sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
-
-    if (rc != SQLITE_OK) {
-        throw std::runtime_error(
-            std::string("Failed to prepare insert: ") + sqlite3_errmsg(db_)
-        );
-    }
-
-    // Bind parameters
-    sqlite3_bind_int64(stmt, 1, static_cast<sqlite3_int64>(faiss_idx));
-    sqlite3_bind_text(stmt, 2, event_id.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, classification.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 4, discrepancy_score);
-    sqlite3_bind_int64(stmt, 5, std::time(nullptr));
-
-    // Execute
-    rc = sqlite3_step(stmt);
-
-    if (rc != SQLITE_DONE) {
-        std::string error = sqlite3_errmsg(db_);
-        sqlite3_finalize(stmt);
-        throw std::runtime_error("Failed to insert event: " + error);
-    }
-
+    sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+    sqlite3_bind_int64(stmt, 1, faiss_idx);
+    sqlite3_bind_text (stmt, 2, event_id.c_str(),          -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 3, classification.c_str(),     -1, SQLITE_STATIC);
+    sqlite3_bind_double(stmt,4, discrepancy_score);
+    sqlite3_bind_text (stmt, 5, trace_id.empty() ? nullptr : trace_id.c_str(),
+                                trace_id.empty() ? 0 : -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 6, source_ip.c_str(),          -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 7, dest_ip.c_str(),            -1, SQLITE_STATIC);
+    sqlite3_bind_int64(stmt, 8, static_cast<int64_t>(timestamp_ms));
+    sqlite3_bind_text (stmt, 9, pb_artifact_path.empty() ? nullptr : pb_artifact_path.c_str(),
+                                pb_artifact_path.empty() ? 0 : -1, SQLITE_STATIC);
+    sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }
+
+void MetadataDB::update_firewall_by_trace_id(const std::string& trace_id,
+                                              const std::string& action,
+                                              uint64_t           fw_ts,
+                                              float              fw_score)
+{
+    const char* sql =
+        "UPDATE events SET firewall_action=?, firewall_timestamp=?, firewall_score=? "
+        "WHERE trace_id=?;";
+
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+    sqlite3_bind_text  (stmt, 1, action.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int64 (stmt, 2, static_cast<int64_t>(fw_ts));
+    sqlite3_bind_double(stmt, 3, fw_score);
+    sqlite3_bind_text  (stmt, 4, trace_id.c_str(), -1, SQLITE_STATIC);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+
+    void MetadataDB::update_firewall_by_ip_ts(const std::string& source_ip,
+                                               uint64_t           fw_ts_ms,
+                                               const std::string& action,
+                                               float              fw_score,
+                                               uint64_t           window_ms)
+{
+    // Find best matching event: same src_ip within ±window_ms of firewall timestamp
+    // Uses idx_src_ip_ts index
+    const char* sql =
+        "UPDATE events SET firewall_action=?, firewall_timestamp=?, firewall_score=? "
+        "WHERE faiss_idx = ("
+        "  SELECT faiss_idx FROM events "
+        "  WHERE source_ip=? "
+        "    AND timestamp_ms BETWEEN ? AND ? "
+        "    AND firewall_action IS NULL "       // don't overwrite existing correlation
+        "  ORDER BY ABS(CAST(timestamp_ms AS INTEGER) - ?) ASC "
+        "  LIMIT 1"
+        ");";
+
+    int64_t ts_min = static_cast<int64_t>(fw_ts_ms) - static_cast<int64_t>(window_ms);
+    int64_t ts_max = static_cast<int64_t>(fw_ts_ms) + static_cast<int64_t>(window_ms);
+
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+    sqlite3_bind_text  (stmt, 1, action.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int64 (stmt, 2, static_cast<int64_t>(fw_ts_ms));
+    sqlite3_bind_double(stmt, 3, fw_score);
+    sqlite3_bind_text  (stmt, 4, source_ip.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int64 (stmt, 5, ts_min);
+    sqlite3_bind_int64 (stmt, 6, ts_max);
+    sqlite3_bind_int64 (stmt, 7, static_cast<int64_t>(fw_ts_ms));
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+
 
 size_t MetadataDB::count() const {
     const char* sql = "SELECT COUNT(*) FROM events";
@@ -150,3 +198,21 @@ void MetadataDB::exec_sql(const char* sql) {
 }
 
 } // namespace rag
+void rag::MetadataDB::insert_event(
+    size_t faiss_idx,
+    const std::string& event_id,
+    const std::string& classification,
+    float discrepancy_score)
+{
+    insert_event(
+        static_cast<int64_t>(faiss_idx),
+        event_id,
+        classification,
+        discrepancy_score,
+        "",  // trace_id      — Day 7z
+        "",  // source_ip
+        "",  // dest_ip
+        0,   // timestamp_ms
+        ""   // pb_artifact_path — Day 7z
+    );
+}

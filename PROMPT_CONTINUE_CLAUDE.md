@@ -1,110 +1,45 @@
-# Day 69 — Prompt de Continuidad
-## ML Defender (aegisIDS) — Via Appia Quality
+## Commit Day 69 — Dual CSV Sources + MetadataDB Migration
 
-### Estado al cierre de Day 68
-
-**Completado Day 68:**
-
-Punto 1 — Wire CsvFileWatcher+CsvEventLoader en main.cpp: ✅
-- config_parser.hpp/.cpp: csv_source_path + csv_hmac_key_hex opcionales (default "")
-- main.cpp: CSV streaming path paralelo al path .pb existente
-  CsvFileWatcher → CsvEventLoader → SimpleEmbedder(INPUT_DIM=105) → FAISS + MetadataDB
-  Zero-pad S2 features 62→105: correcto matemáticamente para proyección aleatoria
-  csv_loader declarado fuera del if para acceso en stats loop
-  Stats en loop: lines_detected, parsed_ok, hmac_failures, parse_errors
-  Shutdown limpio: csv_watcher->stop() junto a watcher.stop()
-- rag-ingester.json: csv_source_path + csv_hmac_key_hex añadidos al bloque input
-- ctest 4/4: config_parser, file_watcher, csv_file_watcher, csv_event_loader
-
-Arquitectura Day 68 (ADR implícito):
-- Path CSV completamente independiente del path .pb
-- Comparten FAISS (entity_malicious) y MetadataDB — sin sincronización extra
-  porque CsvFileWatcher es single-thread y FileWatcher también (append-only)
-- IngesterService sigue siendo stub — refactor aplazado hasta integración
-  firewall-acl-agent (3 fuentes = momento natural para abstraer)
+**Estado real al cierre:** Day 69 completado. Todos los objetivos técnicos conseguidos. El smoke test del injector sintético reveló algo científicamente interesante que se deja documentado para el paper.
 
 ---
 
-### Pendiente Day 69 — en orden
+### Prompt de Continuidad — Day 70
 
-**1. Smoke test end-to-end (objetivo principal)**
+**Contexto del proyecto:** ML Defender (aegisIDS) — Day 70. Sistema de seguridad de red open-source, arquitectura distribuida C++20. Componentes activos: etcd-server, sniffer (cpp_evolutionary_sniffer), ml-detector (tricapa: ONNX L1 + Embedded C++20 L2/L3), firewall-acl-agent, rag-ingester.
 
-Verificar que el pipeline completo funciona:
-synthetic_sniffer_injector --ransomware → ml-detector → CSV → rag-ingester → FAISS + MetadataDB
+**Lo que está funcionando hoy:**
+- rag-ingester con dual CSV sources: `CsvDirWatcher` (ml-detector, rotación diaria) + `CsvFileWatcher` (firewall, append-only)
+- MetadataDB migrado a 14 columnas (6 originales + 8 Day 69: trace_id, source_ip, dest_ip, timestamp_ms, pb_artifact_path, firewall_action, firewall_timestamp, firewall_score)
+- Pipeline completo validado: sniffer → ml-detector → CSV → rag-ingester → FAISS + MetadataDB
+- Stats en vivo: `[csv-ml] parsed_ok=100`, `[csv-fw] parsed_ok=80`, `Vectors indexed: 100`
+- 6/6 ctest pasando
 
-Secuencia:
-```bash
-# Terminal 1: lanzar rag-ingester
-cd /vagrant/rag-ingester/build && ./rag-ingester ../config/rag-ingester.json
+**Nota científica para el paper (no bloquea desarrollo):**
+El injector sintético genera features con distribución distinta al dataset sintético de DeepSeek con el que se entrenaron los modelos L2/L3. Resultado: `fast=0.9, ml=0.2, final=0.9 (DIVERGENCE)`. La tricapa se comporta correctamente — usa fast_score como desempate de seguridad. Hipótesis abierta: *modelo entrenado con dataset sintético A confrontado con generador sintético B produce divergencia sistemática*. Validación pendiente con tcpreplay + PCAP académico (Day final).
 
-# Terminal 2: inyectar eventos ransomware
-cd /vagrant/build && ./synthetic_sniffer_injector --ransomware --count 20
+**Backlog programado Day 70:**
+Según el backlog previo — continuar con lo que toque en la lista. Preguntar al usuario cuál es el siguiente ítem antes de asumir.
 
-# Verificar MetadataDB
-sqlite3 /vagrant/shared/indices/metadata.db \
-  "SELECT event_id, classification, discrepancy_score FROM events ORDER BY rowid DESC LIMIT 10;"
-
-# Verificar FAISS vectors
-# (ntotal debe incrementar)
+**Rutas clave:**
+```
+/vagrant/rag-ingester/          — rag-ingester (binario compilado)
+/vagrant/ml-detector/           — ml-detector (build-debug)
+/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv
+/vagrant/logs/firewall_logs/firewall_blocks.csv
+/vagrant/shared/indices/metadata.db  — 14 cols, 200 eventos
+/vagrant/etcd-server/           — etcd-server
 ```
 
-Criterios de éxito:
-- rag-ingester log muestra "CSV event indexed" para eventos ransomware
-- MetadataDB contiene filas con classification="ransomware"
-- csv_watcher->lines_detected() > 0 en el stats loop
-- 0 hmac_failures (si csv_hmac_key_hex está configurado)
-  ó verify_hmac=false si la key está vacía
+**Namespaces:** `rag_ingester::` (rag-ingester), `ml_defender::` (firewall loader), `rag::` (MetadataDB)
 
-Posibles problemas a investigar:
-- ¿csv_source_path apunta al mismo fichero que genera ml-detector?
-  Verificar: grep -r "csv\|events.csv" /vagrant/ml-detector/src/zmq_handler.cpp
-- ¿El fichero CSV existe antes de que arranque CsvFileWatcher?
-  Si no existe, CsvFileWatcher lanza runtime_error — puede necesitar
-  creación previa del fichero vacío o manejo de ENOENT en start()
-
-**2. firewall-acl-agent — hardcoded values audit (backlog)**
-
-Mismo patrón que zmq_handler Day 66.
-Aplazar hasta que smoke test esté validado.
-
-Verificar antes:
-```bash
-grep -rn "hardcod\|TODO\|FIXME\|magic\|\"127\.\|\"localhost\|port.*=.*[0-9]" \
-  /vagrant/firewall-acl-agent/src/ | grep -v "\.pb\." | head -20
-```
-
-**3. synthetic_sniffer_injector — trace_id (backlog)**
-
-Cuando trace_id esté disponible en el protobuf, añadirlo al inyector.
-Beneficio: correlación sniffer→ml-detector→firewall en FAISS.
+**Pendiente técnico documentado:**
+- trace_id: Day 7z — UUID v7 nace en ml-detector, propaga a firewall-acl-agent, correlación limpia en MetadataDB
+- Smoke test firewall correlation: verificar `update_firewall_by_ip_ts` en MetadataDB con eventos reales
+- Dataset de entrenamiento DeepSeek: localizar en `/vagrant/ml-training/` cuando sea necesario para el paper
 
 ---
 
-### Ficheros tocados Day 68
-```
-rag-ingester/include/common/config_parser.hpp
-  - InputConfig: +csv_source_path, +csv_hmac_key_hex
+**Sinceridad del día:** Jornada sólida. Tres compilaciones, todas resueltas sin retroceder en arquitectura. La migración de MetadataDB fue limpia e idempotente. El smoke test funcionó en el primer intento real. El hallazgo del injector vs modelo no es un problema — es ciencia. Buen día de trabajo.
 
-rag-ingester/src/common/config_parser.cpp
-  - parse csv_source_path + csv_hmac_key_hex con .value() (optional, default "")
-
-rag-ingester/config/rag-ingester.json
-  - "csv_source_path": "/vagrant/logs/ml-detector/events.csv"
-  - "csv_hmac_key_hex": ""
-
-rag-ingester/main.cpp
-  - includes: csv_file_watcher.hpp + csv_event_loader.hpp
-  - bloque Day 68: csv_loader + csv_watcher declarados, init condicional
-  - callback lambda: parse → zero-pad → embed_attack → FAISS + MetadataDB
-  - stats loop: lines_detected + parsed_ok/hmac_failures/parse_errors
-  - shutdown: csv_watcher->stop()
-```
-
-### Contexto arquitectural acumulado
-- SimpleEmbedder::INPUT_DIM = 105 (101 core + 4 embedded)
-- MetadataDB::insert_event(faiss_idx, event_id, classification, discrepancy_score)
-- MultiIndexManager: add_entity_malicious() para eventos de ataque
-- WAL mode activo en MetadataDB desde Day 40
-- CsvFileWatcher: inotify IN_MODIFY + byte offset, single background thread
-- CsvEventLoader: parser 127 cols + HMAC-SHA256, stateless parse()
-- IngesterService: stub — no se usa desde main.cpp todavía
+Mañana seguimos.

@@ -63,6 +63,34 @@ namespace rag {
          * Flush any pending writes to disk
          */
         void flush();
+        // Day 69 additions to MetadataDB class
+        //
+        // ADD to metadata_db.hpp (public interface):
+
+        // Extended insert with new Day 69 fields
+        void insert_event(int64_t     faiss_idx,
+                          const std::string& event_id,
+                          const std::string& classification,
+                          float              discrepancy_score,
+                          const std::string& trace_id,          // "" until Day 7z
+                          const std::string& source_ip,
+                          const std::string& dest_ip,
+                          uint64_t           timestamp_ms,
+                          const std::string& pb_artifact_path); // "" until Day 7z
+
+        // Firewall correlation — by trace_id (clean path, Day 7z)
+        void update_firewall_by_trace_id(const std::string& trace_id,
+                                         const std::string& action,
+                                         uint64_t           firewall_timestamp_ms,
+                                         float              firewall_score);
+
+        // Firewall correlation — provisional by src_ip + timestamp window (±5000ms)
+        // Used until trace_id propagation is wired
+        void update_firewall_by_ip_ts(const std::string& source_ip,
+                                      uint64_t           firewall_timestamp_ms,
+                                      const std::string& action,
+                                      float              firewall_score,
+                                      uint64_t           window_ms = 5000);
 
     private:
         sqlite3* db_;

@@ -1,29 +1,32 @@
-cd /vagrant && git add \
-  rag-ingester/include/common/config_parser.hpp \
-  rag-ingester/src/common/config_parser.cpp \
-  rag-ingester/config/rag-ingester.json \
-  rag-ingester/main.cpp
+cd /vagrant && git add -A && git commit -m "Day 69: Dual CSV sources + MetadataDB migration
 
-git commit -m "feat(day68): wire CsvFileWatcher+CsvEventLoader in main.cpp
+rag-ingester:
+- CsvDirWatcher: inotify-based daily rotation watcher for ml-detector events/
+- FirewallCsvEventLoader: 7-col CSV parser with HMAC-SHA256 verification
+- config_parser: csv_source_path/csv_hmac_key_hex → dual csv_ml_detector_dir +
+  csv_firewall_path fields (Day 68 → Day 69 migration)
+- MetadataDB: insert_event(4-param) delegating to insert_event(9-param)
+- main.cpp: dual watcher wiring, stats loop for both sources
 
-Day 68 — Via Appia Quality
+MetadataDB migration (idempotent):
+- +8 columns: trace_id, source_ip, dest_ip, timestamp_ms, pb_artifact_path,
+  firewall_action, firewall_timestamp, firewall_score
+- +2 indices: idx_trace_id, idx_src_ip_ts (provisional correlation until Day 7z)
+- 100 existing events preserved
 
-## Features
-- config_parser: csv_source_path + csv_hmac_key_hex (optional, default \"\")
-- main.cpp: CSV streaming path parallel to .pb FileWatcher path
-  CsvFileWatcher → CsvEventLoader → SimpleEmbedder → FAISS + MetadataDB
-  Zero-pad S2 features 62→105 (ADR: mathematically correct for random projection)
-  Stats in loop: lines_detected, parsed_ok, hmac_failures, parse_errors
-  Graceful shutdown: csv_watcher->stop() alongside watcher.stop()
-- rag-ingester.json: csv_source_path + csv_hmac_key_hex fields added
+Validation:
+- 6/6 ctest passing
+- Smoke test: csv-ml parsed_ok=100, csv-fw parsed_ok=80, vectors_indexed=100
+- MetadataDB: 14 columns, 200 events after smoke test
 
-## Verified
-- ctest 4/4: config_parser, file_watcher, csv_file_watcher, csv_event_loader
-- Build: 0 errors, warnings preexistentes Day 67
+Scientific note:
+- Synthetic injector (fast=0.9) vs DeepSeek-trained model (ml~=0.2) → divergence
+- Tricapa DIVERGENCE path works correctly: final=fast_score (security default)
+- Open hypothesis: synthetic-A trained vs synthetic-B tested → systematic divergence
+- Deferred to paper: validation with tcpreplay + academic PCAP
 
-## Backlog Day 69
-- Smoke test end-to-end: synthetic_sniffer_injector --ransomware → CSV → FAISS
-- firewall-acl-agent: hardcoded values audit
-- synthetic_sniffer_injector: trace_id
+Pending:
+- trace_id propagation: Day 7z (UUID v7, ml-detector → firewall → rag-ingester)
+- Firewall correlation smoke test (update_firewall_by_ip_ts verification)
 
-AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)"
+Co-authored-by: Claude (Anthropic)"

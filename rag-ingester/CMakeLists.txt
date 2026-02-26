@@ -35,6 +35,7 @@ find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(OpenSSL REQUIRED)   # Day 67: CsvEventLoader HMAC-SHA256
+# Day 69: FirewallCsvEventLoader HMAC-SHA256
 
 # etcd-client (REQUIRED)
 find_library(ETCD_CLIENT_LIB
@@ -95,7 +96,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/proto          # ← CRÍTICO: protobuf copiado aquí
         ${Protobuf_INCLUDE_DIRS}
-        ${OPENSSL_INCLUDE_DIR}             # Day 67: CsvEventLoader
+        ${OPENSSL_INCLUDE_DIR}             # Day 67: CsvEventLoader / Day 69: FirewallCsvEventLoader
         /usr/local/include
         /vagrant/crypto-transport/include  # ← crypto-transport headers
         /vagrant/common/include            # ← reason_codes.hpp (ADR-002)
@@ -141,7 +142,7 @@ target_link_libraries(event_loader
 target_compile_options(event_loader PRIVATE -Wall -Wextra -Wpedantic)
 
 # ============================================================================
-# Day 67 Components — CSV ingestion pipeline
+# Day 67 Components — CSV ingestion pipeline (ml-detector path)
 # ============================================================================
 
 # CsvFileWatcher library — inotify tail semantics for append-only CSV
@@ -155,6 +156,22 @@ add_library(csv_event_loader STATIC src/csv_event_loader.cpp)
 target_include_directories(csv_event_loader PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(csv_event_loader PRIVATE OpenSSL::Crypto)
 target_compile_options(csv_event_loader PRIVATE -Wall -Wextra -Wpedantic)
+
+# ============================================================================
+# Day 69 Components — Dual CSV sources
+# ============================================================================
+
+# CsvDirWatcher library — inotify on directory for daily-rotating CSV files
+add_library(csv_dir_watcher STATIC src/csv_dir_watcher.cpp)
+target_include_directories(csv_dir_watcher PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(csv_dir_watcher PRIVATE Threads::Threads)
+target_compile_options(csv_dir_watcher PRIVATE -Wall -Wextra -Wpedantic)
+
+# FirewallCsvEventLoader library — parse 7-column firewall CSV + HMAC-SHA256
+add_library(firewall_csv_event_loader STATIC src/firewall_csv_event_loader.cpp)
+target_include_directories(firewall_csv_event_loader PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(firewall_csv_event_loader PRIVATE OpenSSL::Crypto)
+target_compile_options(firewall_csv_event_loader PRIVATE -Wall -Wextra -Wpedantic)
 
 # ============================================================================
 # Main Executable
@@ -184,6 +201,8 @@ target_link_libraries(rag-ingester
         event_loader
         csv_file_watcher
         csv_event_loader
+        csv_dir_watcher
+        firewall_csv_event_loader
         Threads::Threads
         ${Protobuf_LIBRARIES}
         ${ETCD_CLIENT_LIB}
@@ -260,6 +279,14 @@ message(STATUS "  CsvFileWatcher:  inotify IN_MODIFY + offset (append-only CSV)"
 message(STATUS "  CsvEventLoader:  127-col CSV parser + HMAC-SHA256 verification")
 message(STATUS "  Feature vector:  62 raw NetworkFeatures (Section 2)")
 message(STATUS "  WAL mode:        SQLite WAL required for streaming inserts")
+message(STATUS "")
+message(STATUS "Day 69 Components:")
+message(STATUS "  CsvDirWatcher:          inotify on directory, daily rotation")
+message(STATUS "  FirewallCsvEventLoader: 7-col CSV parser + HMAC-SHA256")
+message(STATUS "  Source A (ml-detector): CsvDirWatcher → FAISS + MetadataDB INSERT")
+message(STATUS "  Source B (firewall):    CsvFileWatcher → MetadataDB UPDATE")
+message(STATUS "  Correlation:            provisional by src_ip+ts_window (±5s)")
+message(STATUS "                          clean path via trace_id (Day 7z)")
 message(STATUS "")
 message(STATUS "🎯 Single Source of Truth:")
 message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")

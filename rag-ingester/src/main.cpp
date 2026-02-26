@@ -1,6 +1,8 @@
 // main.cpp
 // RAG Ingester - Main Entry Point
 // Day 40: Producer complete - metadata_db + FAISS persistence
+// Day 68: CSV streaming path (CsvFileWatcher + CsvEventLoader)
+// Day 69: Dual CSV sources — ml-detector (dir rotation) + firewall (single file)
 
 #include <iostream>
 #include <csignal>
@@ -9,16 +11,18 @@
 #include <chrono>
 #include <filesystem>
 #include <vector>
-
 #include <spdlog/spdlog.h>
 #include "metadata_db.hpp"
 #include <faiss/index_io.h>
 #include <faiss/IndexFlat.h>
+
 #include "common/config_parser.hpp"
 #include "file_watcher.hpp"
 #include "event_loader.hpp"
-#include "csv_file_watcher.hpp"
 #include "csv_event_loader.hpp"
+#include "csv_file_watcher.hpp"
+#include "csv_dir_watcher.hpp"
+#include "firewall_csv_event_loader.hpp"
 #include "embedders/simple_embedder.hpp"
 #include "indexers/multi_index_manager.hpp"
 
@@ -276,7 +280,7 @@ int main(int argc, char* argv[]) {
                 std::string classification = event.final_class;
                 float discrepancy_score = event.discrepancy_score;
 
-                // Insert into metadata DB (sin IPs - no están en Event struct)
+                // Insert into metadata DB
                 try {
                     metadata_db->insert_event(
                         faiss_idx,
@@ -315,77 +319,146 @@ int main(int argc, char* argv[]) {
         };
 
         // ====================================================================
-        // 7. Start watching
+        // 7. Start watching .pb files
         // ====================================================================
         watcher.start(callback);
 
-    // ====================================================================
-    // Day 68: CSV streaming path (CsvFileWatcher + CsvEventLoader)
-    // ====================================================================
-    std::shared_ptr<rag_ingester::CsvEventLoader> csv_loader;
-    std::unique_ptr<rag_ingester::CsvFileWatcher> csv_watcher;
+        // ====================================================================
+        // Day 69 — Source A: ml-detector CSV (directory, daily rotation)
+        // CsvDirWatcher detects IN_CREATE (new YYYY-MM-DD.csv) + IN_MODIFY
+        // ====================================================================
+        std::shared_ptr<rag_ingester::CsvEventLoader>  ml_csv_loader;
+        std::shared_ptr<rag_ingester::CsvDirWatcher>   dir_watcher;
 
-    if (!config.ingester.input.csv_source_path.empty()) {
-        spdlog::info("Initializing CSV streaming path...");
-        spdlog::info("  CSV source: {}", config.ingester.input.csv_source_path);
+        if (!config.ingester.input.csv_ml_detector_dir.empty()) {
+            spdlog::info("Initializing CSV ml-detector path...");
+            spdlog::info("  Dir: {}", config.ingester.input.csv_ml_detector_dir);
 
-        rag_ingester::CsvEventLoaderConfig csv_cfg;
-        csv_cfg.hmac_key_hex = config.ingester.input.csv_hmac_key_hex;
-        csv_cfg.verify_hmac  = !csv_cfg.hmac_key_hex.empty();
+            rag_ingester::CsvEventLoaderConfig ml_cfg;
+            ml_cfg.hmac_key_hex = config.ingester.input.csv_ml_detector_hmac_key_hex;
+            ml_cfg.verify_hmac  = !ml_cfg.hmac_key_hex.empty();
 
-        csv_loader = std::make_shared<rag_ingester::CsvEventLoader>(csv_cfg);
+            ml_csv_loader = std::make_shared<rag_ingester::CsvEventLoader>(ml_cfg);
 
-        csv_watcher = std::make_unique<rag_ingester::CsvFileWatcher>(
-            config.ingester.input.csv_source_path,
-            false,
-            500
-        );
+            dir_watcher = std::make_shared<rag_ingester::CsvDirWatcher>(
+                config.ingester.input.csv_ml_detector_dir,
+                [&](const std::string& line) {
+                    // CsvDirWatcher delivers line number implicitly via closure counter
+                    // CsvEventLoader::parse() is stateless — lineno used for logging only
+                    static std::atomic<uint64_t> lineno{0};
+                    uint64_t ln = ++lineno;
 
-        csv_watcher->start([&, csv_loader](const std::string& line, uint64_t lineno) {
-            auto result = csv_loader->parse(line, lineno);
+                    auto result = ml_csv_loader->parse(line, ln);
+                    if (result.status != rag_ingester::CsvParseStatus::OK) {
+                        spdlog::warn("[csv-ml] line {} rejected: {}", ln, result.error);
+                        events_failed++;
+                        return;
+                    }
 
-            if (result.status != rag_ingester::CsvParseStatus::OK) {
-                spdlog::warn("CSV line {} rejected: {}", lineno, result.error);
-                events_failed++;
-                return;
-            }
+                    auto& event = result.event;
 
-            auto& event = result.event;
+                    // Zero-pad S2 features 62→105 (ADR: Day 68)
+                    if (event.features.size() < rag_ingester::SimpleEmbedder::INPUT_DIM) {
+                        event.features.resize(rag_ingester::SimpleEmbedder::INPUT_DIM, 0.0f);
+                    }
 
-            // Zero-pad 62→105: S2 raw features; ceros no contribuyen
-            // a la proyeccion aleatoria de SimpleEmbedder (ADR: Day 68)
-            if (event.features.size() < rag_ingester::SimpleEmbedder::INPUT_DIM) {
-                event.features.resize(rag_ingester::SimpleEmbedder::INPUT_DIM, 0.0f);
-            }
+                    try {
+                        auto attack_emb = embedder.embed_attack(event);
+                        index_manager.add_entity_malicious(attack_emb);
+                        vectors_indexed++;
 
-            try {
-                auto attack_emb = embedder.embed_attack(event);
-                index_manager.add_entity_malicious(attack_emb);
-                vectors_indexed++;
+                        metadata_db->insert_event(
+                            vectors_indexed - 1,
+                            event.event_id,
+                            event.final_class,
+                            event.discrepancy_score
+                        );
 
-                metadata_db->insert_event(
-                    vectors_indexed - 1,
-                    event.event_id,
-                    event.final_class,
-                    event.discrepancy_score
-                );
+                        events_processed++;
 
-                events_processed++;
+                        spdlog::debug("[csv-ml] indexed: id={} class={} conf={:.3f} line={}",
+                                      event.event_id, event.final_class, event.confidence, ln);
 
-                spdlog::debug("CSV event indexed: id={}, class={}, conf={:.3f}, line={}",
-                              event.event_id, event.final_class, event.confidence, lineno);
+                    } catch (const std::exception& e) {
+                        events_failed++;
+                        spdlog::error("[csv-ml] indexing failed (line {}): {}", ln, e.what());
+                    }
+                }
+            );
 
-            } catch (const std::exception& e) {
-                events_failed++;
-                spdlog::error("CSV event indexing failed (line {}): {}", lineno, e.what());
-            }
-        });
+            dir_watcher->start();
+            spdlog::info("✅ CSV ml-detector dir watcher started");
 
-        spdlog::info("✅ CSV watcher started");
+        } else {
+            spdlog::info("CSV ml-detector path disabled (csv_ml_detector_dir not set)");
+        }
 
-    } else {
-        spdlog::info("CSV streaming disabled (csv_source_path not set)");
-    }
+        // ====================================================================
+        // Day 69 — Source B: firewall-acl-agent CSV (single file, append-only)
+        // CsvFileWatcher (inotify IN_MODIFY + offset) + FirewallCsvEventLoader
+        // Does NOT insert into FAISS — UPDATE MetadataDB WHERE src_ip + ts window
+        // ====================================================================
+        std::shared_ptr<ml_defender::FirewallCsvEventLoader> fw_csv_loader;
+        std::unique_ptr<rag_ingester::CsvFileWatcher>        fw_watcher;
+
+        if (!config.ingester.input.csv_firewall_path.empty()) {
+            spdlog::info("Initializing CSV firewall path...");
+            spdlog::info("  File: {}", config.ingester.input.csv_firewall_path);
+
+            fw_csv_loader = std::make_shared<ml_defender::FirewallCsvEventLoader>(
+                config.ingester.input.csv_firewall_hmac_key_hex
+            );
+
+            fw_watcher = std::make_unique<rag_ingester::CsvFileWatcher>(
+                config.ingester.input.csv_firewall_path,
+                false,  // seek_to_end = false: replay existing lines on startup
+                500
+            );
+
+            fw_watcher->start([&](const std::string& line, uint64_t lineno) {
+                ml_defender::FirewallEvent fw_ev;
+                auto result = fw_csv_loader->parse(line, fw_ev);
+
+                if (result == ml_defender::FirewallParseResult::EMPTY_LINE) return;
+
+                if (result != ml_defender::FirewallParseResult::OK) {
+                    spdlog::warn("[csv-fw] line {} rejected (result={})", lineno,
+                                 static_cast<int>(result));
+                    return;
+                }
+
+                // UPDATE MetadataDB — provisional correlation by src_ip + timestamp window
+                // (trace_id path available once trace_id propagation is wired — Day 7z)
+                try {
+                    if (!fw_ev.trace_id.empty()) {
+                        metadata_db->update_firewall_by_trace_id(
+                            fw_ev.trace_id,
+                            fw_ev.action,
+                            fw_ev.timestamp_ms,
+                            fw_ev.score
+                        );
+                    } else {
+                        metadata_db->update_firewall_by_ip_ts(
+                            fw_ev.source_ip,
+                            fw_ev.timestamp_ms,
+                            fw_ev.action,
+                            fw_ev.score
+                        );
+                    }
+
+                    spdlog::debug("[csv-fw] correlated: src={} action={} score={:.3f} line={}",
+                                  fw_ev.source_ip, fw_ev.action, fw_ev.score, lineno);
+
+                } catch (const std::exception& e) {
+                    spdlog::error("[csv-fw] correlation failed (line {}): {}", lineno, e.what());
+                }
+            });
+
+            spdlog::info("✅ CSV firewall watcher started");
+
+        } else {
+            spdlog::info("CSV firewall path disabled (csv_firewall_path not set)");
+        }
 
         spdlog::info("✅ RAG Ingester ready and waiting for events");
         spdlog::info("   Indices will be saved every {} events", SAVE_INTERVAL);
@@ -415,13 +488,24 @@ int main(int argc, char* argv[]) {
                 spdlog::info("  Bytes processed: {}", stats.bytes_processed);
                 spdlog::info("  Partial features: {}", stats.partial_feature_count);
 
-
-                if (csv_loader) {
-                    auto cs = csv_loader->get_stats();
-                    spdlog::info("  CSV lines detected: {}", csv_watcher->lines_detected());
-                    spdlog::info("  CSV parsed_ok={} hmac_fail={} parse_err={}",
+                // Day 69 — CSV ml-detector stats
+                if (dir_watcher && ml_csv_loader) {
+                    auto cs = ml_csv_loader->get_stats();
+                    spdlog::info("  [csv-ml] lines={} rotations={} parsed_ok={} hmac_fail={} parse_err={}",
+                                 dir_watcher->lines_detected(),
+                                 dir_watcher->files_rotated(),
                                  cs.parsed_ok, cs.hmac_failures, cs.parse_errors);
                 }
+
+                // Day 69 — CSV firewall stats
+                if (fw_watcher && fw_csv_loader) {
+                    spdlog::info("  [csv-fw] lines={} parsed_ok={} hmac_fail={} parse_err={}",
+                                 fw_watcher->lines_detected(),
+                                 fw_csv_loader->parsed_ok(),
+                                 fw_csv_loader->hmac_failures(),
+                                 fw_csv_loader->parse_errors());
+                }
+
                 last_stats = now;
             }
         }
@@ -431,7 +515,9 @@ int main(int argc, char* argv[]) {
         // ====================================================================
         spdlog::info("Shutting down...");
         watcher.stop();
-        if (csv_watcher) { csv_watcher->stop(); spdlog::info("CSV watcher stopped"); }
+
+        if (dir_watcher)  { dir_watcher->stop();  spdlog::info("CSV ml-detector watcher stopped"); }
+        if (fw_watcher)   { fw_watcher->stop();   spdlog::info("CSV firewall watcher stopped"); }
 
         // Save final state to disk
         spdlog::info("🔒 Saving final state to disk...");

@@ -2,6 +2,7 @@
 # RAG Ingester - Test Suite
 # Day 36: config_parser + FileWatcher tests
 # Day 67: CsvFileWatcher + CsvEventLoader tests
+# Day 69: CsvDirWatcher + FirewallCsvEventLoader tests
 #
 # ⚠️  All test targets defined HERE only.
 #     The root CMakeLists.txt does: enable_testing() + add_subdirectory(tests)
@@ -72,3 +73,37 @@ target_link_libraries(test_csv_event_loader
         OpenSSL::Crypto
 )
 add_test(NAME test_csv_event_loader COMMAND test_csv_event_loader)
+
+# ============================================================================
+# Test: CsvDirWatcher (Day 69) — inotify on directory, daily rotation
+# ============================================================================
+add_executable(test_csv_dir_watcher
+        test_csv_dir_watcher.cpp
+)
+target_include_directories(test_csv_dir_watcher
+        PRIVATE ${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(test_csv_dir_watcher
+        PRIVATE
+        csv_dir_watcher
+        Threads::Threads
+)
+add_test(NAME test_csv_dir_watcher COMMAND test_csv_dir_watcher)
+
+# ============================================================================
+# Test: FirewallCsvEventLoader (Day 69) — 7-column firewall CSV + HMAC-SHA256
+# ============================================================================
+add_executable(test_firewall_csv_event_loader
+        test_firewall_csv_event_loader.cpp
+)
+target_include_directories(test_firewall_csv_event_loader
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${OPENSSL_INCLUDE_DIR}
+)
+target_link_libraries(test_firewall_csv_event_loader
+        PRIVATE
+        firewall_csv_event_loader
+        OpenSSL::Crypto
+)
+add_test(NAME test_firewall_csv_event_loader COMMAND test_firewall_csv_event_loader)
