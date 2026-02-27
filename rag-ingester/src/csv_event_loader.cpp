@@ -262,6 +262,15 @@ void CsvEventLoader::parse_section1(const std::vector<std::string>& cols,
     // col 1: event_id
     ev.event_id = cols[1];
 
+    // col 2: src_ip
+    ev.source_ip = cols.size() > 2 ? cols[2] : "";
+
+    // col 3: dst_ip
+    ev.dest_ip = cols.size() > 3 ? cols[3] : "";
+
+    // timestamp_ms (convert ns → ms)
+    ev.timestamp_ms = ev.timestamp_ns / 1000000;
+
     // col 7: final_class
     ev.final_class = cols[7];
 

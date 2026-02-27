@@ -7,24 +7,26 @@
 //
 // Single background thread — callbacks fire on that thread.
 //
+// Day 70: replay_on_start — si true, procesa el contenido existente del
+// fichero activo al arrancar (offset=0). Default false mantiene comportamiento
+// anterior (seek to EOF, solo eventos nuevos).
+//
 // AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)
-// DATE: Day 69
-
+// DATE: Day 69 / Day 70
 #pragma once
-
 #include <string>
 #include <functional>
 #include <thread>
 #include <atomic>
 #include <cstdint>
-
 namespace rag_ingester {
-
     class CsvDirWatcher {
     public:
         using LineCallback = std::function<void(const std::string& line)>;
 
-        explicit CsvDirWatcher(const std::string& dir_path, LineCallback callback);
+        explicit CsvDirWatcher(const std::string& dir_path,
+                               LineCallback callback,
+                               bool replay_on_start = false);
         ~CsvDirWatcher();
 
         // Throws std::runtime_error if dir_path does not exist.
@@ -37,10 +39,10 @@ namespace rag_ingester {
     private:
         std::string   dir_path_;
         LineCallback  callback_;
+        bool          replay_on_start_ {false};
 
         std::thread        thread_;
         std::atomic<bool>  running_ {false};
-
         std::atomic<uint64_t> lines_detected_ {0};
         std::atomic<uint64_t> files_rotated_  {0};
 
@@ -49,5 +51,4 @@ namespace rag_ingester {
         void run();
         off_t drain_new_lines(const std::string& filepath, off_t offset);
     };
-
 } // namespace rag_ingester

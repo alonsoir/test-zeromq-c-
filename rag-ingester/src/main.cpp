@@ -3,6 +3,8 @@
 // Day 40: Producer complete - metadata_db + FAISS persistence
 // Day 68: CSV streaming path (CsvFileWatcher + CsvEventLoader)
 // Day 69: Dual CSV sources — ml-detector (dir rotation) + firewall (single file)
+// Day 70: replay_on_start=true en CsvDirWatcher — procesa CSVs existentes al arrancar
+//         Checkpoint periódico SAVE_INTERVAL añadido al CSV ml-detector callback
 
 #include <iostream>
 #include <csignal>
@@ -326,6 +328,7 @@ int main(int argc, char* argv[]) {
         // ====================================================================
         // Day 69 — Source A: ml-detector CSV (directory, daily rotation)
         // CsvDirWatcher detects IN_CREATE (new YYYY-MM-DD.csv) + IN_MODIFY
+        // Day 70: replay_on_start=true — procesa contenido existente al arrancar
         // ====================================================================
         std::shared_ptr<rag_ingester::CsvEventLoader>  ml_csv_loader;
         std::shared_ptr<rag_ingester::CsvDirWatcher>   dir_watcher;
@@ -368,13 +371,25 @@ int main(int argc, char* argv[]) {
                         vectors_indexed++;
 
                         metadata_db->insert_event(
-                            vectors_indexed - 1,
+                            static_cast<int64_t>(vectors_indexed - 1),
                             event.event_id,
                             event.final_class,
-                            event.discrepancy_score
+                            event.discrepancy_score,
+                            "",               // trace_id — Day 7z
+                            event.source_ip,
+                            event.dest_ip,
+                            event.timestamp_ms,
+                            ""                // pb_artifact_path — Day 7z
                         );
 
                         events_processed++;
+
+                        // Day 70: checkpoint periódico — mismo SAVE_INTERVAL que .pb watcher
+                        events_since_last_save++;
+                        if (events_since_last_save >= SAVE_INTERVAL) {
+                            save_indices_to_disk();
+                            events_since_last_save = 0;
+                        }
 
                         spdlog::debug("[csv-ml] indexed: id={} class={} conf={:.3f} line={}",
                                       event.event_id, event.final_class, event.confidence, ln);
@@ -383,11 +398,12 @@ int main(int argc, char* argv[]) {
                         events_failed++;
                         spdlog::error("[csv-ml] indexing failed (line {}): {}", ln, e.what());
                     }
-                }
+                },
+                true  // Day 70: replay_on_start — procesa CSVs existentes al arrancar
             );
 
             dir_watcher->start();
-            spdlog::info("✅ CSV ml-detector dir watcher started");
+            spdlog::info("✅ CSV ml-detector dir watcher started (replay_on_start=true)");
 
         } else {
             spdlog::info("CSV ml-detector path disabled (csv_ml_detector_dir not set)");

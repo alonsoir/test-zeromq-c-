@@ -1,32 +1,11 @@
-cd /vagrant && git add -A && git commit -m "Day 69: Dual CSV sources + MetadataDB migration
+cd /vagrant && git add -A && \
+git commit -m "Day 70: fix FAISS persistence + MetadataDB IP population
 
-rag-ingester:
-- CsvDirWatcher: inotify-based daily rotation watcher for ml-detector events/
-- FirewallCsvEventLoader: 7-col CSV parser with HMAC-SHA256 verification
-- config_parser: csv_source_path/csv_hmac_key_hex → dual csv_ml_detector_dir +
-  csv_firewall_path fields (Day 68 → Day 69 migration)
-- MetadataDB: insert_event(4-param) delegating to insert_event(9-param)
-- main.cpp: dual watcher wiring, stats loop for both sources
+- csv_dir_watcher: replay_on_start itera todos los CSVs históricos
+- main.cpp: checkpoint periódico en CSV callback (SAVE_INTERVAL=100)
+- metadata_db: añadir timestamp a INSERT extendido (NOT NULL fix)
+- csv_event_loader: parsear cols 2/3 (source_ip, dest_ip)
+- event_loader.hpp: añadir source_ip, dest_ip, timestamp_ms al struct Event
+- csv_dir_watcher: eliminar dependencia spdlog (fix test linkage)
 
-MetadataDB migration (idempotent):
-- +8 columns: trace_id, source_ip, dest_ip, timestamp_ms, pb_artifact_path,
-  firewall_action, firewall_timestamp, firewall_score
-- +2 indices: idx_trace_id, idx_src_ip_ts (provisional correlation until Day 7z)
-- 100 existing events preserved
-
-Validation:
-- 6/6 ctest passing
-- Smoke test: csv-ml parsed_ok=100, csv-fw parsed_ok=80, vectors_indexed=100
-- MetadataDB: 14 columns, 200 events after smoke test
-
-Scientific note:
-- Synthetic injector (fast=0.9) vs DeepSeek-trained model (ml~=0.2) → divergence
-- Tricapa DIVERGENCE path works correctly: final=fast_score (security default)
-- Open hypothesis: synthetic-A trained vs synthetic-B tested → systematic divergence
-- Deferred to paper: validation with tcpreplay + academic PCAP
-
-Pending:
-- trace_id propagation: Day 7z (UUID v7, ml-detector → firewall → rag-ingester)
-- Firewall correlation smoke test (update_firewall_by_ip_ts verification)
-
-Co-authored-by: Claude (Anthropic)"
+Result: 100 events in MetadataDB with IPs, attack.faiss 26K persisted"

@@ -88,8 +88,8 @@ void MetadataDB::create_schema() {
     const char* sql =
         "INSERT INTO events "
         "(faiss_idx, event_id, classification, discrepancy_score, "
-        " trace_id, source_ip, dest_ip, timestamp_ms, pb_artifact_path) "
-        "VALUES (?,?,?,?,?,?,?,?,?);";
+        " timestamp, trace_id, source_ip, dest_ip, timestamp_ms, pb_artifact_path) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?);";
 
     sqlite3_stmt* stmt = nullptr;
     sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
@@ -97,12 +97,13 @@ void MetadataDB::create_schema() {
     sqlite3_bind_text (stmt, 2, event_id.c_str(),          -1, SQLITE_STATIC);
     sqlite3_bind_text (stmt, 3, classification.c_str(),     -1, SQLITE_STATIC);
     sqlite3_bind_double(stmt,4, discrepancy_score);
-    sqlite3_bind_text (stmt, 5, trace_id.empty() ? nullptr : trace_id.c_str(),
+    sqlite3_bind_int64(stmt, 5, static_cast<int64_t>(timestamp_ms));
+    sqlite3_bind_text (stmt, 6, trace_id.empty() ? nullptr : trace_id.c_str(),
                                 trace_id.empty() ? 0 : -1, SQLITE_STATIC);
-    sqlite3_bind_text (stmt, 6, source_ip.c_str(),          -1, SQLITE_STATIC);
-    sqlite3_bind_text (stmt, 7, dest_ip.c_str(),            -1, SQLITE_STATIC);
-    sqlite3_bind_int64(stmt, 8, static_cast<int64_t>(timestamp_ms));
-    sqlite3_bind_text (stmt, 9, pb_artifact_path.empty() ? nullptr : pb_artifact_path.c_str(),
+    sqlite3_bind_text (stmt, 7, source_ip.c_str(),          -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 8, dest_ip.c_str(),            -1, SQLITE_STATIC);
+    sqlite3_bind_int64(stmt, 9, static_cast<int64_t>(timestamp_ms));
+    sqlite3_bind_text (stmt,10, pb_artifact_path.empty() ? nullptr : pb_artifact_path.c_str(),
                                 pb_artifact_path.empty() ? 0 : -1, SQLITE_STATIC);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);

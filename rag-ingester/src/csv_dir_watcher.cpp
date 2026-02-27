@@ -1,5 +1,10 @@
 // csv_dir_watcher.cpp
-// Day 69
+// Day 69 / Day 70
+//
+// Day 70: replay_on_start — si true, procesa TODOS los CSVs existentes en el
+// directorio ordenados por nombre (YYYY-MM-DD.csv → orden cronológico natural),
+// luego entra en el loop inotify con active_offset = EOF del fichero de hoy
+// para no reprocesar eventos ya consumidos.
 //
 // AUTHORS: Alonso Isidoro Roman + Claude (Anthropic)
 
@@ -14,6 +19,8 @@
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
+#include <vector>
 
 namespace rag_ingester {
 
@@ -23,9 +30,12 @@ namespace fs = std::filesystem;
 // Constructor / Destructor
 // ---------------------------------------------------------------------------
 
-CsvDirWatcher::CsvDirWatcher(const std::string& dir_path, LineCallback callback)
+CsvDirWatcher::CsvDirWatcher(const std::string& dir_path,
+                             LineCallback callback,
+                             bool replay_on_start)
     : dir_path_(dir_path)
     , callback_(std::move(callback))
+    , replay_on_start_(replay_on_start)
 {}
 
 CsvDirWatcher::~CsvDirWatcher() {
@@ -100,7 +110,33 @@ void CsvDirWatcher::run() {
                                    IN_CREATE | IN_MOVED_TO | IN_MODIFY);
     if (dir_wd < 0) { close(ifd); return; }
 
-    // Seed with today's file — seek to current EOF
+    // -----------------------------------------------------------------------
+    // Day 70: replay_on_start — procesar TODOS los CSVs existentes ordenados
+    // por nombre (YYYY-MM-DD.csv → orden cronológico natural por std::sort).
+    // El watcher ya está registrado en inotify antes del replay para no perder
+    // eventos que lleguen durante el procesamiento.
+    // -----------------------------------------------------------------------
+    if (replay_on_start_) {
+        std::vector<std::string> existing_csvs;
+
+        for (const auto& entry : fs::directory_iterator(dir_path_)) {
+            if (entry.path().extension() == ".csv") {
+                existing_csvs.push_back(entry.path().string());
+            }
+        }
+
+        // YYYY-MM-DD.csv → std::sort produce orden cronológico correcto
+        std::sort(existing_csvs.begin(), existing_csvs.end());
+
+
+        for (const auto& csv_path : existing_csvs) {
+            drain_new_lines(csv_path, 0);  // offset 0 = fichero completo
+        }
+
+    }
+
+    // Después del replay: active_file = hoy, active_offset = EOF actual
+    // para no reprocesar lo que ya se consumió en el replay.
     std::string active_file   = today_filepath();
     off_t       active_offset = 0;
     if (fs::exists(active_file)) {
