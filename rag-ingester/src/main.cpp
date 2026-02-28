@@ -399,11 +399,11 @@ int main(int argc, char* argv[]) {
                         spdlog::error("[csv-ml] indexing failed (line {}): {}", ln, e.what());
                     }
                 },
-                true  // Day 70: replay_on_start — procesa CSVs existentes al arrancar
+                config.ingester.input.replay_on_start  // configurable via rag-ingester.json
             );
 
             dir_watcher->start();
-            spdlog::info("✅ CSV ml-detector dir watcher started (replay_on_start=true)");
+            spdlog::info("✅ CSV ml-detector dir watcher started (replay_on_start={})", config.ingester.input.replay_on_start);
 
         } else {
             spdlog::info("CSV ml-detector path disabled (csv_ml_detector_dir not set)");

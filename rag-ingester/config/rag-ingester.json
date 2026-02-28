@@ -14,7 +14,7 @@
   "ingester": {
     "input": {
       "source": "file_watch",
-      "directory": "/vagrant/logs/rag/synthetic/artifacts/2026-01-24",
+      "directory": "/vagrant/logs/rag/empty",
       "pattern": "*.pb.enc",
       "encrypted": true,
       "compressed": true,
@@ -24,7 +24,8 @@
       "csv_ml_detector_hmac_key_hex": "",
 
       "csv_firewall_path":            "/vagrant/logs/firewall_logs/firewall_blocks.csv",
-      "csv_firewall_hmac_key_hex":    ""
+      "csv_firewall_hmac_key_hex":    "",
+      "replay_on_start":              true
     },
 
     "threading": {

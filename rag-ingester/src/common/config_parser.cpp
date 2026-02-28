@@ -52,6 +52,8 @@ void ConfigParser::from_json(const nlohmann::json& j, Config& config) {
         j["ingester"]["input"].value("csv_ml_detector_hmac_key_hex", "");
     config.ingester.input.csv_firewall_path =
         j["ingester"]["input"].value("csv_firewall_path", "");
+    config.ingester.input.replay_on_start =
+        j["ingester"]["input"].value("replay_on_start", false);
     config.ingester.input.csv_firewall_hmac_key_hex =
         j["ingester"]["input"].value("csv_firewall_hmac_key_hex", "");
 

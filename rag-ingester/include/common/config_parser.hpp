@@ -20,6 +20,7 @@ struct InputConfig {
     std::string csv_ml_detector_hmac_key_hex;  // 64-char hex HMAC-SHA256        ("" = sin verify)
     std::string csv_firewall_path;             // fichero único append-only       ("" = disabled)
     std::string csv_firewall_hmac_key_hex;     // 64-char hex HMAC-SHA256        ("" = sin verify)
+    bool replay_on_start;                      // replay CSVs existentes al arrancar
 };
 struct ThreadingConfig {
     std::string mode;  // "single" or "parallel"

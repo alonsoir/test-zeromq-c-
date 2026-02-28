@@ -184,7 +184,7 @@ void RagCommandManager::handleQuerySimilar(const std::vector<std::string>& args)
         return;
     }
 
-    if (!chronos_index_ || chronos_index_->ntotal == 0) {
+    if (!attack_index_ || attack_index_->ntotal == 0) {
         std::cout << "❌ FAISS indices not loaded or empty" << std::endl;
         return;
     }
@@ -202,15 +202,15 @@ void RagCommandManager::handleQuerySimilar(const std::vector<std::string>& args)
     size_t query_idx = *faiss_idx_opt;
 
     // Reconstruct query vector from FAISS
-    std::vector<float> query_vector(128);
-    chronos_index_->reconstruct(query_idx, query_vector.data());
+    std::vector<float> query_vector(64);
+    attack_index_->reconstruct(query_idx, query_vector.data());
 
     // Search top-k neighbors
     int k = 5;
     std::vector<faiss::idx_t> indices(k);
     std::vector<float> distances(k);
 
-    chronos_index_->search(1, query_vector.data(), k,
+    attack_index_->search(1, query_vector.data(), k,
                           distances.data(), indices.data());
 
     // Display query event
@@ -376,7 +376,7 @@ void RagCommandManager::handleInfo(const std::vector<std::string>& args) {
 
     for (const auto& evt : events) {
         // Convert timestamp to readable format
-        time_t t = static_cast<time_t>(evt.timestamp / 1000000000ULL);  // nanoseconds to seconds
+        time_t t = static_cast<time_t>(evt.timestamp / 1000ULL);  // nanoseconds to seconds
         char time_str[64];
         strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", localtime(&t));
 
