@@ -3,6 +3,7 @@
 # Day 36: config_parser + FileWatcher tests
 # Day 67: CsvFileWatcher + CsvEventLoader tests
 # Day 69: CsvDirWatcher + FirewallCsvEventLoader tests
+# Day 72: trace_id_generator tests (header-only, OpenSSL + spdlog)
 #
 # ⚠️  All test targets defined HERE only.
 #     The root CMakeLists.txt does: enable_testing() + add_subdirectory(tests)
@@ -107,3 +108,32 @@ target_link_libraries(test_firewall_csv_event_loader
         OpenSSL::Crypto
 )
 add_test(NAME test_firewall_csv_event_loader COMMAND test_firewall_csv_event_loader)
+
+# ============================================================================
+# Test: trace_id_generator (Day 72)
+#
+# Header-only — no static library needed.
+# trace_id_generator.hpp lives in include/utils/ and is already covered
+# by the root CMakeLists.txt include_directories(${CMAKE_SOURCE_DIR}/include).
+#
+# Dependencies:
+#   OpenSSL::Crypto — SHA256 (openssl/sha.h)
+#   spdlog::spdlog  — warn/debug logs for sentinel substitutions
+#
+# Test 5 (edge cases) will emit spdlog warn messages for empty fields —
+# this is intentional and confirms the audit trail is working.
+# ============================================================================
+add_executable(test_trace_id
+        test_trace_id.cpp
+)
+target_include_directories(test_trace_id
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${OPENSSL_INCLUDE_DIR}
+)
+target_link_libraries(test_trace_id
+        PRIVATE
+        OpenSSL::Crypto
+        spdlog::spdlog
+)
+add_test(NAME test_trace_id COMMAND test_trace_id)

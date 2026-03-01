@@ -255,7 +255,7 @@ void RagCommandManager::handleQuerySimilar(const std::vector<std::string>& args)
 
     if (explain) {
         std::cout << "\n🔬 Explanation (--explain):" << std::endl;
-        std::cout << "   Feature space: Chronos embedding (128-dim)" << std::endl;
+        std::cout << "   Feature space: Attack embedding (64-dim)" << std::endl;
         std::cout << "   Distance metric: L2 (Euclidean)" << std::endl;
         std::cout << "   Lower distance = more similar behavior" << std::endl;
         std::cout << "   Expected: Same-class events cluster together (<0.5 dist)" << std::endl;

@@ -60,9 +60,18 @@ namespace rag {
         size_t count() const;
 
         /**
+         * Check if event_id already exists in database (idempotency guard)
+         * Day 72: prevents FAISS/MetadataDB desync on multi-file replay
+         * @param event_id Event identifier to check
+         * @return true if event already indexed
+         */
+        bool exists(const std::string& event_id) const;
+
+        /**
          * Flush any pending writes to disk
          */
         void flush();
+
         // Day 69 additions to MetadataDB class
         //
         // ADD to metadata_db.hpp (public interface):

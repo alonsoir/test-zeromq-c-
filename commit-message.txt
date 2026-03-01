@@ -1,31 +1,36 @@
-cd /vagrant
+git add \
+  rag-ingester/include/metadata_db.hpp \
+  rag-ingester/src/metadata_db.cpp \
+  rag-ingester/include/utils/trace_id_generator.hpp \
+  rag-ingester/src/main.cpp \
+  rag-ingester/tests/test_trace_id.cpp \
+  rag-ingester/tests/CMakeLists.txt \
+  rag-ingester/CMakeLists.txt \
+  rag/src/rag_command_manager.cpp
 
-# rag-local fixes
-git add rag/src/rag_command_manager.cpp
-git add rag/src/main.cpp
+git commit -m "Day 72: trace_id correlation + idempotency guard + schema from birth
 
-# rag-ingester: replay_on_start configurable
-git add rag-ingester/include/common/config_parser.hpp
-git add rag-ingester/src/common/config_parser.cpp
-git add rag-ingester/src/main.cpp
-git add rag-ingester/config/rag-ingester.json
+- MetadataDB: exists() guard prevents FAISS/DB desync on duplicate events
+  Verified: 199 CSV lines replayed, 100 unique indexed, 99 silently rejected
 
-git commit -m "Day 71: rag-local validated + replay_on_start configurable
+- trace_id_generator (include/utils/, header-only):
+  SHA256_prefix_16B(src_ip|dst_ip|canonical_attack_type|bucket)
+  Zero-coordination: deterministic across restarts, O(1), stateless
+  Canonicalization: SSH_BRUTE/ssh-brute/ssh_bruteforce → ssh_brute
+  Sentinels: empty IP → 0.0.0.0, empty attack_type → unknown (warn logged)
+  TraceIdMetadata.fallback_applied for audit without log parsing
+  Versioned TraceIdPolicy: window_ms per attack_type (ransomware=60s, ddos=10s)
 
-rag-local (rag-security):
-- Fix: query_similar now uses attack_index (64-dim, 100 vectors)
-  instead of chronos_index (0 vectors) — was crashing on empty index
-- Fix: timestamp display corrected ms→s (1000 divisor, was 1e9)
-- query_similar functional: 4/4 same-class neighbors, dist 0.000-0.001
+- MetadataDB schema: complete CREATE TABLE from birth, no ALTER TABLE needed
+  Verified: 100/100 events with trace_id populated after clean replay
 
-rag-ingester:
-- replay_on_start moved from hardcoded true to config field
-  (config_parser.hpp/cpp + rag-ingester.json)
-- Identified bug: faiss_idx assigned from in-memory counter
-  causes FAISS/MetadataDB desync on multi-file replay
-  Fix pending Day 72: metadata_db::exists(event_id) guard
+- test_trace_id: 6 test groups including edge cases (empty fields, sentinels,
+  concatenation collision resistance, window sensitivity)
 
-Known issues (Day 72+):
-- etcd PUT in rag-local fails (ChaCha20 key mismatch, non-blocking)
-- --explain text still says Chronos/128-dim (cosmetic)
-- Idempotency guard missing in CSV callback"
+- Fix: --explain text corrected to 'Attack embedding (64-dim)'
+
+Clustering quality: 4/4 same-class neighbors, distances 0.001-0.004
+Bug 7 (etcd PUT ChaCha20 mismatch) deferred to Day 73 — non-blocking
+
+Co-authored-by: Claude (Anthropic)
+Co-authored-by: Qwen (Alibaba) [TraceIdPolicy design + collision math]"

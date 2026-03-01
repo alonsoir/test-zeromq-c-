@@ -35,7 +35,7 @@ find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(OpenSSL REQUIRED)   # Day 67: CsvEventLoader HMAC-SHA256
-# Day 69: FirewallCsvEventLoader HMAC-SHA256
+# Day 72: trace_id_generator SHA256
 
 # etcd-client (REQUIRED)
 find_library(ETCD_CLIENT_LIB
@@ -93,13 +93,14 @@ endif()
 # Include Directories
 # ============================================================================
 include_directories(
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_BINARY_DIR}/proto          # ← CRÍTICO: protobuf copiado aquí
+        ${CMAKE_SOURCE_DIR}/include          # covers include/utils/ (header-only, Day 72)
+        ${CMAKE_BINARY_DIR}/proto            # ← CRÍTICO: protobuf copiado aquí
         ${Protobuf_INCLUDE_DIRS}
-        ${OPENSSL_INCLUDE_DIR}             # Day 67: CsvEventLoader / Day 69: FirewallCsvEventLoader
+        ${OPENSSL_INCLUDE_DIR}               # Day 67: CsvEventLoader / Day 69: FirewallCsvEventLoader
+        # Day 72: trace_id_generator (openssl/sha.h)
         /usr/local/include
-        /vagrant/crypto-transport/include  # ← crypto-transport headers
-        /vagrant/common/include            # ← reason_codes.hpp (ADR-002)
+        /vagrant/crypto-transport/include    # ← crypto-transport headers
+        /vagrant/common/include              # ← reason_codes.hpp (ADR-002)
 )
 
 message(STATUS "✅ protobuf headers: ${CMAKE_BINARY_DIR}/proto")
@@ -172,6 +173,16 @@ add_library(firewall_csv_event_loader STATIC src/firewall_csv_event_loader.cpp)
 target_include_directories(firewall_csv_event_loader PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(firewall_csv_event_loader PRIVATE OpenSSL::Crypto)
 target_compile_options(firewall_csv_event_loader PRIVATE -Wall -Wextra -Wpedantic)
+
+# ============================================================================
+# Day 72 Components
+# ============================================================================
+# trace_id_generator — header-only, no static library needed.
+# Located at include/utils/trace_id_generator.hpp.
+# Included via #include "utils/trace_id_generator.hpp" in main.cpp.
+# Already covered by include_directories(${CMAKE_SOURCE_DIR}/include) above.
+# Dependencies: OpenSSL::Crypto (SHA256) + spdlog::spdlog (sentinel warn logs).
+# Both are already linked into rag-ingester target below.
 
 # ============================================================================
 # Main Executable
@@ -286,7 +297,17 @@ message(STATUS "  FirewallCsvEventLoader: 7-col CSV parser + HMAC-SHA256")
 message(STATUS "  Source A (ml-detector): CsvDirWatcher → FAISS + MetadataDB INSERT")
 message(STATUS "  Source B (firewall):    CsvFileWatcher → MetadataDB UPDATE")
 message(STATUS "  Correlation:            provisional by src_ip+ts_window (±5s)")
-message(STATUS "                          clean path via trace_id (Day 7z)")
+message(STATUS "                          clean path via trace_id (Day 72)")
+message(STATUS "")
+message(STATUS "Day 72 Components:")
+message(STATUS "  Idempotency guard:      exists() before embed+index (FAISS/DB sync)")
+message(STATUS "  trace_id_generator:     header-only, include/utils/")
+message(STATUS "                          SHA256(src|dst|attack|bucket) prefix 16B")
+message(STATUS "                          O(1), zero-coordination, deterministic")
+message(STATUS "                          Sentinel: empty IP → 0.0.0.0 (warn logged)")
+message(STATUS "                          Sentinel: empty attack → unknown (warn logged)")
+message(STATUS "  MetadataDB schema:      complete from birth (no ALTER TABLE needed)")
+message(STATUS "  test_trace_id:          6 test groups incl. edge cases")
 message(STATUS "")
 message(STATUS "🎯 Single Source of Truth:")
 message(STATUS "  Compiler Flags: Controlled by root Makefile via PROFILE")
