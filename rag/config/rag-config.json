@@ -33,10 +33,21 @@
     "use_mlock": false,
     "use_mmap": true
   },
-  "capabilities": ["component_management", "config_validation", "pipeline_control", "embedder_system", "faiss_search"],
+  "capabilities": [
+    "component_management",
+    "config_validation",
+    "pipeline_control",
+    "embedder_system",
+    "faiss_search"
+  ],
   "compression": "lz4",
   "encryption": "AES-256-CBC",
   "whitelist_commands": true,
   "requires_encryption": true,
-  "requires_compression": false
+  "requires_compression": false,
+  "logging": {
+  "path": "/vagrant/logs/rag.log",
+  "level": "info",
+  "append": true
+  }
 }

@@ -30,7 +30,8 @@ struct EtcdClient::Impl {
         config.port = port_;
         config.encryption_enabled = true;
         config.compression_enabled = true;
-        
+        config.compression_min_size = 0;
+
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
     
@@ -87,7 +88,12 @@ bool EtcdClient::is_connected() const {
 
 bool EtcdClient::registerService() {
     std::cout << "📝 Registering RAG service in etcd..." << std::endl;
-    
+
+    if (!pImpl->client_->register_component()) {
+        std::cerr << "❌ Failed to register component" << std::endl;
+        return false;
+    }
+
     // Crear configuración de RAG
     nlohmann::json rag_config = {
         {"component", pImpl->component_name_},

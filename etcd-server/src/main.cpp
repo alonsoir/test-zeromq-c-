@@ -18,6 +18,7 @@ void signal_handler(int signal) {
     if (g_server) {
         g_server->stop();
     }
+    exit(0);
 }
 
 int main() {

@@ -1,36 +1,12 @@
-git add \
-  rag-ingester/include/metadata_db.hpp \
-  rag-ingester/src/metadata_db.cpp \
-  rag-ingester/include/utils/trace_id_generator.hpp \
-  rag-ingester/src/main.cpp \
-  rag-ingester/tests/test_trace_id.cpp \
-  rag-ingester/tests/CMakeLists.txt \
-  rag-ingester/CMakeLists.txt \
-  rag/src/rag_command_manager.cpp
+cd /vagrant && git add -A && git commit -m "Day 73: Fix etcd/rag startup bugs, Makefile pipeline stable
 
-git commit -m "Day 72: trace_id correlation + idempotency guard + schema from birth
-
-- MetadataDB: exists() guard prevents FAISS/DB desync on duplicate events
-  Verified: 199 CSV lines replayed, 100 unique indexed, 99 silently rejected
-
-- trace_id_generator (include/utils/, header-only):
-  SHA256_prefix_16B(src_ip|dst_ip|canonical_attack_type|bucket)
-  Zero-coordination: deterministic across restarts, O(1), stateless
-  Canonicalization: SSH_BRUTE/ssh-brute/ssh_bruteforce → ssh_brute
-  Sentinels: empty IP → 0.0.0.0, empty attack_type → unknown (warn logged)
-  TraceIdMetadata.fallback_applied for audit without log parsing
-  Versioned TraceIdPolicy: window_ms per attack_type (ransomware=60s, ddos=10s)
-
-- MetadataDB schema: complete CREATE TABLE from birth, no ALTER TABLE needed
-  Verified: 100/100 events with trace_id populated after clean replay
-
-- test_trace_id: 6 test groups including edge cases (empty fields, sentinels,
-  concatenation collision resistance, window sensitivity)
-
-- Fix: --explain text corrected to 'Attack embedding (64-dim)'
-
-Clustering quality: 4/4 same-class neighbors, distances 0.001-0.004
-Bug 7 (etcd PUT ChaCha20 mismatch) deferred to Day 73 — non-blocking
-
-Co-authored-by: Claude (Anthropic)
-Co-authored-by: Qwen (Alibaba) [TraceIdPolicy design + collision math]"
+- etcd_client.cpp: add register_component() before put_config() in registerService()
+- etcd_client.cpp: set compression_min_size=0 to force LZ4 always (fix 500 error)
+- main.cpp (rag): add isatty() daemon mode with sigwait() - no more infinite loop
+- main.cpp (rag): add cin.eof() guard for interactive mode
+- etcd-server/main.cpp: add exit(0) to signal_handler
+- Makefile: pipeline-start/stop/status working for etcd-server + rag-security
+- Makefile: fix pkill via vagrant ssh using ps+grep pattern instead
+- Makefile: nohup with sleep inside same SSH session (keeps session alive)
+- Makefile: add etcd-server-status, rag-status, rag-logs targets
+- rag-config.json: add logging section with path"

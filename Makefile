@@ -30,6 +30,7 @@
 .PHONY: crypto-transport-build crypto-transport-clean crypto-transport-test
 .PHONY: etcd-server etcd-server-build etcd-server-clean etcd-server-start etcd-server-stop
 .PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs
+.PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: test-hardening test-hardening-build test-hardening-run
 .PHONY: day38-step1 day38-step2 day38-step3 day38-step4 day38-step5
 .PHONY: day38-full day38-status day38-clean day38-pipeline
@@ -424,6 +425,41 @@ etcd-server:
 	@vagrant ssh -c "ln -sfn $(ETCD_SERVER_BUILD_DIR) $(ETCD_SERVER_LEGACY_LINK)"
 	@echo ""
 	@echo "✅ etcd-server built ($(PROFILE))"
+
+etcd-server-status:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "etcd-server Status:"
+	@vagrant ssh -c "pgrep -a -f etcd-server && echo '✅ etcd-server: RUNNING' || echo '❌ etcd-server: STOPPED'"
+	@vagrant ssh -c "curl -s http://localhost:2379/health || echo '⚠️  Not responding'"
+	@echo "════════════════════════════════════════════════════════════"
+
+pipeline-start: etcd-server-start
+	@echo "⏳ Waiting for etcd-server to stabilize..."
+	@sleep 3
+	@$(MAKE) rag-start
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ Pipeline started                                      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@$(MAKE) pipeline-status
+
+pipeline-stop:
+	@echo "🛑 Stopping pipeline..."
+	@$(MAKE) rag-stop
+	@$(MAKE) etcd-server-stop
+	@echo "✅ Pipeline stopped"
+
+pipeline-status:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  Pipeline Status                                          ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@vagrant ssh -c "ps aux | grep '[e]tcd-server'  | grep -v defunct | grep -q . && echo '  ✅ etcd-server:   RUNNING' || echo '  ❌ etcd-server:   STOPPED'"
+	@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && echo '  ✅ rag-security:  RUNNING' || echo '  ❌ rag-security:  STOPPED'"
+	@vagrant ssh -c "ps aux | grep '[m]l-detector'  | grep -v defunct | grep -q . && echo '  ✅ ml-detector:   RUNNING' || echo '  ❌ ml-detector:   STOPPED'"
+	@vagrant ssh -c "ps aux | grep '[f]irewall-acl' | grep -v defunct | grep -q . && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
+	@vagrant ssh -c "ps aux | grep '[s]niffer'      | grep -v defunct | grep -q . && echo '  ✅ sniffer:       RUNNING' || echo '  ❌ sniffer:       STOPPED'"
+	@echo ""
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
@@ -878,13 +914,15 @@ etcd-server-start:
 	@echo "🚀 Starting etcd-server..."
 	@vagrant ssh -c 'mkdir -p /vagrant/logs && \
 		cd $(ETCD_SERVER_BUILD_DIR) && \
-		nohup ./etcd-server > /vagrant/logs/etcd-server.log 2>&1 &'
-	@sleep 2
-	@vagrant ssh -c "pgrep -f etcd-server && echo '✅ etcd-server started' || echo '❌ Failed to start'"
+		nohup ./etcd-server </dev/null >/vagrant/logs/etcd-server.log 2>&1 & \
+		sleep 3'
+	@vagrant ssh -c "ps aux | grep '[e]tcd-server' | grep -v defunct | grep -q . && echo '✅ etcd-server started' || echo '❌ Failed to start'"
 
 etcd-server-stop:
 	@echo "🛑 Stopping etcd-server..."
-	@vagrant ssh -c "pkill -f etcd-server 2>/dev/null || true"
+	-@vagrant ssh -c "ps aux | grep '[e]tcd-server' | grep -v defunct | grep -q . && kill -9 \$$(ps aux | grep '[e]tcd-server' | grep -v defunct | awk '{print \$$2}') 2>/dev/null; exit 0"
+	@sleep 1
+	@vagrant ssh -c "ps aux | grep '[e]tcd-server' | grep -v defunct | grep -q . && echo '⚠️  Still running' || echo '✅ etcd-server stopped'"
 
 # ============================================================================
 # TSAN Validation Suite (Day 48 Phase 0)
@@ -1045,11 +1083,27 @@ rag-clean:
 
 rag-start:
 	@echo "🚀 Starting RAG Security System..."
-	@vagrant ssh -c "cd /vagrant/rag/build && nohup ./rag-security -c ../config/rag-config.json > /vagrant/logs/rag.log 2>&1 &"
+	@vagrant ssh -c 'mkdir -p /vagrant/logs && \
+		cd /vagrant/rag/build && \
+		nohup ./rag-security </dev/null >/vagrant/logs/rag.log 2>&1 & \
+		sleep 4'
+	@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && echo '✅ rag-security started' || echo '❌ Failed to start'"
 
 rag-stop:
 	@echo "🛑 Stopping RAG..."
-	@vagrant ssh -c "pkill -f rag-security 2>/dev/null || true"
+	-@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && kill -9 \$$(ps aux | grep '[r]ag-security' | grep -v defunct | awk '{print \$$2}') 2>/dev/null; exit 0"
+	@sleep 1
+	@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && echo '⚠️  Still running' || echo '✅ rag-security stopped'"
+
+rag-status:
+	@echo "════════════════════════════════════════════════════════════"
+	@echo "RAG Security Status:"
+	@vagrant ssh -c "pgrep -a -f rag-security && echo '✅ rag-security: RUNNING' || echo '❌ rag-security: STOPPED'"
+	@vagrant ssh -c "tail -5 /vagrant/logs/rag.log 2>/dev/null || echo '⚠️  No log yet'"
+	@echo "════════════════════════════════════════════════════════════"
+
+rag-logs:
+	@vagrant ssh -c "tail -f /vagrant/logs/rag.log"
 
 # ============================================================================
 # Test Hardening Suite (Day 46/47)
