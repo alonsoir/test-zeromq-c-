@@ -4,8 +4,8 @@
 
 [![Via Appia Quality](https://img.shields.io/badge/Via_Appia-Quality-gold)](https://en.wikipedia.org/wiki/Appian_Way)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Status: Production Ready](https://img.shields.io/badge/Status-Production_Ready-brightgreen)]()
-
+[![Status: Preparing to arXiv Delivery](https://img.shields.io/badge/Status-Production_Ready-brightgreen)]()
+https://alonsoir-test-zeromq-c-.mintlify.app/introduction
 ---
 
 ## 🎯 Mission
