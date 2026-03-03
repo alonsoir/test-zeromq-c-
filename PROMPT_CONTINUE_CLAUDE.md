@@ -1,26 +1,28 @@
-## Prompt de continuidad — Día 74
+## Prompt de continuidad — Día 75
 
-**Estado al cierre del Día 73:**
+**Estado al cierre del Día 74:**
+pipeline-start y pipeline-stop funcionan perfectamente.
+make pipeline-stop → tmux limpio, sin procesos huérfanos confirmado.
+6/6 componentes arrancan, se registran en etcd, heartbeats 200 OK.
 
-`pipeline-start` arranca correctamente **etcd-server** y **rag-security** desde el Makefile del Mac. Ambos sobreviven y mandan heartbeat. El resto de componentes (**ml-detector, firewall-acl-agent, sniffer**) no tienen targets en `pipeline-start` todavía.
+**Bugs cerrados Día 74:**
+- Bug 5 sniffer: register_component() antes de put_config() ✅
+- Bug LZ4 sniffer: compression_min_size=0 ✅
+- pipeline-status via tmux has-session ✅
+- pipeline-stop via tmux kill-session ✅
+- firewall-start paths corregidos ✅
+- Typo ppipeline-start → pipeline-start ✅
 
-**Bugs cerrados hoy:**
-- Bug 5 (register_component antes de put_config) ✅
-- Bug LZ4 (compression_min_size=0) ✅
-- rag-security bucle infinito en daemon mode ✅
-- etcd-server SIGTERM sin exit(0) ✅
-- Makefile pipeline-start/stop/status funcional ✅
-
-**Pendiente Día 74:**
-1. Añadir ml-detector, firewall-acl-agent, sniffer a `pipeline-start` con sus paths correctos (`build-debug/`)
-2. Verificar que rag-security recibe el seed de cifrado de etcd (el `component=` vacío en PUT puede seguir siendo problema)
-3. Fix path hardcodeado en etcd-server-start — usar `$(ETCD_SERVER_BUILD_DIR)` en lugar de `build-debug`
-4. Añadir rag-ingester al pipeline
-5. Una vez pipeline estable: trace_id en CLI (P2 del Día 72)
-
-**Archivos modificados:**
-- `/vagrant/rag/src/etcd_client.cpp`
-- `/vagrant/rag/src/main.cpp`
-- `/vagrant/etcd-server/src/main.cpp`
-- `/vagrant/Makefile`
-- `/vagrant/rag/config/rag-config.json`
+**Pendiente Día 75 (en orden):**
+1. Verificar heartbeat del sniffer llega a 200 (solo vimos CRYPTO, no heartbeat confirmado)
+2. Conectar a sesión tmux de rag-security para lanzar comandos interactivos
+   - Investigar cómo expone su CLI (probablemente stdin de la sesión tmux)
+3. trace_id en CLI (P2 del Día 72)
+4. Test de stress con CTU-13 pcap replay:
+   - Arrancar las dos VMs del Vagrantfile (server + client)
+   - make pipeline-start → make test-replay-neris (492K events)
+   - Dejar corriendo varias horas y medir:
+      * Latencia end-to-end sniffer → ml-detector → firewall
+      * Tasa de eventos/seg sostenida
+      * Estabilidad de memoria (sin leaks)
+      * Heartbeats continuos durante todo el test

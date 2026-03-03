@@ -1,4 +1,4 @@
-# ML Defender (aegisIDS)
+# ML Defender (aRGus EDR)
 
 **Open-source, enterprise-grade network security system protecting critical infrastructure from ransomware and DDoS attacks.**
 

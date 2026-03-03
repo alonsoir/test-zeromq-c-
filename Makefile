@@ -35,6 +35,9 @@
 .PHONY: day38-step1 day38-step2 day38-step3 day38-step4 day38-step5
 .PHONY: day38-full day38-status day38-clean day38-pipeline
 .PHONY: tsan-all tsan-quick tsan-clean tsan-summary tsan-status
+.PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
+.PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
+.PHONY: etcd-server-start rag-start rag-stop dev-setup-tools
 
 # ============================================================================
 # ML Defender Pipeline - Master Makefile
@@ -118,6 +121,8 @@ FIREWALL_LEGACY_LINK      := /vagrant/firewall-acl-agent/build
 ETCD_SERVER_LEGACY_LINK   := /vagrant/etcd-server/build
 TOOLS_LEGACY_LINK         := /vagrant/tools/build
 
+RAG_BUILD_DIR := /vagrant/rag/build
+RAG_INGESTER_BIN_DIR := /vagrant/rag-ingester/build
 # ============================================================================
 # HELP
 # ============================================================================
@@ -319,6 +324,18 @@ etcd-client-test:
 # CRITICAL: All components copy protobuf files BEFORE cmake
 # Dependencies are explicit and automatic
 # ============================================================================
+# Ajusta estas rutas a tu estructura real
+SNIFFER_DIR := /vagrant/sniffer
+SNIFFER_BIN := ./build-debug/sniffer
+SNIFFER_CFG := ../config/sniffer.json
+
+sniffer-start: sniffer
+	@echo "🚀 Starting Sniffer (SUDO + TMUX + Hybrid Mode)..."
+	@vagrant ssh -c "tmux kill-session -t sniffer 2>/dev/null || true"
+	@echo "Lanzamos tmux y dentro ejecutamos sudo env para preservar el path de las librerías..."
+	@vagrant ssh -c "tmux new-session -d -s sniffer 'cd $(SNIFFER_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer -c $(SNIFFER_CFG)'"
+	@sleep 2
+	@$(MAKE) pipeline-status
 
 sniffer: proto etcd-client-build
 	@echo ""
@@ -342,6 +359,13 @@ sniffer: proto etcd-client-build
 	@echo ""
 	@echo "✅ Sniffer built ($(PROFILE))"
 
+ml-detector-start: ml-detector
+	@echo "🚀 Starting ML Detector (Tricapa Persistente)..."
+	@vagrant ssh -c "tmux kill-session -t ml-detector 2>/dev/null || true"
+	@vagrant ssh -c "tmux new-session -d -s ml-detector 'cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector'"
+	@sleep 3
+	@$(MAKE) pipeline-status
+
 ml-detector: proto etcd-client-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -364,6 +388,14 @@ ml-detector: proto etcd-client-build
 	@echo ""
 	@echo "✅ ML Detector built ($(PROFILE))"
 
+rag-ingester-start: rag-ingester
+	@echo "🚀 Starting RAG Ingester (Full Context)..."
+	@vagrant ssh -c "tmux kill-session -t rag-ingester 2>/dev/null || true"
+	@echo "Ejecución desde la raíz del componente para resolver paths relativos del config..."
+	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester'"
+	@sleep 2
+	@$(MAKE) pipeline-status
+
 rag-ingester: proto etcd-client-build crypto-transport-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -385,6 +417,17 @@ rag-ingester: proto etcd-client-build crypto-transport-build
 	@vagrant ssh -c "ln -sfn $(RAG_INGESTER_BUILD_DIR) $(RAG_INGESTER_LEGACY_LINK)"
 	@echo ""
 	@echo "✅ RAG Ingester built ($(PROFILE))"
+
+FIREWALL_DIR := /vagrant/firewall-acl-agent
+FIREWALL_BIN := ./firewall-acl-agent
+FIREWALL_CFG := ../config/firewall.json
+
+firewall-start: firewall
+	@echo "🚀 Starting Firewall ACL (SUDO + TMUX)..."
+	@vagrant ssh -c "tmux kill-session -t firewall 2>/dev/null || true"
+	@vagrant ssh -c "tmux new-session -d -s firewall 'cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG)'"
+	@sleep 2
+	@$(MAKE) pipeline-status
 
 firewall: proto etcd-client-build
 	@echo ""
@@ -434,32 +477,38 @@ etcd-server-status:
 	@echo "════════════════════════════════════════════════════════════"
 
 pipeline-start: etcd-server-start
-	@echo "⏳ Waiting for etcd-server to stabilize..."
-	@sleep 3
+	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."
+	@sleep 4
 	@$(MAKE) rag-start
+	@sleep 2
+	@$(MAKE) rag-ingester-start
+	@$(MAKE) ml-detector-start
+	@$(MAKE) firewall-start
+	@sleep 2
+	@$(MAKE) sniffer-start
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  ✅ Pipeline started                                      ║"
+	@echo "║  ✅ FULL PIPELINE STARTED (Day 74)                        ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@$(MAKE) pipeline-status
 
 pipeline-stop:
-	@echo "🛑 Stopping pipeline..."
-	@$(MAKE) rag-stop
-	@$(MAKE) etcd-server-stop
+	@echo "🛑 Stopping all pipeline components..."
+	@vagrant ssh -c "for s in sniffer ml-detector firewall rag-ingester rag-security etcd-server; do tmux kill-session -t $$s 2>/dev/null || true; done"
 	@echo "✅ Pipeline stopped"
 
 pipeline-status:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  Pipeline Status                                          ║"
+	@echo "║  📊 ML Defender Pipeline Status (via TMUX)                ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
-	@vagrant ssh -c "ps aux | grep '[e]tcd-server'  | grep -v defunct | grep -q . && echo '  ✅ etcd-server:   RUNNING' || echo '  ❌ etcd-server:   STOPPED'"
-	@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && echo '  ✅ rag-security:  RUNNING' || echo '  ❌ rag-security:  STOPPED'"
-	@vagrant ssh -c "ps aux | grep '[m]l-detector'  | grep -v defunct | grep -q . && echo '  ✅ ml-detector:   RUNNING' || echo '  ❌ ml-detector:   STOPPED'"
-	@vagrant ssh -c "ps aux | grep '[f]irewall-acl' | grep -v defunct | grep -q . && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
-	@vagrant ssh -c "ps aux | grep '[s]niffer'      | grep -v defunct | grep -q . && echo '  ✅ sniffer:       RUNNING' || echo '  ❌ sniffer:       STOPPED'"
-	@echo ""
+	@vagrant ssh -c "tmux has-session -t etcd-server 2>/dev/null && echo '  ✅ etcd-server:   RUNNING' || echo '  ❌ etcd-server:   STOPPED'"
+	@vagrant ssh -c "tmux has-session -t rag-security 2>/dev/null && echo '  ✅ rag-security:  RUNNING' || echo '  ❌ rag-security:  STOPPED'"
+	@vagrant ssh -c "tmux has-session -t rag-ingester 2>/dev/null && echo '  ✅ rag-ingester:  RUNNING' || echo '  ❌ rag-ingester:  STOPPED'"
+	@vagrant ssh -c "tmux has-session -t ml-detector 2>/dev/null && echo '  ✅ ml-detector:   RUNNING' || echo '  ❌ ml-detector:   STOPPED'"
+	@vagrant ssh -c "tmux has-session -t sniffer 2>/dev/null && echo '  ✅ sniffer:       RUNNING' || echo '  ❌ sniffer:       STOPPED'"
+	@vagrant ssh -c "tmux has-session -t firewall 2>/dev/null && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
+	@echo "╚════════════════════════════════════════════════════════════╝"
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
@@ -909,20 +958,20 @@ test-replay-big:
 # ============================================================================
 # etcd-server Control
 # ============================================================================
+dev-setup-tools:
+	@echo "🔧 Instalando herramientas de gestión en la VM..."
+	@vagrant ssh -c "sudo apt-get update && sudo apt-get install -y tmux net-tools"
 
-etcd-server-start:
-	@echo "🚀 Starting etcd-server..."
-	@vagrant ssh -c 'mkdir -p /vagrant/logs && \
-		cd $(ETCD_SERVER_BUILD_DIR) && \
-		nohup ./etcd-server </dev/null >/vagrant/logs/etcd-server.log 2>&1 & \
-		sleep 3'
-	@vagrant ssh -c "ps aux | grep '[e]tcd-server' | grep -v defunct | grep -q . && echo '✅ etcd-server started' || echo '❌ Failed to start'"
+etcd-server-start: etcd-server
+	@echo "🚀 Starting etcd-server (Persistente)..."
+	@vagrant ssh -c "tmux kill-session -t etcd-server 2>/dev/null || true"
+	@vagrant ssh -c "tmux new-session -d -s etcd-server 'cd /vagrant && $(ETCD_SERVER_BUILD_DIR)/etcd-server'"
+	@sleep 2
+	@$(MAKE) etcd-server-status
 
 etcd-server-stop:
-	@echo "🛑 Stopping etcd-server..."
-	-@vagrant ssh -c "ps aux | grep '[e]tcd-server' | grep -v defunct | grep -q . && kill -9 \$$(ps aux | grep '[e]tcd-server' | grep -v defunct | awk '{print \$$2}') 2>/dev/null; exit 0"
-	@sleep 1
-	@vagrant ssh -c "ps aux | grep '[e]tcd-server' | grep -v defunct | grep -q . && echo '⚠️  Still running' || echo '✅ etcd-server stopped'"
+	@vagrant ssh -c "tmux kill-session -t etcd-server 2>/dev/null || true"
+	@echo "✅ etcd-server stopped"
 
 # ============================================================================
 # TSAN Validation Suite (Day 48 Phase 0)
@@ -1082,18 +1131,14 @@ rag-clean:
 	@vagrant ssh -c "cd /vagrant/rag && make clean"
 
 rag-start:
-	@echo "🚀 Starting RAG Security System..."
-	@vagrant ssh -c 'mkdir -p /vagrant/logs && \
-		cd /vagrant/rag/build && \
-		nohup ./rag-security </dev/null >/vagrant/logs/rag.log 2>&1 & \
-		sleep 4'
-	@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && echo '✅ rag-security started' || echo '❌ Failed to start'"
+	@echo "🚀 Starting rag-security (from /vagrant/rag/build)..."
+	@vagrant ssh -c "tmux kill-session -t rag-security 2>/dev/null || true"
+	@vagrant ssh -c "tmux new-session -d -s rag-security 'cd /vagrant/rag/build && ./rag-security'"
+	@sleep 2
 
 rag-stop:
-	@echo "🛑 Stopping RAG..."
-	-@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && kill -9 \$$(ps aux | grep '[r]ag-security' | grep -v defunct | awk '{print \$$2}') 2>/dev/null; exit 0"
-	@sleep 1
-	@vagrant ssh -c "ps aux | grep '[r]ag-security' | grep -v defunct | grep -q . && echo '⚠️  Still running' || echo '✅ rag-security stopped'"
+	@vagrant ssh -c "tmux kill-session -t rag-security 2>/dev/null || true"
+	@echo "✅ rag-security stopped"
 
 rag-status:
 	@echo "════════════════════════════════════════════════════════════"

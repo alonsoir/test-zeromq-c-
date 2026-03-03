@@ -1,12 +1,18 @@
-cd /vagrant && git add -A && git commit -m "Day 73: Fix etcd/rag startup bugs, Makefile pipeline stable
+git add -A && git commit -m "Day 74: Full pipeline operational - 6/6 components registered in etcd
 
-- etcd_client.cpp: add register_component() before put_config() in registerService()
-- etcd_client.cpp: set compression_min_size=0 to force LZ4 always (fix 500 error)
-- main.cpp (rag): add isatty() daemon mode with sigwait() - no more infinite loop
-- main.cpp (rag): add cin.eof() guard for interactive mode
-- etcd-server/main.cpp: add exit(0) to signal_handler
-- Makefile: pipeline-start/stop/status working for etcd-server + rag-security
-- Makefile: fix pkill via vagrant ssh using ps+grep pattern instead
-- Makefile: nohup with sleep inside same SSH session (keeps session alive)
-- Makefile: add etcd-server-status, rag-status, rag-logs targets
-- rag-config.json: add logging section with path"
+FIXES:
+- sniffer etcd_client: add register_component() before put_config() (Bug 5)
+- sniffer etcd_client: add compression_min_size=0 (Bug LZ4)
+- Makefile: fix firewall-start paths (FIREWALL_DIR, FIREWALL_BIN)
+- Makefile: fix ppipeline-start typo → pipeline-start
+- Makefile: pipeline-status via tmux has-session (eliminates pgrep false positives)
+- Makefile: pipeline-stop via tmux kill-session (clean shutdown)
+- Makefile: etcd-server-stop and rag-stop unified to tmux
+
+RESULT:
+make pipeline-start  → 6/6 RUNNING (etcd-server, rag-security, rag-ingester,
+                                     ml-detector, firewall, sniffer)
+make pipeline-stop   → 6/6 STOPPED (clean, no orphan processes)
+All components register in etcd and send heartbeat 200 OK
+
+Via Appia Quality: pipeline survives stop/start cycle from single command"
