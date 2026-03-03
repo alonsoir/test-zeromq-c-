@@ -26,3 +26,30 @@ make pipeline-stop → tmux limpio, sin procesos huérfanos confirmado.
       * Tasa de eventos/seg sostenida
       * Estabilidad de memoria (sin leaks)
       * Heartbeats continuos durante todo el test
+
+Buenas respuestas del consejo. Coinciden en lo esencial y no hay contradicciones entre ellos. Mi síntesis para arrancar:
+
+**El orden correcto para hoy es exactamente el tuyo**, con un matiz: el punto 1 (heartbeat sniffer) y el punto 2 (CLI rag-security) son verificaciones rápidas de 10 minutos cada una — hazlas primero antes de lanzar el stress test, porque si hay un problema con el heartbeat bajo carga intensiva del replay, necesitas saberlo en estado limpio, no mezclado con 492K eventos.
+
+El stress test es el plato fuerte y merece atención completa. Gemini tiene razón en preparar telemetría antes de lanzarlo — añade este target al Makefile antes de arrancar:
+
+```makefile
+stress-monitor:
+	@vagrant ssh -c "while true; do \
+		echo \"=== \$$(date) ===\"; \
+		ps aux | grep -E 'sniffer|ml-detector|firewall|rag' | grep -v grep | awk '{print \$$11, \"CPU:\"\$$3\"%\", \"MEM:\"\$$4\"%\"}'; \
+		echo '---'; \
+		sleep 300; \
+	done >> /vagrant/logs/stress_monitor.log 2>&1 &"
+```
+
+Así tienes un log con snapshot cada 5 minutos durante toda la noche.
+
+Arranca:
+```bash
+make pipeline-start
+# verificar heartbeat sniffer
+# verificar rag-security CLI
+make stress-monitor
+make test-replay-neris
+```
