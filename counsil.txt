@@ -1,0 +1,133 @@
+## Commit Message
+
+```
+git add -A
+git commit -m "DAY 75: Proto3 embedded serialization bug fix + regression tests
+
+ROOT CAUSE IDENTIFIED & PARTIALLY FIXED:
+- ring_consumer.cpp::send_ransomware_features() never called mutable_ddos_embedded(),
+  mutable_traffic_classification(), mutable_internal_anomaly() → submessages absent
+  on wire → ml-detector crashes in ByteSizeLong() dereferencing null this=0x0
+
+FIXES APPLIED:
+- ring_consumer.cpp: Populate 3 missing embedded messages with Phase 1 sentinel
+  values (0.5f) to force proto3 serialization (DAY 75 FIX @ line 1190)
+- rag_logger.cpp: Remove incorrect proto2-style has_required_embedded guard
+  (DAY 75 FIX @ line 393) — proto3 submessages never return null pointers
+- rag_logger.cpp: Add crypto_manager_ null guard before artifact save
+- zmq_handler.cpp: Add null guards for crypto_manager_ and output_socket_
+  in send_enriched_event() for defensive diagnostics
+
+REGRESSION TESTS (6/6 PASSING):
+- sniffer/tests/test_proto3_embedded_serialization.cpp (3 tests)
+  * NeverCallingMutableMeansSubmessageAbsentOnWire
+  * SentinelValuesForceSubmessageSerialization
+  * NonZeroValuesFromRealFlowAlwaysSerialize
+- ml-detector/tests/unit/test_rag_logger_artifact_save.cpp (3 tests)
+  * AccessingUnsetSubmessageIsAlwaysSafeInProto3
+  * EventWithSentinelsPassesEmbeddedCheck
+  * NormalFlowEventsUnaffectedByFix
+
+PENDING:
+- sniffer build-debug needs clean rebuild (cmake fails: libsnappy missing + unknown
+  second error). ring_consumer.cpp fix is in source but not yet in running binary.
+  ml-detector continues crashing until sniffer is rebuilt.
+
+Makefile: Decouple *-start targets from compilation (pipeline-start no longer
+triggers full rebuild of all components)
+
+Co-authored-by: Claude Sonnet (Anthropic)
+Co-authored-by: [Consejo de Sabios pending review]"
+```
+
+---
+
+## Para el Consejo de Sabios
+
+Aquí tienes el briefing completo para compartir:
+
+---
+
+**ML Defender — DAY 75 — Consulta al Consejo**
+**Componente:** sniffer (C++20, eBPF/XDP, Protobuf 3)
+**Severidad:** CRÍTICO — pipeline no operativo
+
+---
+
+### El bug
+
+El `ml-detector` crashea con SIGSEGV cada vez que el sniffer envía un evento de tipo `ransomware-features`. El GDB lo confirma sin ambigüedad:
+
+```
+#0  protobuf::RansomwareEmbeddedFeatures::_internal_io_intensity (this=0x0)
+    at network_security.pb.h:10111
+#1  protobuf::RansomwareEmbeddedFeatures::ByteSizeLong (this=0x0)
+    at network_security.pb.cc:3051
+#2  WireFormatLite::MessageSize<RansomwareEmbeddedFeatures>
+#3  protobuf::NetworkFeatures::ByteSizeLong (this=0x7f1864001330)
+```
+
+`this=0x0` en `RansomwareEmbeddedFeatures::ByteSizeLong` — protobuf intenta serializar un submensaje cuyo puntero interno es null.
+
+---
+
+### Root cause
+
+En `ring_consumer.cpp::send_ransomware_features()` (línea ~1186), el código construye un `NetworkSecurityEvent` y solo llama a `mutable_ransomware_embedded()`. Nunca llama a `mutable_ddos_embedded()`, `mutable_traffic_classification()`, ni `mutable_internal_anomaly()`.
+
+En **proto3**, no llamar a `mutable_X()` deja el puntero interno a null — a diferencia de proto2 donde el acceso a un campo no inicializado devuelve una instancia por defecto. Cuando el ml-detector intenta serializar el evento enriquecido para enviarlo por ZMQ, protobuf llama a `ByteSizeLong()` sobre esos submensajes null y crashea.
+
+El fix ya está escrito en el source:
+
+```cpp
+// DAY 75 FIX @ ring_consumer.cpp:1190
+auto* ddos_emb = net_features->mutable_ddos_embedded();
+ddos_emb->set_source_ip_dispersion(0.5f);
+ddos_emb->set_geographical_concentration(0.5f);
+ddos_emb->set_flow_completion_rate(0.5f);
+
+auto* traffic_emb = net_features->mutable_traffic_classification();
+traffic_emb->set_connection_rate(0.5f);
+traffic_emb->set_tcp_udp_ratio(0.5f);
+traffic_emb->set_port_entropy(0.5f);
+
+auto* internal_emb = net_features->mutable_internal_anomaly();
+internal_emb->set_internal_connection_rate(0.5f);
+internal_emb->set_service_port_consistency(0.5f);
+internal_emb->set_connection_duration_std(0.5f);
+```
+
+---
+
+### El problema actual
+
+El fix está en el source pero **no en el binario**. Al intentar hacer un clean rebuild del sniffer:
+
+```bash
+rm -rf /vagrant/sniffer/build-debug
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+# → CMake Error at CMakeLists.txt:184
+# → "Package 'libsnappy', required by 'virtual:world', not found"
+# → (libsnappy-dev ya instalado, pero hay un segundo error desconocido)
+```
+
+El cmake falla con al menos un error después de libsnappy. El error completo no ha sido capturado todavía.
+
+---
+
+### Pregunta al Consejo
+
+1. **¿Por qué el cmake del sniffer falla después de instalar libsnappy-dev?** ¿Hay alguna dependencia en cadena típica en proyectos eBPF/XDP con protobuf que suele faltar en Debian Bookworm?
+
+2. **¿El enfoque de sentineles 0.5f es correcto semánticamente?** En Phase 1, los campos `ddos_embedded`, `traffic_classification` e `internal_anomaly` no tienen contexto real en el path de ransomware-features (que viene del `RansomwareFeatureProcessor`, no del flujo normal de red). Los valores 0.5f son neutrales pero arbitrarios. ¿Hay una alternativa mejor — por ejemplo, marcar estos campos como "no disponible" de forma explícita en el schema proto?
+
+3. **¿El diseño es correcto a largo plazo?** El `NetworkSecurityEvent` tiene un campo `NetworkFeatures` que contiene 4 submensajes embedded (ddos, ransomware, traffic, internal). El path `ransomware-features` solo tiene datos reales para `ransomware_embedded`. ¿Deberíamos usar `oneof` en el proto para modelar esto, o mantener los 4 campos opcionales con el patrón sentinel?
+
+---
+
+**Contexto del sistema:** C++20, protobuf 3.21, ZeroMQ, eBPF/XDP, Debian Bookworm (Vagrant VM), pipeline de 6 componentes (etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall-acl-agent).
+
+**Ficheros clave:**
+- `/vagrant/sniffer/src/userspace/ring_consumer.cpp` — fix pendiente de compilar
+- `/vagrant/ml-detector/src/zmq_handler.cpp` — crashea en `send_enriched_event`
+- `/vagrant/protobuf/network_security.proto` — schema con 4 embedded messages

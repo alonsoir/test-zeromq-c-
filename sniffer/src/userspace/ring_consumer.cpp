@@ -1186,7 +1186,30 @@ void RingBufferConsumer::send_ransomware_features(const protobuf::RansomwareFeat
         auto* net_features = event.mutable_network_features();
         auto* ransom_features = net_features->mutable_ransomware();
         ransom_features->CopyFrom(features);
-        
+
+        // DAY 75 FIX: Populate embedded detector messages with Phase 1 sentinel values.
+        // These events are time-window aggregates from RansomwareProcessor —
+        // no FlowStatistics is available here, so populate_ml_defender_features()
+        // cannot be called. Proto3 does NOT serialize submessages where all float
+        // fields equal 0.0f (the default), causing has_ddos_embedded()==false on
+        // the receiver side and "Skipping artifact save" in rag_logger.
+        // Sentinel 0.5f matches the Phase 1 TODO neutral used in ml_defender_features.cpp.
+        // Phase 2: replace with real values once FlowAggregator is available.
+        auto* ddos_emb = net_features->mutable_ddos_embedded();
+        ddos_emb->set_source_ip_dispersion(0.5f);       // Phase 1 sentinel: multi-flow TODO
+        ddos_emb->set_geographical_concentration(0.5f); // Phase 1 sentinel: GeoIP TODO
+        ddos_emb->set_flow_completion_rate(0.5f);       // No flow context in this path
+
+        auto* traffic_emb = net_features->mutable_traffic_classification();
+        traffic_emb->set_connection_rate(0.5f);         // Phase 1 sentinel: multi-flow TODO
+        traffic_emb->set_tcp_udp_ratio(0.5f);           // Phase 1 sentinel: protocol TODO
+        traffic_emb->set_port_entropy(0.5f);            // Phase 1 sentinel: multi-flow TODO
+
+        auto* internal_emb = net_features->mutable_internal_anomaly();
+        internal_emb->set_internal_connection_rate(0.5f); // Phase 1 sentinel: multi-flow TODO
+        internal_emb->set_service_port_consistency(0.5f); // Phase 1 sentinel: multi-flow TODO
+        internal_emb->set_connection_duration_std(0.5f);  // Phase 1 sentinel: multi-flow TODO
+
         bool high_threat = (
             features.new_external_ips_30s() > fast_detector_config_.ransomware.activation_thresholds.external_ips_30s ||
             features.smb_connection_diversity() > fast_detector_config_.ransomware.activation_thresholds.smb_diversity

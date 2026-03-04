@@ -329,7 +329,7 @@ SNIFFER_DIR := /vagrant/sniffer
 SNIFFER_BIN := ./build-debug/sniffer
 SNIFFER_CFG := ../config/sniffer.json
 
-sniffer-start: sniffer
+sniffer-start:
 	@echo "🚀 Starting Sniffer (SUDO + TMUX + Hybrid Mode)..."
 	@vagrant ssh -c "tmux kill-session -t sniffer 2>/dev/null || true"
 	@echo "Lanzamos tmux y dentro ejecutamos sudo env para preservar el path de las librerías..."
@@ -359,7 +359,7 @@ sniffer: proto etcd-client-build
 	@echo ""
 	@echo "✅ Sniffer built ($(PROFILE))"
 
-ml-detector-start: ml-detector
+ml-detector-start:
 	@echo "🚀 Starting ML Detector (Tricapa Persistente)..."
 	@vagrant ssh -c "tmux kill-session -t ml-detector 2>/dev/null || true"
 	@vagrant ssh -c "tmux new-session -d -s ml-detector 'cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector'"
@@ -388,7 +388,7 @@ ml-detector: proto etcd-client-build
 	@echo ""
 	@echo "✅ ML Detector built ($(PROFILE))"
 
-rag-ingester-start: rag-ingester
+rag-ingester-start:
 	@echo "🚀 Starting RAG Ingester (Full Context)..."
 	@vagrant ssh -c "tmux kill-session -t rag-ingester 2>/dev/null || true"
 	@echo "Ejecución desde la raíz del componente para resolver paths relativos del config..."
@@ -422,7 +422,7 @@ FIREWALL_DIR := /vagrant/firewall-acl-agent
 FIREWALL_BIN := ./firewall-acl-agent
 FIREWALL_CFG := ../config/firewall.json
 
-firewall-start: firewall
+firewall-start:
 	@echo "🚀 Starting Firewall ACL (SUDO + TMUX)..."
 	@vagrant ssh -c "tmux kill-session -t firewall 2>/dev/null || true"
 	@vagrant ssh -c "tmux new-session -d -s firewall 'cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG)'"
@@ -509,6 +509,8 @@ pipeline-status:
 	@vagrant ssh -c "tmux has-session -t sniffer 2>/dev/null && echo '  ✅ sniffer:       RUNNING' || echo '  ❌ sniffer:       STOPPED'"
 	@vagrant ssh -c "tmux has-session -t firewall 2>/dev/null && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
 	@echo "╚════════════════════════════════════════════════════════════╝"
+
+pipeline-build: etcd-server rag-build rag-ingester-build ml-detector sniffer
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""

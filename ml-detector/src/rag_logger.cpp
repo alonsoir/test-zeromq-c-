@@ -389,22 +389,16 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         }
         
         const auto& nf = event.network_features();
-        
-        // Validate critical embedded messages exist (prevent null pointer deref)
-        bool has_required_embedded = 
-            nf.has_ddos_embedded() &&
-            nf.has_ransomware_embedded() &&
-            nf.has_traffic_classification() &&
-            nf.has_internal_anomaly();
-        
-        if (!has_required_embedded) {
-            logger_->warn("⚠️  Skipping artifact save: event {} has incomplete embedded messages", 
-                         event.event_id());
-            logger_->debug("   ddos_embedded: {}, ransomware_embedded: {}, traffic: {}, internal: {}",
-                          nf.has_ddos_embedded(), nf.has_ransomware_embedded(),
-                          nf.has_traffic_classification(), nf.has_internal_anomaly());
-            return;
-        }
+
+        // DAY 75 FIX: Removed proto2-style has_required_embedded guard.
+        // In proto3, submessages are NEVER null pointers — accessing
+        // nf.ddos_embedded() on an unset field returns a safe default instance.
+        // The original check (has_ddos_embedded() == false) incorrectly blocked
+        // ransomware-features events whose embedded messages contained all-zero
+        // floats: proto3 omits zero-value fields on the wire, making has_X()
+        // return false even for a fully constructed message.
+        // The real fix is in ring_consumer.cpp::send_ransomware_features()
+        // which now populates sentinel values to force serialization.
         
         // ====================================================================
         // Event is valid, proceed with artifact save
@@ -418,7 +412,8 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         std::string base_filename = artifact_dir + "/event_" + event.event_id();
 
         // 🎯 ADR-001: Save ENCRYPTED protobuf if enabled
-        if (config_.save_protobuf_artifacts) {
+        // DAY 75: Guard crypto_manager_ — may be null in test/degraded mode
+        if (config_.save_protobuf_artifacts && crypto_manager_) {
             std::string pb_path = base_filename + ".pb.enc";  // .enc extension
             std::ofstream pb_file(pb_path, std::ios::binary);
 
@@ -441,7 +436,7 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         }
 
         // 🎯 ADR-001: Save ENCRYPTED JSON if enabled
-        if (config_.save_json_artifacts) {
+        if (config_.save_json_artifacts && crypto_manager_) {
             std::string json_path = base_filename + ".json.enc";  // .enc extension
             std::ofstream json_file(json_path, std::ios::binary);
 

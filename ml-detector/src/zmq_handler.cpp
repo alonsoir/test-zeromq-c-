@@ -799,6 +799,15 @@ void ZMQHandler::process_event(const std::string& message) {
 
 void ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent& event) {
     try {
+        // DAY 75: Defensive null guards
+        if (!crypto_manager_) {
+            logger_->error("[DAY75] send_enriched_event: crypto_manager_ NULL — dropping {}", event.event_id());
+            return;
+        }
+        if (!output_socket_) {
+            logger_->error("[DAY75] send_enriched_event: output_socket_ NULL — dropping {}", event.event_id());
+            return;
+        }
         std::string serialized;
         if (!event.SerializeToString(&serialized)) {
             logger_->error("Failed to serialize enriched event {}", event.event_id());

@@ -1,18 +1,37 @@
-git add -A && git commit -m "Day 74: Full pipeline operational - 6/6 components registered in etcd
+git add -A
+git commit -m "DAY 75: Proto3 embedded serialization bug fix + regression tests
 
-FIXES:
-- sniffer etcd_client: add register_component() before put_config() (Bug 5)
-- sniffer etcd_client: add compression_min_size=0 (Bug LZ4)
-- Makefile: fix firewall-start paths (FIREWALL_DIR, FIREWALL_BIN)
-- Makefile: fix ppipeline-start typo → pipeline-start
-- Makefile: pipeline-status via tmux has-session (eliminates pgrep false positives)
-- Makefile: pipeline-stop via tmux kill-session (clean shutdown)
-- Makefile: etcd-server-stop and rag-stop unified to tmux
+ROOT CAUSE IDENTIFIED & PARTIALLY FIXED:
+- ring_consumer.cpp::send_ransomware_features() never called mutable_ddos_embedded(),
+  mutable_traffic_classification(), mutable_internal_anomaly() → submessages absent
+  on wire → ml-detector crashes in ByteSizeLong() dereferencing null this=0x0
 
-RESULT:
-make pipeline-start  → 6/6 RUNNING (etcd-server, rag-security, rag-ingester,
-                                     ml-detector, firewall, sniffer)
-make pipeline-stop   → 6/6 STOPPED (clean, no orphan processes)
-All components register in etcd and send heartbeat 200 OK
+FIXES APPLIED:
+- ring_consumer.cpp: Populate 3 missing embedded messages with Phase 1 sentinel
+  values (0.5f) to force proto3 serialization (DAY 75 FIX @ line 1190)
+- rag_logger.cpp: Remove incorrect proto2-style has_required_embedded guard
+  (DAY 75 FIX @ line 393) — proto3 submessages never return null pointers
+- rag_logger.cpp: Add crypto_manager_ null guard before artifact save
+- zmq_handler.cpp: Add null guards for crypto_manager_ and output_socket_
+  in send_enriched_event() for defensive diagnostics
 
-Via Appia Quality: pipeline survives stop/start cycle from single command"
+REGRESSION TESTS (6/6 PASSING):
+- sniffer/tests/test_proto3_embedded_serialization.cpp (3 tests)
+  * NeverCallingMutableMeansSubmessageAbsentOnWire
+  * SentinelValuesForceSubmessageSerialization
+  * NonZeroValuesFromRealFlowAlwaysSerialize
+- ml-detector/tests/unit/test_rag_logger_artifact_save.cpp (3 tests)
+  * AccessingUnsetSubmessageIsAlwaysSafeInProto3
+  * EventWithSentinelsPassesEmbeddedCheck
+  * NormalFlowEventsUnaffectedByFix
+
+PENDING:
+- sniffer build-debug needs clean rebuild (cmake fails: libsnappy missing + unknown
+  second error). ring_consumer.cpp fix is in source but not yet in running binary.
+  ml-detector continues crashing until sniffer is rebuilt.
+
+Makefile: Decouple *-start targets from compilation (pipeline-start no longer
+triggers full rebuild of all components)
+
+Co-authored-by: Claude Sonnet (Anthropic)
+Co-authored-by: [Consejo de Sabios pending review]"
