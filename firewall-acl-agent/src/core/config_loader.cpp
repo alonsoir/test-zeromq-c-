@@ -133,11 +133,7 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
         config.logging = parse_logging(root["logging"]);
     }
 
-    if (root.isMember("logging")) {
-        config.logging = parse_logging(root["logging"]);
-    }
-
-    if (root.isMember("etcd")) {  // ← AÑADIR ESTAS 3 LÍNEAS
+    if (root.isMember("etcd")) {
         config.etcd = parse_etcd(root["etcd"]);
     }
 
@@ -146,14 +142,21 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
         config.transport = parse_transport(root["transport"]);
     }
 
+    // ✅ Day 61: CSV batch logger config (proper parser)
+    if (root.isMember("csv_batch_logger")) {
+        config.csv_batch_logger = parse_csv_batch_logger(root["csv_batch_logger"]);
+        std::cout << "[CONFIG] CSV batch logger output_dir: "
+                  << config.csv_batch_logger.output_dir << std::endl;
+    }
+
     // Validate configuration
     validate_config(config);
-    
+
     std::cout << "[CONFIG] ✓ Configuration loaded successfully" << std::endl;
     if (config.operation.dry_run) {
         std::cout << "[CONFIG] ⚠️  DRY-RUN MODE ENABLED - No actual firewall changes will be made" << std::endl;
     }
-    
+
     return config;
 }
 
@@ -164,11 +167,16 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
 OperationConfig ConfigLoader::parse_operation(const Json::Value& json) {
     OperationConfig config;
     config.dry_run = get_optional<bool>(json, "dry_run", true);
-    config.log_directory = get_optional<std::string>(json, "log_directory", "/vagrant/firewall-acl-agent/build/logs");
+
+    // Default log directory (can be overridden by csv_batch_logger in load_from_file)
+    config.log_directory = get_optional<std::string>(json, "log_directory",
+        "/vagrant/firewall-acl-agent/build/logs");
+
     config.enable_debug_logging = get_optional<bool>(json, "enable_debug_logging", true);
     config.simulate_block = get_optional<bool>(json, "simulate_block", true);
     config.validation_strictness = get_optional<std::string>(json, "validation_strictness", "high");
     config.max_processing_delay_ms = get_optional<int>(json, "max_processing_delay_ms", 10);
+
     return config;
 }
 
@@ -202,16 +210,16 @@ IPSetConfigNew ConfigLoader::parse_ipset(const Json::Value& json) {
 
 std::map<std::string, IPSetConfigNew> ConfigLoader::parse_ipsets(const Json::Value& json) {
     std::map<std::string, IPSetConfigNew> ipsets;
-    
+
     if (!json.isObject()) {
         return ipsets;
     }
-    
+
     // Iterar sobre cada entrada en "ipsets" (blacklist, whitelist, etc.)
     for (const auto& key : json.getMemberNames()) {
         ipsets[key] = parse_ipset(json[key]);
     }
-    
+
     return ipsets;
 }
 
@@ -247,11 +255,11 @@ ValidationConfig ConfigLoader::parse_validation(const Json::Value& json) {
     config.max_confidence_score = get_optional<float>(json, "max_confidence_score", 1.0f);
     config.block_localhost = get_optional<bool>(json, "block_localhost", false);
     config.block_gateway = get_optional<bool>(json, "block_gateway", false);
-    
+
     if (json.isMember("allowed_ip_ranges")) {
         config.allowed_ip_ranges = parse_string_array(json["allowed_ip_ranges"]);
     }
-    
+
     return config;
 }
 
@@ -276,27 +284,27 @@ LoggingConfigNew ConfigLoader::parse_logging(const Json::Value& json) {
 
 void ConfigLoader::validate_config(const FirewallAgentConfig& config) {
     std::vector<std::string> errors;
-    
+
     // Validate ZMQ endpoint
     if (config.zmq.endpoint.empty()) {
         errors.push_back("ZMQ endpoint cannot be empty");
     }
-    
+
     // Validate IPSet name
     if (config.ipset.set_name.empty()) {
         errors.push_back("IPSet name cannot be empty");
     }
-    
+
     // Validate chain name
     if (config.iptables.chain_name.empty()) {
         errors.push_back("IPTables chain name cannot be empty");
     }
-    
+
     // Validate confidence thresholds
     if (config.batch_processor.min_confidence < 0.0f || config.batch_processor.min_confidence > 1.0f) {
         errors.push_back("Batch processor min_confidence must be between 0.0 and 1.0");
     }
-    
+
     if (!errors.empty()) {
         std::string error_msg = "❌ CONFIGURATION VALIDATION FAILED:\n";
         for (const auto& error : errors) {
@@ -318,33 +326,33 @@ void ConfigLoader::log_config_summary(const FirewallAgentConfig& config) {
     std::cout << "\n╔════════════════════════════════════════════════════════╗\n"
               << "║  Firewall ACL Agent Configuration Summary             ║\n"
               << "╚════════════════════════════════════════════════════════╝\n";
-    
+
     std::cout << "\n[Operation]\n"
               << "  Dry-Run:         " << (config.operation.dry_run ? "ENABLED ⚠️" : "DISABLED") << "\n"
               << "  Debug Logging:   " << (config.operation.enable_debug_logging ? "ON" : "OFF") << "\n"
               << "  Simulate Block:  " << (config.operation.simulate_block ? "ON" : "OFF") << "\n";
-    
+
     std::cout << "\n[ZMQ]\n"
               << "  Endpoint:        " << config.zmq.endpoint << "\n"
               << "  Topic:           " << config.zmq.topic << "\n"
               << "  Timeout:         " << config.zmq.recv_timeout_ms << "ms\n";
-    
+
     std::cout << "\n[IPSet]\n"
               << "  Name:            " << config.ipset.set_name << "\n"
               << "  Type:            " << config.ipset.set_type << "\n"
               << "  Max Elements:    " << config.ipset.max_elements << "\n"
               << "  Timeout:         " << config.ipset.timeout << "s\n";
-    
+
     std::cout << "\n[IPTables]\n"
               << "  Chain:           " << config.iptables.chain_name << "\n"
               << "  Log Blocked:     " << (config.iptables.log_blocked ? "ON" : "OFF") << "\n"
               << "  Rate Limiting:   " << (config.iptables.enable_rate_limiting ? "ON" : "OFF") << "\n";
-    
+
     std::cout << "\n[Batch Processor]\n"
               << "  Batch Size:      " << config.batch_processor.batch_size_threshold << "\n"
               << "  Min Confidence:  " << config.batch_processor.min_confidence << "\n"
               << "  Batching:        " << (config.batch_processor.enable_batching ? "ON" : "OFF") << "\n";
-    
+
     std::cout << std::endl;
 }
 
@@ -369,40 +377,44 @@ EtcdConfig ConfigLoader::parse_etcd(const Json::Value& json) {
 
     return config;
 }
- TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
-    TransportConfig config;
 
-    std::cout << "[DEBUG] parse_transport() called" << std::endl;
-    std::cout << "[DEBUG] JSON received: " << json << std::endl;
+//===----------------------------------------------------------------------===//
+// Transport Parser (Day 23)
+//===----------------------------------------------------------------------===//
+
+TransportConfig ConfigLoader::parse_transport(const Json::Value& json) {
+    TransportConfig config;
 
     // Parse compression section
     if (json.isMember("compression")) {
-        std::cout << "[DEBUG] compression section found" << std::endl;
         const auto& comp = json["compression"];
-        std::cout << "[DEBUG] comp has 'enabled': " << comp.isMember("enabled") << std::endl;
         config.compression.enabled = get_optional<bool>(comp, "enabled", false);
-        std::cout << "[DEBUG] compression.enabled = " << config.compression.enabled << std::endl;
         config.compression.decompression_only = get_optional<bool>(comp, "decompression_only", true);
         config.compression.algorithm = get_optional<std::string>(comp, "algorithm", "lz4");
-    } else {
-        std::cout << "[DEBUG] NO compression section" << std::endl;
     }
 
     // Parse encryption section
     if (json.isMember("encryption")) {
-        std::cout << "[DEBUG] encryption section found" << std::endl;
         const auto& enc = json["encryption"];
-        std::cout << "[DEBUG] enc has 'enabled': " << enc.isMember("enabled") << std::endl;
         config.encryption.enabled = get_optional<bool>(enc, "enabled", false);
-        std::cout << "[DEBUG] encryption.enabled = " << config.encryption.enabled << std::endl;
         config.encryption.decryption_only = get_optional<bool>(enc, "decryption_only", true);
         config.encryption.etcd_token_required = get_optional<bool>(enc, "etcd_token_required", true);
         config.encryption.algorithm = get_optional<std::string>(enc, "algorithm", "chacha20-poly1305");
         config.encryption.fallback_mode = get_optional<std::string>(enc, "fallback_mode", "compressed_only");
-    } else {
-        std::cout << "[DEBUG] NO encryption section" << std::endl;
     }
 
+    return config;
+}
+//===----------------------------------------------------------------------===//
+// CSV Batch Logger Parser (Day 59)
+//===----------------------------------------------------------------------===//
+
+CsvBatchLoggerConfig ConfigLoader::parse_csv_batch_logger(const Json::Value& json) {
+    CsvBatchLoggerConfig config;
+    config.enabled      = get_optional<bool>(json, "enabled", false);
+    config.output_dir   = get_optional<std::string>(json, "output_dir", "/vagrant/logs/firewall_logs");
+    config.batch_size   = get_optional<int>(json, "batch_size", 100);
+    config.batch_timeout_sec = get_optional<int>(json, "batch_timeout_sec", 5);
     return config;
 }
 

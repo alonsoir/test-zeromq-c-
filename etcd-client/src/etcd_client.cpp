@@ -1,49 +1,24 @@
 // etcd-client/src/etcd_client.cpp
 #include "etcd_client/etcd_client.hpp"
-#include <crypto_transport/crypto.hpp>
-#include <crypto_transport/compression.hpp>
-#include <crypto_transport/utils.hpp>
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
+#include <openssl/hmac.h>
+#include <openssl/evp.h>
+#include <sstream>
+#include <iomanip>
 #include <atomic>
-#include <csignal>
+// Day 60: Crypto + Compression for put_config()
+#include "crypto_transport/crypto_manager.hpp"  // ← Solo este
 
 using json = nlohmann::json;
 
-// Helper functions for string <-> vector<uint8_t> conversion
-namespace {
-    inline std::vector<uint8_t> string_to_bytes(const std::string& str) {
-        return std::vector<uint8_t>(str.begin(), str.end());
-    }
 
-    inline std::string bytes_to_string(const std::vector<uint8_t>& bytes) {
-        return std::string(bytes.begin(), bytes.end());
-    }
-}
-
-// Forward declarations of helper functions
+// Forward declarations of helper functions (component namespace)
+// Note: http namespace is now fully declared in etcd_client.hpp
 namespace etcd_client {
-namespace http {
-    struct Response {
-        int status_code = 0;
-        std::string body;
-        bool success = false;
-    };
-
-    Response post(const std::string& host, int port, const std::string& path,
-                  const std::string& body, int timeout_seconds, int max_retries, int backoff_seconds);
-    Response get(const std::string& host, int port, const std::string& path,
-                 int timeout_seconds, int max_retries, int backoff_seconds);
-    Response del(const std::string& host, int port, const std::string& path,
-                 int timeout_seconds, int max_retries, int backoff_seconds);
-    Response put(const std::string& host, int port, const std::string& path,
-             const std::string& body, const std::string& content_type,
-             int timeout_seconds, int max_retries, int backoff_seconds,
-             size_t original_size = 0);
-}
 
 namespace component {
     std::string build_registration_payload(const Config& config);
@@ -52,35 +27,19 @@ namespace component {
     ComponentInfo parse_component_info(const std::string& json_str);
     std::vector<ComponentInfo> parse_component_list(const std::string& json_str);
 }
+
 } // namespace etcd_client
 
-// Global signal handler (outside namespace)
-namespace {
-    std::atomic<etcd_client::EtcdClient*> g_etcd_client_instance{nullptr};
-
-    void signal_handler(int signal) {
-        std::cout << "\n🛑 Signal " << signal << " received, cleaning up..." << std::endl;
-        etcd_client::EtcdClient* instance = g_etcd_client_instance.load();
-        if (instance) {
-            instance->unregister_component();
-            instance->disconnect();
-        }
-        std::_Exit(signal);
-    }
-}
-
 namespace etcd_client {
-
-// ============================================================================
-// EtcdClient::Impl - Private Implementation
 // ============================================================================
 
 struct EtcdClient::Impl {
     Config config_;
-    std::vector<uint8_t> encryption_key_;
+    std::string encryption_key_;
     bool connected_ = false;
     mutable std::mutex mutex_;
-
+    // Day 59: Service discovery paths from etcd-server
+    ServicePaths service_paths_;
     // Heartbeat thread
     std::thread heartbeat_thread_;
     std::atomic<bool> heartbeat_running_{false};
@@ -149,90 +108,54 @@ struct EtcdClient::Impl {
             payload,
             config_.timeout_seconds,
             1, // Single attempt for heartbeat
-            0
+            0,
+            config_.component_name
         );
 
         return response.success;
     }
 
-    // Apply encryption and compression to data
-    std::string process_outgoing_data(const std::string& data) {
-        auto data_bytes = string_to_bytes(data);
-        size_t original_size = data.size();
+	// Day 60: Apply encryption and compression to outgoing data
+std::string process_outgoing_data(const std::string& data) {
 
-        // Step 1: Compress (if enabled and data size > threshold)
+    std::string processed = data;
+    size_t original_size = data.size();
+
+    // Create CryptoManager with encryption key
+    if (!encryption_key_.empty()) {
+        // Convert hex key (64 chars) to binary key (32 bytes)
+        auto key_bytes = EtcdClient::hex_to_bytes(encryption_key_);
+        std::string binary_key(key_bytes.begin(), key_bytes.end());
+
+        crypto::CryptoManager crypto_mgr(binary_key);
+
+        // Step 1: Compress (if enabled and size > threshold)
         if (config_.compression_enabled &&
-            crypto_transport::should_compress(original_size, config_.compression_min_size)) {
+            original_size > static_cast<size_t>(config_.compression_min_size)) {
             try {
-                data_bytes = crypto_transport::compress(data_bytes);
+				processed = crypto_mgr.compress_with_size(processed);
                 std::cout << "📦 Compressed: " << original_size << " → "
-                          << data_bytes.size() << " bytes" << std::endl;
+                          << processed.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Compression failed: " << e.what() << std::endl;
-                // Continue without compression
-                data_bytes = string_to_bytes(data);
+                processed = data; // Continue without compression
             }
         }
 
-        // Step 2: Encrypt (if enabled and key available)
-        if (config_.encryption_enabled && !encryption_key_.empty()) {
+        // Step 2: Encrypt (if enabled)
+        if (config_.encryption_enabled) {
             try {
-                data_bytes = crypto_transport::encrypt(data_bytes, encryption_key_);
-                std::cout << "🔒 Encrypted: " << data_bytes.size() << " bytes" << std::endl;
+                processed = crypto_mgr.encrypt(processed);
+                std::cout << "🔒 Encrypted: " << processed.size() << " bytes" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "⚠️  Encryption failed: " << e.what() << std::endl;
                 throw; // Encryption failure is critical
             }
         }
-
-        return bytes_to_string(data_bytes);
     }
 
-    // Remove encryption and decompression from data
-    std::string process_incoming_data(const std::string& data, size_t original_size = 0) {
-        auto data_bytes = string_to_bytes(data);
-
-        // Step 1: Decrypt (if enabled and key available)
-        if (config_.encryption_enabled && !encryption_key_.empty()) {
-            try {
-                data_bytes = crypto_transport::decrypt(data_bytes, encryption_key_);
-                std::cout << "🔓 Decrypted: " << data_bytes.size() << " bytes" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "⚠️  Decryption failed: " << e.what() << std::endl;
-                throw; // Decryption failure is critical
-            }
-        }
-
-        // Step 2: Decompress (if compression was used)
-        // FIX Day 52: Extract 4-byte header before decompression
-        if (config_.compression_enabled && original_size > 0) {
-            try {
-                // Validate minimum size for header
-                if (data_bytes.size() < 4) {
-                    throw std::runtime_error("Compressed data too small for header");
-                }
-
-                // Extract 4-byte decompressed size (big-endian)
-                uint32_t decompressed_size =
-                    (data_bytes[0] << 24) | (data_bytes[1] << 16) |
-                    (data_bytes[2] << 8) | data_bytes[3];
-
-                std::cout << "📦 Decompression header: " << decompressed_size
-                          << " bytes (from " << (data_bytes.size() - 4) << " compressed)" << std::endl;
-
-                // Remove 4-byte header and decompress
-                std::vector<uint8_t> compressed_only(data_bytes.begin() + 4, data_bytes.end());
-                data_bytes = crypto_transport::decompress(compressed_only, decompressed_size);
-
-                std::cout << "📦 Decompressed: " << compressed_only.size() << " → "
-                          << data_bytes.size() << " bytes" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "⚠️  Decompression failed: " << e.what() << std::endl;
-            }
-        }
-
-        return bytes_to_string(data_bytes);
-    }
+    return processed;
+}
 };
 
 // ============================================================================
@@ -241,34 +164,13 @@ struct EtcdClient::Impl {
 
 // Constructors
 EtcdClient::EtcdClient(const Config& config)
-    : pImpl(std::make_unique<Impl>(config)) {
-    // Register signal handlers for clean shutdown
-    EtcdClient* expected = nullptr;
-    if (g_etcd_client_instance.compare_exchange_strong(expected, this)) {
-        std::signal(SIGINT, signal_handler);
-        std::signal(SIGTERM, signal_handler);
-    }
-}
+    : pImpl(std::make_unique<Impl>(config)) {}
 
 EtcdClient::EtcdClient(const std::string& config_json_path)
-    : pImpl(std::make_unique<Impl>(Config::from_json_file(config_json_path))) {
-    // Register signal handlers
-    EtcdClient* expected = nullptr;
-    if (g_etcd_client_instance.compare_exchange_strong(expected, this)) {
-        std::signal(SIGINT, signal_handler);
-        std::signal(SIGTERM, signal_handler);
-    }
-}
+    : pImpl(std::make_unique<Impl>(Config::from_json_file(config_json_path))) {}
 
 // Destructor
-EtcdClient::~EtcdClient() {
-    // Unregister and disconnect before destruction
-    EtcdClient* expected = this;
-    if (g_etcd_client_instance.compare_exchange_strong(expected, nullptr)) {
-        unregister_component();
-        disconnect();
-    }
-}
+EtcdClient::~EtcdClient() = default;
 
 // Move semantics
 EtcdClient::EtcdClient(EtcdClient&&) noexcept = default;
@@ -286,34 +188,26 @@ bool EtcdClient::connect() {
     std::cout << "🔗 Connecting to etcd-server: "
               << pImpl->config_.host << ":" << pImpl->config_.port << std::endl;
 
-    // Test connection with health check
-    auto health_response = http::get(
+    // Test connection with a simple GET request
+    auto response = http::get(
         pImpl->config_.host,
         pImpl->config_.port,
         "/health",
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
-    if (!health_response.success) {
-        std::cerr << "❌ Server health check failed" << std::endl;
-        return false;
+    pImpl->connected_ = response.success;
+
+    if (pImpl->connected_) {
+        std::cout << "✅ Connected to etcd-server" << std::endl;
+    } else {
+        std::cerr << "❌ Failed to connect to etcd-server" << std::endl;
     }
 
-    pImpl->connected_ = true;
-    std::cout << "✅ Connected to etcd-server" << std::endl;
-
-    // Register component and get encryption key
-    pImpl->mutex_.unlock();
-    bool registered = register_component();
-    pImpl->mutex_.lock();
-
-    if (!registered) {
-        std::cerr << "⚠️  Component registration failed (continuing anyway)" << std::endl;
-    }
-
-    return true;
+    return pImpl->connected_;
 }
 
 bool EtcdClient::is_connected() const {
@@ -345,7 +239,7 @@ bool EtcdClient::set(const std::string& key, const std::string& value) {
 
     try {
         // Process data (compress + encrypt)
-        std::string processed_value = pImpl->process_outgoing_data(value);
+        std::string processed_value = value;
 
         // Build JSON payload
         json payload = {
@@ -362,7 +256,8 @@ bool EtcdClient::set(const std::string& key, const std::string& value) {
             payload.dump(),
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            pImpl->config_.component_name
         );
 
         if (response.success) {
@@ -395,7 +290,8 @@ std::string EtcdClient::get(const std::string& key) {
             "/kv/get?key=" + key,
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            pImpl->config_.component_name
         );
 
         if (!response.success) {
@@ -406,10 +302,10 @@ std::string EtcdClient::get(const std::string& key) {
         // Parse response
         json j = json::parse(response.body);
         std::string value = j.value("value", "");
-        size_t original_size = j.value("original_size", 0);
+        // original_size = j.value("original_size", 0);
 
         // Process data (decrypt + decompress)
-        std::string processed_value = pImpl->process_incoming_data(value, original_size);
+        std::string processed_value = value;
 
         std::cout << "✅ Key retrieved: " << key << std::endl;
         return processed_value;
@@ -434,7 +330,8 @@ bool EtcdClient::del(const std::string& key) {
         "/kv/delete?key=" + key,
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -468,7 +365,8 @@ std::vector<std::string> EtcdClient::list_keys(const std::string& prefix) {
             path,
             pImpl->config_.timeout_seconds,
             pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
+            pImpl->config_.retry_backoff_seconds,
+            pImpl->config_.component_name
         );
 
         if (response.success) {
@@ -493,9 +391,9 @@ bool EtcdClient::register_component() {
 
     if (!pImpl->connected_) {
         std::cerr << "❌ Not connected, attempting to connect..." << std::endl;
-        pImpl->mutex_.unlock();
+        pImpl->mutex_.unlock(); // Unlock before calling connect()
         bool conn = connect();
-        pImpl->mutex_.lock();
+        pImpl->mutex_.lock();   // Re-lock after connect()
 
         if (!conn) {
             std::cerr << "❌ Failed to connect for registration" << std::endl;
@@ -512,24 +410,40 @@ bool EtcdClient::register_component() {
         payload,
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
-        // Parse response and extract encryption key
-        try {
-            json j = json::parse(response.body);
-            if (j.contains("encryption_key")) {
-                std::string hex_key = j["encryption_key"].get<std::string>();
-                pImpl->encryption_key_ = crypto_transport::hex_to_bytes(hex_key);
-                std::cout << "🔑 Encryption key received from server ("
-                          << pImpl->encryption_key_.size() << " bytes)" << std::endl;
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "⚠️  Failed to parse encryption key: " << e.what() << std::endl;
-        }
-
         std::cout << "✅ Component registered: " << pImpl->config_.component_name << std::endl;
+
+        // Day 59: Parse service discovery paths from registration response
+        try {
+            auto j = json::parse(response.body);
+
+            if (j.contains("paths") && j["paths"].is_object()) {
+                const auto& paths = j["paths"];
+                pImpl->service_paths_.hmac_key = paths.value("hmac_key", "");
+                pImpl->service_paths_.crypto_token = paths.value("crypto_token", "");
+                pImpl->service_paths_.config = paths.value("config", "");
+
+                std::cout << "🗺️  Service discovery paths received:" << std::endl;
+                std::cout << "   - HMAC key: " << pImpl->service_paths_.hmac_key << std::endl;
+                std::cout << "   - Crypto token: " << pImpl->service_paths_.crypto_token << std::endl;
+                std::cout << "   - Config: " << pImpl->service_paths_.config << std::endl;
+            } else {
+                std::cerr << "⚠️  No service paths in registration response" << std::endl;
+            }
+
+            // Also extract encryption key if present
+            if (j.contains("encryption_key")) {
+                pImpl->encryption_key_ = j["encryption_key"].get<std::string>();
+                std::cout << "🔑 Encryption key received" << std::endl;
+            }
+
+        } catch (const std::exception& e) {
+            std::cerr << "⚠️  Failed to parse registration response: " << e.what() << std::endl;
+        }
 
         // Start heartbeat thread
         pImpl->mutex_.unlock();
@@ -565,7 +479,8 @@ bool EtcdClient::unregister_component() {
         payload,
         pImpl->config_.timeout_seconds,
         1, // Single attempt
-        0
+        0,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -598,7 +513,8 @@ ComponentInfo EtcdClient::get_component_info(const std::string& name) {
         "/component?name=" + name,
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -624,7 +540,8 @@ std::vector<ComponentInfo> EtcdClient::list_components() {
         "/components",
         pImpl->config_.timeout_seconds,
         pImpl->config_.max_retry_attempts,
-        pImpl->config_.retry_backoff_seconds
+        pImpl->config_.retry_backoff_seconds,
+        pImpl->config_.component_name
     );
 
     if (response.success) {
@@ -651,38 +568,6 @@ std::string EtcdClient::get_config_active() {
     return get("/config/" + pImpl->config_.component_name + "/active");
 }
 
-std::string EtcdClient::get_component_config(const std::string& component_name) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex_);
-
-    if (!pImpl->connected_) {
-        std::cerr << "❌ [etcd-client] Not connected to etcd-server" << std::endl;
-        return "";
-    }
-
-    try {
-        auto response = http::get(
-            pImpl->config_.host,
-            pImpl->config_.port,
-            "/config/" + component_name,
-            pImpl->config_.timeout_seconds,
-            pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds
-        );
-
-        if (!response.success) {
-            std::cerr << "❌ [etcd-client] Failed to get config for: " << component_name << std::endl;
-            return "";
-        }
-
-        std::cout << "✅ [etcd-client] Config retrieved for: " << component_name << std::endl;
-        return response.body;
-
-    } catch (const std::exception& e) {
-        std::cerr << "❌ [etcd-client] Exception getting config: " << e.what() << std::endl;
-        return "";
-    }
-}
-
 bool EtcdClient::put_config(const std::string& json_config) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
 
@@ -691,6 +576,7 @@ bool EtcdClient::put_config(const std::string& json_config) {
         return false;
     }
 
+    // 1. Validate JSON
     try {
         auto parsed = nlohmann::json::parse(json_config);
         std::cout << "✅ [etcd-client] JSON validated (" << json_config.size() << " bytes)" << std::endl;
@@ -701,32 +587,38 @@ bool EtcdClient::put_config(const std::string& json_config) {
     }
 
     try {
-        size_t original_size = json_config.size();
-        std::string processed_config = pImpl->process_outgoing_data(json_config);
-        std::string path = "/v1/config/" + pImpl->config_.component_name;
+    	// 2. Process data (compress + encrypt)
+    	size_t original_size = json_config.size();
+    	std::string processed_config = pImpl->process_outgoing_data(json_config);
 
-        std::string content_type = "application/json";
-        if (pImpl->config_.encryption_enabled || pImpl->config_.compression_enabled) {
-            content_type = "application/octet-stream";
-        }
+    	// 3. Determine Content-Type
+    	std::string content_type = "application/json";
+    	if (pImpl->config_.encryption_enabled || pImpl->config_.compression_enabled) {
+        	content_type = "application/octet-stream";
+    	}
+
+        // 3. Build path
+        std::string path = "/v1/config/" + pImpl->config_.component_name;
 
         std::cout << "📤 [etcd-client] Uploading config to "
                   << pImpl->config_.host << ":" << pImpl->config_.port << path << std::endl;
         std::cout << "   Original: " << json_config.size()
                   << " -> Processed: " << processed_config.size() << " bytes" << std::endl;
 
+        // 4. Send PUT request (9 parameters - original_size will use default = 0)
         auto response = http::put(
-            pImpl->config_.host,
-            pImpl->config_.port,
-            path,
-            processed_config,
-            content_type,
-            pImpl->config_.timeout_seconds,
-            pImpl->config_.max_retry_attempts,
-            pImpl->config_.retry_backoff_seconds,
-            original_size
-        );
+    		pImpl->config_.host,
+    		pImpl->config_.port,
+    		path,
+    		processed_config,
+    		content_type,  // ← Ya no hardcoded
+    		pImpl->config_.timeout_seconds,
+    		pImpl->config_.max_retry_attempts,
+    		pImpl->config_.retry_backoff_seconds,
+    		original_size  // ← Añadir este parámetro
+			);
 
+        // 5. Check response
         if (!response.success) {
             std::cerr << "❌ [etcd-client] PUT request failed" << std::endl;
             return false;
@@ -766,12 +658,12 @@ bool EtcdClient::rollback_config() {
 void EtcdClient::set_encryption_key(const std::string& key) {
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
 
-    if (key.size() != crypto_transport::get_key_size()) {
+    if (key.size() != 32) {
         throw std::runtime_error("Invalid key size (expected " +
-                                 std::to_string(crypto_transport::get_key_size()) + " bytes)");
+                                 std::to_string(32) + " bytes)");
     }
 
-    pImpl->encryption_key_ = string_to_bytes(key);
+    pImpl->encryption_key_ = key;
     std::cout << "🔑 Encryption key set" << std::endl;
 }
 
@@ -780,11 +672,73 @@ bool EtcdClient::has_encryption_key() const {
     return !pImpl->encryption_key_.empty();
 }
 
+
 std::string EtcdClient::get_encryption_key() const {
-    if (!pImpl->encryption_key_.empty()) {
-        return crypto_transport::bytes_to_hex(pImpl->encryption_key_);
+    std::lock_guard<std::mutex> lock(pImpl->mutex_);
+    return pImpl->encryption_key_;
+}
+
+std::string EtcdClient::get_component_config(const std::string& component_name) {
+    return get("/config/" + component_name + "/active");
+}
+
+std::optional<std::vector<uint8_t>> EtcdClient::get_hmac_key(const std::string& key_path) {
+    std::lock_guard<std::mutex> lock(pImpl->mutex_);
+    if (!pImpl->connected_) return std::nullopt;
+
+    auto response = http::get(pImpl->config_.host, pImpl->config_.port, key_path,
+                             pImpl->config_.timeout_seconds, pImpl->config_.max_retry_attempts,
+                             pImpl->config_.retry_backoff_seconds,
+                             pImpl->config_.component_name);
+    if (!response.success) return std::nullopt;
+
+    try {
+        auto j = json::parse(response.body);
+        std::string key_hex;
+        if (j.contains("key_hex") && j["key_hex"].is_string()) {
+            key_hex = j["key_hex"].get<std::string>();
+        } else if (j.contains("key") && j["key"].is_string()) {
+            key_hex = j["key"].get<std::string>();
+        } else {
+            return std::nullopt;
+        }
+        return EtcdClient::hex_to_bytes(key_hex);
+    } catch (...) { return std::nullopt; }
+}
+
+ServicePaths EtcdClient::get_service_paths() const {
+    std::lock_guard<std::mutex> lock(pImpl->mutex_);
+    return pImpl->service_paths_;
+}
+std::string EtcdClient::compute_hmac_sha256(const std::string& data, const std::vector<uint8_t>& key) {
+    unsigned char hmac_result[EVP_MAX_MD_SIZE];
+    unsigned int hmac_len;
+    HMAC(EVP_sha256(), key.data(), key.size(),
+         reinterpret_cast<const unsigned char*>(data.data()), data.size(),
+         hmac_result, &hmac_len);
+    return EtcdClient::bytes_to_hex(std::vector<uint8_t>(hmac_result, hmac_result + hmac_len));
+}
+
+bool EtcdClient::validate_hmac_sha256(const std::string& data, const std::string& hmac_hex,
+                                       const std::vector<uint8_t>& key) {
+    return compute_hmac_sha256(data, key) == hmac_hex;
+}
+
+std::string EtcdClient::bytes_to_hex(const std::vector<uint8_t>& data) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (uint8_t byte : data) oss << std::setw(2) << static_cast<int>(byte);
+    return oss.str();
+}
+
+std::vector<uint8_t> EtcdClient::hex_to_bytes(const std::string& hex_string) {
+    if (hex_string.length() % 2 != 0) throw std::invalid_argument("Hex must have even length");
+    std::vector<uint8_t> bytes;
+    bytes.reserve(hex_string.length() / 2);
+    for (size_t i = 0; i < hex_string.length(); i += 2) {
+        bytes.push_back(static_cast<uint8_t>(std::stoi(hex_string.substr(i, 2), nullptr, 16)));
     }
-    return "";
+    return bytes;
 }
 
 } // namespace etcd_client

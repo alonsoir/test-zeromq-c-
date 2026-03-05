@@ -31,6 +31,7 @@ struct EtcdClient::Impl {
         config.port = port_;
         config.encryption_enabled = true;
         config.compression_enabled = true;
+        config.compression_min_size = 0;
 
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
@@ -88,6 +89,11 @@ bool EtcdClient::is_connected() const {
 
 bool EtcdClient::registerService() {
     std::cout << "📝 [Sniffer] Registering sniffer service in etcd..." << std::endl;
+
+    if (!pImpl->client_->register_component()) {
+        std::cerr << "❌ [Sniffer] Failed to register component" << std::endl;
+        return false;
+    }
 
     // Cargar TODO el sniffer.json (Via Appia Quality: single source of truth)
     std::ifstream config_file("/vagrant/sniffer/config/sniffer.json");

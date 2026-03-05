@@ -1,149 +1,29 @@
-docs: Update CLAUDE.md with Day 53 plan - HMAC log security
+fix(sniffer): DAY 76 — resolve SIGSEGV ByteSizeLong + proto3 sentinel init
 
-SUMMARY
-=======
-Updated technical reference (CLAUDE.md) with Day 52 achievements and
-comprehensive Day 53 plan for implementing HMAC-based log integrity
-to prevent log poisoning attacks against the RAG system.
+Root cause: Proto3 C++ 3.21 does not serialize submessages where all float
+fields equal 0.0f (default). Receiver gets null pointer → SIGSEGV in
+ByteSizeLong() when ml-detector processes embedded detector submessages.
 
-CHANGES
-=======
+Three separate routes in ring_consumer.cpp were affected:
+- populate_protobuf_event() — line 872
+- send_fast_alert()         — line 1170  
+- send_ransomware_features() — line 1255 (DAY 75 fix was incomplete)
 
-1. Day 52 Status Updates
-   -------------------------
-   - Marked firewall-acl-agent as "Production-Ready" ✅
-   - Added stress testing results (36K events, 0 errors)
-   - Updated known issues (resolved hardcoding bugs)
-   - Added capacity planning section
-   - Updated Via Appia principles (Graceful Degradation)
+Fix: init_embedded_sentinels() helper initializes all 40 fields across
+4 submessages (DDoSFeatures, RansomwareEmbeddedFeatures, TrafficFeatures,
+InternalFeatures) with 0.5f Phase 1 sentinel values before serialization.
 
-2. NEW: RAG Log Security Section
-   --------------------------------
-   - Documented log poisoning threat model
-   - Explained why HMAC > ChaCha20 for RAG logs
-   - Detailed HMAC implementation architecture
-   - Added security guarantees and benefits
-   - Included key management strategy
-   - Defense-in-depth measures
+Additional fixes in this session:
+- snappy::Uncompress() wrong signature (2 args → 3): .data(), .size()
+- libsnappy.pc symlink for cmake discovery
 
-3. Day 53 Implementation Plan
-   ----------------------------
-   - Phase 1: Audit ml-detector + rag-ingester current state
-   - Phase 2: Implement HMAC in firewall-acl-agent → rag-ingester
-   - Phase 3: Implement HMAC in ml-detector → rag-ingester
-   - Acceptance criteria and testing strategy
-   - Performance targets (<5μs overhead)
+Pipeline validated: 6/6 components RUNNING, ml-detector VIVO after 60s+
+Regression tests: all green (no regressions)
 
-4. Updated Anti-Patterns
-   -----------------------
-   - DO NOT: Encrypt RAG logs with ChaCha20 (use HMAC for integrity)
-   - DO NOT: Write RAG logs without integrity protection
-   - DO: Protect RAG logs with HMAC (detect tampering)
+Phase 2 pending: replace 0.5f sentinels with real extracted values
+from ShardedFlowManager in populate_ml_defender_features() to enable
+F1-score validation against CTU-13 dataset.
 
-SECURITY RATIONALE
-==================
+Co-authored-by: Claude (Anthropic) GROK4 Gemini, Qwen, DeepSeek, ChatGPT, Alonso Isidoro Román
 
-Log Poisoning Attacks:
-  - Attacker injects malicious content → contaminates RAG
-  - Attacker modifies logs → hides activity
-  - Attacker poisons ML training data → degrades accuracy
-  - Attacker manipulates LLM responses → arbitrary behavior
-
-Why HMAC vs ChaCha20 for RAG Logs:
-
-| Feature              | ChaCha20 | HMAC |
-|----------------------|----------|------|
-| FAISS indexing       | ❌       | ✅   |
-| Detect tampering     | ❌       | ✅   |
-| Detect injection     | ❌       | ✅   |
-| Performance          | 10μs     | 2μs  |
-| Logs human-readable  | ❌       | ✅   |
-| Key compromise risk  | High     | Low  |
-
-Conclusion: HMAC provides integrity + FAISS compatibility.
-
-ARCHITECTURE
-============
-
-Secure Logging Flow (Day 53):
-
-  Component (ml-detector / firewall-acl-agent)
-    ├─ Generate log line (plaintext)
-    ├─ Retrieve HMAC key from etcd
-    ├─ Compute HMAC-SHA256(log_line, hmac_key)
-    └─ Write: "log_line|HMAC:hex_value\n"
-
-  rag-ingester
-    ├─ Read log file (permissions: 0400)
-    ├─ For each line:
-    │   ├─ Split → (message, hmac_hex)
-    │   ├─ Compute expected_hmac
-    │   ├─ Constant-time compare
-    │   ├─ If VALID → parse and ingest
-    │   └─ If INVALID → REJECT + ALERT
-    └─ Metrics: tampering_attempts_total
-
-  RAG / FAISS
-    ├─ Contains ONLY validated logs
-    └─ Protected against log poisoning ✅
-
-DOCUMENTATION ADDITIONS
-=======================
-
-New Sections:
-  - RAG Log Security (comprehensive threat model)
-  - HMAC vs Encryption comparison table
-  - Implementation plan (3 phases)
-  - Security guarantees after Day 53
-  - Key management strategy
-  - Defense-in-depth measures
-
-Updated Sections:
-  - Development Phase & Current State
-  - Known Issues (Day 52 resolved, Day 53 planned)
-  - Anti-Patterns & Lessons Learned
-  - Via Appia Quality Principles
-  - Footer (status update)
-
-FILES MODIFIED
-==============
-- CLAUDE.md (technical reference)
-
-FILES CREATED
-=============
-- docs/day53_continuity_prompt.md (implementation guide)
-
-VALIDATION
-==========
-Day 52 achievements documented:
-  ✅ Config-driven architecture (no hardcoding)
-  ✅ Stress testing (36K events, 0 crypto errors)
-  ✅ Graceful degradation validated
-  ✅ IPSet capacity planning insights
-
-Day 53 plan documented:
-  ✅ Threat model (log poisoning)
-  ✅ Solution architecture (HMAC)
-  ✅ Implementation phases (audit → firewall → ml-detector)
-  ✅ Security guarantees
-  ✅ Testing strategy
-
-NEXT SESSION (Day 53)
-=====================
-1. Audit ml-detector + rag-ingester current implementation
-2. Create feature branch: feature/rag-firewall-hmac-security
-3. Implement HMAC in firewall-acl-agent
-4. Implement HMAC validation in rag-ingester
-5. Test tampering detection (inject malicious lines)
-6. Verify: valid logs pass, invalid logs rejected with alerts
-
-VIA APPIA QUALITY
-=================
-"Security is not an afterthought. Log integrity must be built in from
-the foundation, like the stones of the Via Appia, each one verified
-before being laid." 🏛️
-
-Prevention > Detection > Response
-HMAC ensures prevention at the source.
-
-Co-authored-by: Claude (Anthropic)
+this bug was epic to fix.

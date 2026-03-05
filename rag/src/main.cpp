@@ -1,3 +1,5 @@
+#include <signal.h>
+#include <unistd.h>
 #include "rag/whitelist_manager.hpp"
 #include "rag/rag_command_manager.hpp"
 #include "rag/config_manager.hpp"
@@ -9,6 +11,8 @@
 #include <iostream>
 #include <csignal>
 #include <memory>
+#include <cstdio>
+#include <nlohmann/json.hpp>  // probablemente ya incluido via config_manager
 
 // ============================================================================
 // GLOBALS
@@ -128,6 +132,19 @@ int main() {
             std::cerr << "❌ Error crítico: No se pudo cargar la configuración" << std::endl;
             return 1;
         }
+
+        // 1b. REDIRIGIR LOGS SEGÚN CONFIG — El JSON es la ley
+        {
+            const auto& cfg = config_manager.getRawConfig();
+            if (cfg.contains("logging") && cfg["logging"].contains("path")) {
+                std::string log_path = cfg["logging"]["path"].get<std::string>();
+                bool append         = cfg["logging"].value("append", true);
+                const char* mode    = append ? "a" : "w";
+                freopen(log_path.c_str(), mode, stdout);
+                freopen(log_path.c_str(), mode, stderr);
+            }
+        }
+        std::cout << "🚀 Iniciando RAG Security System - Arquitectura Centralizada" << std::endl;
 
         // ====================================================================
         // 2. INICIALIZAR LLAMA INTEGRATION
@@ -255,31 +272,31 @@ try {
         // ====================================================================
         std::cout << "\n✅ Sistema listo. Escribe 'help' para ver comandos disponibles." << std::endl;
         std::cout << "   Comandos especiales:" << std::endl;
-        //std::cout << "   - test_embedder : Probar sistema de embeddings" << std::endl;
         std::cout << "   - exit/quit     : Salir del sistema" << std::endl;
 
         // ====================================================================
         // 8. BUCLE PRINCIPAL DE COMANDOS
         // ====================================================================
-        std::string input;
-        while (true) {
-            std::cout << "\nSECURITY_SYSTEM> ";
-            std::getline(std::cin, input);
-
-            if (input.empty()) continue;
-
-            // Comandos especiales
-            if (input == "exit" || input == "quit") {
-                break;
+        if (!isatty(STDIN_FILENO)) {
+            // Modo daemon: bloquear hasta SIGTERM/SIGINT
+            std::cout << "🔧 Modo daemon activo" << std::endl;
+            sigset_t mask;
+            sigemptyset(&mask);
+            sigaddset(&mask, SIGTERM);
+            sigaddset(&mask, SIGINT);
+            int sig;
+            sigwait(&mask, &sig);
+        } else {
+            // Modo interactivo
+            std::string input;
+            while (true) {
+                std::cout << "\nSECURITY_SYSTEM> ";
+                std::getline(std::cin, input);
+                if (std::cin.eof()) break;
+                if (input.empty()) continue;
+                if (input == "exit" || input == "quit") break;
+                whitelist_manager->processCommand(input);
             }
-
-            //if (input == "test_embedder") {
-            //    testEmbedder();
-            //    continue;
-            //}
-
-            // Comandos regulares (WhiteListManager)
-            whitelist_manager->processCommand(input);
         }
 
         std::cout << "\n👋 Cerrando sistema..." << std::endl;

@@ -53,6 +53,8 @@ public:
 
     // Para registro en etcd
     nlohmann::json getConfigForEtcd() const;
+    // Junto a getConfigForEtcd() en la sección public:
+    const nlohmann::json& getRawConfig() const { return config_; }  // inline, header-only
     std::string getComponentId() const;
 
     /**

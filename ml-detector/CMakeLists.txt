@@ -205,6 +205,7 @@ set(SOURCES
         src/traffic_detector.cpp
         src/internal_detector.cpp
         src/etcd_client.cpp
+        src/csv_event_writer.cpp
         ${PROTO_SOURCES}
 )
 
@@ -330,6 +331,9 @@ target_include_directories(ml-detector PRIVATE
         ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
 )
 
+find_package(OpenSSL REQUIRED)
+message(STATUS "Found OpenSSL: ${OPENSSL_VERSION}")
+
 # ============================================================================
 # LINK LIBRARIES
 # ============================================================================
@@ -342,6 +346,8 @@ target_link_libraries(ml-detector PRIVATE
         nlohmann_json::nlohmann_json
         ${ETCD_CLIENT_LIB}
         ${CRYPTO_TRANSPORT_LIB}
+        OpenSSL::SSL          # Day 63: HMAC-SHA256 para CsvEventWriter
+        OpenSSL::Crypto       # Day 63
 )
 
 # nlohmann/json
@@ -387,71 +393,8 @@ set_property(TARGET ml-detector PROPERTY POSITION_INDEPENDENT_CODE ON)
 # ============================================================================
 if(BUILD_TESTS)
     enable_testing()
-
-    # Google Test (si está disponible)
     find_package(GTest QUIET)
-
-    if(GTest_FOUND)
-        message(STATUS "Found GTest: ${GTest_VERSION}")
-
-        # Test sources
-        set(TEST_SOURCES
-                tests/unit/test_classifier.cpp
-                tests/unit/test_feature_extractor.cpp
-                tests/unit/test_model_loader.cpp
-        )
-
-        foreach(test_src ${TEST_SOURCES})
-            get_filename_component(test_name ${test_src} NAME_WE)
-            add_executable(${test_name} ${test_src})
-
-            target_include_directories(${test_name} PRIVATE
-                    ${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
-            )
-
-            target_link_libraries(${test_name} PRIVATE
-                    GTest::GTest
-                    GTest::Main
-                    PkgConfig::ZMQ
-                    ${Protobuf_LIBRARIES}
-                    onnxruntime
-                    Threads::Threads
-            )
-
-            add_test(NAME ${test_name} COMMAND ${test_name})
-        endforeach()
-
-        # ============================================================================
-        # TEST_DETECTORS
-        # ============================================================================
-        add_executable(test_detectors
-                tests/unit/test_detectors.cpp
-                src/ddos_detector.cpp
-                src/traffic_detector.cpp
-                src/internal_detector.cpp
-        )
-
-        target_include_directories(test_detectors PRIVATE
-                ${CMAKE_CURRENT_SOURCE_DIR}/include
-                ${CMAKE_BINARY_DIR}/proto
-        )
-
-        target_link_libraries(test_detectors PRIVATE
-                GTest::GTest
-                GTest::Main
-                PkgConfig::ZMQ
-                ${Protobuf_LIBRARIES}
-                onnxruntime
-                Threads::Threads
-        )
-
-        add_test(NAME test_detectors COMMAND test_detectors)
-
-        message(STATUS "Tests enabled")
-    else()
-        message(STATUS "GTest not found - tests disabled")
-    endif()
+    add_subdirectory(tests)
 endif()
 
 # ============================================================================
@@ -478,44 +421,6 @@ install(FILES README.md
         DESTINATION share/doc/ml-detector
         COMPONENT documentation
 )
-
-# ============================================================================
-# RANSOMWARE DETECTOR TESTS
-# ============================================================================
-
-if(BUILD_TESTS)
-    # Unit Tests - Solo el detector aislado
-    add_executable(test_ransomware_detector_unit
-            tests/unit/test_ransomware_detector.cpp
-    )
-
-    target_link_libraries(test_ransomware_detector_unit PRIVATE
-            ransomware_detector
-    )
-
-    add_test(NAME RansomwareDetectorUnit
-            COMMAND test_ransomware_detector_unit
-    )
-
-    # Unit Tests - DDoS, Traffic, Internal Detectors
-    add_executable(test_detectors_unit
-            tests/unit/test_detectors.cpp
-            src/ddos_detector.cpp
-            src/traffic_detector.cpp
-            src/internal_detector.cpp
-    )
-
-    target_include_directories(test_detectors_unit PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
-
-    target_link_libraries(test_detectors_unit PRIVATE
-    )
-
-    add_test(NAME DetectorsUnit
-            COMMAND test_detectors_unit
-    )
-endif()
 
 # ============================================================================
 # SUMMARY

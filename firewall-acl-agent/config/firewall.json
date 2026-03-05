@@ -147,6 +147,14 @@
       "log_crypto_token_retrieval": true
     }
   },
+  "_comment_csv_batch_logger": "DAY 59: HMAC-signed CSV logging for RAG ingestion",
+  "csv_batch_logger": {
+    "enabled": true,
+    "output_dir": "/vagrant/logs/firewall_logs",
+    "batch_size": 100,
+    "batch_timeout_sec": 5,
+    "_comment": "Generates CSV batches with HMAC signatures for tamper detection"
+  },
 
   "metrics": {
     "enable_export": true,

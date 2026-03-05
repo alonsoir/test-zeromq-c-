@@ -53,6 +53,9 @@ namespace rag_ingester {
         // 🎯 ADR-002: Multi-Engine Provenance
         std::vector<EngineVerdict> verdicts;  // All engine opinions
         float discrepancy_score;              // 0.0 (agree) - 1.0 (disagree)
+        std::string source_ip;
+        std::string dest_ip;
+        uint64_t    timestamp_ms {0};
         std::string final_decision;           // "ALLOW", "DROP", "ALERT"
     };
 

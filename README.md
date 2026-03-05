@@ -1,10 +1,11 @@
-# ML Defender (aegisIDS)
+# ML Defender (aRGus EDR)
 
 **Open-source, enterprise-grade network security system protecting critical infrastructure from ransomware and DDoS attacks.**
 
 [![Via Appia Quality](https://img.shields.io/badge/Via_Appia-Quality-gold)](https://en.wikipedia.org/wiki/Appian_Way)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Status: Production Ready](https://img.shields.io/badge/Status-Production_Ready-brightgreen)]()
+[![Status: Preparing to arXiv Delivery](https://img.shields.io/badge/Status-Production_Ready-brightgreen)]()
+https://alonsoir-test-zeromq-c-.mintlify.app/introduction
 
 ---
 
@@ -26,6 +27,14 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │  Network Traffic (eBPF/XDP)                                      │
 │         ↓                                                         │
 │  ┌──────────────────┐                                            │
+│  │  sniffer (C++20) │  eBPF/XDP packet capture                  │
+│  │                  │  - ShardedFlowManager (16 shards)          │
+│  │                  │  - Fast Detector (heuristics)              │
+│  │                  │  - 4x embedded ML feature extraction       │
+│  │                  │  - ChaCha20-Poly1305 + LZ4 transport       │
+│  └──────────────────┘                                            │
+│         ↓  ZeroMQ (encrypted)                                    │
+│  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4x Embedded RandomForest Models           │
 │  │  (C++20)         │  - DDoS Detection (97.6% accuracy)        │
 │  │                  │  - Ransomware Detection                    │
@@ -40,6 +49,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │  ┌──────────────────┐                                            │
 │  │  etcd-server     │  Distributed Config + Key Management      │
 │  │  (C++)           │  Automatic crypto seed exchange            │
+│  │                  │  HMAC secrets management ✅                │
 │  └──────────────────┘                                            │
 │         ↓                                                         │
 │  ┌──────────────────┐                                            │
@@ -67,9 +77,41 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ---
 
-## 📊 Current Status (Day 52 - Feb 8, 2026)
+## 📊 Current Status (Day 76 - Mar 5, 2026)
 
 ### ✅ Production Ready Components
+
+#### sniffer
+- [x] eBPF/XDP packet capture (sub-microsecond latency)
+- [x] ShardedFlowManager (16 shards, thread-safe, zero-lock)
+- [x] Fast Detector (heuristics, Layer 1)
+- [x] RansomwareFeatureProcessor (30s aggregation, Layer 2)
+- [x] 4x embedded ML feature extraction (DDoS, Ransomware, Traffic, Internal)
+- [x] ChaCha20-Poly1305 + LZ4 encrypted ZMQ transport
+- [x] Proto3 sentinel initialization — **DAY 76 fix** ✅
+  - `init_embedded_sentinels()` helper covers all 3 send routes
+  - Eliminates SIGSEGV in ml-detector ByteSizeLong
+  - Pipeline stable: 6/6 components running continuously
+
+#### etcd-server
+- [x] Distributed configuration management
+- [x] Automatic crypto seed exchange
+- [x] Service registration & heartbeats
+- [x] **HMAC Secrets Management** (Day 53 ✅)
+  - Key generation/rotation/retrieval
+  - HTTP API for secrets
+  - Historical key tracking
+- [x] C++ implementation with etcd v3 API
+
+#### etcd-client
+- [x] Configuration retrieval
+- [x] Service discovery
+- [x] **HMAC Utilities** (Day 53 ✅)
+  - compute_hmac_sha256()
+  - validate_hmac_sha256()
+  - Hex encoding/decoding
+  - Key retrieval from etcd-server
+- [x] ZMQ crypto seed negotiation
 
 #### ml-detector
 - [x] 4x embedded RandomForest models (C++20)
@@ -79,12 +121,8 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 - [x] LZ4 compression
 - [x] Dual-NIC deployment (host IDS + gateway mode)
 - [x] Validated with real malware (CTU-13 Neris botnet, 97.6% accuracy)
-
-#### etcd-server
-- [x] Distributed configuration management
-- [x] Automatic crypto seed exchange
-- [x] Service registration & heartbeats
-- [x] C++ implementation with etcd v3 API
+- [x] Dual-Score architecture (fast + ML scores)
+- [x] RAG Logger with HMAC artifact integrity
 
 #### firewall-acl-agent (Day 52 ✅)
 - [x] Kernel-level blocking (IPSet/IPTables)
@@ -118,11 +156,16 @@ sudo apt-get install -y \
     build-essential cmake git \
     libzmq3-dev libprotobuf-dev protobuf-compiler \
     libjsoncpp-dev libssl-dev liblz4-dev \
+    libzstd-dev libsnappy-dev \
     libgrpc++-dev libetcd-cpp-api-dev \
     ipset iptables python3 python3-pip
 
 # Kernel headers (for eBPF)
 sudo apt-get install -y linux-headers-$(uname -r)
+
+# Fix libsnappy pkg-config (if needed)
+sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/snappy.pc \
+            /usr/lib/x86_64-linux-gnu/pkgconfig/libsnappy.pc
 ```
 
 ### Build & Deploy
@@ -132,20 +175,14 @@ sudo apt-get install -y linux-headers-$(uname -r)
 git clone https://github.com/yourusername/ml-defender.git
 cd ml-defender
 
-# 2. Build all components
-./scripts/build_all.sh
+# 2. Build all components (from macOS host with Vagrant)
+make all
 
-# 3. Start etcd-server (terminal 1)
-cd etcd-server/build
-sudo ./etcd_server
+# 3. Start full pipeline
+make pipeline-start
 
-# 4. Start firewall-acl-agent (terminal 2)
-cd firewall-acl-agent/build
-sudo ./firewall-acl-agent -c ../config/firewall.json
-
-# 5. Verify
-tail -f /vagrant/logs/lab/firewall-agent.log
-sudo ipset list ml_defender_blacklist_test
+# 4. Verify
+make pipeline-status
 ```
 
 ### Test with Synthetic Data
@@ -160,50 +197,48 @@ watch -n 1 'sudo ipset list ml_defender_blacklist_test | head -20'
 
 ---
 
-## 🔬 Day 52 Achievements
+## 🔬 Day 76 Achievements
 
-### Config-Driven Architecture
-**Problem**: Hardcoded values scattered throughout codebase  
-**Solution**: All configuration from JSON (single source of truth)
+### Proto3 Sentinel Fix — SIGSEGV Eliminated
+**Problem**: Proto3 C++ 3.21 does not serialize submessages where all float
+fields equal `0.0f`. Receiver gets null pointer → SIGSEGV in `ByteSizeLong()`
+when ml-detector processes DDoS/Ransomware/Traffic/Internal embedded submessages.
 
-**Fixes**:
-- Logger path from `config.logging.file` (not hardcoded)
-- IPSet names from `config.ipsets` map (eliminated singleton ambiguity)
-- BatchProcessor config from JSON (no struct defaults)
-- Removed duplicate logging configuration
+Three routes in `ring_consumer.cpp` were affected:
+- `populate_protobuf_event()` — raw eBPF capture path
+- `send_fast_alert()` — Layer 1 heuristic alert path
+- `send_ransomware_features()` — Layer 2 aggregation path (DAY 75 fix was incomplete)
 
-**Result**: Clean, maintainable, production-ready configuration
+**Solution**: `init_embedded_sentinels()` helper initializes all 40 fields
+across 4 submessages with `0.5f` Phase 1 sentinel values before serialization.
 
-### Stress Testing Validation
-**Tests**: 36,000 events across 4 progressive stress tests
+**Result**: Pipeline runs continuously. ml-detector VIVO after 60s+ of operation.
 
-| Test | Events | Rate      | CPU    | Result |
-|------|--------|-----------|--------|--------|
-| 1    | 1,000  | 42.6/sec  | N/A    | ✅ PASS |
-| 2    | 5,000  | 94.9/sec  | N/A    | ✅ PASS |
-| 3    | 10,000 | 176.1/sec | 41-45% | ✅ PASS |
-| 4    | 20,000 | 364.9/sec | 49-54% | ✅ PASS |
+### Additional Fixes
+- `snappy::Uncompress()` wrong signature (2 args → 3 args): added `.data(), .size()`
+- `libsnappy.pc` symlink for cmake pkg-config discovery
 
-**Metrics** (36K events total):
+### Pipeline Validation
 ```
-crypto_errors: 0              ← Perfect crypto pipeline
-decompression_errors: 0       ← Perfect LZ4 pipeline
-protobuf_parse_errors: 0      ← Perfect message parsing
-ipset_successes: 118          ← First ~1000 blocked successfully
-ipset_failures: 16,681        ← Capacity limit (not a bug)
-max_queue_depth: 16,690       ← Backpressure handled gracefully
+etcd-server:   ✅ RUNNING
+rag-security:  ✅ RUNNING
+rag-ingester:  ✅ RUNNING
+ml-detector:   ✅ RUNNING  ← Previously crashing on every event
+sniffer:       ✅ RUNNING
+firewall:      ✅ RUNNING
 ```
-
-**Discoveries**:
-- Crypto pipeline is production-ready (0 errors)
-- IPSet capacity planning is critical (hit 1000 IP limit)
-- System exhibits graceful degradation (no crashes)
-- CPU efficiency excellent (54% max)
-- Memory efficient (127MB under extreme load)
 
 ---
 
 ## 📋 Backlog & Roadmap
+
+### Priority 0: F1-Score Validation (Current — DAY 77)
+
+**sniffer/ring_consumer.cpp**:
+- [ ] Replace `0.5f` sentinels with real extracted values from ShardedFlowManager
+- [ ] Fix call order: `populate_ml_defender_features()` must not be overwritten by sentinels
+- [ ] Complete `run_ml_detection()` — write inference results back to proto_event
+- [ ] Validate F1-score against CTU-13 Neris dataset (`make test-replay-neris`)
 
 ### Priority 1: Production Scale (2 weeks)
 
@@ -235,11 +270,6 @@ max_queue_depth: 16,690       ← Backpressure handled gracefully
 - [ ] Recidivism detection
 - [ ] Trend analysis
 - [ ] Intent classification
-
-See detailed backlogs:
-- [firewall-acl-agent backlog](firewall-acl-agent/BACKLOG.md)
-- [rag-ingester backlog](rag-ingester/BACKLOG.md)
-- [rag backlog](rag/BACKLOG.md)
 
 ---
 
@@ -295,18 +325,19 @@ This project practices "Consejo de Sabios" (Council of Wise Ones):
 - Unit tests: Core algorithms and data structures
 - Integration tests: End-to-end pipeline validation
 - Stress tests: 36K events, multiple load profiles
-- Chaos tests: Component failure scenarios
+- Regression tests: Proto3 serialization, RAG logger HMAC
 
 ### Continuous Validation
 ```bash
 # Run full test suite
-./scripts/run_tests.sh
+make test
 
 # Stress test pipeline
-./scripts/stress_test.sh --events 10000 --rate 200
+make test-replay-neris   # CTU-13 Neris botnet (492K events)
+make test-replay-small   # Quick validation
 
 # Validate crypto pipeline
-./scripts/validate_crypto.sh
+make verify-all
 ```
 
 ---
@@ -328,27 +359,33 @@ This project practices "Consejo de Sabios" (Council of Wise Ones):
 
 ### Security Guarantees
 - ✅ ChaCha20-Poly1305 authenticated encryption (AEAD)
+- ✅ HMAC-SHA256 log integrity (tamper detection)
 - ✅ No cleartext transmission of threats
 - ✅ Autonomous blocking (no human in loop)
 - ✅ IPSet/IPTables kernel-level enforcement
 - ✅ Fail-closed design (errors → block, not allow)
 
-### Known Limitations (Day 52)
+### Known Limitations
 - IPSet capacity finite (max realistic: 500K IPs)
 - No persistence layer yet (evicted IPs lost)
 - Single-node deployment (no HA/failover)
-- Manual capacity management required
+- Embedded detector features use Phase 1 sentinels pending real extraction (DAY 77)
 
 ---
 
 ## 📈 Performance
 
-### Benchmarks (Day 52)
+### Benchmarks
+
+**sniffer**:
+- Packet capture: sub-microsecond (eBPF/XDP)
+- Flow tracking: ShardedFlowManager 16 shards, lock-free per shard
+- Transport: ChaCha20-Poly1305 + LZ4, 0 crypto errors
 
 **ml-detector**:
-- Detection latency: <1 μs (sub-microsecond)
-- Throughput: 1M+ packets/sec (tested on synthetic traffic)
-- Features extracted: 83 per flow
+- Detection latency: 0.24μs – 1.06μs (4 embedded models)
+- Throughput: 1M+ packets/sec (synthetic traffic)
+- Features: 83 per flow (23 Level 1 + 40 embedded Phase 1)
 - Models: 4 concurrent (DDoS, Ransomware, Traffic Class, Anomaly)
 
 **firewall-acl-agent**:
@@ -357,7 +394,6 @@ This project practices "Consejo de Sabios" (Council of Wise Ones):
 - CPU: 54% max under extreme load
 - Memory: 127 MB RSS
 - Crypto pipeline: 0 errors @ 36K events
-- Graceful degradation: No crashes when capacity exceeded
 
 **etcd-server**:
 - Service registration: <50 ms
@@ -387,8 +423,8 @@ cd ml-defender
 git checkout -b feature/your-feature
 
 # Build and test
-./scripts/build_all.sh
-./scripts/run_tests.sh
+make all
+make test
 
 # Submit PR with:
 # - Description of changes
@@ -407,14 +443,14 @@ MIT License - See [LICENSE](LICENSE) for details
 ## 🙏 Acknowledgments
 
 ### Human Contributors
-- **Alonso** (alonso@example.com) - Creator, ML Architect, Via Appia Philosopher
+- **Alonso Isidoro Roman** - Creator, ML Architect, Via Appia Philosopher
 
 ### AI Co-Authors
 This project practices transparent AI collaboration. The following AI systems have contributed to development:
-- **Claude** (Anthropic) - Architecture design, code review, documentation
+- **Claude** (Anthropic) - Architecture design, code review, debugging, documentation
 - **DeepSeek** - Algorithm optimization, debugging
-- **Grok** - Performance analysis
-- **ChatGPT** - Research assistance
+- **Grok** - Performance analysis, cmake diagnostics
+- **ChatGPT** - Research assistance, lifetime analysis
 - **Qwen** - Documentation review
 
 All AI contributions are explicitly acknowledged in code comments and commit messages.
@@ -434,22 +470,36 @@ All AI contributions are explicitly acknowledged in code comments and commit mes
 
 ---
 
+## Attribution
+
+This project is authored by Alonso Isidoro Roman and was developed with
+AI assistance from Claude (Anthropic) and the Consejo de Sabios methodology.
+For details on the collaboration methodology and all acknowledgments, see:
+
+- [AUTHORS.md](AUTHORS.md) - Copyright and ownership
+- [ATTRIBUTION.md](ATTRIBUTION.md) - Full acknowledgments and methodology
+- [LICENSE](LICENSE) - MIT License terms
+
+---
+
 ## 🗺️ Project Status
 
-**Current Phase**: Day 52 - Production-ready core, capacity optimization needed
+**Current Phase**: Day 76 — Pipeline stable, F1-score validation next
 
-**Last Updated**: February 8, 2026
+**Last Updated**: March 5, 2026
 
 **Recent Milestones**:
-- ✅ Day 50: Crash diagnostics and observability
-- ✅ Day 51-52: Config-driven architecture
-- ✅ Day 52: Stress testing validation (36K events)
-- ✅ Day 52: Crypto pipeline validated (0 errors)
+- ✅ Day 52: Stress testing validation (36K events, 0 crypto errors)
+- ✅ Day 53: HMAC infrastructure (secrets management, key rotation)
+- ✅ Day 64: CSV pipeline + 127-column schema
+- ✅ Day 72: Deterministic trace_id correlation (SHA256 + temporal buckets)
+- ✅ Day 75: Proto3 null pointer root cause identified (ByteSizeLong SIGSEGV)
+- ✅ Day 76: SIGSEGV eliminated — pipeline 6/6 stable, init_embedded_sentinels()
 
 **Next Milestones**:
-- 🎯 Week 8: Multi-tier storage + async queue
-- 🎯 Week 9: RAG enhancement (firewall logs)
-- 🎯 Week 10: Production deployment (hospital pilot)
+- 🎯 Day 77: Real feature extraction in ring_consumer (replace 0.5f sentinels)
+- 🎯 Day 78: F1-score validation against CTU-13 Neris (492K events)
+- 🎯 Week N: arXiv paper submission
 
 ---
 

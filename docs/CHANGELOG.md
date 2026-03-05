@@ -6,6 +6,103 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
+## [Day 53 - HMAC Infrastructure] - 2026-02-10
+
+### ✨ **Added - HMAC Log Integrity System (Phases 1-2)**
+
+#### **🔐 FASE 1: etcd-server SecretsManager**
+- **HMAC Key Generation**: SHA256-based keys (32 bytes random + salt)
+- **Key Rotation**: Timestamp-based rotation con historical tracking
+- **Key Management**:
+  - `generate_hmac_key()`: Nueva key generation
+  - `rotate_hmac_key()`: Safe rotation con backup
+  - `get_hmac_key()`: Retrieval by timestamp
+  - `list_hmac_keys()`: Audit trail
+- **HTTP Endpoints**:
+```
+  GET  /secrets/keys              → List all HMAC keys
+  GET  /secrets/{secret_name}     → Get specific secret
+  POST /secrets/rotate/{component} → Rotate component key
+```
+- **Testing**: 12 unit tests + 4 integration tests (100% pass)
+
+#### **🛡️ FASE 2: etcd-client HMAC Utilities**
+- **5 Core Methods**:
+```cpp
+  get_hmac_key(component, timestamp)   → Key retrieval
+  compute_hmac_sha256(data, key)       → HMAC generation
+  validate_hmac_sha256(data, hmac, key)→ HMAC verification
+  bytes_to_hex(bytes)                  → Hex encoding
+  hex_to_bytes(hex)                    → Hex decoding
+```
+- **OpenSSL Integration**: HMAC_SHA256 implementation
+- **Universal Availability**: All components (ml-detector, sniffer, rag-ingester) inherit HMAC via etcd-client
+- **Testing**: 12 unit tests + 4 integration tests (100% pass)
+
+### 🔧 **Technical Details**
+
+#### **Architecture Pattern**
+```
+etcd-server (SecretsManager)
+    ↓ HTTP API
+etcd-client (HMAC utilities)
+    ↓ Link-time inheritance
+ml-detector, sniffer, rag-ingester (Ready for HMAC)
+```
+
+#### **Files Modified/Created** (16 total)
+```
+etcd-server/
+├── include/etcd_server/secrets_manager.hpp        # New class
+├── src/secrets_manager.cpp                        # New implementation
+├── src/http_server.cpp                            # 3 new endpoints
+├── tests/test_secrets_manager.cpp                 # 12 unit tests
+├── tests/test_secrets_manager_integration.cpp     # 4 integration tests
+└── CMakeLists.txt                                 # OpenSSL linking
+
+etcd-client/
+├── include/etcd_client/etcd_client.hpp            # 5 new methods
+├── src/etcd_client.cpp                            # HMAC implementation
+├── tests/test_etcd_client_hmac.cpp                # 12 unit tests
+├── tests/test_etcd_client_hmac_integration.cpp    # 4 integration tests
+└── CMakeLists.txt                                 # OpenSSL linking
+```
+
+### 🧪 **Testing Summary**
+
+**Total Tests**: 32 (24 unit + 8 integration)  
+**Pass Rate**: 100%
+
+#### **SecretsManager Tests**
+- [x] Key generation randomness
+- [x] Key rotation without data loss
+- [x] Key retrieval by timestamp
+- [x] Historical key tracking
+- [x] HTTP endpoint functionality
+- [x] Concurrent access safety
+
+#### **etcd-client HMAC Tests**
+- [x] HMAC computation correctness
+- [x] HMAC validation (valid/invalid cases)
+- [x] Hex encoding/decoding roundtrip
+- [x] Key retrieval from etcd-server
+- [x] Error handling (missing keys, invalid hex)
+- [x] Thread safety
+
+### 📊 **Performance Characteristics**
+
+- **Key Generation**: ~1ms (includes RAND_bytes + etcd store)
+- **HMAC Computation**: ~0.05ms (SHA256 hash)
+- **Key Retrieval**: ~2ms (HTTP GET from etcd-server)
+- **Memory Overhead**: +64 bytes per HMAC tag (SHA256)
+
+### 🗺️ **Next Steps (FASE 3)**
+
+- [ ] rag-ingester EventLoader HMAC integration
+- [ ] ml-detector log signing (optional P2)
+- [ ] Audit trail visualization (P3)
+
+---
 
 ## [v4.0.0-rag-llama-integration] - 2025-11-20
 

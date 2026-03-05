@@ -549,6 +549,9 @@ int main(int argc, char** argv) {
         zmq_config.max_reconnect_interval_ms = config.zmq.max_reconnect_interval_ms;
         zmq_config.enable_reconnect = config.zmq.enable_reconnect;
 
+        // ✅ Day 61: CSV batch logger output directory
+        zmq_config.log_directory = config.csv_batch_logger.output_dir;
+
         // Transport configuration (compression)
         if (config.transport.compression.enabled) {
             zmq_config.compression_enabled = true;
@@ -588,7 +591,10 @@ int main(int argc, char** argv) {
         }
 
         FIREWALL_LOG_INFO("Initializing ZMQ subscriber");
-        ZMQSubscriber subscriber(processor, zmq_config);
+        ZMQSubscriber subscriber(processor, zmq_config, etcd_client.get());
+
+        FIREWALL_LOG_INFO("ZMQ subscriber created",
+            "etcd_integration", etcd_client ? "ENABLED" : "DISABLED");
 
         // Start ZMQ subscriber thread
         FIREWALL_LOG_INFO("Starting ZMQ subscriber thread");

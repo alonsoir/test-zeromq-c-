@@ -101,7 +101,7 @@ struct LoggingConfigNew {
     std::string level = "debug";
     bool console = true;
     bool syslog = false;
-    std::string file = "/vagrant/firewall-acl-agent/build/logs/firewall-agent.log";
+    std::string file = "/vagrant/logs/lab/firewall-agent.log";
     int max_file_size_mb = 10;
     int backup_count = 5;
     bool log_protobuf_messages = true;
@@ -109,7 +109,15 @@ struct LoggingConfigNew {
     bool log_block_decisions = true;
     bool log_performance_metrics = true;
 };
-
+    //===----------------------------------------------------------------------===//
+    // CSV Batch Logger Configuration (Day 59)
+    //===----------------------------------------------------------------------===//
+    struct CsvBatchLoggerConfig {
+        bool enabled = false;
+        std::string output_dir;
+        int batch_size = 100;
+        int batch_timeout_sec = 5;
+    };
     //===----------------------------------------------------------------------===//
     // Etcd Configuration
     //===----------------------------------------------------------------------===//
@@ -159,6 +167,7 @@ struct FirewallAgentConfig {
     LoggingConfigNew logging;
     EtcdConfig etcd;
     TransportConfig transport;  // ✅ Day 23: AÑADIR ESTA LÍNEA
+    CsvBatchLoggerConfig csv_batch_logger;  // ✅ Day 59
 
     bool is_valid() const { return true; }
     std::vector<std::string> validate() const { return {}; }
@@ -199,6 +208,8 @@ private:
     static T get_optional(const Json::Value& json, const std::string& key, const T& default_value);
     
     static std::vector<std::string> parse_string_array(const Json::Value& array);
+
+    static CsvBatchLoggerConfig parse_csv_batch_logger(const Json::Value& json);
 };
 
 } // namespace mldefender::firewall

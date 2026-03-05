@@ -33,6 +33,7 @@ find_package(PkgConfig REQUIRED)
 
 # Find crypto-transport library (our new dependency)
 find_library(CRYPTO_TRANSPORT_LIB crypto_transport PATHS /usr/local/lib REQUIRED)
+set(CRYPTO_TRANSPORT_INCLUDE /vagrant/crypto-transport/include)
 if(NOT CRYPTO_TRANSPORT_LIB)
     message(FATAL_ERROR "crypto-transport library not found. Install it first from /vagrant/crypto-transport")
 endif()
@@ -42,6 +43,9 @@ find_package(nlohmann_json 3.2.0 QUIET)
 if(NOT nlohmann_json_FOUND)
     message(STATUS "nlohmann_json not found via find_package, will use system headers")
 endif()
+
+# Find OpenSSL (for HMAC - Day 53)
+find_package(OpenSSL REQUIRED)
 
 # ============================================================================
 # Sources
@@ -65,7 +69,8 @@ target_include_directories(etcd_client
         $<INSTALL_INTERFACE:include>
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        /usr/local/include  # For crypto-transport headers
+        ${CRYPTO_TRANSPORT_INCLUDE}
+        ${OPENSSL_INCLUDE_DIR}
 )
 
 # ============================================================================
@@ -87,6 +92,8 @@ target_compile_options(etcd_client
 target_link_libraries(etcd_client
         PRIVATE
         ${CRYPTO_TRANSPORT_LIB}
+        OpenSSL::SSL
+        OpenSSL::Crypto
 )
 
 # Add nlohmann_json if found
@@ -119,14 +126,10 @@ install(DIRECTORY include/etcd_client
 )
 
 # ============================================================================
-# Tests (optional)
+# Tests (ALWAYS enabled - tests must pass)
 # ============================================================================
-option(BUILD_TESTS "Build tests" ON)
-
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+enable_testing()
+add_subdirectory(tests)
 
 # ============================================================================
 # Configuration Summary

@@ -5,6 +5,38 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
+#include <chrono>
+#include "etcd_server/secrets_manager.hpp"
+
+// ============================================================================
+// Day 62: Contextual request logging helper
+// ============================================================================
+static std::string server_iso8601_now() {
+    auto now = std::chrono::system_clock::now();
+    auto now_t = std::chrono::system_clock::to_time_t(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()) % 1000;
+    std::ostringstream ss;
+    ss << std::put_time(std::gmtime(&now_t), "%Y-%m-%dT%H:%M:%S")
+       << '.' << std::setfill('0') << std::setw(3) << ms.count() << 'Z';
+    return ss.str();
+}
+
+static void log_request(const httplib::Request& req, int status,
+                        const std::string& context = "") {
+    std::string component = req.get_header_value("X-Component-Name");
+    std::string client_ts  = req.get_header_value("X-Request-Timestamp");
+    if (component.empty()) component = "unknown";
+    if (client_ts.empty())  client_ts  = "unknown";
+    std::cout << "[ETCD←] " << req.method << " " << req.path
+              << " | status=" << status
+              << " | component=" << component
+              << " | client_ts=" << client_ts
+              << " | server_ts=" << server_iso8601_now()
+              << (context.empty() ? "" : " | " + context)
+              << std::endl;
+}
 // etcd-server/src/etcd_server.cpp
 using json = nlohmann::json;
 
@@ -63,7 +95,7 @@ void EtcdServer::run_server() {
 
     // Endpoint de registro de componentes
     server.Post("/register", [this](const httplib::Request& req, httplib::Response& res) {
-        std::cout << "[ETCD-SERVER] 📝 POST /register recibido" << std::endl;
+        log_request(req, 200, "register");
 
         try {
             auto json_body = json::parse(req.body);
@@ -77,11 +109,23 @@ void EtcdServer::run_server() {
             std::string component_name = json_body["component"];
 
             if (component_registry_->register_component(component_name, req.body)) {
+                // Extract component short name (e.g., "firewall-acl-agent" -> "firewall")
+                std::string short_name = component_name;
+                size_t dash_pos = component_name.find('-');
+                if (dash_pos != std::string::npos) {
+                    short_name = component_name.substr(0, dash_pos);
+                }
+
                 json response = {
                     {"status", "success"},
                     {"message", "Componente registrado correctamente"},
                     {"component", component_name},
-                    {"encryption_key", component_registry_->get_encryption_key()}
+                    {"encryption_key", component_registry_->get_encryption_key()},
+                    {"paths", {
+                        {"hmac_key", "/secrets/" + short_name},
+                        {"crypto_token", "/crypto/" + short_name + "/tokens"},
+                        {"config", "/config/" + short_name}
+                    }}
                 };
                 res.set_content(response.dump(), "application/json");
             } else {
@@ -101,7 +145,7 @@ void EtcdServer::run_server() {
 
     // Endpoint para desregistrar componentes - IMPLEMENTACIÓN REAL
     server.Post("/unregister", [this](const httplib::Request& req, httplib::Response& res) {
-        std::cout << "[ETCD-SERVER] 📝 POST /unregister recibido" << std::endl;
+        log_request(req, 200, "unregister");
 
         try {
             auto json_body = json::parse(req.body);
@@ -147,8 +191,8 @@ void EtcdServer::run_server() {
     });
 
     // Endpoint para listar componentes registrados
-    server.Get("/components", [this](const httplib::Request& /*req*/, httplib::Response& res) {
-        std::cout << "[ETCD-SERVER] 📋 GET /components solicitado" << std::endl;
+    server.Get("/components", [this](const httplib::Request& req, httplib::Response& res) {
+        log_request(req, 200, "list_components");
 
         auto components = component_registry_->get_registered_components();
         json response = {
@@ -161,8 +205,8 @@ void EtcdServer::run_server() {
     });
 
     // Endpoint para obtener seed de cifrado
-    server.Get("/seed", [this](const httplib::Request& /*req*/, httplib::Response& res) {
-        std::cout << "[ETCD-SERVER] 🔑 GET /seed solicitado" << std::endl;
+    server.Get("/seed", [this](const httplib::Request& req, httplib::Response& res) {
+        log_request(req, 200, "seed");
 
         std::string seed = component_registry_->get_encryption_seed();
         json response = {
@@ -173,8 +217,8 @@ void EtcdServer::run_server() {
     });
 
     // Endpoint de validación de configuración
-    server.Get("/validate", [this](const httplib::Request& /*req*/, httplib::Response& res) {
-        std::cout << "[ETCD-SERVER] 🔍 GET /validate solicitado" << std::endl;
+    server.Get("/validate", [this](const httplib::Request& req, httplib::Response& res) {
+        log_request(req, 200, "validate");
 
         std::string validation = component_registry_->validate_configuration();
         res.set_content(validation, "application/json");
@@ -183,7 +227,7 @@ void EtcdServer::run_server() {
     // Endpoint para obtener configuración de componente
     server.Get("/config/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
         std::string component = req.matches[1];
-        std::cout << "[ETCD-SERVER] 📋 GET /config/" << component << " solicitado" << std::endl;
+        log_request(req, 200, "get_config:" + component);
 
         std::string config = component_registry_->get_component_config(component);
         if (config == "{}") {
@@ -201,7 +245,7 @@ void EtcdServer::run_server() {
     // Endpoint para actualizar configuración
     server.Put("/config/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
         std::string component = req.matches[1];
-        std::cout << "[ETCD-SERVER] ✏️  PUT /config/" << component << " solicitado" << std::endl;
+        log_request(req, 200, "put_config:" + component);
 
         try {
             auto json_body = json::parse(req.body);
@@ -226,7 +270,7 @@ void EtcdServer::run_server() {
                 res.set_content(response.dump(), "application/json");
             } else {
                 res.status = 400;
-                res.set_content(R"({"status": "error", "message": "Error actualizando configuración"})", "application/json");
+                res.set_content(R"({"status", "error", "message": "Error actualizando configuración"})", "application/json");
             }
         } catch (const std::exception& e) {
             res.status = 400;
@@ -338,7 +382,7 @@ server.Put("/v1/config/(.*)", [this](const httplib::Request& req, httplib::Respo
     // Endpoint de heartbeat - Añadir después del endpoint /v1/config
 server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::Response& res) {
     std::string component_name = req.matches[1];
-    std::cout << "[ETCD-SERVER] 💓 POST /v1/heartbeat/" << component_name << std::endl;
+    log_request(req, 200, "heartbeat:" + component_name);
 
     try {
         auto json_body = json::parse(req.body);
@@ -400,7 +444,7 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
 });
 
     // Endpoint de salud
-    server.Get("/health", [](const httplib::Request& /*req*/, httplib::Response& res) {
+    server.Get("/health", [](const httplib::Request& req, httplib::Response& res) {
         json response = {
             {"status", "healthy"},
             {"service", "etcd-server"},
@@ -410,7 +454,7 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
     });
 
     // Endpoint de información del sistema
-    server.Get("/info", [this](const httplib::Request& /*req*/, httplib::Response& res) {
+    server.Get("/info", [this](const httplib::Request& req, httplib::Response& res) {
         json response = {
             {"status", "success"},
             {"service", "etcd-server"},
@@ -420,6 +464,205 @@ server.Post("/v1/heartbeat/(.*)", [this](const httplib::Request& req, httplib::R
         };
         res.set_content(response.dump(), "application/json");
     });
+
+    // ============================================================================
+// SECRETS ENDPOINTS (Day 55 - ACTIVE)
+// ============================================================================
+
+// Endpoint: GET /secrets/keys - List all components with HMAC keys
+server.Get("/secrets/keys", [this](const httplib::Request& req, httplib::Response& res) {
+    log_request(req, 200, "secrets_keys");
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    // TODO Day 56: Implementar listado de todos los componentes
+    // Por ahora devolvemos instrucciones de uso
+    json response = {
+        {"status", "success"},
+        {"message", "Use GET /secrets/{component} to get active key"},
+        {"endpoints", {
+            {"get_key", "GET /secrets/{component}"},
+            {"rotate_key", "POST /secrets/rotate/{component}"},
+            {"valid_keys", "GET /secrets/valid/{component}"}
+        }}
+    };
+    res.set_content(response.dump(), "application/json");
+});
+
+// Endpoint: GET /secrets/{component} - Get active HMAC key (hex-encoded)
+server.Get(R"(/secrets/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    std::cout << "[ETCD-SERVER] 🔑 GET /secrets/" << component << " solicitado" << std::endl;
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    try {
+        auto key = secrets_manager_->get_hmac_key(component);
+
+        json response = {
+            {"status", "success"},
+            {"component", component},
+            {"key", key.key_data},  // Hex-encoded
+            {"created_at", secrets_manager_->format_time(key.created_at)},
+            {"is_active", key.is_active}
+        };
+        res.set_content(response.dump(), "application/json");
+
+        std::cout << "[ETCD-SERVER] ✅ Devuelta clave activa para: " << component << std::endl;
+
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"message", "Error retrieving HMAC key"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+        std::cerr << "[ETCD-SERVER] ❌ Error en GET /secrets/" << component << ": " << e.what() << std::endl;
+    }
+});
+
+// Endpoint: POST /secrets/rotate/{component} - Rotate HMAC key with grace period
+server.Post(R"(/secrets/rotate/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    bool force = req.has_param("force") && req.get_param_value("force") == "true";
+
+    std::cout << "[ETCD-SERVER] 🔄 POST /secrets/rotate/" << component
+              << (force ? " (FORCE)" : "") << std::endl;
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    try {
+        auto new_key = secrets_manager_->rotate_hmac_key(component, force);
+        auto valid_keys = secrets_manager_->get_valid_keys(component);
+
+        json response = {
+            {"status", "success"},
+            {"component", component},
+            {"new_key", {
+                {"key", new_key.key_data},
+                {"created_at", secrets_manager_->format_time(new_key.created_at)},
+                {"is_active", true}
+            }},
+            {"valid_keys_count", valid_keys.size()},
+            {"grace_period_seconds", secrets_manager_->get_grace_period_seconds()},
+            {"message", "Old key valid for " + std::to_string(secrets_manager_->get_grace_period_seconds()) + " seconds"},
+            {"forced", force}
+        };
+        res.set_content(response.dump(), "application/json");
+
+        std::cout << "[ETCD-SERVER] ✅ Rotación completada para: " << component
+                  << " (" << valid_keys.size() << " claves válidas)" << std::endl;
+
+    } catch (const std::runtime_error& e) {
+        // Check if it's a cooldown violation
+        std::string error_msg(e.what());
+        if (error_msg.find("Rotation too soon") != std::string::npos) {
+            // Extract retry seconds from message
+            size_t pos = error_msg.find("retry in ");
+            int retry_seconds = 240;  // default
+            if (pos != std::string::npos) {
+                retry_seconds = std::stoi(error_msg.substr(pos + 9));
+            }
+
+            res.status = 429;  // Too Many Requests
+            json error = {
+                {"status", "error"},
+                {"message", "Rotation cooldown active"},
+                {"details", error_msg},
+                {"retry_after_seconds", retry_seconds}
+            };
+            res.set_header("Retry-After", std::to_string(retry_seconds));
+            res.set_content(error.dump(), "application/json");
+
+            std::cout << "[ETCD-SERVER] ⏳ Rotación rechazada (cooldown): " << component << std::endl;
+        } else {
+            // Other runtime errors
+            res.status = 500;
+            json error = {
+                {"status", "error"},
+                {"message", "Error rotating HMAC key"},
+                {"details", e.what()}
+            };
+            res.set_content(error.dump(), "application/json");
+            std::cerr << "[ETCD-SERVER] ❌ Error en POST /secrets/rotate/" << component << ": " << e.what() << std::endl;
+        }
+    }
+});
+
+// Endpoint: GET /secrets/valid/{component} - Get all valid keys (active + grace period)
+server.Get(R"(/secrets/valid/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+    std::string component = req.matches[1];
+    std::cout << "[ETCD-SERVER] 🔑 GET /secrets/valid/" << component << " solicitado" << std::endl;
+
+    if (!secrets_manager_) {
+        res.status = 503;
+        json error = {
+            {"status", "error"},
+            {"message", "SecretsManager not initialized"}
+        };
+        res.set_content(error.dump(), "application/json");
+        return;
+    }
+
+    try {
+        auto valid_keys = secrets_manager_->get_valid_keys(component);
+
+        json keys_array = json::array();
+        for (const auto& key : valid_keys) {
+            keys_array.push_back({
+                {"key", key.key_data},
+                {"created_at", secrets_manager_->format_time(key.created_at)},
+                {"expires_at", secrets_manager_->format_time(key.expires_at)},
+                {"is_active", key.is_active}
+            });
+        }
+
+        json response = {
+            {"status", "success"},
+            {"component", component},
+            {"valid_keys_count", valid_keys.size()},
+            {"keys", keys_array}
+        };
+        res.set_content(response.dump(), "application/json");
+
+        std::cout << "[ETCD-SERVER] ✅ Devueltas " << valid_keys.size() << " claves válidas para: " << component << std::endl;
+
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json error = {
+            {"status", "error"},
+            {"message", "Error retrieving valid keys"},
+            {"details", e.what()}
+        };
+        res.set_content(error.dump(), "application/json");
+        std::cerr << "[ETCD-SERVER] ❌ Error en GET /secrets/valid/" << component << ": " << e.what() << std::endl;
+    }
+});
 
     std::cout << "[ETCD-SERVER] 🌐 Iniciando servidor HTTP en 0.0.0.0:" << port_ << std::endl;
 

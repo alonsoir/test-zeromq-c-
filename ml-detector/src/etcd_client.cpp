@@ -1,6 +1,8 @@
 #include "etcd_client.hpp"
 #include <etcd_client/etcd_client.hpp>
 #include <nlohmann/json.hpp>
+#include <sstream>
+#include <iomanip>
 #include <fstream>
 #include <iostream>
 
@@ -28,10 +30,11 @@ struct EtcdClient::Impl {
         config.component_name = component_name;
         config.host = host_;
         config.port = port_;
-        config.encryption_enabled = true;
+        config.encryption_enabled = (endpoint.find("http://") != 0);
         config.compression_enabled = true;
 
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
+        client_->connect();
     }
 
     void parseEndpoint(const std::string& endpoint) {
@@ -53,7 +56,30 @@ struct EtcdClient::Impl {
 
         std::cout << "📡 [ml-detector] Parsed endpoint: " << host_ << ":" << port_ << std::endl;
     }
-};
+
+    std::string get_hmac_key() {
+        if (!client_) {
+            std::cerr << "[etcd] Client not initialized" << std::endl;
+            return "";
+        }
+        std::string key_path = "/secrets/" + component_name_;
+        auto result = client_->get_hmac_key(key_path);
+        if (!result.has_value() || result->empty()) {
+            std::cerr << "[etcd] Failed to get HMAC key from " << key_path << std::endl;
+            return "";
+        }
+        // Convertir vector<uint8_t> a hex string
+        std::ostringstream hex;
+        hex << std::hex << std::setfill('0');
+        for (uint8_t b : result.value()) {
+            hex << std::setw(2) << static_cast<unsigned int>(b);
+        }
+        std::string key_hex = hex.str();
+        std::cout << "[etcd] HMAC key received for " << key_path
+                  << " (" << key_hex.size() << " chars)" << std::endl;
+        return key_hex;
+    }
+};  // ← cierre de struct Impl
 
 // ============================================================================
 // Implementación pública del Adapter
@@ -159,6 +185,10 @@ std::string EtcdClient::get_encryption_seed() const {
     }
 
     return seed;
+}
+
+std::string EtcdClient::get_hmac_key() const {
+    return pImpl->get_hmac_key();
 }
 
 } // namespace ml_detector

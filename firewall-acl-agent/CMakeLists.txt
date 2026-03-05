@@ -83,6 +83,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
+find_package(OpenSSL REQUIRED)
+
 # ============================================================================
 # Day 50: Backtrace Support for Crash Diagnostics
 # ============================================================================
@@ -193,6 +195,7 @@ target_link_libraries(firewall_core
         ${JSONCPP_LIBRARIES}
         Threads::Threads
         ${CRYPTO_TRANSPORT_LIB}
+        OpenSSL::Crypto
 )
 
 # Day 50: Add backtrace library if available
@@ -226,6 +229,7 @@ add_executable(firewall-acl-agent
 target_link_libraries(firewall-acl-agent
         PRIVATE
         firewall_core
+        OpenSSL::Crypto
 )
 
 # Day 50: Link additional libraries for crash diagnostics
@@ -283,6 +287,7 @@ if(BUILD_TESTS)
     target_link_libraries(firewall_tests
             PRIVATE
             firewall_core
+            OpenSSL::Crypto
             GTest::gtest
             GTest::gtest_main
     )

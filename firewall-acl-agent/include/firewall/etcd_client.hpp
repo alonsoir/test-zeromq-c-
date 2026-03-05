@@ -1,7 +1,12 @@
 #pragma once
+#ifndef FIREWALL_ETCD_CLIENT_HPP
+#define FIREWALL_ETCD_CLIENT_HPP
 
-#include <memory>
+#include <etcd_client/etcd_client.hpp>  // ✅ Day 59: For ServicePaths
 #include <string>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace mldefender::firewall {
 
@@ -44,9 +49,46 @@ namespace mldefender::firewall {
         */
         std::string get_crypto_seed() const;
 
+        /**
+     * @brief Get HMAC key from etcd-server (Day 58)
+     * @param key_path Path to key in etcd (e.g., "/secrets/firewall/log_hmac_key")
+     * @return HMAC key as bytes (32 bytes), or nullopt if not found
+     */
+        std::optional<std::vector<uint8_t>> get_hmac_key(const std::string& key_path);
+
+        /**
+         * @brief Compute HMAC-SHA256 signature (Day 58)
+         * @param data Data to sign (e.g., CSV line)
+         * @param key HMAC key (32 bytes)
+         * @return HMAC signature as hex string (64 chars)
+         */
+        std::string compute_hmac_sha256(const std::string& data,
+                                        const std::vector<uint8_t>& key);
+
+        /**
+         * @brief Convert bytes to hex string (Day 58)
+         * @param bytes Binary data
+         * @return Hex-encoded string
+         */
+        std::string bytes_to_hex(const std::vector<uint8_t>& bytes);
+
+        // ============================================================================
+        // Day 59: Service Discovery
+        // ============================================================================
+
+        /**
+         * @brief Get service discovery paths from etcd-server
+         *
+         * Returns paths where this component should find HMAC keys, crypto tokens, etc.
+         * These paths are received during component registration and owned by etcd-server.
+         *
+         * @return ServicePaths structure with paths, or invalid paths if not registered
+         */
+        etcd_client::ServicePaths get_service_paths() const;
     private:
         struct Impl;
         std::unique_ptr<Impl> pImpl;
     };
 
 } // namespace mldefender::firewall
+#endif

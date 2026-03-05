@@ -618,6 +618,26 @@ target_link_libraries(test_ring_consumer_protobuf
 message(STATUS "🧪 Unit Test: test_ring_consumer_protobuf configured (Day 46 - 40 features)")
 
 # ============================================================================
+# PROTO3 EMBEDDED SERIALIZATION TEST — DAY 75 regression
+# Validates: all-zero float submessage trap + sentinel fix for send_ransomware_features
+# ============================================================================
+add_executable(test_proto3_embedded_serialization
+        tests/test_proto3_embedded_serialization.cpp
+        ${PROTO_SOURCES}
+)
+target_include_directories(test_proto3_embedded_serialization PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_proto3_embedded_serialization
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+        gtest
+        gtest_main
+)
+message(STATUS "🧪 Unit Test: test_proto3_embedded_serialization configured (DAY 75 regression)")
+
+# ============================================================================
 # SHARDED FLOW MANAGER MULTITHREAD TEST - Day 46 (Concurrency validation)
 # ============================================================================
 

@@ -12,7 +12,7 @@ namespace ml_detector {
     class EtcdClient {
     public:
         /**
-         * @brief Construct etcd client adapter
+         * @brief Construct etcd client adetcd_client.hppapter
          * @param endpoint etcd server endpoint (e.g., "localhost:2379")
          * @param component_name Component identifier (e.g., "ml-detector")
          */
@@ -40,6 +40,16 @@ namespace ml_detector {
          * @return Encryption seed obtained during initialize() (32 bytes base64)
          */
         std::string get_encryption_seed() const;
+
+        /**
+         * @brief Get HMAC key for CSV integrity from etcd-server
+         *
+         * Calls GET /secrets/ml-detector — returns 64-char hex key (32 bytes).
+         * Called once at startup, stored in CsvEventWriter.
+         *
+         * @return 64-char hex string, empty string on failure
+         */
+        std::string get_hmac_key() const;
 
     private:
         struct Impl;

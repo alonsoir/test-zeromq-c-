@@ -8,6 +8,7 @@
 // - Eliminates race conditions on current_date_, current_log_, events_in_current_file_
 
 #include "rag_logger.hpp"
+#include "csv_event_writer.hpp"
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -54,6 +55,13 @@ RAGLogger::~RAGLogger() {
     logger_->info("   Divergent events: {}", divergent_events_.load());
 }
 
+void RAGLogger::set_csv_writer(std::shared_ptr<CsvEventWriter> writer) {
+        csv_writer_ = writer;
+        logger_->info("[RAGLogger] CsvEventWriter attached — CSV output active");
+        logger_->info("[RAGLogger]   Output: {}/YYYY-MM-DD.csv",
+                      csv_writer_ ? "/vagrant/logs/ml-detector/events" : "n/a");
+}
+
 // ============================================================================
 // Main Public Interface
 // ============================================================================
@@ -86,7 +94,11 @@ bool RAGLogger::log_event(const protobuf::NetworkSecurityEvent& event,
             if (config_.save_protobuf_artifacts || config_.save_json_artifacts) {
                 save_artifacts(event, json_record);
             }
-
+            if (csv_writer_) {
+                csv_writer_->write_event(event);
+                // Note: write_event() has its own error handling and logging.
+                // A CSV write failure never affects JSONL success.
+            }
             // FIX: Removed check_rotation() call here - now happens inside write_jsonl()
         }
 
@@ -377,22 +389,16 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         }
         
         const auto& nf = event.network_features();
-        
-        // Validate critical embedded messages exist (prevent null pointer deref)
-        bool has_required_embedded = 
-            nf.has_ddos_embedded() &&
-            nf.has_ransomware_embedded() &&
-            nf.has_traffic_classification() &&
-            nf.has_internal_anomaly();
-        
-        if (!has_required_embedded) {
-            logger_->warn("⚠️  Skipping artifact save: event {} has incomplete embedded messages", 
-                         event.event_id());
-            logger_->debug("   ddos_embedded: {}, ransomware_embedded: {}, traffic: {}, internal: {}",
-                          nf.has_ddos_embedded(), nf.has_ransomware_embedded(),
-                          nf.has_traffic_classification(), nf.has_internal_anomaly());
-            return;
-        }
+
+        // DAY 75 FIX: Removed proto2-style has_required_embedded guard.
+        // In proto3, submessages are NEVER null pointers — accessing
+        // nf.ddos_embedded() on an unset field returns a safe default instance.
+        // The original check (has_ddos_embedded() == false) incorrectly blocked
+        // ransomware-features events whose embedded messages contained all-zero
+        // floats: proto3 omits zero-value fields on the wire, making has_X()
+        // return false even for a fully constructed message.
+        // The real fix is in ring_consumer.cpp::send_ransomware_features()
+        // which now populates sentinel values to force serialization.
         
         // ====================================================================
         // Event is valid, proceed with artifact save
@@ -406,7 +412,8 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         std::string base_filename = artifact_dir + "/event_" + event.event_id();
 
         // 🎯 ADR-001: Save ENCRYPTED protobuf if enabled
-        if (config_.save_protobuf_artifacts) {
+        // DAY 75: Guard crypto_manager_ — may be null in test/degraded mode
+        if (config_.save_protobuf_artifacts && crypto_manager_) {
             std::string pb_path = base_filename + ".pb.enc";  // .enc extension
             std::ofstream pb_file(pb_path, std::ios::binary);
 
@@ -429,7 +436,7 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
         }
 
         // 🎯 ADR-001: Save ENCRYPTED JSON if enabled
-        if (config_.save_json_artifacts) {
+        if (config_.save_json_artifacts && crypto_manager_) {
             std::string json_path = base_filename + ".json.enc";  // .enc extension
             std::ofstream json_file(json_path, std::ios::binary);
 

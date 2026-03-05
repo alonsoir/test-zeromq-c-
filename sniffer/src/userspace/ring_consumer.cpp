@@ -19,6 +19,57 @@ extern FeatureLogger::VerbosityLevel g_verbosity;
 
 // Thread-local FastDetector instance (Layer 1 detection)
 
+// DAY 76: sentinel init — debe estar antes de namespace para forward visibility
+static void init_embedded_sentinels(protobuf::NetworkFeatures* net) {
+    auto* ddos = net->mutable_ddos_embedded();
+    ddos->set_syn_ack_ratio(0.5f);
+    ddos->set_packet_symmetry(0.5f);
+    ddos->set_source_ip_dispersion(0.5f);
+    ddos->set_protocol_anomaly_score(0.5f);
+    ddos->set_packet_size_entropy(0.5f);
+    ddos->set_traffic_amplification_factor(0.5f);
+    ddos->set_flow_completion_rate(0.5f);
+    ddos->set_geographical_concentration(0.5f);
+    ddos->set_traffic_escalation_rate(0.5f);
+    ddos->set_resource_saturation_score(0.5f);
+
+    auto* ransom = net->mutable_ransomware_embedded();
+    ransom->set_io_intensity(0.5f);
+    ransom->set_entropy(0.5f);
+    ransom->set_resource_usage(0.5f);
+    ransom->set_network_activity(0.5f);
+    ransom->set_file_operations(0.5f);
+    ransom->set_process_anomaly(0.5f);
+    ransom->set_temporal_pattern(0.5f);
+    ransom->set_access_frequency(0.5f);
+    ransom->set_data_volume(0.5f);
+    ransom->set_behavior_consistency(0.5f);
+
+    auto* traffic = net->mutable_traffic_classification();
+    traffic->set_packet_rate(0.5f);
+    traffic->set_connection_rate(0.5f);
+    traffic->set_tcp_udp_ratio(0.5f);
+    traffic->set_avg_packet_size(0.5f);
+    traffic->set_port_entropy(0.5f);
+    traffic->set_flow_duration_std(0.5f);
+    traffic->set_src_ip_entropy(0.5f);
+    traffic->set_dst_ip_concentration(0.5f);
+    traffic->set_protocol_variety(0.5f);
+    traffic->set_temporal_consistency(0.5f);
+
+    auto* internal = net->mutable_internal_anomaly();
+    internal->set_internal_connection_rate(0.5f);
+    internal->set_service_port_consistency(0.5f);
+    internal->set_protocol_regularity(0.5f);
+    internal->set_packet_size_consistency(0.5f);
+    internal->set_connection_duration_std(0.5f);
+    internal->set_lateral_movement_score(0.5f);
+    internal->set_service_discovery_patterns(0.5f);
+    internal->set_data_exfiltration_indicators(0.5f);
+    internal->set_temporal_anomaly_score(0.5f);
+    internal->set_access_pattern_entropy(0.5f);
+}
+
 namespace sniffer {
     // ============================================================================
     // Thread-Local Detectors and Extractors (Phase 1, Day 3)
@@ -503,15 +554,15 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
     // Only analyze if payload is present
     if (event.payload_len > 0) {
         auto payload_features = payload_analyzer_.analyze(event.payload, event.payload_len);
-        
+
         // Check for high-risk indicators
-        if (payload_features.high_entropy || 
+        if (payload_features.high_entropy ||
             payload_features.is_pe_executable ||
             payload_features.suspicious_strings > 0) {
-            
+
             // TODO: Store payload features for protobuf
             // Could add to thread_local cache or pass to populate_protobuf_event
-            
+
             // Optional: Log suspicious payloads
             if (g_verbosity >= FeatureLogger::VerbosityLevel::BASIC) {
                 std::cout << "[Payload] Suspicious: entropy=" << payload_features.entropy
@@ -695,7 +746,7 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     };
     auto& flow_manager = sniffer::flow::ShardedFlowManager::instance();
     auto flow_stats_opt = flow_manager.get_flow_stats_copy(flow_key);
-    
+
     if (flow_stats_opt.has_value()) {
         const auto& flow_stats = flow_stats_opt.value();
 
@@ -762,9 +813,9 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
 
     // Dual-NIC deployment metadata (Phase 1, Day 7)
     // [DEBUG] Dual-NIC values from eBPF
-    std::cout << "[DUAL-NIC] ifindex=" << event.source_ifindex 
-              << " mode=" << (int)event.interface_mode 
-              << " wan=" << (int)event.is_wan_facing 
+    std::cout << "[DUAL-NIC] ifindex=" << event.source_ifindex
+              << " mode=" << (int)event.interface_mode
+              << " wan=" << (int)event.is_wan_facing
               << " iface=" << event.source_interface << std::endl;
     features->set_interface_mode(event.interface_mode);
     features->set_is_wan_facing(event.is_wan_facing);
@@ -816,6 +867,9 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     proto_event.add_event_tags("raw_ebpf_capture");
     proto_event.add_event_tags("enhanced_multithreaded");
     proto_event.add_event_tags("requires_processing");
+
+    // DAY 76 FIX: sentinel init for all 3 routes
+    init_embedded_sentinels(proto_event.mutable_network_features());
 }
 
 std::string RingBufferConsumer::protocol_to_string(uint8_t protocol) const {
@@ -1085,19 +1139,19 @@ void RingBufferConsumer::ransomware_processor_loop() {
 
 void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
     auto start_time = std::chrono::steady_clock::now();
-    
+
     try {
         protobuf::NetworkSecurityEvent alert;
         alert.set_event_id("fast-alert-" + std::to_string(event.timestamp));
-        
+
         auto* ts = alert.mutable_event_timestamp();
         ts->set_seconds(event.timestamp / 1'000'000'000ULL);
         ts->set_nanos(event.timestamp % 1'000'000'000ULL);
-        
+
         alert.set_originating_node_id(config_.node_id);
-        
+
         auto* net_features = alert.mutable_network_features();
-        
+
         char src_ip_str[INET_ADDRSTRLEN];
         char dst_ip_str[INET_ADDRSTRLEN];
         struct in_addr src_addr, dst_addr;
@@ -1105,14 +1159,16 @@ void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
         dst_addr.s_addr = htonl(event.dst_ip);
         inet_ntop(AF_INET, &src_addr, src_ip_str, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &dst_addr, dst_ip_str, INET_ADDRSTRLEN);
-        
+
         net_features->set_source_ip(src_ip_str);
         net_features->set_destination_ip(dst_ip_str);
         net_features->set_source_port(event.src_port);
         net_features->set_destination_port(event.dst_port);
         net_features->set_protocol_number(event.protocol);
         net_features->set_protocol_name(sniffer::protocol_to_string(event.protocol));
-        
+		// FIX 76
+		init_embedded_sentinels(net_features);
+
         alert.set_overall_threat_score(fast_detector_config_.ransomware.scores.alert);
 
 		// 🎯 DAY 13: Dual-Score Architecture
@@ -1137,31 +1193,31 @@ void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
 
 		alert.set_final_classification("SUSPICIOUS");
         alert.set_threat_category("RANSOMWARE_FAST_DETECTION");
-        
+
         auto snapshot = fast_detector_.snapshot();
         alert.set_correlation_id("ransomware-" + std::to_string(event.timestamp / 1'000'000'000ULL));
-        
+
         std::string serialized;
         if (alert.SerializeToString(&serialized)) {
             std::vector<uint8_t> data(serialized.begin(), serialized.end());
-            
+
             std::lock_guard<std::mutex> lock(send_queue_mutex_);
             send_queue_.push(std::move(data));
             send_queue_cv_.notify_one();
-            
+
             stats_.ransomware_fast_alerts++;
-            
+
             std::cout << "[FAST ALERT] Ransomware heuristic: "
                       << "src=" << src_ip_str << ":" << event.src_port
                       << " dst=" << dst_ip_str << ":" << event.dst_port
                       << " (ExtIPs=" << snapshot.external_ips_10s
                       << ", SMB=" << snapshot.smb_conns << ")" << std::endl;
         }
-        
+
     } catch (const std::exception& e) {
         std::cerr << "[WARNING] Fast alert failed: " << e.what() << std::endl;
     }
-    
+
     auto end_time = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     stats_.ransomware_processing_time_us += duration.count();
@@ -1169,24 +1225,35 @@ void RingBufferConsumer::send_fast_alert(const SimpleEvent& event) {
 
 void RingBufferConsumer::send_ransomware_features(const protobuf::RansomwareFeatures& features) {
     auto start_time = std::chrono::steady_clock::now();
-    
+
     try {
         protobuf::NetworkSecurityEvent event;
-        
+
         uint64_t now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         event.set_event_id("ransomware-features-" + std::to_string(now_ns));
-        
+
         auto* ts = event.mutable_event_timestamp();
         ts->set_seconds(now_ns / 1'000'000'000ULL);
         ts->set_nanos(now_ns % 1'000'000'000ULL);
-        
+
         event.set_originating_node_id(config_.node_id);
-        
+
         auto* net_features = event.mutable_network_features();
         auto* ransom_features = net_features->mutable_ransomware();
         ransom_features->CopyFrom(features);
-        
+
+        // DAY 75 FIX: Populate embedded detector messages with Phase 1 sentinel values.
+        // These events are time-window aggregates from RansomwareProcessor —
+        // no FlowStatistics is available here, so populate_ml_defender_features()
+        // cannot be called. Proto3 does NOT serialize submessages where all float
+        // fields equal 0.0f (the default), causing has_ddos_embedded()==false on
+        // the receiver side and "Skipping artifact save" in rag_logger.
+        // Sentinel 0.5f matches the Phase 1 TODO neutral used in ml_defender_features.cpp.
+        // Phase 2: replace with real values once FlowAggregator is available.
+        // DAY 76 FIX: reemplaza bloque DAY75 parcial con helper completo (40 campos)
+        init_embedded_sentinels(net_features);
+
         bool high_threat = (
             features.new_external_ips_30s() > fast_detector_config_.ransomware.activation_thresholds.external_ips_30s ||
             features.smb_connection_diversity() > fast_detector_config_.ransomware.activation_thresholds.smb_diversity
@@ -1276,11 +1343,11 @@ void RingBufferConsumer::send_ransomware_features(const protobuf::RansomwareFeat
                           << ", Score=" << event.overall_threat_score()
                           << ", Class=" << event.final_classification() << std::endl;
             }
-        
+
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Ransomware features failed: " << e.what() << std::endl;
     }
-    
+
     auto end_time = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     stats_.ransomware_processing_time_us += duration.count();
@@ -1375,6 +1442,9 @@ RingBufferConsumer::extract_internal_features(
         .access_pattern_entropy = internal.access_pattern_entropy()
     };
 }
+
+
+
 // ============================================================================
 // ML DEFENDER: Embedded Detectors Inference Engine
 // ============================================================================

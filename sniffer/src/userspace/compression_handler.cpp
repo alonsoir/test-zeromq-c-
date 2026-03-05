@@ -186,7 +186,7 @@ std::vector<uint8_t> CompressionHandler::decompress_snappy([[maybe_unused]] cons
     std::string decompressed;
     const std::string input(static_cast<const char*>(data), size);
 
-    if (!snappy::Uncompress(input, &decompressed)) {
+    if (!snappy::Uncompress(input.data(), input.size(), &decompressed)) {
         throw std::runtime_error("Snappy decompression failed");
     }
 

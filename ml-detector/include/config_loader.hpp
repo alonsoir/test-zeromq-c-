@@ -301,6 +301,21 @@ struct DetectorConfig {
         bool enable_avx2;
         int cache_line_size;
     } performance;
+
+    // CSV Writer
+    struct {
+        std::string base_dir;
+        float min_score_threshold;
+        int max_events_per_file;
+    } csv_writer;
+
+    // Scoring thresholds (dual-score architecture)
+    struct {
+        float divergence_warn_threshold;   // score_divergence > X → DIVERGENCE source
+        float divergence_high_threshold;   // investigation_priority HIGH
+        float malicious_threshold;         // final_score >= X → "MALICIOUS" / "DROP"
+        float requires_rag_threshold;      // final_score >= X → requires_rag_analysis
+    } scoring;
 };
 
 /**
