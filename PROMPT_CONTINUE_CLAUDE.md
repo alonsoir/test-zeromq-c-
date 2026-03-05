@@ -1,61 +1,46 @@
-## Estado DAY 76 → Continuidad DAY 77
+### Segundo trabajo DAY 77 — crear la feature branch
+```bash
+git checkout -b feature/ring-consumer-real-features
+```
 
-### Pipeline
-6/6 componentes RUNNING y estables. ml-detector sobrevive 60s+ sin crash.
-SIGSEGV ByteSizeLong eliminado definitivamente.
+### Objetivo de la feature
+Reemplazar NaN sentinels con valores reales extraídos del tráfico
+para validar F1-score contra CTU-13 Neris (492K eventos).
 
-### Feature actual
-Cerrar: feature/rag-firewall-hmac-security → merge a main
-Abrir:  feature/ring-consumer-real-features
+### Primer diagnóstico — verificar el extractor
+```bash
+vagrant ssh -c "grep -n 'set_' /vagrant/sniffer/src/userspace/ml_defender_features.cpp | wc -l"
+# debe ser ~40 setters
 
-### Objetivo DAY 77
-Reemplazar los 0.5f sentinel de init_embedded_sentinels() con valores
-reales extraídos del tráfico de red, para poder validar F1-score contra
-CTU-13 con datos correctos.
+vagrant ssh -c "grep -n 'set_' /vagrant/sniffer/src/userspace/ml_defender_features.cpp"
+```
 
-### Arquitectura actual (ring_consumer.cpp)
+### Problema arquitectónico a resolver
+En populate_protobuf_event(), el orden actual es incorrecto:
 
-Ruta principal: populate_protobuf_event()
-1. Llama ml_extractor_.populate_ml_defender_features(flow_stats, proto_event)
-   → Si flow existe en ShardedFlowManager: rellena los 40 campos reales ✅
-   → Si flow NO existe: cae al sentinel 0.5f (fallback)
-2. Llama run_ml_detection() → infiere pero NO escribe resultados al proto (TODO)
-3. Llama init_embedded_sentinels() → sobrescribe con 0.5f ← PROBLEMA
+1. populate_ml_defender_features()  ← valores reales si flow existe
+2. run_ml_detection()
+3. init_embedded_sentinels()        ← SOBRESCRIBE con NaN ❌
 
-El bug actual: init_embedded_sentinels() se llama DESPUÉS de
-populate_ml_defender_features(), sobrescribiendo los valores reales.
+Fix correcto (ChatGPT5):
+```cpp
+auto* ddos = net->mutable_ddos_embedded();
+if (ddos->ByteSizeLong() == 0) init_ddos_sentinels(ddos);
+// idem para ransomware, traffic, internal
+```
 
-### Primer análisis DAY 77
-Verificar si populate_ml_defender_features() realmente rellena los 40 campos:
+ByteSizeLong()==0 → submensaje vacío → aplicar sentinel
+ByteSizeLong()>0  → populate_ml_defender_features() ya escribió → no tocar
 
-vagrant ssh -c "grep -n 'populate_ml_defender_features\|mutable_ddos\|mutable_ransomware_embedded\|mutable_traffic\|mutable_internal' /vagrant/sniffer/src/userspace/ml_defender_features.cpp | head -30"
-
-Luego ver ml_defender_features.cpp completo para entender qué extrae
-del FlowStatistics y qué queda vacío.
-
-### Lógica correcta a implementar
-En populate_protobuf_event():
-1. populate_ml_defender_features() — valores reales si flow existe
-2. init_embedded_sentinels() SOLO si los submensajes siguen vacíos
-   (usar has_ddos_embedded() para no sobrescribir valores reales)
-
-En send_fast_alert() y send_ransomware_features():
-→ No hay flow context → sentinels 0.5f son permanentes (Phase 2)
-
-### Estado de run_ml_detection()
-Función incompleta — infiere los 4 modelos pero no escribe resultados
-de vuelta al proto_event. Los TODO están documentados en el código.
-Esto es trabajo DAY 77+ también.
-
-### Ficheros clave
-/vagrant/sniffer/src/userspace/ring_consumer.cpp
-/vagrant/sniffer/src/userspace/ml_defender_features.cpp
-/vagrant/sniffer/include/ml_defender_features.hpp
+### Trabajo pendiente en run_ml_detection()
+Función incompleta — infiere los 4 modelos pero los resultados
+no se escriben al proto_event. Los TODO están documentados.
+Completar esto es parte de la feature.
 
 ### Tests de regresión — no tocar
 sniffer/tests/test_proto3_embedded_serialization.cpp     3/3 ✅
 ml-detector/tests/unit/test_rag_logger_artifact_save.cpp 3/3 ✅
 
-### Objetivo final de la feature
-Que el pcap relay con CTU-13 produzca F1-score válido:
-make test-replay-neris   (492K eventos, botnet Neris)
+### Validación final
+make test-replay-neris   # CTU-13 Neris botnet, 492K eventos
+# Objetivo: F1-score > 0.90 en detección DDoS + Ransomware
