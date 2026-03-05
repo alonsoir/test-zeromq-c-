@@ -1,88 +1,61 @@
-Totalmente de acuerdo — llevas muchas horas y este bug merece cabeza fresca. Documentemos el estado exacto.
+## Estado DAY 76 → Continuidad DAY 77
 
----
+### Pipeline
+6/6 componentes RUNNING y estables. ml-detector sobrevive 60s+ sin crash.
+SIGSEGV ByteSizeLong eliminado definitivamente.
 
-## Estado Final Día 75 — 12:30 UTC
+### Feature actual
+Cerrar: feature/rag-firewall-hmac-security → merge a main
+Abrir:  feature/ring-consumer-real-features
 
-### ✅ Completado hoy
-| Item | Estado |
-|---|---|
-| Tests regresión Proto3 (sniffer) | ✅ 3/3 passing |
-| Tests regresión RAG Logger (ml-detector) | ✅ 3/3 passing |
-| Fix rag_logger.cpp (guard proto2 eliminado) | ✅ compilado |
-| Fix zmq_handler.cpp (null guards DAY75) | ✅ compilado |
-| Fix rag_logger.cpp (crypto_manager_ guard) | ✅ compilado |
-| Makefile: *-start desacoplado de compilación | ✅ |
-| Root cause definitivo del crash identificado | ✅ |
+### Objetivo DAY 77
+Reemplazar los 0.5f sentinel de init_embedded_sentinels() con valores
+reales extraídos del tráfico de red, para poder validar F1-score contra
+CTU-13 con datos correctos.
 
-### 🔴 Bloqueante pendiente
-**El fix de `ring_consumer.cpp` nunca llegó al binario del sniffer.**
+### Arquitectura actual (ring_consumer.cpp)
 
-El GDB lo confirma sin ambigüedad:
-```
-#0  RansomwareEmbeddedFeatures::_internal_io_intensity (this=0x0)
-```
-El sniffer envía `mutable_ransomware_embedded()` con puntero null — exactamente el bug original. El ml-detector crashea al serializar ese evento en `ByteSizeLong`.
+Ruta principal: populate_protobuf_event()
+1. Llama ml_extractor_.populate_ml_defender_features(flow_stats, proto_event)
+   → Si flow existe en ShardedFlowManager: rellena los 40 campos reales ✅
+   → Si flow NO existe: cae al sentinel 0.5f (fallback)
+2. Llama run_ml_detection() → infiere pero NO escribe resultados al proto (TODO)
+3. Llama init_embedded_sentinels() → sobrescribe con 0.5f ← PROBLEMA
 
-### 🔜 Mañana — primer paso
-El cmake del sniffer falla con un segundo error después de libsnappy. Ver error completo:
-```bash
-cd /vagrant/sniffer/build-debug
-cmake -DCMAKE_BUILD_TYPE=Debug .. 2>&1 | grep -E "(Error|not found)" | head -20
-```
-Una vez cmake pase, el sniffer recompilará ring_consumer.cpp desde cero y el crash desaparecerá.
+El bug actual: init_embedded_sentinels() se llama DESPUÉS de
+populate_ml_defender_features(), sobrescribiendo los valores reales.
 
----
+### Primer análisis DAY 77
+Verificar si populate_ml_defender_features() realmente rellena los 40 campos:
 
-Buen trabajo hoy — el diagnóstico fue metódico y llegamos al root cause real. Mañana son 5 minutos de cmake y listo. 🏛️
+vagrant ssh -c "grep -n 'populate_ml_defender_features\|mutable_ddos\|mutable_ransomware_embedded\|mutable_traffic\|mutable_internal' /vagrant/sniffer/src/userspace/ml_defender_features.cpp | head -30"
 
-Despues de hablar con el consejo, llegamos a este acuerdo final:
+Luego ver ml_defender_features.cpp completo para entender qué extrae
+del FlowStatistics y qué queda vacío.
 
-## Prompt de continuidad DAY 76
+### Lógica correcta a implementar
+En populate_protobuf_event():
+1. populate_ml_defender_features() — valores reales si flow existe
+2. init_embedded_sentinels() SOLO si los submensajes siguen vacíos
+   (usar has_ddos_embedded() para no sobrescribir valores reales)
 
-```
-## Estado DAY 75 — Continuidad DAY 76
+En send_fast_alert() y send_ransomware_features():
+→ No hay flow context → sentinels 0.5f son permanentes (Phase 2)
 
-### Bloqueante principal
-El sniffer no está compilado con el fix. cmake falla en clean rebuild:
-- Error conocido: "Package 'libsnappy', required by 'virtual:world', not found"
-- Solución probable: symlink snappy.pc → libsnappy.pc (diagnóstico de Grok)
-- Segundo error: desconocido, requiere log completo
+### Estado de run_ml_detection()
+Función incompleta — infiere los 4 modelos pero no escribe resultados
+de vuelta al proto_event. Los TODO están documentados en el código.
+Esto es trabajo DAY 77+ también.
 
-### Root cause del crash (confirmado por GDB + Consejo)
-ml-detector crashea con SIGSEGV en:
-  #0  RansomwareEmbeddedFeatures::_internal_io_intensity (this=0x0)
-  #1  RansomwareEmbeddedFeatures::ByteSizeLong (this=0x0)
+### Ficheros clave
+/vagrant/sniffer/src/userspace/ring_consumer.cpp
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp
+/vagrant/sniffer/include/ml_defender_features.hpp
 
-En proto3 C++ 3.21, si nunca se llama mutable_X(), el puntero interno
-queda null. No hay lazy init en getters. El crash es esperado y real.
-El fix (llamar mutable_* + sentineles) es correcto para Phase 1.
-
-PENDIENTE verificar: buscar std::move sobre eventos proto por si hay
-también un bug de lifetime (hipótesis ChatGPT-5, no descartada).
-
-### Fix en source — pendiente de compilar
-ring_consumer.cpp:1190 — DAY 75 FIX presente en source, NO en binario.
-El pipeline-start recompilaba encima (ya corregido en Makefile).
-
-### Fixes ya compilados en ml-detector (binario 12:01)
-- rag_logger.cpp: guard proto2 eliminado + crypto_manager_ null guard
-- zmq_handler.cpp: null guards crypto_manager_ y output_socket_
-
-### Primer comando DAY 76
-sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/snappy.pc \
-            /usr/lib/x86_64-linux-gnu/pkgconfig/libsnappy.pc
-cd /vagrant/sniffer && rm -rf build-debug && mkdir build-debug && cd build-debug
-cmake -DCMAKE_BUILD_TYPE=Debug .. 2>&1 | tee cmake.log
-grep -E "(Error|not found)" cmake.log
-
-### Decisiones arquitectónicas pendientes (no urgentes)
-- Sentineles: cambiar 0.5f → 0.0f (más honesto semánticamente)
-- NO usar oneof — ataques híbridos ransomware+DDoS son escenario real
-- Phase 2: añadir campos ddos_confidence, ransomware_confidence al proto
-- Crear issue para migración a campos de confianza explícitos
-
-### Regresión tests — todos green (no tocar)
+### Tests de regresión — no tocar
 sniffer/tests/test_proto3_embedded_serialization.cpp     3/3 ✅
 ml-detector/tests/unit/test_rag_logger_artifact_save.cpp 3/3 ✅
-```
+
+### Objetivo final de la feature
+Que el pcap relay con CTU-13 produzca F1-score válido:
+make test-replay-neris   (492K eventos, botnet Neris)

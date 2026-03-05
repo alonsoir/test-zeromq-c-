@@ -1,37 +1,29 @@
-git add -A
-git commit -m "DAY 75: Proto3 embedded serialization bug fix + regression tests
+fix(sniffer): DAY 76 — resolve SIGSEGV ByteSizeLong + proto3 sentinel init
 
-ROOT CAUSE IDENTIFIED & PARTIALLY FIXED:
-- ring_consumer.cpp::send_ransomware_features() never called mutable_ddos_embedded(),
-  mutable_traffic_classification(), mutable_internal_anomaly() → submessages absent
-  on wire → ml-detector crashes in ByteSizeLong() dereferencing null this=0x0
+Root cause: Proto3 C++ 3.21 does not serialize submessages where all float
+fields equal 0.0f (default). Receiver gets null pointer → SIGSEGV in
+ByteSizeLong() when ml-detector processes embedded detector submessages.
 
-FIXES APPLIED:
-- ring_consumer.cpp: Populate 3 missing embedded messages with Phase 1 sentinel
-  values (0.5f) to force proto3 serialization (DAY 75 FIX @ line 1190)
-- rag_logger.cpp: Remove incorrect proto2-style has_required_embedded guard
-  (DAY 75 FIX @ line 393) — proto3 submessages never return null pointers
-- rag_logger.cpp: Add crypto_manager_ null guard before artifact save
-- zmq_handler.cpp: Add null guards for crypto_manager_ and output_socket_
-  in send_enriched_event() for defensive diagnostics
+Three separate routes in ring_consumer.cpp were affected:
+- populate_protobuf_event() — line 872
+- send_fast_alert()         — line 1170  
+- send_ransomware_features() — line 1255 (DAY 75 fix was incomplete)
 
-REGRESSION TESTS (6/6 PASSING):
-- sniffer/tests/test_proto3_embedded_serialization.cpp (3 tests)
-  * NeverCallingMutableMeansSubmessageAbsentOnWire
-  * SentinelValuesForceSubmessageSerialization
-  * NonZeroValuesFromRealFlowAlwaysSerialize
-- ml-detector/tests/unit/test_rag_logger_artifact_save.cpp (3 tests)
-  * AccessingUnsetSubmessageIsAlwaysSafeInProto3
-  * EventWithSentinelsPassesEmbeddedCheck
-  * NormalFlowEventsUnaffectedByFix
+Fix: init_embedded_sentinels() helper initializes all 40 fields across
+4 submessages (DDoSFeatures, RansomwareEmbeddedFeatures, TrafficFeatures,
+InternalFeatures) with 0.5f Phase 1 sentinel values before serialization.
 
-PENDING:
-- sniffer build-debug needs clean rebuild (cmake fails: libsnappy missing + unknown
-  second error). ring_consumer.cpp fix is in source but not yet in running binary.
-  ml-detector continues crashing until sniffer is rebuilt.
+Additional fixes in this session:
+- snappy::Uncompress() wrong signature (2 args → 3): .data(), .size()
+- libsnappy.pc symlink for cmake discovery
 
-Makefile: Decouple *-start targets from compilation (pipeline-start no longer
-triggers full rebuild of all components)
+Pipeline validated: 6/6 components RUNNING, ml-detector VIVO after 60s+
+Regression tests: all green (no regressions)
 
-Co-authored-by: Claude Sonnet (Anthropic)
-Co-authored-by: [Consejo de Sabios pending review]"
+Phase 2 pending: replace 0.5f sentinels with real extracted values
+from ShardedFlowManager in populate_ml_defender_features() to enable
+F1-score validation against CTU-13 dataset.
+
+Co-authored-by: Claude (Anthropic) GROK4 Gemini, Qwen, DeepSeek, ChatGPT, Alonso Isidoro Román
+
+this bug was epic to fix.
