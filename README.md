@@ -20,14 +20,14 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────-─┐
 │                         ML Defender Pipeline                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
+├─────────────────────────────────────────────────────────────────-┤
+│                                                                  │
 │  Network Traffic (eBPF/XDP)                                      │
-│         ↓                                                         │
+│         ↓                                                        │
 │  ┌──────────────────┐                                            │
-│  │  sniffer (C++20) │  eBPF/XDP packet capture                  │
+│  │  sniffer (C++20) │  eBPF/XDP packet capture                   │
 │  │                  │  - ShardedFlowManager (16 shards)          │
 │  │                  │  - Fast Detector (heuristics)              │
 │  │                  │  - 4x embedded ML feature extraction       │
@@ -36,22 +36,23 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4x Embedded RandomForest Models           │
-│  │  (C++20)         │  - DDoS Detection (97.6% accuracy)        │
+│  │  (C++20)         │  - DDoS Detection (97.6% accuracy)         │
 │  │                  │  - Ransomware Detection                    │
 │  │                  │  - Traffic Classification                  │
 │  │                  │  - Internal Anomaly Detection              │
 │  └──────────────────┘                                            │
-│         ↓                                                         │
-│  ┌──────────────────┐  ChaCha20-Poly1305 + LZ4                  │
+│         ↓                                                        │
+│  ┌──────────────────┐  ChaCha20-Poly1305 + LZ4                   │ 
 │  │  Crypto Pipeline │  36K events, 0 errors ✅                   │
-│  └──────────────────┘                                            │
-│         ↓                                                         │
+│  |     (C++20)      |                                            |
+|  └──────────────────┘                                            │
+│         ↓                                                        │
 │  ┌──────────────────┐                                            │
-│  │  etcd-server     │  Distributed Config + Key Management      │
-│  │  (C++)           │  Automatic crypto seed exchange            │
+│  │  etcd-server     │  Distributed Config + Key Management       │ 
+│  │  (C++20)         │  Automatic crypto seed exchange            │
 │  │                  │  HMAC secrets management ✅                │
 │  └──────────────────┘                                            │
-│         ↓                                                         │
+│         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │ firewall-acl     │  Autonomous Blocking (Day 52 ✅)           │
 │  │ agent (C++20)    │  - IPSet/IPTables integration              │
@@ -59,20 +60,20 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │  │                  │  - Config-driven (JSON is law)             │
 │  │                  │  - 364 events/sec tested                   │
 │  └──────────────────┘                                            │
-│         ↓                                                         │
+│         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag-ingester    │  Log Parsing + Vector Ingestion            │
-│  │  (Python)        │  - ml-detector logs ✅                     │
-│  │                  │  - firewall logs (planned)                 │
+│  │  (C++20)         │  - ml-detector logs ✅                     │
+│  │                  │  - firewall logs    ✅                     │
 │  └──────────────────┘                                            │
-│         ↓                                                         │
+│         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag (TinyLlama) │  Natural Language Intelligence             │
 │  │  + FAISS         │  - Forensic queries                        │
-│  │                  │  - ML retraining data                      │
+│  │  (C++20)         │  - ML retraining data                      │
 │  └──────────────────┘                                            │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
+│                                                                  │
+└─────────────────────────────────────────────────────────────────-┘
 ```
 
 ---
@@ -120,7 +121,8 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 - [x] ChaCha20-Poly1305 encryption
 - [x] LZ4 compression
 - [x] Dual-NIC deployment (host IDS + gateway mode)
-- [x] Validated with real malware (CTU-13 Neris botnet, 97.6% accuracy)
+- [x] Validated with real malware (CTU-13 Neris botnet, 97.6% accuracy) 
+- [] Validated with real malware (CTU-13 Neris botnet, with full open source components)
 - [x] Dual-Score architecture (fast + ML scores)
 - [x] RAG Logger with HMAC artifact integrity
 
@@ -223,7 +225,7 @@ across 4 submessages with `0.5f` Phase 1 sentinel values before serialization.
 etcd-server:   ✅ RUNNING
 rag-security:  ✅ RUNNING
 rag-ingester:  ✅ RUNNING
-ml-detector:   ✅ RUNNING  ← Previously crashing on every event
+ml-detector:   ✅ RUNNING  
 sniffer:       ✅ RUNNING
 firewall:      ✅ RUNNING
 ```
