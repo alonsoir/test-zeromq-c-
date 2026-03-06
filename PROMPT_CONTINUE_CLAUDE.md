@@ -1,62 +1,116 @@
 # ML Defender — Prompt de Continuidad DAY 78
-**Generado:** Cierre DAY 77 (6 marzo 2026)
+**Generado:** Cierre DAY 77 (6 marzo 2026) — versión final con consenso del Consejo
 **Branch activa:** `feature/ring-consumer-real-features`
 **Estado del pipeline:** 6/6 componentes RUNNING ✅
 
 ---
 
+## ⚠️ DECISIÓN PENDIENTE CRÍTICA — Primera tarea del día
+
+**Contexto:** En DAY 77 se introdujeron 12 `quiet_NaN()` como sentinel de
+"feature no computada". Post-commit se descubrió que ml-detector trata NaN
+como error:
+
+```cpp
+// ml-detector/src/feature_extractor.cpp:201-202
+if (std::isnan(features[i])) {
+    logger_->error("Feature[{}] {} is NaN", i, LEVEL1_FEATURE_NAMES[i]);
+```
+
+**Consenso del Consejo (DAY 77 segunda ronda):**
+
+NaN es semánticamente correcto pero incompatible con el consumidor actual.
+La solución correcta NO es 0.0f, -1.0f, ni -100.0f arbitrarios — es un
+valor escalar **matemáticamente inalcanzable** por cualquier split de los
+modelos ensemble embebidos (traducidos directamente a C++20).
+
+**Para elegir ese valor científicamente, hay que inspeccionar los modelos
+antes de decidir.** Esos son los primeros comandos del día.
+
+---
+
+## PRIMEROS COMANDOS DAY 78 — Inspección de modelos ensemble
+
+```bash
+# 1. Localizar los modelos ensemble embebidos
+vagrant ssh -c "ls -la /vagrant/sniffer/models/ 2>/dev/null || \
+  find /vagrant/sniffer -name '*.cpp' | xargs grep -l \
+  'threshold\|tree\|forest\|ensemble' | grep -v backup"
+
+# 2. Ver rangos de features en los splits de los árboles (C++20)
+vagrant ssh -c "grep -rn 'feature\[0\]\|feature\[1\]\|threshold\|<= \|>= ' \
+  /vagrant/sniffer/src/userspace/ml_defender_models*.cpp \
+  /vagrant/sniffer/src/userspace/*detector*.cpp 2>/dev/null | head -40"
+
+# 3. Ver cómo está definido predict() en los modelos
+vagrant ssh -c "grep -rn 'class.*Detector\|predict\|DecisionTree\|RandomForest' \
+  /vagrant/sniffer/include/*.hpp | grep -v backup | head -30"
+
+# 4. Diagnóstico complementario: rango mínimo/máximo de thresholds en los árboles
+vagrant ssh -c "grep -rn '<= \|>= \|< \|> ' \
+  /vagrant/sniffer/src/userspace/*detector*.cpp \
+  /vagrant/sniffer/src/userspace/*model*.cpp 2>/dev/null | \
+  grep -oE '[-]?[0-9]+\.[0-9]+' | sort -n | head -5 && echo '---' && \
+  grep -rn '<= \|>= \|< \|> ' \
+  /vagrant/sniffer/src/userspace/*detector*.cpp \
+  /vagrant/sniffer/src/userspace/*model*.cpp 2>/dev/null | \
+  grep -oE '[-]?[0-9]+\.[0-9]+' | sort -n | tail -5"
+```
+
+**Con estos outputs el Consejo decide el valor sentinel correcto.**
+
+Criterio de selección:
+- Debe ser escalar (no NaN, no Inf)
+- Fuera del rango [min_threshold, max_threshold] de todos los árboles
+- Típicamente: si todos los thresholds son [0.0, 1.0] → sentinel = -9999.0f
+- Si hay thresholds negativos: sentinel = valor por debajo del mínimo absoluto
+- El modelo lo enviará siempre a la misma rama (left/right default) de forma
+  determinista → comportamiento predecible, no aleatorio como con NaN
+
+---
+
 ## Qué se hizo en DAY 77 — COMPLETADO ✅
 
-**Archivos modificados (git diff --stat HEAD):**
+**Archivos modificados:**
 - `sniffer/src/userspace/ring_consumer.cpp` — +67/-58 líneas
 - `sniffer/src/userspace/ml_defender_features.cpp` — +24/-24 líneas
 
-**Cambios realizados:**
-
 ### T1: NaN sentinel (ring_consumer.cpp líneas 21-72)
-Reemplazada `init_embedded_sentinels()` — 40 campos de `0.5f` → `quiet_NaN()`.
-`0.5f` era peligroso: coincide con tráfico real (tcp_udp_ratio≈0.5).
-NaN es non-default en proto3 → serialización garantizada + semántica honesta.
+40 campos `0.5f` → `quiet_NaN()` en `init_embedded_sentinels()`.
 
 ### T2: Orden correcto en populate_protobuf_event()
 ```
-ANTES (bug desde el principio):
-  populate_ml_defender_features()  ← reales
-  run_ml_detection()
-  init_embedded_sentinels()        ← SOBRESCRIBÍA todo ❌
-
-AHORA (correcto):
-  init_embedded_sentinels()        ← NaN primero (línea 738)
-  populate_ml_defender_features()  ← sobrescribe con reales (línea 757)
-  run_ml_detection()               ← inferencia (línea 776)
+ANTES (bug desde día 1):            AHORA (correcto):
+  populate_ml_defender_features()     init_embedded_sentinels() NaN (738)
+  run_ml_detection()                  populate_ml_defender_features() (757)
+  init_embedded_sentinels() ❌        run_ml_detection() (776)
 ```
 
-### T3: 12 extractores TODO → quiet_NaN (ml_defender_features.cpp)
-Los 12 extractores con `return 0.5f` Phase 2 devuelven ahora `quiet_NaN()`.
-Los otros `return 0.5f` (fallbacks en lógica real) NO fueron tocados.
-
-Lista de los 12 convertidos:
+### T3: 12 extractores TODO → quiet_NaN
+Lista de los 12:
 - traffic: connection_rate, tcp_udp_ratio, port_entropy, flow_duration_std,
   src_ip_entropy, dst_ip_concentration, protocol_variety (7)
 - internal: internal_connection_rate, service_port_consistency,
   connection_duration_std, lateral_movement_score, service_discovery_patterns (5)
 
 ### T4: Documentación deuda run_ml_detection()
-Comentario DAY 77 añadido en cabecera de `run_ml_detection()` documentando
-que los scores no se escriben al proto y el plan DAY 78.
 
-**Resultado tests:**
+**3 call sites de init_embedded_sentinels:**
+- Línea 738: ruta principal ✅
+- Línea 1172: send_fast_alert (sin FlowStatistics) ✅
+- Línea 1257: ruta ransomware (sin FlowStatistics) ✅
+
+**Tests al cierre DAY 77:**
 - crypto-transport: 3/3 ✅
 - etcd-client HMAC: 12/12 ✅
-- ml-detector (test_rag_logger_artifact_save incluido): 9/9 ✅
-- test_trace_id: 44/46 ✅ (2 fallos PREEXISTENTES del DAY 72, no relacionados)
-- Compilación sniffer: limpia ✅
+- ml-detector: 9/9 ✅
+- test_trace_id: 44/46 — 2 fallos PREEXISTENTES DAY 72
 
 ---
 
-## Estado real de features tras DAY 77
+## Estado real de features
 
-| Submensaje | Reales | NaN (Phase 2) |
+| Submensaje | Reales | NaN→sentinel (Phase 2) |
 |---|---|---|
 | ddos_embedded | 10/10 | 0 |
 | ransomware_embedded | 10/10 | 0 |
@@ -70,179 +124,160 @@ data_exfiltration_indicators, temporal_anomaly_score, access_pattern_entropy
 
 ---
 
-## DAY 78 — HACER MAÑANA
+## Plan DAY 78 — orden definitivo
 
-**Objetivo:** Conectar TimeWindowAggregator a MLDefenderExtractor.
-Desbloquea los 12 extractores restantes con datos reales.
-
-### Contexto arquitectónico clave
-
-`TimeWindowAggregator` existe, está implementado y funciona.
-Conectado a `RansomwareFeatureProcessor` pero NO a `MLDefenderExtractor`.
+### PASO 0 — Inspeccionar modelos → elegir sentinel (30 min)
+Ejecutar los 4 comandos de arriba. El Consejo decide el valor.
+Implementar: reemplazar `quiet_NaN()` → `MISSING_FEATURE_SENTINEL` en los 12
+extractores Y en `init_embedded_sentinels()` (los 40 campos).
 
 ```cpp
-// ring_consumer.cpp:83 — problema de diseño
-thread_local MLDefenderExtractor RingBufferConsumer::ml_extractor_;
-// thread_local + default constructor = sin acceso al agregador
+// Constante a definir tras inspección — valor a determinar
+constexpr float MISSING_FEATURE_SENTINEL = ???;  // DAY 78 Paso 0
 ```
 
-`MLDefenderExtractor` constructor:
-```cpp
-// ml_defender_features.hpp:36
-MLDefenderExtractor() = default;  // sin dependencias
-```
-
-### Tarea 5 — Diagnóstico previo (primer comando del día)
+Verificar que ml-detector ya no logguea errores:
 ```bash
-# Ver qué expone RansomwareFeatureProcessor
-vagrant ssh -c "grep -n 'get_aggregator\|extractor_\|TimeWindowAggregator' \
+make pipeline-start && sleep 10 && \
+vagrant ssh -c "grep -i 'NaN\|isnan' /var/log/ml-defender.log 2>/dev/null || \
+  journalctl -u ml-detector --since '1 min ago' | grep -i nan"
+```
+
+### PASO 1 — Diagnóstico TimeWindowAggregator (10 min)
+```bash
+vagrant ssh -c "grep -A 5 -n 'get_aggregator\|aggregator_' \
   /vagrant/sniffer/include/ransomware_feature_processor.hpp"
 
-# Ver cómo se instancia RingBufferConsumer y dónde vive el RansomwareProcessor
-vagrant ssh -c "grep -n 'ransomware_processor\|RansomwareFeatureProcessor' \
+vagrant ssh -c "grep -n 'ransomware_processor_\|RansomwareFeatureProcessor' \
   /vagrant/sniffer/src/userspace/ring_consumer.cpp | grep -v backup | head -20"
+
+vagrant ssh -c "grep -n 'count_unique\|get_window_stats\|get_default_window' \
+  /vagrant/sniffer/include/time_window_aggregator.hpp"
+
+vagrant ssh -c "grep -n 'protocol\|ip_proto' \
+  /vagrant/sniffer/include/flow_manager.hpp | head -10"
 ```
 
-### Tarea 5 — Inyección del TimeWindowAggregator
-
-**Solución — inicialización lazy (compatible con thread_local):**
+### PASO 2 — Inyección TimeWindowAggregator en MLDefenderExtractor (20 min)
 ```cpp
-// ml_defender_features.hpp — añadir:
-class MLDefenderExtractor {
-public:
-    MLDefenderExtractor() = default;
-    void set_aggregator(TimeWindowAggregator* agg) { aggregator_ = agg; }
-    bool has_aggregator() const { return aggregator_ != nullptr; }
+// ml_defender_features.hpp — añadir
+void set_aggregator(TimeWindowAggregator* agg) {
+    if (!aggregator_) aggregator_ = agg;  // proteger contra reinit thread_local
+}
+bool has_aggregator() const { return aggregator_ != nullptr; }
 private:
     TimeWindowAggregator* aggregator_ = nullptr;
-};
 
-// ring_consumer.cpp — en inicialización del thread o constructor:
-ml_extractor_.set_aggregator(ransomware_processor_->get_aggregator());
-```
-
-**Patrón guard en cada extractor:**
-```cpp
-float MLDefenderExtractor::extract_traffic_src_ip_entropy(...) const {
-    if (!aggregator_) return std::numeric_limits<float>::quiet_NaN();
-    // ... implementación real
+// ring_consumer.cpp — inyección lazy en populate_protobuf_event o consume()
+if (!ml_extractor_.has_aggregator() && ransomware_processor_) {
+    ml_extractor_.set_aggregator(ransomware_processor_->get_aggregator());
 }
 ```
 
-### Tarea 6 — Implementar los 12 extractores
+### PASO 3 — Implementar 12 extractores (60 min)
+Prioridad por facilidad/impacto:
 
-Mapping feature → primitiva de TimeWindowAggregator:
+| Feature | Primitiva | Dificultad |
+|---|---|---|
+| traffic: connection_rate | event_count / window_s | fácil |
+| traffic: src_ip_entropy | count_unique_ips() + Shannon | media |
+| traffic: dst_ip_concentration | count_unique_ips() Gini | media |
+| traffic: port_entropy | count_unique_ports() + Shannon | media |
+| traffic: protocol_variety | unique protocols en ventana | media |
+| traffic: flow_duration_std | get_window_stats() | media |
+| traffic: tcp_udp_ratio | protocol field (*) | difícil |
+| internal: internal_connection_rate | !is_external_ip() count | media |
+| internal: service_port_consistency | unique_ports vs baseline | media |
+| internal: lateral_movement_score | unique internal IPs | media |
+| internal: service_discovery_patterns | unique_ports por IP | difícil |
+| internal: connection_duration_std | get_window_stats() | media |
 
-| Feature | Primitiva disponible |
-|---|---|
-| traffic: src_ip_entropy | count_unique_ips() + Shannon |
-| traffic: dst_ip_concentration | count_unique_ips() (Gini) |
-| traffic: port_entropy | count_unique_ports() |
-| traffic: protocol_variety | get_window_stats().protocol_count |
-| traffic: connection_rate | get_window_stats().event_count / window_s |
-| traffic: flow_duration_std | get_window_stats() si disponible |
-| traffic: tcp_udp_ratio | necesita protocol field en FlowStatistics (*) |
-| internal: internal_connection_rate | count_unique_ips() filtrado !is_external_ip() |
-| internal: service_port_consistency | count_unique_ports() vs baseline |
-| internal: lateral_movement_score | count_unique_ips() internos |
-| internal: service_discovery_patterns | count_unique_ports() por IP |
-| internal: connection_duration_std | get_window_stats() si disponible |
+(*) Si `protocol` no existe en FlowStatistics → dejar MISSING_FEATURE_SENTINEL
+con TODO DAY 79. Publicar paper con 39/40. Honesto.
 
-(*) tcp_udp_ratio puede necesitar añadir campo `protocol` a FlowStatistics.
-Verificar primero si ya existe: `grep -n 'protocol' /vagrant/sniffer/include/flow_manager.hpp`
-
-**Verificar primitivas disponibles antes de implementar:**
-```bash
-vagrant ssh -c "grep -n 'count_unique\|get_window_stats\|get_default_window' \
-  /vagrant/sniffer/include/time_window_aggregator.hpp"
+Patrón guard en cada extractor:
+```cpp
+float MLDefenderExtractor::extract_traffic_src_ip_entropy(...) const {
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    // implementación real con TimeWindowAggregator
+}
 ```
 
-### Tarea 7 — run_ml_detection() scores → proto
-
-Los TODOs ya están documentados en el código (Phase1-Day4).
-Implementar al menos la escritura básica de scores:
+### PASO 4 — run_ml_detection() scores → proto (30 min)
+```bash
+# Verificar campos en proto
+vagrant ssh -c "grep -n 'ddos_score\|ransomware_score\|final_classification' \
+  /vagrant/proto/*.proto"
+```
 
 ```cpp
-// Sentinel -1.0f = "no inferido" (inambiguo: probabilidades van [0,1])
-proto_event.set_ddos_score(-1.0f);          // default
-proto_event.set_ransomware_score(-1.0f);    // default
-
+// Sentinel -1.0f para scores (probabilidades en [0,1] → -1.0f inambiguo)
+proto_event.set_ddos_score(-1.0f);
+proto_event.set_ransomware_score(-1.0f);
 if (ddos_pred.is_ddos(0.7f)) {
     proto_event.set_ddos_score(ddos_pred.ddos_prob);
     proto_event.set_final_classification("DDOS");
     proto_event.set_overall_threat_score(ddos_pred.ddos_prob);
 }
-if (ransomware_pred.is_ransomware(0.75f)) {
-    proto_event.set_ransomware_score(ransomware_pred.ransomware_prob);
-    proto_event.set_final_classification("RANSOMWARE");
-}
 ```
 
-Verificar que los campos existen en el proto:
+### PASO 5 — Validación (30 min)
 ```bash
-vagrant ssh -c "grep -n 'ddos_score\|ransomware_score\|final_classification' \
-  /vagrant/proto/*.proto"
-```
-
-### Verificación DAY 78
-```bash
-make test                # regresión completa — mismos resultados que DAY 77
-make test-replay-neris   # CTU-13 Neris 492K eventos
-# Objetivo: F1 > 0.90 en DDoS + Ransomware
+make test                # mismos resultados DAY 77
+make test-replay-neris   # CTU-13 Neris 492K — objetivo F1 > 0.90
 ```
 
 ---
 
-## Deuda técnica conocida (no tocar en DAY 78)
+## Deuda técnica conocida
 
 | Item | Prioridad | DAY |
 |---|---|---|
-| test_trace_id 2 fallos (fallback_applied edge case) | P2 | Post-validación |
-| tcp_udp_ratio: añadir protocol field a FlowStatistics | P2 | 79 |
+| Elegir MISSING_FEATURE_SENTINEL tras inspección modelos | **P0 — primero** | 78 |
+| TimeWindowAggregator → MLDefenderExtractor | P1 | 78 |
+| 12 extractores multi-flow | P1 | 78 |
+| run_ml_detection scores → proto | P1 | 78 |
+| tcp_udp_ratio: protocol field en FlowStatistics | P2 | 79 |
 | Thresholds desde JSON (TODO Phase1-Day4-CRITICAL) | P1 | 79 |
-| Telemetría: ratio eventos con NaN vs reales | P2 | 79 |
-| trace_id en CLI | P2 | Post-validación |
-| HSM/IRootKeyProvider | P3 | Post-paper |
-
----
-
-## Comandos de diagnóstico rápido
-
-```bash
-# Verificar estado NaN vs 0.5f
-vagrant ssh -c "grep -c 'quiet_NaN' /vagrant/sniffer/src/userspace/ml_defender_features.cpp"
-# Debe ser 12
-
-vagrant ssh -c "grep -c 'quiet_NaN' /vagrant/sniffer/src/userspace/ring_consumer.cpp"
-# Debe ser 1 (en la función init_embedded_sentinels)
-
-# Verificar orden correcto en populate_protobuf_event
-vagrant ssh -c "grep -n 'init_embedded_sentinel\|populate_ml_defender\|run_ml_detection' \
-  /vagrant/sniffer/src/userspace/ring_consumer.cpp | grep -v backup"
-# Debe mostrar: sentinel(738) < populate(757) < run_ml(776)
-
-# Tests de regresión
-vagrant ssh -c "cd /vagrant && make test 2>&1 | grep -E '100%|FAILED|passed'"
-
-# Pipeline
-make pipeline-start && sleep 5 && make pipeline-status
-```
+| Telemetría: ratio eventos sentinel vs reales | P2 | 79 |
+| test_trace_id 2 fallos preexistentes | P2 | post-validación |
+| trace_id en CLI | P2 | post-validación |
+| HSM/IRootKeyProvider | P3 | post-paper |
 
 ---
 
 ## Notas para el paper
 
-- El bug sentinel overwrite (DAY 76-77) ilustra cómo proto3 default-value
-  semantics interactúa inesperadamente con la serialización en pipelines reales.
-- La dicotomía single-flow (eBPF kernel) vs multi-flow (userspace aggregation)
-  es material para la sección de arquitectura — 28/40 features son single-flow.
-- F1 baseline (28 features) vs completo (40 features) cuantificará el valor
-  de la infraestructura multi-flow — tabla comparativa para el paper.
-- El NaN approach vs 0.5f sentinel es una decisión de ingeniería reproducible
-  y citable: afecta directamente la distribución de features vista por el modelo.
+- "Semantic corruption via proto3 default-value elision + sentinel misuse +
+  incorrect pipeline ordering → silent feature corruption" — sección
+  lessons learned.
+- Contrato explícito entre capas del pipeline sobre missing data:
+  extractor puede generar sentinel, ML inference layer nunca recibe NaN.
+- 70% features single-flow (eBPF) vs 30% multi-flow (TimeWindowAggregator).
+- F1 baseline (28 features) vs completo (39-40) — tabla comparativa.
+- El sentinel matemáticamente inalcanzable es citable como decisión de
+  ingeniería rigurosa vs valores arbitrarios (-1.0f, 0.5f, etc.).
 
 ---
 
-*Consejo de Sabios — Cierre DAY 77, 6 marzo 2026*
-*Branch: feature/ring-consumer-real-features*
-*Próximo: DAY 78 — TimeWindowAggregator injection + 12 extractores + scores proto*
+## Sanity check al arrancar
+
+```bash
+vagrant ssh -c "grep -c 'quiet_NaN' \
+  /vagrant/sniffer/src/userspace/ml_defender_features.cpp"
+# Debe ser 12 (los cambiaremos a MISSING_FEATURE_SENTINEL en Paso 0)
+
+vagrant ssh -c "grep -n 'init_embedded_sentinels(' \
+  /vagrant/sniffer/src/userspace/ring_consumer.cpp | grep -v backup"
+# Debe mostrar líneas 738, 1172, 1257
+
+vagrant ssh -c "grep -n 'init_embedded_sentinel\|populate_ml_defender\|run_ml_detection' \
+  /vagrant/sniffer/src/userspace/ring_consumer.cpp | grep -v backup"
+# Orden: sentinel(738) < populate(757) < run_ml(776)
+```
+
+---
+
+*Consejo de Sabios — Cierre DAY 77 versión final, 6 marzo 2026*
+*DAY 78 arranca con: inspección modelos ensemble → sentinel científico →
+inyección agregador → 12 extractores → scores proto → F1 CTU-13*
