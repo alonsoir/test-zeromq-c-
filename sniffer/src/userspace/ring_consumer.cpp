@@ -19,55 +19,56 @@ extern FeatureLogger::VerbosityLevel g_verbosity;
 
 // Thread-local FastDetector instance (Layer 1 detection)
 
-// DAY 76: sentinel init — debe estar antes de namespace para forward visibility
+// DAY 77: NaN sentinel — fuerza serializacion sin contaminar distribuciones reales
+// NaN es non-default en proto3 -> submensaje presente en wire
+// NaN != ninguna metrica real -> modelo ML no lo interpreta como senal valida
+// Reemplaza 0.5f (DAY 76) que podia coincidir con trafico real (tcp_udp_ratio~0.5)
 static void init_embedded_sentinels(protobuf::NetworkFeatures* net) {
+    constexpr float NaN = std::numeric_limits<float>::quiet_NaN();
     auto* ddos = net->mutable_ddos_embedded();
-    ddos->set_syn_ack_ratio(0.5f);
-    ddos->set_packet_symmetry(0.5f);
-    ddos->set_source_ip_dispersion(0.5f);
-    ddos->set_protocol_anomaly_score(0.5f);
-    ddos->set_packet_size_entropy(0.5f);
-    ddos->set_traffic_amplification_factor(0.5f);
-    ddos->set_flow_completion_rate(0.5f);
-    ddos->set_geographical_concentration(0.5f);
-    ddos->set_traffic_escalation_rate(0.5f);
-    ddos->set_resource_saturation_score(0.5f);
-
+    ddos->set_syn_ack_ratio(NaN);
+    ddos->set_packet_symmetry(NaN);
+    ddos->set_source_ip_dispersion(NaN);
+    ddos->set_protocol_anomaly_score(NaN);
+    ddos->set_packet_size_entropy(NaN);
+    ddos->set_traffic_amplification_factor(NaN);
+    ddos->set_flow_completion_rate(NaN);
+    ddos->set_geographical_concentration(NaN);
+    ddos->set_traffic_escalation_rate(NaN);
+    ddos->set_resource_saturation_score(NaN);
     auto* ransom = net->mutable_ransomware_embedded();
-    ransom->set_io_intensity(0.5f);
-    ransom->set_entropy(0.5f);
-    ransom->set_resource_usage(0.5f);
-    ransom->set_network_activity(0.5f);
-    ransom->set_file_operations(0.5f);
-    ransom->set_process_anomaly(0.5f);
-    ransom->set_temporal_pattern(0.5f);
-    ransom->set_access_frequency(0.5f);
-    ransom->set_data_volume(0.5f);
-    ransom->set_behavior_consistency(0.5f);
-
+    ransom->set_io_intensity(NaN);
+    ransom->set_entropy(NaN);
+    ransom->set_resource_usage(NaN);
+    ransom->set_network_activity(NaN);
+    ransom->set_file_operations(NaN);
+    ransom->set_process_anomaly(NaN);
+    ransom->set_temporal_pattern(NaN);
+    ransom->set_access_frequency(NaN);
+    ransom->set_data_volume(NaN);
+    ransom->set_behavior_consistency(NaN);
     auto* traffic = net->mutable_traffic_classification();
-    traffic->set_packet_rate(0.5f);
-    traffic->set_connection_rate(0.5f);
-    traffic->set_tcp_udp_ratio(0.5f);
-    traffic->set_avg_packet_size(0.5f);
-    traffic->set_port_entropy(0.5f);
-    traffic->set_flow_duration_std(0.5f);
-    traffic->set_src_ip_entropy(0.5f);
-    traffic->set_dst_ip_concentration(0.5f);
-    traffic->set_protocol_variety(0.5f);
-    traffic->set_temporal_consistency(0.5f);
-
+    traffic->set_packet_rate(NaN);
+    traffic->set_connection_rate(NaN);
+    traffic->set_tcp_udp_ratio(NaN);
+    traffic->set_avg_packet_size(NaN);
+    traffic->set_port_entropy(NaN);
+    traffic->set_flow_duration_std(NaN);
+    traffic->set_src_ip_entropy(NaN);
+    traffic->set_dst_ip_concentration(NaN);
+    traffic->set_protocol_variety(NaN);
+    traffic->set_temporal_consistency(NaN);
     auto* internal = net->mutable_internal_anomaly();
-    internal->set_internal_connection_rate(0.5f);
-    internal->set_service_port_consistency(0.5f);
-    internal->set_protocol_regularity(0.5f);
-    internal->set_packet_size_consistency(0.5f);
-    internal->set_connection_duration_std(0.5f);
-    internal->set_lateral_movement_score(0.5f);
-    internal->set_service_discovery_patterns(0.5f);
-    internal->set_data_exfiltration_indicators(0.5f);
-    internal->set_temporal_anomaly_score(0.5f);
-    internal->set_access_pattern_entropy(0.5f);
+    internal->set_internal_connection_rate(NaN);
+    internal->set_service_port_consistency(NaN);
+    internal->set_protocol_regularity(NaN);
+    internal->set_packet_size_consistency(NaN);
+    internal->set_connection_duration_std(NaN);
+    internal->set_lateral_movement_score(NaN);
+    internal->set_service_discovery_patterns(NaN);
+    internal->set_data_exfiltration_indicators(NaN);
+    internal->set_temporal_anomaly_score(NaN);
+    internal->set_access_pattern_entropy(NaN);
 }
 
 namespace sniffer {
@@ -733,6 +734,9 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
                                                  protobuf::NetworkSecurityEvent& proto_event,
                                                  int buffer_index) const {
     // ============================================================================
+    // DAY 77: NaN-first — orden correcto: NaN -> populate(reales) -> run_ml_detection
+    init_embedded_sentinels(proto_event.mutable_network_features());
+
     // ML DEFENDER: Feature Extraction (Phase 1, Day 3)
     // ============================================================================
 
@@ -868,8 +872,6 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
     proto_event.add_event_tags("enhanced_multithreaded");
     proto_event.add_event_tags("requires_processing");
 
-    // DAY 76 FIX: sentinel init for all 3 routes
-    init_embedded_sentinels(proto_event.mutable_network_features());
 }
 
 std::string RingBufferConsumer::protocol_to_string(uint8_t protocol) const {
@@ -1450,6 +1452,13 @@ RingBufferConsumer::extract_internal_features(
 // ============================================================================
 
 void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_event) {
+    // DAY 77 STATUS: Inferencia funciona, scores NO se escriben al proto.
+    // DAY 78 TODO: implementar PHASE 3/4 — escribir scores con sentinel -1.0f
+    //   proto_event.set_ddos_score(-1.0f)       // -1.0f = no inferido ([0,1] = valido)
+    //   proto_event.set_ransomware_score(-1.0f)
+    //   proto_event.set_final_classification("PENDING")
+    // DAY 78 TODO: cargar thresholds desde JSON (ver TODO Phase1-Day4-CRITICAL)
+
     auto start = std::chrono::high_resolution_clock::now();
 
     // ========================================================================

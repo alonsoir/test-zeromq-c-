@@ -380,7 +380,7 @@ float MLDefenderExtractor::extract_traffic_connection_rate(const FlowStatistics&
     // Requires tracking multiple flows to count new connections.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& flow) const {
@@ -390,7 +390,7 @@ float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& f
     // Need to add uint8_t protocol field (6=TCP, 17=UDP).
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_avg_packet_size(const FlowStatistics& flow) const {
@@ -416,7 +416,7 @@ float MLDefenderExtractor::extract_traffic_port_entropy(const FlowStatistics& fl
     // Requires tracking ports from multiple flows in a time window.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistics& flow) const {
@@ -426,7 +426,7 @@ float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistic
     // Single flow has no std dev of duration.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_src_ip_entropy(const FlowStatistics& flow) const {
@@ -436,7 +436,7 @@ float MLDefenderExtractor::extract_traffic_src_ip_entropy(const FlowStatistics& 
     // Similar to ddos_source_ip_dispersion.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_dst_ip_concentration(const FlowStatistics& flow) const {
@@ -446,7 +446,7 @@ float MLDefenderExtractor::extract_traffic_dst_ip_concentration(const FlowStatis
     // Requires tracking multiple flows.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics& flow) const {
@@ -456,7 +456,7 @@ float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics
     // Requires multi-flow tracking.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_temporal_consistency(const FlowStatistics& flow) const {
@@ -495,7 +495,7 @@ float MLDefenderExtractor::extract_internal_connection_rate(const FlowStatistics
     // Requires multi-flow tracking and IP classification (internal vs external).
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_internal_service_port_consistency(const FlowStatistics& flow) const {
@@ -505,7 +505,7 @@ float MLDefenderExtractor::extract_internal_service_port_consistency(const FlowS
     // Requires multi-flow tracking and port baseline.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_internal_protocol_regularity(const FlowStatistics& flow) const {
@@ -537,7 +537,7 @@ float MLDefenderExtractor::extract_internal_connection_duration_std(const FlowSt
     // Standard deviation of connection durations requires multiple flows.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_internal_lateral_movement_score(const FlowStatistics& flow) const {
@@ -547,7 +547,7 @@ float MLDefenderExtractor::extract_internal_lateral_movement_score(const FlowSta
     // Requires tracking internal IP destinations across flows.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_internal_service_discovery_patterns(const FlowStatistics& flow) const {
@@ -557,7 +557,7 @@ float MLDefenderExtractor::extract_internal_service_discovery_patterns(const Flo
     // Requires tracking many connections to different ports.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return std::numeric_limits<float>::quiet_NaN();  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_internal_data_exfiltration_indicators(const FlowStatistics& flow) const {

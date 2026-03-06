@@ -1,29 +1,35 @@
-fix(sniffer): DAY 76 — resolve SIGSEGV ByteSizeLong + proto3 sentinel init
+git add sniffer/src/userspace/ring_consumer.cpp \
+        sniffer/src/userspace/ml_defender_features.cpp
 
-Root cause: Proto3 C++ 3.21 does not serialize submessages where all float
-fields equal 0.0f (default). Receiver gets null pointer → SIGSEGV in
-ByteSizeLong() when ml-detector processes embedded detector submessages.
+git commit -m "fix(sniffer): DAY 77 — NaN sentinels + correct populate order
 
-Three separate routes in ring_consumer.cpp were affected:
-- populate_protobuf_event() — line 872
-- send_fast_alert()         — line 1170  
-- send_ransomware_features() — line 1255 (DAY 75 fix was incomplete)
+Replace 0.5f sentinels with quiet_NaN() across the feature pipeline.
 
-Fix: init_embedded_sentinels() helper initializes all 40 fields across
-4 submessages (DDoSFeatures, RansomwareEmbeddedFeatures, TrafficFeatures,
-InternalFeatures) with 0.5f Phase 1 sentinel values before serialization.
+Problems fixed:
+- init_embedded_sentinels() used 0.5f which could coincide with real
+  traffic (e.g. tcp_udp_ratio≈0.5), causing model to interpret missing
+  data as valid signal
+- populate_protobuf_event() called init_embedded_sentinels() AFTER
+  populate_ml_defender_features(), overwriting all real values with
+  sentinels on every event (bug present since day 1, masked by DAY 76
+  sentinel overwrite fix)
+- 12 Phase 2 extractors returned 0.5f instead of NaN, indistinguishable
+  from real measurements
 
-Additional fixes in this session:
-- snappy::Uncompress() wrong signature (2 args → 3): .data(), .size()
-- libsnappy.pc symlink for cmake discovery
+Changes:
+- ring_consumer.cpp: upgrade init_embedded_sentinels() to quiet_NaN()
+  for all 40 fields (4 submessages)
+- ring_consumer.cpp: fix order in populate_protobuf_event():
+  NaN sentinel → populate_ml_defender_features() → run_ml_detection()
+- ml_defender_features.cpp: 12 TODO(Phase 2) extractors now return
+  quiet_NaN() instead of 0.5f, pending TimeWindowAggregator injection
 
-Pipeline validated: 6/6 components RUNNING, ml-detector VIVO after 60s+
-Regression tests: all green (no regressions)
+Semantics: NaN = 'not computed / Phase 2 pending'
+           real value = extracted from FlowStatistics
+           no field ever looks like valid data when it is not
 
-Phase 2 pending: replace 0.5f sentinels with real extracted values
-from ShardedFlowManager in populate_ml_defender_features() to enable
-F1-score validation against CTU-13 dataset.
+Real features now flowing: 28/40 (ddos 10/10, ransomware 10/10,
+traffic 3/10, internal 5/10). Remaining 12 require TimeWindowAggregator
+injection — planned DAY 78.
 
-Co-authored-by: Claude (Anthropic) GROK4 Gemini, Qwen, DeepSeek, ChatGPT, Alonso Isidoro Román
-
-this bug was epic to fix.
+Tests: ml-detector 9/9, crypto-transport 3/3, etcd-client 12/12"
