@@ -190,6 +190,125 @@ make pipeline-status
 
 ---
 
+## Aportación ChatGPT5 + parallel.ai (cierre DAY 78)
+
+### Aproximaciones implementables para io_intensity/resource_usage:
+- pseudo_io_intensity = bytes_transferred/time → calculate_byte_rate() ya existe
+- burstiness = std(packet_rate) → packet_timestamps disponible en FlowStatistics
+- session_volume = total_bytes_per_window → WindowStats.total_bytes disponible
+
+### Features adicionales a evaluar DAY 79-80:
+- interarrival_time_std → packet_timestamps disponible
+- fan_out = unique_dst_per_src → unique_ips_count del aggregator
+
+### Investigación activa (parallel.ai buscando):
+- Inferencia de CPU/I/O desde tráfico puro
+- Ref base: Kitsune NDSS 2018
+- Resultado esperado: incorporar al paper en sección "future work"
+  o "related work" según lo que encuentre parallel.ai
+- Ver docs/Network-Only NIDS: Behavioral Features That Survive Encryption.MD
+
+
+### Prompt de búsqueda académica disponible (ChatGPT5)
+- Guardado para usar con Elicit/Semantic Scholar/Perplexity
+
+
+## Aportación GROK4
+
+¡Excelente planificación para mañana! Tienes una mezcla muy inteligente: features **clásicas y bien validadas** (fáciles de implementar, alto impacto en baselines) + exploración en la **frontera abierta** de inferir comportamiento host desde red pura (donde está el verdadero valor diferencial, y donde CrowdStrike/SentinelOne tienen ventaja propietaria vía agentes).
+
+Voy a estructurarlo por secciones, con sugerencias concretas de implementación, referencias validadas y cómo integrarlas en tu flujo actual (TimeWindowAggregator + multi-flow stats).
+
+### 1. Features implementables mañana (infraestructura lista)
+
+Estas son rápidas, ya que dependen de datos que ya agregas en la ventana de 30s o en flujos multi-paquete.
+
+- **`flow_duration_std`** / **`connection_duration_std`**  
+  **Definición típica (CIC-IDS2017)**: Desviación estándar de la duración de los flujos/conexiones observados en la ventana temporal.  
+  En CIC-IDS2017 (y derivados), "Flow Duration" es por flujo individual, pero la std se calcula sobre múltiples flujos en contextos de agregación o ventanas.  
+  **Por qué es útil**: Captura variabilidad en sesiones (e.g., DDoS → muchas conexiones cortas → baja std; escaneo → mezcla de duraciones → alta std; beaconing C&C → duraciones regulares → baja std).  
+  **Implementación trivial** (asumiendo que ya trackeas una lista o stats de duraciones de flujos en la ventana):
+
+  ```cpp
+  // En TimeWindowAggregator o nuevo MultiFlowAggregator
+  std::vector<double> flow_durations;  // push_back cada vez que cierras un flujo en la ventana
+
+  // Al final de la ventana o por paquete (incremental)
+  double mean_duration = ...;  // ya lo tienes o lo calculas
+  double variance = 0.0;
+  for (auto dur : flow_durations) {
+      variance += (dur - mean_duration) * (dur - mean_duration);
+  }
+  variance /= flow_durations.size();  // o size-1 para sample std
+  features["flow_duration_std"] = std::sqrt(variance);
+
+  // Alternativa incremental (mejor para memoria): Welford's online algorithm
+  // Mantén count, mean, M2 (running variance)
+  ```
+
+  **Referencia**: CIC-IDS2017 feature set incluye "Flow Duration", "Flow IAT Std" (inter-arrival time std), y derivados. La std de duración aparece en papers que usan CICFlowMeter o similares.
+
+- **`protocol_variety`** / **`tcp_udp_ratio`**  
+  **Definición estándar**:
+  - `protocol_variety`: Número de protocolos distintos (o entropía de distribución) en la ventana (e.g., IP protocol field: TCP=6, UDP=17, ICMP=1, etc.).
+  - `tcp_udp_ratio`: (num TCP packets + flows) / (num UDP + flows), o bytes ratio, o solo count ratio.  
+    **Historia**: Desde Moore & Papagiannaki (IMC 2004) se usa para identificar aplicaciones (payloads ocultos tras puertos no estándar). Muy discriminante en botnets que usan DNS tunneling (UDP alto), o C&C sobre HTTP/TLS (TCP dominante).  
+    **Implementación**:
+
+  ```cpp
+  // En TimeWindowAggregator
+  int tcp_count = 0, udp_count = 0, other_proto = 0;
+  std::set<uint8_t> unique_protos;  // o bitmask si solo IP proto
+
+  // En cada process_packet()
+  if (proto == 6) tcp_count++;
+  else if (proto == 17) udp_count++;
+  else other_proto++;
+  unique_protos.insert(proto);
+
+  features["protocol_variety"] = unique_protos.size();
+  // O entropía: Shannon sobre distribución normalizada
+  features["tcp_udp_ratio"] = (tcp_count + 1e-6) / (udp_count + tcp_count + 1e-6);
+  ```
+
+  **Referencia**: Moore & Papagiannaki (2004) usan port-based + payload para clasificación, pero mencionan protocol distribution como feature básica.
+
+Con estas dos (o cuatro si separas src/dst o bytes vs packets), subes de 29/40 a 33–35 reales fácilmente.
+
+### 2. Investigación activa: `io_intensity` / `resource_usage` desde tráfico puro
+
+Aquí entramos en territorio **Kitsune-style** (Mirsky et al., NDSS 2018): inferir anomalías host-side sin agente, solo desde red. Kitsune no tiene features directas como "CPU usage" o "disk I/O bytes", pero usa **estadísticas temporales avanzadas** que capturan indirectamente comportamientos de recursos:
+
+- AfterImage (su feature extractor) genera ~115 features por paquete, incluyendo:
+  - Estadísticas damped incremental (ewma-like) de jitter, packet sizes, inter-arrival times, correlation entre src/dst.
+  - Stats por "channel" (IP pair o 5-tuple).
+  - No I/O directo, pero alta tasa de small packets + high connection rate → proxy de CPU spikes (beaconing, scanning).
+  - Bursts de bytes out → posible exfil o encryption (ransomware).
+
+**Frontera real**:
+- **Con agente** (CrowdStrike Falcon, SentinelOne): features directas como process CPU %, disk write entropy, file change rate, ETW events → muy precisas para ransomware/crypto.
+- **Solo red** (tu caso): aproximaciones via proxies. Kitsune demuestra que se puede detectar bien (AUC alto en datasets reales) con stats puras de red + autoencoders ensemble. No hay "io_intensity" named, pero se infiere de patrones como:
+  - Alta varianza en packet sizes + alta rate → posible encryption loop (CPU + I/O).
+  - Sudden burst de outbound bytes sin inbound → exfil.
+  - Muchas conexiones nuevas + low payload → C&C o lateral.
+
+**Ideas concretas para tus features "secretas" aproximadas**:
+
+1. **`io_intensity_proxy`**
+  - Proxy: bytes_written_equivalent = sum(payload outbound) en ventana / duration
+    + penalización si muchos small writes (e.g., entropy de packet sizes baja → bloques fijos como ransomware).
+  - O: connection_rate × avg_pkt_size_std (alta tasa + variabilidad → I/O irregular).
+
+2. **`resource_usage_anomaly`**
+  - Proxy: z-score de (packets/sec + new_flows/sec) vs rolling baseline.
+  - O inspirado en Kitsune: damped stats de inter-arrival time std + correlation features (si implementas algo similar a AfterImage).
+
+**Recomendación práctica**:
+- Empieza con 2–3 proxies simples (no copies Kitsune entero, que es 115 feats).
+- Documenta en el paper: "Features inspiradas en enfoques network-only como Kitsune (Mirsky et al., 2018), que logran detección unsupervised sin agente, aproximando anomalías de recursos host vía patrones temporales de tráfico."
+
+¿Quieres pseudocódigo más detallado para alguna de estas (e.g., Welford para std, o proxy io_intensity)? O prefieres priorizar las fáciles mañana y dejar las proxies para después de CTU-13 baseline? ¡Avísame cómo vas a ordenarlas! Esto ya pinta para un paper muy sólido. 🚀
+
 *Consejo de Sabios — Cierre DAY 78, 7 marzo 2026*
 *DAY 79 arranca con: 0.5f→SENTINEL → inspección FlowStatistics →
 thresholds JSON → F1 CTU-13 baseline*
