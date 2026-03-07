@@ -164,6 +164,29 @@ grep -n 'init_embedded_sentinel\|populate_ml_defender\|run_ml_detection' \
 # Pipeline arriba
 make pipeline-status
 ```
+## Referencias académicas para features pendientes
+
+### Implementables mañana (infraestructura lista):
+- `flow_duration_std` / `connection_duration_std`: algoritmo trivial,
+  dato disponible en TimeWindowAggregator. Ref: CIC-IDS2017 dataset
+  feature documentation, Universidad de New Brunswick.
+- `protocol_variety` / `tcp_udp_ratio`: estándar desde 2004.
+  Ref: Moore & Papagiannaki, "Toward the Accurate Identification of
+  Network Applications", IMC 2004.
+
+### Investigación activa (secreto industrial o frontera abierta):
+- `io_intensity` / `resource_usage` desde tráfico de red puro:
+  Ref: Mirsky et al., "Kitsune: An Ensemble of Autoencoders for
+  Online Network Intrusion Detection", NDSS 2018.
+  Línea: network-based host profiling sin agente endpoint.
+  Sistemas comerciales (CrowdStrike, SentinelOne): agente endpoint,
+  secreto industrial. Frontera conocida, documentada, no resuelta
+  públicamente con la precisión requerida.
+
+### Decisión DAY 79:
+1. Implementar los 4 atacables → 33/40 features reales
+2. Documentar los 2 restantes citando Kitsune + literatura EDR
+3. Medir F1 con 33/40 y documentar delta vs 29/40
 
 ---
 
