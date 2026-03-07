@@ -1,35 +1,21 @@
-git add sniffer/src/userspace/ring_consumer.cpp \
-        sniffer/src/userspace/ml_defender_features.cpp
+feat(sniffer): DAY 78 — MISSING_FEATURE_SENTINEL + TimeWindowAggregator + 9 multi-flow extractors + run_ml_detection scores→proto
 
-git commit -m "fix(sniffer): DAY 77 — NaN sentinels + correct populate order
-
-Replace 0.5f sentinels with quiet_NaN() across the feature pipeline.
-
-Problems fixed:
-- init_embedded_sentinels() used 0.5f which could coincide with real
-  traffic (e.g. tcp_udp_ratio≈0.5), causing model to interpret missing
-  data as valid signal
-- populate_protobuf_event() called init_embedded_sentinels() AFTER
-  populate_ml_defender_features(), overwriting all real values with
-  sentinels on every event (bug present since day 1, masked by DAY 76
-  sentinel overwrite fix)
-- 12 Phase 2 extractors returned 0.5f instead of NaN, indistinguishable
-  from real measurements
-
-Changes:
-- ring_consumer.cpp: upgrade init_embedded_sentinels() to quiet_NaN()
-  for all 40 fields (4 submessages)
-- ring_consumer.cpp: fix order in populate_protobuf_event():
-  NaN sentinel → populate_ml_defender_features() → run_ml_detection()
-- ml_defender_features.cpp: 12 TODO(Phase 2) extractors now return
-  quiet_NaN() instead of 0.5f, pending TimeWindowAggregator injection
-
-Semantics: NaN = 'not computed / Phase 2 pending'
-           real value = extracted from FlowStatistics
-           no field ever looks like valid data when it is not
-
-Real features now flowing: 28/40 (ddos 10/10, ransomware 10/10,
-traffic 3/10, internal 5/10). Remaining 12 require TimeWindowAggregator
-injection — planned DAY 78.
-
-Tests: ml-detector 9/9, crypto-transport 3/3, etcd-client 12/12"
+- Define MISSING_FEATURE_SENTINEL=-9999.0f (mathematically unreachable
+  by any embedded tree split, range [0.0,5.1]); replaces quiet_NaN()
+  (40 sentinels in ring_consumer.cpp) and 12 Phase-2 TODOs in
+  ml_defender_features.cpp
+- Add TimeWindowAggregator as member of RansomwareFeatureProcessor;
+  expose get_aggregator(); feed tw_event on every process_packet()
+- Inject aggregator lazily into thread_local MLDefenderExtractor via
+  set_aggregator()/has_aggregator() before populate_ml_defender_features()
+- Implement 9 multi-flow extractors using WindowStats (event_count,
+  unique_ips_count, unique_ports_count): connection_rate,
+  src_ip_entropy, dst_ip_concentration, port_entropy,
+  internal_connection_rate, lateral_movement_score,
+  service_port_consistency, service_discovery_patterns,
+  ddos_source_ip_dispersion → 29/40 real features (was 28/40)
+- Implement run_ml_detection PHASE 3/4: write overall_threat_score,
+  final_classification, threat_category, ml_analysis fields to proto;
+  sentinel -1.0 for non-inferred scores
+- Tests: crypto 3/3, etcd-hmac 12/12, ml-detector 9/9,
+  trace_id 44/46 (2 pre-existing DAY72 failures)

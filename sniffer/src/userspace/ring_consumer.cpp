@@ -24,51 +24,51 @@ extern FeatureLogger::VerbosityLevel g_verbosity;
 // NaN != ninguna metrica real -> modelo ML no lo interpreta como senal valida
 // Reemplaza 0.5f (DAY 76) que podia coincidir con trafico real (tcp_udp_ratio~0.5)
 static void init_embedded_sentinels(protobuf::NetworkFeatures* net) {
-    constexpr float NaN = std::numeric_limits<float>::quiet_NaN();
+    // DAY 78: sentinel en ml_defender_features.hpp
     auto* ddos = net->mutable_ddos_embedded();
-    ddos->set_syn_ack_ratio(NaN);
-    ddos->set_packet_symmetry(NaN);
-    ddos->set_source_ip_dispersion(NaN);
-    ddos->set_protocol_anomaly_score(NaN);
-    ddos->set_packet_size_entropy(NaN);
-    ddos->set_traffic_amplification_factor(NaN);
-    ddos->set_flow_completion_rate(NaN);
-    ddos->set_geographical_concentration(NaN);
-    ddos->set_traffic_escalation_rate(NaN);
-    ddos->set_resource_saturation_score(NaN);
+    ddos->set_syn_ack_ratio(MISSING_FEATURE_SENTINEL);
+    ddos->set_packet_symmetry(MISSING_FEATURE_SENTINEL);
+    ddos->set_source_ip_dispersion(MISSING_FEATURE_SENTINEL);
+    ddos->set_protocol_anomaly_score(MISSING_FEATURE_SENTINEL);
+    ddos->set_packet_size_entropy(MISSING_FEATURE_SENTINEL);
+    ddos->set_traffic_amplification_factor(MISSING_FEATURE_SENTINEL);
+    ddos->set_flow_completion_rate(MISSING_FEATURE_SENTINEL);
+    ddos->set_geographical_concentration(MISSING_FEATURE_SENTINEL);
+    ddos->set_traffic_escalation_rate(MISSING_FEATURE_SENTINEL);
+    ddos->set_resource_saturation_score(MISSING_FEATURE_SENTINEL);
     auto* ransom = net->mutable_ransomware_embedded();
-    ransom->set_io_intensity(NaN);
-    ransom->set_entropy(NaN);
-    ransom->set_resource_usage(NaN);
-    ransom->set_network_activity(NaN);
-    ransom->set_file_operations(NaN);
-    ransom->set_process_anomaly(NaN);
-    ransom->set_temporal_pattern(NaN);
-    ransom->set_access_frequency(NaN);
-    ransom->set_data_volume(NaN);
-    ransom->set_behavior_consistency(NaN);
+    ransom->set_io_intensity(MISSING_FEATURE_SENTINEL);
+    ransom->set_entropy(MISSING_FEATURE_SENTINEL);
+    ransom->set_resource_usage(MISSING_FEATURE_SENTINEL);
+    ransom->set_network_activity(MISSING_FEATURE_SENTINEL);
+    ransom->set_file_operations(MISSING_FEATURE_SENTINEL);
+    ransom->set_process_anomaly(MISSING_FEATURE_SENTINEL);
+    ransom->set_temporal_pattern(MISSING_FEATURE_SENTINEL);
+    ransom->set_access_frequency(MISSING_FEATURE_SENTINEL);
+    ransom->set_data_volume(MISSING_FEATURE_SENTINEL);
+    ransom->set_behavior_consistency(MISSING_FEATURE_SENTINEL);
     auto* traffic = net->mutable_traffic_classification();
-    traffic->set_packet_rate(NaN);
-    traffic->set_connection_rate(NaN);
-    traffic->set_tcp_udp_ratio(NaN);
-    traffic->set_avg_packet_size(NaN);
-    traffic->set_port_entropy(NaN);
-    traffic->set_flow_duration_std(NaN);
-    traffic->set_src_ip_entropy(NaN);
-    traffic->set_dst_ip_concentration(NaN);
-    traffic->set_protocol_variety(NaN);
-    traffic->set_temporal_consistency(NaN);
+    traffic->set_packet_rate(MISSING_FEATURE_SENTINEL);
+    traffic->set_connection_rate(MISSING_FEATURE_SENTINEL);
+    traffic->set_tcp_udp_ratio(MISSING_FEATURE_SENTINEL);
+    traffic->set_avg_packet_size(MISSING_FEATURE_SENTINEL);
+    traffic->set_port_entropy(MISSING_FEATURE_SENTINEL);
+    traffic->set_flow_duration_std(MISSING_FEATURE_SENTINEL);
+    traffic->set_src_ip_entropy(MISSING_FEATURE_SENTINEL);
+    traffic->set_dst_ip_concentration(MISSING_FEATURE_SENTINEL);
+    traffic->set_protocol_variety(MISSING_FEATURE_SENTINEL);
+    traffic->set_temporal_consistency(MISSING_FEATURE_SENTINEL);
     auto* internal = net->mutable_internal_anomaly();
-    internal->set_internal_connection_rate(NaN);
-    internal->set_service_port_consistency(NaN);
-    internal->set_protocol_regularity(NaN);
-    internal->set_packet_size_consistency(NaN);
-    internal->set_connection_duration_std(NaN);
-    internal->set_lateral_movement_score(NaN);
-    internal->set_service_discovery_patterns(NaN);
-    internal->set_data_exfiltration_indicators(NaN);
-    internal->set_temporal_anomaly_score(NaN);
-    internal->set_access_pattern_entropy(NaN);
+    internal->set_internal_connection_rate(MISSING_FEATURE_SENTINEL);
+    internal->set_service_port_consistency(MISSING_FEATURE_SENTINEL);
+    internal->set_protocol_regularity(MISSING_FEATURE_SENTINEL);
+    internal->set_packet_size_consistency(MISSING_FEATURE_SENTINEL);
+    internal->set_connection_duration_std(MISSING_FEATURE_SENTINEL);
+    internal->set_lateral_movement_score(MISSING_FEATURE_SENTINEL);
+    internal->set_service_discovery_patterns(MISSING_FEATURE_SENTINEL);
+    internal->set_data_exfiltration_indicators(MISSING_FEATURE_SENTINEL);
+    internal->set_temporal_anomaly_score(MISSING_FEATURE_SENTINEL);
+    internal->set_access_pattern_entropy(MISSING_FEATURE_SENTINEL);
 }
 
 namespace sniffer {
@@ -756,7 +756,11 @@ void RingBufferConsumer::populate_protobuf_event(const SimpleEvent& event,
 
         // Extract and populate ML Defender features (40 features)
         // This populates 4 submessages: DDoS, Ransomware, Traffic, Internal
-        ml_extractor_.populate_ml_defender_features(flow_stats, proto_event);
+        // DAY 78: inyección lazy — thread_local no admite constructor con args
+		if (!ml_extractor_.has_aggregator() && ransomware_processor_) {
+    		ml_extractor_.set_aggregator(ransomware_processor_->get_aggregator());
+		}
+		ml_extractor_.populate_ml_defender_features(flow_stats, proto_event);
 
         // Optional: Log feature extraction if verbosity enabled
         if (g_verbosity >= FeatureLogger::VerbosityLevel::GROUPED) {
@@ -1479,61 +1483,64 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
 
     // ========================================================================
     // PHASE 3: Threshold Application & Classification
+    // DAY 78: scores escritos al proto con sentinel -1.0f para no inferido
+    // TODO(DAY79): cargar thresholds desde JSON (Phase1-Day4-CRITICAL)
     // ========================================================================
+    double threat_score = -1.0;
+    std::string classification = "BENIGN";
+    std::string category = "NORMAL";
 
-    // TODO(Phase1-Day4-CRITICAL): Load thresholds from model JSON metadata
-    // Current: Hardcoded values for rapid prototyping
-    // Required: Read from models/production/*.json → "detection_threshold" field
-    // Why: JSON is the law - single source of truth for model parameters
-    // Refactor: Create ModelConfig class to load thresholds on initialization
-
-    // DDoS Detection
-    // TODO: Load threshold from ddos_binary_detector.json (currently 0.7)
+    // DDoS
     if (ddos_pred.is_ddos(0.7f)) {
         stats_.ddos_attacks_detected++;
-        // TODO(Phase1-Day4): Set proto_event.ml_analysis() fields:
-        //   - final_threat_classification = "DDOS"
-        //   - overall_threat_score = ddos_pred.probability
-        //   - Add ModelPrediction to level2_specialized_predictions
+        threat_score = ddos_pred.ddos_prob;
+        classification = "MALICIOUS";
+        category = "DDOS";
+        proto_event.mutable_ml_analysis()->set_final_threat_classification("DDOS");
     }
 
-    // Ransomware Detection
-    // TODO: Load threshold from ransomware_detector_embedded.json (currently 0.75)
+    // Ransomware (solo si no hay DDoS ya clasificado)
     if (ransomware_pred.is_ransomware(0.75f)) {
         stats_.ransomware_attacks_detected++;
-        // TODO(Phase1-Day4): Set proto_event.ml_analysis() fields:
-        //   - final_threat_classification = "RANSOMWARE"
-        //   - overall_threat_score = ransomware_pred.probability
-        //   - Add ModelPrediction to level2_specialized_predictions
+        if (classification != "MALICIOUS") {
+            threat_score = ransomware_pred.ransomware_prob;
+            classification = "MALICIOUS";
+            category = "RANSOMWARE";
+            proto_event.mutable_ml_analysis()->set_final_threat_classification("RANSOMWARE");
+        }
     }
 
-    // Traffic Classification
-    // TODO: Load threshold from traffic_detector_embedded.json (currently 0.7)
+    // Traffic context (siempre)
+    proto_event.mutable_ml_analysis()->set_traffic_context(
+        traffic_pred.probability >= 0.5f ? "INTERNAL" : "EXTERNAL"
+    );
     if (traffic_pred.probability >= 0.7f) {
         stats_.suspicious_traffic_detected++;
-        // TODO(Phase1-Day4): Set proto_event.ml_analysis() fields:
-        //   - traffic_context = traffic_pred.is_internal() ? "INTERNAL" : "EXTERNAL"
-        //   - level2_context_classification confidence
+        if (classification == "BENIGN") {
+            threat_score = traffic_pred.probability;
+            classification = "SUSPICIOUS";
+            category = "SUSPICIOUS_TRAFFIC";
+        }
     }
 
-    // Internal Anomaly Detection
-    // TODO: Load threshold from internal_detector_embedded.json (currently 6.5e-10)
-    // NOTE: This extremely low threshold was determined experimentally
+    // Internal anomaly
     if (internal_pred.is_suspicious(0.00000000065f)) {
         stats_.internal_anomalies_detected++;
-        // TODO(Phase1-Day4): Set proto_event.ml_analysis() fields:
-        //   - Add to level2_specialized_predictions with "INTERNAL_ANOMALY"
-        //   - Set suspicious_geographic_pattern if applicable
+        if (classification == "BENIGN") {
+            threat_score = internal_pred.suspicious_prob;
+            classification = "SUSPICIOUS";
+            category = "INTERNAL_ANOMALY";
+        }
     }
 
     // ========================================================================
-    // PHASE 4: Overall Classification Logic
+    // PHASE 4: Write to proto
     // ========================================================================
-    // TODO(Phase1-Day4): Implement ensemble decision logic
-    // - If any detector fires → "SUSPICIOUS" minimum
-    // - If DDoS or Ransomware → "MALICIOUS"
-    // - Aggregate confidence scores
-    // - Set proto_event.final_classification
+    if (threat_score >= 0.0) {
+        proto_event.set_overall_threat_score(threat_score);
+    }
+    proto_event.set_final_classification(classification);
+    proto_event.set_threat_category(category);
 
     // ========================================================================
     // PHASE 5: Performance Metrics

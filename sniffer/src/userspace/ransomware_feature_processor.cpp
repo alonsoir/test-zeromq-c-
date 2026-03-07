@@ -22,6 +22,14 @@ bool RansomwareFeatureProcessor::initialize() {
     dns_analyzer_ = std::make_unique<DNSAnalyzer>(1000);
     ip_whitelist_ = std::make_unique<IPWhitelist>(10000, 24 * 3600);
 
+    // DAY 78: TimeWindowAggregator para features multi-flow
+    aggregator_ = std::make_unique<TimeWindowAggregator>(
+    *flow_tracker_,
+    *ip_whitelist_,
+    *dns_analyzer_,
+    10000  // max_events — mismo valor que extractor_
+    );
+
     extractor_ = std::make_unique<RansomwareFeatureExtractor>(
         *flow_tracker_,
         *dns_analyzer_,
@@ -110,18 +118,21 @@ void RansomwareFeatureProcessor::parse_and_feed_packet(const SimpleEvent& event)
         dns_analyzer_->add_query(domain_buf, timestamp_ns, true, event.src_ip);
     }
 
-    // === 4. Feed TimeWindowAggregator ===
+    // === 4. Feed TimeWindowAggregator y RansomwareFeatureExtractor ===
     TimeWindowEvent tw_event(
         timestamp_ns,
-        event.src_ip,
-        event.dst_ip,
-        event.src_port,
-        event.dst_port,
+        event.src_ip, event.dst_ip,
+        event.src_port, event.dst_port,
         event.protocol,
         event.packet_len
     );
 
     extractor_->add_event(tw_event);
+
+    // DAY 78: mismo evento al TimeWindowAggregator para features multi-flow
+    if (aggregator_) {
+        aggregator_->add_event(tw_event);  // reutilizar tw_event ya construido
+    }
 }
 
 bool RansomwareFeatureProcessor::is_dns_packet(const SimpleEvent& event) {

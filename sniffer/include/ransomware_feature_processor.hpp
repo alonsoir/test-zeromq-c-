@@ -1,11 +1,12 @@
 // sniffer/include/ransomware_feature_processor.hpp
 #pragma once
 
+#include "time_window_aggregator.hpp"
 #include "ransomware_feature_extractor.hpp"
 #include "flow_tracker.hpp"
 #include "dns_analyzer.hpp"
 #include "ip_whitelist.hpp"
-#include "main.h"  // ⭐ AÑADIR ESTO
+#include "main.h"
 #include "network_security.pb.h"
 #include <thread>
 #include <atomic>
@@ -23,7 +24,6 @@ namespace sniffer {
         bool start();
         void stop();
 
-        // ⭐ CAMBIADO: packet_event → SimpleEvent
         void process_packet(const SimpleEvent& event);
 
         // Get extracted features (for ZMQ sender)
@@ -32,12 +32,16 @@ namespace sniffer {
         // For testing: force immediate extraction without waiting for timer
         void force_extraction_for_testing();
 
+        TimeWindowAggregator* get_aggregator() { return aggregator_.get(); }
+
     private:
         // Components
         std::unique_ptr<FlowTracker> flow_tracker_;
         std::unique_ptr<DNSAnalyzer> dns_analyzer_;
         std::unique_ptr<IPWhitelist> ip_whitelist_;
         std::unique_ptr<RansomwareFeatureExtractor> extractor_;
+
+        std::unique_ptr<TimeWindowAggregator> aggregator_;
 
         // Timer thread for periodic extraction
         std::thread extraction_thread_;

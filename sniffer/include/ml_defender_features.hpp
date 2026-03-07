@@ -10,10 +10,17 @@
 #pragma once
 
 #include "flow_manager.hpp"  // For FlowStatistics definition
+// Tras #include "flow_manager.hpp"
+#include "time_window_aggregator.hpp"
 #include <cstdint>
 #include <vector>
 #include <cmath>
 #include <algorithm>
+
+/// Sentinel para features no computadas (ventana temporal insuficiente).
+/// Rango real de splits embedded: [0.0, 5.1] → -9999.0f inalcanzable.
+/// Routing determinista: siempre left_child en todos los árboles.
+constexpr float MISSING_FEATURE_SENTINEL = -9999.0f;
 
 // Forward declarations for protobuf types (in global protobuf namespace)
 namespace protobuf {
@@ -35,6 +42,12 @@ class MLDefenderExtractor {
 public:
     MLDefenderExtractor() = default;
     ~MLDefenderExtractor() = default;
+
+    // DAY 78: inyección lazy de TimeWindowAggregator para features multi-flow
+    void set_aggregator(TimeWindowAggregator* agg) {
+        if (!aggregator_) aggregator_ = agg;
+    }
+    bool has_aggregator() const { return aggregator_ != nullptr; }
 
     // ========================================================================
     // MAIN EXTRACTION METHODS
@@ -221,6 +234,9 @@ private:
     float calculate_iat_mean(const std::vector<uint64_t>& timestamps) const;
     float calculate_iat_std_dev(const std::vector<uint64_t>& timestamps) const;
     float calculate_iat_coefficient_of_variation(const std::vector<uint64_t>& timestamps) const;
+
+    // DAY 78: aggregator para features que requieren ventana temporal
+    TimeWindowAggregator* aggregator_ = nullptr;
 };
 
 } // namespace sniffer
