@@ -206,8 +206,9 @@ make pipeline-status
 - Ref base: Kitsune NDSS 2018
 - Resultado esperado: incorporar al paper en sección "future work"
   o "related work" según lo que encuentre parallel.ai
-- Ver docs/Network-Only NIDS: Behavioral Features That Survive Encryption.MD
-
+  - Ver docs/Network-Only NIDS: Behavioral Features That Survive Encryption.MD
+    (nota) ChatGPT5 hace un analisis de dicho fichero: 
+  docs/Una revision para Network-ONLY NIDS: Behavioral Features That survive Encryption por ChatGPT.md
 
 ### Prompt de búsqueda académica disponible (ChatGPT5)
 - Guardado para usar con Elicit/Semantic Scholar/Perplexity
