@@ -194,7 +194,7 @@ with explicit comments.
 
 **Result**: F1 = 0.9921, Recall = 1.0000 (zero missed attacks on CTU-13 Neris).
 
-Full analysis: [`docs/engineering_decisions/DAY79_sentinel_analysis.md`](docs/engineering_decisions/DAY79_sentinel_analysis.md)
+Full analysis: [`docs/engineering_decisions/DAY79_sentinel_analysis.md`](docs/engineering_decisions/DAY79_sentinel_analysis_CLAUDE.md)
 
 ### Standardized Logging — All 6 Components
 

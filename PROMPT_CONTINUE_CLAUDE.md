@@ -206,5 +206,20 @@ vagrant status
   make test-replay-neris
   ```
 
+Tienes respuestas y propuestas por parte del consejo en:
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah docs/engineering_decisions/          
+total 96
+drwxr-xr-x@   8 aironman  staff   256B Mar  8 09:11 .
+-rw-r--r--@   1 aironman  staff   6.2K Mar  8 09:11 DAY79_sentinel_analysis_CLAUDE_responde_Qwen.md
+-rw-r--r--@   1 aironman  staff   5.1K Mar  8 09:11 DAY79_sentinel_analysis_CLAUDE_responde_GROK4.md
+-rw-r--r--@   1 aironman  staff   4.0K Mar  8 09:10 DAY79_sentinel_analysis_CLAUDE_responde_Gemini.md
+-rw-r--r--@   1 aironman  staff   7.4K Mar  8 09:10 DAY79_sentinel_analysis_CLAUDE_responde_DeepSeek.md
+-rw-r--r--@   1 aironman  staff   5.3K Mar  8 09:10 DAY79_sentinel_analysis_CLAUDE_responde_ChatGPT5.md
+-rw-r--r--@   1 aironman  staff    12K Mar  8 08:22 DAY79_sentinel_analysis_CLAUDE.md
+drwxr-xr-x@ 110 aironman  staff   3.4K Mar  8 08:18 ..
+
+Están en mi sistema de ficheros local, por si quieres leerlos.
+
 *Consejo de Sabios — Cierre DAY 79, 8 marzo 2026*
 *DAY 80 arranca con: thresholds JSON → FlowStatistics inspection → F1 post-thresholds*
