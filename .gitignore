@@ -189,3 +189,6 @@ contrib/claude/pca_pipeline/training_data.npz
 !*/build-*/config/  # Exception: keep config symlinks*/build-*/
 rm --cached ml-detector/build-asan/ml-detector
 /build-*/config/
+shared/indices/*.db-wal
+shared/indices/*.db-shm
+shared/indices/*.db

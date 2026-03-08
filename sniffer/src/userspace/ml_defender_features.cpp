@@ -158,7 +158,7 @@ float MLDefenderExtractor::extract_ddos_geographical_concentration(const FlowSta
     //
     // For Phase 1: Return neutral value
     // For Phase 2: GeoIP service available to RAG for analysis queries
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ddos_traffic_escalation_rate(const FlowStatistics& flow) const {
@@ -221,7 +221,7 @@ float MLDefenderExtractor::extract_ransomware_io_intensity(const FlowStatistics&
     // 3. Correlate network flow with endpoint agent data
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_entropy(const FlowStatistics& flow) const {
@@ -241,7 +241,7 @@ float MLDefenderExtractor::extract_ransomware_resource_usage(const FlowStatistic
     // This requires system-level resource monitoring, not network flow data.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_network_activity(const FlowStatistics& flow) const {
@@ -270,7 +270,7 @@ float MLDefenderExtractor::extract_ransomware_file_operations(const FlowStatisti
     // 3. Count packets to port 445 as proxy metric
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatistics& flow) const {
@@ -285,7 +285,7 @@ float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatisti
     // Consider integration with endpoint agent or eBPF process monitoring.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_temporal_pattern(const FlowStatistics& flow) const {
@@ -300,7 +300,7 @@ float MLDefenderExtractor::extract_ransomware_temporal_pattern(const FlowStatist
     } else if (cv > 1.0f) {
         return 0.2f;  // Normal random pattern
     } else {
-        return 0.5f;  // Neutral
+        return MISSING_FEATURE_SENTINEL;  // Neutral
     }
 }
 
@@ -329,7 +329,7 @@ float MLDefenderExtractor::extract_ransomware_behavior_consistency(const FlowSta
     float iat_std = calculate_iat_std_dev(flow.packet_timestamps);
     float iat_mean = calculate_iat_mean(flow.packet_timestamps);
 
-    if (iat_mean == 0.0f) return 0.5f;
+    if (iat_mean == 0.0f) return MISSING_FEATURE_SENTINEL;
 
     float cv = iat_std / iat_mean;
 
@@ -527,7 +527,7 @@ float MLDefenderExtractor::extract_internal_packet_size_consistency(const FlowSt
     float std_dev = calculate_std_dev(flow.all_lengths);
     float mean = calculate_mean(flow.all_lengths);
 
-    if (mean == 0.0f) return 0.5f;
+    if (mean == 0.0f) return MISSING_FEATURE_SENTINEL;
 
     float cv = std_dev / mean;
 

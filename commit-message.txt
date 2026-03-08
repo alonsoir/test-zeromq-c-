@@ -1,21 +1,43 @@
-feat(sniffer): DAY 78 — MISSING_FEATURE_SENTINEL + TimeWindowAggregator + 9 multi-flow extractors + run_ml_detection scores→proto
+fix(features): replace 0.5f placeholders with MISSING_FEATURE_SENTINEL + logging standard
 
-- Define MISSING_FEATURE_SENTINEL=-9999.0f (mathematically unreachable
-  by any embedded tree split, range [0.0,5.1]); replaces quiet_NaN()
-  (40 sentinels in ring_consumer.cpp) and 12 Phase-2 TODOs in
-  ml_defender_features.cpp
-- Add TimeWindowAggregator as member of RansomwareFeatureProcessor;
-  expose get_aggregator(); feed tw_event on every process_packet()
-- Inject aggregator lazily into thread_local MLDefenderExtractor via
-  set_aggregator()/has_aggregator() before populate_ml_defender_features()
-- Implement 9 multi-flow extractors using WindowStats (event_count,
-  unique_ips_count, unique_ports_count): connection_rate,
-  src_ip_entropy, dst_ip_concentration, port_entropy,
-  internal_connection_rate, lateral_movement_score,
-  service_port_consistency, service_discovery_patterns,
-  ddos_source_ip_dispersion → 29/40 real features (was 28/40)
-- Implement run_ml_detection PHASE 3/4: write overall_threat_score,
-  final_classification, threat_category, ml_analysis fields to proto;
-  sentinel -1.0 for non-inferred scores
-- Tests: crypto 3/3, etcd-hmac 12/12, ml-detector 9/9,
-  trace_id 44/46 (2 pre-existing DAY72 failures)
+DAY 79 — F1=0.9921 baseline CTU-13 Neris (Recall=1.0000, FN=0)
+
+Feature extractor fix:
+- Replace 8x return 0.5f placeholders with MISSING_FEATURE_SENTINEL (-9999.0f)
+  Functions: geographical_concentration, io_intensity, resource_usage,
+  file_operations, process_anomaly, temporal_pattern(else),
+  behavior_consistency(iat_mean==0), packet_size_consistency(mean==0)
+- Preserve flow_completion_rate 0.5f (semantic: TCP established-not-closed)
+- Preserve cv < 0.5f comparison (not a feature value)
+- MISSING_FEATURE_SENTINEL instances: 13 → 21
+- 0.5f instances: 10 → 2 (both intentional)
+
+Rationale: 0.5f inside RandomForest split domain [0.0, 5.1] introduces
+non-deterministic spurious variance. MISSING_FEATURE_SENTINEL (-9999.0f)
+is 3 orders of magnitude outside domain → deterministic left_child routing.
+See docs/engineering_decisions/DAY79_sentinel_analysis.md
+
+Logging standardization (Makefile):
+- Add >> /vagrant/logs/lab/COMPONENT.log 2>&1 to all 6 tmux start targets
+- New target: make logs-all (tail -f all 6 simultaneously)
+- New target: make logs-lab-clean (rotate to archive/)
+- Standard: one component, one file, predictable name
+
+Validation:
+- make test-replay-neris (CTU-13 Neris, 492K packets, 19135 flows)
+- F1=0.9921 | Precision=0.9844 | Recall=1.0000
+- TP=6676 FP=106 FN=0 TN=28 | Total=6810 events
+- Ground truth: infected host 147.32.84.165
+
+Documentation:
+- docs/engineering_decisions/DAY79_sentinel_analysis.md (paper material)
+- README.md updated (Day 79, F1 badge, logging standard)
+- DAY_80_prompt.md generated
+
+Pending (DAY 80):
+- Thresholds from JSON (Phase1-Day4-CRITICAL)
+- FlowStatistics inspection → tcp_udp_ratio viability
+- F1 post-thresholds
+
+Co-authored-by: Alonso <alonsoir@gmail.com>, Claude <claude@anthropic.com>
+Co-authored-by: Consejo de Sabios <grok+chatgpt5+deepseek+qwen>

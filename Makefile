@@ -333,7 +333,7 @@ sniffer-start:
 	@echo "🚀 Starting Sniffer (SUDO + TMUX + Hybrid Mode)..."
 	@vagrant ssh -c "tmux kill-session -t sniffer 2>/dev/null || true"
 	@echo "Lanzamos tmux y dentro ejecutamos sudo env para preservar el path de las librerías..."
-	@vagrant ssh -c "tmux new-session -d -s sniffer 'cd $(SNIFFER_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer -c $(SNIFFER_CFG)'"
+	@vagrant ssh -c "tmux new-session -d -s sniffer 'mkdir -p /vagrant/logs/lab && cd $(SNIFFER_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer -c $(SNIFFER_CFG) >> /vagrant/logs/lab/sniffer.log 2>&1'"
 	@sleep 2
 	@$(MAKE) pipeline-status
 
@@ -362,7 +362,7 @@ sniffer: proto etcd-client-build
 ml-detector-start:
 	@echo "🚀 Starting ML Detector (Tricapa Persistente)..."
 	@vagrant ssh -c "tmux kill-session -t ml-detector 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s ml-detector 'cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector'"
+	@vagrant ssh -c "tmux new-session -d -s ml-detector 'mkdir -p /vagrant/logs/lab && cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector >> /vagrant/logs/lab/ml-detector.log 2>&1'"
 	@sleep 3
 	@$(MAKE) pipeline-status
 
@@ -392,7 +392,7 @@ rag-ingester-start:
 	@echo "🚀 Starting RAG Ingester (Full Context)..."
 	@vagrant ssh -c "tmux kill-session -t rag-ingester 2>/dev/null || true"
 	@echo "Ejecución desde la raíz del componente para resolver paths relativos del config..."
-	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester'"
+	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
 	@sleep 2
 	@$(MAKE) pipeline-status
 
@@ -425,7 +425,7 @@ FIREWALL_CFG := ../config/firewall.json
 firewall-start:
 	@echo "🚀 Starting Firewall ACL (SUDO + TMUX)..."
 	@vagrant ssh -c "tmux kill-session -t firewall 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s firewall 'cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG)'"
+	@vagrant ssh -c "tmux new-session -d -s firewall 'mkdir -p /vagrant/logs/lab && cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG) >> /vagrant/logs/lab/firewall-agent.log 2>&1'"
 	@sleep 2
 	@$(MAKE) pipeline-status
 
@@ -475,6 +475,21 @@ etcd-server-status:
 	@vagrant ssh -c "pgrep -a -f etcd-server && echo '✅ etcd-server: RUNNING' || echo '❌ etcd-server: STOPPED'"
 	@vagrant ssh -c "curl -s http://localhost:2379/health || echo '⚠️  Not responding'"
 	@echo "════════════════════════════════════════════════════════════"
+
+
+# ============================================================================
+# Logging estándar — todos los componentes escriben en /vagrant/logs/lab/
+# Standard: un componente, un fichero, nombre predecible.
+# ADR pendiente: mover configuración log_file a JSON de cada componente.
+# ============================================================================
+logs-all:
+	@echo '📋 Tailing all 6 pipeline component logs (Ctrl+C to stop)...'
+	@vagrant ssh -c "tail -f /vagrant/logs/lab/etcd-server.log /vagrant/logs/lab/rag-security.log /vagrant/logs/lab/rag-ingester.log /vagrant/logs/lab/ml-detector.log /vagrant/logs/lab/firewall-agent.log /vagrant/logs/lab/sniffer.log 2>/dev/null"
+
+logs-lab-clean:
+	@echo '🧹 Rotating pipeline logs...'
+	@vagrant ssh -c "mkdir -p /vagrant/logs/lab/archive && mv /vagrant/logs/lab/*.log /vagrant/logs/lab/archive/ 2>/dev/null || true"
+	@echo '✅ Logs rotated to /vagrant/logs/lab/archive/'
 
 pipeline-start: etcd-server-start
 	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."
@@ -967,7 +982,7 @@ dev-setup-tools:
 etcd-server-start: etcd-server
 	@echo "🚀 Starting etcd-server (Persistente)..."
 	@vagrant ssh -c "tmux kill-session -t etcd-server 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s etcd-server 'cd /vagrant && $(ETCD_SERVER_BUILD_DIR)/etcd-server'"
+	@vagrant ssh -c "tmux new-session -d -s etcd-server 'mkdir -p /vagrant/logs/lab && cd /vagrant && $(ETCD_SERVER_BUILD_DIR)/etcd-server >> /vagrant/logs/lab/etcd-server.log 2>&1'"
 	@sleep 2
 	@$(MAKE) etcd-server-status
 
@@ -1135,7 +1150,7 @@ rag-clean:
 rag-start:
 	@echo "🚀 Starting rag-security (from /vagrant/rag/build)..."
 	@vagrant ssh -c "tmux kill-session -t rag-security 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s rag-security 'cd /vagrant/rag/build && ./rag-security'"
+	@vagrant ssh -c "tmux new-session -d -s rag-security 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag/build && ./rag-security >> /vagrant/logs/lab/rag-security.log 2>&1'"
 	@sleep 2
 
 rag-stop:
