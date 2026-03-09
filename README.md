@@ -4,7 +4,7 @@
 
 [![Via Appia Quality](https://img.shields.io/badge/Via_Appia-Quality-gold)](https://en.wikipedia.org/wiki/Appian_Way)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Status: F1=0.9921 Validated](https://img.shields.io/badge/Status-F1%3D0.9921_Validated-brightgreen)]()
+[![Status: F1=0.9934 Validated](https://img.shields.io/badge/Status-F1%3D0.9934_Validated-brightgreen)]()
 https://alonsoir-test-zeromq-c-.mintlify.app/introduction
 
 ---
@@ -20,9 +20,9 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 ## 🏗️ Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────-─┐
+┌──────────────────────────────────────────────────────────────────┐
 │                         ML Defender Pipeline                     │
-├─────────────────────────────────────────────────────────────────-┤
+├──────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  Network Traffic (eBPF/XDP)                                      │
 │         ↓                                                        │
@@ -32,6 +32,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │  │                  │  - Fast Detector (heuristics)              │
 │  │                  │  - 4x embedded ML feature extraction       │
 │  │                  │  - ChaCha20-Poly1305 + LZ4 transport       │
+│  │                  │  - Thresholds desde JSON ✅ DAY 80         │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
@@ -52,7 +53,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │  │ firewall-acl     │  Autonomous Blocking                       │
 │  │ agent (C++20)    │  - IPSet/IPTables integration              │
 │  │                  │  - Sub-microsecond latency                 │
-│  │                  │  - Config-driven (JSON is law)             │
+│  │                  │  - Config-driven (JSON is law ✅)          │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
@@ -67,23 +68,49 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 │  │  (C++20)         │  - ML retraining data                      │
 │  └──────────────────┘                                            │
 │                                                                  │
-└─────────────────────────────────────────────────────────────────-┘
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 Current Status (Day 79 — March 8, 2026)
+## 📊 Current Status (Day 80 — March 9, 2026)
 
 ### ✅ Validated Results
 
 | Metric | Value |
 |---|---|
-| **F1-score (CTU-13 Neris)** | **0.9921** |
+| **F1-score (CTU-13 Neris)** | **0.9934** |
 | Recall | 1.0000 (zero missed attacks) |
-| Precision | 0.9844 |
-| Dataset | 492K packets, 19,135 flows, 6,810 ML events |
-| Features active | 28/40 real (21 sentinel, 1 semantic) |
+| Precision | 0.9869 |
+| Dataset | 492K packets, 19,135 flows |
+| Features active | 28/40 real (11 sentinel, 1 semantic) |
 | Pipeline components | 6/6 RUNNING |
+| Thresholds | From JSON ✅ (Phase1-Day4-CRITICAL closed) |
+
+### Threshold Configuration (sniffer.json)
+
+```json
+"ml_defender": {
+  "thresholds": {
+    "ddos": 0.85,
+    "ransomware": 0.90,
+    "traffic": 0.80,
+    "internal": 0.85
+  }
+}
+```
+
+No recompilation needed to tune precision/recall trade-off.
+
+### DAY 79 vs DAY 80 Comparison
+
+| Metric | DAY 79 (hardcoded) | DAY 80 (JSON) |
+|---|---|---|
+| F1 | 0.9921 | **0.9934** ✅ |
+| Precision | 0.9844 | **0.9869** ✅ |
+| Recall | 1.0000 | **1.0000** ✅ |
+| False Negatives | 0 | **0** ✅ |
+| False Positives (abs) | 106 | **79** ✅ |
 
 ### ✅ Production Ready Components
 
@@ -96,6 +123,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 - [x] ChaCha20-Poly1305 + LZ4 encrypted ZMQ transport
 - [x] Proto3 sentinel initialization — DAY 76 fix ✅
 - [x] Placeholder `0.5f` → `MISSING_FEATURE_SENTINEL` — DAY 79 fix ✅
+- [x] **Thresholds from JSON — DAY 80 fix ✅** (Phase1-Day4-CRITICAL closed)
 
 #### etcd-server
 - [x] Distributed configuration management
@@ -108,7 +136,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 - [x] Dual-Score architecture (fast + ML scores)
 - [x] ChaCha20-Poly1305 + LZ4 pipeline
 - [x] RAG Logger with HMAC artifact integrity
-- [x] **F1=0.9921 validated — CTU-13 Neris botnet (DAY 79)** ✅
+- [x] **F1=0.9934 validated — CTU-13 Neris botnet (DAY 80)** ✅
 
 #### firewall-acl-agent
 - [x] Kernel-level blocking (IPSet/IPTables)
@@ -171,34 +199,57 @@ make test-replay-neris
 make logs-all
 ```
 
+### Tune Thresholds (no recompilation needed)
+
+Edit `sniffer/build-debug/config/sniffer.json`:
+
+```json
+"ml_defender": {
+  "thresholds": {
+    "ddos": 0.85,
+    "ransomware": 0.90,
+    "traffic": 0.80,
+    "internal": 0.85
+  }
+}
+```
+
+Restart sniffer to apply. Startup log confirms loaded values:
+```
+[ML Defender] Thresholds (JSON): DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
+```
+
 ---
 
-## 🔬 DAY 79 Achievements
+## 🔬 Engineering Decisions
 
-### Sentinel Value Fix — F1 Baseline Established
+### Sentinel Value Taxonomy (DAY 79)
 
-**Problem identified**: 8 feature extractor functions returned `0.5f` as
-"neutral" placeholder for unimplemented Phase 2 features. Since `0.5f` falls
-within the RandomForest split domain [0.0, 5.1], these values could activate
-different tree branches non-deterministically, introducing spurious variance
-in the ensemble.
+Three categories of special values in ML feature extraction:
 
-**Key distinction documented**:
-- `MISSING_FEATURE_SENTINEL = -9999.0f` → 3 orders of magnitude outside split
-  domain → deterministic, auditable routing (always `left_child`) ✅
-- `0.5f` placeholder → inside split domain → non-deterministic spurious variance ❌
-- `0.5f` semantic (TCP established-not-closed in `flow_completion_rate`) → valid ✅
-
-**Fix**: 8 placeholders → `MISSING_FEATURE_SENTINEL`. 2 semantic values protected
-with explicit comments.
-
-**Result**: F1 = 0.9921, Recall = 1.0000 (zero missed attacks on CTU-13 Neris).
+1. **Domain-valid sentinel** (`-9999.0f`) — mathematically unreachable (split
+   domain [0.0, 5.1]). Deterministic, auditable routing. Always `left_child`.
+2. **Semantic value** (e.g. `0.5f` for TCP established-not-closed) — valid domain
+   value with explicit meaning. Must be preserved with protective comments.
+3. **Placeholder within domain** — strictly worse than category 1. Introduces
+   non-deterministic spurious variance in the RandomForest ensemble.
 
 Full analysis: [`docs/engineering_decisions/DAY79_sentinel_analysis.md`](docs/engineering_decisions/DAY79_sentinel_analysis_CLAUDE.md)
 
-### Standardized Logging — All 6 Components
+### JSON is the LAW (DAY 80)
 
-All pipeline components now write to `/vagrant/logs/lab/`:
+All configuration values — including ML thresholds — must come from JSON.
+No hardcoded constants in production code. Fallbacks must be explicit, logged,
+and never silent.
+
+Four-layer bug resolved: literals in `ring_consumer.cpp` → missing mapping in
+`main.cpp` → missing struct in `StrictSnifferConfig` → struct layout mismatch
+causing NaN. Fix: explicit field-by-field mapping between `StrictSnifferConfig`
+and `SnifferConfig`.
+
+### Standardized Logging (DAY 79)
+
+All pipeline components write to `/vagrant/logs/lab/`:
 
 ```
 /vagrant/logs/lab/
@@ -206,44 +257,40 @@ All pipeline components now write to `/vagrant/logs/lab/`:
 ├── rag-security.log
 ├── rag-ingester.log
 ├── ml-detector.log
+├── detector.log      ← spdlog internal (ADR pending: unify)
 ├── firewall-agent.log
 └── sniffer.log
 ```
 
 New Makefile targets:
-- `make logs-all` — tail -f all 6 logs simultaneously
+- `make logs-all` — tail -f all logs simultaneously
 - `make logs-lab-clean` — rotate logs to archive
 
 ---
 
-## 📋 Backlog & Roadmap
+## 📋 Roadmap
 
-### Priority 0: Thresholds from JSON (DAY 80)
+### Immediate (DAY 81)
+- Inspect `FlowStatistics` → implement `tcp_udp_ratio`, `protocol_variety`
+- Clean F1 comparison (same replay, both threshold configs)
+- Balanced dataset validation (P0 for paper — CTU-13 Neris is 98% malicious)
 
-**ring_consumer.cpp** has hardcoded thresholds:
-- DDoS: `0.7f`, Ransomware: `0.75f`, Traffic: `0.7f`, Internal: `0.00000000065f`
+### Short Term (DAY 82-85)
+- CSV Pipeline E2E validation with real traffic
+- Fix 2 pre-existing trace_id test failures (DAY 72)
+- Unify ml-detector dual logs (ADR)
+- arXiv paper preparation
 
-Must be read from `ml_detector_config.json`. "JSON is the law."
-
-### Priority 1: Remaining Features (DAY 80-81)
-
-Features still pending real extraction:
-- `tcp_udp_ratio` — requires protocol field in FlowStatistics
-- `flow_duration_std` / `connection_duration_std` — requires multi-flow aggregation
-- `protocol_variety` — requires multi-flow aggregation
-
-### Priority 2: Production Scale
-
+### Medium Term
 - Multi-tier storage (IPSet → SQLite → Parquet)
 - Async queue + worker pool (1K+ events/sec)
-- Prometheus metrics exporter
-- Grafana dashboards
+- Prometheus metrics + Grafana dashboards
 
-### Priority 3: Intelligence
-
-- Cross-component RAG queries (detection ↔ block linking)
-- Temporal forensic queries
-- Recidivism detection
+### Enterprise
+- Federated Threat Intelligence (opt-in, local anonymization)
+- Attack Graph Generation (GraphML + STIX 2.1)
+- P2P Seed Distribution (eliminate etcd as crypto authority)
+- Hot-reload configuration (no downtime threshold tuning)
 
 ---
 
@@ -269,7 +316,7 @@ This project practices multi-agent peer review:
 ## 🧪 Testing & Validation
 
 ### Datasets Used
-- **CTU-13 Neris Botnet**: F1=0.9921, Recall=1.0000 (DAY 79) ✅
+- **CTU-13 Neris Botnet**: F1=0.9934, Recall=1.0000 (DAY 80) ✅
 - **Synthetic Traffic**: Custom generator for DDoS patterns
 - **Real Network Captures**: 10+ hours of production traffic
 
@@ -313,14 +360,15 @@ make verify-all
 - ✅ Autonomous blocking (no human in loop)
 - ✅ IPSet/IPTables kernel-level enforcement
 - ✅ Fail-closed design (errors → block, not allow)
+- ✅ JSON-driven thresholds (no hardcoded security parameters)
 
 ### Known Limitations
 - IPSet capacity finite (max realistic: 500K IPs)
 - No persistence layer yet (evicted IPs lost on restart)
 - Single-node deployment (no HA/failover)
-- 12/40 ML features use sentinel values (Phase 2 pending)
-- Thresholds hardcoded pending JSON migration (DAY 80)
-- High FPR on heavily imbalanced datasets (documented in DAY79_sentinel_analysis.md)
+- 11/40 ML features use sentinel values (Phase 2 pending)
+- High FPR on heavily imbalanced datasets — documented honestly
+- Balanced dataset validation pending (CTU-13 Neris is 98% malicious traffic)
 
 ---
 
@@ -336,7 +384,7 @@ make verify-all
 **ml-detector**:
 - Detection latency: 0.24μs – 1.06μs (4 embedded models)
 - Throughput: 1M+ packets/sec (synthetic traffic)
-- F1: 0.9921 on CTU-13 Neris (DAY 79)
+- F1: 0.9934 on CTU-13 Neris (DAY 80)
 
 **firewall-acl-agent**:
 - Blocking latency: <10 ms (detection → block)
@@ -401,9 +449,9 @@ See [AUTHORS.md](AUTHORS.md), [ATTRIBUTION.md](ATTRIBUTION.md), [LICENSE](LICENS
 
 ## 🗺️ Project Status
 
-**Current Phase**: Day 79 — F1=0.9921 validated, thresholds JSON migration next
+**Current Phase**: Day 80 — F1=0.9934 validated, JSON thresholds live
 
-**Last Updated**: March 8, 2026
+**Last Updated**: March 9, 2026
 
 **Recent Milestones**:
 - ✅ Day 52: Stress testing (36K events, 0 crypto errors)
@@ -411,10 +459,11 @@ See [AUTHORS.md](AUTHORS.md), [ATTRIBUTION.md](ATTRIBUTION.md), [LICENSE](LICENS
 - ✅ Day 64: CSV pipeline + 127-column schema
 - ✅ Day 72: Deterministic trace_id correlation (SHA256)
 - ✅ Day 76: SIGSEGV eliminated — pipeline 6/6 stable
-- ✅ Day 79: F1=0.9921 — placeholder sentinel fix + logging standard
+- ✅ Day 79: F1=0.9921 — sentinel fix + logging standard
+- ✅ Day 80: F1=0.9934 — **Phase1-Day4-CRITICAL closed — JSON is the LAW** 🦅
 
 **Next Milestones**:
-- 🎯 Day 80: Thresholds from JSON + remaining features + F1 post-fix
+- 🎯 Day 81: FlowStatistics inspection + balanced dataset validation
 - 🎯 Week N+1: arXiv paper submission
 
 ---

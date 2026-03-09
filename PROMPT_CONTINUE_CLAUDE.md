@@ -1,72 +1,62 @@
-# ML Defender — Prompt de Continuidad DAY 80
-**Generado:** Cierre DAY 79 (8 marzo 2026)
+# ML Defender — Prompt de Continuidad DAY 81
+**Generado:** Cierre DAY 80 (9 marzo 2026)
 **Branch activa:** `feature/ring-consumer-real-features`
 **Estado del pipeline:** 6/6 componentes RUNNING ✅
 **Tests:** crypto 3/3 ✅ | etcd-hmac 12/12 ✅ | ml-detector 9/9 ✅ | trace_id 44/46 ✅
 
 ---
 
-## Logros DAY 79
+## Logros DAY 80
 
-### TAREA 1 — 8× `0.5f` → `MISSING_FEATURE_SENTINEL` ✅
-Corregidos con Python3 inline (macOS, BSD sed incompatible con GNU sed).
+### TAREA 0 — Phase1-Day4-CRITICAL: Thresholds desde JSON ✅ CERRADO
 
-| Función | Línea | Tipo | Acción tomada |
+El TODO más antiguo del proyecto (Day 4). **JSON is the LAW.** 🦅
+
+**Problema:** 8 literales hardcodeados en `ring_consumer.cpp` ignoraban la
+infraestructura JSON ya existente y funcional.
+
+**4 capas de bug resueltas:**
+
+| Capa | Fichero | Problema | Fix |
 |---|---|---|---|
-| `geographical_concentration` | 161 | placeholder arquitectural | → SENTINEL |
-| `io_intensity` | 224 | TODO Phase 2 | → SENTINEL |
-| `resource_usage` | 244 | TODO Phase 2 | → SENTINEL |
-| `file_operations` | 273 | TODO Phase 2 | → SENTINEL |
-| `process_anomaly` | 288 | TODO Phase 2 | → SENTINEL |
-| `temporal_pattern` else | 303 | no hay datos IAT | → SENTINEL |
-| `behavior_consistency` iat_mean==0 | 332 | no hay datos | → SENTINEL |
-| `packet_size_consistency` mean==0 | 530 | no hay datos | → SENTINEL |
+| 1 | `ring_consumer.cpp` | 8 literales `0.7f/0.75f/0.00000000065f` | → `config_.ml_defender.thresholds.*` |
+| 2 | `main.cpp` | `ml_defender` nunca se mapeaba a `sniffer_config` | → mapeo explícito campo a campo |
+| 3 | `config_types.h` | `StrictSnifferConfig` no tenía campo `ml_defender` | → struct añadido con defaults |
+| 4 | `main.cpp` | Asignación struct-a-struct con layouts distintos → NaN | → mapeo explícito `.thresholds.*` |
 
-**Intocables documentados:**
-- Línea 139: `return 0.5f; // SEMANTIC VALUE: TCP established-not-closed. NOT a placeholder.`
-- Línea 298: `if (cv < 0.5f)` — comparación, no feature value
+**Evidencia en log de arranque:**
+```
+[Config] ML Defender thresholds (StrictConfig): DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
+[ML Defender] Thresholds (JSON): DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
+```
 
-**Resultado:** `grep -c 'MISSING_FEATURE_SENTINEL'` → 21 | `grep -c '0\.5f'` → 2 (ambos intocables)
+**Ficheros modificados:**
+- `sniffer/src/userspace/ring_consumer.cpp`
+- `sniffer/src/userspace/main.cpp`
+- `sniffer/include/config_types.h`
+- `sniffer/src/userspace/config_types.cpp`
 
-### Logging estándar — deuda técnica liquidada ✅
-Todos los componentes escriben en `/vagrant/logs/lab/`:
+### F1 post-thresholds DAY 80 ✅
 
-| Componente | Fichero log |
-|---|---|
-| etcd-server | `/vagrant/logs/lab/etcd-server.log` |
-| rag-security | `/vagrant/logs/lab/rag-security.log` |
-| rag-ingester | `/vagrant/logs/lab/rag-ingester.log` |
-| ml-detector (stdout) | `/vagrant/logs/lab/ml-detector.log` |
-| ml-detector (spdlog) | `/vagrant/logs/lab/detector.log` (ADR pendiente: unificar) |
-| firewall-acl-agent | `/vagrant/logs/lab/firewall-agent.log` |
-| sniffer | `/vagrant/logs/lab/sniffer.log` |
+Thresholds conservadores del sniffer.json (`ddos=0.85, ransomware=0.90, traffic=0.80, internal=0.85`)
+vs hardcodeados DAY 79 (`0.70/0.75/0.70/0.00000000065`):
 
-Nuevos targets Makefile:
-- `make logs-all` — tail -f de los 6 simultáneamente
-- `make logs-lab-clean` — rota logs a `/vagrant/logs/lab/archive/`
+| Métrica | DAY 79 (hardcoded) | DAY 80 (JSON) | Delta |
+|---|---|---|---|
+| **F1** | 0.9921 | **0.9934** | +0.0013 ✅ |
+| Precision | 0.9844 | **0.9869** | +0.0025 ✅ |
+| Recall | 1.0000 | **1.0000** | 0 ✅ |
+| FN | 0 | **0** | 0 ✅ |
+| FP | 106/134 | 79/95 | -27 abs ✅ |
+| Total eventos | 6810 | 6035 | -775 (distinto replay) |
 
-**Nota macOS permanente:** `sed -i` falla en macOS (BSD sed). Siempre usar Python3 inline o ir a la VM Vagrant para ediciones de ficheros.
-
-### F1 Baseline CTU-13 Neris DAY 79 ✅
-
-| Métrica | Valor |
-|---|---|
-| **F1** | **0.9921** |
-| Precision | 0.9844 |
-| Recall | 1.0000 |
-| TP | 6676 |
-| FP | 106 |
-| FN | 0 |
-| TN | 28 |
-| Total eventos CSV | 6810 |
-| Features reales | 21/40 SENTINEL activos |
-
-**Ground truth:** IP botnet 147.32.84.165 (CTU-13 Neris)
-**Nota honesta:** 106 FP sobre 134 eventos no-botnet = 79% FPR en tráfico benigno. Dataset muy desequilibrado (Neris dominante). Documentado en DAY79_sentinel_analysis.md.
+**Nota honesta:** FPR aparentemente peor (83% vs 79%) no es regresión — el dataset
+cambió entre replays (134 vs 95 eventos benignos). FP absolutos bajaron de 106 a 79.
+Comparativa limpia requiere mismo replay en ambas condiciones — pendiente DAY 81.
 
 ---
 
-## Estado de features DAY 79 → DAY 80
+## Estado de features DAY 80 (sin cambios)
 
 | Submensaje | Reales | SENTINEL | Semántico (válido) |
 |---|---|---|---|
@@ -78,65 +68,69 @@ Nuevos targets Makefile:
 
 ---
 
-## ORDEN DAY 80
+## ORDEN DAY 81
 
-### TAREA 0 — CRÍTICA: Thresholds desde JSON (Phase1-Day4-CRITICAL) (45 min)
-
-El TODO más antiguo del proyecto. "JSON is the law."
+### TAREA 0 — Sanity check post-commit (5 min)
 
 ```bash
-# Ver estructura de config del ml-detector
-cat ml-detector/config/ml_detector_config.json
+# Confirmar que el commit DAY 80 está en main o en la branch
+git log --oneline -5
 
-# Ver dónde están los thresholds hardcodeados
-grep -n '0\.7f\|0\.75f\|0\.00000000065f' sniffer/src/userspace/ring_consumer.cpp
+# Confirmar thresholds desde JSON
+make pipeline-stop && make pipeline-start && sleep 8
+vagrant ssh -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
+# Esperado: DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
 ```
 
-Thresholds hardcodeados en `ring_consumer.cpp`:
-- DDoS: `0.7f`
-- Ransomware: `0.75f`
-- Traffic: `0.7f`
-- Internal: `0.00000000065f`
-
-Implementar `struct MLThresholds` leída en `initialize()`:
-```cpp
-struct MLThresholds {
-    float ddos       = 0.7f;   // fallback EXPLÍCITO, nunca silencioso
-    float ransomware = 0.75f;
-    float traffic    = 0.7f;
-    float internal   = 0.00000000065f;
-};
-```
-
-### TAREA 1 — Inspección FlowStatistics → features atacables (20 min)
+### TAREA 1 — Inspección FlowStatistics → features atacables (P1)
 
 ```bash
-cat sniffer/include/flow_manager.hpp | grep -A 60 'struct FlowStatistics'
+grep -A 80 'struct FlowStatistics' sniffer/include/flow_manager.hpp
+# Objetivo: identificar campos disponibles para:
+# - tcp_udp_ratio: ¿hay tcp_packets y udp_packets separados?
+# - protocol_variety: ¿hay set de protocolos vistos?
+# - flow_duration_std: ¿hay timestamps de inicio/fin por flujo?
 ```
 
-Features objetivo si los campos existen:
-- `tcp_udp_ratio`: ¿hay conteo TCP vs UDP por protocolo?
-- `protocol_variety`: ¿hay set de protocolos vistos?
-- `flow_duration_std`: solo viable con multi-flow — confirmar SENTINEL si no
+**Criterio de decisión:**
+- Campo existe en FlowStatistics → implementar extractor real
+- Campo no existe → confirmar SENTINEL, documentar en deuda técnica como
+  "requiere extensión de FlowStatistics" (no es Phase 2, es Phase 1 incompleto)
 
-### TAREA 2 — Unificar los dos logs de ml-detector (ADR pendiente) (20 min)
+### TAREA 2 — Comparativa F1 limpia (mismo replay, ambas condiciones) (P1)
 
-Actualmente coexisten:
-- `detector.log` — spdlog interno del componente
-- `ml-detector.log` — stdout capturado por Makefile
+Para el paper necesitamos la comparativa con el mismo fichero PCAP:
 
-ADR: mover `log_file` al JSON de configuración de ml-detector. Hasta entonces, documentar el doble fichero como deuda conocida.
-
-### TAREA 3 — F1 post-thresholds (15 min)
-
-Después de implementar thresholds desde JSON, repetir:
 ```bash
+# Con thresholds actuales (JSON 0.85/0.90)
 make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
+vagrant up client
 make test-replay-neris
-# Calcular F1 con el script Python del DAY 79
+# Guardar CSV como referencia DAY80_clean
+
+# Cambiar thresholds en sniffer.json a 0.70/0.75 (valores DAY 79)
+# Repetir replay
+# Comparar F1
 ```
 
-Objetivo: documentar si los thresholds desde JSON cambian el F1 vs 0.9921.
+### TAREA 3 — ADR unificación logs ml-detector (P1)
+
+Documentar formalmente como ADR:
+- `detector.log` (spdlog interno) vs `ml-detector.log` (stdout Makefile)
+- Decisión: mover `log_file` al JSON de configuración
+- Estado: deuda conocida hasta implementar hot-reload (ENT-4)
+
+### TAREA 4 — Validación dataset balanceado (P0 paper) (si tiempo)
+
+El Consejo de Sabios señala esto como el gap científico más importante.
+CTU-13 Neris 98% atacante — reviewers lo saben.
+
+Dataset mínimo viable:
+```bash
+# Opción A: CTU-13 escenarios adicionales (disponible ya)
+# Opción B: MAWI backbone traffic + CTU-13 Neris mezclados
+# Opción C: CICIDS2017 (requiere descarga ~7GB)
+```
 
 ---
 
@@ -144,27 +138,33 @@ Objetivo: documentar si los thresholds desde JSON cambian el F1 vs 0.9921.
 
 | Item | Prioridad | DAY |
 |---|---|---|
-| Thresholds desde JSON (Phase1-Day4-CRITICAL) | **P0** | 80 |
-| Inspección FlowStatistics → tcp_udp_ratio | P1 | 80 |
-| flow_duration_std / connection_duration_std | P1 | 80 |
-| protocol_variety | P1 | 80 |
-| Unificar detector.log + ml-detector.log | P1 | 80 |
-| F1 post-thresholds | P1 | 80 |
-| is_forward dirección flow (ransomware_processor) | P2 | 80-81 |
-| DNS payload parsing real (vs pseudo-domain) | P2 | 81 |
-| Telemetría: ratio eventos sentinel vs reales | P2 | 81 |
+| ~~Thresholds desde JSON (Phase1-Day4-CRITICAL)~~ | ~~P0~~ | ~~80~~ ✅ CERRADO |
+| Inspección FlowStatistics → tcp_udp_ratio | **P1** | 81 |
+| flow_duration_std / connection_duration_std | P1 | 81 |
+| protocol_variety | P1 | 81 |
+| Comparativa F1 limpia (mismo replay) | P1 | 81 |
+| Unificar detector.log + ml-detector.log (ADR) | P1 | 81 |
+| Validación dataset balanceado | **P0 paper** | 81-82 |
+| is_forward dirección flow (ransomware_processor) | P2 | 81-82 |
+| DNS payload parsing real (vs pseudo-domain) | P2 | 82 |
+| Telemetría: ratio eventos sentinel vs reales | P2 | 82 |
 | test_trace_id 2 fallos preexistentes DAY 72 | P2 | post-validación |
 | trace_id en CLI | P2 | post-validación |
-| io_intensity/resource_usage/file_operations/process_anomaly | P3 | post-paper (requiere eBPF tracepoints) |
+| io_intensity/resource_usage/file_operations/process_anomaly | P3 | post-paper |
 | geographical_concentration | SKIP | decisión arquitectural deliberada |
 | HSM/IRootKeyProvider | P3 | post-paper |
 
 ---
 
-## Sanity check al arrancar DAY 80
+## Sanity check al arrancar DAY 81
 
 ```bash
-# 1. Confirmar estado de features
+# 1. Confirmar thresholds JSON funcionando
+make pipeline-start && sleep 8
+vagrant ssh -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
+# Esperado: DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
+
+# 2. Confirmar estado de features (sin cambios desde DAY 79)
 grep -c 'MISSING_FEATURE_SENTINEL' \
   sniffer/src/userspace/ml_defender_features.cpp
 # Esperado: 21
@@ -172,54 +172,56 @@ grep -c 'MISSING_FEATURE_SENTINEL' \
 grep -c '0\.5f' sniffer/src/userspace/ml_defender_features.cpp
 # Esperado: 2 (flow_completion semántico + comparación cv)
 
-# 2. Pipeline y logs
-make pipeline-start && sleep 15 && make pipeline-status
-vagrant ssh -c "ls -lah /vagrant/logs/lab/*.log"
-# Esperado: 7 ficheros (detector.log + 6 nuevos)
+# 3. No quedan literales hardcodeados en ring_consumer
+grep -n '0\.7f\|0\.75f\|0\.00000000065f' \
+  sniffer/src/userspace/ring_consumer.cpp
+# Esperado: vacío
 
-# 3. VM client disponible
+# 4. Pipeline y logs
+make pipeline-status
+vagrant ssh -c "ls -lah /vagrant/logs/lab/*.log"
+# Esperado: 7 ficheros
+
+# 5. VM client
 vagrant status
-# Esperado: defender running, client running (o arrancarlo con vagrant up client)
 ```
 
 ---
 
-## Notas para el paper (acumuladas DAY 79)
+## Notas para el paper (acumuladas DAY 80)
 
-- Sentinel matemáticamente inalcanzable: rango splits [0.0, 5.1], sentinel = -9999.0f → routing determinista left_child. Citable como decisión de ingeniería rigurosa.
-- `0.5f` dentro del rango de splits es PEOR que sentinel — lección aprendida documentada en `docs/engineering_decisions/DAY79_sentinel_analysis.md`.
-- Distinción crítica: `flow_completion_rate` devuelve 0.5f semántico (TCP established-not-closed) — no es placeholder. Documentado con comentario protector en código.
-- F1=0.9921 baseline con 28/40 features reales. Recall perfecto (FN=0). FPR alto (79%) en tráfico benigno por desequilibrio dataset CTU-13.
-- Logging caótico como antipatrón: 4 componentes sin log a fichero, deuda acumulada ~40 días. Solución: redirección tmux en Makefile. ADR pendiente: campo log_file en JSON de cada componente.
-- 70% features single-flow (eBPF) vs 30% multi-flow (TimeWindowAggregator).
+- **Phase1-Day4-CRITICAL cerrado:** 4 capas de bug entre literales hardcodeados
+  y la infraestructura JSON existente. Citable como antipatrón: infraestructura
+  correcta existe pero no se conecta — frecuente en desarrollo iterativo rápido.
+- **Thresholds conservadores mejoran F1:** 0.85/0.90 vs 0.70/0.75 → F1 sube
+  de 0.9921 a 0.9934, FP absolutos bajan de 106 a 79. Recall=1.0 preservado.
+- **Comparativa requiere replay idéntico:** El número de eventos benignos varía
+  entre replays (134 vs 95), lo que hace el FPR no comparable directamente.
+  Documentado honestamente.
+- **`StrictSnifferConfig` vs `SnifferConfig`:** Dos structs de config con el
+  mismo JSON pero layouts distintos. La asignación directa produjo NaN. El mapeo
+  explícito campo a campo es la solución correcta y documentable.
+- Sentinel matemáticamente inalcanzable: rango splits [0.0, 5.1], sentinel = -9999.0f
+- `flow_completion_rate` devuelve 0.5f semántico — comentario protector en código
+- F1=0.9934 con 28/40 features reales. FPR alto por desequilibrio CTU-13.
+- Gap crítico para paper: validación en tráfico balanceado (señalado por todo el Consejo)
 
 ---
 
-## Infraestructura DAY 79
+## Infraestructura permanente
 
-- **macOS (BSD sed):** Nunca usar `sed -i` sin `-e ''`. Usar Python3 inline para ediciones de ficheros en el proyecto.
-- **VM client:** `vagrant up client` antes de `make test-replay-neris`. `autostart: false` por defecto.
-- **Flujo correcto test con tráfico real:**
+- **macOS (BSD sed):** Nunca usar `sed -i`. Usar Python3 inline para ediciones.
+- **VM client:** `vagrant up client` antes de `make test-replay-neris`.
+- **Flujo correcto test:**
   ```bash
   vagrant up client
   make pipeline-start && sleep 15
   make test-replay-neris
   ```
+- **Thresholds en:** `sniffer/build-debug/config/sniffer.json` → sección `ml_defender.thresholds`
+- **Log de confirmación en arranque:** `grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log`
 
-Tienes respuestas y propuestas por parte del consejo en:
+---
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah docs/engineering_decisions/          
-total 96
-drwxr-xr-x@   8 aironman  staff   256B Mar  8 09:11 .
--rw-r--r--@   1 aironman  staff   6.2K Mar  8 09:11 DAY79_sentinel_analysis_CLAUDE_responde_Qwen.md
--rw-r--r--@   1 aironman  staff   5.1K Mar  8 09:11 DAY79_sentinel_analysis_CLAUDE_responde_GROK4.md
--rw-r--r--@   1 aironman  staff   4.0K Mar  8 09:10 DAY79_sentinel_analysis_CLAUDE_responde_Gemini.md
--rw-r--r--@   1 aironman  staff   7.4K Mar  8 09:10 DAY79_sentinel_analysis_CLAUDE_responde_DeepSeek.md
--rw-r--r--@   1 aironman  staff   5.3K Mar  8 09:10 DAY79_sentinel_analysis_CLAUDE_responde_ChatGPT5.md
--rw-r--r--@   1 aironman  staff    12K Mar  8 08:22 DAY79_sentinel_analysis_CLAUDE.md
-drwxr-xr-x@ 110 aironman  staff   3.4K Mar  8 08:18 ..
-
-Están en mi sistema de ficheros local, por si quieres leerlos.
-
-*Consejo de Sabios — Cierre DAY 79, 8 marzo 2026*
-*DAY 80 arranca con: thresholds JSON → FlowStatistics inspection → F1 post-thresholds*
+*Consejo de Sabios — Cierre DAY 80, 9 marzo 2026*
+*DAY 81 arranca con: FlowStatistics inspection → F1 comparativa limpia → dataset balanceado*

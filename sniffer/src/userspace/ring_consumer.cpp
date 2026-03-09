@@ -195,6 +195,12 @@ bool RingBufferConsumer::initialize(int ring_fd, std::shared_ptr<ThreadManager> 
     // Initialize batching
     current_batch_ = std::make_unique<EventBatch>(get_optimal_batch_size());
 
+    std::cout << "[ML Defender] Thresholds (JSON): "
+              << "DDoS=" << config_.ml_defender.thresholds.ddos
+              << " Ransomware=" << config_.ml_defender.thresholds.ransomware
+              << " Traffic=" << config_.ml_defender.thresholds.traffic
+              << " Internal=" << config_.ml_defender.thresholds.internal
+              << std::endl;
     initialized_ = true;
     std::cout << "[INFO] Enhanced RingBufferConsumer initialized successfully" << std::endl;
     std::cout << "  - Ring buffer FD: " << ring_fd_ << std::endl;
@@ -1461,7 +1467,7 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
     //   proto_event.set_ddos_score(-1.0f)       // -1.0f = no inferido ([0,1] = valido)
     //   proto_event.set_ransomware_score(-1.0f)
     //   proto_event.set_final_classification("PENDING")
-    // DAY 78 TODO: cargar thresholds desde JSON (ver TODO Phase1-Day4-CRITICAL)
+    // DAY 80 ✅ thresholds leídos desde JSON vía config_.ml_defender (Phase1-Day4-CRITICAL CERRADO)
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -1484,14 +1490,14 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
     // ========================================================================
     // PHASE 3: Threshold Application & Classification
     // DAY 78: scores escritos al proto con sentinel -1.0f para no inferido
-    // TODO(DAY79): cargar thresholds desde JSON (Phase1-Day4-CRITICAL)
+    // DAY 80 ✅ thresholds leídos desde config_.ml_defender.thresholds (JSON is the LAW)
     // ========================================================================
     double threat_score = -1.0;
     std::string classification = "BENIGN";
     std::string category = "NORMAL";
 
     // DDoS
-    if (ddos_pred.is_ddos(0.7f)) {
+    if (ddos_pred.is_ddos(config_.ml_defender.thresholds.ddos)) {
         stats_.ddos_attacks_detected++;
         threat_score = ddos_pred.ddos_prob;
         classification = "MALICIOUS";
@@ -1500,7 +1506,7 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
     }
 
     // Ransomware (solo si no hay DDoS ya clasificado)
-    if (ransomware_pred.is_ransomware(0.75f)) {
+    if (ransomware_pred.is_ransomware(config_.ml_defender.thresholds.ransomware)) {
         stats_.ransomware_attacks_detected++;
         if (classification != "MALICIOUS") {
             threat_score = ransomware_pred.ransomware_prob;
@@ -1514,7 +1520,7 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
     proto_event.mutable_ml_analysis()->set_traffic_context(
         traffic_pred.probability >= 0.5f ? "INTERNAL" : "EXTERNAL"
     );
-    if (traffic_pred.probability >= 0.7f) {
+    if (traffic_pred.probability >= config_.ml_defender.thresholds.traffic) {
         stats_.suspicious_traffic_detected++;
         if (classification == "BENIGN") {
             threat_score = traffic_pred.probability;
@@ -1524,7 +1530,7 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
     }
 
     // Internal anomaly
-    if (internal_pred.is_suspicious(0.00000000065f)) {
+    if (internal_pred.is_suspicious(config_.ml_defender.thresholds.internal)) {
         stats_.internal_anomalies_detected++;
         if (classification == "BENIGN") {
             threat_score = internal_pred.suspicious_prob;
@@ -1551,10 +1557,10 @@ void RingBufferConsumer::run_ml_detection(protobuf::NetworkSecurityEvent& proto_
 
     // Optional: Log detections if verbosity enabled
     if (g_verbosity >= FeatureLogger::VerbosityLevel::GROUPED) {
-        bool any_detection = (ddos_pred.is_ddos(0.7f) ||
-                             ransomware_pred.is_ransomware(0.75f) ||
-                             traffic_pred.probability >= 0.7f ||
-                             internal_pred.is_suspicious(0.00000000065f));
+        bool any_detection = (ddos_pred.is_ddos(config_.ml_defender.thresholds.ddos) ||
+                             ransomware_pred.is_ransomware(config_.ml_defender.thresholds.ransomware) ||
+                             traffic_pred.probability >= config_.ml_defender.thresholds.traffic ||
+                             internal_pred.is_suspicious(config_.ml_defender.thresholds.internal));
 
         if (any_detection) {
             std::cout << "[ML Defender] Detection: "

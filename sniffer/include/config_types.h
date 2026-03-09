@@ -348,6 +348,13 @@ struct StrictSnifferConfig {
             bool track_activation_rate;
         } performance;
     } fast_detector;
+    // ML Defender thresholds — DAY 80 (Phase1-Day4-CRITICAL CERRADO)
+    struct {
+        float ddos       = 0.85f;
+        float ransomware = 0.90f;
+        float traffic    = 0.80f;
+        float internal   = 0.85f;
+    } ml_defender;
 
 };
 

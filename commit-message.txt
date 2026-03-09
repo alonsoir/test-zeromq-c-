@@ -1,43 +1,14 @@
-fix(features): replace 0.5f placeholders with MISSING_FEATURE_SENTINEL + logging standard
+git add sniffer/src/userspace/ring_consumer.cpp \
+        sniffer/src/userspace/main.cpp \
+        sniffer/include/config_types.h \
+        sniffer/src/userspace/config_types.cpp
 
-DAY 79 — F1=0.9921 baseline CTU-13 Neris (Recall=1.0000, FN=0)
+git commit -m "feat(ml-detector): thresholds desde JSON - Phase1-Day4-CRITICAL CERRADO
 
-Feature extractor fix:
-- Replace 8x return 0.5f placeholders with MISSING_FEATURE_SENTINEL (-9999.0f)
-  Functions: geographical_concentration, io_intensity, resource_usage,
-  file_operations, process_anomaly, temporal_pattern(else),
-  behavior_consistency(iat_mean==0), packet_size_consistency(mean==0)
-- Preserve flow_completion_rate 0.5f (semantic: TCP established-not-closed)
-- Preserve cv < 0.5f comparison (not a feature value)
-- MISSING_FEATURE_SENTINEL instances: 13 → 21
-- 0.5f instances: 10 → 2 (both intentional)
+- ring_consumer.cpp: 8 literales hardcodeados → config_.ml_defender.thresholds.*
+- main.cpp: mapeo explícito StrictSnifferConfig.ml_defender → SnifferConfig
+- config_types.h: struct ml_defender añadido a StrictSnifferConfig
+- config_types.cpp: parser ml_defender desde sniffer.json
 
-Rationale: 0.5f inside RandomForest split domain [0.0, 5.1] introduces
-non-deterministic spurious variance. MISSING_FEATURE_SENTINEL (-9999.0f)
-is 3 orders of magnitude outside domain → deterministic left_child routing.
-See docs/engineering_decisions/DAY79_sentinel_analysis.md
-
-Logging standardization (Makefile):
-- Add >> /vagrant/logs/lab/COMPONENT.log 2>&1 to all 6 tmux start targets
-- New target: make logs-all (tail -f all 6 simultaneously)
-- New target: make logs-lab-clean (rotate to archive/)
-- Standard: one component, one file, predictable name
-
-Validation:
-- make test-replay-neris (CTU-13 Neris, 492K packets, 19135 flows)
-- F1=0.9921 | Precision=0.9844 | Recall=1.0000
-- TP=6676 FP=106 FN=0 TN=28 | Total=6810 events
-- Ground truth: infected host 147.32.84.165
-
-Documentation:
-- docs/engineering_decisions/DAY79_sentinel_analysis.md (paper material)
-- README.md updated (Day 79, F1 badge, logging standard)
-- DAY_80_prompt.md generated
-
-Pending (DAY 80):
-- Thresholds from JSON (Phase1-Day4-CRITICAL)
-- FlowStatistics inspection → tcp_udp_ratio viability
-- F1 post-thresholds
-
-Co-authored-by: Alonso <alonsoir@gmail.com>, Claude <claude@anthropic.com>
-Co-authored-by: Consejo de Sabios <grok+chatgpt5+deepseek+qwen>
+Resultado DAY 80: F1=0.9934 P=0.9869 R=1.0000 FN=0
+JSON is the LAW. 🦅"
