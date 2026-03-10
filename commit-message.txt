@@ -1,14 +1,44 @@
-git add sniffer/src/userspace/ring_consumer.cpp \
-        sniffer/src/userspace/main.cpp \
-        sniffer/include/config_types.h \
-        sniffer/src/userspace/config_types.cpp
+feat(experiments): F1 controlled comparison + experiment tracking infrastructure
 
-git commit -m "feat(ml-detector): thresholds desde JSON - Phase1-Day4-CRITICAL CERRADO
+DAY 81 — Via Appia Quality
 
-- ring_consumer.cpp: 8 literales hardcodeados → config_.ml_defender.thresholds.*
-- main.cpp: mapeo explícito StrictSnifferConfig.ml_defender → SnifferConfig
-- config_types.h: struct ml_defender añadido a StrictSnifferConfig
-- config_types.cpp: parser ml_defender desde sniffer.json
+## Summary
+First controlled F1 comparison (same PCAP, two threshold conditions).
+Experiment tracking infrastructure created. ADR-005 formalized.
 
-Resultado DAY 80: F1=0.9934 P=0.9869 R=1.0000 FN=0
-JSON is the LAW. 🦅"
+## F1 Results (CTU-13 Neris, botnet-capture-20110810-neris.pcap)
+- Condition A (prod JSON 0.85/0.90/0.80/0.85): F1=1.0000, FP=0, FPR=0.0000
+- Condition B (legacy  0.70/0.75/0.70/0.70):  F1=0.9976, FP=1, FPR=0.0002
+- Conclusion: conservative thresholds eliminate sole FP without sacrificing recall
+
+## New files
+- docs/experiments/f1_replay_log.csv    — source of truth, one row per replay
+- docs/experiments/f1_replay_log.md     — human-readable table + replay protocol
+- scripts/calculate_f1_neris.py         — F1 calculator with strict IPv4 regex
+- scripts/pipeline_health.sh            — VM + component status monitor
+- docs/adr/ADR-005-log-unification-ml-detector.md
+
+## Technical findings
+- FlowStatistics inspection: 4 features blocked at struct level (not protobuf)
+  tcp_udp_ratio, flow_duration_std, protocol_variety, connection_duration_std
+  → documented as DEBT-PHASE2 (require TimeWindowAggregator multi-flow)
+  → flow_duration_microseconds (single-flow) already implemented ✅
+- sniffer/config/sniffer.json is source of truth
+  sniffer/build-debug/config/ is generated artifact — never modify directly
+- ML RandomForest max score = 0.6607 (below threshold 0.70)
+  Fast Detector handles all Neris detections — documented for paper
+- pipeline_health.sh: pgrep runs on macOS not in VM — fix pending DAY 82
+
+## Known limitations (documented honestly)
+- FN=0 is upper bound — full per-event IP table needed for confirmation
+- Recall=1.0 not confirmed without per-event IP table
+- Balanced dataset validation pending (CTU-13 Neris 98% malicious) — P0 DAY 82
+- Ground truth for this PCAP: 147.32.84.165 only (.191/.192 absent)
+
+## ADR-005
+detector.log (spdlog) = operational source of truth
+ml-detector.log (Makefile stdout) = startup only
+Unification: post-paper with ENT-4 hot-reload
+
+Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
+Co-authored-by: Consejo de Sabios <council@ml-defender.dev>

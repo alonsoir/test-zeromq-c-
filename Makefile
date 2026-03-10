@@ -37,7 +37,7 @@
 .PHONY: tsan-all tsan-quick tsan-clean tsan-summary tsan-status
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
-.PHONY: etcd-server-start rag-start rag-stop dev-setup-tools
+.PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
 
 # ============================================================================
 # ML Defender Pipeline - Master Makefile
@@ -490,6 +490,9 @@ logs-lab-clean:
 	@echo '🧹 Rotating pipeline logs...'
 	@vagrant ssh -c "mkdir -p /vagrant/logs/lab/archive && mv /vagrant/logs/lab/*.log /vagrant/logs/lab/archive/ 2>/dev/null || true"
 	@echo '✅ Logs rotated to /vagrant/logs/lab/archive/'
+
+pipeline-health:
+	@bash scripts/pipeline_health.sh
 
 pipeline-start: etcd-server-start
 	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."

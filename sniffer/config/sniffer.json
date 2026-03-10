@@ -16,13 +16,11 @@
     "mode": "kernel_user_hybrid",
     "kernel_version_required": "6.1.0"
   },
-
   "deployment": {
     "_comment": "Dual-NIC deployment configuration - Day 11 Stable Testing",
     "_architecture": "Host-based IDS (WAN eth1) + Gateway IDS (LAN eth2) simultaneous operation",
     "_vagrant_mapping": "eth0=NAT, eth1=192.168.56.20 (WAN), eth2=192.168.100.1 (LAN, Gateway)",
     "_fix_note": "eth2 is gateway after removing public_network bridge (was eth3 in Day 8)",
-
     "mode": "dual",
     "_mode_options": [
       "host-only",
@@ -36,7 +34,6 @@
       "dual": "Dual NIC - simultaneous host protection + gateway inspection",
       "validation": "Testing mode - libpcap replay support for PCAP validation"
     },
-
     "host_interface": {
       "name": "eth1",
       "role": "wan",
@@ -46,9 +43,8 @@
       "promiscuous": true,
       "capture_direction": "ingress_only",
       "_behavior": "Captures packets DESTINED to this host (interface_mode=1)",
-      "_day11_test": "Attack from OSX: nmap, hping3 → 192.168.56.20"
+      "_day11_test": "Attack from OSX: nmap, hping3 \u2192 192.168.56.20"
     },
-
     "gateway_interface": {
       "name": "eth2",
       "role": "lan",
@@ -61,7 +57,6 @@
       "_day11_test": "PCAP replay: tcpreplay -i eth1 --mbps=1-10 dataset.pcap from client VM",
       "_fix": "Changed from eth3 to eth2 after removing public_network bridge"
     },
-
     "network_settings": {
       "enable_ip_forwarding": true,
       "enable_nat": false,
@@ -70,7 +65,6 @@
       "mtu": 1500,
       "txqueuelen": 10000
     },
-
     "performance": {
       "expected_throughput_gbps": 0.1,
       "max_pps_per_interface": 10000,
@@ -81,14 +75,12 @@
       },
       "_day11_reality": "XDP Generic in VirtualBox: ~1-5 Mbps sustained, ~1000 pps"
     },
-
     "detection": {
       "differentiate_by_interface": true,
       "tag_events_with_source": true,
       "interface_specific_thresholds": false,
       "_future": "Potential for different thresholds WAN vs LAN"
     },
-
     "hardware_requirements": {
       "_minimum_testing": {
         "cpu_cores": 4,
@@ -111,7 +103,6 @@
         "virtualbox_xdp_generic": "~1-5 Mbps (Day 11 lab environment)"
       }
     },
-
     "validation_mode": {
       "enabled": false,
       "libpcap_replay": true,
@@ -121,10 +112,8 @@
       "_day11": "Client VM replays via eth1, captured on defender eth2 gateway"
     }
   },
-
   "node_id": "cpp_sniffer_v33_day12",
   "cluster_name": "ml-defender-dual-nic-stable",
-
   "profiles": {
     "lab": {
       "capture_interface": "eth1",
@@ -161,25 +150,23 @@
       "_day11_config": "6 workers for dual-NIC load (8GB RAM, 6 cores available, eth2 gateway)"
     }
   },
-
   "profile": "dual_nic",
-
   "capture": {
     "mode": "ebpf_skb",
     "xdp_flags": [
       "XDP_FLAGS_UPDATE_IF_NOEXIST"
     ],
     "promiscuous_mode": true,
-
     "_comment_filter": "Hybrid filtering system v3.2 - Dynamic BPF Maps",
     "filter": {
       "version": "1.0",
       "mode": "hybrid",
-      "excluded_ports": [22],
+      "excluded_ports": [
+        22
+      ],
       "included_ports": [],
       "default_action": "capture"
     },
-
     "buffer_size": 65536,
     "min_packet_size": 20,
     "max_packet_size": 65536,
@@ -199,7 +186,6 @@
       "umem_size": 16777216
     }
   },
-
   "buffers": {
     "ring_buffer_entries": 65536,
     "user_processing_queue_depth": 300,
@@ -209,7 +195,6 @@
     "statistics_buffer_entries": 10000,
     "batch_processing_size": 4
   },
-
   "threading": {
     "ring_consumer_threads": 1,
     "feature_processor_threads": 1,
@@ -218,10 +203,23 @@
     "total_worker_threads": 4,
     "cpu_affinity": {
       "enabled": false,
-      "ring_consumers": [0, 1],
-      "processors": [2, 3, 4, 5],
-      "zmq_senders": [6, 7],
-      "statistics": [8]
+      "ring_consumers": [
+        0,
+        1
+      ],
+      "processors": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "zmq_senders": [
+        6,
+        7
+      ],
+      "statistics": [
+        8
+      ]
     },
     "thread_priorities": {
       "ring_consumers": "high",
@@ -229,7 +227,6 @@
       "zmq_senders": "normal"
     }
   },
-
   "kernel_space": {
     "ebpf_program": "sniffer.bpf.o",
     "xdp_mode": "skb",
@@ -259,7 +256,6 @@
       "map_update_batch_size": 100
     }
   },
-
   "user_space": {
     "flow_table_size": 1000000,
     "time_window_buffer_size": 10000,
@@ -275,7 +271,6 @@
       "gc_interval_seconds": 60
     }
   },
-
   "feature_groups": {
     "ddos_feature_group": {
       "count": 83,
@@ -298,7 +293,6 @@
       "description": "Internal traffic classification features"
     }
   },
-
   "sniffer_time_windows": {
     "flow_tracking_window_seconds": 300,
     "statistics_collection_window_seconds": 60,
@@ -307,7 +301,6 @@
     "max_flows_per_window": 100000,
     "window_overlap_seconds": 10
   },
-
   "network": {
     "output_socket": {
       "address": "127.0.0.1",
@@ -317,7 +310,6 @@
       "high_water_mark": 1000
     }
   },
-
   "zmq": {
     "worker_threads": 1,
     "io_thread_pools": 1,
@@ -351,7 +343,6 @@
       "max_batches_queued": 100
     }
   },
-
   "transport": {
     "compression": {
       "enabled": true,
@@ -373,10 +364,11 @@
       "curve_secret_key": null
     }
   },
-
   "etcd": {
     "enabled": true,
-    "endpoints": ["localhost:2379"],
+    "endpoints": [
+      "localhost:2379"
+    ],
     "connection_timeout_ms": 5000,
     "retry_attempts": 3,
     "retry_interval_ms": 1000,
@@ -387,7 +379,6 @@
     "heartbeat_interval_seconds": 30,
     "lease_ttl_seconds": 60
   },
-
   "processing": {
     "kernel_processing": {
       "max_map_entries": 1000000,
@@ -413,7 +404,6 @@
       "simd_optimization": true
     }
   },
-
   "auto_tuner": {
     "enabled": false,
     "calibration_on_startup": true,
@@ -422,7 +412,6 @@
     "safety_margin_factor": 1.2,
     "feature_placement_strategy": "cost_benefit_optimization"
   },
-
   "monitoring": {
     "stats_interval_seconds": 30,
     "performance_tracking": true,
@@ -449,7 +438,6 @@
       "min_compression_ratio": 0.3
     }
   },
-
   "logging": {
     "level": "INFO",
     "file": "/vagrant/logs/lab/sniffer.log",
@@ -460,7 +448,6 @@
     "include_thread_stats": true,
     "_day11_note": "Logs to /vagrant/logs/lab/ for easy access from host OSX"
   },
-
   "protobuf": {
     "schema_version": "v3.1.0",
     "validate_before_send": true,
@@ -469,7 +456,6 @@
     "pool_size": 1000,
     "reuse_objects": true
   },
-
   "security": {
     "input_validation": {
       "enabled": false,
@@ -479,7 +465,6 @@
       "sanitize_inputs": true
     }
   },
-
   "backpressure": {
     "enabled": false,
     "kernel_backpressure": {
@@ -495,7 +480,6 @@
       "recovery_timeout": 30
     }
   },
-
   "ml_defender": {
     "_comment": "ML Defender Embedded C++20 Detectors - Day 11 Conservative Thresholds",
     "_source": "Single source of truth for ML Tricapa detection thresholds",
@@ -503,8 +487,8 @@
     "_day11_goal": "Validate models with real-world traffic (CTU-13, tcpreplay samples)",
     "thresholds": {
       "ddos": 0.85,
-      "ransomware": 0.90,
-      "traffic": 0.80,
+      "ransomware": 0.9,
+      "traffic": 0.8,
       "internal": 0.85
     },
     "validation": {
@@ -513,25 +497,20 @@
       "fallback_threshold": 0.75
     }
   },
-
   "fast_detector": {
     "_comment": "Fast Path Heuristic Detection (Sniffer-side) - Day 12 Externalized Config",
     "_philosophy": "Via Appia Quality: No hardcoded thresholds, JSON is the law",
     "_performance": "Sub-microsecond heuristics for obvious threats (C&C, lateral movement)",
     "_activation": "Triggers on specific ransomware/C&C patterns detected by TimeWindowAggregator",
     "_scope": "Selective detection - only activates when suspicious patterns exceed thresholds",
-
     "enabled": true,
-
     "ransomware": {
       "_description": "Ransomware-specific heuristics (C&C communication, lateral movement, exfiltration)",
-
       "scores": {
         "high_threat": 0.95,
-        "suspicious": 0.70,
+        "suspicious": 0.7,
         "alert": 0.75
       },
-
       "activation_thresholds": {
         "_comment": "Conditions that trigger Fast Detector (ANY condition = activation)",
         "external_ips_30s": 15,
@@ -542,7 +521,6 @@
         "burst_connections": 50,
         "unique_destinations_30s": 30
       },
-
       "classification": {
         "_comment": "High threat if MULTIPLE strong indicators (ExtIPs OR SMB diversity)",
         "high_threat_conditions": [
@@ -555,13 +533,12 @@
         ]
       }
     },
-
     "ddos": {
       "_description": "DDoS-specific heuristics (future - currently not implemented)",
       "_status": "PLANNED",
       "scores": {
         "high_threat": 0.95,
-        "suspicious": 0.70
+        "suspicious": 0.7
       },
       "activation_thresholds": {
         "syn_flood_rate": 10000,
@@ -569,7 +546,6 @@
         "icmp_flood_rate": 5000
       }
     },
-
     "logging": {
       "_comment": "Detailed logging for F1-score validation",
       "log_activations": true,
@@ -578,7 +554,6 @@
       "log_frequency_seconds": 1,
       "_day12_goal": "Log every detection for precision/recall calculation vs ground truth"
     },
-
     "performance": {
       "max_latency_us": 1,
       "enable_metrics": true,
