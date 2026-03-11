@@ -98,6 +98,9 @@ All code, all analysis scripts, all experiments, and all failures are documented
 | Features active | 28/40 real (11 sentinel Phase 2, 1 semantic) |
 | Pipeline components | 6/6 RUNNING |
 | Thresholds | From JSON ✅ (Phase1-Day4-CRITICAL closed DAY 80) |
+| **ML max score (smallFlows benigno, 1209 flows)** | **0.3818** (0 attacks ✅) |
+| **ML max score (bigFlows mixed, 40467 flows)** | **0.6897** (2 attacks conf≥0.65) |
+| Fast Detector FPR (benign Windows traffic) | High — DEBT-FD-001 (ADR-006) |
 
 ### Threshold Comparison (DAY 81 — same PCAP, controlled)
 
@@ -114,6 +117,33 @@ Conservative thresholds eliminate the sole false positive without sacrificing re
 - CTU-13 Neris is 98% malicious traffic — balanced dataset validation pending (P0)
 - ML RandomForest max score = 0.6607 (below threshold) — Fast Detector handles all detections in Neris
 - 11/40 ML features use sentinel values — Phase 2 pending
+- Fast Detector Path A uses hardcoded thresholds (DAY 13 debt) — FPR high on Windows CDN/update traffic (DEBT-FD-001, ADR-006, fix PHASE2)
+- bigFlows.pcap ground truth unknown (different network from Neris binetflow)
+- Three distinct attack counters in ml-detector — semantically correct but undocumented until DAY 82
+
+### Fast Detector Dual-Path Architecture (discovered DAY 82)
+
+Two independent alert paths coexist in `ring_consumer.cpp`:
+
+**Path A** (`is_suspicious()`, DAY 13): evaluated per-packet, uses compiled constants
+from `fast_detector.hpp` (`THRESHOLD_EXTERNAL_IPS=10`, `WINDOW_NS=10s`).
+Ignores `sniffer.json`. Source of FPs on Windows CDN traffic. **DEBT-FD-001.**
+
+**Path B** (`send_ransomware_features()`, DAY 80): evaluated on temporal aggregates,
+reads `sniffer.json` (`external_ips_30s=15`). Correct JSON-driven behavior.
+
+Fix (PHASE2): inject `FastDetectorConfig` into `FastDetector` constructor.
+Full analysis: `docs/adr/ADR-006-fast-detector-hardcoded-thresholds.md`
+
+### ML Detector: Three Attack Counters
+
+| Signal | Condition | Semantic |
+|---|---|---|
+| log `🚨 ATTACK` | `label_l1 == 1` | RandomForest binary vote |
+| `stats_.attacks_detected` | `label_l1==1 AND conf >= 0.65` | Sufficient confidence |
+| `final_classification=MALICIOUS` | `final_score >= malicious_threshold` | Final decision |
+
+`level1_attack=0.65` is in `ml-detector/config/ml_detector_config.json`.
 
 ---
 
@@ -255,6 +285,8 @@ Protocol defined in `docs/experiments/f1_replay_log.md`.
 | UNKNOWN_DAY80 ⚠️ | 80 | 0.85/0.90 JSON | 0.9934 | 0.9869 | 1.0000 | Replay unknown ⚠️ |
 | DAY81_thresholds_085090 | 81 | 0.85/0.90 JSON | 1.0000 | 1.0000 | 1.0000 | First clean replay ✅ |
 | DAY81_condicionB | 81 | 0.70/0.75 legacy | 0.9976 | 0.9951 | 1.0000 | Controlled comparison ✅ |
+| DAY82-001 | 82 | 0.85/0.90 JSON | — | — | — | smallFlows benign Windows: ML attacks=0 ✅, FD 3741 FPs (DEBT-FD-001) |
+| DAY82-002 | 82 | 0.85/0.90 JSON | — | — | — | bigFlows: ML 7 label=1, 2 attacks (conf≥0.65), max_score=0.6897, GT unknown |
 
 ---
 
@@ -339,8 +371,10 @@ MIT License — See [LICENSE](LICENSE)
 - ✅ Day 79: F1=0.9921 — sentinel fix + logging standard
 - ✅ Day 80: F1=0.9934 — **JSON is the LAW** 🦅
 - ✅ Day 81: F1 comparativa limpia — thresholds empíricamente justificados ✅
+- ✅ Day 82: DEBT-FD-001 discovered — FastDetector Path A hardcoded since DAY 13 (ADR-006)
+- ✅ Day 82: Balanced dataset replays (smallFlows + bigFlows) — ML correct on benign traffic
 
-**Next**: Day 82 — balanced dataset validation (P0 paper)
+**Next**: Day 83 — bigFlows ground truth confirmation + CSV E2E + merge criteria
 
 ---
 

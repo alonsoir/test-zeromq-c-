@@ -1,44 +1,52 @@
-feat(experiments): F1 controlled comparison + experiment tracking infrastructure
+DAY 82: Balanced dataset validation + DEBT-FD-001 discovery
 
-DAY 81 — Via Appia Quality
+Executed first controlled replays on CTU-13 smallFlows and bigFlows.
+Identified a historic architectural debt in FastDetector (DAY 13).
+Documented three distinct attack counter semantics in ml-detector.
 
-## Summary
-First controlled F1 comparison (same PCAP, two threshold conditions).
-Experiment tracking infrastructure created. ADR-005 formalized.
+=== EXPERIMENTS ===
+- DAY82-001: smallFlows.pcap (14261 pkts, 1209 flows)
+  * ML attacks=0, ML max_score=0.3818 ✅ (correct on benign traffic)
+  * Fast Detector: 3741 FPs (Microsoft CDN, Google, Windows Update)
+  * Root cause: DEBT-FD-001 (see below)
+  * Ground truth: 147.32.84.165 absent from this PCAP
 
-## F1 Results (CTU-13 Neris, botnet-capture-20110810-neris.pcap)
-- Condition A (prod JSON 0.85/0.90/0.80/0.85): F1=1.0000, FP=0, FPR=0.0000
-- Condition B (legacy  0.70/0.75/0.70/0.70):  F1=0.9976, FP=1, FPR=0.0002
-- Conclusion: conservative thresholds eliminate sole FP without sacrificing recall
+- DAY82-002: bigFlows.pcap (791615 pkts, 40467 flows)
+  * ML label=1 (log): 7 events | attacks_detected (conf>=0.65): 2
+  * ML max_score=0.6897 (up from 0.6607 in Neris — more flows = more signal)
+  * Fast Detector: 31065 alerts
+  * Ground truth: 172.16.133.x not in Neris binetflow — unknown
 
-## New files
-- docs/experiments/f1_replay_log.csv    — source of truth, one row per replay
-- docs/experiments/f1_replay_log.md     — human-readable table + replay protocol
-- scripts/calculate_f1_neris.py         — F1 calculator with strict IPv4 regex
-- scripts/pipeline_health.sh            — VM + component status monitor
-- docs/adr/ADR-005-log-unification-ml-detector.md
+=== DEBT-FD-001: Fast Detector hardcoded thresholds ===
+FastDetector::is_suspicious() (Path A, DAY 13) uses compiled constants,
+ignoring sniffer.json entirely. Violates "JSON is the law".
 
-## Technical findings
-- FlowStatistics inspection: 4 features blocked at struct level (not protobuf)
-  tcp_udp_ratio, flow_duration_std, protocol_variety, connection_duration_std
-  → documented as DEBT-PHASE2 (require TimeWindowAggregator multi-flow)
-  → flow_duration_microseconds (single-flow) already implemented ✅
-- sniffer/config/sniffer.json is source of truth
-  sniffer/build-debug/config/ is generated artifact — never modify directly
-- ML RandomForest max score = 0.6607 (below threshold 0.70)
-  Fast Detector handles all Neris detections — documented for paper
-- pipeline_health.sh: pgrep runs on macOS not in VM — fix pending DAY 82
+  fast_detector.hpp:
+    THRESHOLD_EXTERNAL_IPS = 10  (JSON has external_ips_30s: 15 — Path B only)
+    THRESHOLD_SMB_CONNS    = 3   (JSON has smb_diversity: 10 — Path B only)
+    THRESHOLD_PORT_SCAN    = 10  (no JSON equivalent)
+    THRESHOLD_RST_RATIO    = 0.2 (no JSON equivalent)
+    WINDOW_NS              = 10s (no JSON equivalent)
 
-## Known limitations (documented honestly)
-- FN=0 is upper bound — full per-event IP table needed for confirmation
-- Recall=1.0 not confirmed without per-event IP table
-- Balanced dataset validation pending (CTU-13 Neris 98% malicious) — P0 DAY 82
-- Ground truth for this PCAP: 147.32.84.165 only (.191/.192 absent)
+Dual-path architecture:
+  Path A: per-packet, hardcoded constants, 10s window → [FAST ALERT] log
+  Path B: aggregated, JSON config, 30s window → send_ransomware_features()
 
-## ADR-005
-detector.log (spdlog) = operational source of truth
-ml-detector.log (Makefile stdout) = startup only
-Unification: post-paper with ENT-4 hot-reload
+Fix target: PHASE2. Migrate to FastDetector constructor injection.
+Documented in docs/adr/ADR-006-fast-detector-hardcoded-thresholds.md
 
-Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
-Co-authored-by: Consejo de Sabios <council@ml-defender.dev>
+=== ML DETECTOR: Three counters, three semantics ===
+  log "🚨 ATTACK"       → label_l1 == 1 (binary RF vote, no threshold)
+  stats_.attacks_detected → label_l1==1 AND conf >= level1_attack(0.65)
+  final_classification   → final_score >= malicious_threshold (JSON)
+
+  level1_attack=0.65 lives in ml-detector/config/ml_detector_config.json
+  (not in sniffer.json). Documented, not a bug.
+
+=== FILES ===
+docs/experiments/f1_replay_log.csv      — 2 new entries (DAY82-001, DAY82-002)
+docs/experiments/f1_replay_log.md       — human-readable entries added
+docs/adr/ADR-006-fast-detector-hardcoded-thresholds.md  — new
+
+Co-authored-by: Claude (Anthropic) <claude@anthropic.com> and the rest of the crew, Grok4, Gemini, Qwen, DeepSeek,
+ChatGPT5, Parallel.ai and myself, Alonso

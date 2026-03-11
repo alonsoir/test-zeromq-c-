@@ -1,94 +1,123 @@
-# ML Defender — Prompt de Continuidad DAY 82
-**Generado:** Cierre DAY 81 (10 marzo 2026)
+# ML Defender — Prompt de Continuidad DAY 83
+**Generado:** Cierre DAY 82 (11 marzo 2026)
 **Branch activa:** `feature/ring-consumer-real-features`
 **Estado del pipeline:** 6/6 componentes RUNNING ✅
 **Tests:** crypto 3/3 ✅ | etcd-hmac 12/12 ✅ | ml-detector 9/9 ✅ | trace_id 44/46 ✅
 
 ---
 
-## Logros DAY 81
+## Logros DAY 82
 
 ### TAREA 0 — Sanity check ✅
 - Thresholds JSON confirmados: DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
-- 21 MISSING_FEATURE_SENTINEL + 2× 0.5f semántico — sin cambios
+- 21 MISSING_FEATURE_SENTINEL — sin cambios
 - ring_consumer limpio de literales hardcodeados
 - Pipeline 6/6 RUNNING
-- ⚠️ VM client estaba `aborted` al arrancar — `vagrant up client` necesario
+- VM client estaba `aborted` al arrancar — `vagrant up client` necesario (comportamiento normal)
 
-### TAREA 1 — Inspección FlowStatistics ✅ DOCUMENTADO
-Las 4 features bloqueadas requieren infraestructura Phase 2 — no Proto3:
+### TAREA 1 — Dataset balanceado: smallFlows.pcap ✅ EJECUTADO Y DOCUMENTADO
 
-| Feature | Bloqueo real | Decisión |
+**Replay DAY82-001:** CTU-13 smallFlows.pcap (9.1MB, 14261 packets, 1209 flows)
+
+| Métrica | Valor |
+|---|---|
+| ML attacks | 0 ✅ |
+| ML score máximo | 0.3818 |
+| Fast Detector alertas | 3,741 ⚠️ |
+| Ground truth | IP botnet 147.32.84.165 AUSENTE en este PCAP |
+| Conclusión | **Todos FPs** — Microsoft CDN, Google, Windows Update |
+
+**Hallazgo crítico — DEBT-FD-001:**
+Fast Detector Path A (`is_suspicious()`) usa constantes hardcodeadas en `fast_detector.hpp`,
+ignorando completamente la configuración JSON. Viola "JSON is the law".
+
+| Constante | Valor hardcodeado | JSON equivalente |
 |---|---|---|
-| `tcp_udp_ratio` | `FlowStatistics` sin campo `protocol` (uint8_t) | DEBT-PHASE2 |
-| `flow_duration_std` | Requiere multi-flow `TimeWindowAggregator` | DEBT-PHASE2 |
-| `protocol_variety` | Ídem | DEBT-PHASE2 |
-| `connection_duration_std` | Ídem | DEBT-PHASE2 |
+| `THRESHOLD_EXTERNAL_IPS` | **10** | `external_ips_30s: 15` (Path B) |
+| `THRESHOLD_SMB_CONNS` | **3** | `smb_diversity: 10` (Path B) |
+| `THRESHOLD_PORT_SCAN` | **10** | — sin equivalente |
+| `THRESHOLD_RST_RATIO` | **0.2** | — sin equivalente |
+| `WINDOW_NS` | **10s** | — sin equivalente |
 
-`flow_duration_microseconds` (por flujo individual) ya está implementado en línea 757.
-Con F1=0.9934 y 28/40 features reales el modelo es sólido para el paper.
+Construido DAY 13, antes del sistema de configuración JSON. Fix PHASE2.
+Documentado en `docs/adr/ADR-006-fast-detector-hardcoded-thresholds.md`.
 
-### TAREA 2 — Comparativa F1 limpia ✅ CERRADA
+### TAREA 2 — Dataset balanceado: bigFlows.pcap ✅ EJECUTADO Y DOCUMENTADO
 
-Primera comparativa controlada con mismo PCAP (320524 packets, 19135 flows):
+**Replay DAY82-002:** CTU-13 bigFlows.pcap (352MB, 791615 packets, 40467 flows)
 
-| Condición | Thresholds | F1 | Precision | FP reales | FPR |
-|---|---|---|---|---|---|
-| A — prod JSON | 0.85/0.90/0.80/0.85 | **1.0000** | 1.0000 | 0 | 0.0000 |
-| B — legacy low | 0.70/0.75/0.70/0.70 | **0.9976** | 0.9951 | 1 | 0.0002 |
+| Métrica | Valor |
+|---|---|
+| ML label=1 log (🚨 ATTACK) | **7** |
+| ML attacks_detected (stats, conf≥0.65) | **2** |
+| ML score máximo | **0.6897** |
+| Fast Detector alertas | 31,065 |
+| IPs top atacantes | 172.16.133.x (red privada) |
+| Ground truth | ❌ 172.16.133.x no está en binetflow Neris |
 
-**Conclusión publicable:** Thresholds conservadores 0.85/0.90 no sacrifican recall
-y eliminan el único FP real. Selección justificada empíricamente.
+**Hallazgo: Tres contadores con semántica distinta (no es bug, es arquitectura):**
 
-**Nota metodológica:** Ground truth = 147.32.84.165 únicamente (.191/.192 ausentes
-en este PCAP). FN=0 es cota superior — Recall=1.0 no confirmado sin tabla IP completa.
+| Contador | Condición | Valor |
+|---|---|---|
+| log `🚨 ATTACK` | `label_l1 == 1` (voto binario RF) | 7 |
+| `stats_.attacks_detected` | `label_l1==1 AND conf>=level1_attack(0.65)` | 2 |
+| `final_classification=MALICIOUS` | `final_score>=malicious_threshold` | pendiente |
 
-**Nuevos ficheros creados:**
-- `docs/experiments/f1_replay_log.csv` — fuente de verdad, una fila por replay
-- `docs/experiments/f1_replay_log.md` — tabla legible + protocolo de replay
-- `scripts/calculate_f1_neris.py` — calculador F1 con regex IPv4 estricto
-- `scripts/pipeline_health.sh` — monitor estado VM + componentes
+`level1_attack: 0.65` está en `ml-detector/config/ml_detector_config.json` (no en sniffer.json).
 
-**Bug encontrado en pipeline_health.sh:** `pgrep` corre en macOS, no en la VM.
-Los componentes aparecen como DOWN aunque estén UP. Fix pendiente DAY 82:
-mover detección de procesos a `vagrant ssh -c "ps xa | grep ..."`.
+**Nota:** `ml-detector/src/ml_detector.cpp` es un fichero vacío (0 bytes). La lógica real
+está en `ml-detector/src/zmq_handler.cpp` (927 líneas). Anotado para limpieza.
 
-### TAREA 3 — ADR-005 Unificación logs ml-detector ✅
-- `detector.log` = spdlog interno (fuente de verdad operacional)
-- `ml-detector.log` = stdout redirigido por Makefile (solo arranque)
-- Decisión: unificar en Phase 2 junto con ENT-4 hot-reload
-- Fichero: `docs/adr/ADR-005-log-unification-ml-detector.md`
+### TAREA 3 — ADR-006 ✅ DOCUMENTADO
+`docs/adr/ADR-006-fast-detector-hardcoded-thresholds.md` — diagnóstico completo
+de arquitectura dual-threshold y plan de migración a JSON en PHASE2.
 
-### TAREA 4 — Dataset balanceado
-No ejecutada por tiempo. P0 para DAY 82.
-
----
-
-## Hallazgos técnicos relevantes DAY 81
-
-### ML Detector nunca supera threshold 0.70
-```
-ML Detector max score: 0.6607 (threshold actual: 0.70 en condición B)
-attacks=0 en todos los Stats del ml-detector
-```
-El Fast Detector (heurísticas de red) hace todo el trabajo de detección en CTU-13 Neris.
-El RandomForest ML no supera threshold en ningún evento. Posible explicación:
-CTU-13 Neris es IRC C&C — el Fast Detector lo reconoce por patrones de IPs externas,
-pero el RandomForest necesita features que con 11 sentinels tiene señal insuficiente.
-Documentable y honesto para el paper.
-
-### Problema de total_events entre replays
-El `received=` del ml-detector acumula eventos desde el arranque del pipeline,
-no desde el inicio del replay. Para comparativas limpias: siempre
-`make pipeline-stop && make logs-lab-clean && make pipeline-start` antes de cada replay.
-
-### sniffer/config/sniffer.json es el fichero fuente
-`sniffer/build-debug/config/sniffer.json` es artefacto generado — se sobreescribe
-en cada pipeline-start. Modificar siempre `sniffer/config/sniffer.json`.
+### TAREA 4 — f1_replay_log actualizado ✅
+Dos nuevas entradas limpias: DAY82-001 (smallFlows) y DAY82-002 (bigFlows).
 
 ---
 
-## Estado features DAY 81 (sin cambios desde DAY 79)
+## Hallazgos técnicos DAY 82
+
+### Arquitectura dual-threshold Fast Detector (bug histórico DAY 13)
+
+Hay DOS paths de alerta completamente independientes en `ring_consumer.cpp`:
+
+```
+Path A (línea 538): fast_detector_.ingest(event) → is_suspicious()
+  - Evalúa en CADA PAQUETE
+  - Usa constantes compiladas: THRESHOLD_EXTERNAL_IPS=10, WINDOW_NS=10s
+  - Imprime snapshot.external_ips_10s (ventana corta, informativo)
+  - Genera [FAST ALERT] en sniffer.log
+
+Path B (línea 1270): send_ransomware_features()
+  - Evalúa sobre agregados temporales del RansomwareProcessor
+  - Usa JSON: external_ips_30s=15, smb_diversity=10
+  - Opera sobre new_external_ips_30s() (ventana larga)
+  - No genera [FAST ALERT] directamente
+```
+
+Path A es el responsable de los FPs en tráfico Windows. El threshold real que dispara
+es 10 (hardcodeado), no 15 (JSON). Fix PHASE2: pasar config al constructor de FastDetector.
+
+### ML Level1 score sube con más volumen de tráfico
+- Neris (19135 flows): max score 0.6607
+- smallFlows (1209 flows): max score 0.3818
+- bigFlows (40467 flows): max score **0.6897**
+
+El RandomForest necesita diversidad de tráfico para activar patrones. Con más flows,
+más probabilidad de encontrar combinaciones de features que superen el umbral.
+7 eventos label=1 en bigFlows (2 con conf≥0.65). Progreso documentable para el paper.
+
+### ground truth bigFlows desconocido
+Las IPs 172.16.133.x son red privada distinta al escenario Neris. No aparecen en
+`capture20110810.binetflow`. bigFlows es de una red diferente — necesita su propio
+ground truth para calcular F1. Para el paper de especificidad necesitamos confirmar
+si bigFlows tiene o no tráfico botnet.
+
+---
+
+## Estado features (sin cambios desde DAY 79)
 
 | Submensaje | Reales | SENTINEL | Semántico (válido) |
 |---|---|---|---|
@@ -100,50 +129,66 @@ en cada pipeline-start. Modificar siempre `sniffer/config/sniffer.json`.
 
 ---
 
-## ORDEN DAY 82
+## ORDEN DAY 83
 
 ### TAREA 0 — Sanity check (5 min)
 ```bash
+vagrant status  # confirmar client running o aborted
 make pipeline-start && sleep 8
 vagrant ssh -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
 # Esperado: DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
+grep -c 'MISSING_FEATURE_SENTINEL' sniffer/src/userspace/ml_defender_features.cpp
+# Esperado: 21
 ```
 
-### TAREA 1 — Fix pipeline_health.sh (15 min) (P2)
-Los `pgrep` deben correr dentro de la VM via `vagrant ssh`:
+### TAREA 1 — Confirmar ground truth bigFlows (P0 paper) (20 min)
+¿bigFlows.pcap tiene tráfico botnet o es benigno puro?
+
 ```bash
-# Sustituir pgrep por:
-vagrant ssh -c "ps xa | grep BINARY | grep -v grep | tail -1"
-# Y stat de ficheros por:
-vagrant ssh -c "stat -c %Y /vagrant/logs/lab/FICHERO.log"
+# Ver qué escenarios CTU-13 existen — bigFlows puede ser escenario distinto
+vagrant ssh -c "cat /vagrant/datasets/ctu13/index.html | grep -i 'scenario\|botnet\|big\|small'"
+
+# ¿Las IPs 172.16.133.x aparecen como From-Botnet en algún binetflow?
+# Si hay más binetflows disponibles:
+vagrant ssh -c "ls /vagrant/datasets/"
+
+# Buscar documentación CTU-13 sobre bigFlows/smallFlows
+# bigFlows y smallFlows son típicamente subsets del escenario completo
+# pero de una red diferente a 147.32.84.x
 ```
 
-### TAREA 2 — Dataset balanceado (P0 paper)
-El gap científico más importante. CTU-13 Neris 98% atacante.
+Si bigFlows tiene botnet → los 7 label=1 pueden ser TPs → necesitamos ground truth.
+Si bigFlows es benigno → FPR del ML también es 0 (attacks=0 con conf≥0.65 en tráfico no-Neris).
+
+### TAREA 2 — Investigar ML score máximo (P1) (30 min)
+Con bigFlows ya tenemos el dato: max=0.6897 con 40K flows. El umbral level1_attack=0.65
+se supera en 2 casos. La pregunta es si son TPs o FPs.
 
 ```bash
-# Opción A: CTU-13 otros escenarios (disponible ya)
-vagrant ssh -c "ls /vagrant/datasets/ctu13/"
-
-# Opción B: MAWI backbone (tráfico real sin ataques)
-# Opción C: CICIDS2017 (~7GB descarga)
-# Opción D: UNSW-NB15
-```
-
-Criterio mínimo para el paper: una validación con tráfico que tenga
->20% eventos benignos reales. Tabla comparativa CTU-13 vs ≥1 dataset balanceado.
-
-### TAREA 3 — Investigar ML Detector score máximo 0.6607 (P1)
-¿Por qué el RandomForest nunca supera 0.70 en CTU-13 Neris?
-```bash
+# ¿Qué IPs generaron los 2 attacks_detected?
 vagrant ssh -c "grep 'DUAL-SCORE' /vagrant/logs/lab/ml-detector.log | \
-  awk -F'ml=' '{print $2}' | awk -F',' '{print $1}' | sort -n | tail -20"
-```
-Si el max ML score es consistentemente <0.70, los modelos embedded no están
-detectando el patrón Neris — documentar honestamente y analizar si requiere
-reentrenamiento o si es un gap de features (11 sentinels).
+  grep -E 'ml=0\.(6[5-9]|[7-9])' | head -10"
 
-### TAREA 4 — Commit y cierre DAY 82
+# Extraer event_id de los 2 attacks y cruzar con sniffer.log para obtener IPs
+```
+
+### TAREA 3 — Fix pipeline_health.sh (P2) (15 min)
+```bash
+# Sustituir pgrep por vagrant ssh + ps xa
+# En pipeline_health.sh, reemplazar:
+#   pgrep -f BINARY
+# Por:
+#   vagrant ssh -c "ps xa | grep BINARY | grep -v grep | wc -l"
+```
+
+### TAREA 4 — CSV Pipeline E2E validation (P2)
+Primer paso hacia merge a main.
+```bash
+make test-replay-neris
+vagrant ssh -c "ls -lh /vagrant/logs/lab/*.csv 2>/dev/null || echo 'No CSV'"
+```
+
+### TAREA 5 — Commit y cierre DAY 83
 
 ---
 
@@ -151,52 +196,57 @@ reentrenamiento o si es un gap de features (11 sentinels).
 
 | Item | Prioridad | DAY |
 |---|---|---|
-| Dataset balanceado | **P0 paper** | 82 |
-| Investigar ML score max 0.6607 | **P1** | 82 |
-| Fix pipeline_health.sh (pgrep→vagrant ssh) | P2 | 82 |
+| Confirmar ground truth bigFlows | **P0 paper** | 83 |
+| Investigar IPs de los 2 attacks_detected bigFlows | **P1** | 83 |
+| Fix pipeline_health.sh (pgrep→vagrant ssh) | P2 | 83 |
+| DEBT-FD-001: FastDetector Path A hardcoded thresholds → JSON | P1-PHASE2 | post-paper |
+| ml_detector.cpp vacío (0 bytes) — limpiar o documentar | P3 | post-paper |
+| Normalizar esquema f1_replay_log.csv (columnas DAY82-001 distintas) | P2 | post-paper |
 | tcp_udp_ratio → uint8_t protocol en FlowStatistics | P2-PHASE2 | post-paper |
 | flow_duration_std / protocol_variety / connection_duration_std | P2-PHASE2 | post-paper |
 | ADR-005 implementación (unificar logs ml-detector) | P2 | post-paper, con ENT-4 |
-| Estandarización idioma logs (ES→EN) | P2 | post-paper |
 | test_trace_id 2 fallos preexistentes DAY 72 | P2 | post-validación |
-| trace_id en CLI | P2 | post-validación |
+| CSV Pipeline E2E con tráfico real | P2 | 83 |
+| is_forward dirección flow (ransomware_processor) | P2 | 83-84 |
+| DNS payload parsing real (vs pseudo-domain) | P2 | 84 |
 | ShardedFlowManager config → JSON (shard_count, flow_timeout_ns) | P3 | post-paper |
-| is_forward dirección flow (ransomware_processor) | P2 | 82-83 |
-| DNS payload parsing real (vs pseudo-domain) | P2 | 83 |
 | geographical_concentration | SKIP | decisión arquitectural deliberada |
 | HSM/IRootKeyProvider | P3 | post-paper |
 
 ---
 
-## Sanity check al arrancar DAY 82
+## Criterio de merge a main (sin cambios)
 
-```bash
-# 1. Thresholds JSON (fuente: sniffer/config/sniffer.json)
-make pipeline-start && sleep 8
-vagrant ssh -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
-# Esperado: DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
+- [ ] Al menos 1 dataset balanceado validado (>20% benigno)
+- [ ] ML score investigation documentada ← **parcialmente completada DAY 82**
+- [ ] F1 comparativa limpia documentada ✅ DAY 81
+- [ ] Pipeline 6/6 RUNNING post-merge
+- [ ] F1 ≥ 0.99 reproducible con `make test-replay-neris`
 
-# 2. Sentinels sin cambios
-grep -c 'MISSING_FEATURE_SENTINEL' sniffer/src/userspace/ml_defender_features.cpp
-# Esperado: 21
+---
 
-# 3. ring_consumer limpio
-grep -n '0\.7f\|0\.75f\|0\.00000000065f' sniffer/src/userspace/ring_consumer.cpp
-# Esperado: vacío
+## Notas para el paper (acumuladas DAY 82)
 
-# 4. Pipeline y VM
-make pipeline-status
-vagrant status
-# ⚠️ Si client está aborted: vagrant up client (solo si vas a hacer replay)
-# ⚠️ Si client está running: NO ejecutar vagrant up client
-```
+- **DEBT-FD-001 publicable:** Fast Detector Path A hardcodeado desde DAY 13 — deuda
+  técnica honesta en sistema de 82 días. Fix PHASE2 identificado y documentado (ADR-006).
+- **Arquitectura dual-score demuestra valor:** ML no confirma FPs del Fast Detector.
+  El sistema no bloquea tráfico legítimo — solo alerta. Diseño defensivo correcto.
+- **ML score progresa con volumen:** 0.3818 (1209 flows) → 0.6897 (40467 flows).
+  Consistente con hipótesis de señal insuficiente con pocos flows.
+- **Tres contadores con semántica distinta:** documentados y explicados. No es bug.
+- **bigFlows ground truth desconocido:** necesita resolución antes de publicar
+  métricas de especificidad con este dataset.
+- **f1_replay_log.csv esquema inconsistente:** DAY82-001/002 tienen columnas distintas
+  a DAY81. Normalizar en PHASE2.
 
 ---
 
 ## Infraestructura permanente
 
 - **macOS (BSD sed):** Nunca usar `sed -i`. Usar Python3 inline.
-- **Fichero fuente JSON:** `sniffer/config/sniffer.json` (NO build-debug)
+- **Fichero fuente JSON sniffer:** `sniffer/config/sniffer.json` (NO build-debug)
+- **Fichero fuente JSON ml-detector:** `ml-detector/config/ml_detector_config.json`
+- **level1_attack threshold:** 0.65 (en ml_detector_config.json, NO en sniffer.json)
 - **VM client:** Verificar `vagrant status` antes de `vagrant up client`
 - **Flujo correcto test:**
   ```bash
@@ -208,28 +258,11 @@ vagrant status
   make test-replay-neris
   ```
 - **F1 calculator:** `python3 scripts/calculate_f1_neris.py <sniffer.log> --total-events N`
-- **Log de confirmación thresholds:** `grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log`
 - **Fuente de verdad F1:** `docs/experiments/f1_replay_log.csv`
+- **ADRs disponibles:** ADR-001 (cifrado), ADR-002 (provenance), ADR-005 (logs),
+  ADR-006 (fast detector thresholds)
 
 ---
 
-## Notas para el paper (acumuladas DAY 81)
-
-- **Comparativa thresholds publicable:** mismo PCAP, mismas condiciones. 0.85/0.90
-  elimina el único FP real vs 0.70/0.75. Empíricamente justificado.
-- **Ground truth CTU-13 Neris para este PCAP:** solo 147.32.84.165 (.191/.192 ausentes).
-  Documentado honestamente. Recall=1.0 es cota superior.
-- **ML RandomForest vs Fast Detector:** Fast Detector hace toda la detección en Neris
-  (score max ML = 0.6607 < threshold 0.70). Gap de features (11 sentinels) es
-  candidato a explicación. Documentable como limitación Phase 1.
-- **DEBT-PHASE2 para 4 features:** tcp_udp_ratio, flow_duration_std, protocol_variety,
-  connection_duration_std. Arquitectura lo anticipó con comentarios `// Phase 2`.
-- **f1_replay_log.csv:** archivo de experimentos iniciado DAY 81. Entradas DAY 79/80
-  retroactivas con asterisco (replay_id desconocido). Primera entrada limpia = DAY 81.
-- **CTU-13 desequilibrio:** 98% atacante — validación en tráfico balanceado es P0 paper.
-  Un clasificador dummy que dijera "todo malicious" obtendría F1≈0.99 en Neris.
-
----
-
-*Consejo de Sabios — Cierre DAY 81, 10 marzo 2026*
-*DAY 82 arranca con: dataset balanceado → ML score investigation → pipeline_health fix*
+*Consejo de Sabios — Cierre DAY 82, 11 marzo 2026*
+*DAY 83 arranca con: ground truth bigFlows → ML score investigation → CSV E2E → commit*
