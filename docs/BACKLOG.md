@@ -281,7 +281,7 @@ Deuda P2, post-paper. Formato objetivo: `[COMPONENT] key=value` en inglés.
 ### ENT-6 — Integración Threat Intelligence (MISP/OpenCTI)
 ### ENT-7 — Observabilidad OpenTelemetry + Grafana
 ### ENT-8 — SecureBusNode (HSM + USB Root Key)
-
+### ENT-9 — Captura y correlación opcional de datagramas sospechosos (ADR-008: Captura y correlación opcional de datagramas sospechosos)
 ---
 
 ## 📊 Estado global del proyecto
