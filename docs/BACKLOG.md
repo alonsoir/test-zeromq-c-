@@ -218,6 +218,9 @@ producción. Ver `docs/engineering_decisions/DAY81_ml_training_data_analysis.md`
 
 - [ ] **ENT-1 (Federated):** ver sección Enterprise — prerequisito: validación local P2
 
+### 🟩 P4 - Consenso mejorado en el firewall-acl-agent (OS)
+- [ ] ADR-007: Consenso AND para bloqueo firewall (max→AND lógico) | P1-PHASE2 | zmq_handler.cpp + JSON scoring config.
+
 ---
 
 ### Nota del Consejo de Sabios (DAY 81)

@@ -212,6 +212,7 @@ vagrant ssh -c "ls -lh /vagrant/logs/lab/*.csv 2>/dev/null || echo 'No CSV'"
 | ShardedFlowManager config → JSON (shard_count, flow_timeout_ns) | P3 | post-paper |
 | geographical_concentration | SKIP | decisión arquitectural deliberada |
 | HSM/IRootKeyProvider | P3 | post-paper |
+| ADR-007: Consenso AND para bloqueo firewall (max→AND lógico) | P1-PHASE2 | zmq_handler.cpp + JSON scoring config |
 
 ---
 
