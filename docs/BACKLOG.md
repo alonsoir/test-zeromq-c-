@@ -126,6 +126,81 @@ vagrant ssh -c "grep 'DUAL-SCORE' /vagrant/logs/lab/ml-detector.log | \
 `pgrep` corre en macOS, no en la VM. Componentes aparecen DOWN aunque estén UP.
 Fix: mover detección a `vagrant ssh -c "ps xa | grep BINARY"`.
 
+---
+
+### 🟥 P0 — Recolección sistemática de datos etiquetados (prerequisito reentrenamiento)
+
+El fast detector ya etiqueta cada evento (MALICIOUS/SUSPICIOUS/BENIGN). Esas
+etiquetas son ground truth aproximado — la materia prima para los datos
+pipeline-native (Categoría C). Sin recolección sistemática no hay reentrenamiento.
+
+- [ ] **FEAT-LABEL-1:** Almacenar eventos con etiqueta del fast detector
+  - 40 features extraídas + decisión fast detector + score de confianza
+  - Metadatos: timestamp, IPs, puertos, trace_id
+  - Formato: CSV/Parquet en `/vagrant/data/training/` con rotación diaria
+  - Prerequisito de CsvEventLoader (ya en backlog)
+
+- [ ] **FEAT-LABEL-2:** Campo "revisión humana" opcional
+  - Canal para que operador sobrescriba etiqueta en casos dudosos
+  - Crea subset de mayor calidad para validación
+
+### 🟧 P1 — Mejora y observabilidad del Fast Detector
+
+El fast detector es el backbone actual. Antes de mejorarlo hay que medirlo mejor.
+
+- [ ] **FEAT-FP-1:** Registro de falsos positivos y negativos del fast detector
+  - Mecanismo de feedback: operador reporta "esto no era un ataque"
+  - Almacenar casos para análisis y reentrenamiento futuro
+  - Prerequisito: dataset balanceado (DAY 82) para saber cuántos FP reales hay
+
+- [ ] **FEAT-FP-2:** Ajuste dinámico de thresholds del Fast Detector desde JSON
+  - Los activation_thresholds (external_ips_30s=15, smb_diversity=10, etc.)
+    ya están en JSON ✅ — confirmar que todos los parámetros heurísticos
+    son configurables sin recompilar
+  - Si alguno está hardcodeado → mover a JSON (mismo patrón que DAY 80)
+
+### 🟨 P2 — Ciclo de reentrenamiento ML con datos pipeline-native
+
+**Hipótesis a validar:** un RandomForest entrenado con datos Categoría C
+(pipeline-native, balanceados ~50/50) debería producir scores > 0.70 en
+producción. Ver `docs/engineering_decisions/DAY81_ml_training_data_analysis.md`.
+
+- [ ] **FEAT-RETRAIN-1:** Generar dataset balanceado desde datos recolectados
+  - Sobremuestreo de ataques para compensar desequilibrio natural
+  - Inclusión de casos donde fast detector falla (si los hay)
+  - Split train/validation/test reproducible
+
+- [ ] **FEAT-RETRAIN-2:** Entrenar y evaluar nuevos modelos RandomForest C++20
+  - Threshold efectivo en producción (no en validación offline)
+  - Mejora en ataques que fast detector no ve (exfiltración lenta, etc.)
+  - Reducción FP en tráfico benigno real
+
+- [ ] **FEAT-RETRAIN-3:** A/B testing — dos versiones ML en paralelo
+  - Modelo actual vs candidato, sin afectar al bloqueo
+  - Comparar decisiones antes de desplegar
+  - Registro en f1_replay_log.csv con campo `model_version`
+
+### 🟩 P3 — Aprendizaje continuo (Enterprise)
+
+- [ ] **ENT-RETRAIN:** Ciclo de reentrenamiento automático periódico
+  - Semanal: nuevos datos → modelo candidato → evaluación → deploy condicional
+  - Prerequisito: ENT-4 (hot-reload) para deploy sin downtime
+
+- [ ] **ENT-1 (Federated):** ver sección Enterprise — prerequisito: validación local P2
+
+---
+
+### Nota del Consejo de Sabios (DAY 81)
+
+> "El fast detector ya es el backbone que protege. El ml-detector es hoy un
+> observador silencioso y una fábrica de datos. La prioridad es no romper
+> el escudo mientras alimentamos la máquina de aprendizaje. Cuando el
+> ml-detector alcance threshold efectivo > 0.70 en producción, pasará de
+> observador a clasificador de respaldo. Hasta entonces, su valor es
+> precisamente generar los datos pipeline-native y alimentar el RAG."
+>
+> — Grok, Gemini, Qwen, DeepSeek, ChatGPT5, Claude, Alonso
+
 ### Validación con datasets balanceados (P0 paper)
 Ver sección EN CURSO.
 
