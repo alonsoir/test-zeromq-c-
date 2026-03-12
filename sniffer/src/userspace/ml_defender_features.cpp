@@ -61,21 +61,16 @@ float MLDefenderExtractor::extract_ddos_packet_symmetry(const FlowStatistics& fl
     return asymmetry;
 }
 
-float MLDefenderExtractor::extract_ddos_source_ip_dispersion(const FlowStatistics& /* flow */) const {
-    // TODO(Phase 2): Requires multi-flow aggregator to count unique source IPs
-    //
-    // ARCHITECTURAL DECISION:
-    // This feature requires tracking multiple flows simultaneously to count
-    // unique source IPs within a time window (e.g., 30 seconds).
-    //
-    // Current FlowStatistics represents a single flow (5-tuple).
-    // Need FlowAggregator component to track this across flows.
-    //
-    // For Phase 1: Return neutral value (0.5) to allow compilation and testing
-    // For Phase 2: Implement FlowAggregator with temporal window tracking
-    //
-    // Expected calculation: entropy(unique_src_ips) / log2(max_expected_ips)
-    return 0.5f;
+float MLDefenderExtractor::extract_ddos_source_ip_dispersion(const FlowStatistics& flow) const {
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    return std::min(
+        std::log2f(static_cast<float>(stats.unique_ips_count) + 1.0f) /
+        std::log2f(static_cast<float>(stats.event_count) + 2.0f),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_ddos_protocol_anomaly_score(const FlowStatistics& flow) const {
@@ -163,7 +158,7 @@ float MLDefenderExtractor::extract_ddos_geographical_concentration(const FlowSta
     //
     // For Phase 1: Return neutral value
     // For Phase 2: GeoIP service available to RAG for analysis queries
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ddos_traffic_escalation_rate(const FlowStatistics& flow) const {
@@ -226,7 +221,7 @@ float MLDefenderExtractor::extract_ransomware_io_intensity(const FlowStatistics&
     // 3. Correlate network flow with endpoint agent data
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_entropy(const FlowStatistics& flow) const {
@@ -246,7 +241,7 @@ float MLDefenderExtractor::extract_ransomware_resource_usage(const FlowStatistic
     // This requires system-level resource monitoring, not network flow data.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_network_activity(const FlowStatistics& flow) const {
@@ -275,7 +270,7 @@ float MLDefenderExtractor::extract_ransomware_file_operations(const FlowStatisti
     // 3. Count packets to port 445 as proxy metric
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatistics& flow) const {
@@ -290,7 +285,7 @@ float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatisti
     // Consider integration with endpoint agent or eBPF process monitoring.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;
 }
 
 float MLDefenderExtractor::extract_ransomware_temporal_pattern(const FlowStatistics& flow) const {
@@ -305,7 +300,7 @@ float MLDefenderExtractor::extract_ransomware_temporal_pattern(const FlowStatist
     } else if (cv > 1.0f) {
         return 0.2f;  // Normal random pattern
     } else {
-        return 0.5f;  // Neutral
+        return MISSING_FEATURE_SENTINEL;  // Neutral
     }
 }
 
@@ -334,7 +329,7 @@ float MLDefenderExtractor::extract_ransomware_behavior_consistency(const FlowSta
     float iat_std = calculate_iat_std_dev(flow.packet_timestamps);
     float iat_mean = calculate_iat_mean(flow.packet_timestamps);
 
-    if (iat_mean == 0.0f) return 0.5f;
+    if (iat_mean == 0.0f) return MISSING_FEATURE_SENTINEL;
 
     float cv = iat_std / iat_mean;
 
@@ -374,13 +369,13 @@ float MLDefenderExtractor::extract_traffic_packet_rate(const FlowStatistics& flo
 }
 
 float MLDefenderExtractor::extract_traffic_connection_rate(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow aggregator
-    //
-    // Connection rate = new connections per second within a time window.
-    // Requires tracking multiple flows to count new connections.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    // connections per second en ventana de 30s, normalizado a [0,1] (saturación en 100 conn/s)
+    float rate = static_cast<float>(stats.event_count) / 30.0f;
+    return std::min(rate / 100.0f, 1.0f);
 }
 
 float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& flow) const {
@@ -390,7 +385,7 @@ float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& f
     // Need to add uint8_t protocol field (6=TCP, 17=UDP).
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_avg_packet_size(const FlowStatistics& flow) const {
@@ -410,13 +405,15 @@ float MLDefenderExtractor::extract_traffic_avg_packet_size(const FlowStatistics&
 }
 
 float MLDefenderExtractor::extract_traffic_port_entropy(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow aggregator
-    //
-    // Port entropy = entropy of destination ports across multiple flows.
-    // Requires tracking ports from multiple flows in a time window.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    return std::min(
+        std::log2f(static_cast<float>(stats.unique_ports_count) + 1.0f) /
+        std::log2f(static_cast<float>(stats.event_count) + 2.0f),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistics& flow) const {
@@ -426,27 +423,33 @@ float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistic
     // Single flow has no std dev of duration.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_src_ip_entropy(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow aggregator
-    //
-    // Source IP entropy requires tracking unique source IPs across flows.
-    // Similar to ddos_source_ip_dispersion.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    // Shannon aproximado: log2(unique_ips) / log2(event_count)
+    return std::min(
+        std::log2f(static_cast<float>(stats.unique_ips_count) + 1.0f) /
+        std::log2f(static_cast<float>(stats.event_count) + 2.0f),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_traffic_dst_ip_concentration(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow aggregator
-    //
-    // Destination IP concentration (Gini coefficient of dst IPs).
-    // Requires tracking multiple flows.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    // Alta concentración = pocas IPs destino únicas (DDoS a un target)
+    return 1.0f - std::min(
+        static_cast<float>(stats.unique_ips_count) /
+        static_cast<float>(stats.event_count),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics& flow) const {
@@ -456,7 +459,7 @@ float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics
     // Requires multi-flow tracking.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_traffic_temporal_consistency(const FlowStatistics& flow) const {
@@ -489,23 +492,25 @@ void MLDefenderExtractor::extract_internal_features(
 }
 
 float MLDefenderExtractor::extract_internal_connection_rate(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow aggregator
-    //
-    // Internal connection rate = connections to internal IPs per second.
-    // Requires multi-flow tracking and IP classification (internal vs external).
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    float rate = static_cast<float>(stats.event_count) / 30.0f;
+    return std::min(rate / 100.0f, 1.0f);
 }
 
 float MLDefenderExtractor::extract_internal_service_port_consistency(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow aggregator
-    //
-    // Service port consistency = are connections to expected ports?
-    // Requires multi-flow tracking and port baseline.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    // Alta consistencia = pocas variaciones de puerto (comportamiento normal)
+    return 1.0f - std::min(
+        static_cast<float>(stats.unique_ports_count) /
+        static_cast<float>(stats.event_count),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_internal_protocol_regularity(const FlowStatistics& flow) const {
@@ -522,7 +527,7 @@ float MLDefenderExtractor::extract_internal_packet_size_consistency(const FlowSt
     float std_dev = calculate_std_dev(flow.all_lengths);
     float mean = calculate_mean(flow.all_lengths);
 
-    if (mean == 0.0f) return 0.5f;
+    if (mean == 0.0f) return MISSING_FEATURE_SENTINEL;
 
     float cv = std_dev / mean;
 
@@ -537,27 +542,33 @@ float MLDefenderExtractor::extract_internal_connection_duration_std(const FlowSt
     // Standard deviation of connection durations requires multiple flows.
     //
     // For Phase 1: Return neutral value
-    return 0.5f;
+    return MISSING_FEATURE_SENTINEL;  // Phase 2: implement with TimeWindowAggregator
 }
 
 float MLDefenderExtractor::extract_internal_lateral_movement_score(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow tracking
-    //
-    // Lateral movement = connections to many internal hosts.
-    // Requires tracking internal IP destinations across flows.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    // Muchas IPs únicas contactadas = posible lateral movement
+    return std::min(
+        static_cast<float>(stats.unique_ips_count) /
+        static_cast<float>(stats.event_count),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_internal_service_discovery_patterns(const FlowStatistics& flow) const {
-    // TODO(Phase 2): Requires multi-flow tracking
-    //
-    // Service discovery = port scanning patterns.
-    // Requires tracking many connections to different ports.
-    //
-    // For Phase 1: Return neutral value
-    return 0.5f;
+    if (!aggregator_) return MISSING_FEATURE_SENTINEL;
+    auto now = TimeWindowAggregator::get_current_time_ns();
+    auto start = now - 30'000'000'000ULL;
+    auto stats = aggregator_->get_window_stats(start, now);
+    if (stats.event_count == 0) return 0.0f;
+    // Muchos puertos únicos por evento = patrón de port scanning
+    return std::min(
+        static_cast<float>(stats.unique_ports_count) /
+        static_cast<float>(stats.event_count),
+        1.0f);
 }
 
 float MLDefenderExtractor::extract_internal_data_exfiltration_indicators(const FlowStatistics& flow) const {

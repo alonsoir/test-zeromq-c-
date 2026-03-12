@@ -189,7 +189,6 @@ set(PROTO_HEADERS ${CMAKE_BINARY_DIR}/proto/network_security.pb.h)
 # ============================================================================
 set(SOURCES
         src/main.cpp
-        src/ml_detector.cpp
         src/classifier_tricapa.cpp
         src/feature_extractor.cpp
         src/rag_logger.cpp
