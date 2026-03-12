@@ -224,9 +224,19 @@ inline TraceIdMetadata generate_trace_id_with_metadata(
     bool fallback = false;
 
     // 1. Normalize IPs — sentinels logged inside normalize_ip()
+    // Fallback is set only when the ORIGINAL input was empty/whitespace,
+    // NOT when the normalized result happens to be "0.0.0.0" (which is a
+    // valid real IP). Checking the result would incorrectly flag real
+    // "0.0.0.0" inputs (e.g., wildcard listeners) as fallbacks.
+    auto is_empty_or_ws = [](const std::string& s) -> bool {
+        if (s.empty()) return true;
+        for (unsigned char c : s) if (!std::isspace(c)) return false;
+        return true;
+    };
     const std::string eff_src = normalize_ip(src_ip, event_id);
     const std::string eff_dst = normalize_ip(dst_ip, event_id);
-    if (eff_src == "0.0.0.0" || eff_dst == "0.0.0.0") fallback = true;
+    if (is_empty_or_ws(src_ip)) fallback = true;
+    if (is_empty_or_ws(dst_ip)) fallback = true;
 
     // 2. Canonicalize attack_type — sentinel/warn logged inside canonicalize_attack_type()
     const std::string attack_type = canonicalize_attack_type(raw_attack_type, event_id);
