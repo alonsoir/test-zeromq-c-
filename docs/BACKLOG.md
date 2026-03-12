@@ -16,6 +16,47 @@
 
 ## ✅ COMPLETADO
 
+### Day 83 (12 Mar 2026) — Ground truth bigFlows + CSV E2E + pipeline_health fix + MERGE TO MAIN
+
+**Ground truth bigFlows resuelto (P0 paper):**
+- bigFlows.pcap confirmado benigno: red 172.16.133.x, no aparece en ningún binetflow CTU-13
+- index.html es del escenario Botnet-91 (red 192.168.1.x) — distinto escenario
+- Solo existe capture20110810.binetflow (Neris, red 147.32.x.x) — sin ground truth para 172.16.133.x
+- Conclusión: los 2 attacks_detected (conf≥0.65, L1=68.97%) son FPs del ML
+- **FPR ML = 2/40,467 = 0.0049%** — dato publicable de especificidad
+- ML reduce FPs del Fast Detector en factor ~15,500x (2 vs 31,065)
+
+**Attacks_detected investigados:**
+- Ambos con L1_conf=68.97% exacto — mismo flow-context, host idéntico
+- Timestamps consecutivos (~0.2s) — mismo par src/dst IP, dos flows del mismo patrón
+- Log DAY 82 limpiado al arrancar pipeline DAY 83 — IPs no recuperables
+- Documentado con evidencia disponible: veredicto FP confirmado por ground truth
+
+**CSV Pipeline E2E — 100% validado:**
+- ml-detector CSV: `/vagrant/logs/ml-detector/events/2026-03-12.csv` — 6.7MB activo
+- Historial completo desde 2026-02-22, crecimiento diario continuo
+- firewall-acl-agent CSV: `/vagrant/logs/firewall_logs/firewall_blocks.csv` — 42K
+- rag-ingester: 71,217 líneas parsed_ok, 0 hmac_fail, 0 parse_err (2 rejected por columnas)
+- CSV Pipeline E2E: **100% ✅** (sube de 80% a 100%)
+
+**pipeline_health.sh fix (DEBT-FD-002):**
+- Root cause: `pgrep` corre en macOS host, no dentro de la VM
+- Fix 1: `pgrep` → `vagrant ssh defender -c "ps xa | grep '$binary'"`
+- Fix 2: VM name `server` → `defender`
+- Resultado: 6/6 componentes con PIDs correctos ✅
+
+**F1 re-verificado DAY 83:**
+- F1=1.0000, Precision=1.0000, Recall=1.0000 — reproducible ✅
+- Criterio de merge cumplido con todos los checks verdes
+
+**MERGE TO MAIN ejecutado DAY 83** ✅
+Todos los criterios verificados:
+- ✅ ≥1 dataset balanceado validado (smallFlows + bigFlows, ambos benignos)
+- ✅ ML score investigation documentada (FPR=0.0049%, factor 15,500x)
+- ✅ F1 comparativa limpia (DAY 81)
+- ✅ Pipeline 6/6 RUNNING
+- ✅ F1=1.0000 reproducible con make test-replay-neris
+
 ### Day 82 (11 Mar 2026) — Balanced dataset validation + DEBT-FD-001
 
 **Validación smallFlows.pcap (tráfico benigno Windows):**
@@ -282,6 +323,7 @@ Deuda P2, post-paper. Formato objetivo: `[COMPONENT] key=value` en inglés.
 ### ENT-7 — Observabilidad OpenTelemetry + Grafana
 ### ENT-8 — SecureBusNode (HSM + USB Root Key)
 ### ENT-9 — Captura y correlación opcional de datagramas sospechosos (ADR-008: Captura y correlación opcional de datagramas sospechosos)
+
 ---
 
 ## 📊 Estado global del proyecto

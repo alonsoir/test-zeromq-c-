@@ -40,7 +40,7 @@ for entry in "${COMPONENTS[@]}"; do
     binary=$(basename "$pattern")
 
     # Buscar PID del proceso real (no el grep ni el sudo)
-    pid=$(pgrep -f "$binary" | grep -v grep | tail -1)
+    pid=$(vagrant ssh defender -c "ps xa | grep '$binary' | grep -v grep" 2>/dev/null | awk '{print $1}' | tail -1)
 
     if [ -z "$pid" ]; then
         printf "    %-22s %-10s %-10s %-10s\n" "$name" "❌ DOWN" "-" "-"
