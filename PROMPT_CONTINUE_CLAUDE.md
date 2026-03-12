@@ -1,183 +1,174 @@
-# ML Defender — Prompt de Continuidad DAY 84
-**Generado:** Cierre DAY 83 (12 marzo 2026)
-**Branch activa:** `main` ← MERGE COMPLETADO DAY 83
+# ML Defender — Prompt de Continuidad DAY 85
+**Generado:** Cierre DAY 84 (12 marzo 2026)
+**Branch activa:** `main`
 **Estado del pipeline:** 6/6 componentes RUNNING ✅
-**Tests:** crypto 3/3 ✅ | etcd-hmac 12/12 ✅ | ml-detector 9/9 ✅ | trace_id 44/46 ✅
+**Tests:** crypto 3/3 ✅ | etcd-hmac 12/12 ✅ | ml-detector 9/9 ✅ | trace_id **46/46** ✅
 
 ---
 
-## Logros DAY 83
+## Logros DAY 84
 
-### TAREA 0 — Sanity check ✅
-- Pipeline 6/6 RUNNING
-- Thresholds JSON: DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
-- MISSING_FEATURE_SENTINEL: 21 — sin cambios
+### TAREA 1 — ARCHITECTURE.md v5.1.0 ✅
+- 815 líneas, 10 diagramas Mermaid, totalmente en inglés
+- Resultados validados: F1=1.0000, FPR=0.0049%, latencia 0.24–1.06μs
+- Executive Summary para CTO incluido
+- PDF generado en `/mnt/user-data/outputs/ARCHITECTURE.pdf`
+- Commit pendiente: `git add docs/ARCHITECTURE.md && git commit -m "docs: ARCHITECTURE.md v5.1.0"`
 
-### TAREA 1 — Ground truth bigFlows ✅ RESUELTO (P0 paper)
-- bigFlows.pcap confirmado **benigno puro**: red 172.16.133.x sin binetflow disponible
-- index.html es del escenario Botnet-91 (192.168.1.x) — distinto a Neris (147.32.x.x)
-- Solo hay un binetflow: capture20110810.binetflow (Neris)
-- **FPR ML = 2/40,467 = 0.0049%** — publicable como especificidad
+### TAREA 2 — Fix trace_id 46/46 ✅ CERRADO DAY 84
+**Deuda preexistente desde DAY 72 — cerrada.**
 
-### TAREA 2 — Attacks_detected bigFlows investigados ✅
-- 2 eventos con L1_conf=68.97% exacto — mismo host, flows consecutivos (~0.2s)
-- Veredicto: **FPs del ML** (tráfico benigno sin ground truth botnet)
-- ML reduce FPs Fast Detector en factor **~15,500x** (2 vs 31,065)
-- Log limpiado al arrancar pipeline DAY 83 — IPs no recuperables, documentado
+**FAIL 1 (bug en test):** `ts_bucket0_start = 1000000ULL` no alineado al bucket de
+`ransomware` (window=60000ms). `1000000 / 60000 = 16`, `1059999 / 60000 = 17` → buckets
+distintos → fallo intermitente. Fix: `60000000ULL` (múltiplo exacto de 60000).
 
-### TAREA 3 — Fix pipeline_health.sh ✅
-- pgrep (macOS) → vagrant ssh defender (VM)
-- VM name: server → defender
-- 6/6 componentes con PIDs correctos
+**FAIL 2 (bug en implementación):** En `generate_trace_id_with_metadata()`:
+```cpp
+// ANTES (incorrecto):
+if (eff_src == "0.0.0.0" || eff_dst == "0.0.0.0") fallback = true;
+// disparaba fallback=true para "0.0.0.0" real (IP válida de wildcard listener)
 
-### TAREA 4 — CSV Pipeline E2E ✅ 100% VALIDADO
-- ml-detector: /vagrant/logs/ml-detector/events/ — CSVs diarios desde 2026-02-22
-- firewall-acl-agent: /vagrant/logs/firewall_logs/firewall_blocks.csv
-- rag-ingester: 71,217 parsed_ok, 0 hmac_fail
-- CSV Pipeline sube de 80% → **100% ✅**
-
-### TAREA 5 — F1 re-verificado + MERGE TO MAIN ✅
-- F1=1.0000 reproducible confirmado
-- **MERGE a main ejecutado DAY 83**
-- Tag: `day83-merge`
-
----
-
-## Hallazgos técnicos DAY 83
-
-### Resultado publicable: FPR ML = 0.0049%
-```
-bigFlows.pcap (40,467 flows, tráfico benigno, red 172.16.133.x)
-──────────────────────────────────────────────────────────────
-  ML attacks_detected (conf ≥ 0.65):  2
-  FPR ML:  2 / 40,467 = 0.0049%
-  Fast Detector alertas:              31,065
-  FPR Fast Detector:                  31,065 / 40,467 = 76.8%
-  ML reduce FPs Fast Detector:        ~15,500x
-```
-Demuestra que la arquitectura dual-score justifica su existencia.
-
-### CSV paths (fuentes de verdad)
-- ml-detector CSV: `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
-- firewall CSV: `/vagrant/logs/firewall_logs/firewall_blocks.csv`
-- rag-ingester lee ambos — NO el directorio /vagrant/logs/lab/
-
-### pipeline_health.sh — comando correcto post-fix
-```bash
-vagrant ssh defender -c "ps xa | grep '$binary' | grep -v grep"
+// DESPUÉS (correcto):
+auto is_empty_or_ws = [](const std::string& s) -> bool {
+    if (s.empty()) return true;
+    for (unsigned char c : s) if (!std::isspace(c)) return false;
+    return true;
+};
+if (is_empty_or_ws(src_ip)) fallback = true;
+if (is_empty_or_ws(dst_ip)) fallback = true;
+// inspecciona el INPUT original, no el resultado normalizado
 ```
 
+**Ficheros modificados:**
+- `rag-ingester/include/utils/trace_id_generator.hpp`
+- `rag-ingester/tests/test_trace_id.cpp`
+
+**Resultado:** `make test` → 100% passed, 0 failed. Suite completa limpia. ✅
+
+### Decisiones estratégicas DAY 84
+- **Producción:** bare-metal Linux, dual NIC, sin Vagrant. Kernel ≥ 5.8. Hardware ~150-200€.
+- **Modelo de negocio:** open-core. MIT para hospitales/escuelas. Enterprise comercial.
+  Tier gratuito enterprise para organizaciones que genuinamente no pueden pagar.
+- **Paper:** arXiv como "Independent Researcher, Extremadura, Spain". No requiere afiliación
+  universitaria. Endorser objetivo: Sebastian Garcia (CTU Prague, autor CTU-13).
+- **Repo cleanup:** POST-paper. Freeze en `snapshot/day84-pre-cleanup` antes de limpiar.
+- **Vagrant:** solo para reproducibilidad de experimentos, nunca en producción.
+  Añadir `make test-replay-neris-full` que hace `vagrant up` automático.
+
 ---
 
-## Estado features (sin cambios desde DAY 79)
+## Estado del sistema (sin cambios desde DAY 83)
 
-| Submensaje | Reales | SENTINEL | Semántico |
-|---|---|---|---|
-| ddos_embedded | 9/10 | 0 | 1 |
-| ransomware_embedded | 6/10 | 4 | 0 |
-| traffic_classification | 6/10 | 4 | 0 |
-| internal_anomaly | 7/10 | 3 | 0 |
-| **Total** | **28/40** | **11** | **1** |
+**Branch:** `main` — tag `v0.83.0-day83-main`
+**Pipeline:** 6/6 RUNNING ✅
+**F1:** 1.0000 (CTU-13 Neris, 19,135 flows, thresholds 0.85/0.90/0.80/0.85)
+**FPR ML:** 0.0049% (2 FP / 40,467 flows bigFlows benigno)
+**Reducción FP vs Fast Detector:** ~15,500x
+
+**Features:** 28/40 reales | 11 sentinel (-9999.0f) | 1 semántico (0.5f TCP half-open)
 
 ---
 
-## ORDEN DAY 84
+## ORDEN DAY 85
 
 ### TAREA 0 — Sanity check (5 min)
 ```bash
 vagrant status
-git branch  # confirmar que estamos en main
-make pipeline-start && sleep 8
-vagrant ssh -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
+git branch  # confirmar main
+make test 2>&1 | grep -E '(tests passed|tests failed)'
 ```
 
-### TAREA 1 — Estructura paper arXiv (P0)
-El paper es el siguiente objetivo. Estructura propuesta:
+### TAREA 1 — Commit DAY 84 completo (10 min)
+```bash
+# Fix trace_id ya aplicado en VM — commit pendiente en macOS tras vagrant halt
+git add rag-ingester/include/utils/trace_id_generator.hpp
+git add rag-ingester/tests/test_trace_id.cpp
+git commit -m "fix: trace_id 46/46 — bucket alignment + fallback_applied semantics
 
-**Secciones:**
-1. Abstract — problema, solución, F1=1.0000, FPR=0.0049%
-2. Introduction — motivación (ransomware hospitalario), objetivos
+FAIL 1 (test bug): ts_bucket0_start=1000000 not bucket-aligned for
+window=60000ms. Fixed: 60000000ULL (exact multiple of window).
+
+FAIL 2 (impl bug): fallback_applied triggered for real '0.0.0.0' input.
+Fixed: is_empty_or_ws() checks original input, not normalized result.
+
+Test suite: 44/46 → 46/46. Pre-existing since DAY 72 — closed DAY 84.
+
+Co-authored-by: Claude (Anthropic) <claude@anthropic.com>"
+
+# ARCHITECTURE.md si no se hizo DAY 84
+git add docs/ARCHITECTURE.md
+git commit -m "docs: ARCHITECTURE.md v5.1.0 — Consejo de Sabios review"
+
+git push origin main
+```
+
+### TAREA 2 — Abstract arXiv (P0)
+**Este es el objetivo principal de DAY 85.**
+
+Datos disponibles:
+- F1=1.0000 | Precision=1.0000 | Recall=1.0000 (CTU-13 Neris, 19,135 flows)
+- F1=0.9976 con thresholds conservadores (comparativa DAY 81)
+- FPR ML = 0.0049% (2 FP / 40,467 flows benignos)
+- FPR Fast Detector = 76.8% — ML reduce FPs ~15,500x
+- Latencia: DDoS 0.24μs | Ransomware 1.06μs | Traffic 0.37μs | Internal 0.33μs
+- 6 componentes C++20, eBPF/XDP, embedded RandomForest
+- Afiliación: "Independent Researcher, Extremadura, Spain"
+
+Estructura propuesta del paper:
+1. Abstract
+2. Introduction — motivación (ransomware hospitalario), gap en literatura
 3. Architecture — pipeline 6 componentes, dual-score design
 4. Implementation — C++20, eBPF/XDP, embedded RandomForest
 5. Evaluation — CTU-13 Neris F1=1.0000, bigFlows FPR=0.0049%
 6. Limitations — 28/40 features, DEBT-FD-001, single-node
 7. Future Work — PHASE2, Enterprise features
 8. Conclusion
-9. Acknowledgments — Consejo de Sabios (Claude, Grok, ChatGPT5, DeepSeek, Qwen)
+9. Acknowledgments — Consejo de Sabios
 
-Discutir con el Consejo: venue objetivo (arXiv primero, luego RAID/USENIX Security).
+Venue: arXiv (cs.CR) → RAID 2026 / USENIX Security Fall 2026
 
-### TAREA 2 — Fix trace_id 2 fallos preexistentes DAY 72 (P1)
-```bash
-make test
-# Identificar los 2 fallos trace_id
-# Investigar root cause
-```
-
-### TAREA 3 — DNS payload parsing real (P2)
-Actualmente usa pseudo-domain. Implementar parsing real.
+### TAREA 3 — DNS payload parsing real (P2, si sobra tiempo)
+Actualmente usa pseudo-domain. Implementar parsing real desde el paquete.
 
 ---
 
 ## Deuda técnica actualizada
 
-| Item | Prioridad | DAY |
+| Item | Prioridad | Estado |
 |---|---|---|
-| Paper arXiv — estructura y redacción | **P0** | 84+ |
-| Fix trace_id 2 fallos DAY 72 | P1 | 84 |
-| DNS payload parsing real | P2 | 84-85 |
+| Paper arXiv — redacción | **P0** | DAY 85+ |
+| `make test-replay-neris-full` (Vagrant auto) | P2 | DAY 85-86 |
+| DNS payload parsing real | P2 | DAY 85-86 |
 | DEBT-FD-001: FastDetector Path A → JSON | P1-PHASE2 | post-paper |
-| ml_detector.cpp vacío (0 bytes) | P3 | post-paper |
-| ADR-005 implementación (unificar logs) | P2 | post-paper, con ENT-4 |
-| tcp_udp_ratio → uint8_t protocol | P2-PHASE2 | post-paper |
-| flow_duration_std / protocol_variety / connection_duration_std | P2-PHASE2 | post-paper |
-| ShardedFlowManager config → JSON | P3 | post-paper |
-| geographical_concentration | SKIP | decisión deliberada |
-| ADR-007: Consenso AND firewall | P1-PHASE2 | post-paper |
 | Ring Consumer 28/40 → 40/40 features | P2-PHASE2 | post-paper |
-
----
-
-## Criterio de merge completado ✅ DAY 83
-
-- ✅ ≥1 dataset balanceado validado
-- ✅ ML score investigation documentada
-- ✅ F1 comparativa limpia documentada
-- ✅ Pipeline 6/6 RUNNING
-- ✅ F1=1.0000 reproducible
-
-**Branch main actualizada. Próximo objetivo: paper.**
+| ADR-007: Consenso AND firewall | P1-PHASE2 | post-paper |
+| ~~Fix trace_id 2 fallos DAY 72~~ | ~~P1~~ | ✅ CERRADO DAY 84 |
 
 ---
 
 ## Infraestructura permanente
 
-- **macOS (BSD sed):** Nunca `sed -i`. Usar Python3 inline.
-- **JSON sniffer:** `sniffer/config/sniffer.json` (NO build-debug)
+- **macOS (BSD sed):** Nunca `sed -i`. Usar Python3 inline **desde dentro de la VM** para evitar corrupción de escape sequences por SSH/heredoc.
+- **JSON sniffer:** `sniffer/config/sniffer.json` (NO build-debug/)
 - **JSON ml-detector:** `ml-detector/config/ml_detector_config.json`
-- **level1_attack:** 0.65 (ml_detector_config.json)
+- **level1_attack threshold:** 0.65
+- **VM:** `defender` (no `server`)
 - **CSV ml-detector:** `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
 - **CSV firewall:** `/vagrant/logs/firewall_logs/firewall_blocks.csv`
-- **VM:** `defender` (no `server`)
+- **F1 calculator:** `python3 scripts/calculate_f1_neris.py <sniffer.log> --total-events N`
+- **Fuente de verdad F1:** `docs/experiments/f1_replay_log.csv`
 - **Flujo correcto test:**
 ```bash
   vagrant status
   make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
-  vagrant ssh -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
+  vagrant ssh defender -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
   vagrant up client  # solo si aborted
   make test-replay-neris
   python3 scripts/calculate_f1_neris.py /vagrant/logs/lab/sniffer.log --total-events 19135
 ```
-- **F1 calculator:** `python3 scripts/calculate_f1_neris.py <sniffer.log> --total-events N`
-- **Fuente de verdad F1:** `docs/experiments/f1_replay_log.csv`
-- **ADRs:** ADR-001, ADR-002, ADR-005, ADR-006
 
 ---
 
-*Consejo de Sabios — Cierre DAY 83, 12 marzo 2026*
-*DAY 84 arranca con: paper structure + trace_id fixes + DNS parsing*
-```
----
-ML Defender (aRGus EDR) — open source, C++20, F1=1.0000 validated
-Built with: Alonso Isidoro Roman + Consejo de Sabios (Claude, Grok, ChatGPT5, DeepSeek, Qwen, Gemini)
-https://alonsoir-test-zeromq-c-.mintlify.app/introduction
+*Consejo de Sabios — Cierre DAY 84, 12 marzo 2026*
+*DAY 85 arranca con: commit DAY 84 + abstract arXiv*
+*Test suite: 100% ✅ — sin deuda técnica bloqueante*
