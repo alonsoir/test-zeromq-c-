@@ -1,1208 +1,815 @@
-# **ARCHITECTURE.md - ML Defender Platform (Actualizado Día 9)**
+# ARCHITECTURE.md — ML Defender (aRGus EDR)
 
-**Version:** 4.1.0  
-**Last Updated:** December 5, 2025  
-**Status:** Phase 1 Complete - Gateway Mode Ready (Pending Validation)
-
----
-
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [System Components](#system-components)
-- [Data Flow](#data-flow)
-- [cpp_sniffer Architecture](#cpp_sniffer-architecture)
-- [XDP Mode Selection & Gateway Mode Architecture](#xdp-mode-selection--gateway-mode-architecture)
-- [ml-detector Architecture](#ml-detector-architecture)
-- [RAG Security System Architecture](#rag-security-system-architecture)
-- [Enterprise Features](#enterprise-features)
-- [Home Device Deployment](#home-device-deployment)
-- [Performance Characteristics](#performance-characteristics)
-- [Security Considerations](#security-considerations)
+**Version:** 5.1.0
+**Last Updated:** March 12, 2026 — DAY 83
+**Branch:** main (merged DAY 83)
+**Status:** Production baseline validated — F1=1.0000, FPR=0.0049%
 
 ---
 
-## 🎯 Overview
+## Table of Contents
 
-The ML Defender Platform is a **distributed, multi-component system** designed to provide real-time network security with embedded ML detection and RAG-powered intelligence for both **home** and **enterprise** deployments.
-
-### System Goals
-
-1. **Real-time Detection** - Sub-microsecond threat identification
-2. **High Accuracy** - >98% detection rate, <1% false positives
-3. **Low Overhead** - <5% CPU, <100 MB memory per component
-4. **Scalability** - Single device → Multi-node enterprise
-5. **Security** - Hardened, minimal attack surface
-6. **Intelligence** - LLM-powered security analysis via RAG system
-
----
-
-## 🔧 System Components
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    FULL SYSTEM ARCHITECTURE                  │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
-│  cpp_sniffer    │───────▶│  ml-detector    │───────▶│ firewall-acl    │
-│                 │  ZMQ   │                 │  ZMQ   │     -agent      │
-│  eBPF Capture   │  PUSH  │  ML Inference   │  REQ   │  iptables/nft   │
-│  3-Layer Detect │        │  4 C++20 Models │        │  Auto Response  │
-│  Dual-NIC Ready │        │                 │        │                 │
-└─────────────────┘        └─────────────────┘        └─────────────────┘
-        │                           │                           │
-        │                           │                           │
-        └───────────────────────────┴───────────────────────────┘
-                                    │
-                        ┌───────────▼───────────┐
-                        │  RAG Security System  │
-                        │  TinyLlama-1.1B +     │
-                        │  KISS Architecture    │
-                        └───────────────────────┘
-                                    │
-                        ┌───────────▼───────────┐
-                        │  etcd (Enterprise)    │
-                        │  Config + Coordination│
-                        └───────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Role | Status | Language |
-|-----------|------|--------|----------|
-| **cpp_sniffer** | Packet capture + feature extraction | ✅ Production (Host-Based) | C++20 + eBPF |
-| **ml-detector** | ML inference + threat scoring | ✅ 4 Models Complete | C++20 |
-| **RAG Security System** | LLM intelligence + analysis | ✅ LLAMA Real | C++20 |
-| **firewall-acl-agent** | Automated response | 📋 Planned | C++20 |
-| **etcd** | Config coordination (enterprise) | 📋 Planned | C++20 |
+* [Overview](#overview)
+* [System Components](#system-components)
+* [Data Flow](#data-flow)
+* [Dual-Score Decision Architecture](#dual-score-decision-architecture)
+* [Fast Detector Path Architecture](#fast-detector-path-architecture)
+* [Feature Extraction Taxonomy](#feature-extraction-taxonomy)
+* [Deployment Models](#deployment-models)
+* [Component Architecture](#component-architecture)
+* [Cryptographic Transport](#cryptographic-transport)
+* [Configuration System](#configuration-system)
+* [Validated Results](#validated-results)
+* [Performance Characteristics](#performance-characteristics)
+* [Security Considerations](#security-considerations)
+* [Development Environment](#development-environment)
+* [Production Deployment](#production-deployment)
+* [Roadmap](#roadmap)
+* [Engineering Decision Records](#engineering-decision-records)
+* [Addendum — Security & RAG Enhancements](#addendum--security--rag-enhancements)
+* [Executive Summary — 2 Minutes for CTO](#executive-summary--2-minutes-for-cto)
 
 ---
 
-## 🌊 Data Flow
+## Overview
 
-### Current Implementation (Phase 1 Complete)
-```
-Network Traffic
-      ↓
-┌─────────────┐
-│ cpp_sniffer │ Capture + Extract Features
-│ eBPF/XDP    │ 40 ML features
-│ Dual-NIC    │ Gateway Mode Ready
-└──────┬──────┘
-       │ ZMQ (Protobuf) port 5571
-       ↓
-┌─────────────┐
-│ ml-detector │ 4 Embedded C++20 Models
-│             │ • DDoS: 0.24μs
-│             │ • Ransomware: 1.06μs  
-│             │ • Traffic: 0.37μs
-│             │ • Internal: 0.33μs
-└──────┬──────┘
-       │ ZMQ (Alert) port 5572
-       ↓
-┌─────────────┐
-│ RAG System  │ Security Intelligence
-│ TinyLlama   │ • ask_llm "security questions"
-│ 1.1B        │ • show_config
-│             │ • update_setting
-└─────────────┘
+ML Defender (aRGus EDR) is an open-source, enterprise-grade network security system
+designed to protect hospitals, schools, and small organizations from ransomware and
+DDoS attacks. It combines a high-speed heuristic Fast Detector with an embedded
+C++20 RandomForest ML pipeline to achieve both high recall and ultra-low false
+positive rates.
+
+### Design Philosophy
+
+**Via Appia Quality** — Systems built like Roman roads, designed to endure decades.
+**JSON is the LAW** — All configuration values, including ML thresholds, come from JSON files.
+**Scientific Honesty** — All failures, limitations, and architectural debts are documented explicitly.
+
+### Key Validated Results (DAY 83)
+
+| Metric                          | Value        | Dataset                        |
+| ------------------------------- | ------------ | ------------------------------ |
+| F1-Score                        | **1.0000**   | CTU-13 Neris (19,135 flows)    |
+| Precision                       | **1.0000**   | CTU-13 Neris                   |
+| Recall                          | **1.0000**   | CTU-13 Neris                   |
+| FPR (ML)                        | **0.0049%**  | bigFlows benign (40,467 flows) |
+| FPR (Fast Detector)             | 76.8%        | bigFlows benign                |
+| FP Reduction Factor             | **~15,500x** | ML vs Fast Detector alone      |
+| Detection latency (embedded RF) | 0.24–1.06 µs | Per model                      |
+
+---
+
+## System Components
+
+```mermaid
+graph TD
+    NET[Network Traffic] --> SNIF[sniffer\neBPF/XDP + Fast Detector\nC++20]
+    SNIF -->|ZeroMQ PUSH\nChaCha20+LZ4| MLD[ml-detector\nONNX + Embedded RF\nC++20]
+    MLD -->|ZeroMQ PUB\nChaCha20+LZ4| FW[firewall-acl-agent\nIPSet + IPTables\nC++20]
+    MLD -->|CSV HMAC-SHA256\ndaily rotation| RAGI[rag-ingester\nFAISS + SQLite\nC++20]
+    FW -->|CSV HMAC-SHA256| RAGI
+    RAGI --> RAGS[rag-security\nTinyLlama-1.1B\nC++20]
+    ETCD[etcd-server\nCrypto seeds + Config\nC++20] -->|ChaCha20 seeds| SNIF
+    ETCD -->|ChaCha20 seeds| MLD
+    ETCD -->|ChaCha20 seeds| FW
+    ETCD -->|HMAC keys| RAGI
 ```
 
-### RAG Security System Architecture
-```
-┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│   WhiteList     │    │   RagCommand     │    │   LlamaIntegration│
-│    Manager      │◄---│     Manager      │◄---│     (REAL)       │
-│ (Router + Etcd) │    │ (RAG Core + Val) │    │  TinyLlama-1.1B  │
-└─────────────────┘    └──────────────────┘    └──────────────────┘
-         │                       │                       │
-         │                       ├───────────────────────┘
-         │                       │
-         │              ┌──────────────────┐
-         └------------► │   ConfigManager  │
-                        │  (JSON Persist)  │
-                        └──────────────────┘
+### Component Status (DAY 83)
 
-Commands Available:
-• rag show_config           - Display system configuration
-• rag update_setting <k> <v> - Update settings with validation
-• rag show_capabilities     - Show RAG system capabilities  
-• rag ask_llm <question>    - Query LLAMA with security questions
-• exit                      - Exit the system
+| Component          | Language          | Status     | Binary                                              |
+| ------------------ | ----------------- | ---------- | --------------------------------------------------- |
+| sniffer            | C++20 + eBPF      | Production | `sniffer/build-debug/sniffer`                       |
+| ml-detector        | C++20 + ONNX      | Production | `ml-detector/build-debug/ml-detector`               |
+| firewall-acl-agent | C++20             | Production | `firewall-acl-agent/build-debug/firewall-acl-agent` |
+| rag-ingester       | C++20             | Production | `rag-ingester/build-debug/rag-ingester`             |
+| rag-security       | C++20 + llama.cpp | Production | `rag/build/rag-security`                            |
+| etcd-server        | C++20             | Production | `etcd-server/build-debug/etcd-server`               |
+
+---
+
+## Data Flow
+
+```mermaid
+flowchart TD
+    A[Packet arrives at NIC] --> B[eBPF/XDP kernel hook - less than 1 us]
+    B -->|ring buffer zero-copy| C[RingBufferConsumer\nmulti-threaded]
+    C --> D[ShardedFlowManager\n16 shards by flow hash\nresolves ISSUE-003]
+    D --> E[FeatureExtractor\n40 features per flow]
+    E --> F{Fast Detector\ndual-path}
+    F -->|Path A - hardcoded - DEBT-FD-001| G[is_suspicious\nper-packet heuristics]
+    F -->|Path B - JSON-driven| H[send_ransomware_features\ntemporal aggregates]
+    G --> I[Protobuf serialization\nNetworkSecurityEvent]
+    H --> I
+    I --> J[ChaCha20-Poly1305\n+ LZ4 compression]
+    J -->|ZeroMQ PUSH\ntcp://127.0.0.1:5571| K[ml-detector\nLevel 1 ONNX RF - approx 26 ms]
+    K --> L[Level 2+3 Embedded RF\n0.24 to 1.06 us]
+    L --> M{Dual-Score Decision\nmax of fast and ml}
+    M -->|final_score >= 0.70\nMALICIOUS| N[ZeroMQ PUB\ntcp://0.0.0.0:5572]
+    M -->|final_score >= 0.85\nRAG analysis| O[rag-security\ndeep forensic]
+    N --> P[firewall-acl-agent\nIPSet block - less than 10 ms]
+    P --> Q[HMAC-signed CSV\n/vagrant/logs/firewall_logs/]
+    K --> R[HMAC-signed CSV\n/vagrant/logs/ml-detector/events/]
+    R --> S[rag-ingester\nFAISS + SQLite]
+    Q --> S
 ```
 
 ---
 
-## 🔍 cpp_sniffer Architecture
+## Dual-Score Decision Architecture
 
-**Repository:** This repo  
-**Language:** C++20 + eBPF/C  
-**Status:** ✅ Production Ready (Host-Based Mode)
+The core architectural insight of ML Defender: the Fast Detector has high recall
+but high FPR. The ML layer acts as a validator, not a replacement.
 
-### Three-Layer Detection Pipeline
-```
-┌─────────────────────────────────────────────────────────────┐
-│  KERNEL SPACE                                                │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  Layer 0: eBPF/XDP Program (sniffer.bpf.c)        │    │
-│  │                                                     │    │
-│  │  • XDP/TC hook on network interface                │    │
-│  │  • Parse Ethernet → IP → TCP/UDP headers          │    │
-│  │  • Extract first 512 bytes of L4 payload          │    │
-│  │  • Populate simple_event structure (544 bytes)    │    │
-│  │  • Submit to ring buffer (4 MB)                   │    │
-│  │                                                     │    │
-│  │  Performance: <1 μs per packet                     │    │
-│  │  Safety: eBPF verifier approved                    │    │
-│  └────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                            ↓ Ring Buffer (zero-copy)
-┌─────────────────────────────────────────────────────────────┐
-│  USER SPACE                                                  │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  RingBufferConsumer (Multi-threaded)               │    │
-│  │                                                     │    │
-│  │  Thread Pools:                                      │    │
-│  │  • Ring consumers: N threads (packet ingestion)    │    │
-│  │  • Feature processors: M threads (analysis)        │    │
-│  │  • ZMQ senders: K threads (output)                 │    │
-│  └────────────────────────────────────────────────────┘    │
-│                            ↓                                 │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  FeatureExtractor (83+ features)                   │    │
-│  │                                                     │    │
-│  │  • Statistical features (mean, std, min, max)      │    │
-│  │  • Temporal features (IAT, burst, duration)        │    │
-│  │  • Protocol features (flags, lengths, ratios)      │    │
-│  │  • Behavioral features (scan, lateral, C&C)        │    │
-│  └────────────────────────────────────────────────────┘    │
-│                            ↓                                 │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  Protobuf Serialization                            │    │
-│  │  (NetworkSecurityEvent)                            │    │
-│  └───────────────────────┬────────────────────────────┘    │
-│                           │ Dual-NIC Support                │
-│  ┌───────────────────────▼────────────────────────────┐    │
-│  │  Gateway Mode Metadata                              │    │
-│  │  • ifindex detection (eth1=3, eth3=5)              │    │
-│  │  • mode identification (HOST=1, GATEWAY=2)         │    │
-│  │  • WAN flag (1=WAN-facing, 0=LAN-facing)           │    │
-│  └───────────────────────┬────────────────────────────┘    │
-│                           │                                 │
-│  ┌───────────────────────▼────────────────────────────┐    │
-│  │  ZMQ PUSH Socket                                    │    │
-│  │  tcp://127.0.0.1:5571                              │    │
-│  └────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph Input
+        P[Flow features]
+    end
+    subgraph FastDetector[Fast Detector - Path A and B]
+        FD[Heuristics\nfast_score 0 to 1]
+    end
+    subgraph MLPipeline[ML Pipeline - L1 + L2 + L3]
+        L1[ONNX RF L1\nconf >= 0.65]
+        L2[Embedded DDoS\nRansomware]
+        L3[Embedded Traffic\nInternal]
+        ML[ml_score 0 to 1]
+        L1 --> L2 --> L3 --> ML
+    end
+    subgraph Decision[Dual-Score Decision]
+        MAX[final_score = max of fast and ml\nMaximum Threat Wins]
+        DIV{Divergence\ncheck}
+        MAX --> DIV
+    end
+    subgraph Output
+        SAFE[BENIGN\nno action]
+        ALERT[MALICIOUS >= 0.70\nblock]
+        RAG[RAG forensic >= 0.85\ndeep analysis]
+    end
+    P --> FD
+    P --> L1
+    FD --> MAX
+    ML --> MAX
+    DIV -->|low score| SAFE
+    DIV -->|medium score| ALERT
+    DIV -->|high score| RAG
 ```
 
-### Data Structures
+### Validated Impact of Dual-Score
 
-**simple_event (eBPF → Userspace):**
+| Signal | bigFlows benign (40,467 flows) | Meaning |
+|--------|-------------------------------|---------|
+| Fast Detector alerts | 31,065 | FPR = 76.8% |
+| ML confirmed (conf >= 0.65) | **2** | FPR = **0.0049%** |
+| FP reduction factor | **~15,500x** | ML validates, Fast Detector catches |
+
+### Three Attack Counter Semantics (Architecture, Not a Bug)
+
+| Signal | Condition | Semantic |
+|--------|-----------|----------|
+| log `ATTACK` | `label_l1 == 1` | RF binary vote |
+| `stats_.attacks_detected` | `label_l1==1 AND conf >= 0.65` | Sufficient confidence |
+| `final_classification=MALICIOUS` | `final_score >= 0.70` | Final system decision |
+
+`level1_attack=0.65` is in `ml_detector_config.json` — separate from `sniffer.json`.
+
+---
+
+## Fast Detector Path Architecture
+
+```mermaid
+flowchart TD
+    subgraph PathA[Path A - DEBT-FD-001 - DAY 13]
+        A1[is_suspicious\nper-packet evaluation]
+        A2[Compiled constants:\nTHRESHOLD_EXTERNAL_IPS=10\nTHRESHOLD_SMB_CONNS=3\nTHRESHOLD_PORT_SCAN=10\nTHRESHOLD_RST_RATIO=0.2\nWINDOW_NS=10s]
+        A3[Ignores sniffer.json\nSource of 76.8% FPR\non Windows CDN traffic]
+        A1 --- A2 --- A3
+    end
+    subgraph PathB[Path B - JSON-driven - DAY 80]
+        B1[send_ransomware_features\ntemporal aggregates]
+        B2[Reads sniffer.json:\nexternal_ips_30s=15\nsmb_diversity=10]
+        B3[JSON is the LAW\nCorrect behavior]
+        B1 --- B2 --- B3
+    end
+    subgraph Fix[PHASE2 Fix - ADR-006]
+        F1[Inject FastDetectorConfig\nstruct into constructor]
+        F2[Load from sniffer.json\nat startup]
+        F3[Same latency budget less than 5 us\nno hot path allocation]
+        F1 --- F2 --- F3
+    end
+    PathA -.->|PHASE2| Fix
+    PathB -.->|Already correct| Fix
+```
+
+---
+
+## Feature Extraction Taxonomy
+
+```mermaid
+graph TD
+    FE[FeatureExtractor\n40 features total] --> D[ddos_embedded\n10 features]
+    FE --> R[ransomware_embedded\n10 features]
+    FE --> T[traffic_classification\n10 features]
+    FE --> I[internal_anomaly\n10 features]
+
+    D --> DR[9 REAL - extracted from ShardedFlowManager]
+    D --> DSE[1 SEMANTIC - flow_completion=0.5f - TCP half-open]
+
+    R --> RR[6 REAL]
+    R --> RS[4 SENTINEL - negative 9999.0f]
+
+    T --> TR[6 REAL]
+    T --> TS[4 SENTINEL - negative 9999.0f]
+
+    I --> IR[7 REAL]
+    I --> IS[3 SENTINEL - negative 9999.0f]
+```
+
+| Category | Count | Value      | Meaning                                                     |
+| -------- | ----- | ---------- | ----------------------------------------------------------- |
+| Real     | 28    | Extracted  | Computed from actual flow data                              |
+| Sentinel | 11    | `-9999.0f` | Outside all RF split domains — routes deterministically     |
+| Semantic | 1     | `0.5f`     | TCP half-open — valid domain value, not missing             |
+| Total    | 40    | —          | —                                                           |
+
+### Sentinel Taxonomy (DAY 79 — Critical Design Decision)
+
+`MISSING_FEATURE_SENTINEL = -9999.0f` is confirmed outside all RandomForest split
+domains. Any flow reaching a split on a sentinel-valued feature routes deterministically
+to the same leaf — no spurious variance.
+
+> **Never use `0.5f` or `NaN` as sentinels.** `NaN` propagates silently and corrupts
+> RF arithmetic. `0.5f` is a valid semantic value (TCP half-open). Only `-9999.0f`
+> is guaranteed safe. — ADR-DAY79
+
+### Features Blocked at Phase 1 (DEBT-PHASE2)
+
+| Feature                  | Blocker                                        | Fix    |
+| ------------------------ | ---------------------------------------------- | ------ |
+| `tcp_udp_ratio`          | `FlowStatistics` lacks `uint8_t protocol`      | PHASE2 |
+| `flow_duration_std`      | Requires multi-flow `TimeWindowAggregator`     | PHASE2 |
+| `protocol_variety`       | Requires multi-flow `TimeWindowAggregator`     | PHASE2 |
+| `connection_duration_std`| Requires multi-flow `TimeWindowAggregator`     | PHASE2 |
+
+---
+
+## Deployment Models
+
+### Development / Experiment Reproduction (Current)
+
+```mermaid
+graph TD
+    MAC[macOS Host] --> VAG[Vagrant + VirtualBox]
+    VAG --> DEF[VM: defender\nDebian bookworm\nAll 6 components\n/vagrant/ shared]
+    VAG --> CLI[VM: client\ntcpreplay\nDataset replay]
+    DEF <-->|Private network 192.168.100.x| CLI
+```
+
+**Quick start for experiment reproduction:**
+```bash
+git clone https://github.com/yourusername/ml-defender.git
+cd ml-defender
+vagrant up defender client
+make pipeline-start
+sleep 15
+make test-replay-neris
+python3 scripts/calculate_f1_neris.py \
+  /vagrant/logs/lab/sniffer.log --total-events 19135
+# Expected: F1-Score: 1.0000
+```
+
+> Vagrant is the experiment reproduction environment only.
+> Production deployments run bare-metal without VM overhead.
+
+### Production — Naive Single-Node (Post-Paper)
+
+```mermaid
+graph LR
+    INT[Internet] --> RTR[Router\nany brand\nunmodified]
+    RTR --> MLD[ML Defender Box\nLinux bare metal\ndual NIC\nDebian 11 hardened]
+    MLD --> LAN[Internal Network\nhospital or school or office]
+```
+
+The router is never modified. ML Defender is a transparent bridge — any brand,
+any firmware, zero dependency on network hardware.
+
+**Hardware requirements:**
+- Linux kernel >= 5.8 (eBPF/XDP support, standard since 2020)
+- Dual NIC — any ~20 EUR PCIe card for SOHO; Intel i210/i350 for >1 Gbps
+- RAM: ~900 MB (with TinyLlama loaded)
+- Any mini-PC, NUC, Raspberry Pi 5, or repurposed server
+
+### Production — Multi-Component Parallel (Enterprise Preview)
+
+```mermaid
+graph TD
+    W[WAN interface] --> S1[sniffer-WAN\nconfig: wan=true]
+    L[LAN interface] --> S2[sniffer-LAN\nconfig: wan=false]
+    Z[DMZ interface] --> S3[sniffer-DMZ\nconfig: dmz=true]
+
+    S1 --> M1[ml-detector-1]
+    S2 --> M2[ml-detector-2]
+    S3 --> M3[ml-detector-3]
+
+    M1 --> FW[firewall-acl-agent\naggregates all decisions]
+    M2 --> FW
+    M3 --> FW
+
+    M1 --> RI[rag-ingester]
+    M2 --> RI
+    M3 --> RI
+    FW --> RI
+
+    RI --> RS[rag-security]
+    ETCD[etcd-server] --> M1
+    ETCD --> M2
+    ETCD --> M3
+    ETCD --> FW
+```
+
+---
+
+## Component Architecture
+
+### sniffer (eBPF/XDP)
+
+**Source:** `sniffer/`
+**Config:** `sniffer/config/sniffer.json` — source of truth (NOT `build-debug/`)
+
+**eBPF data structure:**
 ```c
 struct simple_event {
-    uint32_t src_ip;           // Source IP
-    uint32_t dst_ip;           // Destination IP
-    uint16_t src_port;         // Source port
-    uint16_t dst_port;         // Destination port
-    uint8_t protocol;          // IP protocol (TCP=6, UDP=17)
-    uint8_t tcp_flags;         // TCP flags
-    uint32_t packet_len;       // Total packet length
-    uint16_t ip_header_len;    // IP header length
-    uint16_t l4_header_len;    // L4 header length
-    uint64_t timestamp;        // Nanosecond timestamp
-    uint16_t payload_len;      // Actual payload captured
-    uint8_t payload[512];      // First 512 bytes of L4 payload
-} __attribute__((packed));
-
-// Total size: 544 bytes
+    uint32_t src_ip;        uint32_t dst_ip;
+    uint16_t src_port;      uint16_t dst_port;
+    uint8_t  protocol;      uint8_t  tcp_flags;
+    uint32_t packet_len;    uint16_t ip_header_len;
+    uint16_t l4_header_len; uint64_t timestamp;
+    uint16_t payload_len;   uint8_t  payload[512];
+} __attribute__((packed)); // 544 bytes total
 ```
 
-### Dual-NIC Implementation (Day 9)
-
-**Multi-Interface XDP Attachment:**
-```cpp
-// include/ebpf_loader.hpp
-std::vector<int> attached_ifindexes_;  // Multiple interfaces tracking
-
-// src/userspace/ebpf_loader.cpp
-bool EbpfLoader::attach_skb(const std::string& interface_name) {
-    // Check if ALREADY attached to THIS interface
-    if (std::find(attached_ifindexes_.begin(), attached_ifindexes_.end(), ifindex) 
-        != attached_ifindexes_.end()) {
-        return true;  // Already attached
-    }
-    
-    // Attach and add to tracking list
-    int err = bpf_xdp_attach(ifindex, prog_fd_, xdp_flags, nullptr);
-    if (!err) {
-        attached_ifindexes_.push_back(ifindex);
-    }
-    return !err;
-}
+**Startup confirmation:**
 ```
-
-**BPF Map Configuration for Gateway Mode:**
-```c
-// BPF map for interface configuration
-struct iface_config {
-    __u32 ifindex;    // Interface index (e.g., 3 for eth1, 5 for eth3)
-    __u8 mode;        // 1=HOST_BASED, 2=GATEWAY
-    __u8 is_wan;      // 1=WAN-facing, 0=LAN-facing
-    __u8 reserved[2]; // Padding
-};
-```
-
-**Example Configuration:**
-```json
-// eth1 (WAN interface): Host-based mode, WAN-facing
-{
-    "ifindex": 3,
-    "mode": 1,    // HOST_BASED
-    "is_wan": 1,  // WAN-facing
-    "reserved": [0, 0]
-}
-
-// eth3 (LAN interface): Gateway mode, LAN-facing
-{
-    "ifindex": 5,
-    "mode": 2,    // GATEWAY
-    "is_wan": 0,  // LAN-facing
-    "reserved": [0, 0]
-}
-```
-
-### Performance Characteristics
-
-| Metric | Value | Validated |
-|--------|-------|-----------|
-| **Throughput** | 82 evt/s peak | ✅ 17h test |
-| **Latency (Layer 0)** | <1 μs | ✅ eBPF |
-| **Memory** | 4.5 MB | ✅ Stable 17h |
-| **CPU (load)** | 5-10% | ✅ Under stress |
-| **CPU (idle)** | 0% | ✅ Background |
-| **Dual-NIC Attach** | ✅ Working | Verified with bpftool |
-
----
-
-## ⚡ XDP Mode Selection & Gateway Mode Architecture
-
-**Critical Learning (Day 9):** XDP Generic (SKB mode) has fundamental limitations for gateway mode validation in development environments.
-
-### **XDP Generic (Software Mode) Limitations**
-
-#### **What XDP Generic CAN Capture:**
-```
-✅ Tráfico que entra FÍSICAMENTE desde fuera del host
-  - SSH desde máquina externa hacia la VM
-  - HTTP requests desde navegador externo
-  - Cualquier paquete que cruce el límite físico de la VM
-```
-
-#### **What XDP Generic CANNOT Capture:**
-```
-❌ Tráfico generado localmente en la misma VM
-  - tcpreplay desde VM hacia sus propias interfaces
-  - curl/wget a servicios locales en la misma VM
-  - Loopback interno (127.0.0.1)
-
-❌ Tráfico entre network namespaces
-  - Namespace client → veth pair → bridge → eth3
-  - veth pairs, bridges, tunnels internos
-
-❌ Tráfico inyectado artificialmente
-  - Paquetes creados en userspace y enviados directamente
-  - Scapy, raw sockets, netcat desde la misma máquina
-```
-
-### **Technical Explanation**
-
-```
-┌──────────────────────────────────────────────────────┐
-│  Packet Flow in Linux Networking Stack               │
-└──────────────────────────────────────────────────────┘
-
-EXTERNAL TRAFFIC (from physical network):
-  NIC Driver → XDP Generic Hook → Networking Stack → Application
-                    ↑
-            [XDP CAN CAPTURE HERE] ✅
-
-LOCAL TRAFFIC (generated on same host):
-  Application → Networking Stack → Loopback/Output
-                    ↑
-            [XDP HOOK NEVER TRIGGERED] ❌
-
-INTER-VM TRAFFIC (via virtual networks):
-  VM1 App → Virtual Network → Hypervisor → VM2 NIC
-                                       ↑
-                            [PHYSICAL BOUNDARY]
-                                       ↓
-                              XDP CAN CAPTURE ✅
-```
-
-### **Implications for Testing Strategy**
-
-#### **1. Host-Based IDS Testing:**
-```bash
-# ✅ VALID - XDP Generic works for external traffic
-ssh usuario@192.168.56.20        # Desde macOS hacia VM
-curl http://192.168.56.20        # Desde navegador externo
-```
-
-#### **2. Gateway Mode Testing:**
-```bash
-# ❌ INVALID - Won't capture with XDP Generic
-sudo tcpreplay -i eth3 traffic.pcap    # Misma VM
-sudo curl http://192.168.100.1:8080    # Loopback interno
-
-# ✅ VALID - Requires physical traffic crossing boundary
-# Option A: Multi-VM setup
-# Option B: Physical hardware with real NICs
-```
-
-### **XDP Mode Comparison Table**
-
-| Feature | XDP Generic (SKB) | Native XDP (Driver) | TC-BPF (Alternative) |
-|---------|-------------------|---------------------|----------------------|
-| **Performance** | ~1M pps | 10M+ pps | ~500K pps |
-| **Capture Scope** | External only | All traffic | All traffic |
-| **Driver Support** | All NICs | Limited (ixgbe, mlx5) | All NICs |
-| **Gateway Mode** | Limited testing | Full support | Full support |
-| **Development** | Easy | Hardware required | Easy |
-| **Our Use Case** | Host-based OK | Production gateway | Fallback option |
-
-### **Gateway Mode Validation Strategy**
-
-#### **Development/Testing Environment:**
-```ruby
-# Vagrantfile Multi-VM Setup (Day 10 Strategy)
-Vagrant.configure("2") do |config|
-  # Defender VM (ML Defender)
-  config.vm.define "defender" do |defender|
-    defender.vm.network "private_network",
-                      ip: "192.168.100.1",
-                      virtualbox__intnet: "lan"
-    defender.vm.network "public_network",
-                      bridge: "en0: Wi-Fi"
-  end
-  
-  # Client VM (Traffic Generator)
-  config.vm.define "client" do |client|
-    client.vm.network "private_network",
-                      ip: "192.168.100.50",
-                      virtualbox__intnet: "lan"
-  end
-end
-```
-
-#### **Traffic Flow for Validation:**
-```
-Client VM (192.168.100.50)
-  ↓ curl 8.8.8.8
-  ↓ VirtualBox Internal Network "lan"
-  ↓
-Defender eth3 (192.168.100.1) ← ✅ XDP GENERIC CAN CAPTURE
-  (Traffic crosses VM boundary)
-  ↓ IP forwarding + NAT
-  ↓
-Defender eth1 (192.168.56.20)
-  ↓
-Internet
-```
-
-#### **Success Criteria for Gateway Mode:**
-1. **Traffic must cross VM boundary** (physical network hop)
-2. **eth3 must be in gateway mode** (`mode=2, wan=0`)
-3. **Metadata must propagate** (`ifindex=5` events appear)
-4. **Performance must be measured** (throughput, latency, drops)
-
-### **Production Deployment Requirements**
-
-#### **For Small Office/Home Office (SOHO):**
-```
-RECOMMENDED: Native XDP-capable NIC
-  - Intel i210/i350 (supports native XDP)
-  - Throughput: 1 Gbps full duplex
-  - Latency: <10 μs per packet
-
-FALLBACK: TC-BPF if Native XDP unavailable
-  - Works with any NIC
-  - Throughput: ~500 Mbps
-  - Latency: ~50 μs per packet
-```
-
-#### **For Enterprise Deployment:**
-```
-REQUIRED: Native XDP with hardware offload
-  - Mellanox ConnectX-5/6 (mlx5 driver)
-  - Intel E810 (ice driver)
-  - Throughput: 10-100 Gbps
-  - Latency: <5 μs per packet
-```
-
-### **Testing Methodology Updates**
-
-#### **Updated Test Categories:**
-
-1. **Unit Tests** - Individual components
-2. **Integration Tests** - Component interactions
-3. **Host-Based Validation** - External → VM traffic
-4. **Gateway Mode Validation** - Multi-VM or physical setup
-5. **Performance Benchmarks** - Throughput, latency, drops
-6. **Long-Running Stability** - 24h+ continuous operation
-
-#### **Gateway-Specific Tests:**
-```bash
-# Test 1: Multi-VM traffic validation
-vagrant up defender client
-vagrant ssh client -c "curl 8.8.8.8"
-# Verify: Events with ifindex=5 appear in defender logs
-
-# Test 2: Performance under load
-vagrant ssh client -c "iperf3 -c 8.8.8.8 -t 30"
-# Measure: Throughput, CPU usage, packet drops
-
-# Test 3: Protocol coverage
-vagrant ssh client -c "nmap -sS -sU -p 1-1000 8.8.8.8"
-# Verify: TCP/UDP packets captured correctly
-```
-
-### **Key Takeaways for Developers**
-
-1. **XDP Generic is sufficient for:**
-    - Host-based IDS development
-    - Unit/integration testing
-    - Feature development
-
-2. **XDP Generic is insufficient for:**
-    - Gateway mode validation with synthetic traffic
-    - Performance benchmarking of transit traffic
-    - Production gateway deployments
-
-3. **Validation requires:**
-    - Physical traffic crossing VM/host boundary
-    - Multi-VM setup or physical hardware
-    - Real-world traffic patterns
-
----
-
-## 🤖 ml-detector Architecture
-
-**Repository:** ../ml-detector  
-**Language:** C++20  
-**Status:** ✅ 4 Embedded Models Complete
-
-### Current State (4 C++20 Embedded Models)
-```
-ZMQ PULL (from cpp_sniffer) port 5571
-      ↓
-┌──────────────────────┐
-│  Feature Validation  │
-│  • Check 40 features │
-│  • Handle missing    │
-└──────────┬───────────┘
-           ↓
-┌──────────────────────┐
-│  4 Embedded Models   │
-│  • All C++20         │
-│  • Sub-microsecond   │
-└──────────┬───────────┘
-           ↓
-┌──────────────────────┐
-│  Alert Generation    │
-│  • Configurable      │
-│    thresholds        │
-│  • Send to firewall  │
-└──────────────────────┘
-```
-
-### Embedded Model Performance
-
-**Model #1: DDoS Detector**
-- **Latency:** 0.24μs (417x better than target)
-- **Features:** 10 network behavior features
-- **Accuracy:** >98% validated
-- **Throughput:** ~4.1M predictions/sec
-
-**Model #2: Ransomware Detector**
-- **Latency:** 1.06μs (94x better than target)
-- **Features:** 10 file/encryption patterns
-- **Accuracy:** >98% validated
-- **Throughput:** 944K predictions/sec
-
-**Model #3: Traffic Classifier**
-- **Latency:** 0.37μs (270x better than target)
-- **Features:** 10 traffic pattern features
-- **Accuracy:** Internet vs Internal classification
-- **Throughput:** ~2.7M predictions/sec
-
-**Model #4: Internal Threat Detector**
-- **Latency:** 0.33μs (303x better than target)
-- **Features:** 10 lateral movement indicators
-- **Accuracy:** Data exfiltration detection
-- **Throughput:** ~3.0M predictions/sec
-
-### Configuration System
-```json
-{
-  "ml_defender": {
-    "thresholds": {
-      "ddos": 0.85,
-      "ransomware": 0.90,  
-      "traffic": 0.80,
-      "internal": 0.85
-    },
-    "validation": {
-      "min_threshold": 0.5,
-      "max_threshold": 0.99,
-      "fallback_threshold": 0.75
-    }
-  }
-}
+[ML Defender] Thresholds (JSON): DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
 ```
 
 ---
 
-## 🧠 RAG Security System Architecture
+### ml-detector
 
-**Repository:** /vagrant/rag  
-**Language:** C++20  
-**Status:** ✅ Complete with Real LLAMA Integration
+**Source:** `ml-detector/`
+**Config:** `ml-detector/config/ml_detector_config.json`
 
-### KISS Architecture Design
-```
-┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│   WhiteList     │    │   RagCommand     │    │   LlamaIntegration│
-│    Manager      │◄---│     Manager      │◄---│     (REAL)       │
-│ (Router + Etcd) │    │ (RAG Core + Val) │    │  TinyLlama-1.1B  │
-└─────────────────┘    └──────────────────┘    └──────────────────┘
-         │                       │                       │
-         │                       ├───────────────────────┘
-         │                       │
-         │              ┌──────────────────┐
-         └------------► │   ConfigManager  │
-                        │  (JSON Persist)  │
-                        └──────────────────┘
-```
+> Note: `ml-detector/src/ml_detector.cpp` is empty (0 bytes).
+> All logic is in `ml-detector/src/zmq_handler.cpp` (927 lines). — DAY 82
 
-### Core Components
+#### Model Stack
 
-**1. WhiteListManager**
-- Central router for all communications
-- etcd integration for distributed coordination
-- Single point of truth for component registration
+| Level | Model                          | Features | Threshold | Latency     | Note                          |
+| ----- | ------------------------------ | -------- | --------- | ----------- | ----------------------------- |
+| L1    | ONNX RandomForest              | 23       | 0.65      | ~26 ms      | ONNX runtime overhead         |
+| L2    | Embedded C++20 DDoS RF         | 10       | 0.70      | **0.24 µs** | 4.1M inferences/sec           |
+| L2    | Embedded C++20 Ransomware RF   | 10       | 0.75      | **1.06 µs** | 944K inferences/sec           |
+| L3    | Embedded C++20 Traffic RF      | 10       | 0.60      | **0.37 µs** | 2.7M inferences/sec           |
+| L3    | Embedded C++20 Internal RF     | 10       | 0.65      | **0.33 µs** | 3.0M inferences/sec           |
 
-**2. RagCommandManager**
-- Core RAG logic and command processing
-- Inherits from BaseValidator for robust validation
-- Manages all RAG-specific operations
+> **ONNX L1 latency (~26 ms):** Dominated by ONNX runtime initialization, not
+> inference. Can be reduced with `ORT_ENABLE_ALL` session options, or by converting
+> L1 to embedded C++20 RF (same approach as L2+L3). Planned for PHASE2.
 
-**3. LlamaIntegration**
-- **Real TinyLlama-1.1B integration** (not simulated)
-- Model: `/vagrant/rag/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf`
-- C++20 bindings to llama.cpp library
-- Security-focused prompt engineering
+#### CSV Output
 
-**4. ConfigManager**
-- JSON persistence with automatic type validation
-- Settings: `rag_port`, `model_path`, `max_tokens`
-- Runtime configuration updates
-
-### Available Commands
-```bash
-SECURITY_SYSTEM> rag show_config
-SECURITY_SYSTEM> rag ask_llm "¿Qué es un firewall en seguridad informática?"
-SECURITY_SYSTEM> rag ask_llm "Explica cómo detectar un ataque DDoS"
-SECURITY_SYSTEM> rag update_setting port 9090
-SECURITY_SYSTEM> rag show_capabilities
-SECURITY_SYSTEM> exit
-```
-
-### Validation System
-```
-BaseValidator (Abstract)
-    ↑
-RagValidator (Concrete)
-    • Command validation
-    • Setting type checking  
-    • Security rule enforcement
-```
-
-### Known Issues & Solutions
-
-**⚠️ KV Cache Inconsistency:**
-```
-Problem: 
-  init: the tokens of sequence 0 in the input batch have inconsistent sequence positions
-  - last position stored: X = 213
-  - tokens have starting position: Y = 0
-  
-Solution:
-  Manual KV cache clearing between queries using batch reset
-  Positions always start at 0 for new queries
-  Workaround stable for multiple sequential queries
-```
-
-**Technical Implementation:**
-```cpp
-// Manual cache clearing workaround
-void clear_kv_cache() {
-    llama_batch batch = llama_batch_init(1, 0, 1);
-    batch.n_tokens = 0;  // Empty batch
-    llama_decode(ctx, batch);  // Resets internal state
-    llama_batch_free(batch);
-}
-```
-
-### Usage Example
-```bash
-# Start RAG Security System
-cd /vagrant/rag/build && ./rag-security
-
-# Interactive session
-SECURITY_SYSTEM> rag ask_llm "¿Cómo funciona un firewall de aplicaciones?"
-🤖 Consultando LLM: "¿Cómo funciona un firewall de aplicaciones?"
-🎯 Generando respuesta REAL para: "¿Cómo funciona un firewall de aplicaciones?"
-📊 Tokens generados: 86
-🤖 Respuesta: Un firewall de aplicaciones es un sistema de seguridad que filtra el tráfico...
-```
+- Path: `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
+- Condition: `final_score >= 0.50`
+- Schema: 127 columns (validated DAY 64)
+- HMAC-SHA256 per row — feeds directly into `rag-ingester` for forensic queries
+- Daily rotation
 
 ---
 
-## 🏢 Enterprise Features
+### firewall-acl-agent
 
-## 🔗 etcd Coordinator (C++20)
+**Source:** `firewall-acl-agent/`
 
-**Repository:** ../etcd-coordinator  
-**Language:** C++20  
-**Library:** etcd-cpp-apiv3  
-**Status:** 📋 Phase 4 (Enterprise Features)
+- Decrypts ChaCha20-Poly1305 events from ml-detector (ZeroMQ SUB)
+- Decompresses LZ4
+- Updates IPSet blacklist and applies IPTables DROP rule
+- Writes HMAC-signed CSV: `/vagrant/logs/firewall_logs/firewall_blocks.csv`
+- Stress tested: 364 ev/s, 54% CPU, 127 MB RAM, **0 crypto errors** @ 36K events
+- **Current mode:** `simulate_block: true` (dry-run for development safety)
 
-### Core Responsibilities
-
-```cpp
-class EtcdCoordinator {
-public:
-    // 1. Receive JSON from components
-    void receive_config(const std::string& component_id, 
-                       const nlohmann::json& config);
-    
-    // 2. Store in key-value structure
-    void store(const std::string& key, const std::string& value);
-    
-    // 3. O(1) access with JSON path
-    std::string get(const std::string& json_path);
-    void set(const std::string& json_path, const std::string& value);
-    
-    // 4. Notify watchers with validation
-    void watch(const std::string& key_prefix, 
-              std::function<void(const WatchEvent&)> callback);
-    bool validate_update(const std::string& key, 
-                        const nlohmann::json& new_value);
-    
-    // 5. Distribute encryption keys
-    void distribute_encryption_key(const std::string& component_id,
-                                   const std::vector<uint8_t>& key);
-};
-```
-
-### Key Structure
-
-```
-/config/
-├── cpp_sniffer/
-│   ├── node_001/
-│   │   ├── interface           → "eth0"
-│   │   ├── filter_mode         → "hybrid"
-│   │   ├── excluded_ports      → [22, 4444, 8080]
-│   │   └── encryption_key      → [binary blob]
-│   └── node_002/...
-├── ml_detector/
-│   ├── model_version           → "3"
-│   ├── model_path              → "/models/rf_v3.pkl"
-│   ├── threshold               → 0.75
-│   ├── f1_scores/
-│   │   ├── model_1             → 0.9861
-│   │   ├── model_2             → 0.9912
-│   │   └── model_3             → 0.9934  # BEST
-│   └── production_model        → "model_3"
-└── firewall_acl/
-    ├── block_duration          → 3600
-    ├── whitelist               → ["192.168.1.100"]
-    └── action_mode             → "block"
-
-/state/
-├── health/
-│   ├── cpp_sniffer_001         → "healthy"
-│   ├── ml_detector             → "healthy"
-│   └── firewall_acl            → "healthy"
-└── metrics/
-    ├── packets_processed       → 2080549
-    ├── alerts_generated        → 1234
-    └── models_swapped          → 3
-```
-
-### Implementation (C++20)
-
-```cpp
-#include <etcd/Client.hpp>
-#include <nlohmann/json.hpp>
-#include <thread>
-#include <coroutine>
-
-class EtcdCoordinator {
-private:
-    etcd::Client client_;
-    std::unordered_map<std::string, WatchHandle> watchers_;
-    
-public:
-    EtcdCoordinator(const std::string& etcd_url) 
-        : client_(etcd_url) {}
-    
-    // 1. Receive JSON from component
-    void receive_config(const std::string& component_id, 
-                       const nlohmann::json& config) {
-        std::string key = "/config/" + component_id;
-        std::string value = config.dump();
-        
-        auto response = client_.set(key, value).get();
-        if (!response.is_ok()) {
-            throw std::runtime_error("Failed to store config");
-        }
-    }
-    
-    // 2. Store in KV (already done above)
-    
-    // 3. O(1) access with JSON path
-    std::string get(const std::string& json_path) {
-        auto response = client_.get(json_path).get();
-        if (!response.is_ok()) {
-            throw std::runtime_error("Key not found: " + json_path);
-        }
-        return response.value().as_string();
-    }
-    
-    void set(const std::string& json_path, const std::string& value) {
-        // Validate before setting
-        if (!validate_update(json_path, nlohmann::json::parse(value))) {
-            throw std::runtime_error("Invalid value for key: " + json_path);
-        }
-        
-        client_.set(json_path, value).get();
-        // Watchers are automatically notified by etcd
-    }
-    
-    // 4. Watch with validation
-    void watch(const std::string& key_prefix, 
-              std::function<void(const WatchEvent&)> callback) {
-        
-        auto watcher = client_.watch(key_prefix);
-        
-        // Spawn coroutine for async watching
-        std::jthread watch_thread([this, watcher = std::move(watcher), 
-                                  callback]() mutable {
-            while (true) {
-                auto response = watcher->Wait();
-                if (!response.is_ok()) break;
-                
-                for (const auto& event : response.events()) {
-                    WatchEvent evt{
-                        .key = event.key(),
-                        .value = event.value(),
-                        .type = event.event_type()
-                    };
-                    
-                    // Validate before notifying
-                    if (validate_update(evt.key, 
-                                      nlohmann::json::parse(evt.value))) {
-                        callback(evt);
-                    }
-                }
-            }
-        });
-        
-        watch_thread.detach();
-    }
-    
-    // Validation logic
-    bool validate_update(const std::string& key, 
-                        const nlohmann::json& new_value) {
-        // Example: Validate threshold is in [0, 1]
-        if (key.find("/threshold") != std::string::npos) {
-            float threshold = new_value.get<float>();
-            return threshold >= 0.0f && threshold <= 1.0f;
-        }
-        
-        // Example: Validate port is in valid range
-        if (key.find("/excluded_ports") != std::string::npos) {
-            for (int port : new_value) {
-                if (port < 1 || port > 65535) return false;
-            }
-        }
-        
-        // Add more validation rules...
-        return true;
-    }
-    
-    // 5. Distribute encryption keys
-    void distribute_encryption_key(const std::string& component_id,
-                                   const std::vector<uint8_t>& key) {
-        std::string key_path = "/config/" + component_id + "/encryption_key";
-        
-        // Base64 encode key for storage
-        std::string encoded_key = base64_encode(key);
-        
-        client_.set(key_path, encoded_key).get();
-    }
-};
-```
-
-### Component Watcher (C++20)
-
-**Each component implements:**
-
-```cpp
-// In cpp_sniffer, ml_detector, firewall_acl
-class ComponentWatcher {
-private:
-    EtcdCoordinator& coordinator_;
-    std::string component_id_;
-    
-public:
-    ComponentWatcher(EtcdCoordinator& coord, std::string id)
-        : coordinator_(coord), component_id_(id) {}
-    
-    void start_watching() {
-        std::string watch_prefix = "/config/" + component_id_;
-        
-        coordinator_.watch(watch_prefix, [this](const WatchEvent& event) {
-            this->handle_config_update(event);
-        });
-    }
-    
-    void handle_config_update(const WatchEvent& event) {
-        std::cout << "[Watcher] Config update: " 
-                  << event.key << " = " << event.value << std::endl;
-        
-        // Hot-reload configuration
-        auto new_config = nlohmann::json::parse(event.value);
-        apply_config(new_config);
-    }
-    
-    void apply_config(const nlohmann::json& config) {
-        // Example: Update filter ports without restart
-        if (config.contains("excluded_ports")) {
-            update_excluded_ports(config["excluded_ports"]);
-        }
-        
-        // Example: Swap ML model without restart
-        if (config.contains("model_path")) {
-            hot_swap_model(config["model_path"]);
-        }
-    }
-};
-```
+> **ADR-007 pending:** Current blocking uses `MAX(fast, ml)`. PHASE2 introduces
+> AND consensus — both Fast Detector AND ML must agree above threshold before a
+> block is applied. Reduces spurious blocks on ambiguous traffic.
 
 ---
 
-## 🏠 Home Device Deployment
+### rag-ingester
 
-### Target Hardware
+**Source:** `rag-ingester/`
 
-**Raspberry Pi 5:**
-- ARM Cortex-A76 (4 cores, 2.4 GHz)
-- 8 GB RAM
-- microSD / NVMe storage
-- Gigabit Ethernet
+- Reads ml-detector CSV + firewall CSV
+- Validates HMAC-SHA256 per row before ingestion (chain of custody)
+- Embeds events into FAISS Attack index (256-d vectors)
+- Stores metadata in SQLite
+- Validated DAY 83: `lines=71,217 parsed_ok=71,217 hmac_fail=0 parse_err=0`
 
-### Custom Debian 11 ARM
-
-**Minimal OS:**
-```
-Base Debian 11 ARM64
-├─ Kernel 6.1+ (eBPF support)
-├─ libbpf, libzmq (minimal deps)
-├─ systemd (service management)
-├─ iptables/nftables
-└─ SSH (hardened)
-
-Removed:
-❌ Desktop environment
-❌ Unnecessary services
-❌ Development tools (after build)
-❌ Documentation
-```
-
-**Size Target:** <2 GB total footprint
-
-### Security Hardening
-
-1. **Minimal Services**
-    - Only: sshd, systemd, network
-    - Firewall: Drop all except SSH + management
-
-2. **Secure Boot**
-    - Signed kernel
-    - Verified boot chain
-    - Read-only root
-
-3. **Auto-Updates**
-    - Security patches only
-    - Staged rollout
-    - Rollback on failure
-
-4. **Network Isolation**
-    - Management VLAN
-    - Monitored interfaces only
-    - No outbound except updates
-
-### Physical Device
-
-**Case Design:**
-```
-┌─────────────────────────┐
-│   🛡️ ML Defender Home   │
-│                         │
-│  [●] Power   [●] Net    │
-│  [●] Alert   [●] Health │
-│                         │
-│  👤 Avatar 1  👤 Avatar 2│
-└─────────────────────────┘
-```
-
-**LEDs:**
-- 🟢 Power (green)
-- 🟢 Network (green = OK, 🟡 amber = degraded)
-- 🔴 Alert (red = threat detected)
-- 🔵 Health (blue = all services OK)
+**HMAC key rotation policy (ADR-004):**
+- Keys rotated via etcd with cooldown period
+- Heartbeat: 30s interval, TTL: 60s
+- All rows written with the key active at write time; validated with key active at read time
 
 ---
 
-## 📊 Performance Characteristics (Full System)
+### rag-security
+
+**Source:** `rag/`
+
+- TinyLlama-1.1B (GGUF, llama.cpp backend)
+- FAISS similarity search over Attack index
+- Activated when `final_score >= 0.85`
+- CLI forensic interface:
+  ```bash
+  rag ask_llm "What IPs were blocked in the last hour?"
+  rag show_config
+  rag show_capabilities
+  ```
+
+---
+
+### etcd-server
+
+**Source:** `etcd-server/`
+
+```mermaid
+graph TD
+    ETCD[etcd-server] -->|ChaCha20 seeds| S[sniffer]
+    ETCD -->|ChaCha20 seeds| M[ml-detector]
+    ETCD -->|ChaCha20 seeds| F[firewall-acl-agent]
+    ETCD -->|HMAC keys + rotation ADR-004| RI[rag-ingester]
+    S -->|heartbeat 30s TTL 60s| ETCD
+    M -->|heartbeat 30s TTL 60s| ETCD
+    F -->|heartbeat 30s TTL 60s| ETCD
+```
+
+> **Open Source mode:** etcd distributes crypto seeds. Functional but not
+> enterprise-grade. A compromised etcd exposes all component keys.
+>
+> **Enterprise ENT-3:** P2P key exchange. Each component pair negotiates session
+> keys via Diffie-Hellman authenticated by component identity hashes (SHA256 of
+> binary + config at startup). etcd is removed from the cryptographic trust chain.
+
+---
+
+## Cryptographic Transport
+
+| Channel                    | Encryption        | Compression | Integrity      | Notes                        |
+| -------------------------- | ----------------- | ----------- | -------------- | ---------------------------- |
+| sniffer → ml-detector      | ChaCha20-Poly1305 | LZ4         | AEAD           | packet-to-ML transport       |
+| ml-detector → firewall     | ChaCha20-Poly1305 | LZ4         | AEAD           | dual-score decision output   |
+| CSV logs                   | —                 | —           | HMAC-SHA256    | forensic ingestion integrity |
+| Component session keys     | Diffie-Hellman    | —           | SHA256         | ENT-3 P2P, no etcd reliance  |
+| etcd → components          | ChaCha20-Poly1305 | —           | TLS            | open source mode             |
+
+---
+
+## Configuration System
+
+**Principle:** JSON is the LAW. No hardcoded security values in production code.
+Fallbacks are explicit and logged.
+
+**Source files (always edit these, never build artifacts):**
+
+| Component          | Config file                                               |
+| ------------------ | --------------------------------------------------------- |
+| sniffer            | `sniffer/config/sniffer.json`                             |
+| ml-detector        | `ml-detector/config/ml_detector_config.json`              |
+| firewall-acl-agent | `firewall-acl-agent/config/firewall_acl_agent_config.json`|
+| rag-ingester       | `rag-ingester/config/rag_ingester_config.json`            |
+
+> **Warning:** `sniffer/build-debug/config/sniffer.json` is a generated artifact.
+> Changes are overwritten at build time. Always edit the source file.
+
+---
+
+## Validated Results
+
+### F1 Comparison (DAY 81 — same PCAP, controlled)
+
+| Condition              | DDoS | Ransom | Traffic | Internal | F1         | FP |
+| ---------------------- | ---- | ------ | ------- | -------- | ---------- | -- |
+| Production (JSON)      | 0.85 | 0.90   | 0.80    | 0.85     | **1.0000** | 0  |
+| Legacy low thresholds  | 0.70 | 0.75   | 0.70    | 0.70     | **0.9976** | 1  |
+
+### Specificity Validation (DAY 82-83 — benign traffic)
+
+| Dataset         | Flows  | Network       | ML FP | FPR ML       | FD alerts | FPR FD |
+| --------------- | ------ | ------------- | ----- | ------------ | --------- | ------ |
+| smallFlows.pcap | 1,209  | 172.16.133.x  | 0     | 0%           | 3,741     | —      |
+| bigFlows.pcap   | 40,467 | 172.16.133.x  | **2** | **0.0049%**  | 31,065    | 76.8%  |
+
+**bigFlows confirmed benign:** network 172.16.133.x is not present in any CTU-13
+binetflow. The Botnet-91 scenario (192.168.1.x) in ctu13/index.html is a completely
+different dataset from Neris (147.32.x.x).
+
+### Experiment Tracking
+
+All F1 replay results in `docs/experiments/f1_replay_log.csv`:
+
+| replay_id                  | day | F1         | Notes                          |
+| -------------------------- | --- | ---------- | ------------------------------ |
+| UNKNOWN_DAY79              | 79  | 0.9921     | Baseline after sentinel fix    |
+| UNKNOWN_DAY80              | 80  | 0.9934     | JSON thresholds activated      |
+| DAY81_thresholds_085090    | 81  | **1.0000** | First clean replay             |
+| DAY81_condicionB           | 81  | 0.9976     | Legacy thresholds comparison   |
+| DAY82-001                  | 82  | —          | smallFlows benign, attacks=0   |
+| DAY82-002                  | 82  | —          | bigFlows, 2 FP conf>=0.65      |
+| DAY83_verification         | 83  | **1.0000** | Pre-merge re-verification      |
+
+---
+
+## Performance Characteristics
 
 ### Latency Budget (End-to-End)
 
-| Stage | Latency | Cumulative |
-|-------|---------|------------|
-| eBPF capture | <1 μs | 1 μs |
-| Ring buffer | <1 μs | 2 μs |
-| Feature extraction | <10 μs | 12 μs |
-| ZMQ PUSH | <100 μs | 112 μs |
-| ml-detector inference | 0.24-1.06μs | ~113 μs |
-| RAG analysis (optional) | <1 sec | ~1.1 sec |
+| Stage                        | Latency    | Note                          |
+| ---------------------------- | ---------- | ----------------------------- |
+| eBPF/XDP kernel capture      | <1 µs      |                               |
+| Ring buffer to userspace     | <1 µs      | zero-copy                     |
+| Feature extraction           | <10 µs     |                               |
+| Fast Detector heuristics     | <5 µs      | Path A or B                   |
+| ZeroMQ + ChaCha20 + LZ4      | <100 µs    |                               |
+| ml-detector L1 (ONNX)        | ~26 ms     | optimization planned PHASE2   |
+| ml-detector L2+L3 (embedded) | 0.24–1.06 µs |                             |
+| firewall-acl-agent response  | <10 ms     |                               |
+| **Total packet-to-block**    | **<150 ms**| ONNX dominates worst case     |
 
-**Total:** <150 ms from packet to detection (worst case)
+### Resource Usage (Single Node, Lab VM)
 
-### Throughput
+| Component                 | CPU         | Memory  |
+| ------------------------- | ----------- | ------- |
+| sniffer                   | 5–10%       | ~5 MB   |
+| ml-detector               | 10–20%      | ~150 MB |
+| firewall-acl-agent        | 5% (54% stress) | ~127 MB |
+| rag-ingester              | variable    | ~50 MB  |
+| rag-security (TinyLlama)  | 15–30%      | ~500 MB |
+| etcd-server               | 2%          | ~20 MB  |
+| **Total**                 | **<70%**    | **<900 MB** |
 
-- **cpp_sniffer:** 82 evt/s validated (can handle 200+ evt/s)
-- **ml-detector:** 944K - 4.1M inferences/sec across 4 models
-- **Bottleneck:** Network bandwidth (1 Gbps link saturates at ~120k pps)
+### Target Hardware by Deployment Tier
 
-### Resource Usage
-
-**Per Component (Raspberry Pi 5):**
-| Component | CPU | Memory | Disk |
-|-----------|-----|--------|------|
-| cpp_sniffer | 5-10% | 5 MB | 2 MB |
-| ml-detector | 10-20% | 150 MB | 50 MB |
-| RAG System | 15-30% | 500 MB | 1.5 GB (model) |
-| **Total** | **<60%** | **<700 MB** | **~1.5 GB** |
-
-**Plenty of headroom for 4-core ARM CPU + 8 GB RAM**
-
----
-
-## 🔒 Security Considerations
-
-### Attack Surface
-
-**Minimized:**
-- eBPF: Kernel-verified, no arbitrary code exec
-- cpp_sniffer: Runs as non-root (cap_net_admin only)
-- ZMQ: Local sockets only (no external exposure)
-- RAG System: Local model, no external API calls
-
-**Risks:**
-- eBPF bugs (mitigated by verifier)
-- ZMQ buffer overflow (mitigated by Protobuf size limits)
-- ml-detector model poisoning (mitigated by signature verification)
-
-### Hardening Checklist
-
-- [x] eBPF verifier approved
-- [x] Minimal privileges (capabilities, not root)
-- [ ] SELinux/AppArmor profiles
-- [ ] Signed model updates
-- [ ] Encrypted ZMQ (optional, for remote)
-- [ ] Rate limiting on all inputs
-- [ ] Audit logging
+| Tier     | Hardware                        | Approx. Cost | Capacity         |
+| -------- | ------------------------------- | ------------ | ---------------- |
+| Minimal  | Raspberry Pi 5 (8 GB)           | 80 EUR       | SOHO, 1–5 devices |
+| Standard | Mini-PC NUC (16 GB, dual NIC)   | 200 EUR      | School / clinic  |
+| Full     | x86_64 server (32 GB, SFP+)     | 500 EUR      | Hospital / enterprise |
 
 ---
 
-## 📈 Scalability
+## Security Considerations
 
-### Single Device (Home)
+### Guarantees
 
-- 1 Raspberry Pi 5
-- 3 components co-located
-- 1 Gbps link (~120k pps)
-- **Capacity:** 1-5 devices protected
+- ChaCha20-Poly1305 AEAD — all inter-component traffic authenticated and encrypted
+- HMAC-SHA256 CSV log integrity — tamper detection before RAG ingestion
+- Autonomous blocking — no human in loop for confirmed threats
+- JSON-driven thresholds — no hardcoded security parameters in production code
+- Fail-closed design — component failure does not open firewall
+- ThreadSanitizer validated — 0 races, 0 deadlocks in ShardedFlowManager
 
-### Multi-Node (Enterprise)
+### Architectural Debt Register
 
-- N sniffers (tap/span multiple links)
-- M ml-detector nodes (load balanced)
-- K firewall agents (distributed)
-- etcd cluster (3-5 nodes)
-- **Capacity:** 100+ Gbps, millions of flows
-
----
-
-## 🧪 Testing Between Features
-
-**Mandatory for every major feature:**
-
-1. **Unit Tests** - All new code covered
-2. **Integration Tests** - Component interactions
-3. **Stress Test** - 1h high load (200+ evt/s)
-4. **Long-Running** - 17h+ stability
-5. **Regression** - All previous tests pass
-6. **Environment Validation** - Verify testing matches production environment constraints
-
-### **XDP-Specific Testing Requirements:**
-
-#### **For Host-Based Mode:**
-- [x] External traffic validation (SSH, HTTP from outside)
-- [x] Performance metrics under external load
-- [x] Multi-protocol capture validation
-
-#### **For Gateway Mode:**
-- [ ] Multi-VM setup for validation (Day 10)
-- [ ] Physical boundary crossing verification
-- [ ] Transit traffic performance benchmarks
-- [ ] NAT/routing integration testing
-
-### **Current Test Status:**
-
-| Test Type | Host-Based | Gateway Mode | Notes |
-|-----------|------------|--------------|-------|
-| Unit Tests | ✅ Complete | ✅ Complete | Same code base |
-| Integration | ✅ Complete | ⚠️ Needs Setup | Multi-VM required |
-| Performance | ✅ 17h Stable | ⏳ Pending | Requires physical traffic |
-| Gateway Validation | N/A | 🔄 Day 10 | Multi-VM strategy defined |
+| ID           | Description                              | Severity | Status     | Fix         |
+| ------------ | ---------------------------------------- | -------- | ---------- | ----------- |
+| DEBT-FD-001  | Fast Detector Path A hardcoded thresholds | High    | Open       | PHASE2 ADR-006 |
+| DEBT-PHASE2  | 11/40 features use sentinel              | Medium   | Open       | PHASE2      |
+| ADR-007      | Firewall MAX to AND consensus            | Medium   | Open       | PHASE2      |
+| ENT-3        | etcd as crypto authority (open source)   | High     | Documented | Enterprise  |
+| ONNX-L1      | ~26 ms ONNX overhead vs µs embedded      | Low      | Documented | PHASE2      |
 
 ---
 
-## 📝 Documentación a Actualizar Basado en Aprendizajes Día 9
+## Development Environment
 
-### **Documentation Updates Required:**
+### Pipeline Commands
 
-1. **`TESTING.md`** - Add gateway mode validation procedures
-2. **`DEPLOYMENT.md`** - Hardware requirements for production
-3. **`TROUBLESHOOTING.md`** - XDP capture issues guide
-4. **`ARCHITECTURE.md`** - This document (updated)
+```bash
+make pipeline-start              # Start all 6 components via tmux
+make pipeline-stop               # Stop all components
+make pipeline-status             # Check component status (PIDs)
+make logs-lab-clean              # Clear all logs
+bash scripts/pipeline_health.sh  # Detailed health monitor (runs inside VM: defender)
+```
 
-### **New Documentation to Create:**
-```markdown
-docs/gateway-mode-validation/
-├── multi-vm-setup.md
-├── hardware-requirements.md
-├── performance-benchmarks.md
-└── troubleshooting-capture-issues.md
+### Experiment Reproduction (Full F1 from Scratch)
+
+```bash
+make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
+vagrant ssh defender -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
+vagrant up client   # only if client VM is not running
+make test-replay-neris
+python3 scripts/calculate_f1_neris.py \
+  /vagrant/logs/lab/sniffer.log --total-events 19135
+# Expected: F1-Score: 1.0000
+```
+
+### Log Locations
+
+```
+/vagrant/logs/lab/
+  sniffer.log          Fast Detector alerts, thresholds confirmation
+  detector.log         spdlog operational log (source of truth, ADR-005)
+  ml-detector.log      startup output only
+  firewall-agent.log   block decisions
+  rag-ingester.log     CSV ingestion stats, HMAC validation
+  rag-security.log     RAG query results
+  etcd-server.log      key rotation, heartbeats
+
+/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv
+  ML event log (score >= 0.50), HMAC per row
+  Consumed by rag-ingester -> FAISS + SQLite -> forensic queries
+
+/vagrant/logs/firewall_logs/firewall_blocks.csv
+  Block decisions, HMAC per row
+  Consumed by rag-ingester -> forensic history
 ```
 
 ---
 
-## 🎯 Milestones
+## Production Deployment
 
-### Milestone 1: Core Detection Complete ✅ **Updated: Dec 5, 2025**
-- [x] cpp_sniffer production-ready (host-based mode)
-- [x] ml-detector (4 embedded C++20 models)
-- [x] RAG Security System with LLAMA real
-- [x] Configuration system with JSON validation
-- [x] Dual-NIC architecture implementation
-- [x] XDP limitations documented and understood
-- [ ] Gateway mode validation with multi-VM setup
-- [ ] Raspberry Pi image
+### Planned: Debian 11 Hardened Installer (Post-Paper)
 
-**Current Status:** 85% Complete
+```bash
+curl -fsSL https://ml-defender.io/install.sh | sudo bash
+```
 
-**New Dependencies Identified:**
-1. Multi-VM testing environment for gateway validation
-2. Hardware with Native XDP support for production gateway
-3. Updated deployment documentation for mode-specific requirements
+This will verify kernel requirements, compile for target architecture (x86_64 or
+ARM64), verify SHA256 hashes against signed manifest, apply seccomp and AppArmor
+profiles per component, and install systemd units with `CapabilityBoundingSet`.
 
-### Milestone 2: Automated Response
-- [ ] firewall-acl-agent development
-- [ ] Dynamic iptables/nftables integration
-- [ ] Rate limiting and connection tracking
-- [ ] End-to-end threat response pipeline
+### Planned: systemd Unit Startup Order
 
-**ETA:** Q1 2026
+```
+ml-defender-etcd.service           (starts first — provides crypto seeds)
+ml-defender-sniffer.service         (After=etcd)
+ml-defender-ml-detector.service     (After=sniffer)
+ml-defender-firewall.service        (After=ml-detector)
+ml-defender-rag-ingester.service    (After=ml-detector firewall)
+ml-defender-rag-security.service    (After=rag-ingester)
+```
 
-### Milestone 3: Enterprise Features
-- [ ] etcd integration
-- [ ] Distributed configuration management
-- [ ] Multi-node deployment
-- [ ] Advanced monitoring and alerting
-
-**ETA:** Q2 2026
-
-### Milestone 4: First Physical Device 🎉
-- [ ] Custom Debian ARM
-- [ ] Security hardening
-- [ ] ARM binaries compiled
-- [ ] Case + LEDs
-- [ ] **Home deployment** 🏠
-
-**ETA:** Q3 2026
+Each unit: `Restart=always`, `CapabilityBoundingSet`, `seccomp` profile,
+`PrivateTmp=yes`, `NoNewPrivileges=yes`.
 
 ---
 
-## 🆕 Recent Achievements (December 5, 2025)
+## Roadmap
 
-### Dual-NIC Gateway Architecture (Day 9)
-- ✅ **Dual XDP Attachment** - Simultaneous attachment to multiple interfaces
-- ✅ **BPF Map Configuration** - Per-interface settings (mode, wan flag)
-- ✅ **Host-Based Validation** - 100+ events captured with correct metadata
-- ✅ **Scientific Rigor** - Multiple experiments, honest documentation
-- ⚠️ **XDP Generic Limitation Identified** - Requires physical traffic for gateway validation
-- ✅ **Validation Strategy Defined** - Multi-VM setup for Day 10
+### Phase 1 — COMPLETE (DAY 83)
 
-### RAG Security System with Real LLAMA
-- ✅ **TinyLlama-1.1B integration** - Real model, not simulation
-- ✅ **KISS Architecture** - Clean separation of responsibilities
-- ✅ **WhiteListManager** - Central router with etcd communication
-- ✅ **Robust Validation** - BaseValidator + RagValidator inheritance
-- ✅ **JSON Persistence** - Automatic configuration management
-- ✅ **Interactive Commands** - ask_llm, show_config, update_setting
+Pipeline 6/6 stable, F1=1.0000 on CTU-13 Neris, FPR=0.0049% on bigFlows benign,
+CSV pipeline E2E validated (71,217 rows, 0 errors), merged to main.
 
-### ML Detector Performance
-- ✅ **4 Embedded C++20 Models** - All sub-microsecond latency
-- ✅ **DDoS Detector**: 0.24μs (417x better than target)
-- ✅ **Ransomware Detector**: 1.06μs (94x better than target)
-- ✅ **Traffic Classifier**: 0.37μs (270x better than target)
-- ✅ **Internal Threat Detector**: 0.33μs (303x better than target)
+### Phase 2 — Post-Paper (DAY 90+)
 
-### System Stability
-- ✅ **17-hour stress test** - Memory stable (+1 MB growth)
-- ✅ **35,387 events processed** - Zero crashes
-- ✅ **Configurable thresholds** - JSON single source of truth
-- ✅ **Zero hardcoding** - All settings from configuration
+- Complete 40/40 real features (eliminate DEBT-PHASE2)
+- Fix DEBT-FD-001 — inject FastDetectorConfig into Fast Detector Path A
+- ADR-007 — AND consensus for firewall blocking
+- ONNX L1 optimization or conversion to embedded C++20 RF
+- Debian 11 bare-metal installer with seccomp profiles
+- systemd production units
+- CLI dashboard: `argus status`, `argus report`, `argus map`
+- PDF/CSV report generation for management
 
-### Key Technical Learnings (Day 9):
-1. **XDP Generic vs Native XDP** - Fundamental differences in capture scope
-2. **Testing Methodology** - Environment must match production use case
-3. **Gateway Mode Validation** - Requires traffic crossing physical boundaries
-4. **Documentation Honesty** - Clear about what works and what needs validation
+### Enterprise
+
+```mermaid
+graph LR
+    ENT1[ENT-1\nFederated Threat\nIntelligence] --> ENT2[ENT-2\nAttack Graph\nGraphML + STIX 2.1]
+    ENT2 --> ENT3[ENT-3\nP2P Key Exchange\neliminate etcd\nas crypto authority]
+    ENT3 --> ENT4[ENT-4\nHot-Reload Config\nno downtime]
+    ENT4 --> ENT5[ENT-5\nGlobal Federated\nTelemetry]
+    ENT5 --> ENT6[ENT-6\nMISP + OpenCTI]
+    ENT6 --> ENT7[ENT-7\nOpenTelemetry\n+ Grafana]
+    ENT7 --> ENT8[ENT-8\nHSM + USB Root Key]
+    ENT8 --> ENT9[ENT-9\nDatagram Capture\n+ Correlation]
+```
+
+> **ENT-3 in detail:** Each component pair negotiates a session key via
+> Diffie-Hellman authenticated by component identity hashes (SHA256 of binary +
+> config at startup). etcd is removed from the cryptographic trust chain entirely.
+> A compromised etcd no longer exposes component session keys.
 
 ---
 
-**Built with ❤️, rigorous testing, and scientific honesty**
+## Addendum — Security & RAG Enhancements
 
-**Esta arquitectura representa lo último en seguridad ML embebida con inteligencia IA real, documentada con integridad técnica tras el descubrimiento de limitaciones críticas del entorno de desarrollo.** 🛡️💚
+### RAG Activation & Forensic Flow
 
-*Documentado el 5 de diciembre de 2025, tras 4 horas de experimentación intensiva que definieron los límites de XDP Generic y establecieron una estrategia robusta de validación para el modo gateway.*
+```mermaid
+flowchart TD
+    ML[ML final_score >= 0.85] --> RAG[rag-security]
+    FW[Firewall block applied] --> RAGI[rag-ingester]
+    ML --> RAGI
+    RAGI --> FAISS[FAISS Attack Index + SQLite]
+    FAISS --> RAG
+    RAG --> CLI[CLI forensic queries\nask_llm / show_config]
+```
+
+### Cryptographic Trust Levels
+
+| Channel                | Encryption        | Compression | Integrity   | Notes                        |
+| ---------------------- | ----------------- | ----------- | ----------- | ---------------------------- |
+| sniffer → ml-detector  | ChaCha20-Poly1305 | LZ4         | AEAD        | packet-to-ML transport       |
+| ml-detector → firewall | ChaCha20-Poly1305 | LZ4         | AEAD        | dual-score decision output   |
+| CSV logs               | —                 | —           | HMAC-SHA256 | forensic ingestion integrity |
+| Component session keys | Diffie-Hellman    | —           | SHA256      | ENT-3 P2P, no etcd reliance  |
+
+---
+
+## Executive Summary — 2 Minutes for CTO
+
+```mermaid
+flowchart LR
+    NIC[Packet in NIC] --> EBPF[eBPF/XDP\nless than 1 us]
+    EBPF --> RB[Ring Buffer]
+    RB --> FE[40 Flow Features]
+    FE --> FD[Fast Detector\nless than 5 us]
+    FE --> ML[ML L1-L3\n0.24 to 26 ms]
+    FD --> MAX[Dual-Score Decision\nmax of Fast and ML]
+    ML --> MAX
+    MAX -->|score >= 0.70| FW[Firewall block\nless than 10 ms]
+    MAX -->|score >= 0.85| RAG[RAG forensic\nTinyLlama-1.1B]
+    FW --> RAG
+```
+
+**Key Metrics**
+
+| Metric                | Value                         |
+| --------------------- | ----------------------------- |
+| F1                    | 1.0000                        |
+| ML FPR                | 0.0049%                       |
+| Fast Detector FPR     | 76.8% — filtered by ML        |
+| FP Reduction          | ~15,500x                      |
+| Total latency         | <150 ms packet-to-block       |
+| Embedded RF latency   | 0.24–1.06 µs                  |
+| ONNX L1 latency       | ~26 ms (planned embed PHASE2) |
+| Memory footprint      | <900 MB total                 |
+| Min hardware          | Raspberry Pi 5 ~80 EUR        |
+
+**Why This Matters**
+
+A hospital or school running ML Defender on a 200 EUR mini-PC gets:
+- Autonomous ransomware and DDoS detection and blocking
+- Ultra-low false positive rate (0.0049%) — operators are not flooded with alerts
+- Cryptographically authenticated event pipeline end-to-end
+- Full forensic history queryable in natural language
+- Zero dependency on router brand or firmware
+
+**Architectural Highlights**
+
+Dual-score validation, JSON-driven thresholds, ChaCha20 authenticated transport,
+fail-closed design, sentinel-safe RF routing, ThreadSanitizer-validated concurrency.
+
+**Roadmap**
+
+PHASE2: complete 40/40 features, embed L1 RF, Fast Detector JSON config.
+Enterprise: P2P key exchange, federated telemetry, attack graphs, SIEM integration.
+
+---
+
+## Engineering Decision Records
+
+| ADR       | Title                              | Status      |
+| --------- | ---------------------------------- | ----------- |
+| ADR-001   | ChaCha20-Poly1305 for all transport | Implemented |
+| ADR-002   | Multi-engine detection provenance  | Implemented |
+| ADR-004   | HMAC key rotation with cooldown    | Implemented |
+| ADR-005   | Unified ml-detector logging        | Post-paper with ENT-4 |
+| ADR-006   | Fast Detector hardcoded thresholds | Fix PHASE2  |
+| ADR-007   | Firewall AND consensus             | PHASE2      |
+| ADR-DAY79 | Sentinel value taxonomy (-9999.0f) | Implemented |
+
+Full ADR documents: `docs/adr/`
+
+---
+
+## Acknowledgments
+
+**Author:** Alonso Isidoro Roman — Independent Researcher, Extremadura, Spain
+
+**Consejo de Sabios (AI peer review throughout development):**
+Claude (Anthropic), Grok, ChatGPT5, DeepSeek, Qwen
+
+**Datasets:**
+- CTU-13: Garcia, Sebastian et al. *An Empirical Comparison of Botnet Detection Methods.*
+  Computers & Security, 2014. CVUT Prague — Stratosphere IPS Lab.
+- bigFlows / smallFlows: CTU-13 supplementary captures (confirmed benign, 172.16.133.x)
+
+---
+
+**Via Appia Quality** — Built to last decades.
+
+*Last updated: DAY 83 — March 12, 2026*
+*Branch: main — tag: v0.83.0-day83-main*
