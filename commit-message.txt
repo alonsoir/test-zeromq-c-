@@ -1,31 +1,20 @@
-## 4. Commit GitHub
-```
-feat: DAY 83 — bigFlows ground truth + CSV E2E + pipeline_health fix + MERGE TO MAIN
+git add docs/ml_defender_paper_draft_v1.md
+git add docs/ml_defender_paper_draft_v1_revision_*.md
+git commit -m "docs: paper arXiv draft v1 + Consejo de Sabios reviews DAY 85
 
-VALIDATED RESULTS:
-- bigFlows.pcap confirmed benign (172.16.133.x, no botnet ground truth)
-- ML FPR = 0.0049% (2 FP / 40,467 flows) — publishable specificity metric
-- ML reduces Fast Detector FPs by ~15,500x (2 vs 31,065 alerts)
-- F1=1.0000 re-verified on CTU-13 Neris (19,135 flows)
+First complete draft: Abstract, Introduction, Architecture, Implementation,
+Consejo de Sabios methodology, Evaluation (F1=1.0000), Limitations,
+Future Work, Conclusion, Acknowledgments.
 
-FIXES:
-- pipeline_health.sh: pgrep (macOS host) → vagrant ssh defender (VM)
-- pipeline_health.sh: VM name server → defender
-- All 6 components now show correct PIDs
+Reviews received from: ChatGPT, DeepSeek, Grok, Gemini, Qwen.
+Integration pending DAY 86.
 
-VALIDATED:
-- CSV Pipeline E2E: 100% (up from 80%)
-  - ml-detector: /vagrant/logs/ml-detector/events/ — daily CSVs since 2026-02-22
-  - firewall: /vagrant/logs/firewall_logs/firewall_blocks.csv
-  - rag-ingester: 71,217 parsed_ok, 0 hmac_fail
+Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
+Co-authored-by: ChatGPT (OpenAI) <chatgpt@openai.com>
+Co-authored-by: DeepSeek <deepseek@deepseek.com>
+Co-authored-by: Grok (xAI) <grok@xai.com>
+Co-authored-by: Qwen (Alibaba) <qwen@alibaba.com>
+Co-authored-by: Gemini (Google) <gemini@google.com>
+Co-authored-by: Parallel.ai <parallel@parallel.ai>"
 
-MERGE CRITERIA — ALL GREEN:
-[x] >=1 balanced dataset validated (smallFlows + bigFlows, both benign)
-[x] ML score investigation documented (FPR=0.0049%, 15,500x FP reduction)
-[x] F1 comparison documented (DAY 81)
-[x] Pipeline 6/6 RUNNING
-[x] F1>=0.99 reproducible (F1=1.0000 confirmed)
-
-Co-authored-by: Claude (Anthropic) <claude@anthropic.com>, Alonso
-Co-authored-by: Consejo de Sabios (Grok, ChatGPT5, DeepSeek, Qwen)
-```
+git push origin main
