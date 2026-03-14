@@ -17,12 +17,12 @@ Bringing machine 'client' up with 'virtualbox' provider...
 ╔════════════════════════════════════════════════════════════╗
 ║  📊 ML Defender Pipeline Status (via TMUX)                ║
 ╚════════════════════════════════════════════════════════════╝
-  ✅ etcd-server:   RUNNING
-  ✅ rag-security:  RUNNING
-  ✅ rag-ingester:  RUNNING
-  ✅ ml-detector:   RUNNING
-  ✅ sniffer:       RUNNING
-  ✅ firewall:      RUNNING
+✅ etcd-server:   RUNNING
+✅ rag-security:  RUNNING
+✅ rag-ingester:  RUNNING
+✅ ml-detector:   RUNNING
+✅ sniffer:       RUNNING
+✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % sleep 15
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-replay-small
@@ -39,11 +39,11 @@ Actual: 14261 packets (9216531 bytes) sent in 7.37 seconds
 Rated: 1249993.8 Bps, 9.99 Mbps, 1934.15 pps
 Flows: 1209 flows, 163.97 fps, 14243 unique flow packets, 18 unique non-flow packets
 Statistics for network device: eth1
-        Successful packets:        14261
-        Failed packets:            0
-        Truncated packets:         0
-        Retried packets (ENOBUFS): 0
-        Retried packets (EAGAIN):  0
+Successful packets:        14261
+Failed packets:            0
+Truncated packets:         0
+Retried packets (ENOBUFS): 0
+Retried packets (EAGAIN):  0
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:16:12.434] [ml-detector] [info] 📊 Stats: received=18, processed=18, sent=18, attacks=0, errors=(deser:0, feat:0, inf:0)
@@ -75,8 +75,8 @@ Es obvio que hacer el grep lleva tiempo. Esperamos un poco.
 [2026-03-14 07:22:12.467] [ml-detector] [info] 📊 Stats: received=7457, processed=7457, sent=7457, attacks=1, errors=(deser:0, feat:0, inf:0)
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l /vagrant/logs/lab/ml-detector.log
 wc: /vagrant/logs/lab/ml-detector.log: open: No such file or directory
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/ml-detector.log 
-   55474 logs/lab/ml-detector.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/ml-detector.log
+55474 logs/lab/ml-detector.log
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % Cuando puedo sacar el número para el script python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events XXXX --day "DAY86_small"
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:26:12.470] [ml-detector] [info] 📊 Stats: received=7481, processed=7481, sent=7481, attacks=1, errors=(deser:0, feat:0, inf:0)
@@ -89,45 +89,45 @@ wc: /vagrant/logs/lab/ml-detector.log: open: No such file or directory
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events 7481 --day "DAY86_small"
 
 ====================================================================
-  ML DEFENDER - F1 SCORE CALCULATOR
-  Day: DAY86_small  |  Thresholds: 
-  Ground truth: CTU-13 Neris (3 malicious IPs)
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY86_small  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
 ====================================================================
-  Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
 
 ====================================================================
-  FAST DETECTOR — deduplicated alerts vs ground truth
+FAST DETECTOR — deduplicated alerts vs ground truth
 ====================================================================
-  Raw [FAST ALERT] lines:      10064
-  Deduplicated alert events:   916
-  Total events (ml-detector):  7481
+Raw [FAST ALERT] lines:      10064
+Deduplicated alert events:   916
+Total events (ml-detector):  7481
 
-  TP  (malicious, detected):   766
-  FP  (benign, false alarm):   150
-  FN  (malicious, missed):     0
-  TN  (benign, correct):       6565
+TP  (malicious, detected):   766
+FP  (benign, false alarm):   150
+FN  (malicious, missed):     0
+TN  (benign, correct):       6565
 
-  Precision:  0.8362
-  Recall:     1.0000
-  F1-Score:   0.9108  ← paper metric
-  FPR:        0.0223
-  Accuracy:   0.9799
+Precision:  0.8362
+Recall:     1.0000
+F1-Score:   0.9108  ← paper metric
+FPR:        0.0223
+Accuracy:   0.9799
 
-  NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
 ====================================================================
 
-  DETECTED IPs breakdown:
-    147.32.84.165  →  766 flow(s) detected  [MALICIOUS ✓]
+DETECTED IPs breakdown:
+147.32.84.165  →  766 flow(s) detected  [MALICIOUS ✓]
 
-  FALSE POSITIVE IPs (sample, max 5):
-    src=192.168.3.131  dst=65.55.5.232
-    src=72.14.213.147  dst=192.168.3.131
-    src=66.235.139.121  dst=192.168.3.131
-    src=65.55.239.163  dst=192.168.3.131
-    src=192.168.3.131  dst=65.55.239.163
+FALSE POSITIVE IPs (sample, max 5):
+src=192.168.3.131  dst=65.55.5.232
+src=72.14.213.147  dst=192.168.3.131
+src=66.235.139.121  dst=192.168.3.131
+src=65.55.239.163  dst=192.168.3.131
+src=192.168.3.131  dst=65.55.239.163
 
-  CSV line for f1_replay_log.csv:
-  DAYDAY86_small,,7481,766,150,0,6565,0.9108,0.8362,1.0000,0.0223
+CSV line for f1_replay_log.csv:
+DAYDAY86_small,,7481,766,150,0,6565,0.9108,0.8362,1.0000,0.0223
 
 # Experimento 2 — neris (el principal)
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
@@ -143,12 +143,12 @@ wc: /vagrant/logs/lab/ml-detector.log: open: No such file or directory
 ╔════════════════════════════════════════════════════════════╗
 ║  📊 ML Defender Pipeline Status (via TMUX)                ║
 ╚════════════════════════════════════════════════════════════╝
-  ✅ etcd-server:   RUNNING
-  ✅ rag-security:  RUNNING
-  ❌ rag-ingester:  STOPPED
-  ✅ ml-detector:   RUNNING
-  ✅ sniffer:       RUNNING
-  ✅ firewall:      RUNNING
+✅ etcd-server:   RUNNING
+✅ rag-security:  RUNNING
+❌ rag-ingester:  STOPPED
+✅ ml-detector:   RUNNING
+✅ sniffer:       RUNNING
+✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-health
 
@@ -156,24 +156,24 @@ wc: /vagrant/logs/lab/ml-detector.log: open: No such file or directory
 ║      ML Defender — Pipeline Health Monitor                  ║
 ╚══════════════════════════════════════════════════════════════╝
 
-  🖥  VM Status:
-    defender: running
-    client:   running
+🖥  VM Status:
+defender: running
+client:   running
 
-  📦 Pipeline Components:
-    Component              Status     PID        Log Activity
-    ---------              ------     ---        ------------
-    etcd-server            ✅ UP     2760       ❓ no log
-    rag-security           ✅ UP     2817       ❓ no log
-    rag-ingester           ❌ DOWN   -          -         
-    ml-detector            ✅ UP     2936       ❓ no log
-    sniffer                ✅ UP     3170       ❓ no log
-    firewall               ✅ UP     3039       ❓ no log
+📦 Pipeline Components:
+Component              Status     PID        Log Activity
+---------              ------     ---        ------------
+etcd-server            ✅ UP     2760       ❓ no log
+rag-security           ✅ UP     2817       ❓ no log
+rag-ingester           ❌ DOWN   -          -         
+ml-detector            ✅ UP     2936       ❓ no log
+sniffer                ✅ UP     3170       ❓ no log
+firewall               ✅ UP     3039       ❓ no log
 
-  📊 ML-Detector last stats:
-    received=16, processed=16, sent=16, attacks=0, errors=(deser:0, feat:0, inf:0)
+📊 ML-Detector last stats:
+received=16, processed=16, sent=16, attacks=0, errors=(deser:0, feat:0, inf:0)
 
-  ⚠️  VM 'client' ya está RUNNING — no ejecutar 'vagrant up client'
+⚠️  VM 'client' ya está RUNNING — no ejecutar 'vagrant up client'
 
 ╚══════════════════════════════════════════════════════════════╝
 
@@ -186,41 +186,41 @@ Ejecución desde la raíz del componente para resolver paths relativos del confi
 ╔════════════════════════════════════════════════════════════╗
 ║  📊 ML Defender Pipeline Status (via TMUX)                ║
 ╚════════════════════════════════════════════════════════════╝
-  ✅ etcd-server:   RUNNING
-  ✅ rag-security:  RUNNING
-  ✅ rag-ingester:  RUNNING
-  ✅ ml-detector:   RUNNING
-  ✅ sniffer:       RUNNING
-  ✅ firewall:      RUNNING
+✅ etcd-server:   RUNNING
+✅ rag-security:  RUNNING
+✅ rag-ingester:  RUNNING
+✅ ml-detector:   RUNNING
+✅ sniffer:       RUNNING
+✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-health   
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-health
 
 ╔══════════════════════════════════════════════════════════════╗
 ║      ML Defender — Pipeline Health Monitor                  ║
 ╚══════════════════════════════════════════════════════════════╝
 
-  🖥  VM Status:
-    defender: running
-    client:   running
+🖥  VM Status:
+defender: running
+client:   running
 
-  📦 Pipeline Components:
-    Component              Status     PID        Log Activity
-    ---------              ------     ---        ------------
-    etcd-server            ✅ UP     2760       ❓ no log
-    rag-security           ✅ UP     2817       ❓ no log
-    rag-ingester           ✅ UP     3679       ❓ no log
-    ml-detector            ✅ UP     2936       ❓ no log
-    sniffer                ✅ UP     3170       ❓ no log
-    firewall               ✅ UP     3039       ❓ no log
+📦 Pipeline Components:
+Component              Status     PID        Log Activity
+---------              ------     ---        ------------
+etcd-server            ✅ UP     2760       ❓ no log
+rag-security           ✅ UP     2817       ❓ no log
+rag-ingester           ✅ UP     3679       ❓ no log
+ml-detector            ✅ UP     2936       ❓ no log
+sniffer                ✅ UP     3170       ❓ no log
+firewall               ✅ UP     3039       ❓ no log
 
-  📊 ML-Detector last stats:
-    received=52, processed=52, sent=52, attacks=0, errors=(deser:0, feat:0, inf:0)
+📊 ML-Detector last stats:
+received=52, processed=52, sent=52, attacks=0, errors=(deser:0, feat:0, inf:0)
 
-  ⚠️  VM 'client' ya está RUNNING — no ejecutar 'vagrant up client'
+⚠️  VM 'client' ya está RUNNING — no ejecutar 'vagrant up client'
 
 ╚══════════════════════════════════════════════════════════════╝
 
-Por qué ha fallado levantar rag-ingester antes? 
+Por qué ha fallado levantar rag-ingester antes?
 
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-replay-neris
 🧪 Replaying CTU-13 Neris botnet (492K events)...
@@ -230,11 +230,11 @@ Actual: 320524 packets (44200259 bytes) sent in 39.68 seconds
 Rated: 1113850.3 Bps, 8.91 Mbps, 8077.23 pps
 Flows: 19135 flows, 482.20 fps, 322242 unique flow packets, 906 unique non-flow packets
 Statistics for network device: eth1
-        Successful packets:        320524
-        Failed packets:            2630
-        Truncated packets:         0
-        Retried packets (ENOBUFS): 0
-        Retried packets (EAGAIN):  0
+Successful packets:        320524
+Failed packets:            2630
+Truncated packets:         0
+Retried packets (ENOBUFS): 0
+Retried packets (EAGAIN):  0
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:45:24.961] [ml-detector] [info] 📊 Stats: received=5941, processed=5941, sent=5941, attacks=0, errors=(deser:0, feat:0, inf:0)
@@ -262,8 +262,8 @@ Statistics for network device: eth1
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_neris.log
 
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l /tmp/sniffer_neris.log
-   38277 /tmp/sniffer_neris.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1" 
+38277 /tmp/sniffer_neris.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:59:25.012] [ml-detector] [info] 📊 Stats: received=12444, processed=12444, sent=12444, attacks=12, errors=(deser:0, feat:0, inf:0)
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
@@ -284,88 +284,88 @@ Es suficiente?
 
 
 ====================================================================
-  ML DEFENDER - F1 SCORE CALCULATOR
-  Day: DAY86_neris  |  Thresholds: 
-  Ground truth: CTU-13 Neris (3 malicious IPs)
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY86_neris  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
 ====================================================================
-  Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
 
 ====================================================================
-  FAST DETECTOR — deduplicated alerts vs ground truth
+FAST DETECTOR — deduplicated alerts vs ground truth
 ====================================================================
-  Raw [FAST ALERT] lines:      5662
-  Deduplicated alert events:   648
-  Total events (ml-detector):  12563
+Raw [FAST ALERT] lines:      5662
+Deduplicated alert events:   648
+Total events (ml-detector):  12563
 
-  TP  (malicious, detected):   646
-  FP  (benign, false alarm):   2
-  FN  (malicious, missed):     0
-  TN  (benign, correct):       11915
+TP  (malicious, detected):   646
+FP  (benign, false alarm):   2
+FN  (malicious, missed):     0
+TN  (benign, correct):       11915
 
-  Precision:  0.9969
-  Recall:     1.0000
-  F1-Score:   0.9985  ← paper metric
-  FPR:        0.0002
-  Accuracy:   0.9998
+Precision:  0.9969
+Recall:     1.0000
+F1-Score:   0.9985  ← paper metric
+FPR:        0.0002
+Accuracy:   0.9998
 
-  NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
 ====================================================================
 
-  DETECTED IPs breakdown:
-    147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
+DETECTED IPs breakdown:
+147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
 
-  FALSE POSITIVE IPs (sample, max 5):
-    src=192.168.56.1  dst=224.0.0.251
-    src=192.168.56.1  dst=192.168.56.255
+FALSE POSITIVE IPs (sample, max 5):
+src=192.168.56.1  dst=224.0.0.251
+src=192.168.56.1  dst=192.168.56.255
 
-  CSV line for f1_replay_log.csv:
-  DAYDAY86_neris,,12563,646,2,0,11915,0.9985,0.9969,1.0000,0.0002
+CSV line for f1_replay_log.csv:
+DAYDAY86_neris,,12563,646,2,0,11915,0.9985,0.9969,1.0000,0.0002
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"                  
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:02:25.023] [ml-detector] [info] 📊 Stats: received=12605, processed=12605, sent=12605, attacks=12, errors=(deser:0, feat:0, inf:0)
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12605 --day "DAY86_neris"
 
 
 ====================================================================
-  ML DEFENDER - F1 SCORE CALCULATOR
-  Day: DAY86_neris  |  Thresholds: 
-  Ground truth: CTU-13 Neris (3 malicious IPs)
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY86_neris  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
 ====================================================================
-  Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
 
 ====================================================================
-  FAST DETECTOR — deduplicated alerts vs ground truth
+FAST DETECTOR — deduplicated alerts vs ground truth
 ====================================================================
-  Raw [FAST ALERT] lines:      5662
-  Deduplicated alert events:   648
-  Total events (ml-detector):  12605
+Raw [FAST ALERT] lines:      5662
+Deduplicated alert events:   648
+Total events (ml-detector):  12605
 
-  TP  (malicious, detected):   646
-  FP  (benign, false alarm):   2
-  FN  (malicious, missed):     0
-  TN  (benign, correct):       11957
+TP  (malicious, detected):   646
+FP  (benign, false alarm):   2
+FN  (malicious, missed):     0
+TN  (benign, correct):       11957
 
-  Precision:  0.9969
-  Recall:     1.0000
-  F1-Score:   0.9985  ← paper metric
-  FPR:        0.0002
-  Accuracy:   0.9998
+Precision:  0.9969
+Recall:     1.0000
+F1-Score:   0.9985  ← paper metric
+FPR:        0.0002
+Accuracy:   0.9998
 
-  NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
 ====================================================================
 
-  DETECTED IPs breakdown:
-    147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
+DETECTED IPs breakdown:
+147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
 
-  FALSE POSITIVE IPs (sample, max 5):
-    src=192.168.56.1  dst=224.0.0.251
-    src=192.168.56.1  dst=192.168.56.255
+FALSE POSITIVE IPs (sample, max 5):
+src=192.168.56.1  dst=224.0.0.251
+src=192.168.56.1  dst=192.168.56.255
 
-  CSV line for f1_replay_log.csv:
-  DAYDAY86_neris,,12605,646,2,0,11957,0.9985,0.9969,1.0000,0.0002
+CSV line for f1_replay_log.csv:
+DAYDAY86_neris,,12605,646,2,0,11957,0.9985,0.9969,1.0000,0.0002
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"                  
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:04:25.069] [ml-detector] [info] 📊 Stats: received=12685, processed=12685, sent=12685, attacks=12, errors=(deser:0, feat:0, inf:0)
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
@@ -378,44 +378,93 @@ Es suficiente?
 
 
 ====================================================================
-  ML DEFENDER - F1 SCORE CALCULATOR
-  Day: DAY86_neris  |  Thresholds: 
-  Ground truth: CTU-13 Neris (3 malicious IPs)
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY86_neris  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
 ====================================================================
-  Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
 
 ====================================================================
-  FAST DETECTOR — deduplicated alerts vs ground truth
+FAST DETECTOR — deduplicated alerts vs ground truth
 ====================================================================
-  Raw [FAST ALERT] lines:      5662
-  Deduplicated alert events:   648
-  Total events (ml-detector):  12723
+Raw [FAST ALERT] lines:      5662
+Deduplicated alert events:   648
+Total events (ml-detector):  12723
 
-  TP  (malicious, detected):   646
-  FP  (benign, false alarm):   2
-  FN  (malicious, missed):     0
-  TN  (benign, correct):       12075
+TP  (malicious, detected):   646
+FP  (benign, false alarm):   2
+FN  (malicious, missed):     0
+TN  (benign, correct):       12075
 
-  Precision:  0.9969
-  Recall:     1.0000
-  F1-Score:   0.9985  ← paper metric
-  FPR:        0.0002
-  Accuracy:   0.9998
+Precision:  0.9969
+Recall:     1.0000
+F1-Score:   0.9985  ← paper metric
+FPR:        0.0002
+Accuracy:   0.9998
 
-  NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
 ====================================================================
 
-  DETECTED IPs breakdown:
-    147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
+DETECTED IPs breakdown:
+147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
 
-  FALSE POSITIVE IPs (sample, max 5):
-    src=192.168.56.1  dst=224.0.0.251
-    src=192.168.56.1  dst=192.168.56.255
+FALSE POSITIVE IPs (sample, max 5):
+src=192.168.56.1  dst=224.0.0.251
+src=192.168.56.1  dst=192.168.56.255
 
-  CSV line for f1_replay_log.csv:
-  DAYDAY86_neris,,12723,646,2,0,12075,0.9985,0.9969,1.0000,0.0002
+CSV line for f1_replay_log.csv:
+DAYDAY86_neris,,12723,646,2,0,12075,0.9985,0.9969,1.0000,0.0002
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % 
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+
+[2026-03-14 08:16:25.086] [ml-detector] [info] 📊 Stats: received=13034, processed=13034, sent=13034, attacks=12, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+
+[2026-03-14 08:48:25.345] [ml-detector] [info] 📊 Stats: received=13930, processed=13930, sent=13930, attacks=12, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+
+[2026-03-14 08:48:25.345] [ml-detector] [info] 📊 Stats: received=13930, processed=13930, sent=13930, attacks=12, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 13930 --day "DAY86_neris"
+
+
+====================================================================
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY86_neris  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
+====================================================================
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+
+====================================================================
+FAST DETECTOR — deduplicated alerts vs ground truth
+====================================================================
+Raw [FAST ALERT] lines:      5662
+Deduplicated alert events:   648
+Total events (ml-detector):  13930
+
+TP  (malicious, detected):   646
+FP  (benign, false alarm):   2
+FN  (malicious, missed):     0
+TN  (benign, correct):       13282
+
+Precision:  0.9969
+Recall:     1.0000
+F1-Score:   0.9985  ← paper metric
+FPR:        0.0002
+Accuracy:   0.9999
+
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+====================================================================
+
+DETECTED IPs breakdown:
+147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
+
+FALSE POSITIVE IPs (sample, max 5):
+src=192.168.56.1  dst=224.0.0.251
+src=192.168.56.1  dst=192.168.56.255
+
+CSV line for f1_replay_log.csv:
+DAYDAY86_neris,,13930,646,2,0,13282,0.9985,0.9969,1.0000,0.0002
+
 
 Espero que valga, me estoy durmiendo...
 
