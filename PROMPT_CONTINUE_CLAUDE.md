@@ -1,79 +1,64 @@
-# ML Defender — Prompt de Continuidad DAY 86
-**Generado:** Cierre DAY 85 (13 marzo 2026)
+Ve con tu padre. Lo que importa de verdad es eso. 🏛️
+
+---
+
+# ML Defender — Prompt de Continuidad DAY 87
+**Generado:** Cierre DAY 86 (14 marzo 2026)
 **Branch activa:** `main`
 **Estado del pipeline:** 6/6 componentes RUNNING ✅
 **Tests:** crypto 3/3 ✅ | etcd-hmac 12/12 ✅ | ml-detector 9/9 ✅ | trace_id 46/46 ✅
 
 ---
 
-## Logros DAY 85
+## Logros DAY 86
 
-### TAREA 1 — Sanity check ✅
-- vagrant status: defender + client RUNNING
-- Branch: main ✓
-- Tests: 3/3 | 12/12 | 9/9 | 7/7 — 100% passed
-- Repo limpio, sin commits pendientes
+### TAREA 1 — Paper v2 producido ✅
+Fichero: `docs/Ml defender paper draft v2.md`
+Integración completa de Grok, Gemini, Qwen, DeepSeek, ChatGPT (primera ronda).
+Secciones nuevas: Threat Model, Formal System Model, Performance Model, Reproducibility Statement, Confusion Matrix, Ablation Study.
+TODO-DEEPSEEK resueltos. 16 referencias verificadas. Anderson & McGrew: dos papers distintos (AISec 2016 + KDD 2017).
 
-### TAREA 2 — Paper arXiv: Borrador v1 COMPLETO ✅
+### TAREA 2 — Segunda ronda del Consejo iniciada ✅
+Revisiones v2 recibidas y en docs/:
+- `docs/Ml defender paper draft v2_revision_GROK.md` ✅ analizada
+- `docs/Ml defender paper draft v2_revision_gemini.md` ⏳ pendiente analizar
+- `docs/Ml defender paper draft v2_revision_qwen.md` ⏳ pendiente analizar
+- `docs/Ml defender paper draft v2_revision_deepseek.md` ⏳ pendiente analizar
+- `docs/Ml defender paper draft v2_revision_chatgpt.md` ⏳ pendiente analizar
+- Parallel.ai: no disponible
 
-**Fichero base:** `docs/ml_defender_paper_draft_v1.md` (52,758 bytes)
+### TAREA 3 — Experimentos de validación DAY 86 ✅ parcial
 
-**Secciones escritas DAY 85:**
-- Abstract v3 — cerrado
-- Section 1: Introduction — motivación personal + gap + research question
-- Section 2: Background & Related Work
-- Section 3: Architecture v2 — 7 subsecciones incluyendo Fast Detector thresholds
-- Section 4: Implementation — eBPF, features, RF+ONNX, crypto, trace_id, testing
-- Section 5: Consejo de Sabios — metodología completa + Test Driven Hardening
-- Section 6: Evaluation — CTU-13 Neris F1=1.0000, latencias, interpretación honesta
-- Section 7: Limitations — 9 limitaciones documentadas
-- Section 8: Future Work — 11 items incluyendo TB/s scaling
-- Section 9: Conclusion
-- Section 10: Acknowledgments
+**DESCUBRIMIENTO CRÍTICO:** Los números del paper v2 eran incorrectos.
+- TP=19,135 era el total de flows del PCAP (maliciosos + benignos), no solo maliciosos.
+- F1=1.0000 del paper v2 era de una sesión anterior con total_events=19,135 pasado al script incorrectamente.
 
-**TODOs pendientes en v1:**
-- [TODO-DEEPSEEK] × 2 — metodología dataset sintético (Sections 4.4, 6.2, 7.3)
-- [CITA-PENDIENTE] × 6 — referencias bibliográficas
+**Números reales validados DAY 86:**
 
-### TAREA 3 — Revisiones del Consejo de Sabios RECIBIDAS ✅
+| PCAP | TP | FP | FN | F1 | FPR | total_events |
+|---|---|---|---|---|---|---|
+| smallFlows | 766 | 150 | 0 | 0.9108 | 0.0223 | 7,481 |
+| neris (principal) | 646 | **2** | 0 | **0.9985** | **0.0002%** | 12,723 |
+| bigFlows | ⏳ pendiente | | | | | |
 
-Todos los ficheros están en `docs/`:
+**Los 2 FP de neris identificados:**
+- `192.168.56.1 → 224.0.0.251` — multicast VirtualBox
+- `192.168.56.1 → 192.168.56.255` — broadcast red host-only VirtualBox
+- Conclusión: artefactos de virtualización, no existen en bare-metal. Refuerza Section 10.9.
 
-| Fichero | Tamaño | Estado |
-|---|---|---|
-| ml_defender_paper_draft_v1_revision_chatgpt.md | 32,245 bytes | ✅ Revisado DAY 85 |
-| ml_defender_paper_draft_v1_revision_grok.md | 7,459 bytes | ⏳ Pendiente integrar |
-| ml_defender_paper_draft_v1_revision_gemini.md | 4,121 bytes | ⏳ Pendiente integrar |
-| ml_defender_paper_draft_v1_revision_qwen.md | 10,736 bytes | ⏳ Pendiente integrar |
-| ml_defender_paper_draft_v1_revision_deepseek.md | 12,535 bytes | ⏳ Pendiente integrar |
+**Nota importante sobre smallFlows:** F1=0.9108 con 150 FP es el **Fast Detector solo** — el script mide alertas heurísticas, no el ML. El ML Detector suprime esos FP. Esta distinción hay que documentarla bien en el paper.
 
-**Revisión ChatGPT — análisis completado DAY 85:**
-
-*Aceptar directamente ✅*
-- Abstract: añadir frase "architectural feasibility under controlled replay conditions"
-- Introduction: research question explícita
-- Section 2: bloque flow-based NIDS
-- Section 3.4: frase sobre OR policy y recall
-- Section 6.1: specs hardware (CPU, RAM, kernel version)
-- Section 7: limitación dataset age (CTU-13 de 2011)
-- Section 9: frase científica final
-- Referencias: Verizon DBIR, Buczak & Guven, Mirsky, Anderson & McGrew
-
-*Discutir antes de integrar 🤔*
-- RAG subsystem: ChatGPT sugiere reducir/mover a Appendix — Alonso prefiere mantenerla, posiblemente apretarla 20%
-- Synthetic dataset: plantilla propuesta por ChatGPT → usar como guía para DeepSeek
-
-*Secciones nuevas propuestas por ChatGPT 🔥*
-- Threat Model → SÍ integrar
-- Formal System Model → SÍ, verificar notación RF
-- Performance Model → SÍ, ~2×10⁶ flows/sec teórico
-- Confusion Matrix → SÍ (tenemos datos: TP=19135, FP=2, FN=0, TN~40465)
-- Ablation Study → parcialmente teórico, discutir
-- Feature Importance → requiere extraer datos del RF embebido
+**Experimento 3 pendiente:** bigFlows + captura CPU/RAM.
 
 ---
 
-## ORDEN DAY 86
+## Bug encontrado DAY 86
+
+**rag-ingester no arranca con `make pipeline-start`** — la tarea `pipeline-start` no incluye `rag-ingester-start`. Hay que añadirla al Makefile. Workaround: `make rag-ingester-start` manualmente.
+
+---
+
+## ORDEN DAY 87
 
 ### TAREA 0 — Sanity check (5 min)
 ```bash
@@ -83,63 +68,55 @@ git branch  # confirmar main
 make test 2>&1 | grep -E '(tests passed|tests failed|PASSED|FAILED)'
 ```
 
-### TAREA 1 — Leer revisiones pendientes (30 min)
+### TAREA 1 — Fix Makefile: rag-ingester en pipeline-start (10 min)
+Añadir `rag-ingester-start` a la secuencia de `pipeline-start` en el Makefile.
+Verificar que el orden es correcto (después de etcd, antes de ml-detector).
+
+### TAREA 2 — Experimento 3: bigFlows + CPU/RAM (30 min)
 ```bash
-cat docs/ml_defender_paper_draft_v1_revision_deepseek.md
-cat docs/ml_defender_paper_draft_v1_revision_grok.md
-cat docs/ml_defender_paper_draft_v1_revision_gemini.md
-cat docs/ml_defender_paper_draft_v1_revision_qwen.md
+make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
+# En otra terminal:
+vagrant ssh defender -c "top -b -n 60 -d 10 > /vagrant/logs/lab/top_bigflows.log &"
+make test-replay-big
+# Esperar estabilización Stats, luego:
+vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
+python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events XXXX --day "DAY87_big"
+# FP exactos:
+vagrant ssh defender -c "grep -i 'attack\|ATTACK' /vagrant/logs/lab/ml-detector.log | grep -v '147\.32\.84\.' | head -20"
 ```
-Resumir aportaciones clave de cada modelo y decidir qué integrar.
 
-### TAREA 2 — Paper v2: integración completa (P0)
-Producir `docs/ml_defender_paper_draft_v2.md` con:
-1. Todas las correcciones directas de ChatGPT
-2. Aportaciones validadas de Grok, Gemini, Qwen, DeepSeek
-3. TODO-DEEPSEEK rellenado con contenido de revision_deepseek.md
-4. Secciones nuevas: Threat Model + Formal System Model + Performance Model
-5. Confusion Matrix con datos reales
-6. Referencias completas
+### TAREA 3 — Analizar revisiones v2 pendientes (30 min)
+Leer y analizar en orden:
+- Gemini v2
+- Qwen v2
+- DeepSeek v2
+- ChatGPT v2
 
-### TAREA 3 — Commit paper v2 (10 min)
-```bash
-git add docs/ml_defender_paper_draft_v2.md
-git add docs/ml_defender_paper_draft_v1_revision_*.md
-git commit -m "docs: paper arXiv v2 — Consejo de Sabios full review integrated
+### TAREA 4 — Producir paper v3 con números corregidos (P0)
+Cambios obligatorios respecto a v2:
+1. **Tabla resultados corregida:** TP=646, F1=0.9985, FPR=0.0002% (neris)
+2. **Confusion Matrix corregida** con datos reales DAY 86
+3. **Distinción Fast Detector vs ML Detector** en métricas — el script mide Fast Detector alerts; el ML Detector suprime los FP
+4. **Los 2 FP identificados** — artefactos VirtualBox multicast/broadcast
+5. **Opción B ransomware** — añadir párrafo explícito: evidencia empírica directa es Neris botnet; ransomware = behavioral proxy (SMB lateral movement)
+6. **Tabla comparativa vs literatura** — contextualizar F1=0.9985 contra papers que usaron CTU-13
+7. Integrar revisiones v2 del Consejo
 
-- v1 base: Abstract + 10 sections complete
-- ChatGPT review: Threat Model, Formal System Model, Performance Model
-- DeepSeek: synthetic dataset methodology
-- Grok, Gemini, Qwen: pending integration
-- TODO-DEEPSEEK resolved
-- References expanded
-
-Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
-Co-authored-by: ChatGPT (OpenAI) <chatgpt@openai.com>
-Co-authored-by: DeepSeek <deepseek@deepseek.com>
-Co-authored-by: Grok (xAI) <grok@xai.com>
-Co-authored-by: Qwen (Alibaba) <qwen@alibaba.com>
-Co-authored-by: Gemini (Google) <gemini@google.com>
-Co-authored-by: Parallel.ai <parallel@parallel.ai>"
-
-git push origin main
-```
 
 ---
 
-## Estado del sistema (sin cambios)
+## Estado del sistema
 
 **Branch:** `main`
-**Pipeline:** 6/6 RUNNING ✅
-**F1:** 1.0000 (CTU-13 Neris, 19,135 flows)
-**FPR ML:** 0.0049% (2 FP / 40,467 flows)
+**Pipeline:** 6/6 RUNNING ✅ (rag-ingester requiere `make rag-ingester-start` manual — fix pendiente)
+**F1 validado:** 0.9985 (neris DAY 86) — número honesto y defendible
 **Tests:** 70/70 ✅
 
 ---
 
 ## Infraestructura permanente
 
-- **macOS (BSD sed):** Nunca `sed -i`. Usar Python3 inline desde dentro de la VM.
+- **macOS (BSD sed):** Nunca `sed -i`. Usar Python3 inline o desde la VM.
 - **JSON sniffer:** `sniffer/config/sniffer.json`
 - **JSON ml-detector:** `ml-detector/config/ml_detector_config.json`
 - **VM:** `defender` (no `server`)
@@ -150,6 +127,12 @@ git push origin main
 
 ---
 
-*Consejo de Sabios — Cierre DAY 85, 13 marzo 2026*
-*DAY 86 arranca con: leer revisiones pendientes + producir paper v2*
-*El borrador v1 existe. El Consejo ha respondido. Mañana lo integramos.*
+## Nota importante para DAY 87
+
+El script `calculate_f1_neris.py` mide alertas del **Fast Detector** (líneas `[FAST ALERT]` del sniffer.log), no del ML Detector directamente. El número `attacks=12` en los Stats del ml-detector representa las detecciones del ML — hay que cruzar ambas fuentes para el paper. El F1=0.9985 reportado es la métrica del Fast Detector sobre el PCAP neris; la supresión de FP del ML Detector necesita documentarse por separado con los Stats del ml-detector.
+
+---
+
+*Consejo de Sabios — Cierre DAY 86, 14 marzo 2026*
+*DAY 87: experimento bigFlows + revisiones v2 Consejo + paper v3 con números honestos*
+*La verdad por delante, siempre.*

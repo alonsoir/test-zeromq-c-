@@ -1,20 +1,23 @@
-git add docs/ml_defender_paper_draft_v1.md
-git add docs/ml_defender_paper_draft_v1_revision_*.md
-git commit -m "docs: paper arXiv draft v1 + Consejo de Sabios reviews DAY 85
+### TAREA 5 — Commit DAY 87
+```bash
+git add docs/Ml\ defender\ paper\ draft\ v3.md
+git add Makefile
+git add docs/experiments/f1_replay_log.csv
+git commit -m "docs: paper arXiv v3 — números validados DAY 86/87
 
-First complete draft: Abstract, Introduction, Architecture, Implementation,
-Consejo de Sabios methodology, Evaluation (F1=1.0000), Limitations,
-Future Work, Conclusion, Acknowledgments.
-
-Reviews received from: ChatGPT, DeepSeek, Grok, Gemini, Qwen.
-Integration pending DAY 86.
+- F1 corregido: 0.9985 (neris, 646 TP, 2 FP, 0 FN)
+- 2 FP identificados: artefactos VirtualBox multicast/broadcast
+- Confusion Matrix corregida con datos reales
+- Fast Detector vs ML Detector distinción documentada
+- Ransomware claim: behavioral proxy explicitado
+- Tabla comparativa literatura CTU-13
+- Makefile: rag-ingester-start en pipeline-start
+- Consejo de Sabios v2 integrado
 
 Co-authored-by: Claude (Anthropic) <claude@anthropic.com>
 Co-authored-by: ChatGPT (OpenAI) <chatgpt@openai.com>
 Co-authored-by: DeepSeek <deepseek@deepseek.com>
 Co-authored-by: Grok (xAI) <grok@xai.com>
 Co-authored-by: Qwen (Alibaba) <qwen@alibaba.com>
-Co-authored-by: Gemini (Google) <gemini@google.com>
-Co-authored-by: Parallel.ai <parallel@parallel.ai>"
-
-git push origin main
+Co-authored-by: Gemini (Google) <gemini@google.com>"
+```

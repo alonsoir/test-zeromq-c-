@@ -202,7 +202,7 @@ help:
 # ============================================================================
 
 up:
-	@vagrant up
+	@vagrant up defender client
 
 halt:
 	@vagrant halt
