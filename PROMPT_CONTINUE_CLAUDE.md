@@ -96,10 +96,85 @@ git push origin main
 |---|---|---|
 | Paper arXiv — draft v5 (feedback v4) | **P0** | DAY 88 |
 | Paper arXiv — versión LaTeX | P0 | post-v5 |
+| Endorsers arXiv — contacto (Sebastian Garcia + alternativas) | P0 | post-v5 |
 | Bare-metal throughput stress test | P1 | post-paper |
 | DNS payload parsing real | P2 | post-paper |
 | DEBT-FD-001: FastDetector Path A → JSON | P1-PHASE2 | post-paper |
 | ADR-007: Consenso AND firewall | P1-PHASE2 | post-paper |
+
+---
+
+## Nuevo backlog: Detección de vectores de entrada (FEAT-ENTRY-*)
+
+### Contexto (DAY 87 — conversación de cierre)
+ML Defender detecta y detiene la **propagación** del ransomware (movimiento lateral SMB).
+Lo que NO cubre actualmente es la **infiltración** — el momento en que el atacante entra.
+Alonso quiere documentar esto honestamente en el paper (§11 Future Work) y añadirlo
+al backlog open source. Todas estas features serán MIT license.
+
+**Frase clave para el paper:**
+*"ML Defender detiene la propagación. Lo que sigue es detectar la infiltración."*
+
+### Features a añadir al §11 Future Work del paper (draft v5)
+
+**FEAT-NET-1 (P1 — extensión natural del pipeline actual)**
+DNS anomaly detection:
+- DGA (Domain Generation Algorithm) detection — entropía alta en subdominios
+- Dominios de registro reciente como proxy de C2
+- Volumen de queries DNS anómalo por host
+- No requiere cambios arquitectónicos — nuevo detector en la capa de features del sniffer
+
+**FEAT-NET-2 (P1 — extensión natural)**
+Threat intelligence feed integration:
+- IPs/dominios maliciosos conocidos consultados contra flows capturados en tiempo real
+- Encaja con el RAG subsystem como fuente de datos adicional
+- Feeds públicos: abuse.ch, Emerging Threats, AlienVault OTX
+
+**FEAT-AUTH-1 (P2 — nuevo input al pipeline)**
+Ingesta de logs de autenticación:
+- Syslog / Windows Event Log forwarding al pipeline
+- Detección de credential stuffing: múltiples logins fallidos desde misma IP externa
+- Login exitoso desde geolocalización o IP anómala
+- Múltiples logins simultáneos con mismas credenciales
+- Arquitectura: nueva fuente de input a ZeroMQ, sin reescribir componentes existentes
+
+**FEAT-AUTH-2 (P2)**
+Behavioral authentication anomaly detection:
+- Acceso a recursos sensibles fuera de horario laboral
+- Patrón de acceso a shares de red inusual (reconocimiento pre-ransomware)
+- Escalada de privilegios anómala
+
+**FEAT-EDR-1 (P3 — salto arquitectónico, convierte NIDS en EDR completo)**
+Agente ligero en endpoints Windows/Linux:
+- Eventos de proceso: procesos hijos anómalos de apps legítimas (Word → PowerShell)
+- PowerShell / cmd con comandos codificados en base64
+- Filesystem: creación/modificación masiva de ficheros (firma de cifrado)
+- Enumeración de network shares (net view, net use)
+- Reporta al pipeline central vía ZeroMQ
+- Nota: este feature cierra el loop completo — ML Defender ya es EDR en nombre, aquí lo sería en implementación
+
+### Tabla resumen para §11 Future Work
+| Feature | Descripción | Prioridad | Vector cubierto |
+|---|---|---|---|
+| FEAT-NET-1 | DNS anomaly / DGA detection | P1 | C2 communication |
+| FEAT-NET-2 | Threat intelligence feeds | P1 | Known malicious IPs/domains |
+| FEAT-AUTH-1 | Auth log ingestion + brute force detection | P2 | RDP / credential attacks |
+| FEAT-AUTH-2 | Behavioral auth anomaly | P2 | Stolen credentials |
+| FEAT-EDR-1 | Lightweight endpoint agent | P3 | Phishing payload execution |
+
+### Nota sobre coste del atacante vs efectividad (DAY 87)
+- Botnet 200 Mbps / 1h: ~5-20 USD en booters
+- Pipeline bloquea núcleo de botnet: ~30-60 segundos
+- Atacante nota que el ataque no funciona: ~60-180 segundos
+- Asimetría clave: el coste de defender no escala con el número de ataques; el coste del atacante sí
+- Para ransomware: ML Defender es efectivo si lo detecta en fase de propagación lateral (ventana típica: horas antes del cifrado masivo en ataques modernos)
+- Punto ciego actual: low-and-slow infiltration, phishing, RDP brute force → cubierto por FEAT-* arriba
+
+### Para §8.9 v5: párrafo adicional sobre eficiencia de recursos
+Añadir interpretación de que 1.28 GB RAM (incluyendo TinyLlama) + 3.2 cores
+es compatible con hardware existente en hospitales/escuelas — no requiere
+servidor dedicado nuevo. Un servidor de administración de 5 años con 16 GB RAM
+puede correr ML Defender sin interferir con otros servicios.
 
 ---
 
