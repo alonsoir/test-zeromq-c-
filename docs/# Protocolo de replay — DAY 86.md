@@ -465,7 +465,269 @@ src=192.168.56.1  dst=192.168.56.255
 CSV line for f1_replay_log.csv:
 DAYDAY86_neris,,13930,646,2,0,13282,0.9985,0.9969,1.0000,0.0002
 
+Un par de horas más tarde, o algo más...
 
-Espero que valga, me estoy durmiendo...
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
-# Experimento 3 pendiente de confirmacion
+[2026-03-14 12:04:26.613] [ml-detector] [info] 📊 Stats: received=17866, processed=17866, sent=17866, attacks=12, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+
+[2026-03-14 12:04:26.613] [ml-detector] [info] 📊 Stats: received=17866, processed=17866, sent=17866, attacks=12, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+
+[2026-03-14 12:04:26.613] [ml-detector] [info] 📊 Stats: received=17866, processed=17866, sent=17866, attacks=12, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 17866 --day "DAY86_neris"
+
+
+====================================================================
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY86_neris  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
+====================================================================
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+
+====================================================================
+FAST DETECTOR — deduplicated alerts vs ground truth
+====================================================================
+Raw [FAST ALERT] lines:      5662
+Deduplicated alert events:   648
+Total events (ml-detector):  17866
+
+TP  (malicious, detected):   646
+FP  (benign, false alarm):   2
+FN  (malicious, missed):     0
+TN  (benign, correct):       17218
+
+Precision:  0.9969
+Recall:     1.0000
+F1-Score:   0.9985  ← paper metric
+FPR:        0.0001
+Accuracy:   0.9999
+
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+====================================================================
+
+DETECTED IPs breakdown:
+147.32.84.165  →  646 flow(s) detected  [MALICIOUS ✓]
+
+FALSE POSITIVE IPs (sample, max 5):
+src=192.168.56.1  dst=224.0.0.251
+src=192.168.56.1  dst=192.168.56.255
+
+CSV line for f1_replay_log.csv:
+DAYDAY86_neris,,17866,646,2,0,17218,0.9985,0.9969,1.0000,0.0001
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker %
+
+# Experimento 3: bigFlows + CPU/RAM (30 min)
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
+
+🛑 Stopping all pipeline components...
+✅ Pipeline stopped
+🧹 Rotating pipeline logs...
+✅ Logs rotated to /vagrant/logs/lab/archive/
+...
+╔════════════════════════════════════════════════════════════╗
+║  📊 ML Defender Pipeline Status (via TMUX)                ║
+╚════════════════════════════════════════════════════════════╝
+✅ etcd-server:   RUNNING
+✅ rag-security:  RUNNING
+✅ rag-ingester:  RUNNING
+✅ ml-detector:   RUNNING
+✅ sniffer:       RUNNING
+✅ firewall:      RUNNING
+╚════════════════════════════════════════════════════════════╝
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "top -b -n 60 -d 10 > /vagrant/logs/lab/top_bigflows.log &"
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-replay-big
+
+🧪 Replaying CTU-13 bigFlows.pcap...
+Test start: 2026-03-14 12:15:07.978917 ...
+Actual: 32623 packets (12499674 bytes) sent in 10.00 seconds
+Rated: 1249952.4 Bps, 9.99 Mbps, 3262.26 pps
+Actual: 61886 packets (25000292 bytes) sent in 20.00 seconds
+Rated: 1249967.2 Bps, 9.99 Mbps, 3094.18 pps
+Actual: 87964 packets (37501041 bytes) sent in 30.00 seconds
+Rated: 1249979.5 Bps, 9.99 Mbps, 2932.00 pps
+Actual: 112482 packets (50002423 bytes) sent in 40.00 seconds
+Rated: 1249988.2 Bps, 9.99 Mbps, 2811.88 pps
+Actual: 139077 packets (62503278 bytes) sent in 50.00 seconds
+Rated: 1249999.1 Bps, 9.99 Mbps, 2781.39 pps
+Actual: 171078 packets (75003815 bytes) sent in 60.00 seconds
+Rated: 1249998.3 Bps, 9.99 Mbps, 2851.15 pps
+Actual: 201974 packets (87504863 bytes) sent in 70.00 seconds
+Rated: 1249998.8 Bps, 9.99 Mbps, 2885.17 pps
+Actual: 226644 packets (100005853 bytes) sent in 80.00 seconds
+Rated: 1249998.8 Bps, 9.99 Mbps, 2832.88 pps
+Actual: 251491 packets (112507007 bytes) sent in 90.00 seconds
+Rated: 1249998.2 Bps, 9.99 Mbps, 2794.16 pps
+Actual: 281457 packets (125007132 bytes) sent in 100.00 seconds
+Rated: 1249997.9 Bps, 9.99 Mbps, 2814.40 pps
+Actual: 311510 packets (137507592 bytes) sent in 110.00 seconds
+Rated: 1249994.8 Bps, 9.99 Mbps, 2831.74 pps
+Actual: 336340 packets (150008829 bytes) sent in 120.00 seconds
+Rated: 1249996.2 Bps, 9.99 Mbps, 2802.65 pps
+Actual: 362757 packets (162508791 bytes) sent in 130.00 seconds
+Rated: 1249996.2 Bps, 9.99 Mbps, 2790.27 pps
+Actual: 389070 packets (175010159 bytes) sent in 140.00 seconds
+Rated: 1249999.9 Bps, 9.99 Mbps, 2778.91 pps
+Actual: 415171 packets (187510235 bytes) sent in 150.00 seconds
+Rated: 1249999.7 Bps, 9.99 Mbps, 2767.65 pps
+Actual: 437370 packets (200010649 bytes) sent in 160.00 seconds
+Rated: 1249996.6 Bps, 9.99 Mbps, 2733.40 pps
+Actual: 467434 packets (212511211 bytes) sent in 170.00 seconds
+Rated: 1249999.9 Bps, 9.99 Mbps, 2749.46 pps
+Actual: 493401 packets (225010621 bytes) sent in 180.00 seconds
+Rated: 1249995.7 Bps, 9.99 Mbps, 2740.97 pps
+Actual: 524772 packets (237512299 bytes) sent in 190.01 seconds
+Rated: 1249997.1 Bps, 9.99 Mbps, 2761.80 pps
+Actual: 557267 packets (250012751 bytes) sent in 200.01 seconds
+Rated: 1249996.8 Bps, 9.99 Mbps, 2786.18 pps
+Actual: 591386 packets (262513534 bytes) sent in 210.01 seconds
+Rated: 1249999.9 Bps, 9.99 Mbps, 2815.97 pps
+Actual: 621439 packets (275012753 bytes) sent in 220.01 seconds
+Rated: 1249995.1 Bps, 9.99 Mbps, 2824.58 pps
+Actual: 650894 packets (287513675 bytes) sent in 230.01 seconds
+Rated: 1249997.9 Bps, 9.99 Mbps, 2829.83 pps
+Actual: 678794 packets (300014719 bytes) sent in 240.01 seconds
+Rated: 1249999.3 Bps, 9.99 Mbps, 2828.16 pps
+Actual: 709331 packets (312515918 bytes) sent in 250.01 seconds
+Rated: 1249999.9 Bps, 9.99 Mbps, 2837.17 pps
+Actual: 734226 packets (325015760 bytes) sent in 260.01 seconds
+Rated: 1249999.3 Bps, 9.99 Mbps, 2823.80 pps
+Actual: 756748 packets (337515328 bytes) sent in 270.01 seconds
+Rated: 1249997.1 Bps, 9.99 Mbps, 2802.63 pps
+Actual: 783620 packets (350016381 bytes) sent in 280.01 seconds
+Rated: 1249997.1 Bps, 9.99 Mbps, 2798.50 pps
+Test complete: 2026-03-14 12:19:52.313313
+Actual: 791615 packets (355417784 bytes) sent in 284.33 seconds
+Rated: 1249999.2 Bps, 9.99 Mbps, 2784.09 pps
+Flows: 40467 flows, 142.32 fps, 790934 unique flow packets, 436 unique non-flow packets
+Statistics for network device: eth1
+Successful packets:        791615
+Failed packets:            0
+Truncated packets:         0
+Retried packets (ENOBUFS): 0
+Retried packets (EAGAIN):  0
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+230013 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+230025 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "Si, está creciendo el log..."
+Si, está creciendo el log...
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+-rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+-rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
+
+Cual es --total-events?
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events XXXX --day "DAY87_big"
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l /logs/lab/sniffer.log
+wc: /logs/lab/sniffer.log: open: No such file or directory
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+230013 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+230025 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "Si, está creciendo el log..."
+Si, está creciendo el log...
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah /logs/lab/sniffer.log
+ls: /logs/lab/sniffer.log: No such file or directory
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+-rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+-rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+[2026-03-14 12:33:57.778] [ml-detector] [info] 📊 Stats: received=37668, processed=37668, sent=37668, attacks=5, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+[2026-03-14 12:33:57.778] [ml-detector] [info] 📊 Stats: received=37668, processed=37668, sent=37668, attacks=5, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % sleep 60
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+[2026-03-14 12:34:57.778] [ml-detector] [info] 📊 Stats: received=37674, processed=37674, sent=37674, attacks=5, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "sigue creciendo, espero un par de horas..."
+sigue creciendo, espero un par de horas...
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+[2026-03-14 12:54:57.880] [ml-detector] [info] 📊 Stats: received=37982, processed=37982, sent=37982, attacks=5, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+[2026-03-14 12:54:57.880] [ml-detector] [info] 📊 Stats: received=37982, processed=37982, sent=37982, attacks=5, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/top_bigflows.log
+ls: logs/lab/top_bigflows.log: No such file or directory
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "amos, no me digas que no se ha creado el fichero que mide el consumo de ram..."
+amos, no me digas que no se ha creado el fichero que mide el consumo de ram...
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "ls -ltah /vagrant/logs/lab/top_bigflows.log"  
+ls: no se puede acceder a '/vagrant/logs/lab/top_bigflows.log': No existe el fichero o el directorio
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"  
+[2026-03-14 13:01:57.962] [ml-detector] [info] 📊 Stats: received=38064, processed=38064, sent=38064, attacks=5, errors=(deser:0, feat:0, inf:0)
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events 38064 --day "DAY87_big"
+
+
+====================================================================
+ML DEFENDER - F1 SCORE CALCULATOR
+Day: DAY87_big  |  Thresholds:
+Ground truth: CTU-13 Neris (3 malicious IPs)
+====================================================================
+Malicious IPs: 147.32.84.165, 147.32.84.191, 147.32.84.192
+
+====================================================================
+FAST DETECTOR — deduplicated alerts vs ground truth
+====================================================================
+Raw [FAST ALERT] lines:      32400
+Deduplicated alert events:   2517
+Total events (ml-detector):  38064
+
+TP  (malicious, detected):   0
+FP  (benign, false alarm):   2517
+FN  (malicious, missed):     0
+TN  (benign, correct):       35547
+
+Precision:  0.0000
+Recall:     0.0000
+F1-Score:   0.0000  ← paper metric
+FPR:        0.0661
+Accuracy:   0.9339
+
+NOTE: FN estimated as 0 — [FAST ALERT] only fires on detected flows. True FN requires per-event IP table. Recall=1.0 is an upper bound, not confirmed.
+====================================================================
+
+DETECTED IPs breakdown:
+No malicious IPs detected in alerts.
+
+FALSE POSITIVE IPs (sample, max 5):
+src=67.217.94.204  dst=172.16.133.114
+src=172.16.133.53  dst=172.16.139.250
+src=157.56.242.198  dst=172.16.133.57
+src=172.16.133.114  dst=67.217.65.49
+src=172.16.133.43  dst=172.16.139.250
+
+CSV line for f1_replay_log.csv:
+DAYDAY87_big,,38064,0,2517,0,35547,0.0000,0.0000,0.0000,0.0661
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep -i 'attack\|ATTACK' /vagrant/logs/lab/ml-detector.log | grep -v '147\.32\.84\.' | head -20"
+
+- Level 1 (Attack): ✅
+  Level 1: ✅ attack_detector (23 features)
+  [2026-03-14 12:12:57.308] [ml-detector] [info] 📦 Loading Level 1 model: level1/level1_attack_detector.onnx
+  [2026-03-14 12:12:57.308] [ml-detector] [info]    Name: attack_detector
+  [2026-03-14 12:12:57.308] [ml-detector] [info] Loading ONNX model: models/production/level1/level1_attack_detector.onnx
+  [2026-03-14 12:12:57.560] [ml-detector] [info]      Level 1: General Attack (ONNX)
+  [2026-03-14 12:12:57.562] [ml-detector] [info]    Level 1: General Attack (ONNX)
+  [2026-03-14 12:13:57.562] [ml-detector] [info] 📊 Stats: received=0, processed=0, sent=0, attacks=0, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:14:57.565] [ml-detector] [info] 📊 Stats: received=1, processed=1, sent=1, attacks=0, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:15:57.591] [ml-detector] [info] 📊 Stats: received=772, processed=772, sent=772, attacks=0, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:16:57.612] [ml-detector] [info] 📊 Stats: received=2956, processed=2956, sent=2956, attacks=0, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:17:57.616] [ml-detector] [info] 📊 Stats: received=5152, processed=5152, sent=5152, attacks=0, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:18:57.633] [ml-detector] [info] 📊 Stats: received=7085, processed=7085, sent=7085, attacks=0, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:19:36.832] [ml-detector] [info] 🚨 ATTACK: event=18346460942505_1408203495, L1_conf=68.97%, processing=56.42ms
+  [2026-03-14 12:19:37.242] [ml-detector] [info] 🚨 ATTACK: event=18346461613105_1408203513, L1_conf=68.97%, processing=54.26ms
+  [2026-03-14 12:19:57.659] [ml-detector] [info] 📊 Stats: received=8881, processed=8881, sent=8881, attacks=2, errors=(deser:0, feat:0, inf:0)
+  [2026-03-14 12:19:59.015] [ml-detector] [info] 🚨 ATTACK: event=18346792711219_3760030506, L1_conf=60.04%, processing=34.09ms
+  [2026-03-14 12:20:19.538] [ml-detector] [info] 🚨 ATTACK: event=18347294214112_3466237660, L1_conf=59.04%, processing=32.68ms
+  [2026-03-14 12:20:48.734] [ml-detector] [info] 🚨 ATTACK: event=18348610893760_341342910, L1_conf=52.52%, processing=14.12ms
+  [2026-03-14 12:20:57.683] [ml-detector] [info] 📊 Stats: received=11367, processed=11367, sent=11367, attacks=2, errors=(deser:0, feat:0, inf:0)
+
