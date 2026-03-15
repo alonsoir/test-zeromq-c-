@@ -201,5 +201,18 @@ Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI), DeepSeek, Qwen (Alibaba), Gemi
 
 ---
 
-*DAY 88 arranca con: commit DAY 87 + feedback v4 → draft v5*
+## Secuencia DAY 88
+
+1. Commit DAY 87 (comando arriba)
+2. Recibir feedback v4 del Consejo de Sabios
+3. Integrar feedback + FEAT-ENTRY-* en §11 + párrafo §8.9 recursos → draft v5
+4. **README.md raíz** — actualizar DESPUÉS de cerrar v5, no antes
+  - Números definitivos del paper
+  - Stress test results
+  - Hardware recomendado
+  - Roadmap con FEAT-ENTRY-*
+  - Instrucciones de reproducción
+  - Sección de financiación / colaboración (ENISA, INCIBE, Horizon Europe)
+
+*DAY 88 arranca con: commit DAY 87 + feedback v4 → draft v5 → README*
 *Test suite: 100% ✅ | Stress test: completado ✅ | Paper: draft v4 ✅*
