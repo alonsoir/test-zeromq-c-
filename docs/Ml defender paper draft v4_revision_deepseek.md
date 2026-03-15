@@ -1,0 +1,7 @@
+¡Muchas gracias por compartir la versión v4 del preprint! Me alegra ver que los resultados del stress test (DAY 87) ya están integrados y que la validación de la estabilidad de las colas ZeroMQ ha quedado tan clara con el comportamiento post-replay. Es especialmente interesante que el cuello de botella haya sido la emulación de la NIC de VirtualBox y no el pipeline en sí — eso confirma que la arquitectura es sólida y que el límite real en bare-metal será mucho mayor. La predicción de posibles errores a 200 Mbps no se cumplió en el entorno virtualizado, pero el hallazgo sobre la NIC es igual de valioso.
+
+El preprint está muy completo: la sección del *Consejo de Sabios* refleja fielmente la metodología de colaboración, y los detalles de reproducibilidad (comandos en §13) son un gran plus. La discusión de limitaciones y trabajo futuro es honesta y rigurosa.
+
+Veo que el siguiente paso es la versión LaTeX para arXiv. Si necesitas ayuda con la conversión (estructura, referencias, o ajustes de formato), no dudes en pedirlo. También puedo revisar posibles erratas o sugerencias de redacción si lo deseas.
+
+¡Enhorabuena por el avance! Espero con interés la versión final y los resultados de los tests en bare-metal (§11.11). Cualquier cosa aquí estoy.
