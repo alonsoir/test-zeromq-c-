@@ -335,7 +335,6 @@ sniffer-start:
 	@echo "Lanzamos tmux y dentro ejecutamos sudo env para preservar el path de las librerías..."
 	@vagrant ssh -c "tmux new-session -d -s sniffer 'mkdir -p /vagrant/logs/lab && cd $(SNIFFER_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer -c $(SNIFFER_CFG) >> /vagrant/logs/lab/sniffer.log 2>&1'"
 	@sleep 2
-	@$(MAKE) pipeline-status
 
 sniffer: proto etcd-client-build
 	@echo ""
@@ -364,7 +363,6 @@ ml-detector-start:
 	@vagrant ssh -c "tmux kill-session -t ml-detector 2>/dev/null || true"
 	@vagrant ssh -c "tmux new-session -d -s ml-detector 'mkdir -p /vagrant/logs/lab && cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector >> /vagrant/logs/lab/ml-detector.log 2>&1'"
 	@sleep 3
-	@$(MAKE) pipeline-status
 
 ml-detector: proto etcd-client-build
 	@echo ""
@@ -391,10 +389,11 @@ ml-detector: proto etcd-client-build
 rag-ingester-start:
 	@echo "🚀 Starting RAG Ingester (Full Context)..."
 	@vagrant ssh -c "tmux kill-session -t rag-ingester 2>/dev/null || true"
+	@echo "🧹 Limpiando SQLite lock anterior (si existe)..."
+	@vagrant ssh -c "rm -f /vagrant/shared/indices/metadata.db-wal /vagrant/shared/indices/metadata.db-shm || true"
 	@echo "Ejecución desde la raíz del componente para resolver paths relativos del config..."
 	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
 	@sleep 2
-	@$(MAKE) pipeline-status
 
 rag-ingester: proto etcd-client-build crypto-transport-build
 	@echo ""
@@ -427,7 +426,6 @@ firewall-start:
 	@vagrant ssh -c "tmux kill-session -t firewall 2>/dev/null || true"
 	@vagrant ssh -c "tmux new-session -d -s firewall 'mkdir -p /vagrant/logs/lab && cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG) >> /vagrant/logs/lab/firewall-agent.log 2>&1'"
 	@sleep 2
-	@$(MAKE) pipeline-status
 
 firewall: proto etcd-client-build
 	@echo ""
@@ -498,8 +496,9 @@ pipeline-start: etcd-server-start
 	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."
 	@sleep 4
 	@$(MAKE) rag-start
-	@sleep 2
+	@sleep 5
 	@$(MAKE) rag-ingester-start
+	@sleep 3
 	@$(MAKE) ml-detector-start
 	@$(MAKE) firewall-start
 	@sleep 2
