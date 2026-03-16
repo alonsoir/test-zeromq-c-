@@ -125,9 +125,9 @@ vboxmanage --version # 7.x
 ### Build & Deploy
 
 ```bash
-git clone https://github.com/yourusername/ml-defender.git
-cd ml-defender
-vagrant up defender
+git clone https://github.com/alonsoir/test-zeromq-c-.git
+cd test-zeromq-c-
+make up
 make all
 make pipeline-start
 make pipeline-status
@@ -138,7 +138,7 @@ make pipeline-status
 ```bash
 make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
 make test-replay-neris
-python3 scripts/calculate_f1_neris.py /vagrant/logs/lab/sniffer.log --total-events 19135
+python3 scripts/calculate_f1_neris.py logs/lab/sniffer.log --total-events 19135
 ```
 
 ### Run Throughput Stress Test
