@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ML DEFENDER LABORATORY - MULTI-VM CONFIGURATION
+# ML DEFENDER LABORATORY - MULTI-VM CONFIGURATION (Vagrantfile)
 # ══════════════════════════════════════════════════════════════════════════════
 #
 # ARCHITECTURE:

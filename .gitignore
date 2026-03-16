@@ -192,3 +192,18 @@ rm --cached ml-detector/build-asan/ml-detector
 shared/indices/*.db-wal
 shared/indices/*.db-shm
 shared/indices/*.db
+.DS_Store
+.cache_ggshield
+
+# Backups locales (no para el repo)
+Makefile.backup
+Vagrantfile.backup
+Vagrantfile.backup*
+
+# macOS
+.DS_Store
+.cache_ggshield
+
+# Logs en raíz
+stress_*.log
+stress_live.log
