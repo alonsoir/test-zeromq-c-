@@ -1,0 +1,18 @@
+docs: DAY 89 — LaTeX preprint, dataset URLs, CLAUDE.md, ransomware expansion backlog
+
+- CLAUDE.md: updated to DAY 88 state — NDR rename, F1=0.9985, stress test results,
+  paper v5 status, tests 70/70, endorsers list, full ADR index, project timeline
+- README.md: add Dataset Setup section with CTU-13 wget commands and VM paths
+- docs/latex/main.tex: full LaTeX source (1052 lines) — equations rendered,
+  booktabs tables, natbib references [1]-[11], author Alonso Isidoro Román
+- docs/latex/references.bib: complete bibliography (14 entries)
+- docs/backlog/BACKLOG.md: integrate FEAT-RANSOM-* expansion
+  - 5 ransomware families in ascending difficulty order
+  - FEAT-RETRAIN-1/2/3: generic retraining pipeline
+  - ENT-MODEL-1/2: enterprise model roadmap (epic pcap relay + distributed fleet)
+  - LockBit explicitly blocked until DEBT-PHASE2 (TLS/byte ratio features)
+  - Architectural decision: single foundational RF ensemble, not specialized models
+
+arXiv endorsement request sent to Sebastian Garcia (CTU Prague, CTU-13 author)
+
+Co-authored-by: Claude (Anthropic) <noreply@anthropic.com>

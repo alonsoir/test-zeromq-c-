@@ -133,6 +133,33 @@ make pipeline-start
 make pipeline-status
 ```
 
+### Dataset Setup
+
+Before running validation or stress tests, download the CTU-13 datasets:
+
+**CTU-13 Neris (scenario 10) — required for F1 validation:**
+```bash
+# Primary source (CTU Prague)
+wget -P /vagrant/datasets/ctu13/ \
+  https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-42/botnet-capture-20110810-neris.pcap \
+  -O /vagrant/datasets/ctu13/neris.pcap
+
+# Mirror: https://www.stratosphereips.org/datasets-ctu13
+```
+
+**CTU-13 bigFlows — required for stress test:**
+```bash
+wget -P /vagrant/datasets/ctu13/ \
+  https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-42/bigFlows.pcap \
+  -O /vagrant/datasets/ctu13/bigFlows.pcap
+```
+
+Expected paths inside the VM:
+```
+/vagrant/datasets/ctu13/neris.pcap      # CTU-13 scenario 10 — 19,135 flows
+/vagrant/datasets/ctu13/bigFlows.pcap   # CTU-13 bigFlows — 791,615 packets
+```
+
 ### Run CTU-13 Neris Validation
 
 ```bash
@@ -158,12 +185,12 @@ Edit `sniffer/config/sniffer.json` (not the build artifact in `build-debug/`):
 
 ```json
 "ml_defender": {
-  "thresholds": {
-    "ddos": 0.85,
-    "ransomware": 0.90,
-    "traffic": 0.80,
-    "internal": 0.85
-  }
+"thresholds": {
+"ddos": 0.85,
+"ransomware": 0.90,
+"traffic": 0.80,
+"internal": 0.85
+}
 }
 ```
 

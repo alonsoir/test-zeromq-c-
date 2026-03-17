@@ -595,6 +595,28 @@ It is now.
 
 All experiments reproducible from the public repository.
 
+**Dataset Setup:**
+
+Download the CTU-13 datasets before running any experiment:
+
+```bash
+# CTU-13 Neris (scenario 10) — required for F1 validation
+# Primary source (CTU Prague):
+wget https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-42/botnet-capture-20110810-neris.pcap \
+  -O /vagrant/datasets/ctu13/neris.pcap
+# Mirror: https://www.stratosphereips.org/datasets-ctu13
+
+# CTU-13 bigFlows — required for stress test (§8.9)
+wget https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-42/bigFlows.pcap \
+  -O /vagrant/datasets/ctu13/bigFlows.pcap
+```
+
+Expected paths inside the Vagrant VM:
+```
+/vagrant/datasets/ctu13/neris.pcap      # CTU-13 scenario 10 — 19,135 flows
+/vagrant/datasets/ctu13/bigFlows.pcap   # CTU-13 bigFlows — 791,615 packets, 40,467 flows
+```
+
 **F1 Evaluation:**
 ```bash
 make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
@@ -615,7 +637,6 @@ vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail 
 **Experimental Record.** All F1 outcomes persisted to `docs/experiments/f1_replay_log.csv`.
 
 **Determinism.** Classifiers embedded in binary; no stochastic inference components; feature extraction deterministic. F1=0.9985 confirmed stable at total_events=12,563 / 12,605 / 12,723 / 13,930.
-
 ---
 
 ## 14. Acknowledgments

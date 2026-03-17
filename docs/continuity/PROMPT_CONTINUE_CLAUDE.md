@@ -1,178 +1,153 @@
-# ML Defender — Prompt de Continuidad DAY 89
-**Generado:** Cierre DAY 88 (16 marzo 2026)
+# ML Defender — Prompt de Continuidad DAY 90
+**Generado:** Cierre DAY 89 (17 marzo 2026)
 **Branch activa:** `main`
 **Estado del pipeline:** 6/6 componentes RUNNING ✅
 **Tests:** crypto 3/3 ✅ | etcd-hmac 12/12 ✅ | ml-detector 9/9 ✅ | trace_id 46/46 ✅
 
 ---
 
-## Logros DAY 88
+## Logros DAY 89
 
-### TAREA 1 — Paper draft v5 ✅
-- Fichero: `docs/Ml defender paper draft v5.md`
-- Feedback del Consejo de Sabios (ronda v5) integrado — 5/5 modelos: ✅
-- **Rename definitivo: aRGus EDR → aRGus NDR** — scope NDR actual, EDR = roadmap FEAT-EDR-1
-- Cambios integrados: GEM1, DSV1-DSV4, CGV2-CGV6, G3, G5, Q1, Q3, CGP1
-- Veredicto unánime del Consejo: "Listo para endorsers / publicable en arXiv"
-- Commit: `bd94dcfb`
+### TAREA 1 — CLAUDE.md actualizado ✅
+- Fichero: `CLAUDE.md` (~10 KB, 289 líneas)
+- Rename NDR, F1=0.9985, stress test, paper v5, tests 70/70, endorsers, ADRs, roadmap
+- Disponible en outputs para commit al repo
 
-### TAREA 2 — README.md actualizado ✅
-- Métricas corregidas: F1=0.9985, TP=646, FPR=0.0002%, ~500× FP reduction
-- Stress test results integrados (DAY 87)
-- FEAT-ENTRY-* roadmap añadido
-- Rename NDR, Gemini añadido al Consejo
-- Sección Funding/Collaboration (ENISA, INCIBE, Horizon Europe)
+### TAREA 2 — Dataset URLs añadidos ✅
+- README.md: sección `### Dataset Setup` con wget + paths VM
+- §13 preprint: bloque dataset setup antes de comandos F1
+- URLs: CTU Prague primaria + Stratosphere IPS mirror
 
-### TAREA 3 — Limpieza repo ✅
-- Rama `cleanup/repo-presentation` creada y mergeada a main
-- Eliminados: Docker (Dockerfile.service1/2/3, docker-compose.yaml), debian/, paper_academic_trap/, service1/2/3/, cppcheck reports, etcd_client_*.cpp dispersos, backups, logs en raíz
-- Movidos: docs/history/, docs/continuity/, docs/gateway/, scripts/tsan/, scripts/stress/
-- Renombrado: claude.md → CLAUDE.md
-- .gitignore actualizado: backups, macOS artifacts, logs en raíz
-- Vagrantfile: Docker eliminado del provisioning (ya no instalará Docker en vagrant provision)
+### TAREA 3 — LaTeX completo ✅
+- `main.tex` (1.052 líneas) + `references.bib` (129 líneas)
+- Compilado en Overleaf → PDF académico limpio, 19 páginas
+- Fórmulas renderizadas (ec. 1-8), tablas booktabs, referencias [1]-[11]
+- Autor: **Alonso Isidoro Román** ✅
+- Sin changelog interno — cabecera limpia de preprint
+
+### TAREA 4 — Email endorser enviado ✅
+- Para: sebastian.garcia@agents.fel.cvut.cz
+- Asunto: arXiv endorsement request — open-source NDR system evaluated on CTU-13 Neris (646 TP, F1=0.9985)
+- Adjunto: PDF LaTeX generado en Overleaf
+- Contenido: motivación Hospital Clínic + datos exactos (147.32.84.165, 646 flows) + mención Slips
+- Estado: enviado, pendiente respuesta
+
+### TAREA 5 — BACKLOG unificado ✅
+- FEAT-RANSOM-* integrado en backlog principal
+- 5 familias en orden de dificultad: Neris Extended → WannaCry/NotPetya → DDoS Variants → Ryuk/Conti → LockBit (bloqueado)
+- FEAT-RETRAIN-1/2/3: pipeline genérico de reentrenamiento
+- ENT-MODEL-1/2: modelos enterprise (epic pcap relay + flota distribuida)
+- Principio arquitectural fijado: modelo fundacional único, no modelos especializados
+- LockBit bloqueado explícitamente hasta DEBT-PHASE2 (TLS/byte ratio features)
 
 ---
 
-## Estado del repo post-DAY 88
+## Estado del repo post-DAY 89
 
-### Raíz limpia
+### Ficheros nuevos/modificados (pendientes de commit)
 ```
-CLAUDE.md          ← memoria del proyecto (desactualizado — ver TAREA 1 DAY 89)
-LICENSE.txt
-Makefile
-README.md
-Vagrantfile
-```
-
-### Carpetas activas del pipeline
-```
-sniffer/           ml-detector/       etcd-server/
-firewall-acl-agent/ rag-ingester/     rag/
-common/            common-rag-ingester/ protobuf/
-etcd-client/       crypto-transport/  tools/
-scripts/           docs/              third_party/
+CLAUDE.md                              ← actualizado DAY 88→89
+README.md                              ← dataset setup añadido
+docs/latex/main.tex                    ← nuevo
+docs/latex/references.bib             ← nuevo
+docs/backlog/BACKLOG.md               ← unificado con FEAT-RANSOM-*
+docs/Ml defender paper draft v5.md    ← §13 actualizado con dataset setup
 ```
 
-### Carpetas pendientes de revisión futura (no urgente)
-```
-models/            722 MB local, solo README.md trackeado — correcto
-ml-training/       historia de experimentos de entrenamiento — se queda
-pcap_testing/      pcaps pequeños, no trackeados
-testing/           no trackeado
-mawi/              datasets MAWI
-datasets/          datasets locales, no trackeados (gitignore)
-contract-validation/ DAY 52 experiment
-contrib/           revisar en sesión futura
+### Commit sugerido
+```bash
+git add CLAUDE.md README.md docs/latex/ docs/backlog/BACKLOG.md
+git commit -m "docs: DAY 89 — CLAUDE.md updated, dataset URLs, LaTeX main.tex, ransomware expansion backlog"
+git tag v0.89.0-day89
+git push origin main --tags
 ```
 
 ---
 
-## Tareas DAY 89 — en orden de prioridad
+## Tareas DAY 90 — en orden de prioridad
 
-### P0 — CLAUDE.md actualización
-El CLAUDE.md actual (22KB, febrero 2026) está desactualizado — no refleja:
-- Rename aRGus NDR
-- F1=0.9985, TP=646, métricas correctas
-- Stress test DAY 87
-- Paper draft v5
-- Test suite 70/70
-- FEAT-ENTRY-* roadmap
-- Arquitectura final (6 componentes estables)
+### P0 — Seguimiento endorser Sebastian Garcia
+- Si responde positivo → submit arXiv cs.CR inmediatamente
+- Si no ha respondido → esperar hasta día 7 (24 marzo) antes de contactar Tier 2
+- Tier 2 backup: Yisroel Mirsky (mirsky@bgu.ac.il) — autor Kitsune, citado en §2 y Tabla 4
 
-Un CLAUDE.md bien escrito = cualquier sesión futura arranca con contexto completo.
-Estructura sugerida: arquitectura actual | métricas validadas | decisiones clave (ADRs) | deuda técnica | estado del paper | próximos pasos.
-
-### P0 — Email a Sebastian Garcia (endorser arXiv)
+### P0 — Fix 2 fallos trace_id (DAY 72, pendiente desde DAY 84)
+```bash
+vagrant ssh defender
+cd /vagrant
+make test  # identificar los 2 fallos exactos
+# investigar root cause
+# TDH: test que falla → fix → confirmar 70/70 → 72/72
 ```
-Para: sebastian.garcia@agents.fel.cvut.cz
-Asunto: arXiv endorsement request — ML NIDS/NDR using CTU-13 dataset
-```
-Contenido: 3 párrafos — quién eres, qué es ML Defender (aRGus NDR), por qué CTU-13 conecta con su trabajo.
-Adjunto: PDF del preprint (generar via pandoc o LaTeX preliminar).
-Link: repositorio GitHub.
+Con estos 2 fixes: test suite pasa de 70/70 a 72/72 (100% real).
 
-### P0 — Dataset setup en README y §13 del preprint
-Añadir nota de rutas esperadas:
-```markdown
-**Dataset setup:**
-- CTU-13: https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-42/
-  (mirror: https://www.stratosphereips.org/datasets-ctu13)
-- Place files in `/vagrant/datasets/ctu13/`
-  - neris.pcap (CTU-13 scenario 10)
-  - bigFlows.pcap (CTU-13 scenario bigFlows)
+### P1 — Subir LaTeX a repo
+```bash
+mkdir -p docs/latex
+cp main.tex docs/latex/
+cp references.bib docs/latex/
+git add docs/latex/
+git commit -m "docs: add LaTeX source for arXiv submission"
 ```
 
-### P1 — Lista de endorsers completa
-Tier 1 (contactar primero):
-1. Sebastian Garcia — sebastian.garcia@agents.fel.cvut.cz (CTU Prague, autor CTU-13)
-2. Yisroel Mirsky — Ben-Gurion University (autor Kitsune, citado en §2 y Tabla 4)
-3. Ariel Shabtai — Ben-Gurion University (co-autor Kitsune)
+### P1 — Consulta al Consejo: features WannaCry/NotPetya
+Antes de FEAT-RANSOM-1, preguntar a cada modelo del Consejo:
+- ¿Son suficientes los 28 features actuales para WannaCry?
+- ¿DNS query feature necesaria?
+- ¿Packet size distribution como feature adicional?
 
-Tier 2 (si Tier 1 no responde en 2 semanas):
-4. Ali Habibi Lashkari — York University (autor CIC-IDS2017)
-5. Iman Sharafaldin — UNB (co-autor CIC-IDS2017, citado en §8.2)
-6. Battista Biggio — Universidad de Cagliari (adversarial ML para seguridad)
-
-### P1 — LaTeX conversion
-Plantilla: arXiv standard (`article` class)
-- Estructura `main.tex` con secciones del draft v5
-- Fórmulas ya en LaTeX en el Markdown — migración directa
-- Tablas: conversión de Markdown a `tabular`
-- Fichero `.bib` con todas las referencias
-- Diagrama pipeline §4.1 (opcional pero recomendado)
-- UTF-8 / caracteres especiales verificados
+### P2 — FEAT-RANSOM-2: Neris Extended (si trace_id resuelto)
+```bash
+# Descargar CTU-13 escenarios adicionales
+wget https://mcfp.felk.cvut.cz/publicDatasets/CTU-Malware-Capture-Botnet-[1-9]/
+# pcap relay con pipeline actual
+# Medir F1 por escenario
+```
 
 ---
 
-## Pendiente técnico post-paper (no DAY 89)
+## Pendiente técnico post-paper
 
 | Item | Prioridad | Estado |
 |---|---|---|
 | Bare-metal throughput stress test | P1 | post-paper |
-| DEBT-FD-001: FastDetector Path A → JSON | P1-PHASE2 | post-paper |
+| DEBT-FD-001: FastDetector Path A → JSON | P1-PHASE2 | prerequisito FEAT-RANSOM-* |
 | ADR-007: AND-consensus firewall | P1-PHASE2 | post-paper |
-| DNS payload parsing real | P2 | post-paper |
-| FEAT-NET-1: DNS anomaly / DGA detection | P1 | roadmap |
-| FEAT-NET-2: Threat intelligence feeds | P1 | roadmap |
-| FEAT-AUTH-1: Auth log ingestion | P2 | roadmap |
-| FEAT-EDR-1: Lightweight endpoint agent | P3 | roadmap |
+| FEAT-RANSOM-2: Neris Extended | P2 | post DEBT-FD-001 |
+| FEAT-RANSOM-1: WannaCry/NotPetya | P2 | post DEBT-FD-001 |
+| FEAT-RETRAIN-1/2/3 | P2 | paralelo a FEAT-RANSOM-* |
+| FEAT-RANSOM-5: LockBit | P2 | BLOQUEADO hasta PHASE2 |
 
 ---
 
 ## Infraestructura permanente
 
-- **macOS (BSD sed):** Nunca `sed -i`. Usar Python3 inline **desde dentro de la VM**.
+- **macOS (BSD sed):** Nunca `sed -i`. Python3 inline desde dentro de la VM.
 - **JSON sniffer:** `sniffer/config/sniffer.json` (NO build-debug/)
-- **JSON ml-detector:** `ml-detector/config/ml_detector_config.json`
-- **VM:** `defender` (no `server`)
-- **CSV ml-detector:** `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
-- **CSV firewall:** `/vagrant/logs/firewall_logs/firewall_blocks.csv`
-- **F1 calculator:** `python3 scripts/calculate_f1_neris.py <sniffer.log> --total-events 19135`
+- **VM:** `vagrant ssh defender` (no `server`)
 - **Dataset paths:** `/vagrant/datasets/ctu13/neris.pcap` | `/vagrant/datasets/ctu13/bigFlows.pcap`
+- **F1 calculator:** `python3 scripts/calculate_f1_neris.py <sniffer.log> --total-events 19135`
+- **Overleaf project:** argus-ndr-v5 (compilado ✅, PDF 19 páginas)
 
 ---
+
+## Endorsers arXiv
+- **Tier 1 contactado:** Sebastian Garcia — sebastian.garcia@agents.fel.cvut.cz ✅ (DAY 89)
+- **Tier 1 pendiente:** Yisroel Mirsky — Ben-Gurion University (autor Kitsune)
+- **Tier 1 pendiente:** Ariel Shabtai — Ben-Gurion University
+- **Tier 2 backup:** Ali Habibi Lashkari, Iman Sharafaldin, Battista Biggio
 
 ## Consejo de Sabios
 Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI), DeepSeek, Qwen (Alibaba), Gemini (Google), Parallel.ai — 7 modelos.
-Veredicto unánime v5: listo para arXiv.
-
----
 
 ## Métricas definitivas (paper v5)
 - F1=0.9985, Precision=0.9969, Recall=1.0000 (CTU-13 Neris, DAY 86, 4 runs estables)
-- TP=646 (flows C2 activos), TN=12,075, FP=2 (artefactos VirtualBox), FN=0
+- TP=646, TN=12,075, FP=2 (artefactos VirtualBox), FN=0
 - FPR ML=0.0002% | FPR Fast Detector=6.61% bigFlows | FP reduction ~500×
 - Latencia: 0.24 μs (DDoS) a 1.06 μs (Ransomware)
-- Stress test: ~33–38 Mbps techo VirtualBox NIC, 2.37M packets, 0 drops, 0 errors, RAM ~1.28 GB estable
+- Stress test: ~33–38 Mbps techo VirtualBox NIC, 2.37M packets, 0 drops, RAM ~1.28 GB
 
 ---
 
-## Secuencia DAY 89
-
-1. **CLAUDE.md** — actualizar con estado completo DAY 88
-2. **Dataset URLs** — añadir en README.md y §13 del preprint
-3. **Email Sebastian Garcia** — redactar y enviar
-4. **LaTeX** — empezar conversión main.tex
-
-*DAY 89 arranca con: CLAUDE.md + dataset URLs + email endorser + LaTeX*
-*Test suite: 100% ✅ | Stress test: completado ✅ | Paper: draft v5 ✅ | Repo: limpio ✅*
+*DAY 90 arranca con: seguimiento endorser + fix trace_id + LaTeX al repo + consulta Consejo features WannaCry*
+*Test suite: 70/70 ✅ | Paper: draft v5 + LaTeX ✅ | Email endorser: enviado ✅ | Repo: limpio ✅*
