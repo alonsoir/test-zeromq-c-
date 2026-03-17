@@ -319,4 +319,4 @@ DAY 103 ─── Commit semana 2 + planificación siguiente fase ────�
 
 *Planificación generada: DAY 89 — 17 marzo 2026*
 *Revisión prevista: DAY 96 (24 marzo) y DAY 103 (31 marzo)*
-*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic)*
+*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic) and the rest of the crew*
