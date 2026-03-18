@@ -1,322 +1,142 @@
-# ML Defender — Planificación DAY 90–103
-## "Fase de documentación y diseño" (sin hardware bare-metal)
-**Período:** 18 marzo – 31 marzo 2026
-**Constraint:** sin PC bare-metal Linux disponible
-**Trigger de cambio de fase:** respuesta de Sebastian Garcia (endorser arXiv)
+# ML Defender — Prompt de Continuidad DAY 91
+## 19 marzo 2026
 
 ---
 
-## Principio organizador
+## Estado del sistema
 
-Estas dos semanas tienen un objetivo claro: cuando llegue el hardware
-(o la respuesta de Sebastian), el proyecto debe estar tan bien documentado
-que cualquier colaborador externo pueda entender el sistema, y cualquier
-experimento planificado pueda ejecutarse en un día limpio sin ambigüedad.
-
-Tres flujos en paralelo:
-- **Flujo A — Código:** lo que se puede hacer en la VM existente
-- **Flujo B — Documentación y diseño:** trabajo intelectual puro
-- **Flujo C — Consejo de Sabios:** consultas técnicas a los 7 modelos
+**Pipeline:** 6/6 RUNNING (etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall)
+**Test suite:** 31/31 ✅ (crypto 3/3, etcd-hmac 12/12, ml-detector 9/9, rag-ingester 7/7)
+**Rama activa:** main
+**Último tag:** pendiente commit DAY 90
 
 ---
 
-## SEMANA 1 (DAY 90–96) — Base sólida
+## Lo que se hizo en DAY 90
 
-### DAY 90 (18 mar) — Fix trace_id + ADR-007
-**Flujo A:**
-- [ ] Fix 2 fallos trace_id (DAY 72) — TDH: test que falla → fix → 72/72
-- [ ] Confirmar test suite 72/72 ✅
+### Flujo A — Código
+- Test suite verificada: 31/31 ✅ — nada que arreglar
+- Aclaración: el "72/72" del plan era incorrecto. 31 es el conteo real de CTest.
+  Los 46 son assertions internas dentro del test_trace_id, no tests de CTest.
 
-**Flujo B:**
-- [ ] ADR-007: AND-consensus firewall
-    - Decisión ya tomada (OR alertas / AND bloqueos)
-    - Documento formal: contexto, decisión, consecuencias, implementación futura
-    - Path: `docs/adr/ADR-007-and-consensus-firewall.md`
+### Flujo B — Documentación
+- **ADR-007 consolidado y listo** para `docs/adr/ADR-007-and-consensus-firewall.md`
+  - Base: documento DAY 82 (más rico)
+  - Adiciones: alternativas descartadas, DEBT-FD-001 como prerequisito,
+    estado actualizado a ACEPTADO, formalizado DAY 90
+  - Fichero en outputs: `ADR-007-and-consensus-firewall.md`
 
-**Flujo C:**
-- [ ] Consulta Consejo #1: features WannaCry/NotPetya
-    - Pregunta: ¿son suficientes los 28 features actuales para separar WannaCry
-      de tráfico benigno? ¿Qué añadirías?
-    - Esperar respuestas divergentes → arbitrar → documentar decisión
-
----
-
-### DAY 91 (19 mar) — ARCHITECTURE.md + diseño WannaCry sintético
-**Flujo B:**
-- [ ] `ARCHITECTURE.md` — descripción técnica completa del pipeline
-    - Para nuevos colaboradores y potenciales deployment partners
-    - Secciones: componentes, flujo de datos, decisiones clave, deployment
-    - Incluir diagrama ASCII del pipeline (ya existe en README, expandir)
-    - Path: `ARCHITECTURE.md` (raíz del repo)
-
-- [ ] Especificación datos sintéticos WannaCry/NotPetya
-    - Distribuciones estadísticas basadas en literatura + CTU-13
-    - Port 445 burst: distribución, rate, duración
-    - RST ratio esperado: rango, varianza
-    - DNS killswitch lookup: frecuencia, TTL
-    - Path: `docs/design/synthetic_data_wannacry_spec.md`
-
-**Flujo C:**
-- [ ] Integrar respuestas Consejo #1 → decisión features WannaCry documentada
+### Flujo C — Consejo de Sabios
+- **Consulta #1 completada** — 2 rondas, 6 modelos (Qwen pendiente de respuesta genuina)
+- Decisiones finales documentadas en `consejo_consulta_1_decisiones_finales.md`
 
 ---
 
-### DAY 92 (20 mar) — ADR-008 LockBit + CONTRIBUTING.md
-**Flujo B:**
-- [ ] ADR-008: features necesarias para LockBit
-    - TLS session duration anomaly — especificación técnica
-    - Upload/download byte ratio — cómo extraerlo del pipeline actual
-    - Certificate anomaly — viable sin DPI?
-    - Conclusión: qué hay que implementar en DEBT-PHASE2 primero
-    - Path: `docs/adr/ADR-008-lockbit-features.md`
+## Decisiones del Consejo #1 (WannaCry/NotPetya features)
 
-- [ ] `CONTRIBUTING.md` — guía para colaboradores externos
-    - Cómo levantar el entorno (Vagrant)
-    - Cómo ejecutar tests
-    - Cómo añadir un nuevo modelo al pipeline
-    - Código de conducta (Via Appia Quality)
-    - Path: `CONTRIBUTING.md` (raíz del repo)
+### UNANIMIDAD
+1. **`rst_ratio` → P1 INMEDIATO** — implementar antes de cualquier dataset sintético
+2. **`syn_ack_ratio` → P1 INMEDIATO** — ídem
+3. **Modelo actual NO generaliza a ransomware SMB** sin reentrenamiento
+  - Recall estimado: 0.70–0.85 sin retraining
+  - F1 > 0.90 requiere datos sintéticos SMB + reentrenamiento
 
-**Flujo C:**
-- [ ] Consulta Consejo #2: WINDOW_NS para Ryuk/Conti
-    - Pregunta: ¿cómo extender ventanas temporales a minutos/horas
-      sin comprometer la latencia de detección en tiempo real?
-    - Posibles aproximaciones: ventanas deslizantes multi-escala,
-      buffer secundario, agregación asíncrona
+### MAYORÍA CLARA
+4. **Ventana 10s:** suficiente WannaCry, insuficiente NotPetya
+  - Decisión: mantener 10s + backlog FEAT-WINDOW-2 (60s secundaria)
+5. **Killswitch DNS:** NO detectable en capa 3/4 sin DPI — limitación honesta
+  - La firma compuesta DNS→SMB fue analizada y descartada:
+    FPR inaceptable (patrón ocurre en tráfico Windows legítimo),
+    y la propagación ya está cubierta por rst_ratio sin necesitar DNS
+6. **dns_query_count:** P3 — valor solo en correlación, no primaria
 
----
-
-### DAY 93 (21 mar) — Protocolo bare-metal + diseño FEAT-RETRAIN
-**Flujo B:**
-- [ ] Protocolo bare-metal stress test (escrito antes de tener hardware)
-    - Metodología exacta: tcpreplay rates, métricas a capturar, duración
-    - Hardware objetivo: specs mínimas, NIC recomendada
-    - Criterios de éxito: qué números necesitamos ver
-    - Path: `docs/experiments/bare_metal_stress_test_protocol.md`
-
-- [ ] Especificación FEAT-RETRAIN-1 (anonimización CSV)
-    - Schema de entrada (127 columnas CSV ml-detector)
-    - Schema de salida (dataset unificado anonimizado)
-    - Reglas de anonimización: IP hashing, timestamp relativos
-    - Balance de clases: algoritmo de oversampling
-    - Path: `docs/design/feat_retrain_1_spec.md`
-
-**Flujo C:**
-- [ ] Integrar respuestas Consejo #2 → decisión WINDOW_NS documentada
-- [ ] Consulta Consejo #3: Python vs C++20 para FEAT-RETRAIN-2
-    - Pregunta: prototipo Python (pandas + scikit-learn) primero,
-      luego C++20 si necesario — ¿o directo C++20?
+### Roadmap de features (resultado Consejo)
+- **P1:** rst_ratio, syn_ack_ratio (implementar DAY 91-92)
+- **P2:** port_diversity_ratio, new_dst_ip_rate, dst_port_445_ratio, FEAT-WINDOW-2
+- **P3:** dns_query_count, smb_connection_burst, wmi_activity_proxy
+- **Descartadas:** ICMP_unreachable_rate, firma compuesta DNS→SMB
 
 ---
 
-### DAY 94 (22 mar) — ADR-009 + diseño Ryuk/Conti sintético
-**Flujo B:**
-- [ ] ADR-009: proceso de inclusión de modelos nuevos al pipeline
-    - Open source: modelo → tests → merge → tag
-    - Enterprise: flujo desde fleet data → modelo → distribución
-    - Criterios de aceptación: F1 mínimo, FPR máximo, latencia máxima
-    - Path: `docs/adr/ADR-009-model-inclusion-process.md`
+## Primer objetivo DAY 91 — ARCHITECTURE.md
 
-- [ ] Especificación datos sintéticos Ryuk/Conti
-    - Diferencias con WannaCry: lateral movement lento, RDP, credenciales
-    - Features temporales necesarias: ¿cómo capturarlas con WINDOW_NS actual?
-    - Path: `docs/design/synthetic_data_ryuk_spec.md`
+**Documento técnico completo del pipeline para colaboradores externos.**
+Es el trabajo principal de hoy. No hay código que tocar primero.
 
-**Seguimiento arXiv:**
-- [ ] Si Sebastian no ha respondido (día 7) → email Yisroel Mirsky (Tier 2)
+Path destino: `ARCHITECTURE.md` (raíz del repo)
 
----
+Secciones a cubrir:
+1. Visión general — qué es ML Defender, para quién, por qué
+2. Componentes (6) — descripción técnica de cada uno
+3. Flujo de datos — sniffer → ml-detector → firewall → rag-ingester → rag-security
+4. Decisiones arquitectónicas clave — ADRs referenciados
+5. Deployment — Vagrant para experimentos, bare-metal para producción
+6. Diagrama ASCII del pipeline (expandir el del README)
+7. Stack tecnológico — C++20, eBPF/XDP, ZeroMQ, ChaCha20, FAISS, protobuf, ONNX
 
-### DAY 95 (23 mar) — FEAT-RANSOM-2 metodología + DDoS variants diseño
-**Flujo B:**
-- [ ] Protocolo FEAT-RANSOM-2: Neris Extended
-    - Lista exacta de escenarios CTU-13 a descargar (1-9, 11-13)
-    - Metodología de evaluación: F1 por escenario, métricas de generalización
-    - Criterios: ¿qué F1 mínimo necesitamos para considerar que generaliza?
-    - Path: `docs/experiments/feat_ransom_2_neris_extended_protocol.md`
-
-- [ ] Especificación DDoS Variants (FEAT-RANSOM-3)
-    - UDP flood vs DNS amplification vs SYN flood: diferencias de features
-    - Datasets disponibles: MAWI, CAIDA, CIC-DDoS2019
-    - Path: `docs/design/feat_ransom_3_ddos_spec.md`
-
-**Flujo C:**
-- [ ] Integrar respuestas Consejo #3 → decisión stack reentrenamiento
-- [ ] Consulta Consejo #4: proporciones dataset épico (ENT-MODEL-1)
-    - Pregunta: ¿qué proporción benigno/ataque por familia?
-      ¿50% benigno + 10% por familia ataque? ¿Otra distribución?
+**Referencia:** ARCHITECTURE.md v5.1.0 ya existe en el repo (DAY 62).
+Hay que revisar qué tiene antes de escribir desde cero.
 
 ---
 
-### DAY 96 (24 mar) — Revisión semana 1 + commit
-**Flujo B:**
-- [ ] Revisión y coherencia de todos los documentos semana 1
-- [ ] Actualizar BACKLOG.md con decisiones tomadas
-- [ ] Actualizar CLAUDE.md con estado DAY 96
+## Segundo objetivo DAY 91 — Spec sintético WannaCry
 
-**Commit semana 1:**
-```bash
-git add docs/adr/ADR-007* docs/adr/ADR-008* docs/adr/ADR-009*
-git add ARCHITECTURE.md CONTRIBUTING.md
-git add docs/design/ docs/experiments/
-git commit -m "docs: DAY 90-96 — ADR-007/008/009, ARCHITECTURE, CONTRIBUTING, design specs"
-git tag v0.96.0-day96
-git push origin main --tags
+Path: `docs/design/synthetic_data_wannacry_spec.md`
+
+Contenido base ya definido por el Consejo:
+- Port 445 burst: rst_ratio > 0.5, connection_rate > 100/s
+- unique_dst_ips_count: miles en ventana 10s
+- syn_ack_ratio: < 0.1 (handshakes fallidos)
+- Killswitch DNS: NO incluir como señal (no detectable)
+- Control negativo: tráfico administrativo Windows (WSUS, backups, SCCM)
+
+---
+
+## Tercer objetivo DAY 91 — Integrar Consejo #1
+
+- Compartir `consejo_consulta_1_decisiones_finales.md` con el Consejo
+- Esperar respuesta genuina de Qwen para completar el registro
+
+---
+
+## Constantes del proyecto
+
+```
+Raíz:          /Users/aironman/CLionProjects/test-zeromq-docker
+VM:            vagrant ssh defender
+Logs:          /vagrant/logs/lab/
+F1 log:        docs/experiments/f1_replay_log.csv
+Paper:         docs/Ml defender paper draft v4.md
+macOS CRÍTICO: NUNCA usar sed -i sin -e '' — usar Python3 o editar en VM
 ```
 
 ---
 
-## SEMANA 2 (DAY 97–103) — Profundidad y preparación
+## Backlog activo (P1)
 
-### DAY 97 (25 mar) — DEBT-FD-001 diseño técnico
-**Flujo A:**
-- [ ] Diseño técnico detallado de DEBT-FD-001
-    - Análisis del código actual: `FastDetector::is_suspicious()` en fast_detector.hpp
-    - Plan de migración: qué constexpr → qué campo JSON
-    - Tests necesarios: casos de prueba antes de implementar
-    - Path: `docs/design/debt_fd_001_migration_plan.md`
-
-**Flujo B:**
-- [ ] Guía de deployment para hospitales/escuelas
-    - Hardware mínimo recomendado
-    - Proceso de instalación paso a paso
-    - Configuración inicial (sniffer.json)
-    - Consideraciones de seguridad operacional
-    - Path: `docs/deployment/hospital_deployment_guide.md`
+| ID | Descripción | Estado |
+|---|---|---|
+| DEBT-FD-001 | Fast Detector Path A hardcoded (ignora sniffer.json) | Pendiente PHASE2 |
+| ADR-007 | AND-consensus firewall | ACEPTADO — implementación PHASE2 |
+| FEAT-NET-1 | DNS/DGA detection | P1 PHASE2 |
+| FEAT-NET-2 | Threat intel feeds | P1 PHASE2 |
+| rst_ratio | Implementar desde sentinel | **P1 — próxima sesión con VM** |
+| syn_ack_ratio | Implementar desde sentinel | **P1 — próxima sesión con VM** |
+| FEAT-WINDOW-2 | Agregador 60s para NotPetya | P2 PHASE2 |
 
 ---
 
-### DAY 98 (26 mar) — Paper v2 preparación
-**Flujo B:**
-- [ ] Identificar mejoras para paper v2 (en base a feedback Consejo + Gepeto)
-    - ¿Qué limitaciones ampliar en §10?
-    - ¿Tabla comparativa mejorada con dataset column ya añadida?
-    - ¿Diagrama pipeline (figura real en LaTeX)?
-    - Checklist de cambios v1 → v2
-    - Path: `docs/paper/v2_improvement_checklist.md`
+## Estado arXiv
 
-- [ ] Si Sebastian ha respondido positivo → **submit arXiv cs.CR**
-
-**Flujo C:**
-- [ ] Integrar respuestas Consejo #4 → proporciones dataset épico documentadas
-- [ ] Consulta Consejo #5: ¿qué haría el sistema más valioso para un hospital real?
-    - Pregunta abierta: fuera del radar técnico habitual
+- Paper draft v4 listo en `docs/Ml defender paper draft v4.md`
+- Esperando respuesta de Sebastian Garcia (endorser arXiv)
+- Si no responde en DAY 96 → email Yisroel Mirsky (Tier 2)
+- Limitaciones a añadir en §10 (resultado Consejo #1):
+  - Killswitch DNS no detectable
+  - Generalización a ransomware SMB: Recall 0.70–0.85 sin retraining
 
 ---
 
-### DAY 99 (27 mar) — Especificación FEAT-RETRAIN-2 completa
-**Flujo B:**
-- [ ] Especificación completa script de entrenamiento
-    - Input schema, output schema
-    - Hiperparámetros RandomForest: cuáles fijar, cuáles buscar
-    - Criterios de deploy: F1 > X, FPR < Y, latencia < Z μs
-    - Proceso de transpilación a C++20 (parametrizar transpiler existente DAY 54)
-    - Path: `docs/design/feat_retrain_2_training_spec.md`
-
-- [ ] Especificación FEAT-LABEL-1 (recolección datos etiquetados)
-    - Schema del dataset pipeline-native
-    - Rotación diaria, retención configurable
-    - Path: `docs/design/feat_label_1_spec.md`
-
----
-
-### DAY 100 (28 mar) — Hito: documentación enterprise
-**Flujo B:**
-- [ ] Documento ENT-MODEL-1: epic pcap relay plan
-    - Lista exacta de datasets a combinar
-    - Proporciones por familia (resultado Consejo #4)
-    - Duración estimada del replay
-    - Hardware necesario (esto sí requiere bare-metal)
-    - Criterios de éxito del modelo enterprise v1
-    - Path: `docs/enterprise/ent_model_1_epic_replay_plan.md`
-
-- [ ] Documento ENT-MODEL-2: visión flota distribuida
-    - Arquitectura conceptual de la flota
-    - Flujo de datos: nodo → anonimización → agregación → modelo
-    - Privacidad: qué datos viajan, qué datos se quedan locales
-    - Path: `docs/enterprise/ent_model_2_fleet_vision.md`
-
-**LinkedIn DAY 100** — hito simbólico, post especial
-
----
-
-### DAY 101 (29 mar) — Mintlify docs + FAQ
-**Flujo B:**
-- [ ] Actualizar documentación Mintlify con estado actual
-    - Nuevas secciones: FEAT-RANSOM-*, FEAT-RETRAIN-*
-    - Resultados stress test
-    - Estado arXiv submission
-    - URL: https://alonsoir-test-zeromq-c-.mintlify.app/introduction
-
-- [ ] FAQ técnico para potenciales colaboradores
-    - ¿Por qué C++20 y no Python?
-    - ¿Por qué RandomForest y no deep learning?
-    - ¿Por qué TinyLlama local y no GPT-4?
-    - ¿Por qué ChaCha20 y no AES?
-    - Path: `docs/faq.md`
-
----
-
-### DAY 102 (30 mar) — Revisión general + coherencia
-**Flujo B:**
-- [ ] Auditoría de coherencia entre todos los documentos nuevos
-    - ¿Contradicen algún ADR existente?
-    - ¿Están alineados con el paper v5?
-    - ¿Están alineados entre sí?
-- [ ] Actualizar BACKLOG.md con todas las decisiones de diseño tomadas
-- [ ] Actualizar CLAUDE.md con estado DAY 102
-
----
-
-### DAY 103 (31 mar) — Commit final + planificación siguiente fase
-**Commit semana 2:**
-```bash
-git add docs/
-git commit -m "docs: DAY 97-103 — deployment guide, paper v2 checklist, enterprise specs, Mintlify, FAQ"
-git tag v0.103.0-day103
-git push origin main --tags
-```
-
-**Planificación siguiente fase:**
-- Si Sebastian (o Mirsky) ha respondido → arXiv submitted → fase validación
-- Si no → Tier 3 + empezar FEAT-RANSOM-2 en VM (Neris Extended, sin hardware nuevo)
-- Si hay hardware disponible → bare-metal stress test según protocolo DAY 93
-
----
-
-## Resumen visual
-
-```
-DAY 90  ─── Fix trace_id (72/72) + ADR-007 + Consejo #1 (WannaCry features)
-DAY 91  ─── ARCHITECTURE.md + spec sintético WannaCry
-DAY 92  ─── ADR-008 (LockBit) + CONTRIBUTING.md + Consejo #2 (WINDOW_NS Ryuk)
-DAY 93  ─── Protocolo bare-metal + spec FEAT-RETRAIN-1 + Consejo #3 (Python vs C++)
-DAY 94  ─── ADR-009 (modelos) + spec Ryuk/Conti + seguimiento Mirsky si necesario
-DAY 95  ─── Protocolo Neris Extended + spec DDoS + Consejo #4 (proporciones)
-DAY 96  ─── Revisión + commit semana 1 ──────────────────────────────────────────
-DAY 97  ─── Diseño técnico DEBT-FD-001 + guía deployment hospitales
-DAY 98  ─── Paper v2 checklist + Consejo #5 (valor hospital real)
-DAY 99  ─── Spec FEAT-RETRAIN-2 completa + FEAT-LABEL-1
-DAY 100 ─── ENT-MODEL-1 plan + ENT-MODEL-2 visión + LinkedIn hito DAY 100
-DAY 101 ─── Mintlify actualización + FAQ técnico
-DAY 102 ─── Auditoría coherencia + BACKLOG + CLAUDE.md
-DAY 103 ─── Commit semana 2 + planificación siguiente fase ──────────────────────
-```
-
----
-
-## Trigger de cambio de fase
-
-| Evento | Acción inmediata |
-|---|---|
-| Sebastian responde positivo | Submit arXiv cs.CR ese mismo día |
-| Sebastian no responde en 7 días (DAY 96) | Email Yisroel Mirsky (Tier 2) |
-| Mirsky no responde en 7 días (DAY 103) | Tier 3 + arXiv sin endorser (cs.CR permite) |
-| Hardware bare-metal disponible | Ejecutar protocolo DAY 93 inmediatamente |
-| Colaborador externo interesado | CONTRIBUTING.md + ARCHITECTURE.md ya listos |
-
----
-
-*Planificación generada: DAY 89 — 17 marzo 2026*
-*Revisión prevista: DAY 96 (24 marzo) y DAY 103 (31 marzo)*
-*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic) and the rest of the crew*
+*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic)*
+*DAY 90 — 18 marzo 2026*
+*Consejo de Sabios — ML Defender (aRGus EDR)*
