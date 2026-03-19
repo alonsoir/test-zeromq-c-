@@ -1,18 +1,28 @@
-docs: DAY 89 — LaTeX preprint, dataset URLs, CLAUDE.md, ransomware expansion backlog
+docs(day91): ARCHITECTURE.md v6.0, WannaCry synthetic spec, Consejo #1 closed
 
-- CLAUDE.md: updated to DAY 88 state — NDR rename, F1=0.9985, stress test results,
-  paper v5 status, tests 70/70, endorsers list, full ADR index, project timeline
-- README.md: add Dataset Setup section with CTU-13 wget commands and VM paths
-- docs/latex/main.tex: full LaTeX source (1052 lines) — equations rendered,
-  booktabs tables, natbib references [1]-[11], author Alonso Isidoro Román
-- docs/latex/references.bib: complete bibliography (14 entries)
-- docs/backlog/BACKLOG.md: integrate FEAT-RANSOM-* expansion
-  - 5 ransomware families in ascending difficulty order
-  - FEAT-RETRAIN-1/2/3: generic retraining pipeline
-  - ENT-MODEL-1/2: enterprise model roadmap (epic pcap relay + distributed fleet)
-  - LockBit explicitly blocked until DEBT-PHASE2 (TLS/byte ratio features)
-  - Architectural decision: single foundational RF ensemble, not specialized models
+- Add ARCHITECTURE.md v6.0.0 — full technical document for external contributors
+  14 sections: 6 components, data flow, ASCII diagrams, tech stack, 12 ADRs,
+  Vagrant + bare-metal deployment, security design, ML subsystem, performance
+  envelope, known limitations, roadmap. Includes generalization gap table
+  (WannaCry/NotPetya recall 0.70-0.85 without retraining).
 
-arXiv endorsement request sent to Sebastian Garcia (CTU Prague, CTU-13 author)
+- Add docs/design/synthetic_data_wannacry_spec.md
+  Quantitative spec for WannaCry/NotPetya synthetic traffic generation.
+  Feature targets: rst_ratio > 0.70, syn_ack_ratio < 0.10, flow_duration_min
+  < 50ms (WannaCry). Control negative: 6 legitimate Windows SMB traffic types
+  with hard exclusion rules. Target dataset: 20,000 flows, 40/60 malicious/benign
+  split correcting CTU-13 Neris 98% bias. Backlog SYN-1 to SYN-12.
 
-Co-authored-by: Claude (Anthropic) <noreply@anthropic.com>
+- Add docs/consejo/consejo_consulta_1_cierre_y_solicitud_qwen.md
+  Formal close of Consejo de Sabios Consulta #1 (7/7 models responded).
+  Qwen (chat.qwen.ai) contributed: flow_duration_min as new P2 feature,
+  proto fields rst_ratio=116 / syn_ack_ratio=117, proto ambiguity doc for
+  RansomwareFeatures vs ransomware_embedded.
+
+- Add flow_duration_min to roadmap (P2, SYN-8b) — Qwen/DAY91 contribution
+- Update ADR directory: 12 ADRs consolidated under docs/adr/
+- arXiv endorser email sent to Sebastian Garcia — awaiting response
+
+Next: DAY 92 — rst_ratio + syn_ack_ratio implementation in sniffer (VM session)
+
+Co-authored-by: Claude <claude@anthropic.com>

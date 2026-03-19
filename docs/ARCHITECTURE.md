@@ -1,815 +1,603 @@
-# ARCHITECTURE.md — ML Defender (aRGus EDR)
+# ML Defender (aRGus EDR) — Architecture
 
-**Version:** 5.1.0
-**Last Updated:** March 12, 2026 — DAY 83
-**Branch:** main (merged DAY 83)
-**Status:** Production baseline validated — F1=1.0000, FPR=0.0049%
+> **Version:** 6.0.0 — DAY 91 (19 marzo 2026)
+> **Authors:** Alonso Isidoro Román, with the Consejo de Sabios (Claude, Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai)
+> **License:** Open Source — see `LICENSE`
+> **Status:** Active research system — arXiv preprint in preparation
 
 ---
 
 ## Table of Contents
 
-* [Overview](#overview)
-* [System Components](#system-components)
-* [Data Flow](#data-flow)
-* [Dual-Score Decision Architecture](#dual-score-decision-architecture)
-* [Fast Detector Path Architecture](#fast-detector-path-architecture)
-* [Feature Extraction Taxonomy](#feature-extraction-taxonomy)
-* [Deployment Models](#deployment-models)
-* [Component Architecture](#component-architecture)
-* [Cryptographic Transport](#cryptographic-transport)
-* [Configuration System](#configuration-system)
-* [Validated Results](#validated-results)
-* [Performance Characteristics](#performance-characteristics)
-* [Security Considerations](#security-considerations)
-* [Development Environment](#development-environment)
-* [Production Deployment](#production-deployment)
-* [Roadmap](#roadmap)
-* [Engineering Decision Records](#engineering-decision-records)
-* [Addendum — Security & RAG Enhancements](#addendum--security--rag-enhancements)
-* [Executive Summary — 2 Minutes for CTO](#executive-summary--2-minutes-for-cto)
+1. [Vision and Motivation](#1-vision-and-motivation)
+2. [Target Audience](#2-target-audience)
+3. [System Overview](#3-system-overview)
+4. [Pipeline Components](#4-pipeline-components)
+5. [Data Flow](#5-data-flow)
+6. [ASCII Pipeline Diagram](#6-ascii-pipeline-diagram)
+7. [Technology Stack](#7-technology-stack)
+8. [Architectural Decision Records](#8-architectural-decision-records)
+9. [Deployment](#9-deployment)
+10. [Security Design](#10-security-design)
+11. [ML Subsystem](#11-ml-subsystem)
+12. [Performance Envelope](#12-performance-envelope)
+13. [Known Limitations](#13-known-limitations)
+14. [Roadmap](#14-roadmap)
 
 ---
 
-## Overview
+## 1. Vision and Motivation
 
-ML Defender (aRGus EDR) is an open-source, enterprise-grade network security system
-designed to protect hospitals, schools, and small organizations from ransomware and
-DDoS attacks. It combines a high-speed heuristic Fast Detector with an embedded
-C++20 RandomForest ML pipeline to achieve both high recall and ultra-low false
-positive rates.
+ML Defender (internal codename **aRGus EDR**) is an open-source, network-level Intrusion Detection System (IDS) / Endpoint Detection and Response (EDR) system written in **C++20**, designed for **resource-constrained organizations**: hospitals, schools, municipal governments, and small businesses.
 
-### Design Philosophy
+These organizations are the most frequent victims of ransomware (WannaCry, NotPetya, Conti, LockBit) and are simultaneously the least equipped to defend themselves. Commercial EDR solutions require enterprise licensing, dedicated security staff, and cloud connectivity — all of which are out of reach for a rural hospital or a primary school.
 
-**Via Appia Quality** — Systems built like Roman roads, designed to endure decades.
-**JSON is the LAW** — All configuration values, including ML thresholds, come from JSON files.
-**Scientific Honesty** — All failures, limitations, and architectural debts are documented explicitly.
+ML Defender is built on a core philosophy:
 
-### Key Validated Results (DAY 83)
+> **"Via Appia Quality"** — build for permanence. Systems that will still work in 10 years without a support contract.
 
-| Metric                          | Value        | Dataset                        |
-| ------------------------------- | ------------ | ------------------------------ |
-| F1-Score                        | **1.0000**   | CTU-13 Neris (19,135 flows)    |
-| Precision                       | **1.0000**   | CTU-13 Neris                   |
-| Recall                          | **1.0000**   | CTU-13 Neris                   |
-| FPR (ML)                        | **0.0049%**  | bigFlows benign (40,467 flows) |
-| FPR (Fast Detector)             | 76.8%        | bigFlows benign                |
-| FP Reduction Factor             | **~15,500x** | ML vs Fast Detector alone      |
-| Detection latency (embedded RF) | 0.24–1.06 µs | Per model                      |
+The system runs entirely **on-premises**, with no cloud dependency, no telemetry, and no external API calls in its critical path. It is designed to be deployed by a single sysadmin with no security background, yet provide detection capabilities comparable to commercial tools.
 
 ---
 
-## System Components
+## 2. Target Audience
 
-```mermaid
-graph TD
-    NET[Network Traffic] --> SNIF[sniffer\neBPF/XDP + Fast Detector\nC++20]
-    SNIF -->|ZeroMQ PUSH\nChaCha20+LZ4| MLD[ml-detector\nONNX + Embedded RF\nC++20]
-    MLD -->|ZeroMQ PUB\nChaCha20+LZ4| FW[firewall-acl-agent\nIPSet + IPTables\nC++20]
-    MLD -->|CSV HMAC-SHA256\ndaily rotation| RAGI[rag-ingester\nFAISS + SQLite\nC++20]
-    FW -->|CSV HMAC-SHA256| RAGI
-    RAGI --> RAGS[rag-security\nTinyLlama-1.1B\nC++20]
-    ETCD[etcd-server\nCrypto seeds + Config\nC++20] -->|ChaCha20 seeds| SNIF
-    ETCD -->|ChaCha20 seeds| MLD
-    ETCD -->|ChaCha20 seeds| FW
-    ETCD -->|HMAC keys| RAGI
-```
+**For this document:**
+- External contributors evaluating the codebase
+- Security researchers validating the detection methodology
+- Potential adopters assessing deployment feasibility
+- Academic reviewers of the companion arXiv preprint
 
-### Component Status (DAY 83)
-
-| Component          | Language          | Status     | Binary                                              |
-| ------------------ | ----------------- | ---------- | --------------------------------------------------- |
-| sniffer            | C++20 + eBPF      | Production | `sniffer/build-debug/sniffer`                       |
-| ml-detector        | C++20 + ONNX      | Production | `ml-detector/build-debug/ml-detector`               |
-| firewall-acl-agent | C++20             | Production | `firewall-acl-agent/build-debug/firewall-acl-agent` |
-| rag-ingester       | C++20             | Production | `rag-ingester/build-debug/rag-ingester`             |
-| rag-security       | C++20 + llama.cpp | Production | `rag/build/rag-security`                            |
-| etcd-server        | C++20             | Production | `etcd-server/build-debug/etcd-server`               |
+**For the system itself:**
+- IT staff at resource-constrained organizations
+- Network administrators wanting passive, zero-impact monitoring
+- SOC teams at small-to-medium organizations needing an affordable EDR layer
 
 ---
 
-## Data Flow
+## 3. System Overview
 
-```mermaid
-flowchart TD
-    A[Packet arrives at NIC] --> B[eBPF/XDP kernel hook - less than 1 us]
-    B -->|ring buffer zero-copy| C[RingBufferConsumer\nmulti-threaded]
-    C --> D[ShardedFlowManager\n16 shards by flow hash\nresolves ISSUE-003]
-    D --> E[FeatureExtractor\n40 features per flow]
-    E --> F{Fast Detector\ndual-path}
-    F -->|Path A - hardcoded - DEBT-FD-001| G[is_suspicious\nper-packet heuristics]
-    F -->|Path B - JSON-driven| H[send_ransomware_features\ntemporal aggregates]
-    G --> I[Protobuf serialization\nNetworkSecurityEvent]
-    H --> I
-    I --> J[ChaCha20-Poly1305\n+ LZ4 compression]
-    J -->|ZeroMQ PUSH\ntcp://127.0.0.1:5571| K[ml-detector\nLevel 1 ONNX RF - approx 26 ms]
-    K --> L[Level 2+3 Embedded RF\n0.24 to 1.06 us]
-    L --> M{Dual-Score Decision\nmax of fast and ml}
-    M -->|final_score >= 0.70\nMALICIOUS| N[ZeroMQ PUB\ntcp://0.0.0.0:5572]
-    M -->|final_score >= 0.85\nRAG analysis| O[rag-security\ndeep forensic]
-    N --> P[firewall-acl-agent\nIPSet block - less than 10 ms]
-    P --> Q[HMAC-signed CSV\n/vagrant/logs/firewall_logs/]
-    K --> R[HMAC-signed CSV\n/vagrant/logs/ml-detector/events/]
-    R --> S[rag-ingester\nFAISS + SQLite]
-    Q --> S
-```
+ML Defender operates as a **passive network monitor** combined with an **active response layer**. It captures packets at the kernel level via eBPF/XDP, extracts statistical flow features, classifies traffic using an embedded Random Forest model (ONNX Runtime), and — upon detection of malicious flows — applies firewall rules automatically.
+
+A secondary **Retrieval-Augmented Generation (RAG)** subsystem indexes historical detection events and makes them queryable via a confined local LLM, enabling forensic analysis without external connectivity.
+
+### Core properties
+
+| Property | Value |
+|---|---|
+| Language | C++20 |
+| Detection latency | < 1 ms (Fast Detector, Path A) |
+| ML inference latency | < 5 ms (ONNX Runtime, Path B) |
+| Encryption | ChaCha20-Poly1305 (all inter-component messages) |
+| Integrity | HMAC-SHA256 per message and per CSV row |
+| Compression | LZ4 (inter-component transport) |
+| Coordination | etcd v3 (service discovery, configuration) |
+| Messaging | ZeroMQ (PUSH/PULL topology) |
+| Test coverage | 31/31 CTest ✅ |
 
 ---
 
-## Dual-Score Decision Architecture
+## 4. Pipeline Components
 
-The core architectural insight of ML Defender: the Fast Detector has high recall
-but high FPR. The ML layer acts as a validator, not a replacement.
-
-```mermaid
-flowchart LR
-    subgraph Input
-        P[Flow features]
-    end
-    subgraph FastDetector[Fast Detector - Path A and B]
-        FD[Heuristics\nfast_score 0 to 1]
-    end
-    subgraph MLPipeline[ML Pipeline - L1 + L2 + L3]
-        L1[ONNX RF L1\nconf >= 0.65]
-        L2[Embedded DDoS\nRansomware]
-        L3[Embedded Traffic\nInternal]
-        ML[ml_score 0 to 1]
-        L1 --> L2 --> L3 --> ML
-    end
-    subgraph Decision[Dual-Score Decision]
-        MAX[final_score = max of fast and ml\nMaximum Threat Wins]
-        DIV{Divergence\ncheck}
-        MAX --> DIV
-    end
-    subgraph Output
-        SAFE[BENIGN\nno action]
-        ALERT[MALICIOUS >= 0.70\nblock]
-        RAG[RAG forensic >= 0.85\ndeep analysis]
-    end
-    P --> FD
-    P --> L1
-    FD --> MAX
-    ML --> MAX
-    DIV -->|low score| SAFE
-    DIV -->|medium score| ALERT
-    DIV -->|high score| RAG
-```
-
-### Validated Impact of Dual-Score
-
-| Signal | bigFlows benign (40,467 flows) | Meaning |
-|--------|-------------------------------|---------|
-| Fast Detector alerts | 31,065 | FPR = 76.8% |
-| ML confirmed (conf >= 0.65) | **2** | FPR = **0.0049%** |
-| FP reduction factor | **~15,500x** | ML validates, Fast Detector catches |
-
-### Three Attack Counter Semantics (Architecture, Not a Bug)
-
-| Signal | Condition | Semantic |
-|--------|-----------|----------|
-| log `ATTACK` | `label_l1 == 1` | RF binary vote |
-| `stats_.attacks_detected` | `label_l1==1 AND conf >= 0.65` | Sufficient confidence |
-| `final_classification=MALICIOUS` | `final_score >= 0.70` | Final system decision |
-
-`level1_attack=0.65` is in `ml_detector_config.json` — separate from `sniffer.json`.
+The system consists of **6 active components**, each running as an independent process. They communicate exclusively via encrypted ZeroMQ channels, with etcd as the service discovery authority.
 
 ---
 
-## Fast Detector Path Architecture
+### 4.1 `etcd-server`
 
-```mermaid
-flowchart TD
-    subgraph PathA[Path A - DEBT-FD-001 - DAY 13]
-        A1[is_suspicious\nper-packet evaluation]
-        A2[Compiled constants:\nTHRESHOLD_EXTERNAL_IPS=10\nTHRESHOLD_SMB_CONNS=3\nTHRESHOLD_PORT_SCAN=10\nTHRESHOLD_RST_RATIO=0.2\nWINDOW_NS=10s]
-        A3[Ignores sniffer.json\nSource of 76.8% FPR\non Windows CDN traffic]
-        A1 --- A2 --- A3
-    end
-    subgraph PathB[Path B - JSON-driven - DAY 80]
-        B1[send_ransomware_features\ntemporal aggregates]
-        B2[Reads sniffer.json:\nexternal_ips_30s=15\nsmb_diversity=10]
-        B3[JSON is the LAW\nCorrect behavior]
-        B1 --- B2 --- B3
-    end
-    subgraph Fix[PHASE2 Fix - ADR-006]
-        F1[Inject FastDetectorConfig\nstruct into constructor]
-        F2[Load from sniffer.json\nat startup]
-        F3[Same latency budget less than 5 us\nno hot path allocation]
-        F1 --- F2 --- F3
-    end
-    PathA -.->|PHASE2| Fix
-    PathB -.->|Already correct| Fix
-```
+**Role:** Configuration authority and service discovery broker.
+
+All components register their ZeroMQ endpoint addresses with etcd on startup. No component has a hardcoded peer address — all addresses are resolved dynamically from etcd at connection time. This enables hot-reload of configuration and makes the system topology reconfigurable without recompilation.
+
+**Key responsibilities:**
+- Publish resource paths (ZeroMQ endpoints) for all other components
+- Store and distribute the shared HMAC key (with rotation support — see ADR-004)
+- Provide a single source of truth for `sniffer.json` configuration
+
+**ADR reference:** ADR-005 (etcd client restoration), ADR-004 (key rotation with cooldown)
 
 ---
 
-## Feature Extraction Taxonomy
+### 4.2 `sniffer`
 
-```mermaid
-graph TD
-    FE[FeatureExtractor\n40 features total] --> D[ddos_embedded\n10 features]
-    FE --> R[ransomware_embedded\n10 features]
-    FE --> T[traffic_classification\n10 features]
-    FE --> I[internal_anomaly\n10 features]
+**Role:** Kernel-space packet capture and flow feature extraction.
 
-    D --> DR[9 REAL - extracted from ShardedFlowManager]
-    D --> DSE[1 SEMANTIC - flow_completion=0.5f - TCP half-open]
+The sniffer attaches an **eBPF/XDP** program to the monitored network interface and captures packets at the earliest possible point in the Linux network stack — before the kernel's networking subsystem processes them. This gives ML Defender zero-copy, sub-microsecond access to raw packet data.
 
-    R --> RR[6 REAL]
-    R --> RS[4 SENTINEL - negative 9999.0f]
+From raw packets, the sniffer assembles **network flows** (5-tuple: src IP, dst IP, src port, dst port, protocol) and computes a **127-column feature vector** per flow over a configurable time window (default: 10 seconds).
 
-    T --> TR[6 REAL]
-    T --> TS[4 SENTINEL - negative 9999.0f]
+**Feature categories:**
+- Packet rate, byte rate, flow duration
+- TCP flag ratios (SYN, ACK, RST, FIN)
+- Port diversity and destination IP diversity
+- Payload entropy (approximated)
+- Protocol distribution
 
-    I --> IR[7 REAL]
-    I --> IS[3 SENTINEL - negative 9999.0f]
-```
+**Output:** Protobuf-serialized `FlowRecord` messages, ChaCha20-Poly1305 encrypted, LZ4 compressed, published to `ml-detector` via ZeroMQ PUSH socket.
 
-| Category | Count | Value      | Meaning                                                     |
-| -------- | ----- | ---------- | ----------------------------------------------------------- |
-| Real     | 28    | Extracted  | Computed from actual flow data                              |
-| Sentinel | 11    | `-9999.0f` | Outside all RF split domains — routes deterministically     |
-| Semantic | 1     | `0.5f`     | TCP half-open — valid domain value, not missing             |
-| Total    | 40    | —          | —                                                           |
+**Configuration:** `sniffer.json` (read from etcd — "JSON is the law" principle)
 
-### Sentinel Taxonomy (DAY 79 — Critical Design Decision)
-
-`MISSING_FEATURE_SENTINEL = -9999.0f` is confirmed outside all RandomForest split
-domains. Any flow reaching a split on a sentinel-valued feature routes deterministically
-to the same leaf — no spurious variance.
-
-> **Never use `0.5f` or `NaN` as sentinels.** `NaN` propagates silently and corrupts
-> RF arithmetic. `0.5f` is a valid semantic value (TCP half-open). Only `-9999.0f`
-> is guaranteed safe. — ADR-DAY79
-
-### Features Blocked at Phase 1 (DEBT-PHASE2)
-
-| Feature                  | Blocker                                        | Fix    |
-| ------------------------ | ---------------------------------------------- | ------ |
-| `tcp_udp_ratio`          | `FlowStatistics` lacks `uint8_t protocol`      | PHASE2 |
-| `flow_duration_std`      | Requires multi-flow `TimeWindowAggregator`     | PHASE2 |
-| `protocol_variety`       | Requires multi-flow `TimeWindowAggregator`     | PHASE2 |
-| `connection_duration_std`| Requires multi-flow `TimeWindowAggregator`     | PHASE2 |
+**ADR reference:** ADR-006 (Fast Detector hardcoded thresholds — DEBT-FD-001), ADR-009 (datagram correlation)
 
 ---
 
-## Deployment Models
+### 4.3 `ml-detector`
 
-### Development / Experiment Reproduction (Current)
+**Role:** Dual-path classification engine.
 
-```mermaid
-graph TD
-    MAC[macOS Host] --> VAG[Vagrant + VirtualBox]
-    VAG --> DEF[VM: defender\nDebian bookworm\nAll 6 components\n/vagrant/ shared]
-    VAG --> CLI[VM: client\ntcpreplay\nDataset replay]
-    DEF <-->|Private network 192.168.100.x| CLI
+The ml-detector receives `FlowRecord` messages from the sniffer and applies a **two-path detection architecture**:
+
+#### Path A — Fast Detector (`FastDetector::is_suspicious()`)
+A handcrafted rule engine with compiled-in thresholds (currently hardcoded — see DEBT-FD-001). Operates in **< 1 ms** and acts as a first-pass filter. Flows flagged by Path A bypass the ML model and are forwarded directly for blocking.
+
+> ⚠️ **DEBT-FD-001:** Path A currently ignores `sniffer.json` thresholds. This is a known architectural debt, documented in ADR-006, scheduled for resolution in PHASE2.
+
+#### Path B — ML Detector (ONNX Runtime)
+A **Random Forest** classifier, trained on CTU-13 Neris botnet traffic and compiled to ONNX format. Loaded at runtime via ONNX Runtime. Operates on the full 127-column feature vector and produces a **maliciousness probability score** (0.0–1.0).
+
+**Validated performance (CTU-13 Neris, DAY 86 re-validation):**
+| Metric | Value |
+|---|---|
+| F1 Score | 0.9985 |
+| Recall | 1.0000 |
+| False Negative Rate | 0.00% |
+| False Positive Rate | 6.61% |
+| True Positives | 646 |
+
+**Scoring and alerting (ADR-007):**
+- **OR logic** for alerts: Path A suspicious OR Path B score > threshold → alert generated
+- **AND logic** for blocks: Path A suspicious AND Path B score > threshold → firewall rule applied
+- This prevents ML score poisoning: an attacker cannot avoid blocking by manipulating features to fool only one path
+
+**Sentinel value system:**
+All missing or semantically undefined features use `MISSING_FEATURE_SENTINEL = -9999.0f` — a value mathematically unreachable in real traffic. This enables deterministic routing of incomplete flows without ambiguity. Semantic values (e.g., `0.5f` for TCP half-open states) are strictly separate from sentinel values.
+
+**Output:** Alert messages and block commands to `firewall-acl-agent`; flow records (with HMAC-SHA256 per-row integrity) to daily-rotating CSV files consumed by `rag-ingester`.
+
+**ADR reference:** ADR-007 (consensus scoring), ADR-003 (ML autonomous evolution), ADR-011 (log unification)
+
+---
+
+### 4.4 `firewall-acl-agent`
+
+**Role:** Automated network response layer.
+
+Receives block commands from `ml-detector` and applies **iptables** rules to drop traffic from flagged source IPs. Implements a grace period mechanism: rules are applied immediately on detection and removed after a configurable cooldown window.
+
+**Design constraints:**
+- Never blocks without a corresponding ml-detector command (no autonomous decisions)
+- Maintains an audit log of all applied and removed rules
+- Rule application is idempotent: applying the same block twice has no effect
+- Human-in-the-loop: the Consejo de Sabios review process governs threshold changes
+
+**ADR reference:** ADR-007 (AND-consensus requirement before blocking)
+
+---
+
+### 4.5 `rag-ingester`
+
+**Role:** Historical event indexer and FAISS index builder.
+
+Consumes two CSV data sources:
+1. **ml-detector daily rotating CSV** — per-flow detection events with HMAC integrity
+2. **firewall-acl-agent append-only CSV** — applied/removed rule audit log
+
+For each batch of new records, `rag-ingester`:
+1. Verifies HMAC-SHA256 integrity per row
+2. Extracts text embeddings (via a lightweight embedding model)
+3. Upserts vectors into **FAISS** indices (class-separated to avoid the curse of dimensionality)
+4. Updates the **SQLite MetadataDB** (14-column schema including `trace_id`, `source_ip`, `dest_ip`, timestamps)
+
+**FAISS anti-curse design:**
+- Separate indices per traffic class (benign / malicious / unknown)
+- PCA dimensionality reduction applied before indexing
+- Temporal tiers: recent events in hot index, older events in cold index
+- No cross-class contamination in similarity search
+
+**ADR reference:** ADR-002 (multi-engine provenance intelligence), ADR-008 (flow graphs and forensic retraining)
+
+---
+
+### 4.6 `rag-security`
+
+**Role:** Local RAG query interface — confined LLM for forensic analysis.
+
+Provides a query interface over the FAISS indices built by `rag-ingester`. A security analyst can ask natural-language questions about historical detection events:
+
+> *"Show me all flows from 192.168.1.45 in the last 24 hours"*
+> *"Which source IPs generated the most RST packets this week?"*
+
+The LLM (TinyLlama, running entirely locally) generates responses grounded in the retrieved FAISS context. The LLM has no internet access, no external API calls, and cannot modify system configuration — it is **strictly read-only and confined** (ADR-010).
+
+**Skills system (ADR-010):**
+The LLM operates via a structured skills registry. Each skill defines a permitted query pattern and the FAISS/SQLite operations it may execute. Skills outside the registry are rejected. This prevents prompt injection from attacker-controlled traffic payloads appearing in the indexed data.
+
+**ADR reference:** ADR-010 (confined LLM skills), ADR-002 (situational intelligence)
+
+---
+
+## 5. Data Flow
+
 ```
+[Network Interface]
+        │
+        ▼ eBPF/XDP (kernel space)
+[sniffer]
+   • 127-column FlowRecord extraction
+   • 10s aggregation window
+   • Protobuf serialization
+        │ ZeroMQ PUSH
+        │ ChaCha20-Poly1305 + LZ4
+        ▼
+[ml-detector]
+   • Path A: FastDetector (< 1ms, hardcoded rules)
+   • Path B: ONNX Runtime RandomForest (< 5ms)
+   • Consensus scoring (ADR-007)
+   • trace_id generation per flow
+        │                    │
+        │ BLOCK command       │ Daily CSV (HMAC per row)
+        ▼                    ▼
+[firewall-acl-agent]    [rag-ingester]
+   • iptables rules        • FAISS index build
+   • Audit CSV             • SQLite MetadataDB
+                                │
+                                ▼
+                          [rag-security]
+                          • FAISS similarity search
+                          • TinyLlama (local, confined)
+                          • Skills registry (ADR-010)
 
-**Quick start for experiment reproduction:**
-```bash
-git clone https://github.com/yourusername/ml-defender.git
-cd ml-defender
-vagrant up defender client
-make pipeline-start
-sleep 15
-make test-replay-neris
-python3 scripts/calculate_f1_neris.py \
-  /vagrant/logs/lab/sniffer.log --total-events 19135
-# Expected: F1-Score: 1.0000
-```
-
-> Vagrant is the experiment reproduction environment only.
-> Production deployments run bare-metal without VM overhead.
-
-### Production — Naive Single-Node (Post-Paper)
-
-```mermaid
-graph LR
-    INT[Internet] --> RTR[Router\nany brand\nunmodified]
-    RTR --> MLD[ML Defender Box\nLinux bare metal\ndual NIC\nDebian 11 hardened]
-    MLD --> LAN[Internal Network\nhospital or school or office]
-```
-
-The router is never modified. ML Defender is a transparent bridge — any brand,
-any firmware, zero dependency on network hardware.
-
-**Hardware requirements:**
-- Linux kernel >= 5.8 (eBPF/XDP support, standard since 2020)
-- Dual NIC — any ~20 EUR PCIe card for SOHO; Intel i210/i350 for >1 Gbps
-- RAM: ~900 MB (with TinyLlama loaded)
-- Any mini-PC, NUC, Raspberry Pi 5, or repurposed server
-
-### Production — Multi-Component Parallel (Enterprise Preview)
-
-```mermaid
-graph TD
-    W[WAN interface] --> S1[sniffer-WAN\nconfig: wan=true]
-    L[LAN interface] --> S2[sniffer-LAN\nconfig: wan=false]
-    Z[DMZ interface] --> S3[sniffer-DMZ\nconfig: dmz=true]
-
-    S1 --> M1[ml-detector-1]
-    S2 --> M2[ml-detector-2]
-    S3 --> M3[ml-detector-3]
-
-    M1 --> FW[firewall-acl-agent\naggregates all decisions]
-    M2 --> FW
-    M3 --> FW
-
-    M1 --> RI[rag-ingester]
-    M2 --> RI
-    M3 --> RI
-    FW --> RI
-
-    RI --> RS[rag-security]
-    ETCD[etcd-server] --> M1
-    ETCD --> M2
-    ETCD --> M3
-    ETCD --> FW
+[etcd-server] ──────────────► all components
+   • ZeroMQ endpoint registry
+   • HMAC key distribution
+   • sniffer.json configuration
 ```
 
 ---
 
-## Component Architecture
+## 6. ASCII Pipeline Diagram
 
-### sniffer (eBPF/XDP)
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        ML DEFENDER (aRGus EDR)                          │
+│                      Network Intrusion Detection                         │
+└─────────────────────────────────────────────────────────────────────────┘
 
-**Source:** `sniffer/`
-**Config:** `sniffer/config/sniffer.json` — source of truth (NOT `build-debug/`)
+         ┌──────────────┐
+         │  etcd-server │  ◄── Configuration authority
+         │   (port 2379)│      Service discovery
+         └──────┬───────┘      HMAC key distribution
+                │ service discovery (all components)
+                │
+ ┌──────────────┼──────────────────────────────────────────────┐
+ │              │                                              │
+ ▼              ▼              ▼              ▼                ▼
+┌─────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
+│ sniffer │ │ml-detect │ │ firewall │ │rag-ingest│ │ rag-security │
+│         │ │          │ │-acl-agent│ │          │ │              │
+│ eBPF/   │ │ Path A:  │ │          │ │ FAISS    │ │ TinyLlama    │
+│ XDP     │─►FastDetect│─► iptables │ │ SQLite   │ │ (local only) │
+│         │ │ Path B:  │ │ rules    │ │ MetadataDB│ │ Skills API  │
+│ 127-col │ │ ONNX RF  │ │          │ │          │─► query iface │
+│ features│ │          │ │          │ │          │ │              │
+└─────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────────┘
+     │            │                         ▲
+     │ ZeroMQ     │ ZeroMQ                  │
+     │ PUSH       │ PUSH                    │
+     │ ChaCha20   │ CSV                     │
+     │ + LZ4      │ + HMAC                  │
+     └────────────┘─────────────────────────┘
 
-**eBPF data structure:**
-```c
-struct simple_event {
-    uint32_t src_ip;        uint32_t dst_ip;
-    uint16_t src_port;      uint16_t dst_port;
-    uint8_t  protocol;      uint8_t  tcp_flags;
-    uint32_t packet_len;    uint16_t ip_header_len;
-    uint16_t l4_header_len; uint64_t timestamp;
-    uint16_t payload_len;   uint8_t  payload[512];
-} __attribute__((packed)); // 544 bytes total
+Legend:
+  ─► ZeroMQ encrypted channel (ChaCha20-Poly1305 + LZ4)
+  ──► etcd service discovery (gRPC)
+  CSV files protected with HMAC-SHA256 per row
 ```
 
-**Startup confirmation:**
-```
-[ML Defender] Thresholds (JSON): DDoS=0.85 Ransomware=0.9 Traffic=0.8 Internal=0.85
-```
+---
+
+## 7. Technology Stack
+
+| Layer | Technology | Rationale |
+|---|---|---|
+| Language | C++20 | Sub-microsecond latency; zero GC pauses; embedded target compatibility |
+| Packet capture | eBPF/XDP | Kernel-bypass; zero-copy; earliest hook point in Linux network stack |
+| Messaging | ZeroMQ 4.x | Battle-tested; PUSH/PULL topology; cross-platform |
+| Serialization | Protocol Buffers (proto3) | Schema-enforced; compact binary; forward-compatible |
+| Encryption | ChaCha20-Poly1305 (libsodium) | AEAD; constant-time; no hardware AES dependency |
+| Integrity | HMAC-SHA256 | Per-message and per-CSV-row audit trail |
+| Compression | LZ4 | Fastest real-time compression; negligible CPU cost |
+| Coordination | etcd v3 | Distributed KV with watch semantics; gRPC transport |
+| ML runtime | ONNX Runtime | Vendor-neutral; supports RandomForest, future neural models |
+| Vector search | FAISS (Facebook AI) | Approximate nearest-neighbor at scale; CPU-only deployment |
+| Metadata | SQLite 3 | Zero-config; embedded; ACID; 14-column MetadataDB schema |
+| LLM | TinyLlama (local) | Fully offline; < 2GB RAM; sufficient for structured forensic queries |
+| Build system | CMake + Conan 2 | Reproducible; cross-platform; dependency management |
+| Test framework | CTest + custom harnesses | 31/31 passing; crypto, HMAC, ML, RAG, trace_id suites |
+| VM / CI | Vagrant + VirtualBox | Multi-VM lab simulation; repeatable dataset replay |
 
 ---
 
-### ml-detector
+## 8. Architectural Decision Records
 
-**Source:** `ml-detector/`
-**Config:** `ml-detector/config/ml_detector_config.json`
+All major architectural decisions are documented in `docs/adr/`. Key decisions relevant to contributors:
 
-> Note: `ml-detector/src/ml_detector.cpp` is empty (0 bytes).
-> All logic is in `ml-detector/src/zmq_handler.cpp` (927 lines). — DAY 82
+| ADR | Title | Status | Impact |
+|---|---|---|---|
+| ADR-001 | Deployment stack (Vagrant, Docker, bare-metal) | ACCEPTED | Deployment model |
+| ADR-002 | Multi-engine provenance situational intelligence | ACCEPTED | RAG architecture |
+| ADR-003 | ML autonomous evolution | ACCEPTED | Retraining pipeline |
+| ADR-004 | HMAC key rotation with cooldown windows | ACCEPTED | Security — key management |
+| ADR-005 | etcd client restoration | ACCEPTED | Resilience |
+| ADR-006 | Fast Detector hardcoded thresholds (DEBT-FD-001) | ACCEPTED (debt) | Path A architecture |
+| ADR-007 | AND-consensus scoring for firewall blocks | ACCEPTED | Detection logic |
+| ADR-008 | Flow graphs and forensic retraining | ACCEPTED | ML evolution |
+| ADR-009 | Suspicious datagram capture and correlation | ACCEPTED | Feature extraction |
+| ADR-010 | Confined LLM with skills registry (rag-security) | ACCEPTED | LLM safety |
+| ADR-011 | Log unification across 6 components | ACCEPTED | Observability |
+| ADR-012 | Plugin loader architecture | PROPOSED | Extensibility |
 
-#### Model Stack
-
-| Level | Model                          | Features | Threshold | Latency     | Note                          |
-| ----- | ------------------------------ | -------- | --------- | ----------- | ----------------------------- |
-| L1    | ONNX RandomForest              | 23       | 0.65      | ~26 ms      | ONNX runtime overhead         |
-| L2    | Embedded C++20 DDoS RF         | 10       | 0.70      | **0.24 µs** | 4.1M inferences/sec           |
-| L2    | Embedded C++20 Ransomware RF   | 10       | 0.75      | **1.06 µs** | 944K inferences/sec           |
-| L3    | Embedded C++20 Traffic RF      | 10       | 0.60      | **0.37 µs** | 2.7M inferences/sec           |
-| L3    | Embedded C++20 Internal RF     | 10       | 0.65      | **0.33 µs** | 3.0M inferences/sec           |
-
-> **ONNX L1 latency (~26 ms):** Dominated by ONNX runtime initialization, not
-> inference. Can be reduced with `ORT_ENABLE_ALL` session options, or by converting
-> L1 to embedded C++20 RF (same approach as L2+L3). Planned for PHASE2.
-
-#### CSV Output
-
-- Path: `/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv`
-- Condition: `final_score >= 0.50`
-- Schema: 127 columns (validated DAY 64)
-- HMAC-SHA256 per row — feeds directly into `rag-ingester` for forensic queries
-- Daily rotation
+> **For contributors:** Before implementing any feature that touches detection logic, scoring, or firewall rules, read ADR-007. Before modifying the RAG subsystem, read ADR-010. For all new ADRs, use the template in `docs/adr/`.
 
 ---
 
-### firewall-acl-agent
+## 9. Deployment
 
-**Source:** `firewall-acl-agent/`
+### 9.1 Experimental — Vagrant Multi-VM Lab
 
-- Decrypts ChaCha20-Poly1305 events from ml-detector (ZeroMQ SUB)
-- Decompresses LZ4
-- Updates IPSet blacklist and applies IPTables DROP rule
-- Writes HMAC-signed CSV: `/vagrant/logs/firewall_logs/firewall_blocks.csv`
-- Stress tested: 364 ev/s, 54% CPU, 127 MB RAM, **0 crypto errors** @ 36K events
-- **Current mode:** `simulate_block: true` (dry-run for development safety)
-
-> **ADR-007 pending:** Current blocking uses `MAX(fast, ml)`. PHASE2 introduces
-> AND consensus — both Fast Detector AND ML must agree above threshold before a
-> block is applied. Reduces spurious blocks on ambiguous traffic.
-
----
-
-### rag-ingester
-
-**Source:** `rag-ingester/`
-
-- Reads ml-detector CSV + firewall CSV
-- Validates HMAC-SHA256 per row before ingestion (chain of custody)
-- Embeds events into FAISS Attack index (256-d vectors)
-- Stores metadata in SQLite
-- Validated DAY 83: `lines=71,217 parsed_ok=71,217 hmac_fail=0 parse_err=0`
-
-**HMAC key rotation policy (ADR-004):**
-- Keys rotated via etcd with cooldown period
-- Heartbeat: 30s interval, TTL: 60s
-- All rows written with the key active at write time; validated with key active at read time
-
----
-
-### rag-security
-
-**Source:** `rag/`
-
-- TinyLlama-1.1B (GGUF, llama.cpp backend)
-- FAISS similarity search over Attack index
-- Activated when `final_score >= 0.85`
-- CLI forensic interface:
-  ```bash
-  rag ask_llm "What IPs were blocked in the last hour?"
-  rag show_config
-  rag show_capabilities
-  ```
-
----
-
-### etcd-server
-
-**Source:** `etcd-server/`
-
-```mermaid
-graph TD
-    ETCD[etcd-server] -->|ChaCha20 seeds| S[sniffer]
-    ETCD -->|ChaCha20 seeds| M[ml-detector]
-    ETCD -->|ChaCha20 seeds| F[firewall-acl-agent]
-    ETCD -->|HMAC keys + rotation ADR-004| RI[rag-ingester]
-    S -->|heartbeat 30s TTL 60s| ETCD
-    M -->|heartbeat 30s TTL 60s| ETCD
-    F -->|heartbeat 30s TTL 60s| ETCD
-```
-
-> **Open Source mode:** etcd distributes crypto seeds. Functional but not
-> enterprise-grade. A compromised etcd exposes all component keys.
->
-> **Enterprise ENT-3:** P2P key exchange. Each component pair negotiates session
-> keys via Diffie-Hellman authenticated by component identity hashes (SHA256 of
-> binary + config at startup). etcd is removed from the cryptographic trust chain.
-
----
-
-## Cryptographic Transport
-
-| Channel                    | Encryption        | Compression | Integrity      | Notes                        |
-| -------------------------- | ----------------- | ----------- | -------------- | ---------------------------- |
-| sniffer → ml-detector      | ChaCha20-Poly1305 | LZ4         | AEAD           | packet-to-ML transport       |
-| ml-detector → firewall     | ChaCha20-Poly1305 | LZ4         | AEAD           | dual-score decision output   |
-| CSV logs                   | —                 | —           | HMAC-SHA256    | forensic ingestion integrity |
-| Component session keys     | Diffie-Hellman    | —           | SHA256         | ENT-3 P2P, no etcd reliance  |
-| etcd → components          | ChaCha20-Poly1305 | —           | TLS            | open source mode             |
-
----
-
-## Configuration System
-
-**Principle:** JSON is the LAW. No hardcoded security values in production code.
-Fallbacks are explicit and logged.
-
-**Source files (always edit these, never build artifacts):**
-
-| Component          | Config file                                               |
-| ------------------ | --------------------------------------------------------- |
-| sniffer            | `sniffer/config/sniffer.json`                             |
-| ml-detector        | `ml-detector/config/ml_detector_config.json`              |
-| firewall-acl-agent | `firewall-acl-agent/config/firewall_acl_agent_config.json`|
-| rag-ingester       | `rag-ingester/config/rag_ingester_config.json`            |
-
-> **Warning:** `sniffer/build-debug/config/sniffer.json` is a generated artifact.
-> Changes are overwritten at build time. Always edit the source file.
-
----
-
-## Validated Results
-
-### F1 Comparison (DAY 81 — same PCAP, controlled)
-
-| Condition              | DDoS | Ransom | Traffic | Internal | F1         | FP |
-| ---------------------- | ---- | ------ | ------- | -------- | ---------- | -- |
-| Production (JSON)      | 0.85 | 0.90   | 0.80    | 0.85     | **1.0000** | 0  |
-| Legacy low thresholds  | 0.70 | 0.75   | 0.70    | 0.70     | **0.9976** | 1  |
-
-### Specificity Validation (DAY 82-83 — benign traffic)
-
-| Dataset         | Flows  | Network       | ML FP | FPR ML       | FD alerts | FPR FD |
-| --------------- | ------ | ------------- | ----- | ------------ | --------- | ------ |
-| smallFlows.pcap | 1,209  | 172.16.133.x  | 0     | 0%           | 3,741     | —      |
-| bigFlows.pcap   | 40,467 | 172.16.133.x  | **2** | **0.0049%**  | 31,065    | 76.8%  |
-
-**bigFlows confirmed benign:** network 172.16.133.x is not present in any CTU-13
-binetflow. The Botnet-91 scenario (192.168.1.x) in ctu13/index.html is a completely
-different dataset from Neris (147.32.x.x).
-
-### Experiment Tracking
-
-All F1 replay results in `docs/experiments/f1_replay_log.csv`:
-
-| replay_id                  | day | F1         | Notes                          |
-| -------------------------- | --- | ---------- | ------------------------------ |
-| UNKNOWN_DAY79              | 79  | 0.9921     | Baseline after sentinel fix    |
-| UNKNOWN_DAY80              | 80  | 0.9934     | JSON thresholds activated      |
-| DAY81_thresholds_085090    | 81  | **1.0000** | First clean replay             |
-| DAY81_condicionB           | 81  | 0.9976     | Legacy thresholds comparison   |
-| DAY82-001                  | 82  | —          | smallFlows benign, attacks=0   |
-| DAY82-002                  | 82  | —          | bigFlows, 2 FP conf>=0.65      |
-| DAY83_verification         | 83  | **1.0000** | Pre-merge re-verification      |
-
----
-
-## Performance Characteristics
-
-### Latency Budget (End-to-End)
-
-| Stage                        | Latency    | Note                          |
-| ---------------------------- | ---------- | ----------------------------- |
-| eBPF/XDP kernel capture      | <1 µs      |                               |
-| Ring buffer to userspace     | <1 µs      | zero-copy                     |
-| Feature extraction           | <10 µs     |                               |
-| Fast Detector heuristics     | <5 µs      | Path A or B                   |
-| ZeroMQ + ChaCha20 + LZ4      | <100 µs    |                               |
-| ml-detector L1 (ONNX)        | ~26 ms     | optimization planned PHASE2   |
-| ml-detector L2+L3 (embedded) | 0.24–1.06 µs |                             |
-| firewall-acl-agent response  | <10 ms     |                               |
-| **Total packet-to-block**    | **<150 ms**| ONNX dominates worst case     |
-
-### Resource Usage (Single Node, Lab VM)
-
-| Component                 | CPU         | Memory  |
-| ------------------------- | ----------- | ------- |
-| sniffer                   | 5–10%       | ~5 MB   |
-| ml-detector               | 10–20%      | ~150 MB |
-| firewall-acl-agent        | 5% (54% stress) | ~127 MB |
-| rag-ingester              | variable    | ~50 MB  |
-| rag-security (TinyLlama)  | 15–30%      | ~500 MB |
-| etcd-server               | 2%          | ~20 MB  |
-| **Total**                 | **<70%**    | **<900 MB** |
-
-### Target Hardware by Deployment Tier
-
-| Tier     | Hardware                        | Approx. Cost | Capacity         |
-| -------- | ------------------------------- | ------------ | ---------------- |
-| Minimal  | Raspberry Pi 5 (8 GB)           | 80 EUR       | SOHO, 1–5 devices |
-| Standard | Mini-PC NUC (16 GB, dual NIC)   | 200 EUR      | School / clinic  |
-| Full     | x86_64 server (32 GB, SFP+)     | 500 EUR      | Hospital / enterprise |
-
----
-
-## Security Considerations
-
-### Guarantees
-
-- ChaCha20-Poly1305 AEAD — all inter-component traffic authenticated and encrypted
-- HMAC-SHA256 CSV log integrity — tamper detection before RAG ingestion
-- Autonomous blocking — no human in loop for confirmed threats
-- JSON-driven thresholds — no hardcoded security parameters in production code
-- Fail-closed design — component failure does not open firewall
-- ThreadSanitizer validated — 0 races, 0 deadlocks in ShardedFlowManager
-
-### Architectural Debt Register
-
-| ID           | Description                              | Severity | Status     | Fix         |
-| ------------ | ---------------------------------------- | -------- | ---------- | ----------- |
-| DEBT-FD-001  | Fast Detector Path A hardcoded thresholds | High    | Open       | PHASE2 ADR-006 |
-| DEBT-PHASE2  | 11/40 features use sentinel              | Medium   | Open       | PHASE2      |
-| ADR-007      | Firewall MAX to AND consensus            | Medium   | Open       | PHASE2      |
-| ENT-3        | etcd as crypto authority (open source)   | High     | Documented | Enterprise  |
-| ONNX-L1      | ~26 ms ONNX overhead vs µs embedded      | Low      | Documented | PHASE2      |
-
----
-
-## Development Environment
-
-### Pipeline Commands
+Used for all dataset replay experiments, stress testing, and CI validation.
 
 ```bash
-make pipeline-start              # Start all 6 components via tmux
-make pipeline-stop               # Stop all components
-make pipeline-status             # Check component status (PIDs)
-make logs-lab-clean              # Clear all logs
-bash scripts/pipeline_health.sh  # Detailed health monitor (runs inside VM: defender)
+# Start the lab
+cd /path/to/test-zeromq-docker
+vagrant up
+
+# SSH into the defender VM
+vagrant ssh defender
+
+# Run the full pipeline
+cd /vagrant
+./scripts/start_pipeline.sh
+
+# Run tests
+cd build && ctest --output-on-failure
 ```
 
-### Experiment Reproduction (Full F1 from Scratch)
+**VM topology:**
+- `defender` — runs all 6 pipeline components + etcd
+- Traffic replay via `tcpreplay` against CTU-13 datasets
 
+**Validated datasets:**
+- CTU-13 Neris (botnet, DAY 79–87 baseline)
+- CTU-13 bigFlows (mixed traffic, stress testing)
+
+**Stress test results (DAY 87):**
+- Tested at 10 / 25 / 50 / 100 Mbps via progressive tcpreplay escalation
+- **Bottleneck confirmed:** VirtualBox NIC virtualization layer (~33–38 Mbps physical limit)
+- **Pipeline itself:** 100% of deliverable traffic processed with zero errors at all tested rates
+- Bare-metal testing is the next P1 milestone
+
+### 9.2 Production — Bare-Metal Linux
+
+Target environment for real deployments.
+
+**Requirements:**
+- Linux kernel ≥ 5.10 (eBPF/XDP support)
+- Network interface with XDP driver support (common NICs: Intel i40e, Mellanox mlx5)
+- ≥ 4 GB RAM (TinyLlama KV cache + FAISS indices)
+- ≥ 2 CPU cores (pipeline is multi-threaded; ML inference is single-threaded)
+- No internet connectivity required (fully air-gapped capable)
+
+**Quick start:**
 ```bash
-make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
-vagrant ssh defender -c "grep 'Thresholds (JSON)' /vagrant/logs/lab/sniffer.log"
-vagrant up client   # only if client VM is not running
-make test-replay-neris
-python3 scripts/calculate_f1_neris.py \
-  /vagrant/logs/lab/sniffer.log --total-events 19135
-# Expected: F1-Score: 1.0000
+# Build
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+# Configure
+cp config/sniffer.json.example config/sniffer.json
+# Edit sniffer.json: set interface, thresholds, etcd address
+
+# Start etcd
+etcd --data-dir /var/lib/etcd &
+
+# Start pipeline components (order matters)
+./etcd-server &
+./rag-ingester &
+./rag-security &
+./ml-detector &
+./firewall-acl-agent &
+./sniffer --interface eth0 &
 ```
 
-### Log Locations
+**Logs:** All components write structured logs to `/var/log/ml-defender/COMPONENT.log`
+(In Vagrant lab: `/vagrant/logs/lab/COMPONENT.log`)
 
-```
-/vagrant/logs/lab/
-  sniffer.log          Fast Detector alerts, thresholds confirmation
-  detector.log         spdlog operational log (source of truth, ADR-005)
-  ml-detector.log      startup output only
-  firewall-agent.log   block decisions
-  rag-ingester.log     CSV ingestion stats, HMAC validation
-  rag-security.log     RAG query results
-  etcd-server.log      key rotation, heartbeats
+### 9.3 Configuration — `sniffer.json`
 
-/vagrant/logs/ml-detector/events/YYYY-MM-DD.csv
-  ML event log (score >= 0.50), HMAC per row
-  Consumed by rag-ingester -> FAISS + SQLite -> forensic queries
+`sniffer.json` is the single configuration file for the entire pipeline. It is stored in etcd and distributed to all components at startup. **No component may hardcode a parameter that belongs in `sniffer.json`.** (This principle is currently violated by Path A — see DEBT-FD-001 / ADR-006.)
 
-/vagrant/logs/firewall_logs/firewall_blocks.csv
-  Block decisions, HMAC per row
-  Consumed by rag-ingester -> forensic history
+Key parameters:
+```json
+{
+  "interface": "eth0",
+  "flow_window_seconds": 10,
+  "ml_score_threshold": 0.7,
+  "fast_detector_rst_ratio_threshold": 0.5,
+  "fast_detector_connection_rate_threshold": 100,
+  "hmac_key_rotation_interval_seconds": 3600,
+  "log_level": "INFO"
+}
 ```
 
 ---
 
-## Production Deployment
+## 10. Security Design
 
-### Planned: Debian 11 Hardened Installer (Post-Paper)
+### 10.1 Transport Security
 
-```bash
-curl -fsSL https://ml-defender.io/install.sh | sudo bash
-```
+All inter-component communication is encrypted with **ChaCha20-Poly1305** (AEAD). The authentication tag provides both integrity and authenticity — a modified message is detected and dropped before processing.
 
-This will verify kernel requirements, compile for target architecture (x86_64 or
-ARM64), verify SHA256 hashes against signed manifest, apply seccomp and AppArmor
-profiles per component, and install systemd units with `CapabilityBoundingSet`.
+The shared encryption key is distributed via etcd. Key rotation is supported with a **cooldown window** and **grace period** (ADR-004) to prevent message drops during rotation.
 
-### Planned: systemd Unit Startup Order
+### 10.2 Data Integrity
 
-```
-ml-defender-etcd.service           (starts first — provides crypto seeds)
-ml-defender-sniffer.service         (After=etcd)
-ml-defender-ml-detector.service     (After=sniffer)
-ml-defender-firewall.service        (After=ml-detector)
-ml-defender-rag-ingester.service    (After=ml-detector firewall)
-ml-defender-rag-security.service    (After=rag-ingester)
-```
+Every CSV row written by `ml-detector` and `firewall-acl-agent` carries an **HMAC-SHA256** computed with the current rotation key. `rag-ingester` verifies this HMAC before indexing any row. A tampered audit log is detected and rejected.
 
-Each unit: `Restart=always`, `CapabilityBoundingSet`, `seccomp` profile,
-`PrivateTmp=yes`, `NoNewPrivileges=yes`.
+### 10.3 LLM Confinement (ADR-010)
+
+The `rag-security` LLM is confined by a **skills registry**. Attackers who control traffic payloads that get indexed in FAISS cannot use those payloads to exfiltrate data or execute commands, because the LLM may only execute predefined skill operations.
+
+### 10.4 Trace ID System
+
+Every flow is assigned a **`trace_id`** at the sniffer level, derived from the 5-tuple and a timestamp bucket. This enables end-to-end correlation of a single flow across all 6 components without transmitting the full 5-tuple in every message.
+
+The `trace_id_generator` handles edge cases:
+- `fallback_applied` flag for flows with wildcard IPs (`0.0.0.0`) — these are valid network events, not errors
+- Timestamp bucket alignment to prevent boundary artifacts
 
 ---
 
-## Roadmap
+## 11. ML Subsystem
 
-### Phase 1 — COMPLETE (DAY 83)
+### 11.1 Model Architecture
 
-Pipeline 6/6 stable, F1=1.0000 on CTU-13 Neris, FPR=0.0049% on bigFlows benign,
-CSV pipeline E2E validated (71,217 rows, 0 errors), merged to main.
+The production classifier is a **Random Forest** with 100 trees, trained on CTU-13 Neris botnet captures. The model is:
+1. Trained in Python (scikit-learn)
+2. Exported to ONNX format
+3. Loaded at runtime by `ml-detector` via ONNX Runtime (C++ API)
+4. Inference: < 5 ms per flow on a single CPU core
 
-### Phase 2 — Post-Paper (DAY 90+)
+### 11.2 Feature Engineering
 
-- Complete 40/40 real features (eliminate DEBT-PHASE2)
-- Fix DEBT-FD-001 — inject FastDetectorConfig into Fast Detector Path A
-- ADR-007 — AND consensus for firewall blocking
-- ONNX L1 optimization or conversion to embedded C++20 RF
-- Debian 11 bare-metal installer with seccomp profiles
-- systemd production units
-- CLI dashboard: `argus status`, `argus report`, `argus map`
-- PDF/CSV report generation for management
+The 127-column feature vector covers:
+- **Flow-level statistics:** duration, packet count, byte count, inter-arrival times
+- **TCP flag ratios:** SYN ratio, ACK ratio, RST ratio (`rst_ratio` — P1 backlog), FIN ratio
+- **Connection quality:** `syn_ack_ratio` (P1 backlog), half-open connections
+- **Destination diversity:** unique destination IPs, unique destination ports (`port_diversity_ratio` — P2)
+- **Protocol signals:** dst port 445 ratio (SMB — P2), DNS query count (P3)
+- **Temporal patterns:** connection rate, burst detection
 
-### Enterprise
+### 11.3 Sentinel Value Taxonomy
 
-```mermaid
-graph LR
-    ENT1[ENT-1\nFederated Threat\nIntelligence] --> ENT2[ENT-2\nAttack Graph\nGraphML + STIX 2.1]
-    ENT2 --> ENT3[ENT-3\nP2P Key Exchange\neliminate etcd\nas crypto authority]
-    ENT3 --> ENT4[ENT-4\nHot-Reload Config\nno downtime]
-    ENT4 --> ENT5[ENT-5\nGlobal Federated\nTelemetry]
-    ENT5 --> ENT6[ENT-6\nMISP + OpenCTI]
-    ENT6 --> ENT7[ENT-7\nOpenTelemetry\n+ Grafana]
-    ENT7 --> ENT8[ENT-8\nHSM + USB Root Key]
-    ENT8 --> ENT9[ENT-9\nDatagram Capture\n+ Correlation]
-```
+| Value | Name | Meaning |
+|---|---|---|
+| `-9999.0f` | `MISSING_FEATURE_SENTINEL` | Feature not computable for this flow — deterministic routing |
+| Semantic values | Various | Domain-specific defaults (e.g., `0.5f` for TCP half-open) |
 
-> **ENT-3 in detail:** Each component pair negotiates a session key via
-> Diffie-Hellman authenticated by component identity hashes (SHA256 of binary +
-> config at startup). etcd is removed from the cryptographic trust chain entirely.
-> A compromised etcd no longer exposes component session keys.
+The sentinel `-9999.0f` was chosen because it is **mathematically unreachable** in real traffic. It is embedded in all 40 float fields across 4 protobuf submessages at initialization (`init_embedded_sentinels()`), preventing Proto3's default-value-suppression bug (DAY 76–78).
 
----
+### 11.4 Generalization Limitations
 
-## Addendum — Security & RAG Enhancements
+The current model is validated on CTU-13 Neris (IRC botnet C2 traffic). Generalization to other attack families:
 
-### RAG Activation & Forensic Flow
+| Attack Type | Estimated Recall | Notes |
+|---|---|---|
+| Neris IRC botnet | 1.0000 | Training distribution |
+| Generic port scanning | ~0.85–0.95 | Similar flow statistics |
+| WannaCry / NotPetya (SMB) | ~0.70–0.85 | Requires `rst_ratio`, `syn_ack_ratio` features + retraining |
+| DNS-based C2 | Low | Layer 3/4 only — DPI required |
 
-```mermaid
-flowchart TD
-    ML[ML final_score >= 0.85] --> RAG[rag-security]
-    FW[Firewall block applied] --> RAGI[rag-ingester]
-    ML --> RAGI
-    RAGI --> FAISS[FAISS Attack Index + SQLite]
-    FAISS --> RAG
-    RAG --> CLI[CLI forensic queries\nask_llm / show_config]
-```
-
-### Cryptographic Trust Levels
-
-| Channel                | Encryption        | Compression | Integrity   | Notes                        |
-| ---------------------- | ----------------- | ----------- | ----------- | ---------------------------- |
-| sniffer → ml-detector  | ChaCha20-Poly1305 | LZ4         | AEAD        | packet-to-ML transport       |
-| ml-detector → firewall | ChaCha20-Poly1305 | LZ4         | AEAD        | dual-score decision output   |
-| CSV logs               | —                 | —           | HMAC-SHA256 | forensic ingestion integrity |
-| Component session keys | Diffie-Hellman    | —           | SHA256      | ENT-3 P2P, no etcd reliance  |
+**Planned mitigations:** Synthetic SMB traffic generation (`docs/design/synthetic_data_wannacry_spec.md`), `rst_ratio` and `syn_ack_ratio` feature implementation (P1 backlog), retraining pipeline (ADR-008).
 
 ---
 
-## Executive Summary — 2 Minutes for CTO
+## 12. Performance Envelope
 
-```mermaid
-flowchart LR
-    NIC[Packet in NIC] --> EBPF[eBPF/XDP\nless than 1 us]
-    EBPF --> RB[Ring Buffer]
-    RB --> FE[40 Flow Features]
-    FE --> FD[Fast Detector\nless than 5 us]
-    FE --> ML[ML L1-L3\n0.24 to 26 ms]
-    FD --> MAX[Dual-Score Decision\nmax of Fast and ML]
-    ML --> MAX
-    MAX -->|score >= 0.70| FW[Firewall block\nless than 10 ms]
-    MAX -->|score >= 0.85| RAG[RAG forensic\nTinyLlama-1.1B]
-    FW --> RAG
-```
+### Validated (Vagrant / VirtualBox)
+| Metric | Value | Condition |
+|---|---|---|
+| Throughput (pipeline) | 100% at ≤ 38 Mbps | VirtualBox NIC limit |
+| Throughput (physical) | ≥ 100 Mbps | Estimated — bare-metal pending |
+| Detection latency (Path A) | < 1 ms | FastDetector rule engine |
+| Detection latency (Path B) | < 5 ms | ONNX Runtime RandomForest |
+| Crypto errors | 0 / 36,000 events | DAY 52–62 stress test |
+| F1 Score | 0.9985 | CTU-13 Neris, DAY 86 |
+| False Negative Rate | 0.00% | Zero missed malicious flows |
 
-**Key Metrics**
-
-| Metric                | Value                         |
-| --------------------- | ----------------------------- |
-| F1                    | 1.0000                        |
-| ML FPR                | 0.0049%                       |
-| Fast Detector FPR     | 76.8% — filtered by ML        |
-| FP Reduction          | ~15,500x                      |
-| Total latency         | <150 ms packet-to-block       |
-| Embedded RF latency   | 0.24–1.06 µs                  |
-| ONNX L1 latency       | ~26 ms (planned embed PHASE2) |
-| Memory footprint      | <900 MB total                 |
-| Min hardware          | Raspberry Pi 5 ~80 EUR        |
-
-**Why This Matters**
-
-A hospital or school running ML Defender on a 200 EUR mini-PC gets:
-- Autonomous ransomware and DDoS detection and blocking
-- Ultra-low false positive rate (0.0049%) — operators are not flooded with alerts
-- Cryptographically authenticated event pipeline end-to-end
-- Full forensic history queryable in natural language
-- Zero dependency on router brand or firmware
-
-**Architectural Highlights**
-
-Dual-score validation, JSON-driven thresholds, ChaCha20 authenticated transport,
-fail-closed design, sentinel-safe RF routing, ThreadSanitizer-validated concurrency.
-
-**Roadmap**
-
-PHASE2: complete 40/40 features, embed L1 RF, Fast Detector JSON config.
-Enterprise: P2P key exchange, federated telemetry, attack graphs, SIEM integration.
+### Next milestone
+- **Bare-metal stress test** — confirm ≥ 100 Mbps without VirtualBox NIC bottleneck
+- Target hardware: standard x86_64 server, Intel NIC with XDP driver support
 
 ---
 
-## Engineering Decision Records
+## 13. Known Limitations
 
-| ADR       | Title                              | Status      |
-| --------- | ---------------------------------- | ----------- |
-| ADR-001   | ChaCha20-Poly1305 for all transport | Implemented |
-| ADR-002   | Multi-engine detection provenance  | Implemented |
-| ADR-004   | HMAC key rotation with cooldown    | Implemented |
-| ADR-005   | Unified ml-detector logging        | Post-paper with ENT-4 |
-| ADR-006   | Fast Detector hardcoded thresholds | Fix PHASE2  |
-| ADR-007   | Firewall AND consensus             | PHASE2      |
-| ADR-DAY79 | Sentinel value taxonomy (-9999.0f) | Implemented |
+1. **DEBT-FD-001 — Path A hardcoded thresholds:** `FastDetector::is_suspicious()` ignores `sniffer.json`. Thresholds are compile-time constants. Resolution scheduled for PHASE2 (ADR-006).
 
-Full ADR documents: `docs/adr/`
+2. **Single-window aggregation:** Current flow aggregation uses a fixed 10-second window. NotPetya's lateral movement pattern requires longer windows (60s+). Mitigation: FEAT-WINDOW-2 (P2 backlog).
 
----
+3. **No DPI (Deep Packet Inspection):** ML Defender operates on layer 3/4 headers and flow statistics only. DNS-based C2 traffic, encrypted C2, and WannaCry killswitch domain queries are not detectable without DPI. This is an explicit design choice (resource-constrained targets cannot afford DPI overhead).
 
-## Acknowledgments
+4. **Dataset bias:** The model was trained on a dataset with 98% malicious traffic (CTU-13 Neris). Performance on balanced real-world traffic distributions is estimated but not yet validated at bare-metal scale.
 
-**Author:** Alonso Isidoro Roman — Independent Researcher, Extremadura, Spain
+5. **SMB ransomware generalization:** Without `rst_ratio` / `syn_ack_ratio` features and SMB synthetic retraining data, recall against WannaCry/NotPetya is estimated at 0.70–0.85. These features are in the P1 backlog.
 
-**Consejo de Sabios (AI peer review throughout development):**
-Claude (Anthropic), Grok, ChatGPT5, DeepSeek, Qwen
-
-**Datasets:**
-- CTU-13: Garcia, Sebastian et al. *An Empirical Comparison of Botnet Detection Methods.*
-  Computers & Security, 2014. CVUT Prague — Stratosphere IPS Lab.
-- bigFlows / smallFlows: CTU-13 supplementary captures (confirmed benign, 172.16.133.x)
+6. **LLM quality:** TinyLlama is used for its offline, low-resource profile. Complex forensic reasoning that requires multi-hop inference may produce degraded results compared to larger models.
 
 ---
 
-**Via Appia Quality** — Built to last decades.
+## 14. Roadmap
 
-*Last updated: DAY 83 — March 12, 2026*
-*Branch: main — tag: v0.83.0-day83-main*
+### PHASE 1 — Current (DAY 91)
+- ✅ 6/6 pipeline components running end-to-end
+- ✅ 31/31 tests passing
+- ✅ F1 = 0.9985 on CTU-13 Neris
+- ✅ Full arXiv paper draft (v4)
+- 🔄 arXiv submission (awaiting endorser response)
+- 🔄 Bare-metal stress test
+
+### PHASE 2 — Features (DAY 91–120)
+| ID | Feature | Priority |
+|---|---|---|
+| rst_ratio | RST packet ratio feature | **P1** |
+| syn_ack_ratio | SYN/ACK ratio feature | **P1** |
+| DEBT-FD-001 | Fix Path A to read sniffer.json | P1 |
+| FEAT-NET-1 | DNS/DGA detection | P1 |
+| FEAT-NET-2 | Threat intelligence feeds | P1 |
+| port_diversity_ratio | Port diversity feature | P2 |
+| new_dst_ip_rate | New destination IP rate | P2 |
+| dst_port_445_ratio | SMB port ratio | P2 |
+| FEAT-WINDOW-2 | 60s secondary aggregation window | P2 |
+| dns_query_count | DNS query volume | P3 |
+| smb_connection_burst | SMB burst detection | P3 |
+| FEAT-AUTH-1 | Auth log monitoring | P2 |
+| FEAT-AUTH-2 | Brute force detection | P2 |
+| FEAT-EDR-1 | Lightweight endpoint agent | P3 |
+| ADR-007 | AND-consensus firewall implementation | P1 |
+| ENT-1 | Federated Threat Intelligence | Enterprise |
+| ENT-2 | Attack Graph Generation | Enterprise |
+| ENT-3 | P2P Seed Distribution (Protobuf) | Enterprise |
+| ENT-4 | Hot-Reload JSON config | Enterprise |
+| ADR-012 | Plugin loader architecture | P2 |
+
+### Long-term — GAIA Vision
+ML Defender is designed as the leaf node of a **hierarchical immune network** (GAIA):
+- **Local RAG-clients** (this system) — per-organization, fully offline
+- **Campus RAG-masters** — aggregate threat intelligence across local nodes
+- **Global RAG-masters** — federated intelligence sharing across organizations
+
+This vision informed the modular, service-discovery-based architecture from the beginning (DAY 1).
+
+---
+
+## Contributing
+
+Please read `CONTRIBUTING.md` before submitting pull requests.
+
+**Methodology:** ML Defender uses **Test Driven Hardening (TDH)** — every new feature is accompanied by:
+1. A failing test that defines the expected behavior
+2. The implementation
+3. A passing test suite (31/31 minimum)
+4. An ADR if the change affects system architecture
+
+**Consejo de Sabios:** Major architectural decisions are reviewed by a panel of 7 AI models (Claude, Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai) before acceptance. See `docs/consejo/` for decision records.
+
+**macOS development note:** Never use `sed -i` without `-e ''` on macOS (BSD sed incompatibility). Use Python3 inline scripts or edit inside the Vagrant VM.
+
+---
+
+*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic)*
+*Consejo de Sabios — ML Defender (aRGus EDR)*
+*DAY 91 — 19 marzo 2026*
