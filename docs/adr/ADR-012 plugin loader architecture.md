@@ -1,7 +1,7 @@
 # ADR-012: Plugin Loader Architecture
 
 **Estado:** PROPOSED  
-**Fecha:** 2026-03-19 (DAY 88)  
+**Fecha:** 2026-03-19 (DAY 88) — actualizado DAY 91  
 **Autor:** Alonso + Consejo de Sabios  
 **Componente:** `libs/plugin-loader` (nueva shared library interna)
 
@@ -24,6 +24,55 @@ Añadir estas features directamente al core de cada componente comprometería:
 El patrón ya establecido en el proyecto con `crypto-transport` como shared library
 interna demuestra que la extracción de responsabilidades funciona bien en esta base
 de código.
+
+---
+
+## Línea divisoria: core open source vs plugin
+
+Esta distinción es **arquitectónicamente crítica** y debe respetarse en cualquier
+decisión de implementación presente o futura.
+
+### Core open source — estadísticas universales de flujo TCP/IP
+
+Pertenecen al core **todas las features que son estadísticas observables universalmente
+en cualquier flujo de red**, independientemente de la familia de amenaza:
+
+| Feature | Razón |
+|---|---|
+| `rst_ratio` | Ratio TCP RST/SYN — observable en cualquier flujo |
+| `syn_ack_ratio` | Ratio handshakes completados — ídem |
+| `flow_duration_min` | Duración mínima de flujos — ídem |
+| `dst_port_445_ratio` | Proporción de tráfico a un puerto — ídem |
+| `port_diversity_ratio` | Diversidad de puertos destino — ídem |
+| `connection_rate` | Tasa de conexiones por segundo — ídem |
+| `unique_dst_ips_count` | Cardinalidad de IPs destino — ídem |
+
+> **Principio:** El Random Forest embebido no detecta "WannaCry". Detecta
+> **escaneo TCP masivo con handshakes fallidos** — una clase de comportamiento.
+> Que WannaCry, NotPetya, u otro worm produzcan ese comportamiento es una
+> consecuencia, no el objeto de detección. Esto hace el sistema más robusto
+> (generaliza a variantes desconocidas) y más honesto científicamente.
+>
+> Meterlas en un plugin sería añadir complejidad sin ningún beneficio —
+> equivale a tratar `packet_rate` como un plugin porque los DDoS son rápidos.
+
+### Plugin — conocimiento específico de amenaza
+
+Son candidatos a plugin **la lógica que depende de conocimiento específico de una
+familia o campaña concreta y que puede quedar obsoleta**:
+
+| Candidato a plugin | Razón |
+|---|---|
+| Modelos especializados por familia (SMB-RF, DNS-RF...) | Entrenados con datos propietarios; se actualizan sin recompilar |
+| Threat intelligence feeds con IOCs (FEAT-NET-2) | Listas de IPs/dominios maliciosos que cambian continuamente |
+| Reglas de correlación multi-evento | Firmas compuestas específicas de campaña |
+| JA4 TLS fingerprinting (FEAT-TLS-1) | Requiere DPI — fuera del hot path genérico |
+| HTTP payload inspection (FEAT-WAF-1) | Ídem |
+| DNS/DGA detection (FEAT-NET-1) | Requiere análisis de nombres de dominio — DPI |
+
+> **Regla práctica:** Si una feature puede quedar obsoleta cuando el atacante
+> cambia su TTPs, es un plugin. Si seguirá siendo válida en 10 años para cualquier
+> ataque de escaneo masivo, es core.
 
 ---
 
@@ -275,12 +324,18 @@ vía HTTP health endpoint o loguearlos periódicamente.
 
 ## Plugins que usarán este mecanismo (roadmap)
 
+> **Nota:** `rst_ratio`, `syn_ack_ratio`, `flow_duration_min` y otras estadísticas
+> de flujo TCP/IP **no son plugins** — pertenecen al core open source. Ver sección
+> "Línea divisoria" más arriba.
+
 | Plugin | Feature | Componente host | Prioridad |
 |--------|---------|----------------|-----------|
 | `libplugin_hello` | Validación mecanismo | sniffer | P0 — primero |
 | `libplugin_ja4` | JA4 TLS fingerprinting | sniffer | P1 |
 | `libplugin_dns_dga` | DNS/DGA detection | sniffer | P1 |
 | `libplugin_http_inspect` | HTTP payload WAF | sniffer | P2 |
+| `libplugin_threat_intel` | Threat intelligence feeds (FEAT-NET-2) | ml-detector | P2 |
+| `libplugin_smb_specialist` | Modelo RF especializado SMB (enterprise) | ml-detector | P3 |
 | `libplugin_ebpf_tls` | eBPF uprobes OpenSSL | sniffer | P3 |
 
 ---
@@ -293,6 +348,8 @@ vía HTTP health endpoint o loguearlos periódicamente.
 - Terceros pueden contribuir plugins sin tocar el core
 - Rendimiento base siempre predecible y medible
 - Extensible a cualquier componente del pipeline con mínimo esfuerzo
+- La línea divisoria core/plugin protege la integridad científica del paper:
+  el sistema detecta clases de comportamiento, no firmas de malware concreto
 
 **Negativas / riesgos:**
 - Un plugin mal escrito puede causar crash del proceso host (mitigado parcialmente
@@ -310,6 +367,9 @@ vía HTTP health endpoint o loguearlos periódicamente.
 - **Procesos separados con IPC**: descartado — latencia inaceptable en el hot path
 - **eBPF programs dinámicos**: interesante a largo plazo pero complejidad muy alta;
   reservado para FEAT-EDR-1
+- **Detección por familia como plugin** (e.g., `libplugin_wannacry`): descartado —
+  `rst_ratio` y `syn_ack_ratio` son estadísticas universales de flujo TCP, no
+  firmas de WannaCry. Ver sección "Línea divisoria".
 
 ---
 
@@ -318,5 +378,7 @@ vía HTTP health endpoint o loguearlos periódicamente.
 - `libs/crypto-transport` — patrón de shared library interna ya establecido
 - FEAT-TLS-1: JA4 TLS Fingerprinting (primer plugin real, post-ADR-012)
 - FEAT-NET-1: DNS/DGA Detection
+- FEAT-NET-2: Threat Intelligence Feeds
 - FEAT-WAF-1: HTTP Payload Inspection
-- Conversación de diseño: sesión DAY 87-88 (2026-03-18/19)
+- `docs/design/synthetic_data_wannacry_spec.md` — spec de datos sintéticos SMB
+- Conversación de diseño: sesión DAY 87-88 (2026-03-18/19), actualizado DAY 91

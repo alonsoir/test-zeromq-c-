@@ -44,7 +44,7 @@
 2. Campos proto para P1:
 ```protobuf
 optional float rst_ratio = 116;
-optional float syn_ack_ratio = 117;
+        optional float syn_ack_ratio = 117;
 ```
 
 3. Ambigüedad documentada: `RansomwareFeatures` (20 campos, enterprise/PHASE 2) vs `ransomware_embedded` (10 campos, PHASE 1) — añadir comentario explicativo en el proto.
@@ -57,87 +57,124 @@ optional float syn_ack_ratio = 117;
 
 ---
 
-## Objetivo principal DAY 92 — VM: rst_ratio + syn_ack_ratio
+## Decisión de arquitectura DAY 91 — ADR-013
 
-**Critical path desbloqueado.** Todo el pipeline de datos sintéticos, reentrenamiento y F1 > 0.90 en SMB depende de que estos dos features tengan valores reales en lugar de `-9999.0f`.
+**ADR-013 redactado y aceptado:** Seed Distribution and Component Authentication.
+Path: `docs/adr/ADR-013-seed-distribution-component-authentication.md`
+**ADR-013 tiene precedencia** sobre cualquier documento anterior que describa
+distribución de seeds o autenticación entre componentes.
 
-### Orden de trabajo
+### Resumen ejecutivo ADR-013
 
-**1. Actualizar proto (sin VM — en Mac)**
-```protobuf
-// En NetworkFeatures
-optional float rst_ratio = 116;
-optional float syn_ack_ratio = 117;
+El seed ChaCha20 deja de ser responsabilidad de etcd-server. Pasa a generarse
+**una única vez en el script de instalación bash** (`scripts/provision.sh`).
+
+| Mecanismo | Responsable | Estado |
+|---|---|---|
+| ZMQ CURVE (canal cifrado) | ya en stack | sin cambios |
+| ChaCha20 seed | `provision.sh` bash | nuevo — DAY 95-96 |
+| HMAC-SHA256 CSVs | crypto-transport | sin cambios |
+| etcd-server | solo ciclo de vida + hot-reload | refactor DAY 97+ |
+
+**Nueva shared library:** `libs/seed-client` — lee y descifra `seed.enc` del
+filesystem. Al estilo `libs/crypto-transport`. Sin red. Sin generación de seeds.
+
+**rag-ingester y rag-security** fuera del seed — solo HMAC.
+
+**Backlog CONGELADO** — no se añaden nuevos ítems salvo valor extraordinario.
+A partir de DAY 92: implementar, no diseñar.
+
+---
+
+## Objetivo principal DAY 92 — rama nueva + proto + sniffer
+
+### Paso 0 — Rama nueva
+```bash
+git checkout -b feature/smb-detection-features
 ```
-Añadir comentario sobre RansomwareFeatures vs ransomware_embedded.
 
-**2. Implementar extractores en sniffer (en VM)**
+### Paso 1 — Proto (sin VM, en Mac)
 
-`rst_ratio`:
+Verificar si `rst_ratio` y `syn_ack_ratio` ya tienen estructura propia en
+`network_security.proto`. Si no la tienen, crearla:
+
+```protobuf
+// SMBScanFeatures — features de escaneo SMB (WannaCry/NotPetya)
+message SMBScanFeatures {
+    optional float rst_ratio            = 1;  // RST/SYN
+    optional float syn_ack_ratio        = 2;  // ACK/SYN
+    optional float flow_duration_min_ms = 3;  // P2 — flujos WannaCry < 50ms
+}
+```
+
+Si no cabe estructura propia, añadir como opcionales en NetworkFeatures
+(campos 116/117) y documentar por qué en comentario.
+
+Añadir también el comentario de ambigüedad RansomwareFeatures:
+```protobuf
+// RansomwareFeatures (20 features) — enterprise roadmap (PHASE 2)
+// PHASE 1 usa ransomware_embedded (10 features) dentro de NetworkFeatures.
+// Ambos coexisten para migración gradual sin breaking changes.
+```
+
+### Paso 2 — Extractores en sniffer (VM)
+
 ```cpp
-// rst_flag_count / (syn_flag_count + epsilon)
 float rst_ratio = (syn_flag_count > 0)
     ? static_cast<float>(rst_flag_count) / syn_flag_count
     : MISSING_FEATURE_SENTINEL;
-```
 
-`syn_ack_ratio`:
-```cpp
-// ack_flag_count / (syn_flag_count + epsilon)
 float syn_ack_ratio = (syn_flag_count > 0)
     ? static_cast<float>(ack_flag_count) / syn_flag_count
     : MISSING_FEATURE_SENTINEL;
 ```
 
-**3. Nuevo test — ml-detector suite**
-- Flujo WannaCry sintético: rst_ratio > 0.70, syn_ack_ratio < 0.10 → debe clasificar como malicioso
-- Flujo legítimo SMB: rst_ratio < 0.10, syn_ack_ratio > 0.70 → no debe clasificar como malicioso
-- Verificar que sentinel `-9999.0f` se mantiene si syn_flag_count == 0
+### Paso 3 — Tests nuevos
+- Flujo WannaCry sintético: `rst_ratio > 0.70`, `syn_ack_ratio < 0.10` → malicioso
+- Flujo legítimo SMB: `rst_ratio < 0.10`, `syn_ack_ratio > 0.70` → benigno
+- `syn_flag_count == 0` → sentinel `-9999.0f` en ambos
 
-**4. Verificar test suite completa**
+### Paso 4 — Test suite completa
 ```bash
 cd build && ctest --output-on-failure
-# Objetivo: 31/31 ✅ mínimo — idealmente 33/31 con los 2 nuevos tests
-```
-
-**5. Actualizar F1 log si hay nueva validación**
-- Path: `docs/experiments/f1_replay_log.csv`
-
----
-
-## Segundo objetivo DAY 92 — Comentario proto RansomwareFeatures
-
-Añadir en `network_security.proto`:
-```protobuf
-// RansomwareFeatures (20 features) — enterprise roadmap (PHASE 2 / FEAT-RANSOMWARE-20)
-// PHASE 1 usa ransomware_embedded (10 features) dentro de NetworkFeatures.
-// Ambos coexisten para migración gradual sin breaking changes.
-// No mezclar: ransomware_embedded es para el Random Forest embebido actual;
-// RansomwareFeatures es para el ensemble enterprise de PHASE 2.
-message RansomwareFeatures { ... }
+# Mínimo: 31/31 ✅ — objetivo: 33/31 con los 2 nuevos tests
 ```
 
 ---
 
-## Backlog activo actualizado
+## Secuencia de implementación acordada
+
+```
+DAY 92  — rama nueva + proto SMBScanFeatures + rst_ratio + syn_ack_ratio
+DAY 93-94 — plugin-loader minimalista (ADR-012, SIN seed-client todavía)
+            documentado explícitamente como "sin autenticación hasta seed-client"
+DAY 95-96 — scripts/provision.sh bash + libs/seed-client
+DAY 97+   — refactor etcd-server/etcd-client + datos sintéticos WannaCry
+```
+
+---
+
+## Backlog activo (CONGELADO)
 
 | ID | Descripción | Estado |
 |---|---|---|
 | **SYN-1** | `rst_ratio` extractor en sniffer | **P1 — DAY 92** |
 | **SYN-2** | `syn_ack_ratio` extractor en sniffer | **P1 — DAY 92** |
-| SYN-3 | Generador sintético Python/Scapy | P1 — tras SYN-1/2 |
-| SYN-4 | Validación CSV contra spec §9 | P1 — tras SYN-3 |
-| SYN-5 | Reentrenamiento Random Forest | P1 — tras SYN-4 |
-| SYN-6 | Validación en CTU-13 Neris hold-out | P1 — tras SYN-5 |
-| SYN-7 | Actualizar f1_replay_log.csv | P1 — tras SYN-6 |
+| ADR-012 | plugin-loader minimalista (sin seed-client) | DAY 93-94 |
+| provision.sh | Script bash generación keypairs + seeds | DAY 95-96 |
+| seed-client | Mini-componente libs/seed-client | DAY 95-96 |
+| etcd refactor | Eliminar responsabilidades criptográficas | DAY 97+ |
+| SYN-3 | Generador sintético Python/Scapy | DAY 97+ |
+| SYN-4 | Validación CSV contra spec §9 | tras SYN-3 |
+| SYN-5 | Reentrenamiento Random Forest | tras SYN-4 |
+| SYN-6 | Validación en CTU-13 Neris hold-out | tras SYN-5 |
+| SYN-7 | Actualizar f1_replay_log.csv | tras SYN-6 |
 | SYN-8 | `dst_port_445_ratio` extractor | P2 |
-| SYN-8b | `flow_duration_min` extractor | P2 — aporte Qwen DAY 91 |
+| SYN-8b | `flow_duration_min` extractor | P2 |
 | SYN-9 | `port_diversity_ratio` extractor | P2 |
 | SYN-10 | FEAT-WINDOW-2 (60s secundaria) | P2 |
 | DEBT-FD-001 | Fast Detector Path A — leer sniffer.json | PHASE2 |
 | ADR-007 | AND-consensus firewall — implementación | PHASE2 |
-| FEAT-NET-1 | DNS/DGA detection | P1 PHASE2 |
-| FEAT-NET-2 | Threat intel feeds | P1 PHASE2 |
 
 ---
 

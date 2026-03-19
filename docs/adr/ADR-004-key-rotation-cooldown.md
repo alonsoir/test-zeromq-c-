@@ -17,7 +17,8 @@
 
 ## Executive Summary
 
-This ADR documents the decision to enforce a **cooldown window** between HMAC key rotations to prevent accumulation of concurrent valid keys. Without this control, rapid rotations during the grace period could create 3, 4, or more simultaneously valid keys, multiplying the attack surface.
+This ADR documents the decision to enforce a **cooldown window** between HMAC key rotations to prevent accumulation of concurrent valid keys. 
+Without this control, rapid rotations during the grace period could create 3, 4, or more simultaneously valid keys, multiplying the attack surface.
 
 **Decision**: `MIN_ROTATION_INTERVAL = GRACE_PERIOD` (300 seconds), guaranteeing **maximum 2 concurrent valid keys** (active + grace period).
 
