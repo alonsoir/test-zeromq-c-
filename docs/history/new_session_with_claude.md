@@ -1,10 +1,10 @@
-I'm continuing work on the test-zeromq-docker project (IDS/IPS with ML autonomous evolution).
+I'm continuing work on the argus project (IDS/IPS with ML autonomous evolution).
 
 Please read this comprehensive context document:
 
 # 🚀 CONTINUATION PROMPT - ML Autonomous Evolution System
 
-**Project:** test-zeromq-docker (IDS/IPS → WAF Evolution)  
+**Project:** argus (IDS/IPS → WAF Evolution)  
 **Current Phase:** Implementing ML Autonomous Retraining & Dynamic Model Loading  
 **Session Date:** November 6, 2025  
 **Status:** Ready to implement Phase 0 (Foundations)
@@ -13,7 +13,7 @@ Version corta:
 
 # Quick Resume: ML Autonomous Evolution System
 
-**Project:** test-zeromq-docker (IDS/IPS → WAF with self-evolving ML)
+**Project:** argus (IDS/IPS → WAF with self-evolving ML)
 **Date:** November 6, 2025
 **Status:** Phase 0 starting
 

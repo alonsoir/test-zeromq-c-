@@ -9,7 +9,7 @@
 | 🗑️  Modelos eliminados | 4 |
 | 📄 Archivos eliminados | 12 |
 | 💾 Modelos conservados | 7 |
-| 💽 Backup | /Users/aironman/CLionProjects/test-zeromq-docker/ml-training/outputs/model_backup_before_cleanup |
+| 💽 Backup | /Users/aironman/CLionProjects/argus/ml-training/outputs/model_backup_before_cleanup |
 
 ## 🚀 MODELOS CONSERVADOS (Producción)
 

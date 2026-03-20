@@ -349,7 +349,7 @@ Used for all dataset replay experiments, stress testing, and CI validation.
 
 ```bash
 # Start the lab
-cd /path/to/test-zeromq-docker
+cd /path/to/argus
 vagrant up
 
 # SSH into the defender VM

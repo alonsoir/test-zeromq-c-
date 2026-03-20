@@ -260,7 +260,7 @@ main() {
 
     # Check if we're in the right directory
     if [ ! -d "ml-detector" ]; then
-        print_error "Must be run from test-zeromq-docker directory"
+        print_error "Must be run from argus directory"
         exit 1
     fi
 

@@ -81,7 +81,7 @@
 
 1. **Copy files to project:**
 ```bash
-cd ~/CLionProjects/test-zeromq-docker
+cd ~/CLionProjects/argus
 
 # Copy feature JSON
 cp ransomware_20_features.json sniffer/config/features/

@@ -130,7 +130,7 @@ Restricciones PHASE 1:
 
 ```bash
 # Verificar si ADR-012 ya existe como fichero
-ls /Users/aironman/CLionProjects/test-zeromq-docker/docs/adr/
+ls /Users/aironman/CLionProjects/argus/docs/adr/
 cat docs/adr/ADR-012-*.md 2>/dev/null || echo "ADR-012 pendiente de redactar"
 ```
 
@@ -187,7 +187,7 @@ DAY 97+   — refactor etcd-server + datos sintéticos WannaCry (SYN-3)
 ## Constantes del proyecto
 
 ```
-Raíz:          /Users/aironman/CLionProjects/test-zeromq-docker
+Raíz:          /Users/aironman/CLionProjects/argus
 VM:            vagrant ssh defender
 Logs:          /vagrant/logs/lab/
 F1 log:        /vagrant/docs/experiments/f1_replay_log.csv

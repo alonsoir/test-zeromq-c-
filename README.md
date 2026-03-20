@@ -8,7 +8,7 @@
 [![Tests: 70/70](https://img.shields.io/badge/Tests-70%2F70_passing-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
 
-https://alonsoir-test-zeromq-c-.mintlify.app/introduction
+https://alonsoir-argus.mintlify.app/introduction
 
 ---
 
@@ -125,8 +125,8 @@ vboxmanage --version # 7.x
 ### Build & Deploy
 
 ```bash
-git clone https://github.com/alonsoir/test-zeromq-c-.git
-cd test-zeromq-c-
+git clone https://github.com/alonsoir/argus.git
+cd argus
 make up
 make all
 make pipeline-start

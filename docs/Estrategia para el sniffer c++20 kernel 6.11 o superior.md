@@ -2255,7 +2255,7 @@ Si quieres, mañana puedo proponerte un **Vagrantfile inicial con kernel 6.12 li
 
 Alonso:
 
-Por cierto, el repo actual es https://github.com/alonsoir/test-zeromq-c-
+Por cierto, el repo actual es https://github.com/alonsoir/argus
 
 Me gustaría ir creando tags partiendo de la rama main una vez terminado cada feature.
 

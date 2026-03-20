@@ -31,7 +31,7 @@ Thresholds problemáticos: 0 (0.00%)
 
 ### **1. COPIAR HEADERS A ML-DETECTOR**
 ```bash
-# Desde /Users/aironman/CLionProjects/test-zeromq-docker/ml-training/scripts/
+# Desde /Users/aironman/CLionProjects/argus/ml-training/scripts/
 cp ddos_detection/ddos_trees_inline.hpp ../ml-detector/src/
 cp external_traffic/traffic_trees_inline.hpp ../ml-detector/src/
 cp internal_traffic/internal_trees_inline.hpp ../ml-detector/src/

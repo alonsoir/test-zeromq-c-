@@ -63,7 +63,7 @@
 ## 📁 CÓMO ORGANIZAR EN TU PROYECTO
 
 ```bash
-cd ~/Code/test-zeromq-docker
+cd ~/Code/argus
 
 # 1. Documentación root
 cp path/to/outputs/README.md .
@@ -309,7 +309,7 @@ tail -f ml-detector/logs/ml_detector.log | grep "Model loaded"
 
 ```bash
 # 1. Organizar documentación
-cd ~/Code/test-zeromq-docker
+cd ~/Code/argus
 cp /path/to/outputs/*.md .
 
 # 2. Git commit
