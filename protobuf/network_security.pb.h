@@ -138,6 +138,9 @@ extern RansomwareEmbeddedFeaturesDefaultTypeInternal _RansomwareEmbeddedFeatures
 class RansomwareFeatures;
 struct RansomwareFeaturesDefaultTypeInternal;
 extern RansomwareFeaturesDefaultTypeInternal _RansomwareFeatures_default_instance_;
+class SMBScanFeatures;
+struct SMBScanFeaturesDefaultTypeInternal;
+extern SMBScanFeaturesDefaultTypeInternal _SMBScanFeatures_default_instance_;
 class SystemConfiguration;
 struct SystemConfigurationDefaultTypeInternal;
 extern SystemConfigurationDefaultTypeInternal _SystemConfiguration_default_instance_;
@@ -190,6 +193,7 @@ template<> ::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse* Arena::
 template<> ::protobuf::RAGAnalysis* Arena::CreateMaybeMessage<::protobuf::RAGAnalysis>(Arena*);
 template<> ::protobuf::RansomwareEmbeddedFeatures* Arena::CreateMaybeMessage<::protobuf::RansomwareEmbeddedFeatures>(Arena*);
 template<> ::protobuf::RansomwareFeatures* Arena::CreateMaybeMessage<::protobuf::RansomwareFeatures>(Arena*);
+template<> ::protobuf::SMBScanFeatures* Arena::CreateMaybeMessage<::protobuf::SMBScanFeatures>(Arena*);
 template<> ::protobuf::SystemConfiguration* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration>(Arena*);
 template<> ::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse>(Arena*);
 template<> ::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse* Arena::CreateMaybeMessage<::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse>(Arena*);
@@ -1478,6 +1482,189 @@ class InternalFeatures final :
 };
 // -------------------------------------------------------------------
 
+class SMBScanFeatures final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protobuf.SMBScanFeatures) */ {
+ public:
+  inline SMBScanFeatures() : SMBScanFeatures(nullptr) {}
+  ~SMBScanFeatures() override;
+  explicit PROTOBUF_CONSTEXPR SMBScanFeatures(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  SMBScanFeatures(const SMBScanFeatures& from);
+  SMBScanFeatures(SMBScanFeatures&& from) noexcept
+    : SMBScanFeatures() {
+    *this = ::std::move(from);
+  }
+
+  inline SMBScanFeatures& operator=(const SMBScanFeatures& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SMBScanFeatures& operator=(SMBScanFeatures&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SMBScanFeatures& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const SMBScanFeatures* internal_default_instance() {
+    return reinterpret_cast<const SMBScanFeatures*>(
+               &_SMBScanFeatures_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(SMBScanFeatures& a, SMBScanFeatures& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SMBScanFeatures* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SMBScanFeatures* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SMBScanFeatures* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SMBScanFeatures>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const SMBScanFeatures& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const SMBScanFeatures& from) {
+    SMBScanFeatures::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(SMBScanFeatures* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protobuf.SMBScanFeatures";
+  }
+  protected:
+  explicit SMBScanFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kRstRatioFieldNumber = 1,
+    kSynAckRatioFieldNumber = 2,
+    kFlowDurationMinMsFieldNumber = 3,
+  };
+  // optional float rst_ratio = 1;
+  bool has_rst_ratio() const;
+  private:
+  bool _internal_has_rst_ratio() const;
+  public:
+  void clear_rst_ratio();
+  float rst_ratio() const;
+  void set_rst_ratio(float value);
+  private:
+  float _internal_rst_ratio() const;
+  void _internal_set_rst_ratio(float value);
+  public:
+
+  // optional float syn_ack_ratio = 2;
+  bool has_syn_ack_ratio() const;
+  private:
+  bool _internal_has_syn_ack_ratio() const;
+  public:
+  void clear_syn_ack_ratio();
+  float syn_ack_ratio() const;
+  void set_syn_ack_ratio(float value);
+  private:
+  float _internal_syn_ack_ratio() const;
+  void _internal_set_syn_ack_ratio(float value);
+  public:
+
+  // optional float flow_duration_min_ms = 3;
+  bool has_flow_duration_min_ms() const;
+  private:
+  bool _internal_has_flow_duration_min_ms() const;
+  public:
+  void clear_flow_duration_min_ms();
+  float flow_duration_min_ms() const;
+  void set_flow_duration_min_ms(float value);
+  private:
+  float _internal_flow_duration_min_ms() const;
+  void _internal_set_flow_duration_min_ms(float value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protobuf.SMBScanFeatures)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+    float rst_ratio_;
+    float syn_ack_ratio_;
+    float flow_duration_min_ms_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_network_5fsecurity_2eproto;
+};
+// -------------------------------------------------------------------
+
 class NetworkFeatures_CustomFeaturesEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<NetworkFeatures_CustomFeaturesEntry_DoNotUse, 
     std::string, double,
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::TYPE_STRING,
@@ -1580,7 +1767,7 @@ class NetworkFeatures final :
                &_NetworkFeatures_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    7;
 
   friend void swap(NetworkFeatures& a, NetworkFeatures& b) {
     a.Swap(&b);
@@ -1673,6 +1860,7 @@ class NetworkFeatures final :
     kRansomwareEmbeddedFieldNumber = 113,
     kTrafficClassificationFieldNumber = 114,
     kInternalAnomalyFieldNumber = 115,
+    kSmbScanFieldNumber = 116,
     kSourcePortFieldNumber = 3,
     kDestinationPortFieldNumber = 4,
     kProtocolNumberFieldNumber = 5,
@@ -2045,6 +2233,24 @@ class NetworkFeatures final :
   void unsafe_arena_set_allocated_internal_anomaly(
       ::protobuf::InternalFeatures* internal_anomaly);
   ::protobuf::InternalFeatures* unsafe_arena_release_internal_anomaly();
+
+  // .protobuf.SMBScanFeatures smb_scan = 116;
+  bool has_smb_scan() const;
+  private:
+  bool _internal_has_smb_scan() const;
+  public:
+  void clear_smb_scan();
+  const ::protobuf::SMBScanFeatures& smb_scan() const;
+  PROTOBUF_NODISCARD ::protobuf::SMBScanFeatures* release_smb_scan();
+  ::protobuf::SMBScanFeatures* mutable_smb_scan();
+  void set_allocated_smb_scan(::protobuf::SMBScanFeatures* smb_scan);
+  private:
+  const ::protobuf::SMBScanFeatures& _internal_smb_scan() const;
+  ::protobuf::SMBScanFeatures* _internal_mutable_smb_scan();
+  public:
+  void unsafe_arena_set_allocated_smb_scan(
+      ::protobuf::SMBScanFeatures* smb_scan);
+  ::protobuf::SMBScanFeatures* unsafe_arena_release_smb_scan();
 
   // uint32 source_port = 3;
   void clear_source_port();
@@ -2691,6 +2897,7 @@ class NetworkFeatures final :
     ::protobuf::RansomwareEmbeddedFeatures* ransomware_embedded_;
     ::protobuf::TrafficFeatures* traffic_classification_;
     ::protobuf::InternalFeatures* internal_anomaly_;
+    ::protobuf::SMBScanFeatures* smb_scan_;
     uint32_t source_port_;
     uint32_t destination_port_;
     uint32_t protocol_number_;
@@ -2814,7 +3021,7 @@ class GeoLocationInfo final :
                &_GeoLocationInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    7;
+    8;
 
   friend void swap(GeoLocationInfo& a, GeoLocationInfo& b) {
     a.Swap(&b);
@@ -3192,7 +3399,7 @@ class GeoEnrichment final :
                &_GeoEnrichment_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    9;
 
   friend void swap(GeoEnrichment& a, GeoEnrichment& b) {
     a.Swap(&b);
@@ -3824,7 +4031,7 @@ class TimeWindow final :
                &_TimeWindow_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    10;
 
   friend void swap(TimeWindow& a, TimeWindow& b) {
     a.Swap(&b);
@@ -4155,7 +4362,7 @@ class FlowAggregation final :
                &_FlowAggregation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    14;
 
   friend void swap(FlowAggregation& a, FlowAggregation& b) {
     a.Swap(&b);
@@ -4428,7 +4635,7 @@ class ModelPrediction final :
                &_ModelPrediction_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    15;
 
   friend void swap(ModelPrediction& a, ModelPrediction& b) {
     a.Swap(&b);
@@ -4767,7 +4974,7 @@ class TricapaMLAnalysis final :
                &_TricapaMLAnalysis_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    17;
 
   friend void swap(TricapaMLAnalysis& a, TricapaMLAnalysis& b) {
     a.Swap(&b);
@@ -5160,7 +5367,7 @@ class DistributedNode final :
                &_DistributedNode_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    19;
 
   friend void swap(DistributedNode& a, DistributedNode& b) {
     a.Swap(&b);
@@ -5736,7 +5943,7 @@ class PipelineTracking final :
                &_PipelineTracking_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    21;
 
   friend void swap(PipelineTracking& a, PipelineTracking& b) {
     a.Swap(&b);
@@ -6242,7 +6449,7 @@ class RAGAnalysis final :
                &_RAGAnalysis_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    22;
 
   friend void swap(RAGAnalysis& a, RAGAnalysis& b) {
     a.Swap(&b);
@@ -6518,7 +6725,7 @@ class HumanFeedback final :
                &_HumanFeedback_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    23;
 
   friend void swap(HumanFeedback& a, HumanFeedback& b) {
     a.Swap(&b);
@@ -6845,7 +7052,7 @@ class HumanInTheLoopReview final :
                &_HumanInTheLoopReview_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    24;
 
   friend void swap(HumanInTheLoopReview& a, HumanInTheLoopReview& b) {
     a.Swap(&b);
@@ -7137,7 +7344,7 @@ class EngineVerdict final :
                &_EngineVerdict_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    25;
 
   friend void swap(EngineVerdict& a, EngineVerdict& b) {
     a.Swap(&b);
@@ -7344,7 +7551,7 @@ class DetectionProvenance final :
                &_DetectionProvenance_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    26;
 
   friend void swap(DetectionProvenance& a, DetectionProvenance& b) {
     a.Swap(&b);
@@ -7599,7 +7806,7 @@ class NetworkSecurityEvent final :
                &_NetworkSecurityEvent_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    28;
 
   friend void swap(NetworkSecurityEvent& a, NetworkSecurityEvent& b) {
     a.Swap(&b);
@@ -8248,7 +8455,7 @@ class EventBatch final :
                &_EventBatch_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    29;
 
   friend void swap(EventBatch& a, EventBatch& b) {
     a.Swap(&b);
@@ -8562,7 +8769,7 @@ class SystemConfiguration final :
                &_SystemConfiguration_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    32;
 
   friend void swap(SystemConfiguration& a, SystemConfiguration& b) {
     a.Swap(&b);
@@ -8916,7 +9123,7 @@ class RansomwareFeatures final :
                &_RansomwareFeatures_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    33;
 
   friend void swap(RansomwareFeatures& a, RansomwareFeatures& b) {
     a.Swap(&b);
@@ -9273,7 +9480,7 @@ class DecisionMetadata final :
                &_DecisionMetadata_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    33;
+    34;
 
   friend void swap(DecisionMetadata& a, DecisionMetadata& b) {
     a.Swap(&b);
@@ -9521,7 +9728,7 @@ class Detection final :
                &_Detection_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    34;
+    35;
 
   friend void swap(Detection& a, Detection& b) {
     a.Swap(&b);
@@ -9750,7 +9957,7 @@ class DetectionBatch final :
                &_DetectionBatch_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    35;
+    36;
 
   friend void swap(DetectionBatch& a, DetectionBatch& b) {
     a.Swap(&b);
@@ -10709,6 +10916,94 @@ inline void InternalFeatures::_internal_set_access_pattern_entropy(float value) 
 inline void InternalFeatures::set_access_pattern_entropy(float value) {
   _internal_set_access_pattern_entropy(value);
   // @@protoc_insertion_point(field_set:protobuf.InternalFeatures.access_pattern_entropy)
+}
+
+// -------------------------------------------------------------------
+
+// SMBScanFeatures
+
+// optional float rst_ratio = 1;
+inline bool SMBScanFeatures::_internal_has_rst_ratio() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool SMBScanFeatures::has_rst_ratio() const {
+  return _internal_has_rst_ratio();
+}
+inline void SMBScanFeatures::clear_rst_ratio() {
+  _impl_.rst_ratio_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+inline float SMBScanFeatures::_internal_rst_ratio() const {
+  return _impl_.rst_ratio_;
+}
+inline float SMBScanFeatures::rst_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.SMBScanFeatures.rst_ratio)
+  return _internal_rst_ratio();
+}
+inline void SMBScanFeatures::_internal_set_rst_ratio(float value) {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  _impl_.rst_ratio_ = value;
+}
+inline void SMBScanFeatures::set_rst_ratio(float value) {
+  _internal_set_rst_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.SMBScanFeatures.rst_ratio)
+}
+
+// optional float syn_ack_ratio = 2;
+inline bool SMBScanFeatures::_internal_has_syn_ack_ratio() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
+inline bool SMBScanFeatures::has_syn_ack_ratio() const {
+  return _internal_has_syn_ack_ratio();
+}
+inline void SMBScanFeatures::clear_syn_ack_ratio() {
+  _impl_.syn_ack_ratio_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000002u;
+}
+inline float SMBScanFeatures::_internal_syn_ack_ratio() const {
+  return _impl_.syn_ack_ratio_;
+}
+inline float SMBScanFeatures::syn_ack_ratio() const {
+  // @@protoc_insertion_point(field_get:protobuf.SMBScanFeatures.syn_ack_ratio)
+  return _internal_syn_ack_ratio();
+}
+inline void SMBScanFeatures::_internal_set_syn_ack_ratio(float value) {
+  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_.syn_ack_ratio_ = value;
+}
+inline void SMBScanFeatures::set_syn_ack_ratio(float value) {
+  _internal_set_syn_ack_ratio(value);
+  // @@protoc_insertion_point(field_set:protobuf.SMBScanFeatures.syn_ack_ratio)
+}
+
+// optional float flow_duration_min_ms = 3;
+inline bool SMBScanFeatures::_internal_has_flow_duration_min_ms() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline bool SMBScanFeatures::has_flow_duration_min_ms() const {
+  return _internal_has_flow_duration_min_ms();
+}
+inline void SMBScanFeatures::clear_flow_duration_min_ms() {
+  _impl_.flow_duration_min_ms_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline float SMBScanFeatures::_internal_flow_duration_min_ms() const {
+  return _impl_.flow_duration_min_ms_;
+}
+inline float SMBScanFeatures::flow_duration_min_ms() const {
+  // @@protoc_insertion_point(field_get:protobuf.SMBScanFeatures.flow_duration_min_ms)
+  return _internal_flow_duration_min_ms();
+}
+inline void SMBScanFeatures::_internal_set_flow_duration_min_ms(float value) {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.flow_duration_min_ms_ = value;
+}
+inline void SMBScanFeatures::set_flow_duration_min_ms(float value) {
+  _internal_set_flow_duration_min_ms(value);
+  // @@protoc_insertion_point(field_set:protobuf.SMBScanFeatures.flow_duration_min_ms)
 }
 
 // -------------------------------------------------------------------
@@ -13143,6 +13438,96 @@ inline void NetworkFeatures::set_allocated_internal_anomaly(::protobuf::Internal
   }
   _impl_.internal_anomaly_ = internal_anomaly;
   // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.internal_anomaly)
+}
+
+// .protobuf.SMBScanFeatures smb_scan = 116;
+inline bool NetworkFeatures::_internal_has_smb_scan() const {
+  return this != internal_default_instance() && _impl_.smb_scan_ != nullptr;
+}
+inline bool NetworkFeatures::has_smb_scan() const {
+  return _internal_has_smb_scan();
+}
+inline void NetworkFeatures::clear_smb_scan() {
+  if (GetArenaForAllocation() == nullptr && _impl_.smb_scan_ != nullptr) {
+    delete _impl_.smb_scan_;
+  }
+  _impl_.smb_scan_ = nullptr;
+}
+inline const ::protobuf::SMBScanFeatures& NetworkFeatures::_internal_smb_scan() const {
+  const ::protobuf::SMBScanFeatures* p = _impl_.smb_scan_;
+  return p != nullptr ? *p : reinterpret_cast<const ::protobuf::SMBScanFeatures&>(
+      ::protobuf::_SMBScanFeatures_default_instance_);
+}
+inline const ::protobuf::SMBScanFeatures& NetworkFeatures::smb_scan() const {
+  // @@protoc_insertion_point(field_get:protobuf.NetworkFeatures.smb_scan)
+  return _internal_smb_scan();
+}
+inline void NetworkFeatures::unsafe_arena_set_allocated_smb_scan(
+    ::protobuf::SMBScanFeatures* smb_scan) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.smb_scan_);
+  }
+  _impl_.smb_scan_ = smb_scan;
+  if (smb_scan) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protobuf.NetworkFeatures.smb_scan)
+}
+inline ::protobuf::SMBScanFeatures* NetworkFeatures::release_smb_scan() {
+  
+  ::protobuf::SMBScanFeatures* temp = _impl_.smb_scan_;
+  _impl_.smb_scan_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::protobuf::SMBScanFeatures* NetworkFeatures::unsafe_arena_release_smb_scan() {
+  // @@protoc_insertion_point(field_release:protobuf.NetworkFeatures.smb_scan)
+  
+  ::protobuf::SMBScanFeatures* temp = _impl_.smb_scan_;
+  _impl_.smb_scan_ = nullptr;
+  return temp;
+}
+inline ::protobuf::SMBScanFeatures* NetworkFeatures::_internal_mutable_smb_scan() {
+  
+  if (_impl_.smb_scan_ == nullptr) {
+    auto* p = CreateMaybeMessage<::protobuf::SMBScanFeatures>(GetArenaForAllocation());
+    _impl_.smb_scan_ = p;
+  }
+  return _impl_.smb_scan_;
+}
+inline ::protobuf::SMBScanFeatures* NetworkFeatures::mutable_smb_scan() {
+  ::protobuf::SMBScanFeatures* _msg = _internal_mutable_smb_scan();
+  // @@protoc_insertion_point(field_mutable:protobuf.NetworkFeatures.smb_scan)
+  return _msg;
+}
+inline void NetworkFeatures::set_allocated_smb_scan(::protobuf::SMBScanFeatures* smb_scan) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.smb_scan_;
+  }
+  if (smb_scan) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(smb_scan);
+    if (message_arena != submessage_arena) {
+      smb_scan = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, smb_scan, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.smb_scan_ = smb_scan;
+  // @@protoc_insertion_point(field_set_allocated:protobuf.NetworkFeatures.smb_scan)
 }
 
 // -------------------------------------------------------------------
@@ -24046,6 +24431,8 @@ inline void DetectionBatch::set_allocated_batch_timestamp(::PROTOBUF_NAMESPACE_I
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

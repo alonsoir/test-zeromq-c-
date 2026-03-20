@@ -79,6 +79,21 @@ message InternalFeatures {
     float access_pattern_entropy = 10;
 }
 
+
+// =====================================================================
+// 🔍 SMB SCAN FEATURES — WannaCry/NotPetya Detection (DAY 92)
+// =====================================================================
+
+// SMBScanFeatures — features de escaneo SMB para detección WannaCry/NotPetya
+// SYN-1: rst_ratio       — P1 (DAY 92) — RST/SYN ratio, WannaCry > 0.70
+// SYN-2: syn_ack_ratio   — P1 (DAY 92) — ACK/SYN ratio, WannaCry < 0.10
+// SYN-8b: flow_duration_min_ms — P2 (DAY 97+) — flujos WannaCry < 50ms
+// Sentinel: MISSING_FEATURE_SENTINEL = -9999.0f cuando syn_flag_count == 0
+message SMBScanFeatures {
+    optional float rst_ratio            = 1;  // RST/SYN — maligno si > 0.70
+    optional float syn_ack_ratio        = 2;  // ACK/SYN — maligno si < 0.10
+    optional float flow_duration_min_ms = 3;  // P2 — flujos WannaCry < 50ms
+}
 // =====================================================================
 // 🚀 NETWORK FEATURES - 83+ Features ML ORGANIZADAS POR MODELO
 // =====================================================================
@@ -203,6 +218,7 @@ message NetworkFeatures {
     RansomwareEmbeddedFeatures ransomware_embedded = 113;
     TrafficFeatures traffic_classification = 114;
     InternalFeatures internal_anomaly = 115;
+    SMBScanFeatures smb_scan = 116;           // SYN-1, SYN-2 — DAY 92
 }
 
 // =====================================================================
@@ -643,6 +659,10 @@ message SystemConfiguration {
   repeated string knowledge_base_sources = 12;
 }
 
+// RansomwareFeatures (20 features) — enterprise roadmap (PHASE 2)
+// PHASE 1 usa ransomware_embedded (RansomwareEmbeddedFeatures, 10 features)
+// dentro de NetworkFeatures (campo 113). Ambos coexisten para migración
+// gradual sin breaking changes. Ver también campo ransomware (nº 106).
 message RansomwareFeatures {
     // C&C Communication
     float dns_query_entropy = 1;

@@ -109,6 +109,22 @@ struct InternalFeaturesDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 InternalFeaturesDefaultTypeInternal _InternalFeatures_default_instance_;
+PROTOBUF_CONSTEXPR SMBScanFeatures::SMBScanFeatures(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.rst_ratio_)*/0
+  , /*decltype(_impl_.syn_ack_ratio_)*/0
+  , /*decltype(_impl_.flow_duration_min_ms_)*/0} {}
+struct SMBScanFeaturesDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SMBScanFeaturesDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SMBScanFeaturesDefaultTypeInternal() {}
+  union {
+    SMBScanFeatures _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SMBScanFeaturesDefaultTypeInternal _SMBScanFeatures_default_instance_;
 PROTOBUF_CONSTEXPR NetworkFeatures_CustomFeaturesEntry_DoNotUse::NetworkFeatures_CustomFeaturesEntry_DoNotUse(
     ::_pbi::ConstantInitialized) {}
 struct NetworkFeatures_CustomFeaturesEntry_DoNotUseDefaultTypeInternal {
@@ -150,6 +166,7 @@ PROTOBUF_CONSTEXPR NetworkFeatures::NetworkFeatures(
   , /*decltype(_impl_.ransomware_embedded_)*/nullptr
   , /*decltype(_impl_.traffic_classification_)*/nullptr
   , /*decltype(_impl_.internal_anomaly_)*/nullptr
+  , /*decltype(_impl_.smb_scan_)*/nullptr
   , /*decltype(_impl_.source_port_)*/0u
   , /*decltype(_impl_.destination_port_)*/0u
   , /*decltype(_impl_.protocol_number_)*/0u
@@ -814,7 +831,7 @@ struct DetectionBatchDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DetectionBatchDefaultTypeInternal _DetectionBatch_default_instance_;
 }  // namespace protobuf
-static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[36];
+static ::_pb::Metadata file_level_metadata_network_5fsecurity_2eproto[37];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_network_5fsecurity_2eproto[10];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_network_5fsecurity_2eproto = nullptr;
 
@@ -883,6 +900,18 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.data_exfiltration_indicators_),
   PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.temporal_anomaly_score_),
   PROTOBUF_FIELD_OFFSET(::protobuf::InternalFeatures, _impl_.access_pattern_entropy_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::SMBScanFeatures, _impl_._has_bits_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::SMBScanFeatures, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protobuf::SMBScanFeatures, _impl_.rst_ratio_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::SMBScanFeatures, _impl_.syn_ack_ratio_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::SMBScanFeatures, _impl_.flow_duration_min_ms_),
+  0,
+  1,
+  2,
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -994,6 +1023,7 @@ const uint32_t TableStruct_network_5fsecurity_2eproto::offsets[] PROTOBUF_SECTIO
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.ransomware_embedded_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.traffic_classification_),
   PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.internal_anomaly_),
+  PROTOBUF_FIELD_OFFSET(::protobuf::NetworkFeatures, _impl_.smb_scan_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protobuf::GeoLocationInfo, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1456,38 +1486,39 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 16, -1, -1, sizeof(::protobuf::RansomwareEmbeddedFeatures)},
   { 32, -1, -1, sizeof(::protobuf::TrafficFeatures)},
   { 48, -1, -1, sizeof(::protobuf::InternalFeatures)},
-  { 64, 72, -1, sizeof(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse)},
-  { 74, 82, -1, sizeof(::protobuf::NetworkFeatures_FeatureMetadataEntry_DoNotUse)},
-  { 84, -1, -1, sizeof(::protobuf::NetworkFeatures)},
-  { 175, -1, -1, sizeof(::protobuf::GeoLocationInfo)},
-  { 196, -1, -1, sizeof(::protobuf::GeoEnrichment)},
-  { 237, -1, -1, sizeof(::protobuf::TimeWindow)},
-  { 248, 256, -1, sizeof(::protobuf::FlowAggregation_ProtocolDistributionEntry_DoNotUse)},
-  { 258, 266, -1, sizeof(::protobuf::FlowAggregation_PortDistributionEntry_DoNotUse)},
-  { 268, 276, -1, sizeof(::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse)},
-  { 278, -1, -1, sizeof(::protobuf::FlowAggregation)},
-  { 292, -1, -1, sizeof(::protobuf::ModelPrediction)},
-  { 306, 314, -1, sizeof(::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse)},
-  { 316, -1, -1, sizeof(::protobuf::TricapaMLAnalysis)},
-  { 335, 343, -1, sizeof(::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse)},
-  { 345, -1, -1, sizeof(::protobuf::DistributedNode)},
-  { 372, 380, -1, sizeof(::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse)},
-  { 382, -1, -1, sizeof(::protobuf::PipelineTracking)},
-  { 410, -1, -1, sizeof(::protobuf::RAGAnalysis)},
-  { 423, -1, -1, sizeof(::protobuf::HumanFeedback)},
-  { 439, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
-  { 452, -1, -1, sizeof(::protobuf::EngineVerdict)},
-  { 463, -1, -1, sizeof(::protobuf::DetectionProvenance)},
-  { 475, 483, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
-  { 485, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
-  { 520, -1, -1, sizeof(::protobuf::EventBatch)},
-  { 532, 540, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
-  { 542, 550, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
-  { 552, -1, -1, sizeof(::protobuf::SystemConfiguration)},
-  { 570, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
-  { 596, -1, -1, sizeof(::protobuf::DecisionMetadata)},
-  { 609, -1, -1, sizeof(::protobuf::Detection)},
-  { 622, -1, -1, sizeof(::protobuf::DetectionBatch)},
+  { 64, 73, -1, sizeof(::protobuf::SMBScanFeatures)},
+  { 76, 84, -1, sizeof(::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse)},
+  { 86, 94, -1, sizeof(::protobuf::NetworkFeatures_FeatureMetadataEntry_DoNotUse)},
+  { 96, -1, -1, sizeof(::protobuf::NetworkFeatures)},
+  { 188, -1, -1, sizeof(::protobuf::GeoLocationInfo)},
+  { 209, -1, -1, sizeof(::protobuf::GeoEnrichment)},
+  { 250, -1, -1, sizeof(::protobuf::TimeWindow)},
+  { 261, 269, -1, sizeof(::protobuf::FlowAggregation_ProtocolDistributionEntry_DoNotUse)},
+  { 271, 279, -1, sizeof(::protobuf::FlowAggregation_PortDistributionEntry_DoNotUse)},
+  { 281, 289, -1, sizeof(::protobuf::FlowAggregation_CountryDistributionEntry_DoNotUse)},
+  { 291, -1, -1, sizeof(::protobuf::FlowAggregation)},
+  { 305, -1, -1, sizeof(::protobuf::ModelPrediction)},
+  { 319, 327, -1, sizeof(::protobuf::TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse)},
+  { 329, -1, -1, sizeof(::protobuf::TricapaMLAnalysis)},
+  { 348, 356, -1, sizeof(::protobuf::DistributedNode_NodeCapabilitiesEntry_DoNotUse)},
+  { 358, -1, -1, sizeof(::protobuf::DistributedNode)},
+  { 385, 393, -1, sizeof(::protobuf::PipelineTracking_ComponentMetadataEntry_DoNotUse)},
+  { 395, -1, -1, sizeof(::protobuf::PipelineTracking)},
+  { 423, -1, -1, sizeof(::protobuf::RAGAnalysis)},
+  { 436, -1, -1, sizeof(::protobuf::HumanFeedback)},
+  { 452, -1, -1, sizeof(::protobuf::HumanInTheLoopReview)},
+  { 465, -1, -1, sizeof(::protobuf::EngineVerdict)},
+  { 476, -1, -1, sizeof(::protobuf::DetectionProvenance)},
+  { 488, 496, -1, sizeof(::protobuf::NetworkSecurityEvent_CustomMetadataEntry_DoNotUse)},
+  { 498, -1, -1, sizeof(::protobuf::NetworkSecurityEvent)},
+  { 533, -1, -1, sizeof(::protobuf::EventBatch)},
+  { 545, 553, -1, sizeof(::protobuf::SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse)},
+  { 555, 563, -1, sizeof(::protobuf::SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse)},
+  { 565, -1, -1, sizeof(::protobuf::SystemConfiguration)},
+  { 583, -1, -1, sizeof(::protobuf::RansomwareFeatures)},
+  { 609, -1, -1, sizeof(::protobuf::DecisionMetadata)},
+  { 622, -1, -1, sizeof(::protobuf::Detection)},
+  { 635, -1, -1, sizeof(::protobuf::DetectionBatch)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -1495,6 +1526,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::protobuf::_RansomwareEmbeddedFeatures_default_instance_._instance,
   &::protobuf::_TrafficFeatures_default_instance_._instance,
   &::protobuf::_InternalFeatures_default_instance_._instance,
+  &::protobuf::_SMBScanFeatures_default_instance_._instance,
   &::protobuf::_NetworkFeatures_CustomFeaturesEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_NetworkFeatures_FeatureMetadataEntry_DoNotUse_default_instance_._instance,
   &::protobuf::_NetworkFeatures_default_instance_._instance,
@@ -1563,366 +1595,371 @@ const char descriptor_table_protodef_network_5fsecurity_2eproto[] PROTOBUF_SECTI
   "_discovery_patterns\030\007 \001(\002\022$\n\034data_exfilt"
   "ration_indicators\030\010 \001(\002\022\036\n\026temporal_anom"
   "aly_score\030\t \001(\002\022\036\n\026access_pattern_entrop"
-  "y\030\n \001(\002\"\366\027\n\017NetworkFeatures\022\021\n\tsource_ip"
-  "\030\001 \001(\t\022\026\n\016destination_ip\030\002 \001(\t\022\023\n\013source"
-  "_port\030\003 \001(\r\022\030\n\020destination_port\030\004 \001(\r\022\027\n"
-  "\017protocol_number\030\005 \001(\r\022\025\n\rprotocol_name\030"
-  "\006 \001(\t\022\026\n\016interface_mode\030\007 \001(\r\022\025\n\ris_wan_"
-  "facing\030\010 \001(\010\022\026\n\016source_ifindex\030\t \001(\r\022\030\n\020"
-  "source_interface\030\n \001(\t\0223\n\017flow_start_tim"
-  "e\030\013 \001(\0132\032.google.protobuf.Timestamp\0220\n\rf"
-  "low_duration\030\014 \001(\0132\031.google.protobuf.Dur"
-  "ation\022\"\n\032flow_duration_microseconds\030\r \001("
-  "\004\022\035\n\025total_forward_packets\030\016 \001(\004\022\036\n\026tota"
-  "l_backward_packets\030\017 \001(\004\022\033\n\023total_forwar"
-  "d_bytes\030\020 \001(\004\022\034\n\024total_backward_bytes\030\021 "
-  "\001(\004\022!\n\031forward_packet_length_max\030\024 \001(\004\022!"
-  "\n\031forward_packet_length_min\030\025 \001(\004\022\"\n\032for"
-  "ward_packet_length_mean\030\026 \001(\001\022!\n\031forward"
-  "_packet_length_std\030\027 \001(\001\022\"\n\032backward_pac"
-  "ket_length_max\030\036 \001(\004\022\"\n\032backward_packet_"
-  "length_min\030\037 \001(\004\022#\n\033backward_packet_leng"
-  "th_mean\030  \001(\001\022\"\n\032backward_packet_length_"
-  "std\030! \001(\001\022\035\n\025flow_bytes_per_second\030( \001(\001"
-  "\022\037\n\027flow_packets_per_second\030) \001(\001\022\"\n\032for"
-  "ward_packets_per_second\030* \001(\001\022#\n\033backwar"
-  "d_packets_per_second\030+ \001(\001\022\035\n\025download_u"
-  "pload_ratio\030, \001(\001\022\033\n\023average_packet_size"
-  "\030- \001(\001\022$\n\034average_forward_segment_size\030."
-  " \001(\001\022%\n\035average_backward_segment_size\030/ "
-  "\001(\001\022$\n\034flow_inter_arrival_time_mean\0302 \001("
-  "\001\022#\n\033flow_inter_arrival_time_std\0303 \001(\001\022#"
-  "\n\033flow_inter_arrival_time_max\0304 \001(\004\022#\n\033f"
-  "low_inter_arrival_time_min\0305 \001(\004\022(\n forw"
-  "ard_inter_arrival_time_total\0306 \001(\001\022\'\n\037fo"
-  "rward_inter_arrival_time_mean\0307 \001(\001\022&\n\036f"
-  "orward_inter_arrival_time_std\0308 \001(\001\022&\n\036f"
-  "orward_inter_arrival_time_max\0309 \001(\004\022&\n\036f"
-  "orward_inter_arrival_time_min\030: \001(\004\022)\n!b"
-  "ackward_inter_arrival_time_total\030; \001(\001\022("
-  "\n backward_inter_arrival_time_mean\030< \001(\001"
-  "\022\'\n\037backward_inter_arrival_time_std\030= \001("
-  "\001\022\'\n\037backward_inter_arrival_time_max\030> \001"
-  "(\004\022\'\n\037backward_inter_arrival_time_min\030\? "
-  "\001(\004\022\026\n\016fin_flag_count\030F \001(\r\022\026\n\016syn_flag_"
-  "count\030G \001(\r\022\026\n\016rst_flag_count\030H \001(\r\022\026\n\016p"
-  "sh_flag_count\030I \001(\r\022\026\n\016ack_flag_count\030J "
-  "\001(\r\022\026\n\016urg_flag_count\030K \001(\r\022\026\n\016cwe_flag_"
-  "count\030L \001(\r\022\026\n\016ece_flag_count\030M \001(\r\022\031\n\021f"
-  "orward_psh_flags\030N \001(\r\022\032\n\022backward_psh_f"
-  "lags\030O \001(\r\022\031\n\021forward_urg_flags\030P \001(\r\022\032\n"
-  "\022backward_urg_flags\030Q \001(\r\022\035\n\025forward_hea"
-  "der_length\030U \001(\001\022\036\n\026backward_header_leng"
-  "th\030V \001(\001\022\"\n\032forward_average_bytes_bulk\030W"
-  " \001(\001\022$\n\034forward_average_packets_bulk\030X \001"
-  "(\001\022!\n\031forward_average_bulk_rate\030Y \001(\001\022#\n"
-  "\033backward_average_bytes_bulk\030Z \001(\001\022%\n\035ba"
-  "ckward_average_packets_bulk\030[ \001(\001\022\"\n\032bac"
-  "kward_average_bulk_rate\030\\ \001(\001\022\035\n\025minimum"
-  "_packet_length\030_ \001(\004\022\035\n\025maximum_packet_l"
-  "ength\030` \001(\004\022\032\n\022packet_length_mean\030a \001(\001\022"
-  "\031\n\021packet_length_std\030b \001(\001\022\036\n\026packet_len"
-  "gth_variance\030c \001(\001\022\023\n\013active_mean\030h \001(\001\022"
-  "\021\n\tidle_mean\030i \001(\001\022\025\n\rddos_features\030d \003("
-  "\001\022\033\n\023ransomware_features\030e \003(\001\022\037\n\027genera"
-  "l_attack_features\030f \003(\001\022!\n\031internal_traf"
-  "fic_features\030g \003(\001\0220\n\nransomware\030j \001(\0132\034"
-  ".protobuf.RansomwareFeatures\022F\n\017custom_f"
-  "eatures\030n \003(\0132-.protobuf.NetworkFeatures"
-  ".CustomFeaturesEntry\022H\n\020feature_metadata"
-  "\030o \003(\0132..protobuf.NetworkFeatures.Featur"
-  "eMetadataEntry\022-\n\rddos_embedded\030p \001(\0132\026."
-  "protobuf.DDoSFeatures\022A\n\023ransomware_embe"
-  "dded\030q \001(\0132$.protobuf.RansomwareEmbedded"
-  "Features\0229\n\026traffic_classification\030r \001(\013"
-  "2\031.protobuf.TrafficFeatures\0224\n\020internal_"
-  "anomaly\030s \001(\0132\032.protobuf.InternalFeature"
-  "s\0325\n\023CustomFeaturesEntry\022\013\n\003key\030\001 \001(\t\022\r\n"
-  "\005value\030\002 \001(\001:\0028\001\0326\n\024FeatureMetadataEntry"
-  "\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\342\003\n\017Geo"
-  "LocationInfo\022\024\n\014country_name\030\001 \001(\t\022\024\n\014co"
-  "untry_code\030\002 \001(\t\022\023\n\013region_name\030\003 \001(\t\022\021\n"
-  "\tcity_name\030\004 \001(\t\022\020\n\010latitude\030\005 \001(\001\022\021\n\tlo"
-  "ngitude\030\006 \001(\001\022\020\n\010timezone\030\007 \001(\t\022\020\n\010isp_n"
-  "ame\030\010 \001(\t\022\031\n\021organization_name\030\t \001(\t\022 \n\030"
-  "autonomous_system_number\030\n \001(\t\022\032\n\022is_ano"
-  "nymous_proxy\030\013 \001(\010\022\035\n\025is_satellite_provi"
-  "der\030\014 \001(\010\022\030\n\020is_tor_exit_node\030\r \001(\010\022\032\n\022i"
-  "s_known_malicious\030\016 \001(\010\022;\n\014threat_level\030"
-  "\017 \001(\0162%.protobuf.GeoLocationInfo.ThreatL"
-  "evel\"G\n\013ThreatLevel\022\013\n\007UNKNOWN\020\000\022\007\n\003LOW\020"
-  "\001\022\n\n\006MEDIUM\020\002\022\010\n\004HIGH\020\003\022\014\n\010CRITICAL\020\004\"\212\n"
-  "\n\rGeoEnrichment\0223\n\020sniffer_node_geo\030\001 \001("
-  "\0132\031.protobuf.GeoLocationInfo\0220\n\rsource_i"
-  "p_geo\030\002 \001(\0132\031.protobuf.GeoLocationInfo\0225"
-  "\n\022destination_ip_geo\030\003 \001(\0132\031.protobuf.Ge"
-  "oLocationInfo\022&\n\036source_destination_dist"
-  "ance_km\030\n \001(\001\022\'\n\037source_destination_same"
-  "_country\030\013 \001(\010\022)\n!source_destination_sam"
-  "e_continent\030\014 \001(\010\022\031\n\021distance_category\030\r"
-  " \001(\t\022\"\n\032sniffer_source_distance_km\030\024 \001(\001"
-  "\022#\n\033sniffer_source_same_country\030\025 \001(\010\022#\n"
-  "\033sniffer_source_relationship\030\026 \001(\t\022\'\n\037sn"
-  "iffer_destination_distance_km\030\031 \001(\001\022(\n s"
-  "niffer_destination_same_country\030\032 \001(\010\022(\n"
-  " sniffer_destination_relationship\030\033 \001(\t\022"
-  "#\n\033threat_intelligence_matches\030\036 \003(\t\022\"\n\032"
-  "threat_intelligence_source\030\037 \001(\t\022 \n\030geog"
-  "raphic_anomaly_score\030  \001(\002\022%\n\035suspicious"
-  "_geographic_pattern\030! \001(\010\022\035\n\025sniffer_nod"
-  "e_enriched\030( \001(\010\022\032\n\022source_ip_enriched\030)"
-  " \001(\010\022\037\n\027destination_ip_enriched\030* \001(\010\022\033\n"
-  "\023enrichment_complete\030+ \001(\010\022%\n\035public_ip_"
-  "discovery_attempted\030- \001(\010\022\033\n\023original_pr"
-  "ivate_ip\030. \001(\t\022\034\n\024discovered_public_ip\030/"
-  " \001(\t\022\034\n\024ip_discovery_service\0300 \001(\t\0225\n\021ip"
-  "_discovery_time\0301 \001(\0132\032.google.protobuf."
-  "Timestamp\022\030\n\020enricher_version\0302 \001(\t\022\024\n\014g"
-  "eoip_method\0303 \001(\t\022\036\n\026geoip_database_vers"
-  "ion\0304 \001(\t\022!\n\031fallback_coordinates_used\0305"
-  " \001(\010\022\037\n\027total_lookup_latency_ms\0306 \001(\002\022\022\n"
-  "\ncache_hits\0307 \001(\005\022\024\n\014cache_misses\0308 \001(\005\022"
-  "\037\n\027enrichment_success_rate\0309 \001(\002\0228\n\024enri"
-  "chment_timestamp\030: \001(\0132\032.google.protobuf"
-  ".Timestamp\"\273\002\n\nTimeWindow\0220\n\014window_star"
-  "t\030\001 \001(\0132\032.google.protobuf.Timestamp\022.\n\nw"
-  "indow_end\030\002 \001(\0132\032.google.protobuf.Timest"
-  "amp\0222\n\017window_duration\030\003 \001(\0132\031.google.pr"
-  "otobuf.Duration\022\027\n\017sequence_number\030\004 \001(\004"
-  "\0224\n\013window_type\030\005 \001(\0162\037.protobuf.TimeWin"
-  "dow.WindowType\"H\n\nWindowType\022\013\n\007SLIDING\020"
-  "\000\022\014\n\010TUMBLING\020\001\022\021\n\rSESSION_BASED\020\002\022\014\n\010AD"
-  "APTIVE\020\003\"\335\004\n\017FlowAggregation\022)\n\013time_win"
-  "dow\030\001 \001(\0132\024.protobuf.TimeWindow\022\035\n\025total"
-  "_flows_in_window\030\002 \001(\004\022\037\n\027total_packets_"
-  "in_window\030\003 \001(\004\022\035\n\025total_bytes_in_window"
-  "\030\004 \001(\004\022R\n\025protocol_distribution\030\005 \003(\01323."
-  "protobuf.FlowAggregation.ProtocolDistrib"
-  "utionEntry\022J\n\021port_distribution\030\006 \003(\0132/."
-  "protobuf.FlowAggregation.PortDistributio"
-  "nEntry\022P\n\024country_distribution\030\007 \003(\01322.p"
-  "rotobuf.FlowAggregation.CountryDistribut"
-  "ionEntry\022\034\n\024window_anomaly_score\030\010 \001(\001\032;"
-  "\n\031ProtocolDistributionEntry\022\013\n\003key\030\001 \001(\t"
-  "\022\r\n\005value\030\002 \001(\004:\0028\001\0327\n\025PortDistributionE"
-  "ntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\032:\n\030"
-  "CountryDistributionEntry\022\013\n\003key\030\001 \001(\t\022\r\n"
-  "\005value\030\002 \001(\004:\0028\001\"\232\004\n\017ModelPrediction\022\022\n\n"
-  "model_name\030\001 \001(\t\022\025\n\rmodel_version\030\002 \001(\t\022"
-  "7\n\nmodel_type\030\003 \001(\0162#.protobuf.ModelPred"
-  "iction.ModelType\022\030\n\020prediction_class\030\004 \001"
-  "(\t\022\030\n\020confidence_score\030\005 \001(\001\022\033\n\023class_pr"
-  "obabilities\030\006 \003(\001\0228\n\024prediction_timestam"
-  "p\030\007 \001(\0132\032.google.protobuf.Timestamp\0226\n\023p"
-  "rocessing_duration\030\010 \001(\0132\031.google.protob"
-  "uf.Duration\"\337\001\n\tModelType\022\031\n\025RANDOM_FORE"
-  "ST_GENERAL\020\000\022\021\n\rLIGHTGBM_DDOS\020\001\022\035\n\031NEURA"
-  "L_NETWORK_RANSOMWARE\020\002\022\024\n\020ENSEMBLE_TRICA"
-  "PA\020\003\022\037\n\033INTERNAL_TRAFFIC_CLASSIFIER\020\004\022\030\n"
-  "\024TRANSFORMER_ADVANCED\020\005\022\026\n\022RANDOM_FOREST"
-  "_DDOS\020\006\022\034\n\030RANDOM_FOREST_RANSOMWARE\020\007\"\300\005"
-  "\n\021TricapaMLAnalysis\022;\n\030level1_general_de"
-  "tection\030\001 \001(\0132\031.protobuf.ModelPrediction"
-  "\022\036\n\026attack_detected_level1\030\002 \001(\010\022\031\n\021leve"
-  "l1_confidence\030\003 \001(\001\022@\n\035level2_context_cl"
-  "assification\030\004 \001(\0132\031.protobuf.ModelPredi"
-  "ction\022\027\n\017traffic_context\030\005 \001(\t\022A\n\036level2"
-  "_specialized_predictions\030\t \003(\0132\031.protobu"
-  "f.ModelPrediction\022A\n\036level3_specialized_"
-  "predictions\030\006 \003(\0132\031.protobuf.ModelPredic"
-  "tion\022#\n\033final_threat_classification\030\007 \001("
-  "\t\022\033\n\023ensemble_confidence\030\010 \001(\001\022:\n\027total_"
-  "analysis_duration\030\n \001(\0132\031.google.protobu"
-  "f.Duration\022\030\n\020models_activated\030\013 \003(\t\022[\n\031"
-  "feature_importance_scores\030\014 \003(\01328.protob"
-  "uf.TricapaMLAnalysis.FeatureImportanceSc"
-  "oresEntry\022\035\n\025requires_human_review\030\r \001(\010"
-  "\032>\n\034FeatureImportanceScoresEntry\022\013\n\003key\030"
-  "\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\"\236\010\n\017Distributed"
-  "Node\022\017\n\007node_id\030\001 \001(\t\022\025\n\rnode_hostname\030\002"
-  " \001(\t\022\027\n\017node_ip_address\030\003 \001(\t\022\031\n\021physica"
-  "l_location\030\004 \001(\t\0225\n\tnode_role\030\005 \001(\0162\".pr"
-  "otobuf.DistributedNode.NodeRole\0229\n\013node_"
-  "status\030\006 \001(\0162$.protobuf.DistributedNode."
-  "NodeStatus\0222\n\016last_heartbeat\030\007 \001(\0132\032.goo"
-  "gle.protobuf.Timestamp\022\030\n\020operating_syst"
-  "em\030\010 \001(\t\022\022\n\nos_version\030\t \001(\t\022\025\n\ragent_ve"
-  "rsion\030\n \001(\t\022\022\n\nprocess_id\030\013 \001(\005\022\024\n\014conta"
-  "iner_id\030\014 \001(\t\022\024\n\014cluster_name\030\r \001(\t\022\031\n\021c"
-  "pu_usage_percent\030\017 \001(\002\022\027\n\017memory_usage_m"
-  "b\030\020 \001(\002\022\032\n\022active_connections\030\021 \001(\005\022\023\n\013q"
-  "ueue_depth\030\022 \001(\005\022)\n\006uptime\030\023 \001(\0132\031.googl"
-  "e.protobuf.Duration\022J\n\021node_capabilities"
-  "\030\024 \003(\0132/.protobuf.DistributedNode.NodeCa"
-  "pabilitiesEntry\022\033\n\023supported_protocols\030\025"
-  " \003(\t\022\035\n\025configuration_version\030\026 \001(\t\0327\n\025N"
-  "odeCapabilitiesEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005val"
-  "ue\030\002 \001(\t:\0028\001\"\320\001\n\010NodeRole\022\022\n\016PACKET_SNIF"
-  "FER\020\000\022\025\n\021FEATURE_PROCESSOR\020\001\022\022\n\016GEOIP_EN"
-  "RICHER\020\002\022\017\n\013ML_ANALYZER\020\003\022\023\n\017THREAT_DETE"
-  "CTOR\020\004\022\027\n\023FIREWALL_CONTROLLER\020\005\022\023\n\017DATA_"
-  "AGGREGATOR\020\006\022\030\n\024DASHBOARD_VISUALIZER\020\007\022\027"
-  "\n\023CLUSTER_COORDINATOR\020\010\"`\n\nNodeStatus\022\n\n"
-  "\006ACTIVE\020\000\022\014\n\010STARTING\020\001\022\014\n\010STOPPING\020\002\022\t\n"
-  "\005ERROR\020\003\022\017\n\013MAINTENANCE\020\004\022\016\n\nOVERLOADED\020"
-  "\005\"\275\007\n\020PipelineTracking\022\023\n\013pipeline_id\030\001 "
-  "\001(\t\0222\n\016pipeline_start\030\002 \001(\0132\032.google.pro"
-  "tobuf.Timestamp\022\032\n\022sniffer_process_id\030\003 "
-  "\001(\005\022\034\n\024processor_process_id\030\004 \001(\005\022\033\n\023enr"
-  "icher_process_id\030\005 \001(\005\022\033\n\023analyzer_proce"
-  "ss_id\030\006 \001(\005\022\033\n\023detector_process_id\030\007 \001(\005"
-  "\022\035\n\025controller_process_id\030\010 \001(\005\0226\n\022packe"
-  "t_captured_at\030\n \001(\0132\032.google.protobuf.Ti"
-  "mestamp\0229\n\025features_extracted_at\030\013 \001(\0132\032"
-  ".google.protobuf.Timestamp\0225\n\021geoip_enri"
-  "ched_at\030\014 \001(\0132\032.google.protobuf.Timestam"
-  "p\0222\n\016ml_analyzed_at\030\r \001(\0132\032.google.proto"
-  "buf.Timestamp\0226\n\022threat_detected_at\030\016 \001("
-  "\0132\032.google.protobuf.Timestamp\0223\n\017action_"
-  "taken_at\030\017 \001(\0132\032.google.protobuf.Timesta"
-  "mp\022;\n\030total_processing_latency\030\024 \001(\0132\031.g"
-  "oogle.protobuf.Duration\022\033\n\023pipeline_hops"
-  "_count\030\025 \001(\005\022\027\n\017processing_path\030\026 \001(\t\022\026\n"
-  "\016retry_attempts\030\031 \001(\005\022\031\n\021processing_erro"
-  "rs\030\032 \003(\t\022\035\n\025requires_reprocessing\030\033 \001(\010\022"
-  "M\n\022component_metadata\030\036 \003(\01321.protobuf.P"
-  "ipelineTracking.ComponentMetadataEntry\022\027"
-  "\n\017processing_tags\030\037 \003(\t\0328\n\026ComponentMeta"
+  "y\030\n \001(\002\"\241\001\n\017SMBScanFeatures\022\026\n\trst_ratio"
+  "\030\001 \001(\002H\000\210\001\001\022\032\n\rsyn_ack_ratio\030\002 \001(\002H\001\210\001\001\022"
+  "!\n\024flow_duration_min_ms\030\003 \001(\002H\002\210\001\001B\014\n\n_r"
+  "st_ratioB\020\n\016_syn_ack_ratioB\027\n\025_flow_dura"
+  "tion_min_ms\"\243\030\n\017NetworkFeatures\022\021\n\tsourc"
+  "e_ip\030\001 \001(\t\022\026\n\016destination_ip\030\002 \001(\t\022\023\n\013so"
+  "urce_port\030\003 \001(\r\022\030\n\020destination_port\030\004 \001("
+  "\r\022\027\n\017protocol_number\030\005 \001(\r\022\025\n\rprotocol_n"
+  "ame\030\006 \001(\t\022\026\n\016interface_mode\030\007 \001(\r\022\025\n\ris_"
+  "wan_facing\030\010 \001(\010\022\026\n\016source_ifindex\030\t \001(\r"
+  "\022\030\n\020source_interface\030\n \001(\t\0223\n\017flow_start"
+  "_time\030\013 \001(\0132\032.google.protobuf.Timestamp\022"
+  "0\n\rflow_duration\030\014 \001(\0132\031.google.protobuf"
+  ".Duration\022\"\n\032flow_duration_microseconds\030"
+  "\r \001(\004\022\035\n\025total_forward_packets\030\016 \001(\004\022\036\n\026"
+  "total_backward_packets\030\017 \001(\004\022\033\n\023total_fo"
+  "rward_bytes\030\020 \001(\004\022\034\n\024total_backward_byte"
+  "s\030\021 \001(\004\022!\n\031forward_packet_length_max\030\024 \001"
+  "(\004\022!\n\031forward_packet_length_min\030\025 \001(\004\022\"\n"
+  "\032forward_packet_length_mean\030\026 \001(\001\022!\n\031for"
+  "ward_packet_length_std\030\027 \001(\001\022\"\n\032backward"
+  "_packet_length_max\030\036 \001(\004\022\"\n\032backward_pac"
+  "ket_length_min\030\037 \001(\004\022#\n\033backward_packet_"
+  "length_mean\030  \001(\001\022\"\n\032backward_packet_len"
+  "gth_std\030! \001(\001\022\035\n\025flow_bytes_per_second\030("
+  " \001(\001\022\037\n\027flow_packets_per_second\030) \001(\001\022\"\n"
+  "\032forward_packets_per_second\030* \001(\001\022#\n\033bac"
+  "kward_packets_per_second\030+ \001(\001\022\035\n\025downlo"
+  "ad_upload_ratio\030, \001(\001\022\033\n\023average_packet_"
+  "size\030- \001(\001\022$\n\034average_forward_segment_si"
+  "ze\030. \001(\001\022%\n\035average_backward_segment_siz"
+  "e\030/ \001(\001\022$\n\034flow_inter_arrival_time_mean\030"
+  "2 \001(\001\022#\n\033flow_inter_arrival_time_std\0303 \001"
+  "(\001\022#\n\033flow_inter_arrival_time_max\0304 \001(\004\022"
+  "#\n\033flow_inter_arrival_time_min\0305 \001(\004\022(\n "
+  "forward_inter_arrival_time_total\0306 \001(\001\022\'"
+  "\n\037forward_inter_arrival_time_mean\0307 \001(\001\022"
+  "&\n\036forward_inter_arrival_time_std\0308 \001(\001\022"
+  "&\n\036forward_inter_arrival_time_max\0309 \001(\004\022"
+  "&\n\036forward_inter_arrival_time_min\030: \001(\004\022"
+  ")\n!backward_inter_arrival_time_total\030; \001"
+  "(\001\022(\n backward_inter_arrival_time_mean\030<"
+  " \001(\001\022\'\n\037backward_inter_arrival_time_std\030"
+  "= \001(\001\022\'\n\037backward_inter_arrival_time_max"
+  "\030> \001(\004\022\'\n\037backward_inter_arrival_time_mi"
+  "n\030\? \001(\004\022\026\n\016fin_flag_count\030F \001(\r\022\026\n\016syn_f"
+  "lag_count\030G \001(\r\022\026\n\016rst_flag_count\030H \001(\r\022"
+  "\026\n\016psh_flag_count\030I \001(\r\022\026\n\016ack_flag_coun"
+  "t\030J \001(\r\022\026\n\016urg_flag_count\030K \001(\r\022\026\n\016cwe_f"
+  "lag_count\030L \001(\r\022\026\n\016ece_flag_count\030M \001(\r\022"
+  "\031\n\021forward_psh_flags\030N \001(\r\022\032\n\022backward_p"
+  "sh_flags\030O \001(\r\022\031\n\021forward_urg_flags\030P \001("
+  "\r\022\032\n\022backward_urg_flags\030Q \001(\r\022\035\n\025forward"
+  "_header_length\030U \001(\001\022\036\n\026backward_header_"
+  "length\030V \001(\001\022\"\n\032forward_average_bytes_bu"
+  "lk\030W \001(\001\022$\n\034forward_average_packets_bulk"
+  "\030X \001(\001\022!\n\031forward_average_bulk_rate\030Y \001("
+  "\001\022#\n\033backward_average_bytes_bulk\030Z \001(\001\022%"
+  "\n\035backward_average_packets_bulk\030[ \001(\001\022\"\n"
+  "\032backward_average_bulk_rate\030\\ \001(\001\022\035\n\025min"
+  "imum_packet_length\030_ \001(\004\022\035\n\025maximum_pack"
+  "et_length\030` \001(\004\022\032\n\022packet_length_mean\030a "
+  "\001(\001\022\031\n\021packet_length_std\030b \001(\001\022\036\n\026packet"
+  "_length_variance\030c \001(\001\022\023\n\013active_mean\030h "
+  "\001(\001\022\021\n\tidle_mean\030i \001(\001\022\025\n\rddos_features\030"
+  "d \003(\001\022\033\n\023ransomware_features\030e \003(\001\022\037\n\027ge"
+  "neral_attack_features\030f \003(\001\022!\n\031internal_"
+  "traffic_features\030g \003(\001\0220\n\nransomware\030j \001"
+  "(\0132\034.protobuf.RansomwareFeatures\022F\n\017cust"
+  "om_features\030n \003(\0132-.protobuf.NetworkFeat"
+  "ures.CustomFeaturesEntry\022H\n\020feature_meta"
+  "data\030o \003(\0132..protobuf.NetworkFeatures.Fe"
+  "atureMetadataEntry\022-\n\rddos_embedded\030p \001("
+  "\0132\026.protobuf.DDoSFeatures\022A\n\023ransomware_"
+  "embedded\030q \001(\0132$.protobuf.RansomwareEmbe"
+  "ddedFeatures\0229\n\026traffic_classification\030r"
+  " \001(\0132\031.protobuf.TrafficFeatures\0224\n\020inter"
+  "nal_anomaly\030s \001(\0132\032.protobuf.InternalFea"
+  "tures\022+\n\010smb_scan\030t \001(\0132\031.protobuf.SMBSc"
+  "anFeatures\0325\n\023CustomFeaturesEntry\022\013\n\003key"
+  "\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\0326\n\024FeatureMeta"
   "dataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028"
-  "\001\"\347\001\n\013RAGAnalysis\022\022\n\nquery_text\030\001 \001(\t\022\033\n"
-  "\023retrieved_knowledge\030\002 \003(\t\022\030\n\020relevance_"
-  "scores\030\003 \003(\001\022\035\n\025ai_generated_analysis\030\004 "
-  "\001(\t\022\033\n\023analysis_confidence\030\005 \001(\001\022\031\n\021know"
-  "ledge_sources\030\006 \003(\t\0226\n\022analysis_timestam"
-  "p\030\007 \001(\0132\032.google.protobuf.Timestamp\"\333\003\n\r"
-  "HumanFeedback\022\023\n\013feedback_id\030\001 \001(\t\022\027\n\017an"
-  "alyst_user_id\030\002 \001(\t\022\032\n\022event_reference_i"
-  "d\030\003 \001(\t\022;\n\rfeedback_type\030\004 \001(\0162$.protobu"
-  "f.HumanFeedback.FeedbackType\022\037\n\027confirme"
-  "d_true_positive\030\005 \001(\010\022 \n\030confirmed_false"
-  "_positive\030\006 \001(\010\022\033\n\023analyst_explanation\030\007"
-  " \001(\t\022\024\n\014analyst_tags\030\010 \003(\t\022!\n\031analyst_co"
-  "nfidence_rating\030\t \001(\005\0226\n\022feedback_timest"
-  "amp\030\n \001(\0132\032.google.protobuf.Timestamp\"r\n"
-  "\014FeedbackType\022\016\n\nVALIDATION\020\000\022\016\n\nCORRECT"
-  "ION\020\001\022\017\n\013ENHANCEMENT\020\002\022\031\n\025FALSE_POSITIVE"
-  "_REPORT\020\003\022\026\n\022ADDITIONAL_CONTEXT\020\004\"\243\003\n\024Hu"
-  "manInTheLoopReview\022\037\n\027requires_human_ana"
-  "lysis\030\001 \001(\010\022F\n\017review_priority\030\002 \001(\0162-.p"
-  "rotobuf.HumanInTheLoopReview.ReviewPrior"
-  "ity\022\026\n\016review_reasons\030\003 \003(\t\0221\n\020analyst_f"
-  "eedback\030\004 \001(\0132\027.protobuf.HumanFeedback\0227"
-  "\n\023escalated_timestamp\030\005 \001(\0132\032.google.pro"
-  "tobuf.Timestamp\0226\n\022reviewed_timestamp\030\006 "
-  "\001(\0132\032.google.protobuf.Timestamp\022\030\n\020revie"
-  "w_completed\030\007 \001(\010\"L\n\016ReviewPriority\022\007\n\003L"
-  "OW\020\000\022\n\n\006MEDIUM\020\001\022\010\n\004HIGH\020\002\022\014\n\010CRITICAL\020\003"
-  "\022\r\n\tEMERGENCY\020\004\"{\n\rEngineVerdict\022\023\n\013engi"
-  "ne_name\030\001 \001(\t\022\026\n\016classification\030\002 \001(\t\022\022\n"
-  "\nconfidence\030\003 \001(\002\022\023\n\013reason_code\030\004 \001(\t\022\024"
-  "\n\014timestamp_ns\030\005 \001(\004\"\304\001\n\023DetectionProven"
-  "ance\022)\n\010verdicts\030\001 \003(\0132\027.protobuf.Engine"
-  "Verdict\022\033\n\023global_timestamp_ns\030\002 \001(\004\022\026\n\016"
-  "final_decision\030\003 \001(\t\022\031\n\021discrepancy_scor"
-  "e\030\004 \001(\002\022\026\n\016logic_override\030\005 \001(\t\022\032\n\022discr"
-  "epancy_reason\030\006 \001(\t\"\316\t\n\024NetworkSecurityE"
-  "vent\022\020\n\010event_id\030\001 \001(\t\0223\n\017event_timestam"
-  "p\030\002 \001(\0132\032.google.protobuf.Timestamp\022\033\n\023o"
-  "riginating_node_id\030\003 \001(\t\0223\n\020network_feat"
-  "ures\030\004 \001(\0132\031.protobuf.NetworkFeatures\022/\n"
-  "\016geo_enrichment\030\005 \001(\0132\027.protobuf.GeoEnri"
-  "chment\022)\n\013time_window\030\006 \001(\0132\024.protobuf.T"
-  "imeWindow\0220\n\013ml_analysis\030\007 \001(\0132\033.protobu"
-  "f.TricapaMLAnalysis\022\?\n\034additional_model_"
-  "predictions\030\010 \003(\0132\031.protobuf.ModelPredic"
-  "tion\0221\n\016capturing_node\030\t \001(\0132\031.protobuf."
-  "DistributedNode\0225\n\021pipeline_tracking\030\n \001"
-  "(\0132\032.protobuf.PipelineTracking\022+\n\014rag_an"
-  "alysis\030\013 \001(\0132\025.protobuf.RAGAnalysis\0224\n\014h"
-  "uman_review\030\014 \001(\0132\036.protobuf.HumanInTheL"
-  "oopReview\022\034\n\024overall_threat_score\030\017 \001(\001\022"
-  "\034\n\024final_classification\030\020 \001(\t\022\027\n\017threat_"
-  "category\030\021 \001(\t\022\026\n\016correlation_id\030\024 \001(\t\022\031"
-  "\n\021related_event_ids\030\025 \003(\t\022\026\n\016event_chain"
-  "_id\030\026 \001(\t\022\026\n\016schema_version\030\031 \001(\r\022K\n\017cus"
-  "tom_metadata\030\032 \003(\01322.protobuf.NetworkSec"
-  "urityEvent.CustomMetadataEntry\022\022\n\nevent_"
-  "tags\030\033 \003(\t\022\030\n\020protobuf_version\030\034 \001(\t\022\033\n\023"
-  "fast_detector_score\030\035 \001(\001\022\031\n\021ml_detector"
-  "_score\030\036 \001(\001\0226\n\024authoritative_source\030\037 \001"
-  "(\0162\030.protobuf.DetectorSource\022\037\n\027fast_det"
-  "ector_triggered\030  \001(\010\022\034\n\024fast_detector_r"
-  "eason\030! \001(\t\0225\n\021decision_metadata\030\" \001(\0132\032"
-  ".protobuf.DecisionMetadata\0221\n\nprovenance"
-  "\030# \001(\0132\035.protobuf.DetectionProvenance\0325\n"
-  "\023CustomMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005val"
-  "ue\030\002 \001(\t:\0028\001\"\325\002\n\nEventBatch\022.\n\006events\030\001 "
-  "\003(\0132\036.protobuf.NetworkSecurityEvent\022\020\n\010b"
-  "atch_id\030\002 \001(\004\0224\n\020batch_created_at\030\003 \001(\0132"
-  "\032.google.protobuf.Timestamp\022\022\n\nbatch_siz"
-  "e\030\004 \001(\r\022<\n\017processing_mode\030\005 \001(\0162#.proto"
-  "buf.EventBatch.ProcessingMode\022\031\n\021batch_s"
-  "ource_node\030\006 \001(\t\"b\n\016ProcessingMode\022\r\n\tRE"
-  "AL_TIME\020\000\022\022\n\016NEAR_REAL_TIME\020\001\022\024\n\020BATCH_P"
-  "ROCESSING\020\002\022\027\n\023HISTORICAL_ANALYSIS\020\003\"\223\005\n"
-  "\023SystemConfiguration\022\031\n\021enabled_ml_model"
-  "s\030\001 \003(\t\022Y\n\027threat_score_thresholds\030\002 \003(\013"
-  "28.protobuf.SystemConfiguration.ThreatSc"
-  "oreThresholdsEntry\0223\n\020time_window_size\030\003"
-  " \001(\0132\031.google.protobuf.Duration\022\035\n\025max_e"
-  "vents_per_window\030\004 \001(\r\0220\n\rcluster_nodes\030"
-  "\005 \003(\0132\031.protobuf.DistributedNode\022U\n\025node"
-  "_role_assignments\030\006 \003(\01326.protobuf.Syste"
-  "mConfiguration.NodeRoleAssignmentsEntry\022"
-  "\032\n\022encryption_enabled\030\007 \001(\010\022\033\n\023compressi"
-  "on_enabled\030\010 \001(\010\022\034\n\024encryption_algorithm"
-  "\030\t \001(\t\022\034\n\024rag_analysis_enabled\030\n \001(\010\022\032\n\022"
-  "rag_model_endpoint\030\013 \001(\t\022\036\n\026knowledge_ba"
-  "se_sources\030\014 \003(\t\032<\n\032ThreatScoreThreshold"
-  "sEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\032:"
-  "\n\030NodeRoleAssignmentsEntry\022\013\n\003key\030\001 \001(\t\022"
-  "\r\n\005value\030\002 \001(\t:\0028\001\"\247\005\n\022RansomwareFeature"
-  "s\022\031\n\021dns_query_entropy\030\001 \001(\002\022\034\n\024new_exte"
-  "rnal_ips_30s\030\002 \001(\005\022\036\n\026dns_query_rate_per"
-  "_min\030\003 \001(\002\022 \n\030failed_dns_queries_ratio\030\004"
-  " \001(\002\022\"\n\032tls_self_signed_cert_count\030\005 \001(\005"
-  "\022$\n\034non_standard_port_http_count\030\006 \001(\005\022 "
-  "\n\030smb_connection_diversity\030\007 \001(\005\022\035\n\025rdp_"
-  "failed_auth_count\030\010 \001(\005\022$\n\034new_internal_"
-  "connections_30s\030\t \001(\005\022\037\n\027port_scan_patte"
-  "rn_score\030\n \001(\002\022!\n\031upload_download_ratio_"
-  "30s\030\013 \001(\002\022\037\n\027burst_connections_count\030\014 \001"
-  "(\005\022\037\n\027unique_destinations_30s\030\r \001(\005\022#\n\033l"
-  "arge_upload_sessions_count\030\016 \001(\005\022\037\n\027noct"
-  "urnal_activity_flag\030\017 \001(\010\022\036\n\026connection_"
-  "rate_stddev\030\020 \001(\002\022 \n\030protocol_diversity_"
-  "score\030\021 \001(\002\022!\n\031avg_flow_duration_seconds"
-  "\030\022 \001(\002\022\025\n\rtcp_rst_ratio\030\023 \001(\002\022\035\n\025syn_wit"
-  "hout_ack_ratio\030\024 \001(\002\"\357\001\n\020DecisionMetadat"
-  "a\022\030\n\020score_divergence\030\001 \001(\001\022\031\n\021divergenc"
-  "e_reason\030\002 \001(\t\022\035\n\025requires_rag_analysis\030"
-  "\003 \001(\010\022\036\n\026investigation_priority\030\004 \001(\t\022\025\n"
-  "\ranomaly_flags\030\005 \003(\t\022\030\n\020confidence_level"
-  "\030\006 \001(\001\0226\n\022decision_timestamp\030\007 \001(\0132\032.goo"
-  "gle.protobuf.Timestamp\"\250\001\n\tDetection\022\016\n\006"
-  "src_ip\030\001 \001(\t\022%\n\004type\030\002 \001(\0162\027.protobuf.De"
-  "tectionType\022\022\n\nconfidence\030\003 \001(\002\022\021\n\ttimes"
-  "tamp\030\004 \001(\004\022\023\n\013description\030\005 \001(\t\022\016\n\006actio"
-  "n\030\006 \001(\t\022\030\n\020duration_seconds\030\007 \001(\r\"\200\001\n\016De"
-  "tectionBatch\022\'\n\ndetections\030\001 \003(\0132\023.proto"
-  "buf.Detection\022\020\n\010batch_id\030\002 \001(\004\0223\n\017batch"
-  "_timestamp\030\003 \001(\0132\032.google.protobuf.Times"
-  "tamp*\225\001\n\rDetectionType\022\025\n\021DETECTION_UNKN"
-  "OWN\020\000\022\022\n\016DETECTION_DDOS\020\001\022\030\n\024DETECTION_R"
-  "ANSOMWARE\020\002\022 \n\034DETECTION_SUSPICIOUS_TRAF"
-  "FIC\020\003\022\035\n\031DETECTION_INTERNAL_THREAT\020\004*\354\001\n"
-  "\016DetectorSource\022\033\n\027DETECTOR_SOURCE_UNKNO"
-  "WN\020\000\022\035\n\031DETECTOR_SOURCE_FAST_ONLY\020\001\022\033\n\027D"
-  "ETECTOR_SOURCE_ML_ONLY\020\002\022!\n\035DETECTOR_SOU"
-  "RCE_FAST_PRIORITY\020\003\022\037\n\033DETECTOR_SOURCE_M"
-  "L_PRIORITY\020\004\022\035\n\031DETECTOR_SOURCE_CONSENSU"
-  "S\020\005\022\036\n\032DETECTOR_SOURCE_DIVERGENCE\020\006b\006pro"
-  "to3"
+  "\001\"\342\003\n\017GeoLocationInfo\022\024\n\014country_name\030\001 "
+  "\001(\t\022\024\n\014country_code\030\002 \001(\t\022\023\n\013region_name"
+  "\030\003 \001(\t\022\021\n\tcity_name\030\004 \001(\t\022\020\n\010latitude\030\005 "
+  "\001(\001\022\021\n\tlongitude\030\006 \001(\001\022\020\n\010timezone\030\007 \001(\t"
+  "\022\020\n\010isp_name\030\010 \001(\t\022\031\n\021organization_name\030"
+  "\t \001(\t\022 \n\030autonomous_system_number\030\n \001(\t\022"
+  "\032\n\022is_anonymous_proxy\030\013 \001(\010\022\035\n\025is_satell"
+  "ite_provider\030\014 \001(\010\022\030\n\020is_tor_exit_node\030\r"
+  " \001(\010\022\032\n\022is_known_malicious\030\016 \001(\010\022;\n\014thre"
+  "at_level\030\017 \001(\0162%.protobuf.GeoLocationInf"
+  "o.ThreatLevel\"G\n\013ThreatLevel\022\013\n\007UNKNOWN\020"
+  "\000\022\007\n\003LOW\020\001\022\n\n\006MEDIUM\020\002\022\010\n\004HIGH\020\003\022\014\n\010CRIT"
+  "ICAL\020\004\"\212\n\n\rGeoEnrichment\0223\n\020sniffer_node"
+  "_geo\030\001 \001(\0132\031.protobuf.GeoLocationInfo\0220\n"
+  "\rsource_ip_geo\030\002 \001(\0132\031.protobuf.GeoLocat"
+  "ionInfo\0225\n\022destination_ip_geo\030\003 \001(\0132\031.pr"
+  "otobuf.GeoLocationInfo\022&\n\036source_destina"
+  "tion_distance_km\030\n \001(\001\022\'\n\037source_destina"
+  "tion_same_country\030\013 \001(\010\022)\n!source_destin"
+  "ation_same_continent\030\014 \001(\010\022\031\n\021distance_c"
+  "ategory\030\r \001(\t\022\"\n\032sniffer_source_distance"
+  "_km\030\024 \001(\001\022#\n\033sniffer_source_same_country"
+  "\030\025 \001(\010\022#\n\033sniffer_source_relationship\030\026 "
+  "\001(\t\022\'\n\037sniffer_destination_distance_km\030\031"
+  " \001(\001\022(\n sniffer_destination_same_country"
+  "\030\032 \001(\010\022(\n sniffer_destination_relationsh"
+  "ip\030\033 \001(\t\022#\n\033threat_intelligence_matches\030"
+  "\036 \003(\t\022\"\n\032threat_intelligence_source\030\037 \001("
+  "\t\022 \n\030geographic_anomaly_score\030  \001(\002\022%\n\035s"
+  "uspicious_geographic_pattern\030! \001(\010\022\035\n\025sn"
+  "iffer_node_enriched\030( \001(\010\022\032\n\022source_ip_e"
+  "nriched\030) \001(\010\022\037\n\027destination_ip_enriched"
+  "\030* \001(\010\022\033\n\023enrichment_complete\030+ \001(\010\022%\n\035p"
+  "ublic_ip_discovery_attempted\030- \001(\010\022\033\n\023or"
+  "iginal_private_ip\030. \001(\t\022\034\n\024discovered_pu"
+  "blic_ip\030/ \001(\t\022\034\n\024ip_discovery_service\0300 "
+  "\001(\t\0225\n\021ip_discovery_time\0301 \001(\0132\032.google."
+  "protobuf.Timestamp\022\030\n\020enricher_version\0302"
+  " \001(\t\022\024\n\014geoip_method\0303 \001(\t\022\036\n\026geoip_data"
+  "base_version\0304 \001(\t\022!\n\031fallback_coordinat"
+  "es_used\0305 \001(\010\022\037\n\027total_lookup_latency_ms"
+  "\0306 \001(\002\022\022\n\ncache_hits\0307 \001(\005\022\024\n\014cache_miss"
+  "es\0308 \001(\005\022\037\n\027enrichment_success_rate\0309 \001("
+  "\002\0228\n\024enrichment_timestamp\030: \001(\0132\032.google"
+  ".protobuf.Timestamp\"\273\002\n\nTimeWindow\0220\n\014wi"
+  "ndow_start\030\001 \001(\0132\032.google.protobuf.Times"
+  "tamp\022.\n\nwindow_end\030\002 \001(\0132\032.google.protob"
+  "uf.Timestamp\0222\n\017window_duration\030\003 \001(\0132\031."
+  "google.protobuf.Duration\022\027\n\017sequence_num"
+  "ber\030\004 \001(\004\0224\n\013window_type\030\005 \001(\0162\037.protobu"
+  "f.TimeWindow.WindowType\"H\n\nWindowType\022\013\n"
+  "\007SLIDING\020\000\022\014\n\010TUMBLING\020\001\022\021\n\rSESSION_BASE"
+  "D\020\002\022\014\n\010ADAPTIVE\020\003\"\335\004\n\017FlowAggregation\022)\n"
+  "\013time_window\030\001 \001(\0132\024.protobuf.TimeWindow"
+  "\022\035\n\025total_flows_in_window\030\002 \001(\004\022\037\n\027total"
+  "_packets_in_window\030\003 \001(\004\022\035\n\025total_bytes_"
+  "in_window\030\004 \001(\004\022R\n\025protocol_distribution"
+  "\030\005 \003(\01323.protobuf.FlowAggregation.Protoc"
+  "olDistributionEntry\022J\n\021port_distribution"
+  "\030\006 \003(\0132/.protobuf.FlowAggregation.PortDi"
+  "stributionEntry\022P\n\024country_distribution\030"
+  "\007 \003(\01322.protobuf.FlowAggregation.Country"
+  "DistributionEntry\022\034\n\024window_anomaly_scor"
+  "e\030\010 \001(\001\032;\n\031ProtocolDistributionEntry\022\013\n\003"
+  "key\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\0327\n\025PortDist"
+  "ributionEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001("
+  "\004:\0028\001\032:\n\030CountryDistributionEntry\022\013\n\003key"
+  "\030\001 \001(\t\022\r\n\005value\030\002 \001(\004:\0028\001\"\232\004\n\017ModelPredi"
+  "ction\022\022\n\nmodel_name\030\001 \001(\t\022\025\n\rmodel_versi"
+  "on\030\002 \001(\t\0227\n\nmodel_type\030\003 \001(\0162#.protobuf."
+  "ModelPrediction.ModelType\022\030\n\020prediction_"
+  "class\030\004 \001(\t\022\030\n\020confidence_score\030\005 \001(\001\022\033\n"
+  "\023class_probabilities\030\006 \003(\001\0228\n\024prediction"
+  "_timestamp\030\007 \001(\0132\032.google.protobuf.Times"
+  "tamp\0226\n\023processing_duration\030\010 \001(\0132\031.goog"
+  "le.protobuf.Duration\"\337\001\n\tModelType\022\031\n\025RA"
+  "NDOM_FOREST_GENERAL\020\000\022\021\n\rLIGHTGBM_DDOS\020\001"
+  "\022\035\n\031NEURAL_NETWORK_RANSOMWARE\020\002\022\024\n\020ENSEM"
+  "BLE_TRICAPA\020\003\022\037\n\033INTERNAL_TRAFFIC_CLASSI"
+  "FIER\020\004\022\030\n\024TRANSFORMER_ADVANCED\020\005\022\026\n\022RAND"
+  "OM_FOREST_DDOS\020\006\022\034\n\030RANDOM_FOREST_RANSOM"
+  "WARE\020\007\"\300\005\n\021TricapaMLAnalysis\022;\n\030level1_g"
+  "eneral_detection\030\001 \001(\0132\031.protobuf.ModelP"
+  "rediction\022\036\n\026attack_detected_level1\030\002 \001("
+  "\010\022\031\n\021level1_confidence\030\003 \001(\001\022@\n\035level2_c"
+  "ontext_classification\030\004 \001(\0132\031.protobuf.M"
+  "odelPrediction\022\027\n\017traffic_context\030\005 \001(\t\022"
+  "A\n\036level2_specialized_predictions\030\t \003(\0132"
+  "\031.protobuf.ModelPrediction\022A\n\036level3_spe"
+  "cialized_predictions\030\006 \003(\0132\031.protobuf.Mo"
+  "delPrediction\022#\n\033final_threat_classifica"
+  "tion\030\007 \001(\t\022\033\n\023ensemble_confidence\030\010 \001(\001\022"
+  ":\n\027total_analysis_duration\030\n \001(\0132\031.googl"
+  "e.protobuf.Duration\022\030\n\020models_activated\030"
+  "\013 \003(\t\022[\n\031feature_importance_scores\030\014 \003(\013"
+  "28.protobuf.TricapaMLAnalysis.FeatureImp"
+  "ortanceScoresEntry\022\035\n\025requires_human_rev"
+  "iew\030\r \001(\010\032>\n\034FeatureImportanceScoresEntr"
+  "y\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\001:\0028\001\"\236\010\n\017Di"
+  "stributedNode\022\017\n\007node_id\030\001 \001(\t\022\025\n\rnode_h"
+  "ostname\030\002 \001(\t\022\027\n\017node_ip_address\030\003 \001(\t\022\031"
+  "\n\021physical_location\030\004 \001(\t\0225\n\tnode_role\030\005"
+  " \001(\0162\".protobuf.DistributedNode.NodeRole"
+  "\0229\n\013node_status\030\006 \001(\0162$.protobuf.Distrib"
+  "utedNode.NodeStatus\0222\n\016last_heartbeat\030\007 "
+  "\001(\0132\032.google.protobuf.Timestamp\022\030\n\020opera"
+  "ting_system\030\010 \001(\t\022\022\n\nos_version\030\t \001(\t\022\025\n"
+  "\ragent_version\030\n \001(\t\022\022\n\nprocess_id\030\013 \001(\005"
+  "\022\024\n\014container_id\030\014 \001(\t\022\024\n\014cluster_name\030\r"
+  " \001(\t\022\031\n\021cpu_usage_percent\030\017 \001(\002\022\027\n\017memor"
+  "y_usage_mb\030\020 \001(\002\022\032\n\022active_connections\030\021"
+  " \001(\005\022\023\n\013queue_depth\030\022 \001(\005\022)\n\006uptime\030\023 \001("
+  "\0132\031.google.protobuf.Duration\022J\n\021node_cap"
+  "abilities\030\024 \003(\0132/.protobuf.DistributedNo"
+  "de.NodeCapabilitiesEntry\022\033\n\023supported_pr"
+  "otocols\030\025 \003(\t\022\035\n\025configuration_version\030\026"
+  " \001(\t\0327\n\025NodeCapabilitiesEntry\022\013\n\003key\030\001 \001"
+  "(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\320\001\n\010NodeRole\022\022\n\016PA"
+  "CKET_SNIFFER\020\000\022\025\n\021FEATURE_PROCESSOR\020\001\022\022\n"
+  "\016GEOIP_ENRICHER\020\002\022\017\n\013ML_ANALYZER\020\003\022\023\n\017TH"
+  "REAT_DETECTOR\020\004\022\027\n\023FIREWALL_CONTROLLER\020\005"
+  "\022\023\n\017DATA_AGGREGATOR\020\006\022\030\n\024DASHBOARD_VISUA"
+  "LIZER\020\007\022\027\n\023CLUSTER_COORDINATOR\020\010\"`\n\nNode"
+  "Status\022\n\n\006ACTIVE\020\000\022\014\n\010STARTING\020\001\022\014\n\010STOP"
+  "PING\020\002\022\t\n\005ERROR\020\003\022\017\n\013MAINTENANCE\020\004\022\016\n\nOV"
+  "ERLOADED\020\005\"\275\007\n\020PipelineTracking\022\023\n\013pipel"
+  "ine_id\030\001 \001(\t\0222\n\016pipeline_start\030\002 \001(\0132\032.g"
+  "oogle.protobuf.Timestamp\022\032\n\022sniffer_proc"
+  "ess_id\030\003 \001(\005\022\034\n\024processor_process_id\030\004 \001"
+  "(\005\022\033\n\023enricher_process_id\030\005 \001(\005\022\033\n\023analy"
+  "zer_process_id\030\006 \001(\005\022\033\n\023detector_process"
+  "_id\030\007 \001(\005\022\035\n\025controller_process_id\030\010 \001(\005"
+  "\0226\n\022packet_captured_at\030\n \001(\0132\032.google.pr"
+  "otobuf.Timestamp\0229\n\025features_extracted_a"
+  "t\030\013 \001(\0132\032.google.protobuf.Timestamp\0225\n\021g"
+  "eoip_enriched_at\030\014 \001(\0132\032.google.protobuf"
+  ".Timestamp\0222\n\016ml_analyzed_at\030\r \001(\0132\032.goo"
+  "gle.protobuf.Timestamp\0226\n\022threat_detecte"
+  "d_at\030\016 \001(\0132\032.google.protobuf.Timestamp\0223"
+  "\n\017action_taken_at\030\017 \001(\0132\032.google.protobu"
+  "f.Timestamp\022;\n\030total_processing_latency\030"
+  "\024 \001(\0132\031.google.protobuf.Duration\022\033\n\023pipe"
+  "line_hops_count\030\025 \001(\005\022\027\n\017processing_path"
+  "\030\026 \001(\t\022\026\n\016retry_attempts\030\031 \001(\005\022\031\n\021proces"
+  "sing_errors\030\032 \003(\t\022\035\n\025requires_reprocessi"
+  "ng\030\033 \001(\010\022M\n\022component_metadata\030\036 \003(\01321.p"
+  "rotobuf.PipelineTracking.ComponentMetada"
+  "taEntry\022\027\n\017processing_tags\030\037 \003(\t\0328\n\026Comp"
+  "onentMetadataEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value"
+  "\030\002 \001(\t:\0028\001\"\347\001\n\013RAGAnalysis\022\022\n\nquery_text"
+  "\030\001 \001(\t\022\033\n\023retrieved_knowledge\030\002 \003(\t\022\030\n\020r"
+  "elevance_scores\030\003 \003(\001\022\035\n\025ai_generated_an"
+  "alysis\030\004 \001(\t\022\033\n\023analysis_confidence\030\005 \001("
+  "\001\022\031\n\021knowledge_sources\030\006 \003(\t\0226\n\022analysis"
+  "_timestamp\030\007 \001(\0132\032.google.protobuf.Times"
+  "tamp\"\333\003\n\rHumanFeedback\022\023\n\013feedback_id\030\001 "
+  "\001(\t\022\027\n\017analyst_user_id\030\002 \001(\t\022\032\n\022event_re"
+  "ference_id\030\003 \001(\t\022;\n\rfeedback_type\030\004 \001(\0162"
+  "$.protobuf.HumanFeedback.FeedbackType\022\037\n"
+  "\027confirmed_true_positive\030\005 \001(\010\022 \n\030confir"
+  "med_false_positive\030\006 \001(\010\022\033\n\023analyst_expl"
+  "anation\030\007 \001(\t\022\024\n\014analyst_tags\030\010 \003(\t\022!\n\031a"
+  "nalyst_confidence_rating\030\t \001(\005\0226\n\022feedba"
+  "ck_timestamp\030\n \001(\0132\032.google.protobuf.Tim"
+  "estamp\"r\n\014FeedbackType\022\016\n\nVALIDATION\020\000\022\016"
+  "\n\nCORRECTION\020\001\022\017\n\013ENHANCEMENT\020\002\022\031\n\025FALSE"
+  "_POSITIVE_REPORT\020\003\022\026\n\022ADDITIONAL_CONTEXT"
+  "\020\004\"\243\003\n\024HumanInTheLoopReview\022\037\n\027requires_"
+  "human_analysis\030\001 \001(\010\022F\n\017review_priority\030"
+  "\002 \001(\0162-.protobuf.HumanInTheLoopReview.Re"
+  "viewPriority\022\026\n\016review_reasons\030\003 \003(\t\0221\n\020"
+  "analyst_feedback\030\004 \001(\0132\027.protobuf.HumanF"
+  "eedback\0227\n\023escalated_timestamp\030\005 \001(\0132\032.g"
+  "oogle.protobuf.Timestamp\0226\n\022reviewed_tim"
+  "estamp\030\006 \001(\0132\032.google.protobuf.Timestamp"
+  "\022\030\n\020review_completed\030\007 \001(\010\"L\n\016ReviewPrio"
+  "rity\022\007\n\003LOW\020\000\022\n\n\006MEDIUM\020\001\022\010\n\004HIGH\020\002\022\014\n\010C"
+  "RITICAL\020\003\022\r\n\tEMERGENCY\020\004\"{\n\rEngineVerdic"
+  "t\022\023\n\013engine_name\030\001 \001(\t\022\026\n\016classification"
+  "\030\002 \001(\t\022\022\n\nconfidence\030\003 \001(\002\022\023\n\013reason_cod"
+  "e\030\004 \001(\t\022\024\n\014timestamp_ns\030\005 \001(\004\"\304\001\n\023Detect"
+  "ionProvenance\022)\n\010verdicts\030\001 \003(\0132\027.protob"
+  "uf.EngineVerdict\022\033\n\023global_timestamp_ns\030"
+  "\002 \001(\004\022\026\n\016final_decision\030\003 \001(\t\022\031\n\021discrep"
+  "ancy_score\030\004 \001(\002\022\026\n\016logic_override\030\005 \001(\t"
+  "\022\032\n\022discrepancy_reason\030\006 \001(\t\"\316\t\n\024Network"
+  "SecurityEvent\022\020\n\010event_id\030\001 \001(\t\0223\n\017event"
+  "_timestamp\030\002 \001(\0132\032.google.protobuf.Times"
+  "tamp\022\033\n\023originating_node_id\030\003 \001(\t\0223\n\020net"
+  "work_features\030\004 \001(\0132\031.protobuf.NetworkFe"
+  "atures\022/\n\016geo_enrichment\030\005 \001(\0132\027.protobu"
+  "f.GeoEnrichment\022)\n\013time_window\030\006 \001(\0132\024.p"
+  "rotobuf.TimeWindow\0220\n\013ml_analysis\030\007 \001(\0132"
+  "\033.protobuf.TricapaMLAnalysis\022\?\n\034addition"
+  "al_model_predictions\030\010 \003(\0132\031.protobuf.Mo"
+  "delPrediction\0221\n\016capturing_node\030\t \001(\0132\031."
+  "protobuf.DistributedNode\0225\n\021pipeline_tra"
+  "cking\030\n \001(\0132\032.protobuf.PipelineTracking\022"
+  "+\n\014rag_analysis\030\013 \001(\0132\025.protobuf.RAGAnal"
+  "ysis\0224\n\014human_review\030\014 \001(\0132\036.protobuf.Hu"
+  "manInTheLoopReview\022\034\n\024overall_threat_sco"
+  "re\030\017 \001(\001\022\034\n\024final_classification\030\020 \001(\t\022\027"
+  "\n\017threat_category\030\021 \001(\t\022\026\n\016correlation_i"
+  "d\030\024 \001(\t\022\031\n\021related_event_ids\030\025 \003(\t\022\026\n\016ev"
+  "ent_chain_id\030\026 \001(\t\022\026\n\016schema_version\030\031 \001"
+  "(\r\022K\n\017custom_metadata\030\032 \003(\01322.protobuf.N"
+  "etworkSecurityEvent.CustomMetadataEntry\022"
+  "\022\n\nevent_tags\030\033 \003(\t\022\030\n\020protobuf_version\030"
+  "\034 \001(\t\022\033\n\023fast_detector_score\030\035 \001(\001\022\031\n\021ml"
+  "_detector_score\030\036 \001(\001\0226\n\024authoritative_s"
+  "ource\030\037 \001(\0162\030.protobuf.DetectorSource\022\037\n"
+  "\027fast_detector_triggered\030  \001(\010\022\034\n\024fast_d"
+  "etector_reason\030! \001(\t\0225\n\021decision_metadat"
+  "a\030\" \001(\0132\032.protobuf.DecisionMetadata\0221\n\np"
+  "rovenance\030# \001(\0132\035.protobuf.DetectionProv"
+  "enance\0325\n\023CustomMetadataEntry\022\013\n\003key\030\001 \001"
+  "(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\325\002\n\nEventBatch\022.\n\006"
+  "events\030\001 \003(\0132\036.protobuf.NetworkSecurityE"
+  "vent\022\020\n\010batch_id\030\002 \001(\004\0224\n\020batch_created_"
+  "at\030\003 \001(\0132\032.google.protobuf.Timestamp\022\022\n\n"
+  "batch_size\030\004 \001(\r\022<\n\017processing_mode\030\005 \001("
+  "\0162#.protobuf.EventBatch.ProcessingMode\022\031"
+  "\n\021batch_source_node\030\006 \001(\t\"b\n\016ProcessingM"
+  "ode\022\r\n\tREAL_TIME\020\000\022\022\n\016NEAR_REAL_TIME\020\001\022\024"
+  "\n\020BATCH_PROCESSING\020\002\022\027\n\023HISTORICAL_ANALY"
+  "SIS\020\003\"\223\005\n\023SystemConfiguration\022\031\n\021enabled"
+  "_ml_models\030\001 \003(\t\022Y\n\027threat_score_thresho"
+  "lds\030\002 \003(\01328.protobuf.SystemConfiguration"
+  ".ThreatScoreThresholdsEntry\0223\n\020time_wind"
+  "ow_size\030\003 \001(\0132\031.google.protobuf.Duration"
+  "\022\035\n\025max_events_per_window\030\004 \001(\r\0220\n\rclust"
+  "er_nodes\030\005 \003(\0132\031.protobuf.DistributedNod"
+  "e\022U\n\025node_role_assignments\030\006 \003(\01326.proto"
+  "buf.SystemConfiguration.NodeRoleAssignme"
+  "ntsEntry\022\032\n\022encryption_enabled\030\007 \001(\010\022\033\n\023"
+  "compression_enabled\030\010 \001(\010\022\034\n\024encryption_"
+  "algorithm\030\t \001(\t\022\034\n\024rag_analysis_enabled\030"
+  "\n \001(\010\022\032\n\022rag_model_endpoint\030\013 \001(\t\022\036\n\026kno"
+  "wledge_base_sources\030\014 \003(\t\032<\n\032ThreatScore"
+  "ThresholdsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 "
+  "\001(\001:\0028\001\032:\n\030NodeRoleAssignmentsEntry\022\013\n\003k"
+  "ey\030\001 \001(\t\022\r\n\005value\030\002 \001(\t:\0028\001\"\247\005\n\022Ransomwa"
+  "reFeatures\022\031\n\021dns_query_entropy\030\001 \001(\002\022\034\n"
+  "\024new_external_ips_30s\030\002 \001(\005\022\036\n\026dns_query"
+  "_rate_per_min\030\003 \001(\002\022 \n\030failed_dns_querie"
+  "s_ratio\030\004 \001(\002\022\"\n\032tls_self_signed_cert_co"
+  "unt\030\005 \001(\005\022$\n\034non_standard_port_http_coun"
+  "t\030\006 \001(\005\022 \n\030smb_connection_diversity\030\007 \001("
+  "\005\022\035\n\025rdp_failed_auth_count\030\010 \001(\005\022$\n\034new_"
+  "internal_connections_30s\030\t \001(\005\022\037\n\027port_s"
+  "can_pattern_score\030\n \001(\002\022!\n\031upload_downlo"
+  "ad_ratio_30s\030\013 \001(\002\022\037\n\027burst_connections_"
+  "count\030\014 \001(\005\022\037\n\027unique_destinations_30s\030\r"
+  " \001(\005\022#\n\033large_upload_sessions_count\030\016 \001("
+  "\005\022\037\n\027nocturnal_activity_flag\030\017 \001(\010\022\036\n\026co"
+  "nnection_rate_stddev\030\020 \001(\002\022 \n\030protocol_d"
+  "iversity_score\030\021 \001(\002\022!\n\031avg_flow_duratio"
+  "n_seconds\030\022 \001(\002\022\025\n\rtcp_rst_ratio\030\023 \001(\002\022\035"
+  "\n\025syn_without_ack_ratio\030\024 \001(\002\"\357\001\n\020Decisi"
+  "onMetadata\022\030\n\020score_divergence\030\001 \001(\001\022\031\n\021"
+  "divergence_reason\030\002 \001(\t\022\035\n\025requires_rag_"
+  "analysis\030\003 \001(\010\022\036\n\026investigation_priority"
+  "\030\004 \001(\t\022\025\n\ranomaly_flags\030\005 \003(\t\022\030\n\020confide"
+  "nce_level\030\006 \001(\001\0226\n\022decision_timestamp\030\007 "
+  "\001(\0132\032.google.protobuf.Timestamp\"\250\001\n\tDete"
+  "ction\022\016\n\006src_ip\030\001 \001(\t\022%\n\004type\030\002 \001(\0162\027.pr"
+  "otobuf.DetectionType\022\022\n\nconfidence\030\003 \001(\002"
+  "\022\021\n\ttimestamp\030\004 \001(\004\022\023\n\013description\030\005 \001(\t"
+  "\022\016\n\006action\030\006 \001(\t\022\030\n\020duration_seconds\030\007 \001"
+  "(\r\"\200\001\n\016DetectionBatch\022\'\n\ndetections\030\001 \003("
+  "\0132\023.protobuf.Detection\022\020\n\010batch_id\030\002 \001(\004"
+  "\0223\n\017batch_timestamp\030\003 \001(\0132\032.google.proto"
+  "buf.Timestamp*\225\001\n\rDetectionType\022\025\n\021DETEC"
+  "TION_UNKNOWN\020\000\022\022\n\016DETECTION_DDOS\020\001\022\030\n\024DE"
+  "TECTION_RANSOMWARE\020\002\022 \n\034DETECTION_SUSPIC"
+  "IOUS_TRAFFIC\020\003\022\035\n\031DETECTION_INTERNAL_THR"
+  "EAT\020\004*\354\001\n\016DetectorSource\022\033\n\027DETECTOR_SOU"
+  "RCE_UNKNOWN\020\000\022\035\n\031DETECTOR_SOURCE_FAST_ON"
+  "LY\020\001\022\033\n\027DETECTOR_SOURCE_ML_ONLY\020\002\022!\n\035DET"
+  "ECTOR_SOURCE_FAST_PRIORITY\020\003\022\037\n\033DETECTOR"
+  "_SOURCE_ML_PRIORITY\020\004\022\035\n\031DETECTOR_SOURCE"
+  "_CONSENSUS\020\005\022\036\n\032DETECTOR_SOURCE_DIVERGEN"
+  "CE\020\006b\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fduration_2eproto,
@@ -1930,9 +1967,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_network_5fsecurity_
 };
 static ::_pbi::once_flag descriptor_table_network_5fsecurity_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_network_5fsecurity_2eproto = {
-    false, false, 15683, descriptor_table_protodef_network_5fsecurity_2eproto,
+    false, false, 15892, descriptor_table_protodef_network_5fsecurity_2eproto,
     "network_security.proto",
-    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 36,
+    &descriptor_table_network_5fsecurity_2eproto_once, descriptor_table_network_5fsecurity_2eproto_deps, 2, 37,
     schemas, file_default_instances, TableStruct_network_5fsecurity_2eproto::offsets,
     file_level_metadata_network_5fsecurity_2eproto, file_level_enum_descriptors_network_5fsecurity_2eproto,
     file_level_service_descriptors_network_5fsecurity_2eproto,
@@ -4303,6 +4340,270 @@ void InternalFeatures::InternalSwap(InternalFeatures* other) {
 
 // ===================================================================
 
+class SMBScanFeatures::_Internal {
+ public:
+  using HasBits = decltype(std::declval<SMBScanFeatures>()._impl_._has_bits_);
+  static void set_has_rst_ratio(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
+  static void set_has_syn_ack_ratio(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
+  static void set_has_flow_duration_min_ms(HasBits* has_bits) {
+    (*has_bits)[0] |= 4u;
+  }
+};
+
+SMBScanFeatures::SMBScanFeatures(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protobuf.SMBScanFeatures)
+}
+SMBScanFeatures::SMBScanFeatures(const SMBScanFeatures& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  SMBScanFeatures* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.rst_ratio_){}
+    , decltype(_impl_.syn_ack_ratio_){}
+    , decltype(_impl_.flow_duration_min_ms_){}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.rst_ratio_, &from._impl_.rst_ratio_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.flow_duration_min_ms_) -
+    reinterpret_cast<char*>(&_impl_.rst_ratio_)) + sizeof(_impl_.flow_duration_min_ms_));
+  // @@protoc_insertion_point(copy_constructor:protobuf.SMBScanFeatures)
+}
+
+inline void SMBScanFeatures::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.rst_ratio_){0}
+    , decltype(_impl_.syn_ack_ratio_){0}
+    , decltype(_impl_.flow_duration_min_ms_){0}
+  };
+}
+
+SMBScanFeatures::~SMBScanFeatures() {
+  // @@protoc_insertion_point(destructor:protobuf.SMBScanFeatures)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void SMBScanFeatures::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void SMBScanFeatures::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void SMBScanFeatures::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.SMBScanFeatures)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000007u) {
+    ::memset(&_impl_.rst_ratio_, 0, static_cast<size_t>(
+        reinterpret_cast<char*>(&_impl_.flow_duration_min_ms_) -
+        reinterpret_cast<char*>(&_impl_.rst_ratio_)) + sizeof(_impl_.flow_duration_min_ms_));
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* SMBScanFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // optional float rst_ratio = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 13)) {
+          _Internal::set_has_rst_ratio(&has_bits);
+          _impl_.rst_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional float syn_ack_ratio = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 21)) {
+          _Internal::set_has_syn_ack_ratio(&has_bits);
+          _impl_.syn_ack_ratio_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional float flow_duration_min_ms = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 29)) {
+          _Internal::set_has_flow_duration_min_ms(&has_bits);
+          _impl_.flow_duration_min_ms_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr);
+          ptr += sizeof(float);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  _impl_._has_bits_.Or(has_bits);
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* SMBScanFeatures::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protobuf.SMBScanFeatures)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // optional float rst_ratio = 1;
+  if (_internal_has_rst_ratio()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(1, this->_internal_rst_ratio(), target);
+  }
+
+  // optional float syn_ack_ratio = 2;
+  if (_internal_has_syn_ack_ratio()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(2, this->_internal_syn_ack_ratio(), target);
+  }
+
+  // optional float flow_duration_min_ms = 3;
+  if (_internal_has_flow_duration_min_ms()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteFloatToArray(3, this->_internal_flow_duration_min_ms(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protobuf.SMBScanFeatures)
+  return target;
+}
+
+size_t SMBScanFeatures::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protobuf.SMBScanFeatures)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000007u) {
+    // optional float rst_ratio = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size += 1 + 4;
+    }
+
+    // optional float syn_ack_ratio = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size += 1 + 4;
+    }
+
+    // optional float flow_duration_min_ms = 3;
+    if (cached_has_bits & 0x00000004u) {
+      total_size += 1 + 4;
+    }
+
+  }
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData SMBScanFeatures::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    SMBScanFeatures::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SMBScanFeatures::GetClassData() const { return &_class_data_; }
+
+
+void SMBScanFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<SMBScanFeatures*>(&to_msg);
+  auto& from = static_cast<const SMBScanFeatures&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.SMBScanFeatures)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000007u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_impl_.rst_ratio_ = from._impl_.rst_ratio_;
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_impl_.syn_ack_ratio_ = from._impl_.syn_ack_ratio_;
+    }
+    if (cached_has_bits & 0x00000004u) {
+      _this->_impl_.flow_duration_min_ms_ = from._impl_.flow_duration_min_ms_;
+    }
+    _this->_impl_._has_bits_[0] |= cached_has_bits;
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SMBScanFeatures::CopyFrom(const SMBScanFeatures& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.SMBScanFeatures)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SMBScanFeatures::IsInitialized() const {
+  return true;
+}
+
+void SMBScanFeatures::InternalSwap(SMBScanFeatures* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(SMBScanFeatures, _impl_.flow_duration_min_ms_)
+      + sizeof(SMBScanFeatures::_impl_.flow_duration_min_ms_)
+      - PROTOBUF_FIELD_OFFSET(SMBScanFeatures, _impl_.rst_ratio_)>(
+          reinterpret_cast<char*>(&_impl_.rst_ratio_),
+          reinterpret_cast<char*>(&other->_impl_.rst_ratio_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata SMBScanFeatures::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
+      file_level_metadata_network_5fsecurity_2eproto[4]);
+}
+
+// ===================================================================
+
 NetworkFeatures_CustomFeaturesEntry_DoNotUse::NetworkFeatures_CustomFeaturesEntry_DoNotUse() {}
 NetworkFeatures_CustomFeaturesEntry_DoNotUse::NetworkFeatures_CustomFeaturesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
     : SuperType(arena) {}
@@ -4312,7 +4613,7 @@ void NetworkFeatures_CustomFeaturesEntry_DoNotUse::MergeFrom(const NetworkFeatur
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkFeatures_CustomFeaturesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[4]);
+      file_level_metadata_network_5fsecurity_2eproto[5]);
 }
 
 // ===================================================================
@@ -4326,7 +4627,7 @@ void NetworkFeatures_FeatureMetadataEntry_DoNotUse::MergeFrom(const NetworkFeatu
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkFeatures_FeatureMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[5]);
+      file_level_metadata_network_5fsecurity_2eproto[6]);
 }
 
 // ===================================================================
@@ -4340,6 +4641,7 @@ class NetworkFeatures::_Internal {
   static const ::protobuf::RansomwareEmbeddedFeatures& ransomware_embedded(const NetworkFeatures* msg);
   static const ::protobuf::TrafficFeatures& traffic_classification(const NetworkFeatures* msg);
   static const ::protobuf::InternalFeatures& internal_anomaly(const NetworkFeatures* msg);
+  static const ::protobuf::SMBScanFeatures& smb_scan(const NetworkFeatures* msg);
 };
 
 const ::PROTOBUF_NAMESPACE_ID::Timestamp&
@@ -4369,6 +4671,10 @@ NetworkFeatures::_Internal::traffic_classification(const NetworkFeatures* msg) {
 const ::protobuf::InternalFeatures&
 NetworkFeatures::_Internal::internal_anomaly(const NetworkFeatures* msg) {
   return *msg->_impl_.internal_anomaly_;
+}
+const ::protobuf::SMBScanFeatures&
+NetworkFeatures::_Internal::smb_scan(const NetworkFeatures* msg) {
+  return *msg->_impl_.smb_scan_;
 }
 void NetworkFeatures::clear_flow_start_time() {
   if (GetArenaForAllocation() == nullptr && _impl_.flow_start_time_ != nullptr) {
@@ -4412,6 +4718,7 @@ NetworkFeatures::NetworkFeatures(const NetworkFeatures& from)
     , decltype(_impl_.ransomware_embedded_){nullptr}
     , decltype(_impl_.traffic_classification_){nullptr}
     , decltype(_impl_.internal_anomaly_){nullptr}
+    , decltype(_impl_.smb_scan_){nullptr}
     , decltype(_impl_.source_port_){}
     , decltype(_impl_.destination_port_){}
     , decltype(_impl_.protocol_number_){}
@@ -4538,6 +4845,9 @@ NetworkFeatures::NetworkFeatures(const NetworkFeatures& from)
   if (from._internal_has_internal_anomaly()) {
     _this->_impl_.internal_anomaly_ = new ::protobuf::InternalFeatures(*from._impl_.internal_anomaly_);
   }
+  if (from._internal_has_smb_scan()) {
+    _this->_impl_.smb_scan_ = new ::protobuf::SMBScanFeatures(*from._impl_.smb_scan_);
+  }
   ::memcpy(&_impl_.source_port_, &from._impl_.source_port_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.idle_mean_) -
     reinterpret_cast<char*>(&_impl_.source_port_)) + sizeof(_impl_.idle_mean_));
@@ -4566,6 +4876,7 @@ inline void NetworkFeatures::SharedCtor(
     , decltype(_impl_.ransomware_embedded_){nullptr}
     , decltype(_impl_.traffic_classification_){nullptr}
     , decltype(_impl_.internal_anomaly_){nullptr}
+    , decltype(_impl_.smb_scan_){nullptr}
     , decltype(_impl_.source_port_){0u}
     , decltype(_impl_.destination_port_){0u}
     , decltype(_impl_.protocol_number_){0u}
@@ -4685,6 +4996,7 @@ inline void NetworkFeatures::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.ransomware_embedded_;
   if (this != internal_default_instance()) delete _impl_.traffic_classification_;
   if (this != internal_default_instance()) delete _impl_.internal_anomaly_;
+  if (this != internal_default_instance()) delete _impl_.smb_scan_;
 }
 
 void NetworkFeatures::ArenaDtor(void* object) {
@@ -4740,6 +5052,10 @@ void NetworkFeatures::Clear() {
     delete _impl_.internal_anomaly_;
   }
   _impl_.internal_anomaly_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.smb_scan_ != nullptr) {
+    delete _impl_.smb_scan_;
+  }
+  _impl_.smb_scan_ = nullptr;
   ::memset(&_impl_.source_port_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.idle_mean_) -
       reinterpret_cast<char*>(&_impl_.source_port_)) + sizeof(_impl_.idle_mean_));
@@ -5458,6 +5774,14 @@ const char* NetworkFeatures::_InternalParse(const char* ptr, ::_pbi::ParseContex
       case 115:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 154)) {
           ptr = ctx->ParseMessage(_internal_mutable_internal_anomaly(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protobuf.SMBScanFeatures smb_scan = 116;
+      case 116:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 162)) {
+          ptr = ctx->ParseMessage(_internal_mutable_smb_scan(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -6196,6 +6520,13 @@ uint8_t* NetworkFeatures::_InternalSerialize(
         _Internal::internal_anomaly(this).GetCachedSize(), target, stream);
   }
 
+  // .protobuf.SMBScanFeatures smb_scan = 116;
+  if (this->_internal_has_smb_scan()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(116, _Internal::smb_scan(this),
+        _Internal::smb_scan(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -6349,6 +6680,13 @@ size_t NetworkFeatures::ByteSizeLong() const {
     total_size += 2 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.internal_anomaly_);
+  }
+
+  // .protobuf.SMBScanFeatures smb_scan = 116;
+  if (this->_internal_has_smb_scan()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.smb_scan_);
   }
 
   // uint32 source_port = 3;
@@ -6939,6 +7277,10 @@ void NetworkFeatures::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
     _this->_internal_mutable_internal_anomaly()->::protobuf::InternalFeatures::MergeFrom(
         from._internal_internal_anomaly());
   }
+  if (from._internal_has_smb_scan()) {
+    _this->_internal_mutable_smb_scan()->::protobuf::SMBScanFeatures::MergeFrom(
+        from._internal_smb_scan());
+  }
   if (from._internal_source_port() != 0) {
     _this->_internal_set_source_port(from._internal_source_port());
   }
@@ -7327,7 +7669,7 @@ void NetworkFeatures::InternalSwap(NetworkFeatures* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkFeatures::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[6]);
+      file_level_metadata_network_5fsecurity_2eproto[7]);
 }
 
 // ===================================================================
@@ -8087,7 +8429,7 @@ void GeoLocationInfo::InternalSwap(GeoLocationInfo* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GeoLocationInfo::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[7]);
+      file_level_metadata_network_5fsecurity_2eproto[8]);
 }
 
 // ===================================================================
@@ -9540,7 +9882,7 @@ void GeoEnrichment::InternalSwap(GeoEnrichment* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GeoEnrichment::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[8]);
+      file_level_metadata_network_5fsecurity_2eproto[9]);
 }
 
 // ===================================================================
@@ -9895,7 +10237,7 @@ void TimeWindow::InternalSwap(TimeWindow* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata TimeWindow::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[9]);
+      file_level_metadata_network_5fsecurity_2eproto[10]);
 }
 
 // ===================================================================
@@ -9909,7 +10251,7 @@ void FlowAggregation_ProtocolDistributionEntry_DoNotUse::MergeFrom(const FlowAgg
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation_ProtocolDistributionEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[10]);
+      file_level_metadata_network_5fsecurity_2eproto[11]);
 }
 
 // ===================================================================
@@ -9923,7 +10265,7 @@ void FlowAggregation_PortDistributionEntry_DoNotUse::MergeFrom(const FlowAggrega
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation_PortDistributionEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[11]);
+      file_level_metadata_network_5fsecurity_2eproto[12]);
 }
 
 // ===================================================================
@@ -9937,7 +10279,7 @@ void FlowAggregation_CountryDistributionEntry_DoNotUse::MergeFrom(const FlowAggr
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation_CountryDistributionEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[12]);
+      file_level_metadata_network_5fsecurity_2eproto[13]);
 }
 
 // ===================================================================
@@ -10427,7 +10769,7 @@ void FlowAggregation::InternalSwap(FlowAggregation* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FlowAggregation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[13]);
+      file_level_metadata_network_5fsecurity_2eproto[14]);
 }
 
 // ===================================================================
@@ -10932,7 +11274,7 @@ void ModelPrediction::InternalSwap(ModelPrediction* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ModelPrediction::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[14]);
+      file_level_metadata_network_5fsecurity_2eproto[15]);
 }
 
 // ===================================================================
@@ -10946,7 +11288,7 @@ void TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse::MergeFrom(const Tr
 ::PROTOBUF_NAMESPACE_ID::Metadata TricapaMLAnalysis_FeatureImportanceScoresEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[15]);
+      file_level_metadata_network_5fsecurity_2eproto[16]);
 }
 
 // ===================================================================
@@ -11631,7 +11973,7 @@ void TricapaMLAnalysis::InternalSwap(TricapaMLAnalysis* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata TricapaMLAnalysis::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[16]);
+      file_level_metadata_network_5fsecurity_2eproto[17]);
 }
 
 // ===================================================================
@@ -11645,7 +11987,7 @@ void DistributedNode_NodeCapabilitiesEntry_DoNotUse::MergeFrom(const Distributed
 ::PROTOBUF_NAMESPACE_ID::Metadata DistributedNode_NodeCapabilitiesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[17]);
+      file_level_metadata_network_5fsecurity_2eproto[18]);
 }
 
 // ===================================================================
@@ -12713,7 +13055,7 @@ void DistributedNode::InternalSwap(DistributedNode* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DistributedNode::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[18]);
+      file_level_metadata_network_5fsecurity_2eproto[19]);
 }
 
 // ===================================================================
@@ -12727,7 +13069,7 @@ void PipelineTracking_ComponentMetadataEntry_DoNotUse::MergeFrom(const PipelineT
 ::PROTOBUF_NAMESPACE_ID::Metadata PipelineTracking_ComponentMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[19]);
+      file_level_metadata_network_5fsecurity_2eproto[20]);
 }
 
 // ===================================================================
@@ -13734,7 +14076,7 @@ void PipelineTracking::InternalSwap(PipelineTracking* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata PipelineTracking::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[20]);
+      file_level_metadata_network_5fsecurity_2eproto[21]);
 }
 
 // ===================================================================
@@ -14189,7 +14531,7 @@ void RAGAnalysis::InternalSwap(RAGAnalysis* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RAGAnalysis::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[21]);
+      file_level_metadata_network_5fsecurity_2eproto[22]);
 }
 
 // ===================================================================
@@ -14739,7 +15081,7 @@ void HumanFeedback::InternalSwap(HumanFeedback* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HumanFeedback::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[22]);
+      file_level_metadata_network_5fsecurity_2eproto[23]);
 }
 
 // ===================================================================
@@ -15151,7 +15493,7 @@ void HumanInTheLoopReview::InternalSwap(HumanInTheLoopReview* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HumanInTheLoopReview::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[23]);
+      file_level_metadata_network_5fsecurity_2eproto[24]);
 }
 
 // ===================================================================
@@ -15526,7 +15868,7 @@ void EngineVerdict::InternalSwap(EngineVerdict* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EngineVerdict::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[24]);
+      file_level_metadata_network_5fsecurity_2eproto[25]);
 }
 
 // ===================================================================
@@ -15935,7 +16277,7 @@ void DetectionProvenance::InternalSwap(DetectionProvenance* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DetectionProvenance::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[25]);
+      file_level_metadata_network_5fsecurity_2eproto[26]);
 }
 
 // ===================================================================
@@ -15949,7 +16291,7 @@ void NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::MergeFrom(const NetworkS
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkSecurityEvent_CustomMetadataEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[26]);
+      file_level_metadata_network_5fsecurity_2eproto[27]);
 }
 
 // ===================================================================
@@ -17336,7 +17678,7 @@ void NetworkSecurityEvent::InternalSwap(NetworkSecurityEvent* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NetworkSecurityEvent::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[27]);
+      file_level_metadata_network_5fsecurity_2eproto[28]);
 }
 
 // ===================================================================
@@ -17707,7 +18049,7 @@ void EventBatch::InternalSwap(EventBatch* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EventBatch::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[28]);
+      file_level_metadata_network_5fsecurity_2eproto[29]);
 }
 
 // ===================================================================
@@ -17721,7 +18063,7 @@ void SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse::MergeFrom(const Sy
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration_ThreatScoreThresholdsEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[29]);
+      file_level_metadata_network_5fsecurity_2eproto[30]);
 }
 
 // ===================================================================
@@ -17735,7 +18077,7 @@ void SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse::MergeFrom(const Syst
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration_NodeRoleAssignmentsEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[30]);
+      file_level_metadata_network_5fsecurity_2eproto[31]);
 }
 
 // ===================================================================
@@ -18380,7 +18722,7 @@ void SystemConfiguration::InternalSwap(SystemConfiguration* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemConfiguration::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[31]);
+      file_level_metadata_network_5fsecurity_2eproto[32]);
 }
 
 // ===================================================================
@@ -19143,7 +19485,7 @@ void RansomwareFeatures::InternalSwap(RansomwareFeatures* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RansomwareFeatures::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[32]);
+      file_level_metadata_network_5fsecurity_2eproto[33]);
 }
 
 // ===================================================================
@@ -19590,7 +19932,7 @@ void DecisionMetadata::InternalSwap(DecisionMetadata* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DecisionMetadata::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[33]);
+      file_level_metadata_network_5fsecurity_2eproto[34]);
 }
 
 // ===================================================================
@@ -20016,7 +20358,7 @@ void Detection::InternalSwap(Detection* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Detection::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[34]);
+      file_level_metadata_network_5fsecurity_2eproto[35]);
 }
 
 // ===================================================================
@@ -20280,7 +20622,7 @@ void DetectionBatch::InternalSwap(DetectionBatch* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DetectionBatch::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_network_5fsecurity_2eproto_getter, &descriptor_table_network_5fsecurity_2eproto_once,
-      file_level_metadata_network_5fsecurity_2eproto[35]);
+      file_level_metadata_network_5fsecurity_2eproto[36]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -20301,6 +20643,10 @@ Arena::CreateMaybeMessage< ::protobuf::TrafficFeatures >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::protobuf::InternalFeatures*
 Arena::CreateMaybeMessage< ::protobuf::InternalFeatures >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protobuf::InternalFeatures >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protobuf::SMBScanFeatures*
+Arena::CreateMaybeMessage< ::protobuf::SMBScanFeatures >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protobuf::SMBScanFeatures >(arena);
 }
 template<> PROTOBUF_NOINLINE ::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse*
 Arena::CreateMaybeMessage< ::protobuf::NetworkFeatures_CustomFeaturesEntry_DoNotUse >(Arena* arena) {
