@@ -715,7 +715,7 @@ float MLDefenderExtractor::calculate_iat_coefficient_of_variation(const std::vec
     // DAY 46 COMPLETION: Now extracts ALL 142 fields from FlowStatistics
     // ============================================================================
 
-    void MLDefenderExtractor::populate_ml_defender_features(
+void MLDefenderExtractor::populate_ml_defender_features(
         const FlowStatistics& flow,
         ::protobuf::NetworkSecurityEvent& proto_event) const {
 
@@ -929,6 +929,28 @@ float MLDefenderExtractor::calculate_iat_coefficient_of_variation(const std::vec
     net_features->set_backward_psh_flags(flow.bwd_psh_flags);
     net_features->set_forward_urg_flags(flow.fwd_urg_flags);
     net_features->set_backward_urg_flags(flow.bwd_urg_flags);
+
+    // 🔍 SMB SCAN FEATURES (SYN-1, SYN-2 — DAY 92)
+    // rst_ratio = RST/SYN — WannaCry > 0.70 (escaneo masivo con RST inmediato)
+    // syn_ack_ratio = ACK/SYN — WannaCry < 0.10 (sin handshake completo)
+    // Sentinel: MISSING_FEATURE_SENTINEL = -9999.0f cuando syn_flag_count == 0
+    {
+        constexpr float MISSING_FEATURE_SENTINEL = -9999.0f;
+        auto* smb = net_features->mutable_smb_scan();
+
+        const float syn_count = static_cast<float>(flow.syn_count);
+        const float rst_count = static_cast<float>(flow.rst_count);
+        const float ack_count = static_cast<float>(flow.ack_count);
+
+        if (syn_count > 0.0f) {
+            smb->set_rst_ratio(rst_count / syn_count);
+            smb->set_syn_ack_ratio(ack_count / syn_count);
+        } else {
+            smb->set_rst_ratio(MISSING_FEATURE_SENTINEL);
+            smb->set_syn_ack_ratio(MISSING_FEATURE_SENTINEL);
+        }
+        // flow_duration_min_ms — SYN-8b, P2 (DAY 97+)
+    }
 
     // 📋 HEADERS
     if (!flow.fwd_header_lengths.empty()) {

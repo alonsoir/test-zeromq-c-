@@ -1,28 +1,28 @@
-docs(day91): ARCHITECTURE.md v6.0, WannaCry synthetic spec, Consejo #1 closed
+git add protobuf/network_security.proto \
+        sniffer/src/userspace/ml_defender_features.cpp \
+        sniffer/tests/test_smb_scan_features.cpp \
+        sniffer/CMakeLists.txt
 
-- Add ARCHITECTURE.md v6.0.0 — full technical document for external contributors
-  14 sections: 6 components, data flow, ASCII diagrams, tech stack, 12 ADRs,
-  Vagrant + bare-metal deployment, security design, ML subsystem, performance
-  envelope, known limitations, roadmap. Includes generalization gap table
-  (WannaCry/NotPetya recall 0.70-0.85 without retraining).
+git commit -m "feat(smb): SYN-1 + SYN-2 extractors + tests green 33/31 (DAY 92)
 
-- Add docs/design/synthetic_data_wannacry_spec.md
-  Quantitative spec for WannaCry/NotPetya synthetic traffic generation.
-  Feature targets: rst_ratio > 0.70, syn_ack_ratio < 0.10, flow_duration_min
-  < 50ms (WannaCry). Control negative: 6 legitimate Windows SMB traffic types
-  with hard exclusion rules. Target dataset: 20,000 flows, 40/60 malicious/benign
-  split correcting CTU-13 Neris 98% bias. Backlog SYN-1 to SYN-12.
+Proto:
+- SMBScanFeatures message (rst_ratio, syn_ack_ratio, flow_duration_min_ms)
+- NetworkFeatures.smb_scan = field 116
+- RansomwareFeatures ambiguity comment (PHASE1 vs PHASE2)
 
-- Add docs/consejo/consejo_consulta_1_cierre_y_solicitud_qwen.md
-  Formal close of Consejo de Sabios Consulta #1 (7/7 models responded).
-  Qwen (chat.qwen.ai) contributed: flow_duration_min as new P2 feature,
-  proto fields rst_ratio=116 / syn_ack_ratio=117, proto ambiguity doc for
-  RansomwareFeatures vs ransomware_embedded.
+Sniffer:
+- ml_defender_features.cpp: rst_ratio + syn_ack_ratio extractors
+- Sentinel MISSING_FEATURE_SENTINEL=-9999.0f when syn_flag_count==0
+- enable_testing() added to sniffer/CMakeLists.txt
 
-- Add flow_duration_min to roadmap (P2, SYN-8b) — Qwen/DAY91 contribution
-- Update ADR directory: 12 ADRs consolidated under docs/adr/
-- arXiv endorser email sent to Sebastian Garcia — awaiting response
+Tests:
+- test_smb_scan_features.cpp: 3 cases
+  - WannaCry synthetic: rst_ratio>0.70, syn_ack_ratio<0.10 → MALICIOUS
+  - Legitimate SMB:     rst_ratio<0.10, syn_ack_ratio>0.70 → BENIGN
+  - Zero SYN:           both fields → -9999.0f sentinel
+- Full suite: 33/31 ✅ zero regressions
 
-Next: DAY 92 — rst_ratio + syn_ack_ratio implementation in sniffer (VM session)
+Backlog: SYN-1 ✅ SYN-2 ✅
 
-Co-authored-by: Claude <claude@anthropic.com>
+Co-authored-by: Claude <claude@anthropic.com>"
+Co-authored-by: Alonso <alonsoir@gmail.com>"

@@ -530,6 +530,8 @@ message(STATUS "")
 # ============================================================================
 # UNIT TESTS
 # ============================================================================
+enable_testing()
+
 
 add_executable(test_payload_analyzer
         tests/test_payload_analyzer.cpp
@@ -636,6 +638,27 @@ target_link_libraries(test_proto3_embedded_serialization
         gtest_main
 )
 message(STATUS "🧪 Unit Test: test_proto3_embedded_serialization configured (DAY 75 regression)")
+
+# ============================================================================
+# SMB SCAN FEATURES TEST — DAY 92 (SYN-1, SYN-2)
+# Validates: rst_ratio + syn_ack_ratio extractor + sentinel for zero SYN
+# ============================================================================
+add_executable(test_smb_scan_features
+        tests/test_smb_scan_features.cpp
+        ${PROTO_SOURCES}
+)
+target_include_directories(test_smb_scan_features PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_smb_scan_features
+        Threads::Threads
+        ${Protobuf_LIBRARIES}
+        gtest
+        gtest_main
+)
+add_test(NAME test_smb_scan_features COMMAND test_smb_scan_features)
+message(STATUS "🧪 Unit Test: test_smb_scan_features configured (DAY 92 - SYN-1, SYN-2)")
 
 # ============================================================================
 # SHARDED FLOW MANAGER MULTITHREAD TEST - Day 46 (Concurrency validation)
