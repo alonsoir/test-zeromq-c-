@@ -87,13 +87,15 @@ A partir de DAY 92: implementar, no diseñar.
 ---
 
 ## Objetivo principal DAY 92 — rama nueva + proto + sniffer
-
 ### Paso 0 — Rama nueva
+### Paso 1 Generacion documentación de los contratos json, el contrato protobuf, los comandos permitidos del rag-security
+### Cerrar rama de documentacion.
+### Abrir rama para las features smb
 ```bash
 git checkout -b feature/smb-detection-features
 ```
 
-### Paso 1 — Proto (sin VM, en Mac)
+### Paso 2 — Proto (sin VM, en Mac)
 
 Verificar si `rst_ratio` y `syn_ack_ratio` ya tienen estructura propia en
 `network_security.proto`. Si no la tienen, crearla:
@@ -117,7 +119,7 @@ Añadir también el comentario de ambigüedad RansomwareFeatures:
 // Ambos coexisten para migración gradual sin breaking changes.
 ```
 
-### Paso 2 — Extractores en sniffer (VM)
+### Paso 3 — Extractores en sniffer (VM)
 
 ```cpp
 float rst_ratio = (syn_flag_count > 0)
@@ -195,9 +197,9 @@ DAY 97+   — refactor etcd-server/etcd-client + datos sintéticos WannaCry
 Raíz:          /Users/aironman/CLionProjects/test-zeromq-docker
 VM:            vagrant ssh defender
 Logs:          /vagrant/logs/lab/
-F1 log:        docs/experiments/f1_replay_log.csv
-Paper:         docs/Ml defender paper draft v4.md
-Proto:         src/proto/network_security.proto (o path equivalente)
+F1 log:        /vagrant/docs/experiments/f1_replay_log.csv
+Paper:         /vagrant/docs/Ml defender paper draft v4.md
+Proto:         /vagrant/protobuf/network_security.proto (o path equivalente)
 macOS CRÍTICO: NUNCA usar sed -i sin -e '' — usar Python3 o editar en VM
 ```
 
