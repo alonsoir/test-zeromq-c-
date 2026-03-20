@@ -7,33 +7,30 @@
 
 **Pipeline:** 6/6 RUNNING (etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall)
 **Test suite:** 33/31 ✅ (crypto 3/3, etcd-hmac 12/12, ml-detector 9/9, rag-ingester 7/7, sniffer 1/1 NEW)
-**Rama activa:** `feature/smb-detection-features`
-**Último tag:** DAY 92
+**Rama activa:** `feature/plugin-loader-adr012`
+**Último tag:** DAY92
 
 ---
 
 ## Lo que se hizo en DAY 92
 
-### Flujo A — Documentación (mañana)
+### Flujo A — Documentación
 
 **Rama `feature/documentation-contracts`** — mergeada a main.
 
 Tres documentos vivos en `docs/contracts/`:
-- `protobuf-contract.md` — `network_security.proto` documentado completo (13 secciones, todas las tablas de campos, dual-score, ADR-002, ambigüedad RansomwareFeatures, spec SMB pendiente)
-- `json-contracts.md` — contratos JSON de los 5 componentes con thresholds, sockets ZMQ, paths de logs y diagrama ASCII del pipeline
-- `rag-security-commands.md` — whitelist completo de comandos, patrones regex, claves restringidas, referencia de cada comando con ejemplos JSON
+- `protobuf-contract.md` — `network_security.proto` documentado completo
+- `json-contracts.md` — contratos JSON de los 5 componentes
+- `rag-security-commands.md` — whitelist completo de comandos rag-security
 
 ### Flujo B — SMB Detection Features
 
-**Rama `feature/smb-detection-features`** — activa.
+**Rama `feature/smb-detection-features`** — mergeada a main.
 
 **Proto (`protobuf/network_security.proto`):**
-- Nuevo mensaje `SMBScanFeatures` (líneas 87-97):
-  - `rst_ratio` (campo 1) — SYN-1, P1
-  - `syn_ack_ratio` (campo 2) — SYN-2, P1
-  - `flow_duration_min_ms` (campo 3) — SYN-8b, P2
+- Nuevo mensaje `SMBScanFeatures` (líneas 87-97)
 - `NetworkFeatures.smb_scan = field 116`
-- Comentario de ambigüedad `RansomwareFeatures` vs `RansomwareEmbeddedFeatures` (línea 663)
+- Comentario ambigüedad `RansomwareFeatures` vs `RansomwareEmbeddedFeatures` (línea 663)
 
 **Extractor (`sniffer/src/userspace/ml_defender_features.cpp`, líneas 939-950):**
 ```cpp
@@ -48,14 +45,104 @@ if (syn_count > 0.0f) {
 }
 ```
 
-**Tests (`sniffer/tests/test_smb_scan_features.cpp`):**
-- Test 1: WannaCry sintético — `rst_ratio > 0.70`, `syn_ack_ratio < 0.10` → MALICIOUS ✅
-- Test 2: SMB legítimo — `rst_ratio < 0.10`, `syn_ack_ratio > 0.70` → BENIGN ✅
-- Test 3: `syn_flag_count == 0` → sentinel `-9999.0f` en ambos campos ✅
+**Tests (`sniffer/tests/test_smb_scan_features.cpp`):** 3/3 ✅
 
-**`sniffer/CMakeLists.txt`:** `enable_testing()` añadido + `test_smb_scan_features` registrado.
+---
 
-**Suite completa:** 33/31 ✅ — zero regresiones.
+## Decisiones del Consejo de Sabios — Acta DAY 92
+
+### Convergencia unánime (5/5 modelos)
+
+**ADR-012 constraints acordados por el Consejo:**
+
+1. **`dlopen`/`dlsym` lazy loading** (Grok, Gemini, Qwen, DeepSeek, ChatGPT5) — no eager loading. En hardware restringido (N100, RPi) la diferencia entre 80MB y 200MB de RAM es crítica.
+
+2. **Plugins limitados a extracción de features — nunca a decisión de bloqueo** (Qwen, Gemini) — un crash en un plugin no puede derribar la cadena de decisión. Separación estricta de responsabilidades.
+
+3. **Interfaz plugin: struct con punteros a funciones** (Qwen) — `init`, `extract_feature`, `destroy`. Sin vtables, sin herencia, sin excepciones cruzando el boundary del plugin. Máxima portabilidad y estabilidad.
+
+4. **`MISSING_FEATURE_SENTINEL` compartido desde cabecera común** (Gemini) — no puede ser que cada plugin lo redefina. Propuesta: `libs/common/sentinel.hpp`.
+
+5. **Sin dependencias crypto en el loader base** — solo carga + resolución de símbolos. Crypto llega en DAY 95-96 con `libs/seed-client`.
+
+### DEBT-SMB-001 — Caso frontera syn_flag_count bajo (DeepSeek)
+
+Con `syn_flag_count = 1`, el ratio colapsa a 0.0 o 1.0 — valores extremos estadísticamente no fiables. El sentinel actual solo cubre `syn_count == 0`, no cubre bajo volumen.
+
+**Mitigación pendiente (DAY 97+ tras datos sintéticos):**
+```cpp
+constexpr uint32_t MIN_SYN_THRESHOLD = 5;  // valor empírico pendiente de validar
+if (syn_count >= MIN_SYN_THRESHOLD) {
+    smb->set_rst_ratio(rst_count / syn_count);
+    smb->set_syn_ack_ratio(ack_count / syn_count);
+} else {
+    smb->set_rst_ratio(MISSING_FEATURE_SENTINEL);
+    smb->set_syn_ack_ratio(MISSING_FEATURE_SENTINEL);
+}
+```
+El valor correcto de `MIN_SYN_THRESHOLD` se determina empíricamente con SYN-3 (dataset sintético).
+
+### Sugerencias para el paper (Gemini, DeepSeek)
+
+- §4: "Ratios de Fracaso" como descripción intuitiva de `rst_ratio`/`syn_ack_ratio` — WannaCry no falla en conectar, *fracasa en completar*.
+- §8: Decision stump sobre `rst_ratio` + `syn_ack_ratio` solos como ablation study baseline (Grok).
+- §10 limitaciones: `flow_duration_min_ms` < 50ms es dato empírico — añadir solo tras validación real con SYN-3, no antes.
+- Tabla coherencia ética (Qwen): mapeo valor→manifestación técnica, útil para §1 introducción.
+
+### README — badge sugerido (Grok)
+
+```markdown
+📜 Living contracts: [Protobuf schema](docs/contracts/protobuf-contract.md) · [Pipeline configs](docs/contracts/json-contracts.md) · [RAG API](docs/contracts/rag-security-commands.md)
+```
+Añadir en DAY 93 — 3 líneas, alto impacto para colaboradores externos.
+
+---
+
+## Objetivo principal DAY 93 — ADR-012 plugin-loader minimalista
+
+### Contexto
+
+Plugin-loader minimalista **sin seed-client todavía** — documentado explícitamente como "sin autenticación hasta seed-client (DAY 95-96)".
+
+### Spec mínima acordada por el Consejo
+
+```
+Interface:
+  struct PluginInterface {
+      int  (*init)(const char* config_path);
+      int  (*extract_feature)(const FlowFeatures* in, float* out, int out_size);
+      void (*destroy)(void);
+  };
+
+Loader:
+  - dlopen() lazy (RTLD_LAZY)
+  - dlsym() para resolver init/extract_feature/destroy
+  - Sin crypto, sin seed — solo carga + resolución de símbolos
+  - MISSING_FEATURE_SENTINEL desde libs/common/sentinel.hpp (compartido)
+
+Restricciones PHASE 1:
+  - Plugins: solo feature extraction
+  - Decisión de bloqueo: NUNCA en un plugin
+  - Crash isolation: PHASE 2 (proceso separado + watchdog)
+```
+
+### Punto de partida
+
+```bash
+# Verificar si ADR-012 ya existe como fichero
+ls /Users/aironman/CLionProjects/test-zeromq-docker/docs/adr/
+cat docs/adr/ADR-012-*.md 2>/dev/null || echo "ADR-012 pendiente de redactar"
+```
+
+### Secuencia acordada
+
+```
+DAY 93-94 — ADR-012 plugin-loader + libs/common/sentinel.hpp
+            README badge + docs/contracts actualización menor
+DAY 95-96 — scripts/provision.sh bash + libs/seed-client
+DAY 97+   — refactor etcd-server + datos sintéticos WannaCry (SYN-3)
+            DEBT-SMB-001: MIN_SYN_THRESHOLD empírico
+```
 
 ---
 
@@ -66,6 +153,7 @@ if (syn_count > 0.0f) {
 | **SYN-1** | `rst_ratio` extractor en sniffer | ✅ DONE — DAY 92 |
 | **SYN-2** | `syn_ack_ratio` extractor en sniffer | ✅ DONE — DAY 92 |
 | **ADR-012** | plugin-loader minimalista (sin seed-client) | **P1 — DAY 93-94** |
+| **DEBT-SMB-001** | `MIN_SYN_THRESHOLD` empírico para rst/syn_ack ratios | DAY 97+ tras SYN-3 |
 | provision.sh | Script bash generación keypairs + seeds | DAY 95-96 |
 | seed-client | Mini-componente libs/seed-client | DAY 95-96 |
 | etcd refactor | Eliminar responsabilidades criptográficas | DAY 97+ |
@@ -78,50 +166,21 @@ if (syn_count > 0.0f) {
 | SYN-8b | `flow_duration_min` extractor | P2 |
 | SYN-9 | `port_diversity_ratio` extractor | P2 |
 | SYN-10 | FEAT-WINDOW-2 (60s secundaria) | P2 |
+| SYN-11 | `flow_duration_std_ms` para NotPetya (Grok) | P2 |
 | DEBT-FD-001 | Fast Detector Path A — leer sniffer.json | PHASE2 |
 | ADR-007 | AND-consensus firewall — implementación | PHASE2 |
 
 ---
 
-## Objetivo principal DAY 93 — ADR-012 plugin-loader minimalista
-
-### Contexto ADR-012
-
-Plugin-loader minimalista **sin seed-client todavía** — documentado explícitamente como "sin autenticación hasta seed-client (DAY 95-96)".
-
-El objetivo es un mecanismo de carga dinámica de componentes/plugins ligero, que no introduzca complejidad criptográfica antes de que `libs/seed-client` esté listo.
-
-### Punto de partida
-
-Antes de implementar, revisar el ADR-012 existente:
-```bash
-cat docs/adr/ADR-012-*.md
-```
-
-Si no existe aún como fichero:
-```bash
-ls docs/adr/
-```
-
-### Secuencia acordada
-
-```
-DAY 93-94 — plugin-loader minimalista (ADR-012, SIN seed-client todavía)
-            documentado explícitamente como "sin autenticación hasta seed-client"
-DAY 95-96 — scripts/provision.sh bash + libs/seed-client
-DAY 97+   — refactor etcd-server/etcd-client + datos sintéticos WannaCry
-```
-
----
-
 ## arXiv — Estado
 
-- Paper draft v4 listo: `docs/argus_ndr_v5.pdf`
+- Paper draft v4 listo: `docs/Ml defender paper draft v4.md`
 - Email enviado a Sebastian Garcia — **recibido, esperando respuesta**
 - Deadline: DAY 96 — si no responde, email a Yisroel Mirsky (Tier 2)
-- Limitaciones a añadir en §10 (pendiente desde Consejo #1):
+- Limitaciones a añadir en §10 (pendiente):
   - Killswitch DNS no detectable en capa 3/4
-  - Generalización SMB: Recall estimado 0.70–0.85 sin reentrenamiento (WannaCry 0.80–0.90, NotPetya 0.60–0.75)
+  - Generalización SMB: Recall estimado 0.70–0.85 sin reentrenamiento
+  - `flow_duration_min_ms` < 50ms — añadir solo tras validación con SYN-3
 
 ---
 
@@ -142,3 +201,4 @@ macOS CRÍTICO: NUNCA usar sed -i sin -e '' — usar Python3 o editar en VM
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic)*
 *DAY 92 — 20 marzo 2026*
 *Consejo de Sabios — ML Defender (aRGus EDR)*
+*Acta Consejo #2 incorporada: Grok · Gemini · Qwen · DeepSeek · ChatGPT5*
