@@ -13,7 +13,7 @@
 ---
 
 ## Lo que se hizo en DAY 92
-
+Hace escasos minutos, hemos creado ADR-15 y ADR-16, pero vamos a trabajar hoy en feature/plugin-loader-adr012
 ### Flujo A — Documentación
 
 **Rama `feature/documentation-contracts`** — mergeada a main.
