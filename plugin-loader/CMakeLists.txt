@@ -78,7 +78,7 @@ install(FILES ${PUBLIC_HEADERS}
 # ============================================================================
 # TESTS (optional)
 # ============================================================================
-option(BUILD_TESTS "Build tests" ON)
+option(BUILD_TESTS "Build tests" OFF)  # tests/ se añade en DAY 94
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)

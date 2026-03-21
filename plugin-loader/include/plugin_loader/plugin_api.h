@@ -1,4 +1,6 @@
 #pragma once
+#include <stdint.h>  /* uint8_t, uint16_t, uint32_t */
+#include <stddef.h>  /* size_t */
 // ============================================================================
 // plugin_api.h — ML Defender Plugin Contract (C ABI)
 // ============================================================================
