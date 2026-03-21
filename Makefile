@@ -28,6 +28,8 @@
 .PHONY: rag-ingester rag-ingester-build rag-ingester-clean
 .PHONY: tools-build tools-clean tools-synthetic-gen
 .PHONY: crypto-transport-build crypto-transport-clean crypto-transport-test
+.PHONY: plugin-loader-build plugin-loader-clean plugin-loader-test
+.PHONY: plugin-hello-build plugin-hello-clean
 .PHONY: etcd-server etcd-server-build etcd-server-clean etcd-server-start etcd-server-stop
 .PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
@@ -112,6 +114,7 @@ TOOLS_BUILD_DIR         := /vagrant/tools/build-$(PROFILE)
 # Libraries (always release, no sanitizers)
 CRYPTO_TRANSPORT_BUILD_DIR := /vagrant/crypto-transport/build
 ETCD_CLIENT_BUILD_DIR      := /vagrant/etcd-client/build
+PLUGIN_LOADER_BUILD_DIR    := /vagrant/plugin-loader/build
 
 # Legacy compatibility (for existing scripts that reference /vagrant/component/build)
 SNIFFER_LEGACY_LINK       := /vagrant/sniffer/build
@@ -149,6 +152,7 @@ help:
 	@echo "  make proto           - Regenerate protobuf"
 	@echo "  make crypto-transport-build - Build crypto-transport library"
 	@echo "  make etcd-client-build     - Build etcd-client library"
+	@echo "  make plugin-loader-build   - Build plugin-loader library (ADR-012)"
 	@echo "  make sniffer         - Build sniffer"
 	@echo "  make ml-detector     - Build ML detector"
 	@echo "  make rag-ingester    - Build RAG ingester"
@@ -279,6 +283,65 @@ crypto-transport-clean:
 crypto-transport-test:
 	@echo "🧪 Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+plugin-loader-build:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔌 Building plugin-loader Library (PHASE 1)              ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "  Phase: 1 — no crypto, no seed-client (ADR-012)"
+	@echo "  Auth:  PHASE 2 (ADR-013, seed-client DAY 95-96)"
+	@echo ""
+	@vagrant ssh -c 'cd /vagrant/plugin-loader && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake -DCMAKE_BUILD_TYPE=Release .. && \
+		make -j4'
+	@echo "Installing system-wide..."
+	@vagrant ssh -c "cd /vagrant/plugin-loader/build && sudo make install && sudo ldconfig"
+	@echo ""
+	@echo "✅ plugin-loader installed to /usr/local/lib"
+	@vagrant ssh -c "ls -lh /usr/local/lib/libplugin_loader.so* 2>/dev/null || echo '⚠️  Library not found in /usr/local/lib'"
+
+plugin-loader-clean:
+	@echo "🧹 Cleaning plugin-loader..."
+	@vagrant ssh -c "rm -rf /vagrant/plugin-loader/build"
+	@vagrant ssh -c "sudo rm -f /usr/local/lib/libplugin_loader.so*"
+	@vagrant ssh -c "sudo rm -rf /usr/local/include/plugin_loader"
+	@vagrant ssh -c "sudo ldconfig"
+	@echo "✅ plugin-loader cleaned"
+
+plugin-loader-test:
+	@echo "🧪 Testing plugin-loader..."
+	@vagrant ssh -c "cd /vagrant/plugin-loader/build && ctest --output-on-failure"
+
+plugin-hello-build: plugin-loader-build
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔌 Building Hello World Plugin (ADR-012 validation)      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@vagrant ssh -c 'cd /vagrant/plugins/hello && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake -DCMAKE_BUILD_TYPE=Release .. && \
+		make -j4'
+	@echo "Deploying to plugin directory..."
+	@vagrant ssh -c "sudo mkdir -p /usr/lib/ml-defender/plugins"
+	@vagrant ssh -c "sudo cp /vagrant/plugins/hello/build/libplugin_hello.so /usr/lib/ml-defender/plugins/"
+	@echo ""
+	@echo "✅ libplugin_hello.so deployed to /usr/lib/ml-defender/plugins/"
+	@vagrant ssh -c "ls -lh /usr/lib/ml-defender/plugins/"
+
+plugin-hello-clean:
+	@echo "🧹 Cleaning hello plugin..."
+	@vagrant ssh -c "rm -rf /vagrant/plugins/hello/build"
+	@vagrant ssh -c "sudo rm -f /usr/lib/ml-defender/plugins/libplugin_hello.so"
+	@echo "✅ hello plugin cleaned"
+
+
 
 etcd-client-build: proto-unified crypto-transport-build
 	@echo ""
@@ -603,6 +666,7 @@ clean-libs:
 	@echo ""
 	@$(MAKE) crypto-transport-clean
 	@$(MAKE) etcd-client-clean
+	@$(MAKE) plugin-loader-clean
 	@echo ""
 	@echo "✅ Libraries cleaned"
 
@@ -662,6 +726,8 @@ test-libs:
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest" || echo "⚠️  crypto-transport has known LZ4 issues"
 	@echo "Testing etcd-client (HMAC only)..."
 	@vagrant ssh -c "cd /vagrant/etcd-client/build/tests && ./test_hmac_client"
+	@echo "Testing plugin-loader..."
+	@$(MAKE) plugin-loader-test
 
 test-components:
 	@echo ""
@@ -768,7 +834,7 @@ verify-all:
 # Unified Build Targets
 # ============================================================================
 
-build-unified: proto-unified crypto-transport-build etcd-client-build sniffer ml-detector rag-ingester firewall tools
+build-unified: proto-unified crypto-transport-build etcd-client-build plugin-loader-build sniffer ml-detector rag-ingester firewall tools
 	@echo ""
 	@echo "✅ Unified build complete [$(PROFILE)]"
 	@$(MAKE) proto-verify
@@ -783,6 +849,7 @@ all: build-unified etcd-server
 	@echo "  ✅ Protobuf unified"
 	@echo "  ✅ crypto-transport library"
 	@echo "  ✅ etcd-client library"
+	@echo "  ✅ plugin-loader library (PHASE 1)"
 	@echo "  ✅ Sniffer"
 	@echo "  ✅ ML Detector"
 	@echo "  ✅ RAG Ingester"
