@@ -52,6 +52,48 @@
 
 ---
 
+
+### Day 93 (21 Mar 2026) — ADR-012 PHASE 1: plugin-loader + ABI validation
+
+**plugin-loader PHASE 1 implementado y validado:**
+- `common/include/sentinel.hpp`: `MISSING_FEATURE_SENTINEL = -9999.0f` centralizado (ADR-012 §4)
+- `plugin-loader/include/plugin_loader/plugin_api.h`: contrato C puro, ABI estable, `PLUGIN_API_VERSION=1`
+- `plugin-loader/include/plugin_loader/plugin_loader.hpp`: interfaz C++ con `PluginLoader` + `PluginStats`
+- `plugin-loader/src/plugin_loader.cpp`: `dlopen`/`dlsym` lazy loading, sin crypto, sin seed-client
+- `plugin-loader/CMakeLists.txt`: patrón idéntico a `crypto-transport`
+- `plugins/hello/hello_plugin.cpp`: hello world plugin — validación contrato end-to-end
+- `Makefile`: targets `plugin-loader-build/clean/test` + `plugin-hello-build/clean`
+
+**Restricciones PHASE 1 respetadas:**
+- Plugins: SOLO feature extraction — decisión de bloqueo NUNCA en plugin ✅
+- Sin crypto, sin seed-client (PHASE 2, ADR-013, DAY 95-96) ✅
+- `MISSING_FEATURE_SENTINEL` desde cabecera común, no redefinido por plugin ✅
+
+**ABI validation via Python3/ctypes:**
+```
+plugin_name()        = hello
+plugin_version()     = 0.1.0
+plugin_api_version() = 1
+PLUGIN_API_VERSION   = 1
+ABI version match    : True ✅
+```
+
+**Artefactos desplegados en VM:**
+- `libplugin_loader.so.1.0.0` → `/usr/local/lib/` (53K) ✅
+- `libplugin_hello.so` → `/usr/lib/ml-defender/plugins/` (16K) ✅
+
+**Criterios ADR-012 hello world:**
+- [x] `dlopen`/`dlsym` funcionan correctamente
+- [x] `plugin_api_version()` retorna `PLUGIN_API_VERSION=1`
+- [x] `plugin_name()` / `plugin_version()` resueltos
+- [ ] `plugin_init()` recibe config JSON — test integración DAY 94
+- [ ] `plugin_process_packet()` en cada paquete — test integración DAY 94
+- [ ] `plugin_shutdown()` limpio — test integración DAY 94
+- [ ] Si se elimina el `.so`, host no aborta — validación manual DAY 94
+- [ ] Budget overrun → warning en log — validación manual DAY 94
+
+**README badge living contracts añadido (sugerencia Grok, acta DAY 92)** ✅
+
 ### Day 82 (11 Mar 2026) — Balanced dataset validation + DEBT-FD-001
 
 **Validación smallFlows.pcap (tráfico benigno Windows):**
@@ -494,6 +536,7 @@ pipeline_health.sh:                   ██████████████
 Paper arXiv (draft v5):               ████████████████████ 100% ✅  ← DAY 88
 LaTeX main.tex:                       ████████████████████ 100% ✅  ← DAY 89
 Email endorser Sebastian Garcia:      ████████████████████ 100% ✅  ← DAY 89
+plugin-loader ADR-012 PHASE 1:        ████████████████░░░░  80% 🟡  integración sniffer DAY 94
 trace_id correlación:                 ████████████████░░░░  80% 🟡  2 fallos DAY 72
 Test Suite:                           ████████████████░░░░  80% 🟡  2 fallos trace_id
 Ring Consumer Real Features:          ████████████░░░░░░░░  60% 🟡  28/40 reales
@@ -541,6 +584,6 @@ ENT-MODEL-2 (flota distribuida):      ░░░░░░░░░░░░░░
 
 ---
 
-*Última actualización: Day 89 — 17 Mar 2026*
-*Branch: main — tag v0.83.0-day83-main*
+*Última actualización: Day 93 — 21 Mar 2026*
+*Branch: feature/plugin-loader-adr012 — DAY 93*
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai*

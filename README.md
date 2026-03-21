@@ -7,6 +7,9 @@
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
 [![Tests: 70/70](https://img.shields.io/badge/Tests-70%2F70_passing-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
+[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--012_PHASE1-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+
+📜 Living contracts: [Protobuf schema](docs/contracts/protobuf-contract.md) · [Pipeline configs](docs/contracts/json-contracts.md) · [RAG API](docs/contracts/rag-security-commands.md)
 
 https://alonsoir-argus.mintlify.app/introduction
 
@@ -48,7 +51,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 - Single botnet scenario evaluated (CTU-13 Neris, 2011). Generalizability to modern ransomware families not empirically established.
 - All throughput figures are conservative lower bounds — VirtualBox NIC emulation ceiling ~33–38 Mbps. Bare-metal characterization is P1 future work.
-- 11/40 ML features use `MISSING_FEATURE_SENTINEL = -9999.0f` (Phase 2 pending).
+- 11/40 ML features use `MISSING_FEATURE_SENTINEL = -9999.0f` (centralizado en `common/include/sentinel.hpp`, Phase 2 pending).
 - Fast Detector Path A (DEBT-FD-001) retains compile-time thresholds — JSON migration scheduled for PHASE 2.
 - Single-node deployment; etcd HA not yet implemented.
 - ChaCha20 seed via etcd not recommended for production — peer-to-peer negotiation under design.
@@ -71,6 +74,7 @@ ML Defender implements **Network Detection and Response (NDR)** capabilities: re
 │  │                  │  ShardedFlowManager (16 shards)           │
 │  │                  │  Fast Detector (rule-based heuristics)    │
 │  │                  │  28/40 features extracted                 │
+│  │                  │  plugin-loader (ADR-012, PHASE 1)         │
 │  │                  │  ChaCha20-Poly1305 + LZ4 transport        │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
@@ -395,6 +399,8 @@ All code, all analysis scripts, all experiments, and all failures are documented
 - ✅ DAY 87: Stress test completed — 2.37M packets, 0 drops, 0 errors, RAM stable
 - ✅ DAY 88: Paper draft v5 — Consejo de Sabios feedback integrated, arXiv ready
 - ✅ DAY 88: Rename aRGus EDR → **aRGus NDR** — accurate scope
+- ✅ DAY 92: SMB detection features — `rst_ratio`, `syn_ack_ratio` extractors + living contracts docs
+- ✅ DAY 93: ADR-012 PHASE 1 — `plugin-loader` + `plugins/hello` + ABI validation via dlopen/dlsym
 
 ---
 
