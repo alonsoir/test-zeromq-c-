@@ -16,90 +16,52 @@
 
 ### tools/provision.sh — COMPLETADO ✅
 
-Script bash de provisioning criptográfico en `tools/` (no `scripts/`).
-Cuatro modos: `full` | `status` | `verify` | `reprovision <component>`.
+6/6 componentes con keypairs Ed25519 + seeds ChaCha20 (32B).
+Paths AppArmor-compatible: `/etc/ml-defender/{component}/`.
+Makefile: `provision`, `provision-status`, `provision-check`, `provision-reprovision`.
+Vagrantfile: bloque `cryptographic-provisioning` con `run: "once"`.
+`pipeline-start` depende de `provision-check` — fail-closed security.
 
-**Resultado verificado en VM:**
-```
-etcd-server        ✅ OK  ✅ OK  ✅ OK  5d45cfbbd7a4bf14...  2026-03-23
-sniffer            ✅ OK  ✅ OK  ✅ OK  86df1c883bf196df...  2026-03-23
-ml-detector        ✅ OK  ✅ OK  ✅ OK  74d6e63b64d81573...  2026-03-23
-firewall-acl-agent ✅ OK  ✅ OK  ✅ OK  42b91b813356c318...  2026-03-23
-rag-ingester       ✅ OK  ✅ OK  ✅ OK  5d77798b80410a9b...  2026-03-23
-rag-security       ✅ OK  ✅ OK  ✅ OK  c3359aac0b900ac9...  2026-03-23
-```
+### JSONs (6/6) — bloque `identity` añadido ✅
 
-**Paths AppArmor-compatible (ADR-019):**
-```
-/etc/ml-defender/{component}/private.pem   chmod 600, root:root
-/etc/ml-defender/{component}/public.pem    chmod 644, root:root
-/etc/ml-defender/{component}/seed.bin      chmod 600, root:root  ← PHASE 1
-/etc/ml-defender/{component}/seed.hex      chmod 600 (debug)
-/etc/ml-defender/{component}/fingerprint.txt
-/etc/ml-defender/{component}/provision_meta.json
-/etc/ml-defender/plugins/                  ← listo, vacío (PHASE 2)
-/etc/ml-defender/ebpf-plugins/             ← listo, vacío (ADR-018)
-```
+Todos los componentes declaran `identity.keys_dir`, `public_key`, `private_key`, `seed_bin`.
+`rag-config.json`: AES-256-CBC eliminado (letra muerta), unificado a ChaCha20-Poly1305.
 
-### JSONs de componentes — bloque `identity` añadido (6/6)
+### Acta Consejo DAY 95 (6/7 — Parallel.ai pendiente) ✅
 
-Todos los JSONs tienen ahora:
-```json
-"identity": {
-  "component_id": "<nombre>",
-  "keys_dir":    "/etc/ml-defender/<nombre>",
-  "public_key":  "/etc/ml-defender/<nombre>/public.pem",
-  "private_key": "/etc/ml-defender/<nombre>/private.pem",
-  "seed_bin":    "/etc/ml-defender/<nombre>/seed.bin"
-}
+Unanimidad en validación. Puntos críticos incorporados al backlog:
+- `DEBT-CRYPTO-001`: nonce management con seeds persistentes
+- `DEBT-CRYPTO-002`: HKDF para derivar session keys
+- `DEBT-CRYPTO-003`: check entropy en provision.sh
+
+---
+
+## ⚠️ INSIGHT CRÍTICO DEL CONSEJO — leer antes de escribir código
+
+**Afecta directamente al diseño de seed-client.**
+
+ChatGPT + Grok (unanimidad): el seed de 32B es **material base**, no clave directa.
+
+```
+INCORRECTO:  seed.bin → chacha20_encrypt(data, key=seed)
+CORRECTO:    seed.bin → HKDF(seed, context) → session_key → chacha20_encrypt(data, session_key)
 ```
 
-### rag-config.json — corrección arquitectural ✅
+Sin HKDF: no hay forward secrecy, compromiso de seed = descifrado histórico completo.
 
-- `"encryption": "AES-256-CBC"` eliminado (era letra muerta)
-- Unificado a `chacha20-poly1305` con `enabled: false`
-- `_architecture_note` documenta el flujo real:
-  - rag-security NO recibe tráfico ZMQ cifrado
-  - Lee FAISS/SQLite poblados por rag-ingester
-  - Los CSVs llegan con HMAC pero SIN cifrado
-- Logging unificado a `/vagrant/logs/lab/rag-security.log`
-
-### Makefile — 4 targets nuevos ✅
-
-```makefile
-make provision              # full provisioning
-make provision-status       # tabla visual (con sudo)
-make provision-check        # verificación CI (falla si faltan claves)
-make provision-reprovision COMPONENT=sniffer
+**Arquitectura de responsabilidades resultante:**
+```
+SeedClient        → lee seed.bin del disco, lo expone como array<uint8_t,32>
+                    NO cifra, NO descifra, NO hace HKDF
+                    Entrega: "esto es material criptográfico, úsalo con cuidado"
+CryptoTransport   → recibe seed de SeedClient
+                    aplica HKDF(seed, context="ml-defender:{component}:v1")
+                    gestiona nonces
+                    cifra/descifra con la session_key derivada
 ```
 
-**pipeline-start ahora depende de provision-check:**
-```makefile
-pipeline-start: provision-check etcd-server-start
-```
-El pipeline nunca arranca sin claves válidas.
-
-### Vagrantfile — bloque cryptographic-provisioning ✅
-
-```ruby
-defender.vm.provision "shell",
-  name: "cryptographic-provisioning",
-  run: "once",          # persiste entre reinicios
-  inline: <<-CRYPTO_PROVISION
-    bash /vagrant/tools/provision.sh full
-  CRYPTO_PROVISION
-```
-
-También añadido a sudoers:
-```
-vagrant ALL=(ALL) NOPASSWD: /vagrant/tools/provision.sh
-```
-
-Y aliases en .bashrc:
-```bash
-alias provision-status='sudo bash /vagrant/tools/provision.sh status'
-alias provision-verify='sudo bash /vagrant/tools/provision.sh verify'
-```
+`SeedClient` sigue siendo igual de simple. El contrato debe quedar documentado
+en el `.hpp`: "seed() devuelve material base para HKDF, no una clave de uso directo."
 
 ---
 
@@ -107,65 +69,92 @@ alias provision-verify='sudo bash /vagrant/tools/provision.sh verify'
 
 ### Tarea A — libs/seed-client (P1)
 
-Mini-librería C++20 al estilo `crypto-transport`. Lee y expone el seed
-para que los componentes del pipeline puedan usarlo con `crypto-transport`.
-
-**Interfaz mínima:**
 ```cpp
 // libs/seed-client/include/seed_client/seed_client.hpp
+
+/**
+ * SeedClient — Lector de material criptográfico base.
+ *
+ * Lee el seed.bin generado por tools/provision.sh y lo expone
+ * para que CryptoTransport aplique HKDF antes de cualquier uso.
+ *
+ * CONTRATO:
+ *   - seed() devuelve material base (32B). NO es una clave simétrica.
+ *   - El llamador (CryptoTransport) es responsable de HKDF + nonce mgmt.
+ *   - SeedClient no hace red, no genera seeds, no cifra, no distribuye.
+ *
+ * ADR refs: ADR-013 (PHASE 1), DEBT-CRYPTO-001, DEBT-CRYPTO-002
+ */
 class SeedClient {
 public:
-    explicit SeedClient(const std::string& config_json_path);
-    void load();                                     // lee seed.bin del path del JSON
-    const std::array<uint8_t, 32>& seed() const;    // seed listo para crypto-transport
+    explicit SeedClient(const std::string& component_json_path);
+    void load();
+    const std::array<uint8_t, 32>& seed() const;
     bool is_loaded() const;
     const std::string& component_id() const;
-    // PHASE 2: seed_rotated() para rotación futura
+    const std::string& keys_dir() const;
 private:
+    std::string component_json_path_;
     std::string keys_dir_;
     std::string component_id_;
-    std::array<uint8_t, 32> seed_;
+    std::array<uint8_t, 32> seed_{};
     bool loaded_ = false;
 };
 ```
 
-**SeedClient NO hace:**
-- Comunicación de red
-- Generación de seeds
-- Distribución de claves
-- Cifrado/descifrado (eso es crypto-transport)
-
-**SeedClient SÍ hace:**
-- Leer `identity.keys_dir` del JSON del componente
-- Abrir `{keys_dir}/seed.bin`
-- Verificar que son exactamente 32 bytes
-- Exponer el seed como `std::array<uint8_t, 32>`
-- Fallar explícitamente si el fichero no existe o es inválido
+**Lógica interna de `load()`:**
+1. Parsear JSON del componente → leer `identity.component_id` y `identity.keys_dir`
+2. Construir path: `{keys_dir}/seed.bin`
+3. Abrir fichero en modo binario
+4. Leer exactamente 32 bytes — `std::runtime_error` si != 32
+5. Copiar a `seed_` — limpiar buffer temporal con `explicit_bzero` o `memset`+barrera
+6. Verificar que el fichero existe y tiene permisos 600 (advertencia si no)
+7. `loaded_ = true`
 
 **Estructura de ficheros:**
 ```
 libs/seed-client/
-  CMakeLists.txt
+  CMakeLists.txt          ← patrón idéntico a crypto-transport
   include/seed_client/
     seed_client.hpp
   src/
     seed_client.cpp
   tests/
-    test_seed_client.cpp    ← CTest
+    test_seed_client.cpp  ← CTest: load OK, file_not_found, wrong_size, component_id
 ```
 
-**Integración con Makefile:**
+**Dependencias:** nlohmann_json únicamente. Más primitivo que crypto-transport.
+
+**Makefile (añadir):**
 ```makefile
 seed-client-build:
-    @vagrant ssh -c 'cd /vagrant/seed-client && ...'
+    @vagrant ssh -c 'cd /vagrant/seed-client && rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4'
+    @vagrant ssh -c 'cd /vagrant/seed-client/build && sudo make install && sudo ldconfig'
+
 seed-client-clean:
+    @vagrant ssh -c 'rm -rf /vagrant/seed-client/build'
+    @vagrant ssh -c 'sudo rm -f /usr/local/lib/libseed_client.so*'
+
 seed-client-test:
+    @vagrant ssh -c 'cd /vagrant/seed-client/build && ctest --output-on-failure'
 ```
 
-**Dependencias:** solo OpenSSL (para verificación futura) y nlohmann_json.
-NO depende de crypto-transport ni etcd-client — es más primitivo que ambos.
+### Tarea B — DEBT-CRYPTO-003 (P2 — si queda tiempo)
 
-### Tarea B — ADR-012 PHASE 1b (P1 — si queda tiempo)
+Añadir check de entropy en `tools/provision.sh` antes de `openssl genpkey`:
+
+```bash
+# En provision.sh, función check_dependencies() o nueva check_entropy():
+avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo "999")
+if [ "$avail" -lt 256 ]; then
+    log_warn "Entropy baja: ${avail} bits — instalando haveged"
+    apt-get install -y haveged >/dev/null 2>&1
+    systemctl start haveged 2>/dev/null || true
+    sleep 1
+fi
+```
+
+### Tarea C — ADR-012 PHASE 1b (P1 — si queda tiempo)
 
 - Integrar plugin-loader en sniffer
 - Test suite plugin-loader con CTest
@@ -179,15 +168,18 @@ cd /Users/aironman/CLionProjects/test-zeromq-docker
 git status
 git log --oneline -5
 
-# Verificar que las claves siguen en la VM
+# Verificar estado de claves
 make provision-status
 
-# Verificar pipeline
-make pipeline-status
+# Ver si ya existe libs/seed-client
+ls libs/ 2>/dev/null || echo "libs/ no existe — crear"
 
-# Ver estructura de libs/ para situar seed-client
-ls libs/ 2>/dev/null || echo "libs/ aún no existe — crear"
-ls crypto-transport/   # referencia de estructura
+# Referencia de estructura
+ls crypto-transport/include/crypto_transport/
+ls crypto-transport/CMakeLists.txt | head -30
+
+# arXiv — verificar si llegó respuesta de Sebastian Garcia
+# Si no: preparar email Yisroel Mirsky (Tier 2)
 ```
 
 ---
@@ -200,10 +192,14 @@ ls crypto-transport/   # referencia de estructura
 | **identity blocks** | Bloque identity en 6 JSONs | ✅ DONE — DAY 95 |
 | **rag-config.json** | AES→ChaCha20, flujo documentado | ✅ DONE — DAY 95 |
 | **Vagrantfile** | cryptographic-provisioning block | ✅ DONE — DAY 95 |
-| **seed-client** | Mini-componente libs/seed-client | **P1 — DAY 96** |
-| **ADR-012 PHASE 1b** | Integración sniffer + test suite | **P1 — DAY 96** |
-| **SYN-1/2** | rst_ratio + syn_ack_ratio | ✅ DONE — DAY 92 |
-| **DEBT-SMB-001** | MIN_SYN_THRESHOLD empírico | DAY 97+ |
+| **seed-client** | libs/seed-client — material base para HKDF | **P1 — DAY 96** |
+| **DEBT-CRYPTO-001** | Nonce management con seeds persistentes | **P1 — DAY 96 (diseño)** |
+| **DEBT-CRYPTO-002** | HKDF en crypto-transport | **P1 — DAY 96 (diseño)** |
+| **DEBT-CRYPTO-003** | Check entropy en provision.sh | P2 — DAY 96 |
+| **ADR-012 PHASE 1b** | Integración sniffer + test suite | P1 — DAY 96 |
+| **FEAT-CRYPTO-1** | Rotación de claves sin downtime | DAY 97+ |
+| **FEAT-CRYPTO-2** | Handshake efímero (Noise simplificado) | PHASE 2 |
+| **FEAT-CRYPTO-3** | TPM 2.0 / HSM enterprise | ENT-8 |
 | **SYN-3..7** | Sintético + reentrenamiento + F1 | DAY 97+ |
 | **DEBT-FD-001** | Fast Detector Path A → JSON | PHASE 2 |
 | **ADR-007** | AND-consensus firewall | PHASE 2 |
@@ -212,9 +208,9 @@ ls crypto-transport/   # referencia de estructura
 
 ## arXiv — Estado
 
-- Paper draft v4: `docs/Ml defender paper draft v5.md`
+- Paper draft v5: `docs/Ml defender paper draft v5.md`
 - Email enviado a Sebastian Garcia — **esperando respuesta**
-- Deadline: DAY 96 — si no responde, email a Yisroel Mirsky (Tier 2)
+- **Deadline DAY 96:** si no responde → email Yisroel Mirsky (Tier 2)
 
 ---
 
@@ -235,3 +231,5 @@ zsh CRÍTICO:   NUNCA pegar Python inline con paréntesis — usar heredoc 'PYEO
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
 *DAY 95 — 23 marzo 2026*
 *Consejo de Sabios — ML Defender (aRGus NDR)*
+*Acta Consejo #3: ChatGPT5 · DeepSeek · Gemini · Grok · Qwen (unanimidad 5/5)*
+*Insight crítico DAY 95: seed → HKDF → session_key. Nunca directo.*

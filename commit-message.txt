@@ -1,12 +1,12 @@
-feat: Vagrantfile cryptographic-provisioning + prompt DAY 96 (DAY 95 cierre)
+docs: BACKLOG + prompt DAY96 + Vagrantfile crypto provisioning (DAY 95 cierre)
 
+- BACKLOG.md: DAY 95 completado, 3 nuevas DEBT-CRYPTO, FEAT-CRYPTO 1-3
+  incorporando feedback Consejo (ChatGPT5/Grok/Gemini/Qwen/DeepSeek)
+- Decisiones consolidadas: ChaCha20 unificado, seed=material base,
+  fail-closed security, provision en tools/
+- Nota del Consejo DAY 95: 'seed → HKDF → session_key. Nunca directo.'
+- Prompt DAY 96: insight HKDF prominente, arquitectura de responsabilidades
+  SeedClient/CryptoTransport documentada antes de escribir código
 - Vagrantfile: bloque cryptographic-provisioning run:once
-  llama a tools/provision.sh full en vagrant up desde cero
-- sudoers: /vagrant/tools/provision.sh sin password para vagrant
-- .bashrc: aliases provision-status y provision-verify
-- docs: prompt de continuidad DAY 96 con estado completo
-
-Tarea A DAY 95 cerrada al 100%.
-Siguiente: libs/seed-client (DAY 96)
 
 Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)
