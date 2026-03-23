@@ -40,6 +40,7 @@
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
 .PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
+.PHONY: provision provision-status provision-check provision-reprovision
 
 # ============================================================================
 # ML Defender Pipeline - Master Makefile
@@ -555,7 +556,7 @@ logs-lab-clean:
 pipeline-health:
 	@bash scripts/pipeline_health.sh
 
-pipeline-start: etcd-server-start
+pipeline-start: provision-check etcd-server-start
 	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."
 	@sleep 4
 	@$(MAKE) rag-start
@@ -568,7 +569,7 @@ pipeline-start: etcd-server-start
 	@$(MAKE) sniffer-start
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  ✅ FULL PIPELINE STARTED (Day 74)                        ║"
+	@echo "║  ✅ FULL PIPELINE STARTED (DAY 95 — con provisioning)     ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@$(MAKE) pipeline-status
 
@@ -1255,3 +1256,40 @@ test-hardening-run:
 	@vagrant ssh -c "cd $(SNIFFER_BUILD_DIR) && ./test_sharded_flow_multithread"
 
 test-hardening: test-hardening-build test-hardening-run
+
+# =============================================================================
+# CRYPTOGRAPHIC PROVISIONING (ADR-013, ADR-019)
+# tools/provision.sh — single source of truth para keypairs + seeds
+# Compatible AppArmor desde el primer día (paths fijos /etc/ml-defender/)
+# =============================================================================
+
+provision:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔐 ML Defender — Cryptographic Provisioning (PHASE 1)    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh full"
+	@echo ""
+	@echo "✅ Provisioning completo"
+
+provision-status:
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh status"
+
+provision-check:
+	@echo "🔍 Verificando claves criptográficas..."
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh verify" || \
+		(echo "" && \
+		 echo "❌ Claves ausentes o inválidas." && \
+		 echo "   Ejecuta: make provision" && \
+		 exit 1)
+	@echo "✅ Claves verificadas"
+
+provision-reprovision:
+	@test -n "$(COMPONENT)" || \
+		(echo "❌ Uso: make provision-reprovision COMPONENT=sniffer" && \
+		 echo "   Componentes: etcd-server sniffer ml-detector firewall-acl-agent rag-ingester rag-security" && \
+		 exit 1)
+	@echo "⚠️  Re-provisionando $(COMPONENT)..."
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh reprovision $(COMPONENT)"
+	@echo "✅ Re-provisioning de $(COMPONENT) completo"

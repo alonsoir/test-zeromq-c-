@@ -1,5 +1,5 @@
-# ML Defender — Prompt de Continuidad DAY 95
-## 23 marzo 2026
+# ML Defender — Prompt de Continuidad DAY 96
+## 24 marzo 2026
 
 ---
 
@@ -12,188 +12,207 @@
 
 ---
 
-## Lo que se hizo en DAY 94
+## Lo que se hizo en DAY 95
 
-### Sesión de diseño — ADR-017 al Consejo de Sabios
+### tools/provision.sh — COMPLETADO ✅
 
-**Consulta enviada al Consejo:** `docs/consejo/CONSEJO_ADR017_CONSULTA.md`
-**Respuestas recibidas:** ChatGPT5, DeepSeek, Gemini, Grok, Qwen (5/7 — Parallel.ai pendiente)
-**Resultado:** Unanimidad total en las 5 preguntas.
+Script bash de provisioning criptográfico en `tools/` (no `scripts/`).
+Cuatro modos: `full` | `status` | `verify` | `reprovision <component>`.
 
-### ADR-017 — Plugin Interface Hierarchy (ACEPTADO)
-
-Decisiones del Consejo (6/6 unánimes):
-
-| Pregunta | Decisión |
-|---|---|
-| P1 — Contextos | Opción A — tipado fuerte por familia |
-| P2 — Función entrada | Separación semántica por familia + `plugin_subtype()` |
-| P3 — Plugins futuros | Opción C — solo primero-partido PHASE 2, terceros PHASE 3 |
-| P4 — Skills rag-security | NO unificar — mecanismo separado |
-| P5 — eBPF plugins | ADR-018 separado |
-
-**Enriquecimientos aprobados:**
-- `plugin_subtype()` añadido al contrato base (ChatGPT5)
-- `NetworkTuple` struct base compartida entre contextos (DeepSeek)
-- `EbpfUprobePlugin` como excepción documentada, no subfamilia formal
-- Familias futuras documentadas: PostProcessorPlugin, FlowPlugin, UprobePlugin
-
-**Jerarquía validada:**
+**Resultado verificado en VM:**
 ```
-PluginBase (identidad + ciclo de vida)
-├── SnifferPlugin       → plugin_process_packet(SnifferContext*)
-│   └── PacketPlugin    → DPI: ja4, dns_dga, http_inspect [PHASE 2]
-├── MlDetectorPlugin
-│   ├── InferencePlugin → plugin_predict(MlDetectorContext*)
-│   └── EnrichmentPlugin→ plugin_enrich(MlDetectorContext*)
-├── RagIngesterPlugin   → plugin_process_event(RagIngesterContext*) [PHASE 3]
-└── [EbpfKernelPlugin]  → ADR-018
+etcd-server        ✅ OK  ✅ OK  ✅ OK  5d45cfbbd7a4bf14...  2026-03-23
+sniffer            ✅ OK  ✅ OK  ✅ OK  86df1c883bf196df...  2026-03-23
+ml-detector        ✅ OK  ✅ OK  ✅ OK  74d6e63b64d81573...  2026-03-23
+firewall-acl-agent ✅ OK  ✅ OK  ✅ OK  42b91b813356c318...  2026-03-23
+rag-ingester       ✅ OK  ✅ OK  ✅ OK  5d77798b80410a9b...  2026-03-23
+rag-security       ✅ OK  ✅ OK  ✅ OK  c3359aac0b900ac9...  2026-03-23
 ```
 
-### ADR-018 — eBPF Kernel Plugin Loader (PROPUESTO)
+**Paths AppArmor-compatible (ADR-019):**
+```
+/etc/ml-defender/{component}/private.pem   chmod 600, root:root
+/etc/ml-defender/{component}/public.pem    chmod 644, root:root
+/etc/ml-defender/{component}/seed.bin      chmod 600, root:root  ← PHASE 1
+/etc/ml-defender/{component}/seed.hex      chmod 600 (debug)
+/etc/ml-defender/{component}/fingerprint.txt
+/etc/ml-defender/{component}/provision_meta.json
+/etc/ml-defender/plugins/                  ← listo, vacío (PHASE 2)
+/etc/ml-defender/ebpf-plugins/             ← listo, vacío (ADR-018)
+```
 
-Mismo modelo mental que ADR-017 pero para stack eBPF:
-- `libbpf` en lugar de `dlopen`
-- JSON por programa eBPF (`kt_bpf_prog_load_v1.json`)
-- HMAC en dos capas: build-time (ADR-015) + provision-time (ADR-018)
-- Naming: `kt_{funcion}_{version}.bpf.o`
-- `EbpfPluginLoader` análogo al `PluginLoader` de ADR-012
+### JSONs de componentes — bloque `identity` añadido (6/6)
 
-### ADR-019 — OS Hardening y Secure Deployment (PROPUESTO)
+Todos los JSONs tienen ahora:
+```json
+"identity": {
+  "component_id": "<nombre>",
+  "keys_dir":    "/etc/ml-defender/<nombre>",
+  "public_key":  "/etc/ml-defender/<nombre>/public.pem",
+  "private_key": "/etc/ml-defender/<nombre>/private.pem",
+  "seed_bin":    "/etc/ml-defender/<nombre>/seed.bin"
+}
+```
 
-Seis capas de hardening para producción:
-1. LUKS2 — cifrado de disco en reposo
-2. SO mínimo — Debian 12 / Ubuntu 24.04 LTS, solo dependencias necesarias
-3. ufw — todos los puertos cerrados excepto SSH; ZMQ solo en loopback
-4. AppArmor — perfil por componente Y por plugin (blast radius mínimo)
-5. kernel sysctl — no forwarding, no core dumps, kptr_restrict=2
-6. SSH hardening — solo claves, no passwords, solo usuario de gestión
+### rag-config.json — corrección arquitectural ✅
 
-**Nota crítica para DAY 95:** `provision.sh` debe diseñarse compatible con
-AppArmor desde el principio. Los paths de claves (`/etc/ml-defender/`) deben
-ser los paths que los perfiles AppArmor permitirán. Si no, habrá que reescribir.
+- `"encryption": "AES-256-CBC"` eliminado (era letra muerta)
+- Unificado a `chacha20-poly1305` con `enabled: false`
+- `_architecture_note` documenta el flujo real:
+  - rag-security NO recibe tráfico ZMQ cifrado
+  - Lee FAISS/SQLite poblados por rag-ingester
+  - Los CSVs llegan con HMAC pero SIN cifrado
+- Logging unificado a `/vagrant/logs/lab/rag-security.log`
 
-### ADR-003 — ML Autonomous Evolution (ACTUALIZADO)
+### Makefile — 4 targets nuevos ✅
 
-Cambio principal: los nuevos modelos RF reentrenados son plugins
-`InferencePlugin` (`libmodel_*.so`), no ficheros `.hpp` compilados en el core.
-El core legacy permanece **FROZEN** — Strangler Fig Pattern.
-Los validadores verify_A..F son herramientas CI, no plugins de producción.
+```makefile
+make provision              # full provisioning
+make provision-status       # tabla visual (con sudo)
+make provision-check        # verificación CI (falla si faltan claves)
+make provision-reprovision COMPONENT=sniffer
+```
 
-### Principios añadidos por Alonso (incorporados en ADR-017)
+**pipeline-start ahora depende de provision-check:**
+```makefile
+pipeline-start: provision-check etcd-server-start
+```
+El pipeline nunca arranca sin claves válidas.
 
-- **JSON is the law — también para plugins:** cada plugin tiene su propio JSON
-  de contrato. Fallo explícito si falta cualquier clave. Sin defaults silenciosos.
-- **La clave HMAC nunca en el JSON:** derivada del intercambio de keypairs en
-  provisioning — nunca en texto claro en ficheros de configuración.
-- **Keypairs para plugins:** mismo modelo que componentes. `provision.sh` genera
-  keypairs solo para plugins declarados en el JSON del componente.
-- **Versionado es identidad criptográfica:** v1 y v2 tienen keypairs distintos.
-  Actualizar un plugin requiere re-provisioning explícito.
+### Vagrantfile — bloque cryptographic-provisioning ✅
+
+```ruby
+defender.vm.provision "shell",
+  name: "cryptographic-provisioning",
+  run: "once",          # persiste entre reinicios
+  inline: <<-CRYPTO_PROVISION
+    bash /vagrant/tools/provision.sh full
+  CRYPTO_PROVISION
+```
+
+También añadido a sudoers:
+```
+vagrant ALL=(ALL) NOPASSWD: /vagrant/tools/provision.sh
+```
+
+Y aliases en .bashrc:
+```bash
+alias provision-status='sudo bash /vagrant/tools/provision.sh status'
+alias provision-verify='sudo bash /vagrant/tools/provision.sh verify'
+```
 
 ---
 
-## Objetivo principal DAY 95 — scripts/provision.sh + libs/seed-client
+## Objetivo principal DAY 96 — libs/seed-client
 
-### Tarea A — scripts/provision.sh
+### Tarea A — libs/seed-client (P1)
 
-El script bash que genera y distribuye keypairs y seeds. Compatible con
-AppArmor desde el primer día (ADR-019).
+Mini-librería C++20 al estilo `crypto-transport`. Lee y expone el seed
+para que los componentes del pipeline puedan usarlo con `crypto-transport`.
 
-**Responsabilidades:**
-```bash
-# Para cada componente del pipeline (6 componentes):
-1. Generar keypair Ed25519 (privada + pública)
-2. Generar seed ChaCha20 (32 bytes aleatorios)
-3. Cifrar seed con clave pública del receptor
-4. Escribir en /etc/ml-defender/{componente}/ con chmod 0600
-
-# Para cada plugin declarado en los JSONs de componentes:
-5. Generar keypair Ed25519 por plugin
-6. Cifrar seed con clave pública del plugin
-7. Intercambiar claves públicas componente↔plugin
-8. Solo si el plugin está en plugins.enabled del componente
-
-# Para cada plugin eBPF declarado en kernel_telemetry.json:
-9. Generar keypair Ed25519 por programa eBPF
-10. Firmar HMAC del .bpf.o con clave del componente
-```
-
-**Paths de claves (fijos, AppArmor-compatible):**
-```
-/etc/ml-defender/{componente}/         → claves de componentes
-/etc/ml-defender/plugins/              → claves de plugins userspace
-/etc/ml-defender/ebpf-plugins/         → claves de plugins eBPF
-```
-
-### Tarea B — libs/seed-client
-
-Mini-componente al estilo `crypto-transport`:
-
+**Interfaz mínima:**
 ```cpp
-// seed_client.hpp — interfaz mínima
+// libs/seed-client/include/seed_client/seed_client.hpp
 class SeedClient {
 public:
     explicit SeedClient(const std::string& config_json_path);
-    void load();                                    // lee y descifra seed.enc
-    const std::array<uint8_t, 32>& seed() const;   // seed listo para crypto-transport
-    bool seed_rotated() const;                      // para rotación futura
+    void load();                                     // lee seed.bin del path del JSON
+    const std::array<uint8_t, 32>& seed() const;    // seed listo para crypto-transport
+    bool is_loaded() const;
+    const std::string& component_id() const;
+    // PHASE 2: seed_rotated() para rotación futura
 private:
-    std::string seed_path_;
-    std::string private_key_path_;
+    std::string keys_dir_;
+    std::string component_id_;
     std::array<uint8_t, 32> seed_;
     bool loaded_ = false;
 };
 ```
 
-**seed-client NO hace:** comunicación de red, generación de seeds, distribución.
+**SeedClient NO hace:**
+- Comunicación de red
+- Generación de seeds
+- Distribución de claves
+- Cifrado/descifrado (eso es crypto-transport)
 
-### Tarea C (si queda tiempo DAY 95)
+**SeedClient SÍ hace:**
+- Leer `identity.keys_dir` del JSON del componente
+- Abrir `{keys_dir}/seed.bin`
+- Verificar que son exactamente 32 bytes
+- Exponer el seed como `std::array<uint8_t, 32>`
+- Fallar explícitamente si el fichero no existe o es inválido
 
-- Integrar plugin-loader en sniffer (Tarea A pendiente de DAY 94)
-- Test suite plugin-loader (Tarea B pendiente de DAY 94)
+**Estructura de ficheros:**
+```
+libs/seed-client/
+  CMakeLists.txt
+  include/seed_client/
+    seed_client.hpp
+  src/
+    seed_client.cpp
+  tests/
+    test_seed_client.cpp    ← CTest
+```
+
+**Integración con Makefile:**
+```makefile
+seed-client-build:
+    @vagrant ssh -c 'cd /vagrant/seed-client && ...'
+seed-client-clean:
+seed-client-test:
+```
+
+**Dependencias:** solo OpenSSL (para verificación futura) y nlohmann_json.
+NO depende de crypto-transport ni etcd-client — es más primitivo que ambos.
+
+### Tarea B — ADR-012 PHASE 1b (P1 — si queda tiempo)
+
+- Integrar plugin-loader en sniffer
+- Test suite plugin-loader con CTest
 
 ---
 
-## Secuencia de diagnóstico al arrancar DAY 95
+## Secuencia de diagnóstico al arrancar DAY 96
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
 git status
 git log --oneline -5
 
-# Verificar que los ADR nuevos están commiteados
-ls docs/adr/ADR-01*.md
+# Verificar que las claves siguen en la VM
+make provision-status
 
-# Verificar artefactos en VM
-vagrant ssh defender -c "ls -lh /usr/local/lib/libplugin_loader.so* \
-    /usr/lib/ml-defender/plugins/"
+# Verificar pipeline
+make pipeline-status
+
+# Ver estructura de libs/ para situar seed-client
+ls libs/ 2>/dev/null || echo "libs/ aún no existe — crear"
+ls crypto-transport/   # referencia de estructura
 ```
 
 ---
 
-## Backlog activo — estado actualizado DAY 94
+## Backlog activo — estado actualizado DAY 95
 
 | ID | Descripción | Estado |
 |---|---|---|
-| **ADR-017** | Plugin Interface Hierarchy | ✅ DONE — DAY 94 |
-| **ADR-018** | eBPF Kernel Plugin Loader | ✅ PROPUESTO — DAY 94 |
-| **ADR-019** | OS Hardening y Secure Deployment | ✅ PROPUESTO — DAY 94 |
-| **ADR-003** | ML Autonomous Evolution (actualizado) | ✅ DONE — DAY 94 |
-| **ADR-012 PHASE 1b** | Integración sniffer + test suite | **P1 — DAY 95** |
-| **provision.sh** | Script bash keypairs + seeds | **P1 — DAY 95-96** |
-| **seed-client** | Mini-componente libs/seed-client | **P1 — DAY 95-96** |
+| **provision.sh** | Script bash keypairs + seeds | ✅ DONE — DAY 95 |
+| **identity blocks** | Bloque identity en 6 JSONs | ✅ DONE — DAY 95 |
+| **rag-config.json** | AES→ChaCha20, flujo documentado | ✅ DONE — DAY 95 |
+| **Vagrantfile** | cryptographic-provisioning block | ✅ DONE — DAY 95 |
+| **seed-client** | Mini-componente libs/seed-client | **P1 — DAY 96** |
+| **ADR-012 PHASE 1b** | Integración sniffer + test suite | **P1 — DAY 96** |
 | **SYN-1/2** | rst_ratio + syn_ack_ratio | ✅ DONE — DAY 92 |
 | **DEBT-SMB-001** | MIN_SYN_THRESHOLD empírico | DAY 97+ |
 | **SYN-3..7** | Sintético + reentrenamiento + F1 | DAY 97+ |
-| **DEBT-FD-001** | Fast Detector Path A → JSON | PHASE2 |
-| **ADR-007** | AND-consensus firewall | PHASE2 |
+| **DEBT-FD-001** | Fast Detector Path A → JSON | PHASE 2 |
+| **ADR-007** | AND-consensus firewall | PHASE 2 |
 
 ---
 
 ## arXiv — Estado
 
-- Paper draft v4: `docs/Ml defender paper draft v4.md`
+- Paper draft v4: `docs/Ml defender paper draft v5.md`
 - Email enviado a Sebastian Garcia — **esperando respuesta**
 - Deadline: DAY 96 — si no responde, email a Yisroel Mirsky (Tier 2)
 
@@ -206,13 +225,13 @@ Raíz:          /Users/aironman/CLionProjects/test-zeromq-docker
 VM:            vagrant ssh defender
 Logs:          /vagrant/logs/lab/
 Plugin dir:    /usr/lib/ml-defender/plugins/
-Keys dir:      /etc/ml-defender/  (a crear en DAY 95)
+Keys dir:      /etc/ml-defender/  ← CREADO EN DAY 95
 macOS CRÍTICO: NUNCA usar sed -i sin -e '' — usar Python3 o editar en VM
+zsh CRÍTICO:   NUNCA pegar Python inline con paréntesis — usar heredoc 'PYEOF'
 ```
 
 ---
 
-*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic)*
-*DAY 94 — 22 marzo 2026*
+*Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
+*DAY 95 — 23 marzo 2026*
 *Consejo de Sabios — ML Defender (aRGus NDR)*
-*Acta Consejo #3: ChatGPT5 · DeepSeek · Gemini · Grok · Qwen (unanimidad 5/5)*

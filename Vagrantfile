@@ -29,6 +29,12 @@
 #   • ONNX Runtime v1.17.1
 #   • Cron restart every 72h (memory leak mitigation)
 #
+# DAY 95: Cryptographic Provisioning
+#   • tools/provision.sh genera keypairs Ed25519 + seeds ChaCha20
+#   • /etc/ml-defender/{component}/ — AppArmor-compatible (ADR-019)
+#   • run: "once" — las claves persisten entre reinicios de VM
+#   • Re-provisionar manualmente: make provision
+#
 # USAGE:
 #   Development (defender only):   vagrant up defender
 #   Gateway testing (both VMs):    vagrant up defender client
@@ -275,7 +281,6 @@ LIBBPF_PROFILE
         cp -r onnxruntime-linux-x64-1.17.1/lib/* /usr/local/lib/
         ldconfig
 
-        # Fix: Create /usr/local/lib64 symlinks for CMake compatibility
         echo "🔗 Creating /usr/local/lib64 symlinks for ONNX Runtime..."
         mkdir -p /usr/local/lib64
         ln -sf /usr/local/lib/libonnxruntime.so* /usr/local/lib64/
@@ -285,8 +290,6 @@ LIBBPF_PROFILE
         echo "✅ ONNX Runtime installed with lib64 symlinks"
       else
         echo "✅ ONNX Runtime already installed"
-
-        # Ensure lib64 symlinks exist even if ONNX was previously installed
         if [ ! -d /usr/local/lib64 ]; then
           echo "🔗 Creating missing /usr/local/lib64 symlinks..."
           mkdir -p /usr/local/lib64
@@ -299,15 +302,10 @@ LIBBPF_PROFILE
       # FAISS v1.8.0 (CPU-only, shared library) - Phase 2A
       if [ ! -f /usr/local/lib/libfaiss.so ]; then
         echo "🔍 Installing FAISS v1.8.0 (CPU-only, shared library)..."
-
-        # Dependencies
         apt-get install -y libblas-dev liblapack-dev
-
-        # Build from source
         cd /tmp && rm -rf faiss
         git clone --depth 1 --branch v1.8.0 https://github.com/facebookresearch/faiss.git
         cd faiss
-
         mkdir -p build && cd build
         cmake .. \
           -DFAISS_ENABLE_GPU=OFF \
@@ -316,20 +314,13 @@ LIBBPF_PROFILE
           -DBUILD_SHARED_LIBS=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=/usr/local
-
         make -j$(nproc)
         make install
         ldconfig
-
         cd /tmp && rm -rf faiss
         echo "✅ FAISS installed successfully"
       else
         echo "✅ FAISS already installed"
-      fi
-
-      # Verify FAISS installation
-      if [ -f /usr/local/lib/libfaiss.so ]; then
-        echo "✅ FAISS library verified: $(ls -lh /usr/local/lib/libfaiss.so | awk '{print $5}')"
       fi
 
       # etcd-cpp-api
@@ -391,6 +382,7 @@ vagrant ALL=(ALL) NOPASSWD: /usr/sbin/ipset
 vagrant ALL=(ALL) NOPASSWD: /usr/bin/pkill
 vagrant ALL=(ALL) NOPASSWD: /bin/kill
 vagrant ALL=(ALL) NOPASSWD: /usr/bin/killall
+vagrant ALL=(ALL) NOPASSWD: /vagrant/tools/provision.sh
 EOF
       chmod 0440 /etc/sudoers.d/ml-defender
 
@@ -465,6 +457,10 @@ alias explore-logs='/vagrant/scripts/explore_rag_logs.sh'
 alias verify-faiss='ls -lh /usr/local/lib/libfaiss.so && ls -d /usr/local/include/faiss'
 alias verify-onnx='ls -lh /usr/local/lib/libonnxruntime.so && find /usr/local/include -name "onnxruntime*.h"'
 
+# Provisioning aliases (DAY 95)
+alias provision-status='sudo bash /vagrant/tools/provision.sh status'
+alias provision-verify='sudo bash /vagrant/tools/provision.sh verify'
+
 export PROJECT_ROOT="/vagrant"
 export MODELS_DIR="/vagrant/ml-detector/models/production"
 
@@ -476,6 +472,9 @@ cat << 'WELCOME'
 🎯 Dual-NIC Configuration:
    eth1: 192.168.56.20 (WAN-facing, host-based IDS)
    eth2: 192.168.100.1 (LAN-facing, gateway mode)
+🔐 Cryptographic Provisioning (DAY 95):
+   provision-status  # Estado de claves
+   provision-verify  # Verificar integridad
 🔍 FAISS Ingestion Ready:
    explore-logs     # Explore available RAG logs
    verify-faiss     # Verify FAISS installation
@@ -497,24 +496,16 @@ BASHRC_EOF
     defender.vm.provision "shell", name: "configure-sniffer", run: "always", inline: <<-SNIFFER_CONFIG
       echo "🔧 Auto-configuring sniffer.json for current network topology..."
 
-      # Detect gateway interface
       GATEWAY_IFACE=$(ip -o addr show | grep "192.168.100.1" | awk '{print $2}')
-
       if [ -z "$GATEWAY_IFACE" ]; then
         echo "⚠️  Gateway interface not found, defaulting to eth2"
         GATEWAY_IFACE="eth2"
       fi
-
       echo "✅ Gateway interface detected: $GATEWAY_IFACE"
 
-      # Update sniffer.json with correct interface
       if [ -f /vagrant/sniffer/config/sniffer.json ]; then
-        # Backup
         cp /vagrant/sniffer/config/sniffer.json /vagrant/sniffer/config/sniffer.json.auto.backup
-
-        # Update using sed (simple and reliable)
         sed -i "s/\\"interface\\": \\"eth[0-9]\\"/\\"interface\\": \\"$GATEWAY_IFACE\\"/g" /vagrant/sniffer/config/sniffer.json
-
         echo "✅ sniffer.json updated with gateway interface: $GATEWAY_IFACE"
       else
         echo "⚠️  sniffer.json not found at /vagrant/sniffer/config/sniffer.json"
@@ -533,11 +524,7 @@ BASHRC_EOF
     # ════════════════════════════════════════════════════════════════════════
     defender.vm.provision "shell", name: "configure-cron-restart", run: "once", inline: <<-CRON
       echo "⏰ Configurando cron para restart automático cada 72h..."
-
-      # Crear entrada cron para vagrant user
       CRON_ENTRY="0 3 */3 * * /vagrant/scripts/restart_ml_defender.sh"
-
-      # Verificar si ya existe
       if ! crontab -u vagrant -l 2>/dev/null | grep -q "restart_ml_defender"; then
         (crontab -u vagrant -l 2>/dev/null; echo "# ML Defender restart every 72h (memory leak mitigation)") | crontab -u vagrant -
         (crontab -u vagrant -l 2>/dev/null; echo "$CRON_ENTRY") | crontab -u vagrant -
@@ -545,39 +532,64 @@ BASHRC_EOF
       else
         echo "✅ Cron ya configurado"
       fi
-
-      # Mostrar crontab
       crontab -u vagrant -l
     CRON
 
-        # ════════════════════════════════════════════════════════════════════════
-        # Provisioning: SQLite.db necessary for RAG and RAG-INGESTER (Day 40)
-        # ════════════════════════════════════════════════════════════════════════
-        defender.vm.provision "shell", name: "configure-sqlite-day40", run: "once", inline: <<-SQLITE
-          echo "📁 Day 40: Creating shared indices directory..."
-          mkdir -p /vagrant/shared/indices
-          chown -R vagrant:vagrant /vagrant/shared/indices
-          chmod 755 /vagrant/shared/indices
+    # ════════════════════════════════════════════════════════════════════════
+    # Provisioning: SQLite.db necessary for RAG and RAG-INGESTER (Day 40)
+    # ════════════════════════════════════════════════════════════════════════
+    defender.vm.provision "shell", name: "configure-sqlite-day40", run: "once", inline: <<-SQLITE
+      echo "📁 Day 40: Creating shared indices directory..."
+      mkdir -p /vagrant/shared/indices
+      chown -R vagrant:vagrant /vagrant/shared/indices
+      chmod 755 /vagrant/shared/indices
+      echo "✅ Shared indices directory ready: /vagrant/shared/indices"
 
-          echo "✅ Shared indices directory ready: /vagrant/shared/indices"
+      if ! dpkg -l | grep -q libsqlite3-dev; then
+        echo "📦 Installing SQLite3 development headers + CLI..."
+        apt-get install -y libsqlite3-dev sqlite3
+        echo "✅ SQLite3 dev + CLI installed"
+      else
+        echo "✅ SQLite3 dev already installed"
+        apt-get install -y sqlite3
+      fi
+    SQLITE
 
-          # SQLite3 dev headers + CLI tool
-          if ! dpkg -l | grep -q libsqlite3-dev; then
-            echo "📦 Installing SQLite3 development headers + CLI..."
-            apt-get install -y libsqlite3-dev sqlite3  # ← AÑADIR sqlite3 aquí
-            echo "✅ SQLite3 dev + CLI installed"
-          else
-            echo "✅ SQLite3 dev already installed"
-            # Asegurar que el CLI también está instalado
-            apt-get install -y sqlite3
-          fi
-        SQLITE
+    # ════════════════════════════════════════════════════════════════════════
+    # Provisioning: Cryptographic Identity (DAY 95)
+    # tools/provision.sh genera keypairs Ed25519 + seeds ChaCha20
+    # para los 6 componentes del pipeline.
+    #
+    # run: "once" — las claves persisten entre reinicios de VM.
+    # Para re-provisionar manualmente: make provision
+    # Para re-provisionar un componente: make provision-reprovision COMPONENT=sniffer
+    #
+    # ADR refs: ADR-013 (seed distribution), ADR-019 (OS hardening)
+    # ════════════════════════════════════════════════════════════════════════
+    defender.vm.provision "shell", name: "cryptographic-provisioning", run: "once", inline: <<-CRYPTO_PROVISION
+      echo "╔════════════════════════════════════════════════════════════╗"
+      echo "║  🔐 Cryptographic Provisioning (DAY 95 — PHASE 1)         ║"
+      echo "╚════════════════════════════════════════════════════════════╝"
 
-      end  # End defender VM  ← AQUÍ termina el bloque defender
+      if [ ! -f /vagrant/tools/provision.sh ]; then
+        echo "❌ tools/provision.sh no encontrado en /vagrant/tools/"
+        echo "   Asegúrate de que el repositorio está montado correctamente."
+        exit 1
+      fi
 
-      # ════════════════════════════════════════════════════════════════════════════
-      # CLIENT VM - Traffic Generator & Gateway Testing
-      # ════════════════════════════════════════════════════════════════════════════
+      chmod +x /vagrant/tools/provision.sh
+      bash /vagrant/tools/provision.sh full
+
+      echo "✅ Cryptographic provisioning completed"
+      echo "   Keys at: /etc/ml-defender/"
+      echo "   Verify:  sudo bash /vagrant/tools/provision.sh status"
+    CRYPTO_PROVISION
+
+  end  # End defender VM
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # CLIENT VM - Traffic Generator & Gateway Testing
+  # ════════════════════════════════════════════════════════════════════════════
 
   config.vm.define "client", autostart: false do |client|
     client.vm.box = "debian/bookworm64"

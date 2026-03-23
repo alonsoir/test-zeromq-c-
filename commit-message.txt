@@ -1,28 +1,12 @@
-git add protobuf/network_security.proto \
-        sniffer/src/userspace/ml_defender_features.cpp \
-        sniffer/tests/test_smb_scan_features.cpp \
-        sniffer/CMakeLists.txt
+feat: Vagrantfile cryptographic-provisioning + prompt DAY 96 (DAY 95 cierre)
 
-git commit -m "feat(smb): SYN-1 + SYN-2 extractors + tests green 33/31 (DAY 92)
+- Vagrantfile: bloque cryptographic-provisioning run:once
+  llama a tools/provision.sh full en vagrant up desde cero
+- sudoers: /vagrant/tools/provision.sh sin password para vagrant
+- .bashrc: aliases provision-status y provision-verify
+- docs: prompt de continuidad DAY 96 con estado completo
 
-Proto:
-- SMBScanFeatures message (rst_ratio, syn_ack_ratio, flow_duration_min_ms)
-- NetworkFeatures.smb_scan = field 116
-- RansomwareFeatures ambiguity comment (PHASE1 vs PHASE2)
+Tarea A DAY 95 cerrada al 100%.
+Siguiente: libs/seed-client (DAY 96)
 
-Sniffer:
-- ml_defender_features.cpp: rst_ratio + syn_ack_ratio extractors
-- Sentinel MISSING_FEATURE_SENTINEL=-9999.0f when syn_flag_count==0
-- enable_testing() added to sniffer/CMakeLists.txt
-
-Tests:
-- test_smb_scan_features.cpp: 3 cases
-  - WannaCry synthetic: rst_ratio>0.70, syn_ack_ratio<0.10 → MALICIOUS
-  - Legitimate SMB:     rst_ratio<0.10, syn_ack_ratio>0.70 → BENIGN
-  - Zero SYN:           both fields → -9999.0f sentinel
-- Full suite: 33/31 ✅ zero regressions
-
-Backlog: SYN-1 ✅ SYN-2 ✅
-
-Co-authored-by: Claude <claude@anthropic.com>"
-Co-authored-by: Alonso <alonsoir@gmail.com>"
+Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)
