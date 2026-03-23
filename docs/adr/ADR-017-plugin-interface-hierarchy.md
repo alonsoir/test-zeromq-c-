@@ -420,6 +420,46 @@ if (declared_type == "sniffer") {
 
 ---
 
+
+## Regla de reprovisioning — granular, no big bang
+
+Añadir un plugin a un componente **no requiere recompilar el componente**.
+El binario del componente no cambia — solo cambia su JSON de configuración
+y el par de claves componente↔plugin_nuevo.
+```
+Evento                           → Reprovisionar
+─────────────────────────────────────────────────────────────
+Nuevo plugin en componente X     → solo X↔plugin_nuevo
+Nueva versión plugin Y en X      → solo X↔plugin_Y_v_nueva
+Nueva versión binario de X       → X↔todos sus interlocutores
+Rotación periódica de seeds      → todos (mantenimiento)
+```
+
+**Por qué añadir un plugin no obliga a reprovisionar los canales ZeroMQ:**
+La semilla ChaCha20 entre sniffer↔ml-detector es independiente del hecho
+de que ml-detector cargue un plugin nuevo. El canal ZeroMQ usa la keypair
+del componente — que no cambia cuando el componente carga un nuevo plugin.
+Solo cambia la relación componente↔plugin_nuevo.
+
+**Implementación en tools/provision:**
+```
+tools/
+    provision/
+        provision.sh              ← orquestador principal
+        provision_component.sh    ← un componente individual
+        provision_plugin.sh       ← un plugin userspace individual
+        provision_ebpf_plugin.sh  ← un plugin eBPF individual
+        verify_provision.sh       ← verifica estado del provisioning
+    stress/
+        tcpreplay_neris.sh
+        tcpreplay_bigflows.sh
+        calculate_f1_neris.py
+```
+
+`verify_provision.sh` verifica que todos los pares de claves están en su
+sitio y son coherentes antes de arrancar el pipeline — falla rápido con
+mensaje claro antes de que el runtime falle con un error críptico.
+
 ## Consecuencias
 
 **Positivas:**

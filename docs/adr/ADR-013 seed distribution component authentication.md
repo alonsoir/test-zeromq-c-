@@ -291,6 +291,27 @@ establece el patrón de cooldown windows y grace periods que se reutilizará.
 
 ---
 
+
+## Regla de reprovisioning granular (DAY 94)
+
+`provision.sh` es granular — no un big bang que reprovisiona todo el sistema
+por cada cambio pequeño. Vive en `tools/provision/` junto con los scripts
+de stress test.
+```
+Evento                           → Acción provision
+─────────────────────────────────────────────────────────────
+Nuevo plugin en componente X     → provision_plugin.sh X plugin_nuevo
+Nueva versión plugin Y en X      → provision_plugin.sh X plugin_Y_v_nueva
+Nueva versión binario de X       → provision_component.sh X
+Rotación periódica de seeds      → provision.sh --all
+Verificación estado              → verify_provision.sh
+```
+
+**Invariante:** añadir un plugin a un componente NO cambia la keypair del
+componente ni obliga a reprovisionar los canales ZeroMQ entre componentes.
+La semilla ChaCha20 entre componentes es independiente de los plugins que
+cada componente cargue.
+
 ## Secuencia de implementación
 
 Esta es la secuencia acordada para las próximas sesiones. **El backlog queda

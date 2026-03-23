@@ -37,7 +37,17 @@ validated, and deployed to production.
 
 ## Decisions Made
 
-### 1. Plugin-based Model Deployment ✅ (actualizado DAY 94)
+### 1. Plugin-based Model Deployment
+
+> **Nota crítica DAY 94 — sin recompilación para nuevos modelos:**
+> Añadir `libmodel_neris_v2.so` a ml-detector **no requiere recompilar
+> ml-detector**. El binario del componente no cambia. Solo se actualiza
+> `ml_detector_config.json` con el nuevo plugin en `plugins.enabled`
+> y se reprovisiona el par ml-detector↔plugin_nuevo. El canal ZeroMQ
+> sniffer↔ml-detector no se ve afectado. Esto es exactamente el valor
+> de ADR-017: el sistema crece sin recompilar el core.
+
+ ✅ (actualizado DAY 94)
 
 **Decisión original (DAY 1–88):** Los modelos reentrenados se compilaban
 como ficheros `model_*.hpp` integrados en el binario de `ml-detector`.
