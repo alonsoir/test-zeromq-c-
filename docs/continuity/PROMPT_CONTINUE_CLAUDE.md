@@ -1,235 +1,146 @@
-# ML Defender — Prompt de Continuidad DAY 96
-## 24 marzo 2026
+# ML Defender — Prompt de Continuidad DAY 97
+## 25 marzo 2026
 
 ---
 
 ## Estado del sistema
 
-**Pipeline:** 6/6 RUNNING (etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall)
-**Test suite:** 33/31 ✅ (crypto 3/3, etcd-hmac 12/12, ml-detector 9/9, rag-ingester 7/7, sniffer 1/1)
-**Rama activa:** `feature/plugin-loader-adr012`
-**Último tag:** DAY92
+**Pipeline:** 6/6 RUNNING
+**Tests:** 39/39 ✅ (crypto 3/3 · etcd-hmac 12/12 · ml-detector 9/9 · rag-ingester 7/7 · sniffer 1/1 · seed-client 6/6)
+**Rama:** `feature/plugin-loader-adr012`
+**Último commit:** `feat(crypto): add seed-client library — cryptographic base material reader (ADR-013 PHASE 1)`
 
 ---
 
-## Lo que se hizo en DAY 95
+## Cadena de confianza (estado actual)
 
-### tools/provision.sh — COMPLETADO ✅
-
-6/6 componentes con keypairs Ed25519 + seeds ChaCha20 (32B).
-Paths AppArmor-compatible: `/etc/ml-defender/{component}/`.
-Makefile: `provision`, `provision-status`, `provision-check`, `provision-reprovision`.
-Vagrantfile: bloque `cryptographic-provisioning` con `run: "once"`.
-`pipeline-start` depende de `provision-check` — fail-closed security.
-
-### JSONs (6/6) — bloque `identity` añadido ✅
-
-Todos los componentes declaran `identity.keys_dir`, `public_key`, `private_key`, `seed_bin`.
-`rag-config.json`: AES-256-CBC eliminado (letra muerta), unificado a ChaCha20-Poly1305.
-
-### Acta Consejo DAY 95 (6/7 — Parallel.ai pendiente) ✅
-
-Unanimidad en validación. Puntos críticos incorporados al backlog:
-- `DEBT-CRYPTO-001`: nonce management con seeds persistentes
-- `DEBT-CRYPTO-002`: HKDF para derivar session keys
-- `DEBT-CRYPTO-003`: check entropy en provision.sh
+```
+provision.sh → seed.bin (chmod 0600, /etc/ml-defender/{component}/)
+    └► libseedclient    ✅ DAY 96 — instalado, 6/6 tests
+        └► crypto-transport (HKDF + ChaCha20 + LZ4)   ← P1 DAY 97
+            └► etcd-client (transporte puro)           ← DAY 98
+                └► componentes + plugin-loader
+```
 
 ---
 
-## ⚠️ INSIGHT CRÍTICO DEL CONSEJO — leer antes de escribir código
+## Decisiones cerradas DAY 96 (Consejo — no reabrir)
 
-**Afecta directamente al diseño de seed-client.**
-
-ChatGPT + Grok (unanimidad): el seed de 32B es **material base**, no clave directa.
-
-```
-INCORRECTO:  seed.bin → chacha20_encrypt(data, key=seed)
-CORRECTO:    seed.bin → HKDF(seed, context) → session_key → chacha20_encrypt(data, session_key)
-```
-
-Sin HKDF: no hay forward secrecy, compromiso de seed = descifrado histórico completo.
-
-**Arquitectura de responsabilidades resultante:**
-```
-SeedClient        → lee seed.bin del disco, lo expone como array<uint8_t,32>
-                    NO cifra, NO descifra, NO hace HKDF
-                    Entrega: "esto es material criptográfico, úsalo con cuidado"
-CryptoTransport   → recibe seed de SeedClient
-                    aplica HKDF(seed, context="ml-defender:{component}:v1")
-                    gestiona nonces
-                    cifra/descifra con la session_key derivada
-```
-
-`SeedClient` sigue siendo igual de simple. El contrato debe quedar documentado
-en el `.hpp`: "seed() devuelve material base para HKDF, no una clave de uso directo."
+| Decisión | Resolución |
+|---|---|
+| HKDF implementation | **libsodium** exclusivamente |
+| HKDF context format | `"ml-defender:{component}:{version}:{tx\|rx}"` |
+| Nonce policy | Contador monotónico **96-bit** por sesión |
+| C++ standard | **C++20 permanente** — migración C++23 solo si kernel/eBPF lo exige |
+| Error handling | `throw` en todo el pipeline — `std::expected` diferido |
+| Cifrado | **SIEMPRE obligatorio** — eliminar flag `enabled` de JSONs |
+| Compresión | **SIEMPRE** cuando posible — eliminar flag `enabled` de JSONs |
+| Orden operaciones | **LZ4 → ChaCha20** (comprimir antes de cifrar) |
+| Rotación seeds | Requiere **reinicio ordenado** de toda la pipeline |
+| Library naming | `libseedclient` sin underscore (convención Linux) |
 
 ---
 
-## Objetivo principal DAY 96 — libs/seed-client
+## Objetivos DAY 97
 
-### Tarea A — libs/seed-client (P1)
+### P1 — DEBT-CRYPTO-002: HKDF en crypto-transport
+
+**Diagnóstico inicial:**
+```bash
+vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null || echo 'apt-get install -y libsodium-dev'"
+cat crypto-transport/include/crypto_transport/crypto.hpp | head -60
+```
+
+**Interfaz objetivo:**
+```cpp
+// Movible, no copiable (RAII de session keys)
+CryptoTransport(const SeedClient& seed_client,
+                const std::string& context = "ml-defender:transport:v1");
+// HKDF-SHA256 via libsodium → session_key (nunca sale de CryptoTransport)
+```
+
+Ficheros: `crypto.hpp` · `crypto.cpp` · `CMakeLists.txt` (añadir libsodium) · tests backward compat.
+
+### P1 — DEBT-CRYPTO-001: Nonce management
+
+Contador monotónico 96-bit. Implementar en `CryptoTransport`, nunca en `SeedClient`.
+
+### P1 — ADR-020: Eliminar flags enabled de JSONs
+
+Eliminar `encryption.enabled` y `compression.enabled` de los 6 JSONs de componentes.
+Cifrado y compresión son siempre obligatorios. Crear `docs/adr/ADR-020-crypto-mandatory.md`.
+
+### P2 — DEBT-CRYPTO-003a: mlock() en seed_client.cpp
 
 ```cpp
-// libs/seed-client/include/seed_client/seed_client.hpp
-
-/**
- * SeedClient — Lector de material criptográfico base.
- *
- * Lee el seed.bin generado por tools/provision.sh y lo expone
- * para que CryptoTransport aplique HKDF antes de cualquier uso.
- *
- * CONTRATO:
- *   - seed() devuelve material base (32B). NO es una clave simétrica.
- *   - El llamador (CryptoTransport) es responsable de HKDF + nonce mgmt.
- *   - SeedClient no hace red, no genera seeds, no cifra, no distribuye.
- *
- * ADR refs: ADR-013 (PHASE 1), DEBT-CRYPTO-001, DEBT-CRYPTO-002
- */
-class SeedClient {
-public:
-    explicit SeedClient(const std::string& component_json_path);
-    void load();
-    const std::array<uint8_t, 32>& seed() const;
-    bool is_loaded() const;
-    const std::string& component_id() const;
-    const std::string& keys_dir() const;
-private:
-    std::string component_json_path_;
-    std::string keys_dir_;
-    std::string component_id_;
-    std::array<uint8_t, 32> seed_{};
-    bool loaded_ = false;
-};
+// Tras leer seed.bin, antes de limpiar buffer temporal:
+mlock(seed_.data(), seed_.size());
 ```
 
-**Lógica interna de `load()`:**
-1. Parsear JSON del componente → leer `identity.component_id` y `identity.keys_dir`
-2. Construir path: `{keys_dir}/seed.bin`
-3. Abrir fichero en modo binario
-4. Leer exactamente 32 bytes — `std::runtime_error` si != 32
-5. Copiar a `seed_` — limpiar buffer temporal con `explicit_bzero` o `memset`+barrera
-6. Verificar que el fichero existe y tiene permisos 600 (advertencia si no)
-7. `loaded_ = true`
-
-**Estructura de ficheros:**
-```
-libs/seed-client/
-  CMakeLists.txt          ← patrón idéntico a crypto-transport
-  include/seed_client/
-    seed_client.hpp
-  src/
-    seed_client.cpp
-  tests/
-    test_seed_client.cpp  ← CTest: load OK, file_not_found, wrong_size, component_id
-```
-
-**Dependencias:** nlohmann_json únicamente. Más primitivo que crypto-transport.
-
-**Makefile (añadir):**
-```makefile
-seed-client-build:
-    @vagrant ssh -c 'cd /vagrant/seed-client && rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4'
-    @vagrant ssh -c 'cd /vagrant/seed-client/build && sudo make install && sudo ldconfig'
-
-seed-client-clean:
-    @vagrant ssh -c 'rm -rf /vagrant/seed-client/build'
-    @vagrant ssh -c 'sudo rm -f /usr/local/lib/libseed_client.so*'
-
-seed-client-test:
-    @vagrant ssh -c 'cd /vagrant/seed-client/build && ctest --output-on-failure'
-```
-
-### Tarea B — DEBT-CRYPTO-003 (P2 — si queda tiempo)
-
-Añadir check de entropy en `tools/provision.sh` antes de `openssl genpkey`:
+### P2 — DEBT-CRYPTO-003b: Entropy check en provision.sh
 
 ```bash
-# En provision.sh, función check_dependencies() o nueva check_entropy():
-avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo "999")
-if [ "$avail" -lt 256 ]; then
-    log_warn "Entropy baja: ${avail} bits — instalando haveged"
-    apt-get install -y haveged >/dev/null 2>&1
-    systemctl start haveged 2>/dev/null || true
-    sleep 1
-fi
+avail=$(cat /proc/sys/kernel/random/entropy_avail)
+[ "$avail" -lt 256 ] && apt-get install -y haveged && systemctl start haveged
 ```
 
-### Tarea C — ADR-012 PHASE 1b (P1 — si queda tiempo)
+### P1 si tiempo — TEST-INTEG-1 + TEST-INTEG-2
 
-- Integrar plugin-loader en sniffer
-- Test suite plugin-loader con CTest
+TEST-INTEG-1: provision → seed → HKDF → cifrado → mensaje → descifrado → verificar.
+TEST-INTEG-2: JSON → LZ4 → ChaCha20 → etcd → ChaCha20_dec → LZ4_dec → JSON (round-trip).
 
 ---
 
-## Secuencia de diagnóstico al arrancar DAY 96
+## Diagnóstico de arranque DAY 97
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git status
-git log --oneline -5
+git status && git log --oneline -5
 
-# Verificar estado de claves
-make provision-status
+# libsodium disponible?
+vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null || echo 'INSTALAR'"
 
-# Ver si ya existe libs/seed-client
-ls libs/ 2>/dev/null || echo "libs/ no existe — crear"
+# seed-client sigue instalado?
+vagrant ssh -c "ls -lh /usr/local/lib/libseedclient.so* 2>/dev/null || echo 'FALTA'"
 
-# Referencia de estructura
-ls crypto-transport/include/crypto_transport/
-ls crypto-transport/CMakeLists.txt | head -30
+# Ver crypto-transport actual
+cat crypto-transport/include/crypto_transport/crypto.hpp | head -60
 
-# arXiv — verificar si llegó respuesta de Sebastian Garcia
-# Si no: preparar email Yisroel Mirsky (Tier 2)
+# arXiv: ¿respuesta Mirsky o Garcia?
 ```
 
 ---
 
-## Backlog activo — estado actualizado DAY 95
+## Backlog P1 activo DAY 97
 
-| ID | Descripción | Estado |
-|---|---|---|
-| **provision.sh** | Script bash keypairs + seeds | ✅ DONE — DAY 95 |
-| **identity blocks** | Bloque identity en 6 JSONs | ✅ DONE — DAY 95 |
-| **rag-config.json** | AES→ChaCha20, flujo documentado | ✅ DONE — DAY 95 |
-| **Vagrantfile** | cryptographic-provisioning block | ✅ DONE — DAY 95 |
-| **seed-client** | libs/seed-client — material base para HKDF | **P1 — DAY 96** |
-| **DEBT-CRYPTO-001** | Nonce management con seeds persistentes | **P1 — DAY 96 (diseño)** |
-| **DEBT-CRYPTO-002** | HKDF en crypto-transport | **P1 — DAY 96 (diseño)** |
-| **DEBT-CRYPTO-003** | Check entropy en provision.sh | P2 — DAY 96 |
-| **ADR-012 PHASE 1b** | Integración sniffer + test suite | P1 — DAY 96 |
-| **FEAT-CRYPTO-1** | Rotación de claves sin downtime | DAY 97+ |
-| **FEAT-CRYPTO-2** | Handshake efímero (Noise simplificado) | PHASE 2 |
-| **FEAT-CRYPTO-3** | TPM 2.0 / HSM enterprise | ENT-8 |
-| **SYN-3..7** | Sintético + reentrenamiento + F1 | DAY 97+ |
-| **DEBT-FD-001** | Fast Detector Path A → JSON | PHASE 2 |
-| **ADR-007** | AND-consensus firewall | PHASE 2 |
+| ID | Tarea |
+|---|---|
+| DEBT-CRYPTO-002 | HKDF en crypto-transport (libsodium) |
+| DEBT-CRYPTO-001 | Nonce 96-bit monotónico |
+| ADR-020 | Eliminar flags enabled — cifrado+compresión siempre |
+| DEBT-CRYPTO-003a | mlock() en seed_client.cpp |
+| DEBT-CRYPTO-003b | Entropy check provision.sh |
+| TEST-INTEG-1/2 | Tests E2E pipeline + etcd JSON round-trip |
+| ADR-012 PHASE 1b | plugin-loader integrado en sniffer |
+| arXiv | Respuesta Mirsky / Tier 3 (Martin Grill) si silencio |
 
 ---
 
-## arXiv — Estado
-
-- Paper draft v5: `docs/Ml defender paper draft v5.md`
-- Email enviado a Sebastian Garcia — **esperando respuesta**
-- **Deadline DAY 96:** si no responde → email Yisroel Mirsky (Tier 2)
-
----
-
-## Constantes del proyecto
+## Constantes
 
 ```
-Raíz:          /Users/aironman/CLionProjects/test-zeromq-docker
-VM:            vagrant ssh defender
-Logs:          /vagrant/logs/lab/
-Plugin dir:    /usr/lib/ml-defender/plugins/
-Keys dir:      /etc/ml-defender/  ← CREADO EN DAY 95
-macOS CRÍTICO: NUNCA usar sed -i sin -e '' — usar Python3 o editar en VM
-zsh CRÍTICO:   NUNCA pegar Python inline con paréntesis — usar heredoc 'PYEOF'
+Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
+VM:      vagrant ssh -c '...'   ← SIEMPRE -c
+Logs:    /vagrant/logs/lab/
+Keys:    /etc/ml-defender/{component}/seed.bin
+
+macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
+zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
 ```
 
 ---
 
+*DAY 96 post-Consejo — 24 marzo 2026*
+*Tests: 39/39 ✅ · libseedclient instalado · Email Mirsky enviado*
+*Consejo DAY 96: Grok · DeepSeek · Gemini · ChatGPT5 (unanimidad 4/4)*
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
-*DAY 95 — 23 marzo 2026*
-*Consejo de Sabios — ML Defender (aRGus NDR)*
-*Acta Consejo #3: ChatGPT5 · DeepSeek · Gemini · Grok · Qwen (unanimidad 5/5)*
-*Insight crítico DAY 95: seed → HKDF → session_key. Nunca directo.*
