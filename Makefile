@@ -41,6 +41,7 @@
 .PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
 .PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
 .PHONY: provision provision-status provision-check provision-reprovision
+.PHONY: seed-client-build seed-client-test seed-client-clean seed-client-rebuild
 
 # ============================================================================
 # ML Defender Pipeline - Master Makefile
@@ -255,7 +256,7 @@ proto: proto-unified
 #              etcd-client depends on: proto, crypto-transport
 # ============================================================================
 
-crypto-transport-build:
+crypto-transport-build: seed-client-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building crypto-transport Library                     ║"
@@ -661,10 +662,11 @@ tools-clean:
 
 clean-libs:
 	@echo ""
-	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  🧹 Cleaning Libraries (crypto-transport, etcd-client)    ║"
-	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo "╔═══════════════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  🧹 Cleaning Libraries (seed-client, plugin-loader, crypto-transport, etcd-client)    ║"
+	@echo "╚═══════════════════════════════════════════════════════════════════════════════════════╝"
 	@echo ""
+	@$(MAKE) seed-client-clean
 	@$(MAKE) crypto-transport-clean
 	@$(MAKE) etcd-client-clean
 	@$(MAKE) plugin-loader-clean
@@ -723,6 +725,8 @@ distclean: clean-all
 # ============================================================================
 
 test-libs:
+	@echo "Testing seed-client..."
+	@$(MAKE) seed-client-test
 	@echo "Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest" || echo "⚠️  crypto-transport has known LZ4 issues"
 	@echo "Testing etcd-client (HMAC only)..."
@@ -835,7 +839,7 @@ verify-all:
 # Unified Build Targets
 # ============================================================================
 
-build-unified: proto-unified crypto-transport-build etcd-client-build plugin-loader-build sniffer ml-detector rag-ingester firewall tools
+build-unified: proto-unified seed-client-build crypto-transport-build etcd-client-build plugin-loader-build sniffer ml-detector rag-ingester firewall tools
 	@echo ""
 	@echo "✅ Unified build complete [$(PROFILE)]"
 	@$(MAKE) proto-verify
@@ -857,6 +861,7 @@ all: build-unified etcd-server
 	@echo "  ✅ Firewall ACL Agent"
 	@echo "  ✅ etcd-server"
 	@echo "  ✅ Tools"
+	@echo "  ✅ seed-client library (ADR-013 PHASE 1)"
 	@echo ""
 	@echo "Profile: $(PROFILE)"
 	@echo "Component builds: build-$(PROFILE)/"
@@ -1293,3 +1298,27 @@ provision-reprovision:
 	@echo "⚠️  Re-provisionando $(COMPONENT)..."
 	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh reprovision $(COMPONENT)"
 	@echo "✅ Re-provisioning de $(COMPONENT) completo"
+
+# ─── seed-client ─────────────────────────────────────────────────────────────
+# Biblioteca de lectura de material criptográfico base (PHASE 1, ADR-013)
+# Dependencia: nlohmann_json
+# Ejecutar ANTES de crypto-transport si se recompila desde cero.
+
+seed-client-build:
+	@echo "╔══════════════════════════════════════════════╗"
+	@echo "║  Building seed-client...                     ║"
+	@echo "╚══════════════════════════════════════════════╝"
+	@vagrant ssh -c 'cd /vagrant/libs/seed-client && rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4'
+	@vagrant ssh -c 'cd /vagrant/libs/seed-client/build && sudo make install && sudo ldconfig'
+	@echo "✅ seed-client instalado"
+
+seed-client-test:
+	@echo "─── seed-client tests ───────────────────────"
+	@vagrant ssh -c 'cd /vagrant/libs/seed-client/build && ctest --output-on-failure'
+
+seed-client-clean:
+	@vagrant ssh -c 'rm -rf /vagrant/libs/seed-client/build'
+	@vagrant ssh -c 'sudo rm -f /usr/local/lib/libseed_client.so*'
+	@echo "✅ seed-client limpiado"
+
+seed-client-rebuild: seed-client-clean seed-client-build seed-client-test
