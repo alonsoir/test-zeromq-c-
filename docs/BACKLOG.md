@@ -141,7 +141,56 @@ mlock(seed_.data(), seed_.size());
 Evita que el material criptográfico llegue al swap.
 **Decisión pendiente:** ¿fallo fatal o advertencia si mlock() falla con ENOMEM?
 
-### FEAT-CRYPTO-1 — Rotación de claves sin downtime (P2 — DAY 98+)
+### FEAT-ROTATION-1 — Política de rotación de seeds (🟡 P2 — DAY 105+)
+
+**Arquitectura decidida (Consejo DAY 97 + Alonso):**
+
+```
+provision.sh     ← único lugar donde vive la política de rotación
+                   SEED_ROTATION_DAYS=30 — single source of truth
+                   nuevo modo: rotate-all (llama a reprovision en orden)
+
+etcd-server      ← almacena provision_meta.json por componente
+                   (fecha, phase, component_id) — ya implementado
+
+rag-security     ← lee metadata de etcd, alerta al admin:
+                   "El seed de sniffer tiene 32 días. Rotación recomendada."
+
+admin root       ← ejecuta el comando cuando decide
+                   sudo bash tools/provision.sh rotate-all
+                   make pipeline-stop && make pipeline-start
+```
+
+**Comandos objetivo:**
+
+```bash
+# Rotar todas las claves y reiniciar (30 segundos de downtime planificado)
+sudo bash /vagrant/tools/provision.sh rotate-all
+make pipeline-stop && make pipeline-start
+
+# Ver estado de rotación
+sudo bash /vagrant/tools/provision.sh status
+# → muestra edad de cada seed y recomendación si > SEED_ROTATION_DAYS
+```
+
+**Cambios en provision.sh:**
+- Añadir `readonly SEED_ROTATION_DAYS=30` — único parámetro de política
+- Nuevo modo `rotate-all`: reprovision de los 6 componentes en orden con backup
+- Modo `status` ya existente: mostrar edad del seed + alerta si > threshold
+
+**Lo que NO haremos (y por qué):**
+- Hot-reload sin reinicio: requiere coordinación distribuida simultánea entre
+  6 componentes. El riesgo de ventana split-brain (MAC failures silenciosos)
+  supera el beneficio. ENT-4 es el path correcto si algún día se necesita.
+- Política en JSONs de componentes: abre 6 puntos de fallo para una decisión
+  que debe vivir en un único lugar.
+- provision.sh en etcd-server como componente ejecutable: vector de escalada
+  de privilegios. El RAG solo lee metadata, nunca ejecuta.
+
+⚠️ **Rotación siempre requiere reinicio ordenado del pipeline completo.**
+Documentado en `docs/SECURITY_MODEL.md` §3.
+
+### FEAT-CRYPTO-1 — Rotación de claves sin downtime (P3 — ENT-4, PHASE 3+)
 
 ⚠️ Rotación con `make provision-reprovision` requiere reinicio ordenado del pipeline.
 Documentar en SECURITY_MODEL.md.
@@ -265,6 +314,7 @@ TEST-INTEG-2 (etcd JSON round-trip):  ░░░░░░░░░░░░░░
 SECURITY_MODEL.md:                    ████████████████████ 100% ✅  DAY 97
 DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
 DEBT-INFRA-002 (rng-tools5):          ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
+FEAT-ROTATION-1 (política rotación):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
 DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 98+
 Fast Detector Config (DEBT-FD-001):   ████░░░░░░░░░░░░░░░░  20% 🟡  PHASE 2
 FEAT-RANSOM-*:                        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post DEBT-FD-001
@@ -303,6 +353,9 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | P4 test-integ | make test-integ separado, no en ctest normal ✅ | 97 |
 | haveged | Aceptable desarrollo. Producción: rng-tools5 + hardware RNG ✅ | 97 |
 | libsodium build | Parche PHASE 1. DEBT-INFRA-001: migrar a Trixie (13) ✅ | 97 |
+| Política rotación seeds | provision.sh único SSOT. rotate-all + pipeline restart ✅ | 97 |
+| Hot-reload seeds | NO en PHASE 1 — split-brain risk. ENT-4 para PHASE 3+ ✅ | 97 |
+| RAG + rotación | RAG lee metadata etcd, alerta admin. Nunca ejecuta provision.sh ✅ | 97 |
 | etcd-client rol final | Transporte puro de blobs opacos ✅ | 96 |
 
 ---
