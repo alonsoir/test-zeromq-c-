@@ -5,3 +5,4 @@
 /usr/local/include/crypto_transport/compression.hpp
 /usr/local/include/crypto_transport/utils.hpp
 /usr/local/include/crypto_transport/crypto_manager.hpp
+/usr/local/include/crypto_transport/transport.hpp

@@ -222,6 +222,7 @@ if(BUILD_TESTS)
     # )
 
     # Test: SecretsManager Basic (Day 55)
+    enable_testing()
     add_executable(test_secrets_manager_simple
             tests/test_secrets_manager_simple.cpp
             src/secrets_manager.cpp
@@ -233,6 +234,7 @@ if(BUILD_TESTS)
             ${OPENSSL_INCLUDE_DIR}
     )
 
+    add_test(NAME test_secrets_manager_simple COMMAND test_secrets_manager_simple)
     target_link_libraries(test_secrets_manager_simple
             PRIVATE
             Threads::Threads

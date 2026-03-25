@@ -31,17 +31,36 @@ message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 # ============================================================================
 find_package(PkgConfig REQUIRED)
 
-# libsodium (ChaCha20-Poly1305)
-pkg_check_modules(LIBSODIUM REQUIRED libsodium)
-if(NOT LIBSODIUM_FOUND)
-    message(FATAL_ERROR "libsodium not found. Install: sudo apt-get install libsodium-dev")
+# libsodium 1.0.19 — priorizar /usr/local sobre sistema (Bookworm tiene 1.0.18)
+find_library(LIBSODIUM_LIBRARIES NAMES sodium
+             HINTS /usr/local/lib
+             NO_DEFAULT_PATH)
+if(NOT LIBSODIUM_LIBRARIES)
+    # fallback al sistema si no está en /usr/local
+    find_library(LIBSODIUM_LIBRARIES NAMES sodium REQUIRED)
 endif()
+find_path(LIBSODIUM_INCLUDE_DIRS sodium.h
+          HINTS /usr/local/include
+          NO_DEFAULT_PATH)
+if(NOT LIBSODIUM_INCLUDE_DIRS)
+    find_path(LIBSODIUM_INCLUDE_DIRS sodium.h REQUIRED)
+endif()
+message(STATUS "libsodium lib:     ${LIBSODIUM_LIBRARIES}")
+message(STATUS "libsodium include: ${LIBSODIUM_INCLUDE_DIRS}")
 
 # LZ4 (compression)
 pkg_check_modules(LZ4 REQUIRED liblz4)
 if(NOT LZ4_FOUND)
     message(FATAL_ERROR "liblz4 not found. Install: sudo apt-get install liblz4-dev")
 endif()
+
+# libseed_client (trust chain — ADR-013)
+find_library(LIBSEED_CLIENT_LIB NAMES seed_client HINTS /usr/local/lib REQUIRED)
+find_path(LIBSEED_CLIENT_INC seed_client/seed_client.hpp HINTS /usr/local/include REQUIRED)
+if(NOT LIBSEED_CLIENT_LIB OR NOT LIBSEED_CLIENT_INC)
+    message(FATAL_ERROR "libseed_client not found. Build libs/seed-client first.")
+endif()
+message(STATUS "libseed_client: ${LIBSEED_CLIENT_LIB}")
 
 # ============================================================================
 # SOURCES
@@ -50,6 +69,7 @@ set(SOURCES
         src/crypto.cpp
         src/compression.cpp
         src/utils.cpp
+        src/transport.cpp
 )
 
 # Public headers that will be installed
@@ -58,6 +78,7 @@ set(PUBLIC_HEADERS
         include/crypto_transport/compression.hpp
         include/crypto_transport/utils.hpp
         include/crypto_transport/crypto_manager.hpp
+        include/crypto_transport/transport.hpp
 )
 
 # ============================================================================
@@ -74,6 +95,7 @@ target_include_directories(crypto_transport
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${LIBSODIUM_INCLUDE_DIRS}
         ${LZ4_INCLUDE_DIRS}
+        ${LIBSEED_CLIENT_INC}
 )
 
 # ============================================================================
@@ -98,6 +120,7 @@ target_link_libraries(crypto_transport
         PRIVATE
         ${LIBSODIUM_LIBRARIES}
         ${LZ4_LIBRARIES}
+        ${LIBSEED_CLIENT_LIB}
 )
 
 # Library properties

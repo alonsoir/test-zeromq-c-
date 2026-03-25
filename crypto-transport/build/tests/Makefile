@@ -213,6 +213,20 @@ test_integration/fast:
 	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integration.dir/build.make tests/CMakeFiles/test_integration.dir/build
 .PHONY : test_integration/fast
 
+# Convenience name for target.
+tests/CMakeFiles/test_crypto_transport.dir/rule:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/test_crypto_transport.dir/rule
+.PHONY : tests/CMakeFiles/test_crypto_transport.dir/rule
+
+# Convenience name for target.
+test_crypto_transport: tests/CMakeFiles/test_crypto_transport.dir/rule
+.PHONY : test_crypto_transport
+
+# fast build rule for target.
+test_crypto_transport/fast:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/build
+.PHONY : test_crypto_transport/fast
+
 test_compression.o: test_compression.cpp.o
 .PHONY : test_compression.o
 
@@ -261,6 +275,30 @@ test_crypto.cpp.s:
 	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto.dir/build.make tests/CMakeFiles/test_crypto.dir/test_crypto.cpp.s
 .PHONY : test_crypto.cpp.s
 
+test_crypto_transport.o: test_crypto_transport.cpp.o
+.PHONY : test_crypto_transport.o
+
+# target to build an object file
+test_crypto_transport.cpp.o:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/test_crypto_transport.cpp.o
+.PHONY : test_crypto_transport.cpp.o
+
+test_crypto_transport.i: test_crypto_transport.cpp.i
+.PHONY : test_crypto_transport.i
+
+# target to preprocess a source file
+test_crypto_transport.cpp.i:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/test_crypto_transport.cpp.i
+.PHONY : test_crypto_transport.cpp.i
+
+test_crypto_transport.s: test_crypto_transport.cpp.s
+.PHONY : test_crypto_transport.s
+
+# target to generate assembly for a file
+test_crypto_transport.cpp.s:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/test_crypto_transport.cpp.s
+.PHONY : test_crypto_transport.cpp.s
+
 test_integration.o: test_integration.cpp.o
 .PHONY : test_integration.o
 
@@ -300,6 +338,7 @@ help:
 	@echo "... test"
 	@echo "... test_compression"
 	@echo "... test_crypto"
+	@echo "... test_crypto_transport"
 	@echo "... test_integration"
 	@echo "... test_compression.o"
 	@echo "... test_compression.i"
@@ -307,6 +346,9 @@ help:
 	@echo "... test_crypto.o"
 	@echo "... test_crypto.i"
 	@echo "... test_crypto.s"
+	@echo "... test_crypto_transport.o"
+	@echo "... test_crypto_transport.i"
+	@echo "... test_crypto_transport.s"
 	@echo "... test_integration.o"
 	@echo "... test_integration.i"
 	@echo "... test_integration.s"
