@@ -1,14 +1,19 @@
-# ML Defender — Prompt de Continuidad DAY 97
-## 25 marzo 2026
+# ML Defender — Prompt de Continuidad DAY 98
+## 26 marzo 2026
 
 ---
 
 ## Estado del sistema
 
 **Pipeline:** 6/6 RUNNING
-**Tests:** 39/39 ✅ (crypto 3/3 · etcd-hmac 12/12 · ml-detector 9/9 · rag-ingester 7/7 · sniffer 1/1 · seed-client 6/6)
-**Rama:** `feature/plugin-loader-adr012`
-**Último commit:** `feat(crypto): add seed-client library — cryptographic base material reader (ADR-013 PHASE 1)`
+**Tests:** 22/22 suites ✅
+- crypto-transport: 4/4 (test_crypto · test_compression · test_integration · test_crypto_transport)
+- seed-client: 1/1
+- etcd-server: 1/1
+- rag-ingester: 7/7
+- ml-detector: 9/9
+  **Rama:** `feature/plugin-loader-adr012`
+  **Último commit:** `feat(crypto): HKDF-SHA256 nativo + CryptoTransport + libsodium 1.0.19 (DAY 97)`
 
 ---
 
@@ -16,59 +21,90 @@
 
 ```
 provision.sh → seed.bin (chmod 0600, /etc/ml-defender/{component}/)
-    └► libseedclient    ✅ DAY 96 — instalado, 6/6 tests
-        └► crypto-transport (HKDF + ChaCha20 + LZ4)   ← P1 DAY 97
-            └► etcd-client (transporte puro)           ← DAY 98
+    └► libseed_client    ✅ DAY 96 — instalado
+        └► CryptoTransport (HKDF-SHA256 + ChaCha20-Poly1305 IETF + nonce 96-bit)  ✅ DAY 97
+            └► etcd-client (transporte puro)   ← P1 DAY 98
                 └► componentes + plugin-loader
 ```
 
 ---
 
-## Decisiones cerradas DAY 96 (Consejo — no reabrir)
+## Decisiones cerradas DAY 97 (Consejo — no reabrir)
 
 | Decisión | Resolución |
 |---|---|
-| HKDF implementation | **libsodium** exclusivamente |
-| HKDF context format | `"ml-defender:{component}:{version}:{tx\|rx}"` |
-| Nonce policy | Contador monotónico **96-bit** por sesión |
-| C++ standard | **C++20 permanente** — migración C++23 solo si kernel/eBPF lo exige |
-| Error handling | `throw` en todo el pipeline — `std::expected` diferido |
-| Cifrado | **SIEMPRE obligatorio** — eliminar flag `enabled` de JSONs |
-| Compresión | **SIEMPRE** cuando posible — eliminar flag `enabled` de JSONs |
-| Orden operaciones | **LZ4 → ChaCha20** (comprimir antes de cifrar) |
-| Rotación seeds | Requiere **reinicio ordenado** de toda la pipeline |
-| Library naming | `libseedclient` sin underscore (convención Linux) |
+| HKDF implementation | **libsodium 1.0.19 nativo** — `crypto_kdf_hkdf_sha256_extract/expand` |
+| libsodium versión | **1.0.19** compilada desde fuente — SHA-256 `018d79fe…` verificado |
+| Bookworm dependency | `apt remove libsodium23` arrastra ZeroMQ — `provision.sh` reinstala `libzmq5 libzmq3-dev cppzmq-dev` |
+| HKDF salt | 32 bytes cero (RFC 5869 default) |
+| expand input | `prk[]` buffer directo — NO el state (API real de 1.0.19) |
+| Nonce layout | `[0x00000000 \|\| uint64_LE_counter]` — upper 4 bytes fijos |
+| CryptoManager | **DEPRECADO** — `CryptoTransport` lo sustituye en DAY 98 |
+| etcd-server tests | `add_test()` añadido al CMakeLists.txt |
+| libsodium path | `NO_DEFAULT_PATH` en CMake para priorizar `/usr/local` sobre sistema |
 
 ---
 
-## Objetivos DAY 97
+## Librerías instaladas en /usr/local
 
-### P1 — DEBT-CRYPTO-002: HKDF en crypto-transport
-
-**Diagnóstico inicial:**
 ```bash
-vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null || echo 'apt-get install -y libsodium-dev'"
-cat crypto-transport/include/crypto_transport/crypto.hpp | head -60
+# Verificar estado post-DAY97
+vagrant ssh -c "
+ls -lh /usr/local/lib/libsodium* &&
+ls -lh /usr/local/lib/libseed_client* &&
+ls -lh /usr/local/lib/libcrypto_transport* &&
+pkg-config --modversion libsodium
+"
+# Esperado:
+#   libsodium.so.26 → 1.0.19
+#   libseed_client.so.1.0.0
+#   libcrypto_transport.so.1.0.0 (incluye transport.hpp instalado)
 ```
 
-**Interfaz objetivo:**
+---
+
+## Objetivos DAY 98
+
+### P1 — Integrar CryptoTransport en los 6 componentes
+
+Sustituir `CryptoManager` por `CryptoTransport` en cada componente.
+Patrón de migración:
+
 ```cpp
-// Movible, no copiable (RAII de session keys)
-CryptoTransport(const SeedClient& seed_client,
-                const std::string& context = "ml-defender:transport:v1");
-// HKDF-SHA256 via libsodium → session_key (nunca sale de CryptoTransport)
+// ANTES (CryptoManager — DEPRECADO)
+CryptoManager crypto(seed_string);
+auto encrypted = crypto.encrypt(plaintext);
+
+// DESPUÉS (CryptoTransport — ADR-013 PHASE 2)
+SeedClient sc("/etc/ml-defender/sniffer/sniffer.json");
+sc.load();
+CryptoTransport tx(sc, "ml-defender:sniffer:v1:tx");
+CryptoTransport rx(sc, "ml-defender:sniffer:v1:rx");
+auto encrypted = tx.encrypt(plaintext_bytes);
 ```
 
-Ficheros: `crypto.hpp` · `crypto.cpp` · `CMakeLists.txt` (añadir libsodium) · tests backward compat.
+Componentes a migrar (en orden):
+1. `etcd-server/src/crypto_manager.cpp` — ya tiene su propio CryptoManager
+2. `sniffer` — mayor volumen de tráfico
+3. `ml-detector`
+4. `firewall-acl-agent`
+5. `rag-ingester`
+6. `rag-security`
 
-### P1 — DEBT-CRYPTO-001: Nonce management
+### P1 — ADR-020: Eliminar flags enabled de los 6 JSONs
 
-Contador monotónico 96-bit. Implementar en `CryptoTransport`, nunca en `SeedClient`.
+Eliminar `encryption.enabled` y `compression.enabled` de:
+- `sniffer/config/sniffer.json`
+- `ml-detector/config/ml_detector_config.json`
+- `firewall-acl-agent/config/firewall.json`
+- `rag-ingester/config/rag-ingester.json`
+- `rag/config/rag-config.json`
+- `etcd-server/config/etcd-server.json`
 
-### P1 — ADR-020: Eliminar flags enabled de JSONs
+### P1 — etcd-client: integrar CryptoTransport
 
-Eliminar `encryption.enabled` y `compression.enabled` de los 6 JSONs de componentes.
-Cifrado y compresión son siempre obligatorios. Crear `docs/adr/ADR-020-crypto-mandatory.md`.
+`etcd-client` actualmente usa `CryptoManager` para el transporte hacia etcd-server.
+Migrar a `CryptoTransport` con contexto `"ml-defender:etcd-client:v1:tx"`.
 
 ### P2 — DEBT-CRYPTO-003a: mlock() en seed_client.cpp
 
@@ -77,49 +113,47 @@ Cifrado y compresión son siempre obligatorios. Crear `docs/adr/ADR-020-crypto-m
 mlock(seed_.data(), seed_.size());
 ```
 
-### P2 — DEBT-CRYPTO-003b: Entropy check en provision.sh
-
-```bash
-avail=$(cat /proc/sys/kernel/random/entropy_avail)
-[ "$avail" -lt 256 ] && apt-get install -y haveged && systemctl start haveged
-```
-
-### P1 si tiempo — TEST-INTEG-1 + TEST-INTEG-2
+### P2 — TEST-INTEG-1 + TEST-INTEG-2
 
 TEST-INTEG-1: provision → seed → HKDF → cifrado → mensaje → descifrado → verificar.
 TEST-INTEG-2: JSON → LZ4 → ChaCha20 → etcd → ChaCha20_dec → LZ4_dec → JSON (round-trip).
 
+### P3 — DEBT-NAMING-001
+
+`libs/seed-client/CMakeLists.txt` tiene `add_library(seed_client ...)` → genera
+`libseed_client.so` (con underscore). El Consejo acordó `libseedclient` (sin underscore).
+No bloquea nada — renombrar en DAY tranquilo.
+
 ---
 
-## Diagnóstico de arranque DAY 97
+## Diagnóstico de arranque DAY 98
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
 git status && git log --oneline -5
 
-# libsodium disponible?
-vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null || echo 'INSTALAR'"
+# Estado librerías
+vagrant ssh -c "pkg-config --modversion libsodium && ls /usr/local/lib/libcrypto_transport* | head -3"
 
-# seed-client sigue instalado?
-vagrant ssh -c "ls -lh /usr/local/lib/libseedclient.so* 2>/dev/null || echo 'FALTA'"
+# Buscar usos de CryptoManager en los componentes
+grep -r "CryptoManager" --include="*.cpp" --include="*.hpp" -l
 
-# Ver crypto-transport actual
-cat crypto-transport/include/crypto_transport/crypto.hpp | head -60
+# Ver cuántos JSONs aún tienen enabled flags
+grep -r '"enabled"' --include="*.json" sniffer/ ml-detector/ firewall-acl-agent/ rag-ingester/ rag/ etcd-server/ 2>/dev/null | grep -v build
 
 # arXiv: ¿respuesta Mirsky o Garcia?
 ```
 
 ---
 
-## Backlog P1 activo DAY 97
+## Backlog P1 activo DAY 98
 
 | ID | Tarea |
 |---|---|
-| DEBT-CRYPTO-002 | HKDF en crypto-transport (libsodium) |
-| DEBT-CRYPTO-001 | Nonce 96-bit monotónico |
-| ADR-020 | Eliminar flags enabled — cifrado+compresión siempre |
+| DEBT-CRYPTO-004 | Migrar CryptoManager → CryptoTransport en 6 componentes |
+| ADR-020 | Eliminar flags enabled — JSONs de los 6 componentes |
+| DEBT-ETCD-001 | etcd-client: integrar CryptoTransport |
 | DEBT-CRYPTO-003a | mlock() en seed_client.cpp |
-| DEBT-CRYPTO-003b | Entropy check provision.sh |
 | TEST-INTEG-1/2 | Tests E2E pipeline + etcd JSON round-trip |
 | ADR-012 PHASE 1b | plugin-loader integrado en sniffer |
 | arXiv | Respuesta Mirsky / Tier 3 (Martin Grill) si silencio |
@@ -133,14 +167,15 @@ Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
 VM:      vagrant ssh -c '...'   ← SIEMPRE -c
 Logs:    /vagrant/logs/lab/
 Keys:    /etc/ml-defender/{component}/seed.bin
+Libs:    /usr/local/lib/ — prioridad sobre /lib/x86_64-linux-gnu/
 
 macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
 zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
+cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
 ```
 
 ---
 
-*DAY 96 post-Consejo — 24 marzo 2026*
-*Tests: 39/39 ✅ · libseedclient instalado · Email Mirsky enviado*
-*Consejo DAY 96: Grok · DeepSeek · Gemini · ChatGPT5 (unanimidad 4/4)*
+*DAY 97 cierre — 25 marzo 2026*
+*Tests: 22/22 suites ✅ · libsodium 1.0.19 · CryptoTransport HKDF nativo*
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
