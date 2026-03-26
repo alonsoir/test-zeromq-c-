@@ -3,8 +3,10 @@
 #include "ring_consumer.hpp"
 #include "fast_detector.hpp"
 #include <reason_codes.hpp>
-// 🎯 DAY 29: Crypto-transport utilities
-#include <crypto_transport/utils.hpp>
+// ADR-013 PHASE 2 — DAY 98
+// DEPRECATED DAY 98 — #include <crypto_transport/utils.hpp>
+#include <lz4.h>
+#include <cstring>
 #include "feature_logger.hpp"
 #include "flow/sharded_flow_manager.hpp"  // ✅ DAY 45: Migrated
 #include "ml_defender_features.hpp"
@@ -98,7 +100,8 @@ namespace sniffer {
     const std::string& encryption_seed)
     : config_(config)
     , fast_detector_config_(fast_detector_config)
-    , encryption_seed_(encryption_seed)  // 🎯 DAY 29
+    // DEPRECATED DAY 98 — encryption_seed ignorado, SeedClient lee desde /etc/ml-defender/sniffer/sniffer.json
+    // , encryption_seed_(encryption_seed)
     , ring_buf_(nullptr)
         , ring_fd_(-1)
         , initialized_(false)
@@ -342,36 +345,18 @@ bool RingBufferConsumer::initialize_zmq() {
         std::cout << "[INFO] ZeroMQ initialized with " << socket_count
                   << " sockets to " << endpoint << std::endl;
 
-        // 🎯 DAY 29: Initialize Crypto-Transport with seed from etcd
-        if (encryption_seed_.empty()) {
-            std::cerr << "[ERROR] No encryption seed provided!" << std::endl;
-            return false;
-        }
-
-        // Convert HEX seed to binary (64 hex chars → 32 bytes)
-        std::string binary_key;
+        // ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient
         try {
-            // Use crypto_transport utility for hex conversion
-            auto key_bytes = crypto_transport::hex_to_bytes(encryption_seed_);
-            binary_key = std::string(key_bytes.begin(), key_bytes.end());
+            seed_client_ = std::make_unique<ml_defender::SeedClient>(
+                "/etc/ml-defender/sniffer/sniffer.json");
+            seed_client_->load();
+            tx_ = std::make_unique<crypto_transport::CryptoTransport>(
+                *seed_client_, "ml-defender:sniffer:v1:tx");
+            std::cout << "[INFO] ✅ CryptoTransport inicializado (HKDF-SHA256 + ChaCha20-Poly1305)" << std::endl;
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] Failed to convert hex seed to binary: " << e.what() << std::endl;
+            std::cerr << "[ERROR] CryptoTransport init failed: " << e.what() << std::endl;
             return false;
         }
-
-        if (binary_key.size() != 32) {
-            std::cerr << "[ERROR] Invalid key size after conversion: " << binary_key.size() << " bytes" << std::endl;
-            return false;
-        }
-
-        crypto_manager_ = std::make_shared<crypto::CryptoManager>(binary_key);
-
-        if (!crypto_manager_) {
-            std::cerr << "[ERROR] Failed to initialize CryptoManager" << std::endl;
-            return false;
-        }
-
-        std::cout << "[INFO] ✅ Crypto-Transport initialized (XSalsa20-Poly1305 + LZ4)" << std::endl;
 
         return true;
 
@@ -657,24 +642,39 @@ bool RingBufferConsumer::send_protobuf_message(const std::vector<uint8_t>& seria
         // Pattern: serialize → compress → encrypt → zmq_send
         // ====================================================================
 
-        if (!crypto_manager_) {
-            std::cerr << "[ERROR] CryptoManager not initialized!" << std::endl;
+        if (!tx_) {
+            std::cerr << "[ERROR] CryptoTransport no inicializado!" << std::endl;
             stats_.zmq_send_failures++;
             return false;
         }
 
-        // Step 1: Compress
-        auto compressed = crypto_manager_->compress_with_size(
-    std::string(serialized_data.begin(), serialized_data.end())
-);
+        // Step 1: Comprimir con LZ4
+        std::vector<uint8_t> to_encrypt;
+        {
+            int orig_size = static_cast<int>(serialized_data.size());
+            int max_compressed = LZ4_compressBound(orig_size);
+            std::vector<uint8_t> compressed(sizeof(uint32_t) + max_compressed);
+            uint32_t orig_le = static_cast<uint32_t>(orig_size);
+            std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
+            int compressed_size = LZ4_compress_default(
+                reinterpret_cast<const char*>(serialized_data.data()),
+                reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
+                orig_size, max_compressed
+            );
+            if (compressed_size > 0) {
+                compressed.resize(sizeof(uint32_t) + compressed_size);
+                to_encrypt = std::move(compressed);
+                std::cout << "[CRYPTO] 📦 Compressed: " << orig_size
+                          << " → " << to_encrypt.size() << " bytes" << std::endl;
+            } else {
+                to_encrypt = serialized_data;
+                std::cerr << "[CRYPTO] ⚠️  LZ4 falló — enviando sin comprimir" << std::endl;
+            }
+        }
 
-        // Step 2: Encrypt
-        auto encrypted = crypto_manager_->encrypt(compressed);
-
-        // Log sizes (optional, for debugging Day 29)
-        std::cout << "[CRYPTO] 📦 Compressed: " << serialized_data.size()
-                  << " → " << compressed.size() << " bytes" << std::endl;
-        std::cout << "[CRYPTO] 🔒 Encrypted: " << compressed.size()
+        // Step 2: Cifrar con CryptoTransport
+        auto encrypted = tx_->encrypt(to_encrypt);
+        std::cout << "[CRYPTO] 🔒 Encrypted: " << to_encrypt.size()
                   << " → " << encrypted.size() << " bytes" << std::endl;
 
         // Step 3: Send encrypted

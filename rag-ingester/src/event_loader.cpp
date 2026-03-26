@@ -4,6 +4,8 @@
 // Via Appia Quality - Robust, exception-safe event processing
 
 #include "event_loader.hpp"
+#include <lz4.h>
+#include <cstring>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -24,14 +26,19 @@ namespace rag_ingester {
 // EventLoader Implementation
 // ============================================================================
 
-EventLoader::EventLoader(std::shared_ptr<crypto::CryptoManager> crypto_manager)
-    : crypto_manager_(crypto_manager) {
+EventLoader::EventLoader() {
     stats_ = {};
-
-    if (crypto_manager_) {
-        std::cout << "[INFO] EventLoader: Encryption enabled (ChaCha20-Poly1305 + LZ4)" << std::endl;
-    } else {
-        std::cout << "[WARN] EventLoader: Encryption DISABLED - plaintext mode" << std::endl;
+    // ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient
+    try {
+        seed_client_ = std::make_unique<ml_defender::SeedClient>(
+            "/etc/ml-defender/rag-ingester/rag-ingester.json");
+        seed_client_->load();
+        rx_ = std::make_unique<crypto_transport::CryptoTransport>(
+            *seed_client_, "ml-defender:rag-artifacts:v1:artifact");
+        std::cout << "[INFO] EventLoader: CryptoTransport inicializado (HKDF-SHA256)" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[WARN] EventLoader: CryptoTransport no disponible: " << e.what()
+                  << " — modo plaintext" << std::endl;
     }
 }
 
@@ -41,13 +48,11 @@ Event EventLoader::load(const std::string& filepath) {
     // 1. Read encrypted file
     auto encrypted = read_file(filepath);
 
-    // 2. Decrypt (ChaCha20-Poly1305)
+    // 2. Decrypt (ADR-013 PHASE 2 — CryptoTransport)
     auto decrypted = decrypt(encrypted);
 
-    // 3. Decompress with size header (FIXED: usar decompress_with_size)
-    std::string decrypted_str(decrypted.begin(), decrypted.end());
-    std::string decompressed_str = crypto_manager_->decompress_with_size(decrypted_str);
-    std::vector<uint8_t> decompressed(decompressed_str.begin(), decompressed_str.end());
+    // 3. Decompress con cabecera LZ4 [uint32_t orig_size LE]
+    auto decompressed = decompress(decrypted);
 
     // 4. Parse protobuf
     return parse_protobuf(decompressed);
@@ -96,33 +101,43 @@ std::vector<uint8_t> EventLoader::read_file(const std::string& path) {
 }
 
 std::vector<uint8_t> EventLoader::decrypt(const std::vector<uint8_t>& encrypted) {
-    std::string encrypted_str(encrypted.begin(), encrypted.end());
-    std::string decrypted_str = crypto_manager_->decrypt(encrypted_str);
-    return std::vector<uint8_t>(decrypted_str.begin(), decrypted_str.end());
+    if (!rx_) {
+        // Modo plaintext
+        return encrypted;
+    }
+    return rx_->decrypt(encrypted);
 }
 
 std::vector<uint8_t> EventLoader::decompress(const std::vector<uint8_t>& compressed) {
-    if (!crypto_manager_) {
-        // No compression - pass through
+    if (compressed.size() <= sizeof(uint32_t)) {
         return compressed;
     }
 
-    if (compressed.empty()) {
+    // Cabecera LZ4: [uint32_t orig_size LE] + datos comprimidos
+    uint32_t orig_size = 0;
+    std::memcpy(&orig_size, compressed.data(), sizeof(orig_size));
+
+    if (orig_size == 0 || orig_size > 64 * 1024 * 1024) {
+        // Sin cabecera válida — devolver tal cual
         return compressed;
     }
 
-    try {
-        // Use crypto_transport::decompress (LZ4)
-        size_t estimated_size = compressed.size() * 10; // 10x compression ratio
-        if (estimated_size < 1024) estimated_size = 1024;
+    std::vector<uint8_t> decompressed(orig_size);
+    int result = LZ4_decompress_safe(
+        reinterpret_cast<const char*>(compressed.data() + sizeof(uint32_t)),
+        reinterpret_cast<char*>(decompressed.data()),
+        static_cast<int>(compressed.size() - sizeof(uint32_t)),
+        static_cast<int>(orig_size)
+    );
 
-        return crypto_transport::decompress(compressed, estimated_size);
-    } catch (const std::exception& e) {
-        // If decompression fails, data may not be compressed - pass through
-        std::cerr << "[WARN] Decompress failed (data may be uncompressed): "
-                  << e.what() << std::endl;
+    if (result < 0) {
+        // Fallo LZ4 — devolver datos sin comprimir
+        std::cerr << "[WARN] EventLoader: LZ4 decompress failed — datos sin comprimir" << std::endl;
         return compressed;
     }
+
+    decompressed.resize(result);
+    return decompressed;
 }
 
 Event EventLoader::parse_protobuf(const std::vector<uint8_t>& data) {

@@ -8,14 +8,22 @@
 
 ComponentRegistry::ComponentRegistry() {
     try {
-        crypto_manager_ = std::make_unique<CryptoManager>();
-        std::cout << "[REGISTRY] ComponentRegistry inicializado con cifrado" << std::endl;
+        // ADR-013 PHASE 2 — CryptoTransport via SeedClient (DAY 98)
+        seed_client_ = std::make_unique<ml_defender::SeedClient>(
+            "/etc/ml-defender/etcd-server/etcd-server.json");
+        seed_client_->load();
+        tx_ = std::make_unique<crypto_transport::CryptoTransport>(
+            *seed_client_, "ml-defender:etcd-server:v1:tx");
+        rx_ = std::make_unique<crypto_transport::CryptoTransport>(
+            *seed_client_, "ml-defender:etcd-server:v1:rx");
+
+        std::cout << "[REGISTRY] ComponentRegistry inicializado con CryptoTransport (HKDF-SHA256)" << std::endl;
 
         // Iniciar monitor de heartbeats
         start_heartbeat_monitor();
         std::cout << "[REGISTRY] 💓 Monitor de heartbeats iniciado" << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "[REGISTRY] ❌ Error inicializando CryptoManager: " << e.what() << std::endl;
+        std::cerr << "[REGISTRY] ❌ Error inicializando CryptoTransport: " << e.what() << std::endl;
         throw;
     }
 }
@@ -109,28 +117,28 @@ std::string ComponentRegistry::get_component_config(const std::string& name) con
 }
 
 std::string ComponentRegistry::get_encryption_seed() const {
-    if (!crypto_manager_) {
-        throw std::runtime_error("CryptoManager no inicializado");
-    }
-    return crypto_manager_->get_current_seed();
+    // DEPRECATED DAY 98 — seed no expuesto con CryptoTransport (ADR-013)
+    std::cerr << "[REGISTRY] ⚠️  DEPRECATED: get_encryption_seed() no disponible con CryptoTransport" << std::endl;
+    return "";
 }
 
 std::string ComponentRegistry::get_encryption_key() const {
-    if (!crypto_manager_) {
-        throw std::runtime_error("CryptoManager no inicializado");
-    }
-    return crypto_manager_->get_encryption_key();
+    // DEPRECATED DAY 98 — clave derivada por HKDF no expuesta (ADR-013)
+    std::cerr << "[REGISTRY] ⚠️  DEPRECATED: get_encryption_key() no disponible con CryptoTransport" << std::endl;
+    return "";
 }
 
 std::string ComponentRegistry::encrypt_data(const std::string& plaintext) {
-    if (!encryption_enabled_ || !crypto_manager_) {
-        return plaintext; // Devolver sin cifrar si está desactivado
+    if (!encryption_enabled_ || !tx_) {
+        return plaintext; // Sin cifrar si desactivado
     }
 
     try {
-        std::string ciphertext = crypto_manager_->encrypt(plaintext);
+        std::vector<uint8_t> plain_bytes(plaintext.begin(), plaintext.end());
+        auto cipher_bytes = tx_->encrypt(plain_bytes);
+        std::string ciphertext(cipher_bytes.begin(), cipher_bytes.end());
         std::cout << "[REGISTRY] 🔒 Datos cifrados (" << plaintext.length() << " bytes -> "
-                  << ciphertext.length() << " bytes hex)" << std::endl;
+                  << ciphertext.length() << " bytes)" << std::endl;
         return ciphertext;
     } catch (const std::exception& e) {
         std::cerr << "[REGISTRY] ❌ Error cifrando datos: " << e.what() << std::endl;
@@ -139,18 +147,17 @@ std::string ComponentRegistry::encrypt_data(const std::string& plaintext) {
 }
 
 std::string ComponentRegistry::decrypt_data(const std::string& ciphertext) {
-    if (!encryption_enabled_ || !crypto_manager_) {
-        return ciphertext; // Devolver sin descifrar si está desactivado
+    if (!encryption_enabled_ || !rx_) {
+        return ciphertext; // Sin descifrar si desactivado
     }
 
     try {
-        if (!crypto_manager_->validate_ciphertext(ciphertext)) {
-            throw std::runtime_error("Ciphertext inválido");
-        }
-
-        std::string plaintext = crypto_manager_->decrypt(ciphertext);
+        // CryptoTransport lanza en MAC fail — no se necesita validate_ciphertext
+        std::vector<uint8_t> cipher_bytes(ciphertext.begin(), ciphertext.end());
+        auto plain_bytes = rx_->decrypt(cipher_bytes);
+        std::string plaintext(plain_bytes.begin(), plain_bytes.end());
         std::cout << "[REGISTRY] 🔓 Datos descifrados (" << ciphertext.length()
-                  << " bytes hex -> " << plaintext.length() << " bytes)" << std::endl;
+                  << " bytes -> " << plaintext.length() << " bytes)" << std::endl;
         return plaintext;
     } catch (const std::exception& e) {
         std::cerr << "[REGISTRY] ❌ Error descifrando datos: " << e.what() << std::endl;
@@ -171,10 +178,9 @@ bool ComponentRegistry::set_encryption_mode(bool enabled) {
 }
 
 void ComponentRegistry::rotate_encryption_key() {
-    if (crypto_manager_) {
-        crypto_manager_->rotate_key();
-        std::cout << "[REGISTRY] 🔄 Clave de cifrado rotada" << std::endl;
-    }
+    // DEPRECATED DAY 98 — rotación gestionada por provision.sh (SSOT)
+    // CryptoTransport no expone rotate — el seed se rota externamente
+    std::cerr << "[REGISTRY] ⚠️  DEPRECATED: rotate_encryption_key() no-op con CryptoTransport" << std::endl;
 }
 
 std::string ComponentRegistry::validate_configuration() const {
@@ -183,7 +189,7 @@ std::string ComponentRegistry::validate_configuration() const {
     result["components_registered"] = components_.size();
     result["encryption_enabled"] = encryption_enabled_;
     result["compression_enabled"] = compression_enabled_;
-    result["encryption_seed_set"] = (crypto_manager_ != nullptr);
+    result["encryption_seed_set"] = (seed_client_ != nullptr && seed_client_->is_loaded());
 
     // Detectar anomalías
     auto anomalies = detect_configuration_anomalies();

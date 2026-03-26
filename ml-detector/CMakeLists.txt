@@ -167,6 +167,32 @@ else()
     Fix: Run 'make crypto-transport-build' from project root")
 endif()
 
+# ADR-013 PHASE 2 — DAY 98: seed-client
+find_library(SEED_CLIENT_LIB
+        NAMES seed_client
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+find_path(SEED_CLIENT_INCLUDE_DIR
+        NAMES seed_client/seed_client.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+if(SEED_CLIENT_LIB AND SEED_CLIENT_INCLUDE_DIR)
+    message(STATUS "✅ Found seed-client: ${SEED_CLIENT_LIB}")
+    include_directories(${SEED_CLIENT_INCLUDE_DIR})
+else()
+    message(FATAL_ERROR "❌ seed-client not found. Run make seed-client-build from project root")
+endif()
+
+# LZ4 (para compresión directa — DAY 98)
+pkg_check_modules(LZ4 REQUIRED liblz4)
+if(NOT LZ4_FOUND)
+    message(FATAL_ERROR "liblz4 not found. Install: sudo apt-get install liblz4-dev")
+endif()
+message(STATUS "✅ LZ4 found: ${LZ4_VERSION}")
+include_directories(${LZ4_INCLUDE_DIRS})
+
 # Threads
 find_package(Threads REQUIRED)
 
@@ -345,6 +371,8 @@ target_link_libraries(ml-detector PRIVATE
         nlohmann_json::nlohmann_json
         ${ETCD_CLIENT_LIB}
         ${CRYPTO_TRANSPORT_LIB}
+        ${SEED_CLIENT_LIB}
+        ${LZ4_LIBRARIES}
         OpenSSL::SSL          # Day 63: HMAC-SHA256 para CsvEventWriter
         OpenSSL::Crypto       # Day 63
 )

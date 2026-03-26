@@ -15,7 +15,10 @@
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include "network_security.pb.h"
-#include <crypto_transport/crypto_manager.hpp>
+// DEPRECATED DAY 98 — #include <crypto_transport/crypto_manager.hpp>
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
+#include <lz4.h>
 
 // Day 63: Forward declaration — avoids circular include, keeps header light
 namespace ml_defender { class CsvEventWriter; }
@@ -76,7 +79,8 @@ class RAGLogger {
 public:
     RAGLogger(const RAGLoggerConfig& config,
               std::shared_ptr<spdlog::logger> logger,
-              std::shared_ptr<crypto::CryptoManager> crypto_manager);
+              // DEPRECATED DAY 98 — crypto_manager eliminado (ADR-013)
+              std::shared_ptr<void> /*deprecated_crypto_manager*/ = nullptr);
     ~RAGLogger();
 
     RAGLogger(const RAGLogger&) = delete;
@@ -131,16 +135,20 @@ private:
 
     static std::string calculate_sha256(const std::string& data);
 
-    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
+    // ADR-013 PHASE 2 — DAY 98: artefactos cifrados con CryptoTransport
+    // DEPRECATED DAY 98 — crypto_manager_ sustituido
+    std::unique_ptr<ml_defender::SeedClient>           artifact_seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport> artifact_tx_;
 };
 
 // ============================================================================
 // Factory Function
 // ============================================================================
 
+// DEPRECATED DAY 98 — crypto_manager eliminado
 std::unique_ptr<RAGLogger> create_rag_logger_from_config(
     const std::string& config_path,
     std::shared_ptr<spdlog::logger> logger,
-    std::shared_ptr<crypto::CryptoManager> crypto_manager);
+    std::shared_ptr<void> /*deprecated*/ = nullptr);
 
 } // namespace ml_defender

@@ -20,7 +20,7 @@ ZMQHandler::ZMQHandler(
     std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
     std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
     std::shared_ptr<ml_defender::InternalDetector> internal_detector,
-    std::shared_ptr<crypto::CryptoManager> crypto_manager,
+    // DEPRECATED DAY 98 — crypto_manager eliminado (ADR-013)
     std::string hmac_key_hex
 )
     : config_(config)
@@ -31,7 +31,7 @@ ZMQHandler::ZMQHandler(
     , traffic_detector_(traffic_detector)
     , internal_detector_(internal_detector)
     , extractor_(extractor)
-    , crypto_manager_(crypto_manager)
+    // DEPRECATED DAY 98 — crypto_manager ignorado
     , hmac_key_hex_(std::move(hmac_key_hex))
     , running_(false)
     , logger_(spdlog::get("ml-detector"))
@@ -44,11 +44,19 @@ ZMQHandler::ZMQHandler(
 
     logger_->info("🔌 Initializing ZMQ Handler");
 
-    if (crypto_manager_) {
-        logger_->info("🔐 Crypto-Transport enabled (ChaCha20-Poly1305 + LZ4)");
-    } else {
-        logger_->error("❌ Crypto-Transport NOT initialized");
-        throw std::runtime_error("CryptoManager required for ZMQHandler");
+    // ADR-013 PHASE 2 — DAY 98: inicializar CryptoTransport via SeedClient
+    try {
+        seed_client_ = std::make_unique<ml_defender::SeedClient>(
+            "/etc/ml-defender/ml-detector/ml_detector_config.json");
+        seed_client_->load();
+        tx_ = std::make_unique<crypto_transport::CryptoTransport>(
+            *seed_client_, "ml-defender:ml-detector:v1:tx");
+        rx_ = std::make_unique<crypto_transport::CryptoTransport>(
+            *seed_client_, "ml-defender:ml-detector:v1:rx");
+        logger_->info("🔐 CryptoTransport inicializado (HKDF-SHA256 + ChaCha20-Poly1305)");
+    } catch (const std::exception& e) {
+        logger_->error("❌ CryptoTransport init failed: {}", e.what());
+        throw;
     }
 
     // Log detector status
@@ -144,8 +152,8 @@ ZMQHandler::ZMQHandler(
     try {
         rag_logger_ = ml_defender::create_rag_logger_from_config(
             "../config/rag_logger_config.json",
-            logger_,
-            crypto_manager_
+            logger_
+            // DEPRECATED DAY 98 — crypto_manager eliminado
         );
 		logger_->info("✅ RAG Logger initialized successfully (encrypted artifacts enabled)");
 		if (csv_writer_) {
@@ -231,12 +239,31 @@ void ZMQHandler::run() {
                 }
 
                 try {
-                    auto decrypted    = crypto_manager_->decrypt(encrypted_data);
-                    auto decompressed = crypto_manager_->decompress_with_size(decrypted);
+                    // ADR-013 PHASE 2 — DAY 98: decrypt + LZ4 decompress
+                    std::vector<uint8_t> cipher_bytes(encrypted_data.begin(), encrypted_data.end());
+                    auto plain_bytes = rx_->decrypt(cipher_bytes);
 
-                    logger_->trace("🔓 Decrypted: {} bytes → {} bytes (decompressed)",
-                                  encrypted_data.size(), decompressed.size());
+                    // LZ4 decompress: cabecera [uint32_t orig_size LE] + datos
+                    std::string decompressed;
+                    if (plain_bytes.size() > sizeof(uint32_t)) {
+                        uint32_t orig_size = 0;
+                        std::memcpy(&orig_size, plain_bytes.data(), sizeof(orig_size));
+                        decompressed.resize(orig_size);
+                        int result = LZ4_decompress_safe(
+                            reinterpret_cast<const char*>(plain_bytes.data() + sizeof(uint32_t)),
+                            decompressed.data(),
+                            static_cast<int>(plain_bytes.size() - sizeof(uint32_t)),
+                            static_cast<int>(orig_size)
+                        );
+                        if (result < 0) {
+                            // Sin cabecera LZ4 — asumir sin compresión
+                            decompressed = std::string(plain_bytes.begin(), plain_bytes.end());
+                        }
+                    } else {
+                        decompressed = std::string(plain_bytes.begin(), plain_bytes.end());
+                    }
 
+                    logger_->trace("🔓 Decrypted: {} → {} bytes", encrypted_data.size(), decompressed.size());
                     process_event(decompressed);
 
                 } catch (const std::exception& e) {
@@ -799,9 +826,9 @@ void ZMQHandler::process_event(const std::string& message) {
 
 void ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent& event) {
     try {
-        // DAY 75: Defensive null guards
-        if (!crypto_manager_) {
-            logger_->error("[DAY75] send_enriched_event: crypto_manager_ NULL — dropping {}", event.event_id());
+        // DAY 75: Defensive null guards — ADR-013 PHASE 2
+        if (!tx_) {
+            logger_->error("[DAY98] send_enriched_event: CryptoTransport tx_ NULL — dropping {}", event.event_id());
             return;
         }
         if (!output_socket_) {
@@ -814,11 +841,29 @@ void ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent& event
             return;
         }
 
-        auto compressed = crypto_manager_->compress_with_size(serialized);
-        auto encrypted  = crypto_manager_->encrypt(compressed);
+        // ADR-013 PHASE 2 — LZ4 + CryptoTransport
+        std::vector<uint8_t> to_encrypt;
+        {
+            int orig_size = static_cast<int>(serialized.size());
+            int max_compressed = LZ4_compressBound(orig_size);
+            std::vector<uint8_t> compressed(sizeof(uint32_t) + max_compressed);
+            uint32_t orig_le = static_cast<uint32_t>(orig_size);
+            std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
+            int compressed_size = LZ4_compress_default(
+                serialized.data(),
+                reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
+                orig_size, max_compressed
+            );
+            if (compressed_size > 0) {
+                compressed.resize(sizeof(uint32_t) + compressed_size);
+                to_encrypt = std::move(compressed);
+            } else {
+                to_encrypt = std::vector<uint8_t>(serialized.begin(), serialized.end());
+            }
+        }
+        auto encrypted = tx_->encrypt(to_encrypt);
 
-        logger_->trace("🔒 Encrypted: {} bytes → {} bytes (compressed+encrypted)",
-                      serialized.size(), encrypted.size());
+        logger_->trace("🔒 Encrypted: {} → {} bytes", serialized.size(), encrypted.size());
 
         zmq::message_t message(encrypted.size());
         memcpy(message.data(), encrypted.data(), encrypted.size());

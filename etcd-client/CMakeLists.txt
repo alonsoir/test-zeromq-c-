@@ -38,6 +38,30 @@ if(NOT CRYPTO_TRANSPORT_LIB)
     message(FATAL_ERROR "crypto-transport library not found. Install it first from /vagrant/crypto-transport")
 endif()
 
+# ADR-013 PHASE 2 — DAY 98: seed-client
+find_library(SEED_CLIENT_LIB
+        NAMES seed_client
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+find_path(SEED_CLIENT_INCLUDE_DIR
+        NAMES seed_client/seed_client.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+if(NOT SEED_CLIENT_LIB OR NOT SEED_CLIENT_INCLUDE_DIR)
+    message(FATAL_ERROR "seed-client not found. Run make seed-client-build from project root")
+endif()
+message(STATUS "✅ Found seed-client: ${SEED_CLIENT_LIB}")
+
+# LZ4 (para compresión directa en process_outgoing_data)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LZ4 REQUIRED liblz4)
+if(NOT LZ4_FOUND)
+    message(FATAL_ERROR "liblz4 not found. Install: sudo apt-get install liblz4-dev")
+endif()
+message(STATUS "✅ LZ4 found")
+
 # nlohmann/json (header-only, should be available)
 find_package(nlohmann_json 3.2.0 QUIET)
 if(NOT nlohmann_json_FOUND)
@@ -70,6 +94,8 @@ target_include_directories(etcd_client
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CRYPTO_TRANSPORT_INCLUDE}
+        ${SEED_CLIENT_INCLUDE_DIR}
+        ${LZ4_INCLUDE_DIRS}
         ${OPENSSL_INCLUDE_DIR}
 )
 
@@ -92,6 +118,8 @@ target_compile_options(etcd_client
 target_link_libraries(etcd_client
         PRIVATE
         ${CRYPTO_TRANSPORT_LIB}
+        ${SEED_CLIENT_LIB}
+        ${LZ4_LIBRARIES}
         OpenSSL::SSL
         OpenSSL::Crypto
 )

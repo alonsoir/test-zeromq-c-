@@ -98,6 +98,32 @@ else()
 endif()
 
 # ============================================================================
+# SEED-CLIENT LIBRARY (ADR-013 PHASE 2 — DAY 98)
+# ============================================================================
+find_library(SEED_CLIENT_LIB
+        NAMES seed_client
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+
+find_path(SEED_CLIENT_INCLUDE_DIR
+        NAMES seed_client/seed_client.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+
+if(SEED_CLIENT_LIB AND SEED_CLIENT_INCLUDE_DIR)
+    message(STATUS "✅ Found seed-client library: ${SEED_CLIENT_LIB}")
+    message(STATUS "✅ Found seed-client headers: ${SEED_CLIENT_INCLUDE_DIR}")
+else()
+    message(FATAL_ERROR "❌ seed-client not found
+    Library: ${SEED_CLIENT_LIB}
+    Headers: ${SEED_CLIENT_INCLUDE_DIR}
+
+    Fix: Run 'make seed-client-build' from project root")
+endif()
+
+# ============================================================================
 # INCLUDE DIRECTORIES
 # ============================================================================
 include_directories(
@@ -146,6 +172,7 @@ target_compile_options(etcd-server
 target_link_libraries(etcd-server
         PRIVATE
         crypto_transport
+        seed_client
         sodium
         lz4
         ${OPENSSL_LIBRARIES}
@@ -159,6 +186,7 @@ target_include_directories(etcd-server
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CRYPTO_TRANSPORT_INCLUDE_DIR}
+        ${SEED_CLIENT_INCLUDE_DIR}
         ${LIBSODIUM_INCLUDE_DIRS}
         ${LZ4_INCLUDE_DIRS}
         ${OPENSSL_INCLUDE_DIR}

@@ -108,6 +108,30 @@ else()
     message(FATAL_ERROR "❌ crypto-transport not found. Install: cd /vagrant/crypto-transport/build && sudo make install")
 endif()
 
+# ADR-013 PHASE 2 — DAY 98: seed-client
+find_library(SEED_CLIENT_LIB
+        NAMES seed_client
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+find_path(SEED_CLIENT_INCLUDE_DIR
+        NAMES seed_client/seed_client.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+if(SEED_CLIENT_LIB AND SEED_CLIENT_INCLUDE_DIR)
+    message(STATUS "✅ Found seed-client: ${SEED_CLIENT_LIB}")
+    include_directories(${SEED_CLIENT_INCLUDE_DIR})
+else()
+    message(FATAL_ERROR "❌ seed-client not found. Run make seed-client-build from project root")
+endif()
+
+# LZ4 (descompresión directa — DAY 98)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LZ4 REQUIRED liblz4)
+message(STATUS "✅ LZ4 found: ${LZ4_VERSION}")
+include_directories(${LZ4_INCLUDE_DIRS})
+
 # ============================================================================
 # etcd-client Library (Custom)
 # ============================================================================
@@ -195,6 +219,8 @@ target_link_libraries(firewall_core
         ${JSONCPP_LIBRARIES}
         Threads::Threads
         ${CRYPTO_TRANSPORT_LIB}
+        ${SEED_CLIENT_LIB}
+        ${LZ4_LIBRARIES}
         OpenSSL::Crypto
 )
 
@@ -216,6 +242,8 @@ target_include_directories(firewall_core
         ${CMAKE_BINARY_DIR}/proto
         ${ZMQ_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
+        ${SEED_CLIENT_INCLUDE_DIR}
+        ${LZ4_INCLUDE_DIRS}
 )
 
 #===----------------------------------------------------------------------===//

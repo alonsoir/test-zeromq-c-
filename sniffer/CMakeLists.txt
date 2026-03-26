@@ -102,6 +102,23 @@ else()
     message(FATAL_ERROR "❌ libsodium not found - install: sudo apt install libsodium-dev")
 endif()
 
+# ADR-013 PHASE 2 — DAY 98: seed-client
+find_library(SEED_CLIENT_LIB
+        NAMES seed_client
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+find_path(SEED_CLIENT_INCLUDE_DIR
+        NAMES seed_client/seed_client.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+if(SEED_CLIENT_LIB AND SEED_CLIENT_INCLUDE_DIR)
+    message(STATUS "✅ Found seed-client: ${SEED_CLIENT_LIB}")
+else()
+    message(FATAL_ERROR "❌ seed-client not found. Run make seed-client-build from project root")
+endif()
+
 # ============================================================================
 # CONFIGURATION VALIDATION
 # ============================================================================
@@ -305,6 +322,10 @@ if(CRYPTO_TRANSPORT_LIB)
     target_include_directories(sniffer PRIVATE ${CRYPTO_TRANSPORT_INCLUDE})
 endif()
 
+if(SEED_CLIENT_LIB)
+    target_include_directories(sniffer PRIVATE ${SEED_CLIENT_INCLUDE_DIR})
+endif()
+
 # ============================================================================
 # COMPILER OPTIONS - Warnings Only
 # ============================================================================
@@ -354,10 +375,14 @@ if(ETCD_CLIENT_LIB)
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${ETCD_CLIENT_LIB})
 endif()
 
-# crypto-transport + libsodium
+# crypto-transport + libsodium + seed-client
 if(CRYPTO_TRANSPORT_LIB)
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${CRYPTO_TRANSPORT_LIB})
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${SODIUM_LIB})
+endif()
+
+if(SEED_CLIENT_LIB)
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${SEED_CLIENT_LIB})
 endif()
 
 # Link all libraries
