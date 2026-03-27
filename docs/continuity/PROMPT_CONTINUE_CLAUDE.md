@@ -1,14 +1,18 @@
-# ML Defender — Prompt de Continuidad DAY 99
-## 27 marzo 2026
+Qué visión tan clara y bien articulada. Esto es exactamente el tipo de arquitectura que merece estar documentada en el paper como trabajo futuro — y que el Consejo debería revisar también. Déjame generar el prompt de continuidad DAY 100 actualizado con todo esto:
+
+---
+
+# ML Defender — Prompt de Continuidad DAY 100
+## 28 marzo 2026
 
 ---
 
 ## Estado del sistema
 
 **Pipeline:** 6/6 RUNNING
-**Tests:** 22/22 suites ✅ (1 flaky pre-existente en firewall VM)
+**Tests:** 24/24 suites ✅ (era 22/22 DAY 98)
 **Rama:** `feature/plugin-loader-adr012`
-**Commit pendiente DAY 98:** ⚠️ hacer como PASO 0
+**Commit DAY 99:** ✅ pusheado
 
 ---
 
@@ -18,45 +22,30 @@
 provision.sh → seed.bin (chmod 0600, /etc/ml-defender/{component}/)
     └► SeedClient → HKDF-SHA256 → CryptoTransport
         └► 6/6 componentes migrados ✅ DAY 98
-        └► Contextos HKDF: ⚠️ ASIMÉTRICOS — P1 DAY 99
-        └► tools/: pendiente DAY 99
+        └► Contextos HKDF: ✅ SIMÉTRICOS — contexts.hpp DAY 99
+        └► Fail-closed: ✅ EventLoader + RAGLogger DAY 99
+        └► tools/: pendiente DAY 100
 ```
 
 ---
 
-## ⚠️ ALERTA CRÍTICA — Contextos HKDF asimétricos
-
-```cpp
-// INCORRECTO (claves distintas → MAC error en E2E):
-// sniffer cifra:      "ml-defender:sniffer:v1:tx"
-// ml-detector descifra: "ml-defender:ml-detector:v1:rx"
-
-// CORRECTO (contexto pertenece al canal, idéntico en emisor/receptor):
-// crypto-transport/include/crypto_transport/contexts.hpp — a crear
-constexpr const char* CTX_SNIFFER_TO_ML  = "ml-defender:sniffer-to-ml-detector:v1";
-constexpr const char* CTX_ML_TO_FIREWALL = "ml-defender:ml-detector-to-firewall:v1";
-constexpr const char* CTX_ETCD_TX        = "ml-defender:etcd:v1:tx";
-constexpr const char* CTX_ETCD_RX        = "ml-defender:etcd:v1:rx";
-constexpr const char* CTX_RAG_ARTIFACTS  = "ml-defender:rag-artifacts:v1";
-```
-
----
-
-## Hoja de ruta — decisión cerrada
-
-**No hay FASE 2.** La Opción 2 (instance_id en nonce) introduce deuda técnica con problemas de seguridad reales (replay cross-instance). Se documenta como camino descartado en ADR-022 y no se implementa.
+## Hoja de ruta de fases — decisión cerrada
 
 ```
-FASE 1 (DAY 99)
-  Single instance. Contexts + TEST-INTEG + fail-closed.
-  Pipeline no distribuido estabilizado completamente.
+FASE 1 ✅ DAY 99 (casi completa)
+  Single instance. contexts.hpp + TEST-INTEG + fail-closed.
+  Pendiente DAY 100: ADR-021, ADR-022, tools/, set_terminate()
 
-FASE 3 (en cuanto FASE 1 esté estable)
-  deployment.yml como SSOT de topología.
+FASE 2 ❌ DESCARTADA
+  Opción 2 (instance_id en nonce) — replay cross-instance,
+  deuda técnica reconocida. Documentada en ADR-022. No implementar.
+
+FASE 3 ⏳ post-arXiv
+  deployment.yml como SSOT de topología distribuida.
   Seeds por familia de canal.
   provision.sh refactorizado para leer manifiesto.
   Vagrantfile multi-VM con topología distribuida real.
-  ADR-021: deployment manifest + families.
+  Cuando se implemente, pasar por revisión del Consejo de Sabios.
 ```
 
 ---
@@ -74,156 +63,144 @@ seed_family_C → canal artefactos→RAG
                 ml-detector1 + ml-detector2 + firewall1 + rag-ingester1
 ```
 
-Un componente puede pertenecer a varias familias — recibe varios `seed.bin` en paths distintos. `provision.sh` lee `deployment.yml` y distribuye seeds a cada miembro de cada familia.
+Un componente puede pertenecer a varias familias — recibe varios `seed.bin`
+en paths distintos. `provision.sh` lee `deployment.yml` y distribuye seeds
+a cada miembro de cada familia.
 
-**Vagrantfile objetivo (FASE 3):**
-```
-VM sniffer1        (192.168.56.10)
-VM ml-detector1    (192.168.56.11)
-VM ml-detector2    (192.168.56.12)
-VM firewall1       (192.168.56.13)
-VM rag-ingester1   (192.168.56.14)
-VM rag-local1      (192.168.56.15)
-
-provision.sh --manifest deployment.yml → genera y distribuye seeds por familia
-```
-
----
-
-## Decisiones cerradas
-
-| Decisión | Resolución |
-|---|---|
-| Migración CryptoManager | ✅ 6/6 DAY 98 |
-| LZ4 formato | custom `[uint32_t orig_size LE]` — estándar interno |
-| Modo degradado | **FATAL en producción** — solo `MLD_DEV_MODE=1` en dev |
-| Contextos HKDF | por canal, idéntico emisor/receptor |
-| Opción 2 (nonce instance_id) | **DESCARTADA** — replay cross-instance, deuda técnica |
-| Multi-instancia | **FASE 3 directamente** — deployment.yml + families |
-| TEST-INTEG-1/2 | gate obligatorio antes de arXiv |
-| `tools/` | antes de arXiv, FASE 3 o antes si hay tiempo |
-
----
-
-## Objetivos DAY 99 (orden estricto)
-
-### PASO 0 — Commit DAY 98
-```bash
-git add -A
-git commit -m "feat(crypto): migrar 6 componentes CryptoManager → CryptoTransport (ADR-013 PHASE 2, DAY 98)
-
-- etcd-server/etcd-client/sniffer/ml-detector/rag-ingester/firewall migrados
-- CryptoManager DEPRECATED en todos los componentes
-- LZ4 custom [uint32_t orig_size LE] estandarizado
-- Tests: 22/22 suites green
-
-DEBT-CRYPTO-004: resuelto"
-```
-
-### PASO 1 — `contexts.hpp`
-```bash
-# 1. Crear crypto-transport/include/crypto_transport/contexts.hpp
-# 2. Añadir como PUBLIC header en crypto-transport/CMakeLists.txt
-# 3. make crypto-transport-build  ← instala en /usr/local/include/
-# 4. Reemplazar strings hardcodeados en 6 componentes
-# 5. make all-build  ← verificar compilación
-```
-
-### PASO 2 — TEST-INTEG-1
-```
-SeedClient(seed.bin) → tx(CTX_SNIFFER_TO_ML).encrypt(payload)
-                     → rx(CTX_SNIFFER_TO_ML).decrypt()
-                     → assert == payload original
-```
-
-### PASO 3 — TEST-INTEG-2
-```
-JSON → LZ4([uint32_t]+data) → tx.encrypt() → rx.decrypt()
-     → LZ4_decompress() → assert == JSON original byte-a-byte
-```
-
-### PASO 4 — Fail-closed EventLoader + RAGLogger
-```bash
-# ANTES: provision.sh está corriendo y seeds en /etc/ml-defender/
-vagrant ssh -c "ls /etc/ml-defender/rag-ingester/"  # verificar
-# DESPUÉS: implementar fail-closed con MLD_DEV_MODE como escape
-# make test  ← verificar 22/22 sigue verde
-```
-
-### PASO 5 — Test pendiente
-```bash
-# Identificar el test que está configurado pero no en ctest
-vagrant ssh -c "cd /vagrant/etcd-server/build-debug && ctest -N"
-vagrant ssh -c "cd /vagrant/etcd-client/build && ctest -N"
-# Sospecha: test_hmac_integration en etcd-server
-```
-
-### PASO 6 — ADR-021 + ADR-022 (documentar, no implementar)
-```
-ADR-021: deployment manifest + families — diseño cerrado, implementación FASE 3
-ADR-022: nonce collision multi-instancia — Opción 2 descartada, Opción 1 vía ADR-021
-```
-
-### PASO 7 — `tools/` migración (si queda tiempo)
-```
-tools/synthetic_sniffer_injector.cpp    — usa CTX_SNIFFER_TO_ML
-tools/synthetic_ml_output_injector.cpp
-tools/generate_synthetic_events.cpp
-Config: /etc/ml-defender/tools/tools.json
+**deployment.yml (SSOT de topología — diseño objetivo FASE 3):**
+```yaml
+topology:
+  sniffer:
+    instances: [sniffer1]
+    host: 192.168.56.10
+    seed_families: [family_A]
+  ml-detector:
+    instances: [ml-detector1, ml-detector2]
+    hosts: [192.168.56.11, 192.168.56.12]
+    seed_families: [family_A, family_B, family_C]
+  firewall:
+    instances: [firewall1]
+    host: 192.168.56.13
+    seed_families: [family_B, family_C]
+  rag-ingester:
+    instances: [rag-ingester1]
+    host: 192.168.56.14
+    seed_families: [family_C]
+  rag-local:
+    instances: [rag-local1]
+    host: 192.168.56.15
+    seed_families: []
 ```
 
 ---
 
-## Ficheros a actualizar (P1 DAY 99)
+## Visión de producto final — "Argus EDR" (sueño documentado)
 
-⚠️ **Estos ficheros no se actualizaron en DAY 98 — pendiente:**
-```
-docs/BACKLOG.md           — añadir ADR-021, ADR-022, FASE 3, eliminar FASE 2
-docs/ARCHITECTURE.md      — añadir arquitectura de familias de canal,
-                            deployment.yml, Vagrantfile multi-VM,
-                            decisión sobre Opción 2 descartada
-```
+### Forma 1 — Imagen Debian "Argus" (appliance)
+Imagen Debian Bookworm securizada, ultra fina, con todos los componentes
+como paquetes seleccionables. Pensada para correr en la máquina DMZ que
+se quiere proteger. El operador selecciona qué componentes activar.
+Incluye las mejores prácticas de hardening del SO.
+
+### Forma 2 — Paquetes Debian individuales
+Para operadores avanzados. Cada componente como paquete `.deb` instalable
+de forma independiente. Requiere conocimiento de la arquitectura.
+
+### Forma 3 — Receta Ansible (modo distribuido)
+El modo de despliegue más potente. El operador define la topología:
+- N sniffers (m por máquina, distribuibles)
+- P ml-detectors (q por máquina, paralelizables)
+- R firewall-acl-agents (uno por firewall en DMZ protegida)
+- S rag-ingesters (reciben CSVs de ml-detectors y firewalls)
+- 1 rag-security (recibe telemetría de todos los rag-ingesters)
+
+La receta Ansible:
+1. Lee la topología definida por el operador
+2. Genera los ficheros JSON de configuración adaptados a cada nodo
+   (a partir de plantillas — "JSON is the law")
+3. Instala, actualiza, securiza cada máquina
+4. Copia paquetes Debian y configuraciones correspondientes
+5. Gestiona seeds por familia de canal (FASE 3)
+
+Requiere que las máquinas físicas existan previamente.
+
+### Forma 4 — Soporte multi-plataforma
+- Paquetes RPM para distros tipo RedHat/CentOS/Fedora
+- Paquete Windows **exclusivamente para firewall-acl-agent**
+    - eBPF no está migrado a Windows → buscar alternativa (WFP/Npcap)
+    - Solo si hay demanda real de clientes
+    - Requiere I+D+I específico para ese componente
+    - No es prioridad actual
+
+### Práctica del Consejo de Sabios
+Cada implementación significativa pasa por revisión del Consejo antes
+de considerar completada. Esto incluye FASE 3 cuando se implemente.
+El objetivo es converger en un pipeline de calidad "Via Appia" con
+múltiples perspectivas de revisión.
 
 ---
 
-## Diagnóstico de arranque DAY 99
+## Lo realizado en DAY 99 (completo)
+
+| Paso | Tarea | Estado |
+|------|-------|--------|
+| 0 | Commit DAY 98 verificado | ✅ |
+| 1 | contexts.hpp + 6 componentes | ✅ |
+| 2/3 | TEST-INTEG-1/2/3 — gate arXiv | ✅ |
+| 4 | Fail-closed EventLoader + RAGLogger | ✅ |
+| 5 | test_hmac_integration habilitado | ✅ |
+| 6 | ADR-021 + ADR-022 | ⏳ DAY 100 |
+| 7 | tools/ migración | ⏳ DAY 100 |
+
+---
+
+## Acciones DAY 100 — derivadas del Consejo de Sabios
+
+| Acción | Origen | Coste estimado |
+|--------|--------|----------------|
+| Comentario "contexto público" en contexts.hpp | DeepSeek | 2 min |
+| `std::set_terminate()` en main() de cada componente | ChatGPT5+Grok | 30 min |
+| ADR-021: deployment.yml + families + policy versioning contextos | Grok | 15 min |
+| ADR-022: threat model formal + bug asimetría como caso pedagógico | ChatGPT5+Grok | 1h |
+| tools/ migración CTX_* | DeepSeek+Grok | 2h |
+| TEST-INTEG-3 → CI smoke test | Unánime | 15 min |
+| DOCS-UPDATE: BACKLOG.md + ARCHITECTURE.md | — | 30 min |
+
+---
+
+## Backlog P1 activo DAY 100
+
+| ID | Tarea | Prioridad |
+|----|-------|-----------|
+| ADR-021 | deployment.yml + families + versioning (documentar) | P1 |
+| ADR-022 | threat model + Opción 2 descartada (documentar) | P1 |
+| DEBT-CRYPTO-004b | tools/ migración CTX_* | P1 antes arXiv |
+| SET-TERMINATE | set_terminate() global en main() de 6 componentes | P1 |
+| CI-SMOKE | TEST-INTEG-3 en CI workflow | P1 |
+| DOCS-UPDATE | BACKLOG.md + ARCHITECTURE.md | P1 |
+| BARE-METAL | stress test sin VirtualBox — siguiente milestone arXiv | P1 |
+| DEBT-CRYPTO-003a | mlock() seed_client.cpp | P2 |
+| ADR-020 | borrar flags enabled JSON | DAY tranquilo |
+| DEBT-NAMING-001 | libseedclient sin underscore | DAY tranquilo |
+
+---
+
+## Diagnóstico de arranque DAY 100
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
 git status && git log --oneline -3
-
-# Contextos a reemplazar
-grep -rn "ml-defender:sniffer\|ml-defender:ml-detector\|ml-defender:etcd\|rag-artifacts" \
-  sniffer/ ml-detector/ rag-ingester/ firewall-acl-agent/ etcd-server/ etcd-client/ \
-  --include="*.cpp" --include="*.hpp" | grep -v build | grep -v DEPRECATED
-
-# Estado tests
 make test 2>&1 | tail -5
 
-# contexts.hpp
-ls crypto-transport/include/crypto_transport/contexts.hpp 2>/dev/null || echo "pendiente crear"
+# contexts.hpp — verificar comentario "público por diseño"
+head -20 crypto-transport/include/crypto_transport/contexts.hpp
+
+# tools/ — strings hardcodeados pendientes
+grep -rn "ml-defender:" tools/ --include="*.cpp" | grep -v build
+
+# ADR docs existentes
+ls docs/adr/ | sort
 ```
-
----
-
-## Backlog P1 activo DAY 99
-
-| ID | Tarea | Fase | Prioridad |
-|---|---|---|---|
-| DAY99-0 | Commit DAY 98 pendiente | 1 | P0 — primero |
-| ADR-013-CONTEXTS | `contexts.hpp` + 6 componentes | 1 | P1 |
-| TEST-INTEG-1 | sniffer→ml round-trip E2E | 1 | P1 gate arXiv |
-| TEST-INTEG-2 | JSON→LZ4→cifrado round-trip | 1 | P1 gate arXiv |
-| FAIL-CLOSED | EventLoader + RAGLogger | 1 | P1 |
-| TEST-PENDING | identificar + correr test pendiente | 1 | P1 |
-| DOCS-UPDATE | BACKLOG.md + ARCHITECTURE.md | 1 | P1 |
-| ADR-021 | deployment.yml + families (diseño) | 3 | P1 documentar |
-| ADR-022 | nonce multi-instancia (Opción 2 descartada) | — | P1 documentar |
-| DEBT-CRYPTO-004b | tools/ migración | 1/3 | P2 antes arXiv |
-| DEBT-CRYPTO-003a | mlock() seed_client.cpp | 1 | P2 |
-| VAGRANTFILE-DIST | multi-VM topología distribuida | 3 | P3 post-arXiv |
-| ADR-020 | borrar flags enabled JSON | — | DAY tranquilo |
-| DEBT-NAMING-001 | libseedclient sin underscore | — | DAY tranquilo |
 
 ---
 
@@ -241,11 +218,75 @@ zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
 cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
 dev:     MLD_DEV_MODE=1 → permite arranque sin seed.bin
 ```
+## Visión CI/CD — patrón Ericsson (documentado, no implementado)
+
+Técnica: Ansible + Jinja2 templating con valores por entorno.
+Origen: validado industrialmente en Ericsson a escala global.
+
+### Estructura objetivo
+
+values/
+test.yml              ← topología + IPs + parámetros entorno test
+preprod.yml           ← ídem preproducción
+prod-{cliente}.yml    ← ídem despliegue real por cliente
+
+templates/              ← plantillas Jinja2 de contratos JSON
+sniffer.json.j2
+ml_detector_config.json.j2
+etcd_server.json.j2
+firewall_config.json.j2
+rag_ingester.json.j2
+rag_security.json.j2
+
+ansible/
+playbook-deploy.yml   ← orquestación completa
+inventory/
+test/
+preprod/
+prod/
+
+### Pipeline CI/CD (3 entornos)
+
+test → preprod → prod (aprobación manual obligatoria en prod)
+
+Cada etapa:
+1. ansible-playbook --extra-vars @values/{entorno}.yml
+2. Jinja2 renderiza JSONs finales desde plantillas
+3. JSONs validados contra schema antes de copiar a nodos
+4. Componentes arrancan con configuración exacta del despliegue
+5. Smoke tests E2E (incluyendo TEST-INTEG-3) como gate de promoción
+
+### Principio
+"JSON is the law" se mantiene — las plantillas son la única
+fuente de verdad de la estructura. Los values.yml son la única
+fuente de verdad de los valores. Separación total.
+
+### Estado
+No implementado. Pre-requisito: FASE 3 (deployment.yml + families).
+Pasar por revisión del Consejo cuando se diseñe el primer playbook.
 
 ---
 
-*DAY 98 cierre — 26 marzo 2026*
-*Tests: 22/22 ✅ · 6/6 componentes migrados*
-*Hoja de ruta limpia: FASE 1 (contexts + tests) → FASE 3 (deployment.yml + families + Vagrantfile distribuido)*
-*Opción 2 descartada — sin deuda técnica*
+## Consejo de Sabios — práctica establecida
+
+Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
+DeepSeek, Qwen (Alibaba), Gemini (Google), Parallel.ai
+
+Cada implementación significativa se somete a revisión del Consejo
+al cierre del día. El objetivo es convergencia en calidad "Via Appia"
+con múltiples perspectivas. FASE 3 pasará por el Consejo cuando se
+implemente.
+
+---
+
+*DAY 99 cierre — 27 marzo 2026*
+*Tests: 24/24 ✅ · contexts.hpp ✅ · TEST-INTEG ✅ · fail-closed ✅*
+*Hoja de ruta: FASE 1 (ADR-021/022 + tools/) → arXiv → FASE 3*
+*Visión de producto: Argus EDR — 4 formas de despliegue documentadas*
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
+
+---
+
+La visión de producto que has descrito esta mañana es exactamente lo que diferencia un proyecto de investigación de un producto real. La receta Ansible con generación automática de JSONs desde plantillas es particularmente elegante — es la materialización del principio "JSON is the law" a escala de despliegue. Y la decisión sobre Windows para firewall-acl-agent es madura: solo si hay demanda real, solo ese componente, con I+D+I explícito.
+
+¿Lo damos por cerrado DAY 99?
