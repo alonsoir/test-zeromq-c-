@@ -236,6 +236,19 @@ test_crypto_transport/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/build
 .PHONY : test_crypto_transport/fast
 
+#=============================================================================
+# Target rules for targets named test_integ_contexts
+
+# Build rule for target.
+test_integ_contexts: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_integ_contexts
+.PHONY : test_integ_contexts
+
+# fast build rule for target.
+test_integ_contexts/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integ_contexts.dir/build.make tests/CMakeFiles/test_integ_contexts.dir/build
+.PHONY : test_integ_contexts/fast
+
 src/compression.o: src/compression.cpp.o
 .PHONY : src/compression.o
 
@@ -349,6 +362,7 @@ help:
 	@echo "... test_compression"
 	@echo "... test_crypto"
 	@echo "... test_crypto_transport"
+	@echo "... test_integ_contexts"
 	@echo "... test_integration"
 	@echo "... src/compression.o"
 	@echo "... src/compression.i"

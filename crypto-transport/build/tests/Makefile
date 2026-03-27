@@ -227,6 +227,20 @@ test_crypto_transport/fast:
 	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/build
 .PHONY : test_crypto_transport/fast
 
+# Convenience name for target.
+tests/CMakeFiles/test_integ_contexts.dir/rule:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/test_integ_contexts.dir/rule
+.PHONY : tests/CMakeFiles/test_integ_contexts.dir/rule
+
+# Convenience name for target.
+test_integ_contexts: tests/CMakeFiles/test_integ_contexts.dir/rule
+.PHONY : test_integ_contexts
+
+# fast build rule for target.
+test_integ_contexts/fast:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integ_contexts.dir/build.make tests/CMakeFiles/test_integ_contexts.dir/build
+.PHONY : test_integ_contexts/fast
+
 test_compression.o: test_compression.cpp.o
 .PHONY : test_compression.o
 
@@ -299,6 +313,30 @@ test_crypto_transport.cpp.s:
 	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/test_crypto_transport.cpp.s
 .PHONY : test_crypto_transport.cpp.s
 
+test_integ_contexts.o: test_integ_contexts.cpp.o
+.PHONY : test_integ_contexts.o
+
+# target to build an object file
+test_integ_contexts.cpp.o:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integ_contexts.dir/build.make tests/CMakeFiles/test_integ_contexts.dir/test_integ_contexts.cpp.o
+.PHONY : test_integ_contexts.cpp.o
+
+test_integ_contexts.i: test_integ_contexts.cpp.i
+.PHONY : test_integ_contexts.i
+
+# target to preprocess a source file
+test_integ_contexts.cpp.i:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integ_contexts.dir/build.make tests/CMakeFiles/test_integ_contexts.dir/test_integ_contexts.cpp.i
+.PHONY : test_integ_contexts.cpp.i
+
+test_integ_contexts.s: test_integ_contexts.cpp.s
+.PHONY : test_integ_contexts.s
+
+# target to generate assembly for a file
+test_integ_contexts.cpp.s:
+	cd /vagrant/crypto-transport/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integ_contexts.dir/build.make tests/CMakeFiles/test_integ_contexts.dir/test_integ_contexts.cpp.s
+.PHONY : test_integ_contexts.cpp.s
+
 test_integration.o: test_integration.cpp.o
 .PHONY : test_integration.o
 
@@ -339,6 +377,7 @@ help:
 	@echo "... test_compression"
 	@echo "... test_crypto"
 	@echo "... test_crypto_transport"
+	@echo "... test_integ_contexts"
 	@echo "... test_integration"
 	@echo "... test_compression.o"
 	@echo "... test_compression.i"
@@ -349,6 +388,9 @@ help:
 	@echo "... test_crypto_transport.o"
 	@echo "... test_crypto_transport.i"
 	@echo "... test_crypto_transport.s"
+	@echo "... test_integ_contexts.o"
+	@echo "... test_integ_contexts.i"
+	@echo "... test_integ_contexts.s"
 	@echo "... test_integration.o"
 	@echo "... test_integration.i"
 	@echo "... test_integration.s"

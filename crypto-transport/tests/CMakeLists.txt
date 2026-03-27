@@ -41,6 +41,12 @@ target_include_directories(test_crypto_transport PRIVATE ${CMAKE_SOURCE_DIR}/inc
 target_link_libraries(test_crypto_transport PRIVATE crypto_transport ${LIBSEED_CLIENT_LIB} GTest::GTest GTest::Main sodium)
 add_test(NAME test_crypto_transport COMMAND test_crypto_transport)
 
+# test_integ_contexts — TEST-INTEG-1/2/3 (gate arXiv, DAY 99)
+add_executable(test_integ_contexts test_integ_contexts.cpp)
+target_include_directories(test_integ_contexts PRIVATE ${CMAKE_SOURCE_DIR}/include ${LIBSEED_CLIENT_INC})
+target_link_libraries(test_integ_contexts PRIVATE crypto_transport ${LIBSEED_CLIENT_LIB} GTest::GTest GTest::Main sodium lz4)
+add_test(NAME test_integ_contexts COMMAND test_integ_contexts)
+
 # Summary
 message(STATUS "========================================")
 message(STATUS "crypto-transport Tests Configuration")
