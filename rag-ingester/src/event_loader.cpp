@@ -30,6 +30,7 @@ namespace rag_ingester {
 EventLoader::EventLoader() {
     stats_ = {};
     // ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient
+    // Fail-closed DAY 99: FATAL en producción, modo degradado solo con MLD_DEV_MODE=1
     try {
         seed_client_ = std::make_unique<ml_defender::SeedClient>(
             "/etc/ml-defender/rag-ingester/rag-ingester.json");
@@ -38,8 +39,15 @@ EventLoader::EventLoader() {
             *seed_client_, ml_defender::crypto::CTX_RAG_ARTIFACTS);
         std::cout << "[INFO] EventLoader: CryptoTransport inicializado (HKDF-SHA256)" << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "[WARN] EventLoader: CryptoTransport no disponible: " << e.what()
-                  << " — modo plaintext" << std::endl;
+        const char* dev_mode = std::getenv("MLD_DEV_MODE");
+        if (dev_mode && std::string(dev_mode) == "1") {
+            std::cerr << "[WARN] EventLoader: MLD_DEV_MODE=1 — modo plaintext permitido: "
+                      << e.what() << std::endl;
+        } else {
+            std::cerr << "[FATAL] EventLoader: CryptoTransport no disponible: " << e.what()
+                      << "\n[FATAL] Establece MLD_DEV_MODE=1 para modo desarrollo." << std::endl;
+            std::terminate();
+        }
     }
 }
 

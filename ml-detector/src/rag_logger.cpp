@@ -36,6 +36,7 @@ namespace ml_defender {
         logger_->info("   Deployment: {}", config_.deployment_id);
 
         // ADR-013 PHASE 2 — DAY 98: CryptoTransport para artefactos cifrados
+        // Fail-closed DAY 99: FATAL en producción, modo degradado solo con MLD_DEV_MODE=1
         try {
             artifact_seed_client_ = std::make_unique<ml_defender::SeedClient>(
                 "/etc/ml-defender/ml-detector/ml_detector_config.json");
@@ -44,8 +45,15 @@ namespace ml_defender {
                 *artifact_seed_client_, ml_defender::crypto::CTX_RAG_ARTIFACTS);
             logger_->info("🔐 RAGLogger artifact encryption: CryptoTransport inicializado");
         } catch (const std::exception& e) {
-            logger_->warn("⚠️  RAGLogger artifact encryption unavailable: {}", e.what());
-            // No lanzar — RAGLogger funciona sin cifrado (modo degradado)
+            const char* dev_mode = std::getenv("MLD_DEV_MODE");
+            if (dev_mode && std::string(dev_mode) == "1") {
+                logger_->warn("⚠️  RAGLogger: MLD_DEV_MODE=1 — modo plaintext permitido: {}",
+                              e.what());
+            } else {
+                logger_->critical("💀 RAGLogger: CryptoTransport no disponible: {}", e.what());
+                logger_->critical("💀 Establece MLD_DEV_MODE=1 para modo desarrollo.");
+                std::terminate();
+            }
         }
         logger_->info("   Node: {}", config_.node_id);
 
