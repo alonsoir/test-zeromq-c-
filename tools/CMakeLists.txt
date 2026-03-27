@@ -35,6 +35,12 @@ message(STATUS "CXX Flags (from Makefile): ${CMAKE_CXX_FLAGS}")
 # Dependencies
 # ============================================================================
 
+# PkgConfig (needed for LZ4)
+find_package(PkgConfig REQUIRED)
+
+# LZ4 (compression — needed by rag_logger.cpp)
+pkg_check_modules(LZ4 REQUIRED liblz4)
+
 # Protobuf
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
@@ -234,6 +240,8 @@ target_link_libraries(generate_synthetic_events
         PRIVATE
         ${Protobuf_LIBRARIES}
         ${CRYPTO_TRANSPORT_LIB}
+        ${LZ4_LIBRARIES}
+        /usr/local/lib/libseed_client.so
         ${ETCD_CLIENT_LIB}
         spdlog::spdlog
         nlohmann_json::nlohmann_json

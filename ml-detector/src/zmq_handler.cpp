@@ -1,4 +1,5 @@
 #include "csv_event_writer.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <filesystem>
 #include <reason_codes.hpp>
 #include "zmq_handler.hpp"
@@ -50,9 +51,9 @@ ZMQHandler::ZMQHandler(
             "/etc/ml-defender/ml-detector/ml_detector_config.json");
         seed_client_->load();
         tx_ = std::make_unique<crypto_transport::CryptoTransport>(
-            *seed_client_, "ml-defender:ml-detector:v1:tx");
+            *seed_client_, ml_defender::crypto::CTX_ML_TO_FIREWALL);
         rx_ = std::make_unique<crypto_transport::CryptoTransport>(
-            *seed_client_, "ml-defender:ml-detector:v1:rx");
+            *seed_client_, ml_defender::crypto::CTX_SNIFFER_TO_ML);
         logger_->info("🔐 CryptoTransport inicializado (HKDF-SHA256 + ChaCha20-Poly1305)");
     } catch (const std::exception& e) {
         logger_->error("❌ CryptoTransport init failed: {}", e.what());

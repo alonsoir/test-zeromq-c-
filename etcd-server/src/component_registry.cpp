@@ -1,4 +1,5 @@
 #include "etcd_server/component_registry.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <iostream>
 #include <algorithm>
 #include <chrono>
@@ -13,9 +14,9 @@ ComponentRegistry::ComponentRegistry() {
             "/etc/ml-defender/etcd-server/etcd-server.json");
         seed_client_->load();
         tx_ = std::make_unique<crypto_transport::CryptoTransport>(
-            *seed_client_, "ml-defender:etcd-server:v1:tx");
+            *seed_client_, ml_defender::crypto::CTX_ETCD_TX);
         rx_ = std::make_unique<crypto_transport::CryptoTransport>(
-            *seed_client_, "ml-defender:etcd-server:v1:rx");
+            *seed_client_, ml_defender::crypto::CTX_ETCD_RX);
 
         std::cout << "[REGISTRY] ComponentRegistry inicializado con CryptoTransport (HKDF-SHA256)" << std::endl;
 

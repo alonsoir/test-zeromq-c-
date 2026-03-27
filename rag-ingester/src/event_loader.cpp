@@ -4,6 +4,7 @@
 // Via Appia Quality - Robust, exception-safe event processing
 
 #include "event_loader.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <lz4.h>
 #include <cstring>
 #include <fstream>
@@ -34,7 +35,7 @@ EventLoader::EventLoader() {
             "/etc/ml-defender/rag-ingester/rag-ingester.json");
         seed_client_->load();
         rx_ = std::make_unique<crypto_transport::CryptoTransport>(
-            *seed_client_, "ml-defender:rag-artifacts:v1:artifact");
+            *seed_client_, ml_defender::crypto::CTX_RAG_ARTIFACTS);
         std::cout << "[INFO] EventLoader: CryptoTransport inicializado (HKDF-SHA256)" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "[WARN] EventLoader: CryptoTransport no disponible: " << e.what()

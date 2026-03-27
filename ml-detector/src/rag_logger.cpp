@@ -8,6 +8,7 @@
 // - Eliminates race conditions on current_date_, current_log_, events_in_current_file_
 
 #include "rag_logger.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <lz4.h>
 #include <cstring>
 #include "csv_event_writer.hpp"
@@ -40,7 +41,7 @@ namespace ml_defender {
                 "/etc/ml-defender/ml-detector/ml_detector_config.json");
             artifact_seed_client_->load();
             artifact_tx_ = std::make_unique<crypto_transport::CryptoTransport>(
-                *artifact_seed_client_, "ml-defender:rag-artifacts:v1:artifact");
+                *artifact_seed_client_, ml_defender::crypto::CTX_RAG_ARTIFACTS);
             logger_->info("🔐 RAGLogger artifact encryption: CryptoTransport inicializado");
         } catch (const std::exception& e) {
             logger_->warn("⚠️  RAGLogger artifact encryption unavailable: {}", e.what());

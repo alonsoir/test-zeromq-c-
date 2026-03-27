@@ -5,6 +5,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "firewall/zmq_subscriber.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <lz4.h>
 #include <cstring>
 #include "firewall_observability_logger.hpp"
@@ -121,7 +122,7 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor,
             "/etc/ml-defender/firewall-acl-agent/firewall.json");
         seed_client_->load();
         rx_ = std::make_unique<crypto_transport::CryptoTransport>(
-            *seed_client_, "ml-defender:ml-detector:v1:tx");
+            *seed_client_, ml_defender::crypto::CTX_ML_TO_FIREWALL);
         FIREWALL_LOG_INFO("CryptoTransport inicializado (HKDF-SHA256 + ChaCha20-Poly1305)");
     } catch (const std::exception& e) {
         FIREWALL_LOG_WARN("CryptoTransport init failed — modo plaintext", "error", std::string(e.what()));

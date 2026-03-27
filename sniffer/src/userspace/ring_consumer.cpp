@@ -1,5 +1,6 @@
 // sniffer/src/userspace/ring_consumer.cpp
 #include "compression_handler.hpp"
+#include <crypto_transport/contexts.hpp>
 #include "ring_consumer.hpp"
 #include "fast_detector.hpp"
 #include <reason_codes.hpp>
@@ -351,7 +352,7 @@ bool RingBufferConsumer::initialize_zmq() {
                 "/etc/ml-defender/sniffer/sniffer.json");
             seed_client_->load();
             tx_ = std::make_unique<crypto_transport::CryptoTransport>(
-                *seed_client_, "ml-defender:sniffer:v1:tx");
+                *seed_client_, ml_defender::crypto::CTX_SNIFFER_TO_ML);
             std::cout << "[INFO] ✅ CryptoTransport inicializado (HKDF-SHA256 + ChaCha20-Poly1305)" << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "[ERROR] CryptoTransport init failed: " << e.what() << std::endl;

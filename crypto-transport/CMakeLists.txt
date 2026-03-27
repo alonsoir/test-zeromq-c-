@@ -79,6 +79,7 @@ set(PUBLIC_HEADERS
         include/crypto_transport/utils.hpp
         include/crypto_transport/crypto_manager.hpp
         include/crypto_transport/transport.hpp
+        include/crypto_transport/contexts.hpp
 )
 
 # ============================================================================

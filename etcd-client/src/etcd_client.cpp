@@ -1,5 +1,6 @@
 // etcd-client/src/etcd_client.cpp
 #include "etcd_client/etcd_client.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <mutex>
@@ -61,9 +62,9 @@ struct EtcdClient::Impl {
                     config_.component_config_path);
                 seed_client_->load();
                 tx_ = std::make_unique<crypto_transport::CryptoTransport>(
-                    *seed_client_, "ml-defender:etcd-client:v1:tx");
+                    *seed_client_, ml_defender::crypto::CTX_ETCD_TX);
                 rx_ = std::make_unique<crypto_transport::CryptoTransport>(
-                    *seed_client_, "ml-defender:etcd-client:v1:rx");
+                    *seed_client_, ml_defender::crypto::CTX_ETCD_RX);
                 std::cout << "🔧 EtcdClient initialized with CryptoTransport (HKDF-SHA256): "
                           << config_.component_name << std::endl;
             } else {
