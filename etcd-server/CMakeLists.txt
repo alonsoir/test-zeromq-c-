@@ -224,10 +224,25 @@ if(BUILD_TESTS)
     # )
 
     # Test 2: HMAC Integration Tests
-    # add_executable(test_hmac_integration
-    #         tests/test_hmac_integration.cpp
-    #         src/secrets_manager.cpp
-    # )
+    add_executable(test_hmac_integration
+            tests/test_hmac_integration.cpp
+            src/secrets_manager.cpp
+    )
+    target_include_directories(test_hmac_integration
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${LIBSODIUM_INCLUDE_DIRS}
+            ${OPENSSL_INCLUDE_DIR}
+    )
+    target_link_libraries(test_hmac_integration
+            PRIVATE
+            Threads::Threads
+            ${LIBSODIUM_LIBRARIES}
+            OpenSSL::SSL
+            OpenSSL::Crypto
+            fmt
+    )
+    add_test(NAME test_hmac_integration COMMAND test_hmac_integration)
 
     # Grace period
     # add_executable(test_secrets_manager_grace_period
