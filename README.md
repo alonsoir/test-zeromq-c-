@@ -11,9 +11,8 @@
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--012_PHASE1-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 
-📜 Living contracts: [Protobuf schema](docs/contracts/protobuf-contract.md) · [Pipeline configs](docs/contracts/json-contracts.md) · [RAG API](docs/contracts/rag-security-commands.md)
+📜 Living contracts: [Protobuf schema](https://github.com/alonsoir/argus/blob/main/docs/contracts/Protobuf%20contracts.md) · [Pipeline configs](https://github.com/alonsoir/argus/blob/main/docs/contracts/JSON%20contracts.md) · [RAG API](https://github.com/alonsoir/argus/blob/main/docs/contracts/Rag%20security%20commands.md)
 
-https://alonsoir-argus.mintlify.app/introduction
 
 ---
 
