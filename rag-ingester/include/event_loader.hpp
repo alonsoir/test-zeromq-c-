@@ -10,9 +10,11 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
-#include <crypto_transport/crypto_manager.hpp>
-// Day 38: Use shared CryptoManager
-#include <crypto_transport/crypto.hpp>
+// DEPRECATED DAY 98 — #include <crypto_transport/crypto_manager.hpp>
+// ADR-013 PHASE 2
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
+#include <lz4.h>
 
 namespace rag_ingester {
 
@@ -83,7 +85,9 @@ public:
      *
      * Day 38: Updated to use shared CryptoManager for consistency with ml-detector
      */
-    explicit EventLoader(std::shared_ptr<crypto::CryptoManager> crypto_manager);
+    // ADR-013 PHASE 2 — DAY 98: SeedClient + CryptoTransport
+    // DEPRECATED DAY 98 — crypto_manager param eliminado
+    explicit EventLoader();
 
     /**
      * @brief Destructor - cleanup resources
@@ -123,8 +127,10 @@ public:
     LoadStats get_stats() const noexcept;
 
 private:
-    // Day 38: Shared CryptoManager (may be nullptr if encryption disabled)
-    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
+    // ADR-013 PHASE 2 — DAY 98
+    // DEPRECATED DAY 98 — crypto_manager_ sustituido
+    std::unique_ptr<ml_defender::SeedClient>           seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport> rx_;
 
     // Statistics
     LoadStats stats_;

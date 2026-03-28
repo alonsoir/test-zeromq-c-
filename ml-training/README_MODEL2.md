@@ -25,7 +25,7 @@ pip install xgboost scikit-learn pandas numpy matplotlib seaborn imbalanced-lear
 ### 2. **Copiar archivos al proyecto**
 
 ```bash
-cd /path/to/test-zeromq-docker/ml-training
+cd /path/to/argus/ml-training
 
 # Los archivos están en outputs/ (generados por Claude)
 # Copiarlos a scripts/

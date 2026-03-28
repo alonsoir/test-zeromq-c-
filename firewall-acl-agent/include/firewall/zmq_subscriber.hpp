@@ -50,6 +50,9 @@
 #include <optional>
 #include <lz4.h>
 #include <openssl/evp.h>
+// ADR-013 PHASE 2 — DAY 98
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
 
 namespace mldefender {
 namespace firewall {
@@ -336,6 +339,9 @@ private:
 
     BatchProcessor& processor_;          ///< Target for detections
     Config config_;                      ///< Configuration
+    // ADR-013 PHASE 2 — DAY 98: CryptoTransport (sustituye crypto_token hex)
+    std::unique_ptr<ml_defender::SeedClient>           seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport> rx_;
     mutable Stats stats_;                ///< Runtime statistics
 
     std::unique_ptr<zmq::context_t> context_;  ///< ZMQ context

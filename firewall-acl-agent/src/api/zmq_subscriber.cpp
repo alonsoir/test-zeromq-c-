@@ -5,6 +5,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "firewall/zmq_subscriber.hpp"
+#include <crypto_transport/contexts.hpp>
+#include <lz4.h>
+#include <cstring>
 #include "firewall_observability_logger.hpp"
 #include "crash_diagnostics.hpp"
 #include <crypto_transport/crypto.hpp>
@@ -111,6 +114,18 @@ ZMQSubscriber::ZMQSubscriber(BatchProcessor& processor,
         throw std::runtime_error(
             std::string("Failed to initialize logger: ") + e.what()
         );
+    }
+
+    // ADR-013 PHASE 2 — DAY 98: inicializar CryptoTransport
+    try {
+        seed_client_ = std::make_unique<ml_defender::SeedClient>(
+            "/etc/ml-defender/firewall-acl-agent/firewall.json");
+        seed_client_->load();
+        rx_ = std::make_unique<crypto_transport::CryptoTransport>(
+            *seed_client_, ml_defender::crypto::CTX_ML_TO_FIREWALL);
+        FIREWALL_LOG_INFO("CryptoTransport inicializado (HKDF-SHA256 + ChaCha20-Poly1305)");
+    } catch (const std::exception& e) {
+        FIREWALL_LOG_WARN("CryptoTransport init failed — modo plaintext", "error", std::string(e.what()));
     }
 
     FIREWALL_LOG_INFO("ZMQ Subscriber initialization complete",

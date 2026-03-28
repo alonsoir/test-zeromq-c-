@@ -61,7 +61,7 @@
 ## Commands to Apply Changes
 
 ```bash
-cd ~/CLionProjects/test-zeromq-docker
+cd ~/CLionProjects/argus
 
 # 1. Copy ransomware features JSON to sniffer
 mkdir -p sniffer/config/features/

@@ -98,6 +98,32 @@ else()
 endif()
 
 # ============================================================================
+# SEED-CLIENT LIBRARY (ADR-013 PHASE 2 — DAY 98)
+# ============================================================================
+find_library(SEED_CLIENT_LIB
+        NAMES seed_client
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+
+find_path(SEED_CLIENT_INCLUDE_DIR
+        NAMES seed_client/seed_client.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+
+if(SEED_CLIENT_LIB AND SEED_CLIENT_INCLUDE_DIR)
+    message(STATUS "✅ Found seed-client library: ${SEED_CLIENT_LIB}")
+    message(STATUS "✅ Found seed-client headers: ${SEED_CLIENT_INCLUDE_DIR}")
+else()
+    message(FATAL_ERROR "❌ seed-client not found
+    Library: ${SEED_CLIENT_LIB}
+    Headers: ${SEED_CLIENT_INCLUDE_DIR}
+
+    Fix: Run 'make seed-client-build' from project root")
+endif()
+
+# ============================================================================
 # INCLUDE DIRECTORIES
 # ============================================================================
 include_directories(
@@ -146,6 +172,7 @@ target_compile_options(etcd-server
 target_link_libraries(etcd-server
         PRIVATE
         crypto_transport
+        seed_client
         sodium
         lz4
         ${OPENSSL_LIBRARIES}
@@ -159,6 +186,7 @@ target_include_directories(etcd-server
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CRYPTO_TRANSPORT_INCLUDE_DIR}
+        ${SEED_CLIENT_INCLUDE_DIR}
         ${LIBSODIUM_INCLUDE_DIRS}
         ${LZ4_INCLUDE_DIRS}
         ${OPENSSL_INCLUDE_DIR}
@@ -196,10 +224,25 @@ if(BUILD_TESTS)
     # )
 
     # Test 2: HMAC Integration Tests
-    # add_executable(test_hmac_integration
-    #         tests/test_hmac_integration.cpp
-    #         src/secrets_manager.cpp
-    # )
+    add_executable(test_hmac_integration
+            tests/test_hmac_integration.cpp
+            src/secrets_manager.cpp
+    )
+    target_include_directories(test_hmac_integration
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${LIBSODIUM_INCLUDE_DIRS}
+            ${OPENSSL_INCLUDE_DIR}
+    )
+    target_link_libraries(test_hmac_integration
+            PRIVATE
+            Threads::Threads
+            ${LIBSODIUM_LIBRARIES}
+            OpenSSL::SSL
+            OpenSSL::Crypto
+            fmt
+    )
+    add_test(NAME test_hmac_integration COMMAND test_hmac_integration)
 
     # Grace period
     # add_executable(test_secrets_manager_grace_period
@@ -222,6 +265,7 @@ if(BUILD_TESTS)
     # )
 
     # Test: SecretsManager Basic (Day 55)
+    enable_testing()
     add_executable(test_secrets_manager_simple
             tests/test_secrets_manager_simple.cpp
             src/secrets_manager.cpp
@@ -233,6 +277,7 @@ if(BUILD_TESTS)
             ${OPENSSL_INCLUDE_DIR}
     )
 
+    add_test(NAME test_secrets_manager_simple COMMAND test_secrets_manager_simple)
     target_link_libraries(test_secrets_manager_simple
             PRIVATE
             Threads::Threads

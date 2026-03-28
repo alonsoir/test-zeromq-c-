@@ -1,3 +1,9 @@
+// =============================================================================
+// DEPRECATED DAY 98 — CryptoManager (etcd-server local)
+// Sustituido por CryptoTransport (ADR-013 PHASE 2, ADR-020)
+// NO usar en código nuevo. Pendiente de borrado en sesión futura.
+// Usar: SeedClient + crypto_transport::CryptoTransport
+// =============================================================================
 #pragma once
 
 #include <string>

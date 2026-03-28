@@ -1,28 +1,27 @@
-git add protobuf/network_security.proto \
-        sniffer/src/userspace/ml_defender_features.cpp \
-        sniffer/tests/test_smb_scan_features.cpp \
-        sniffer/CMakeLists.txt
+git add -A
+git commit -m "feat(crypto): DAY 99 — contexts.hpp + TEST-INTEG + fail-closed + test_hmac_integration
 
-git commit -m "feat(smb): SYN-1 + SYN-2 extractors + tests green 33/31 (DAY 92)
+PASO 1: contexts.hpp — constantes HKDF simétricas por canal
+- crypto-transport/include/crypto_transport/contexts.hpp creado e instalado
+- 10 strings hardcodeados → constantes en 7 componentes (sniffer, ml-detector,
+  rag-logger, rag-ingester, firewall-acl-agent, etcd-server, etcd-client)
+- tools/CMakeLists.txt: PkgConfig + LZ4 + libseed_client corregidos
 
-Proto:
-- SMBScanFeatures message (rst_ratio, syn_ack_ratio, flow_duration_min_ms)
-- NetworkFeatures.smb_scan = field 116
-- RansomwareFeatures ambiguity comment (PHASE1 vs PHASE2)
+PASO 2/3: TEST-INTEG-1/2/3 — gate arXiv completado
+- test_integ_contexts.cpp: round-trip CTX_SNIFFER_TO_ML, todos los canales,
+  JSON→LZ4→encrypt→decrypt byte-a-byte, regresión contextos asimétricos
 
-Sniffer:
-- ml_defender_features.cpp: rst_ratio + syn_ack_ratio extractors
-- Sentinel MISSING_FEATURE_SENTINEL=-9999.0f when syn_flag_count==0
-- enable_testing() added to sniffer/CMakeLists.txt
+PASO 4: Fail-closed EventLoader + RAGLogger
+- FATAL + std::terminate() en producción sin seed.bin
+- MLD_DEV_MODE=1 como único escape en desarrollo
 
-Tests:
-- test_smb_scan_features.cpp: 3 cases
-  - WannaCry synthetic: rst_ratio>0.70, syn_ack_ratio<0.10 → MALICIOUS
-  - Legitimate SMB:     rst_ratio<0.10, syn_ack_ratio>0.70 → BENIGN
-  - Zero SYN:           both fields → -9999.0f sentinel
-- Full suite: 33/31 ✅ zero regressions
+PASO 5: test_hmac_integration habilitado
+- Reescrito contra API actual SecretsManager (etcd_server namespace)
+- 4 tests: E2E HMAC, multi-component, key rotation, RAG simulation
+- OpenSSL SN_manager macro pollution resuelto
 
-Backlog: SYN-1 ✅ SYN-2 ✅
+Tests: 24/24 green (era 22/22 al inicio del día)
 
-Co-authored-by: Claude <claude@anthropic.com>"
-Co-authored-by: Alonso <alonsoir@gmail.com>"
+Pendiente DAY 100: ADR-021 + ADR-022 (documentar), tools/ migración
+
+Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)"

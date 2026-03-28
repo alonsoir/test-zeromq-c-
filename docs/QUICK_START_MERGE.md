@@ -32,7 +32,7 @@ git push origin main --tags
 Copia los 3 scripts que te he creado a tu proyecto:
 
 ```bash
-cd /ruta/a/test-zeromq-c-
+cd /ruta/a/argus
 
 # Crear directorio scripts si no existe
 mkdir -p scripts

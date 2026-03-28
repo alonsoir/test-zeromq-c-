@@ -22,8 +22,11 @@
 // 🎯 DAY 14: RAG Logger
 #include "rag_logger.hpp"
 
-// 🎯 DAY 27: Crypto-Transport Integration
-#include <crypto_transport/crypto_manager.hpp>
+// ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient (sustituye CryptoManager)
+// DEPRECATED DAY 98 — #include <crypto_transport/crypto_manager.hpp>
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
+#include <lz4.h>
 
 // Day 63: CSV Event Writer
 #include "csv_event_writer.hpp"
@@ -51,7 +54,8 @@ public:
         std::shared_ptr<ml_defender::RansomwareDetector> ransomware_detector,
         std::shared_ptr<ml_defender::TrafficDetector> traffic_detector,
         std::shared_ptr<ml_defender::InternalDetector> internal_detector,
-        std::shared_ptr<crypto::CryptoManager> crypto_manager,
+        // DEPRECATED DAY 98 — crypto_manager eliminado (ADR-013)
+        // std::shared_ptr<crypto::CryptoManager> crypto_manager,
         std::string hmac_key_hex = ""   // Day 63: CSV integrity key from etcd
     );
 
@@ -88,8 +92,11 @@ private:
     std::shared_ptr<ml_defender::InternalDetector> internal_detector_;
     std::shared_ptr<FeatureExtractor> extractor_;
 
-    // 🎯 DAY 27: Crypto-Transport
-    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
+    // ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient
+    // DEPRECATED DAY 98 — crypto_manager_ sustituido por seed_client_ + tx_ + rx_
+    std::unique_ptr<ml_defender::SeedClient>           seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport> tx_;
+    std::unique_ptr<crypto_transport::CryptoTransport> rx_;
 
     // ZMQ
     zmq::context_t context_;

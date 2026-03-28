@@ -223,6 +223,32 @@ test_integration/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integration.dir/build.make tests/CMakeFiles/test_integration.dir/build
 .PHONY : test_integration/fast
 
+#=============================================================================
+# Target rules for targets named test_crypto_transport
+
+# Build rule for target.
+test_crypto_transport: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_crypto_transport
+.PHONY : test_crypto_transport
+
+# fast build rule for target.
+test_crypto_transport/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_crypto_transport.dir/build.make tests/CMakeFiles/test_crypto_transport.dir/build
+.PHONY : test_crypto_transport/fast
+
+#=============================================================================
+# Target rules for targets named test_integ_contexts
+
+# Build rule for target.
+test_integ_contexts: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_integ_contexts
+.PHONY : test_integ_contexts
+
+# fast build rule for target.
+test_integ_contexts/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/test_integ_contexts.dir/build.make tests/CMakeFiles/test_integ_contexts.dir/build
+.PHONY : test_integ_contexts/fast
+
 src/compression.o: src/compression.cpp.o
 .PHONY : src/compression.o
 
@@ -271,6 +297,30 @@ src/crypto.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/crypto_transport.dir/build.make CMakeFiles/crypto_transport.dir/src/crypto.cpp.s
 .PHONY : src/crypto.cpp.s
 
+src/transport.o: src/transport.cpp.o
+.PHONY : src/transport.o
+
+# target to build an object file
+src/transport.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/crypto_transport.dir/build.make CMakeFiles/crypto_transport.dir/src/transport.cpp.o
+.PHONY : src/transport.cpp.o
+
+src/transport.i: src/transport.cpp.i
+.PHONY : src/transport.i
+
+# target to preprocess a source file
+src/transport.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/crypto_transport.dir/build.make CMakeFiles/crypto_transport.dir/src/transport.cpp.i
+.PHONY : src/transport.cpp.i
+
+src/transport.s: src/transport.cpp.s
+.PHONY : src/transport.s
+
+# target to generate assembly for a file
+src/transport.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/crypto_transport.dir/build.make CMakeFiles/crypto_transport.dir/src/transport.cpp.s
+.PHONY : src/transport.cpp.s
+
 src/utils.o: src/utils.cpp.o
 .PHONY : src/utils.o
 
@@ -311,6 +361,8 @@ help:
 	@echo "... crypto_transport"
 	@echo "... test_compression"
 	@echo "... test_crypto"
+	@echo "... test_crypto_transport"
+	@echo "... test_integ_contexts"
 	@echo "... test_integration"
 	@echo "... src/compression.o"
 	@echo "... src/compression.i"
@@ -318,6 +370,9 @@ help:
 	@echo "... src/crypto.o"
 	@echo "... src/crypto.i"
 	@echo "... src/crypto.s"
+	@echo "... src/transport.o"
+	@echo "... src/transport.i"
+	@echo "... src/transport.s"
 	@echo "... src/utils.o"
 	@echo "... src/utils.i"
 	@echo "... src/utils.s"

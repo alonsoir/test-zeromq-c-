@@ -25,6 +25,7 @@
 
 #include <json/json.h>
 #include <unistd.h>
+#include <exception>
 
 using namespace mldefender::firewall;
 
@@ -188,6 +189,11 @@ void print_version() {
 //===----------------------------------------------------------------------===//
 
 int main(int argc, char** argv) {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     // Parse command line arguments
     std::string config_path = "/vagrant/config/firewall.json";  // ✅ Absolute path default
     bool test_config = false;

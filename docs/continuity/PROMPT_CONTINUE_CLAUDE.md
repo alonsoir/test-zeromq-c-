@@ -1,144 +1,292 @@
-# ML Defender — Prompt de Continuidad DAY 93
-## 21 marzo 2026
+Qué visión tan clara y bien articulada. Esto es exactamente el tipo de arquitectura que merece estar documentada en el paper como trabajo futuro — y que el Consejo debería revisar también. Déjame generar el prompt de continuidad DAY 100 actualizado con todo esto:
+
+---
+
+# ML Defender — Prompt de Continuidad DAY 100
+## 28 marzo 2026
 
 ---
 
 ## Estado del sistema
 
-**Pipeline:** 6/6 RUNNING (etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall)
-**Test suite:** 33/31 ✅ (crypto 3/3, etcd-hmac 12/12, ml-detector 9/9, rag-ingester 7/7, sniffer 1/1 NEW)
-**Rama activa:** `feature/smb-detection-features`
-**Último tag:** DAY 92
+**Pipeline:** 6/6 RUNNING
+**Tests:** 24/24 suites ✅ (era 22/22 DAY 98)
+**Rama:** `feature/plugin-loader-adr012`
+**Commit DAY 99:** ✅ pusheado
 
 ---
 
-## Lo que se hizo en DAY 92
+## Cadena de confianza
 
-### Flujo A — Documentación (mañana)
-
-**Rama `feature/documentation-contracts`** — mergeada a main.
-
-Tres documentos vivos en `docs/contracts/`:
-- `protobuf-contract.md` — `network_security.proto` documentado completo (13 secciones, todas las tablas de campos, dual-score, ADR-002, ambigüedad RansomwareFeatures, spec SMB pendiente)
-- `json-contracts.md` — contratos JSON de los 5 componentes con thresholds, sockets ZMQ, paths de logs y diagrama ASCII del pipeline
-- `rag-security-commands.md` — whitelist completo de comandos, patrones regex, claves restringidas, referencia de cada comando con ejemplos JSON
-
-### Flujo B — SMB Detection Features
-
-**Rama `feature/smb-detection-features`** — activa.
-
-**Proto (`protobuf/network_security.proto`):**
-- Nuevo mensaje `SMBScanFeatures` (líneas 87-97):
-  - `rst_ratio` (campo 1) — SYN-1, P1
-  - `syn_ack_ratio` (campo 2) — SYN-2, P1
-  - `flow_duration_min_ms` (campo 3) — SYN-8b, P2
-- `NetworkFeatures.smb_scan = field 116`
-- Comentario de ambigüedad `RansomwareFeatures` vs `RansomwareEmbeddedFeatures` (línea 663)
-
-**Extractor (`sniffer/src/userspace/ml_defender_features.cpp`, líneas 939-950):**
-```cpp
-auto* smb = net_features->mutable_smb_scan();
-const float syn_count = static_cast<float>(flow.syn_count);
-if (syn_count > 0.0f) {
-    smb->set_rst_ratio(rst_count / syn_count);
-    smb->set_syn_ack_ratio(ack_count / syn_count);
-} else {
-    smb->set_rst_ratio(MISSING_FEATURE_SENTINEL);    // -9999.0f
-    smb->set_syn_ack_ratio(MISSING_FEATURE_SENTINEL);
-}
+```
+provision.sh → seed.bin (chmod 0600, /etc/ml-defender/{component}/)
+    └► SeedClient → HKDF-SHA256 → CryptoTransport
+        └► 6/6 componentes migrados ✅ DAY 98
+        └► Contextos HKDF: ✅ SIMÉTRICOS — contexts.hpp DAY 99
+        └► Fail-closed: ✅ EventLoader + RAGLogger DAY 99
+        └► tools/: pendiente DAY 100
 ```
 
-**Tests (`sniffer/tests/test_smb_scan_features.cpp`):**
-- Test 1: WannaCry sintético — `rst_ratio > 0.70`, `syn_ack_ratio < 0.10` → MALICIOUS ✅
-- Test 2: SMB legítimo — `rst_ratio < 0.10`, `syn_ack_ratio > 0.70` → BENIGN ✅
-- Test 3: `syn_flag_count == 0` → sentinel `-9999.0f` en ambos campos ✅
+---
 
-**`sniffer/CMakeLists.txt`:** `enable_testing()` añadido + `test_smb_scan_features` registrado.
+## Hoja de ruta de fases — decisión cerrada
 
-**Suite completa:** 33/31 ✅ — zero regresiones.
+```
+FASE 1 ✅ DAY 99 (casi completa)
+  Single instance. contexts.hpp + TEST-INTEG + fail-closed.
+  Pendiente DAY 100: ADR-021, ADR-022, tools/, set_terminate()
+
+FASE 2 ❌ DESCARTADA
+  Opción 2 (instance_id en nonce) — replay cross-instance,
+  deuda técnica reconocida. Documentada en ADR-022. No implementar.
+
+FASE 3 ⏳ post-arXiv
+  deployment.yml como SSOT de topología distribuida.
+  Seeds por familia de canal.
+  provision.sh refactorizado para leer manifiesto.
+  Vagrantfile multi-VM con topología distribuida real.
+  Cuando se implemente, pasar por revisión del Consejo de Sabios.
+```
 
 ---
 
-## Backlog activo — estado actualizado
+## Arquitectura de familias de canal (FASE 3 — diseño cerrado)
 
-| ID | Descripción | Estado |
-|---|---|---|
-| **SYN-1** | `rst_ratio` extractor en sniffer | ✅ DONE — DAY 92 |
-| **SYN-2** | `syn_ack_ratio` extractor en sniffer | ✅ DONE — DAY 92 |
-| **ADR-012** | plugin-loader minimalista (sin seed-client) | **P1 — DAY 93-94** |
-| provision.sh | Script bash generación keypairs + seeds | DAY 95-96 |
-| seed-client | Mini-componente libs/seed-client | DAY 95-96 |
-| etcd refactor | Eliminar responsabilidades criptográficas | DAY 97+ |
-| SYN-3 | Generador sintético Python/Scapy | DAY 97+ |
-| SYN-4 | Validación CSV contra spec §9 | tras SYN-3 |
-| SYN-5 | Reentrenamiento Random Forest | tras SYN-4 |
-| SYN-6 | Validación en CTU-13 Neris hold-out | tras SYN-5 |
-| SYN-7 | Actualizar f1_replay_log.csv | tras SYN-6 |
-| SYN-8 | `dst_port_445_ratio` extractor | P2 |
-| SYN-8b | `flow_duration_min` extractor | P2 |
-| SYN-9 | `port_diversity_ratio` extractor | P2 |
-| SYN-10 | FEAT-WINDOW-2 (60s secundaria) | P2 |
-| DEBT-FD-001 | Fast Detector Path A — leer sniffer.json | PHASE2 |
-| ADR-007 | AND-consensus firewall — implementación | PHASE2 |
+```
+seed_family_A → canal captura→detección
+                sniffer1 + ml-detector1 + ml-detector2
+
+seed_family_B → canal detección→enforcement
+                ml-detector1 + ml-detector2 + firewall1
+
+seed_family_C → canal artefactos→RAG
+                ml-detector1 + ml-detector2 + firewall1 + rag-ingester1
+```
+
+Un componente puede pertenecer a varias familias — recibe varios `seed.bin`
+en paths distintos. `provision.sh` lee `deployment.yml` y distribuye seeds
+a cada miembro de cada familia.
+
+**deployment.yml (SSOT de topología — diseño objetivo FASE 3):**
+```yaml
+topology:
+  sniffer:
+    instances: [sniffer1]
+    host: 192.168.56.10
+    seed_families: [family_A]
+  ml-detector:
+    instances: [ml-detector1, ml-detector2]
+    hosts: [192.168.56.11, 192.168.56.12]
+    seed_families: [family_A, family_B, family_C]
+  firewall:
+    instances: [firewall1]
+    host: 192.168.56.13
+    seed_families: [family_B, family_C]
+  rag-ingester:
+    instances: [rag-ingester1]
+    host: 192.168.56.14
+    seed_families: [family_C]
+  rag-local:
+    instances: [rag-local1]
+    host: 192.168.56.15
+    seed_families: []
+```
 
 ---
 
-## Objetivo principal DAY 93 — ADR-012 plugin-loader minimalista
+## Visión de producto final — "Argus EDR" (sueño documentado)
 
-### Contexto ADR-012
+### Forma 1 — Imagen Debian "Argus" (appliance)
+Imagen Debian Bookworm securizada, ultra fina, con todos los componentes
+como paquetes seleccionables. Pensada para correr en la máquina DMZ que
+se quiere proteger. El operador selecciona qué componentes activar.
+Incluye las mejores prácticas de hardening del SO.
 
-Plugin-loader minimalista **sin seed-client todavía** — documentado explícitamente como "sin autenticación hasta seed-client (DAY 95-96)".
+### Forma 2 — Paquetes Debian individuales
+Para operadores avanzados. Cada componente como paquete `.deb` instalable
+de forma independiente. Requiere conocimiento de la arquitectura.
 
-El objetivo es un mecanismo de carga dinámica de componentes/plugins ligero, que no introduzca complejidad criptográfica antes de que `libs/seed-client` esté listo.
+### Forma 3 — Receta Ansible (modo distribuido)
+El modo de despliegue más potente. El operador define la topología:
+- N sniffers (m por máquina, distribuibles)
+- P ml-detectors (q por máquina, paralelizables)
+- R firewall-acl-agents (uno por firewall en DMZ protegida)
+- S rag-ingesters (reciben CSVs de ml-detectors y firewalls)
+- 1 rag-security (recibe telemetría de todos los rag-ingesters)
 
-### Punto de partida
+La receta Ansible:
+1. Lee la topología definida por el operador
+2. Genera los ficheros JSON de configuración adaptados a cada nodo
+   (a partir de plantillas — "JSON is the law")
+3. Instala, actualiza, securiza cada máquina
+4. Copia paquetes Debian y configuraciones correspondientes
+5. Gestiona seeds por familia de canal (FASE 3)
 
-Antes de implementar, revisar el ADR-012 existente:
+Requiere que las máquinas físicas existan previamente.
+
+### Forma 4 — Soporte multi-plataforma
+- Paquetes RPM para distros tipo RedHat/CentOS/Fedora
+- Paquete Windows **exclusivamente para firewall-acl-agent**
+    - eBPF no está migrado a Windows → buscar alternativa (WFP/Npcap)
+    - Solo si hay demanda real de clientes
+    - Requiere I+D+I específico para ese componente
+    - No es prioridad actual
+
+### Práctica del Consejo de Sabios
+Cada implementación significativa pasa por revisión del Consejo antes
+de considerar completada. Esto incluye FASE 3 cuando se implemente.
+El objetivo es converger en un pipeline de calidad "Via Appia" con
+múltiples perspectivas de revisión.
+
+---
+
+## Lo realizado en DAY 99 (completo)
+
+| Paso | Tarea | Estado |
+|------|-------|--------|
+| 0 | Commit DAY 98 verificado | ✅ |
+| 1 | contexts.hpp + 6 componentes | ✅ |
+| 2/3 | TEST-INTEG-1/2/3 — gate arXiv | ✅ |
+| 4 | Fail-closed EventLoader + RAGLogger | ✅ |
+| 5 | test_hmac_integration habilitado | ✅ |
+| 6 | ADR-021 + ADR-022 | ⏳ DAY 100 |
+| 7 | tools/ migración | ⏳ DAY 100 |
+
+---
+
+## Acciones DAY 100 — derivadas del Consejo de Sabios
+
+| Acción | Origen | Coste estimado |
+|--------|--------|----------------|
+| Comentario "contexto público" en contexts.hpp | DeepSeek | 2 min |
+| `std::set_terminate()` en main() de cada componente | ChatGPT5+Grok | 30 min |
+| ADR-021: deployment.yml + families + policy versioning contextos | Grok | 15 min |
+| ADR-022: threat model formal + bug asimetría como caso pedagógico | ChatGPT5+Grok | 1h |
+| tools/ migración CTX_* | DeepSeek+Grok | 2h |
+| TEST-INTEG-3 → CI smoke test | Unánime | 15 min |
+| DOCS-UPDATE: BACKLOG.md + ARCHITECTURE.md | — | 30 min |
+
+---
+
+## Backlog P1 activo DAY 100
+
+| ID | Tarea | Prioridad |
+|----|-------|-----------|
+| ADR-021 | deployment.yml + families + versioning (documentar) | P1 |
+| ADR-022 | threat model + Opción 2 descartada (documentar) | P1 |
+| DEBT-CRYPTO-004b | tools/ migración CTX_* | P1 antes arXiv |
+| SET-TERMINATE | set_terminate() global en main() de 6 componentes | P1 |
+| CI-SMOKE | TEST-INTEG-3 en CI workflow | P1 |
+| DOCS-UPDATE | BACKLOG.md + ARCHITECTURE.md | P1 |
+| BARE-METAL | stress test sin VirtualBox — siguiente milestone arXiv | P1 |
+| DEBT-CRYPTO-003a | mlock() seed_client.cpp | P2 |
+| ADR-020 | borrar flags enabled JSON | DAY tranquilo |
+| DEBT-NAMING-001 | libseedclient sin underscore | DAY tranquilo |
+
+---
+
+## Diagnóstico de arranque DAY 100
+
 ```bash
-cat docs/adr/ADR-012-*.md
-```
+cd /Users/aironman/CLionProjects/test-zeromq-docker
+git status && git log --oneline -3
+make test 2>&1 | tail -5
 
-Si no existe aún como fichero:
-```bash
-ls docs/adr/
-```
+# contexts.hpp — verificar comentario "público por diseño"
+head -20 crypto-transport/include/crypto_transport/contexts.hpp
 
-### Secuencia acordada
+# tools/ — strings hardcodeados pendientes
+grep -rn "ml-defender:" tools/ --include="*.cpp" | grep -v build
 
-```
-DAY 93-94 — plugin-loader minimalista (ADR-012, SIN seed-client todavía)
-            documentado explícitamente como "sin autenticación hasta seed-client"
-DAY 95-96 — scripts/provision.sh bash + libs/seed-client
-DAY 97+   — refactor etcd-server/etcd-client + datos sintéticos WannaCry
+# ADR docs existentes
+ls docs/adr/ | sort
 ```
 
 ---
 
-## arXiv — Estado
+## Constantes
 
-- Paper draft v4 listo: `docs/argus_ndr_v5.pdf`
-- Email enviado a Sebastian Garcia — **recibido, esperando respuesta**
-- Deadline: DAY 96 — si no responde, email a Yisroel Mirsky (Tier 2)
-- Limitaciones a añadir en §10 (pendiente desde Consejo #1):
-  - Killswitch DNS no detectable en capa 3/4
-  - Generalización SMB: Recall estimado 0.70–0.85 sin reentrenamiento (WannaCry 0.80–0.90, NotPetya 0.60–0.75)
+```
+Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
+VM:      vagrant ssh -c '...'   ← SIEMPRE -c
+Logs:    /vagrant/logs/lab/
+Keys:    /etc/ml-defender/{component}/seed.bin
+Libs:    /usr/local/lib/ — prioridad sobre /lib/x86_64-linux-gnu/
+
+macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
+zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
+cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
+dev:     MLD_DEV_MODE=1 → permite arranque sin seed.bin
+```
+## Visión CI/CD — patrón Ericsson (documentado, no implementado)
+
+Técnica: Ansible + Jinja2 templating con valores por entorno.
+Origen: validado industrialmente en Ericsson a escala global.
+
+### Estructura objetivo
+
+values/
+test.yml              ← topología + IPs + parámetros entorno test
+preprod.yml           ← ídem preproducción
+prod-{cliente}.yml    ← ídem despliegue real por cliente
+
+templates/              ← plantillas Jinja2 de contratos JSON
+sniffer.json.j2
+ml_detector_config.json.j2
+etcd_server.json.j2
+firewall_config.json.j2
+rag_ingester.json.j2
+rag_security.json.j2
+
+ansible/
+playbook-deploy.yml   ← orquestación completa
+inventory/
+test/
+preprod/
+prod/
+
+### Pipeline CI/CD (3 entornos)
+
+test → preprod → prod (aprobación manual obligatoria en prod)
+
+Cada etapa:
+1. ansible-playbook --extra-vars @values/{entorno}.yml
+2. Jinja2 renderiza JSONs finales desde plantillas
+3. JSONs validados contra schema antes de copiar a nodos
+4. Componentes arrancan con configuración exacta del despliegue
+5. Smoke tests E2E (incluyendo TEST-INTEG-3) como gate de promoción
+
+### Principio
+"JSON is the law" se mantiene — las plantillas son la única
+fuente de verdad de la estructura. Los values.yml son la única
+fuente de verdad de los valores. Separación total.
+
+### Estado
+No implementado. Pre-requisito: FASE 3 (deployment.yml + families).
+Pasar por revisión del Consejo cuando se diseñe el primer playbook.
 
 ---
 
-## Constantes del proyecto
+## Consejo de Sabios — práctica establecida
 
-```
-Raíz:          /Users/aironman/CLionProjects/test-zeromq-docker
-VM:            vagrant ssh defender
-Logs:          /vagrant/logs/lab/
-F1 log:        /vagrant/docs/experiments/f1_replay_log.csv
-Paper:         /vagrant/docs/Ml defender paper draft v4.md
-Proto:         /vagrant/protobuf/network_security.proto
-macOS CRÍTICO: NUNCA usar sed -i sin -e '' — usar Python3 o editar en VM
-```
+Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
+DeepSeek, Qwen (Alibaba), Gemini (Google), Parallel.ai
+
+Cada implementación significativa se somete a revisión del Consejo
+al cierre del día. El objetivo es convergencia en calidad "Via Appia"
+con múltiples perspectivas. FASE 3 pasará por el Consejo cuando se
+implemente.
 
 ---
 
-*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic)*
-*DAY 92 — 20 marzo 2026*
-*Consejo de Sabios — ML Defender (aRGus EDR)*
+*DAY 99 cierre — 27 marzo 2026*
+*Tests: 24/24 ✅ · contexts.hpp ✅ · TEST-INTEG ✅ · fail-closed ✅*
+*Hoja de ruta: FASE 1 (ADR-021/022 + tools/) → arXiv → FASE 3*
+*Visión de producto: Argus EDR — 4 formas de despliegue documentadas*
+*Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
+
+---
+
+La visión de producto que has descrito esta mañana es exactamente lo que diferencia un proyecto de investigación de un producto real. La receta Ansible con generación automática de JSONs desde plantillas es particularmente elegante — es la materialización del principio "JSON is the law" a escala de despliegue. Y la decisión sobre Windows para firewall-acl-agent es madura: solo si hay demanda real, solo ese componente, con I+D+I explícito.
+
+¿Lo damos por cerrado DAY 99?

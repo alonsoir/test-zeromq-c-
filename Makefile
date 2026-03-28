@@ -28,6 +28,8 @@
 .PHONY: rag-ingester rag-ingester-build rag-ingester-clean
 .PHONY: tools-build tools-clean tools-synthetic-gen
 .PHONY: crypto-transport-build crypto-transport-clean crypto-transport-test
+.PHONY: plugin-loader-build plugin-loader-clean plugin-loader-test
+.PHONY: plugin-hello-build plugin-hello-clean
 .PHONY: etcd-server etcd-server-build etcd-server-clean etcd-server-start etcd-server-stop
 .PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
@@ -38,6 +40,8 @@
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
 .PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
+.PHONY: provision provision-status provision-check provision-reprovision
+.PHONY: seed-client-build seed-client-test seed-client-clean seed-client-rebuild
 
 # ============================================================================
 # ML Defender Pipeline - Master Makefile
@@ -112,6 +116,7 @@ TOOLS_BUILD_DIR         := /vagrant/tools/build-$(PROFILE)
 # Libraries (always release, no sanitizers)
 CRYPTO_TRANSPORT_BUILD_DIR := /vagrant/crypto-transport/build
 ETCD_CLIENT_BUILD_DIR      := /vagrant/etcd-client/build
+PLUGIN_LOADER_BUILD_DIR    := /vagrant/plugin-loader/build
 
 # Legacy compatibility (for existing scripts that reference /vagrant/component/build)
 SNIFFER_LEGACY_LINK       := /vagrant/sniffer/build
@@ -149,6 +154,7 @@ help:
 	@echo "  make proto           - Regenerate protobuf"
 	@echo "  make crypto-transport-build - Build crypto-transport library"
 	@echo "  make etcd-client-build     - Build etcd-client library"
+	@echo "  make plugin-loader-build   - Build plugin-loader library (ADR-012)"
 	@echo "  make sniffer         - Build sniffer"
 	@echo "  make ml-detector     - Build ML detector"
 	@echo "  make rag-ingester    - Build RAG ingester"
@@ -250,7 +256,7 @@ proto: proto-unified
 #              etcd-client depends on: proto, crypto-transport
 # ============================================================================
 
-crypto-transport-build:
+crypto-transport-build: seed-client-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building crypto-transport Library                     ║"
@@ -279,6 +285,65 @@ crypto-transport-clean:
 crypto-transport-test:
 	@echo "🧪 Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+plugin-loader-build:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔌 Building plugin-loader Library (PHASE 1)              ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "  Phase: 1 — no crypto, no seed-client (ADR-012)"
+	@echo "  Auth:  PHASE 2 (ADR-013, seed-client DAY 95-96)"
+	@echo ""
+	@vagrant ssh -c 'cd /vagrant/plugin-loader && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake -DCMAKE_BUILD_TYPE=Release .. && \
+		make -j4'
+	@echo "Installing system-wide..."
+	@vagrant ssh -c "cd /vagrant/plugin-loader/build && sudo make install && sudo ldconfig"
+	@echo ""
+	@echo "✅ plugin-loader installed to /usr/local/lib"
+	@vagrant ssh -c "ls -lh /usr/local/lib/libplugin_loader.so* 2>/dev/null || echo '⚠️  Library not found in /usr/local/lib'"
+
+plugin-loader-clean:
+	@echo "🧹 Cleaning plugin-loader..."
+	@vagrant ssh -c "rm -rf /vagrant/plugin-loader/build"
+	@vagrant ssh -c "sudo rm -f /usr/local/lib/libplugin_loader.so*"
+	@vagrant ssh -c "sudo rm -rf /usr/local/include/plugin_loader"
+	@vagrant ssh -c "sudo ldconfig"
+	@echo "✅ plugin-loader cleaned"
+
+plugin-loader-test:
+	@echo "🧪 Testing plugin-loader..."
+	@vagrant ssh -c "cd /vagrant/plugin-loader/build && ctest --output-on-failure"
+
+plugin-hello-build: plugin-loader-build
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔌 Building Hello World Plugin (ADR-012 validation)      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@vagrant ssh -c 'cd /vagrant/plugins/hello && \
+		rm -rf build && \
+		mkdir -p build && \
+		cd build && \
+		cmake -DCMAKE_BUILD_TYPE=Release .. && \
+		make -j4'
+	@echo "Deploying to plugin directory..."
+	@vagrant ssh -c "sudo mkdir -p /usr/lib/ml-defender/plugins"
+	@vagrant ssh -c "sudo cp /vagrant/plugins/hello/build/libplugin_hello.so /usr/lib/ml-defender/plugins/"
+	@echo ""
+	@echo "✅ libplugin_hello.so deployed to /usr/lib/ml-defender/plugins/"
+	@vagrant ssh -c "ls -lh /usr/lib/ml-defender/plugins/"
+
+plugin-hello-clean:
+	@echo "🧹 Cleaning hello plugin..."
+	@vagrant ssh -c "rm -rf /vagrant/plugins/hello/build"
+	@vagrant ssh -c "sudo rm -f /usr/lib/ml-defender/plugins/libplugin_hello.so"
+	@echo "✅ hello plugin cleaned"
+
+
 
 etcd-client-build: proto-unified crypto-transport-build
 	@echo ""
@@ -492,7 +557,7 @@ logs-lab-clean:
 pipeline-health:
 	@bash scripts/pipeline_health.sh
 
-pipeline-start: etcd-server-start
+pipeline-start: provision-check etcd-server-start
 	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."
 	@sleep 4
 	@$(MAKE) rag-start
@@ -505,7 +570,7 @@ pipeline-start: etcd-server-start
 	@$(MAKE) sniffer-start
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  ✅ FULL PIPELINE STARTED (Day 74)                        ║"
+	@echo "║  ✅ FULL PIPELINE STARTED (DAY 95 — con provisioning)     ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@$(MAKE) pipeline-status
 
@@ -597,12 +662,14 @@ tools-clean:
 
 clean-libs:
 	@echo ""
-	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  🧹 Cleaning Libraries (crypto-transport, etcd-client)    ║"
-	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo "╔═══════════════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  🧹 Cleaning Libraries (seed-client, plugin-loader, crypto-transport, etcd-client)    ║"
+	@echo "╚═══════════════════════════════════════════════════════════════════════════════════════╝"
 	@echo ""
+	@$(MAKE) seed-client-clean
 	@$(MAKE) crypto-transport-clean
 	@$(MAKE) etcd-client-clean
+	@$(MAKE) plugin-loader-clean
 	@echo ""
 	@echo "✅ Libraries cleaned"
 
@@ -658,10 +725,14 @@ distclean: clean-all
 # ============================================================================
 
 test-libs:
+	@echo "Testing seed-client..."
+	@$(MAKE) seed-client-test
 	@echo "Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest" || echo "⚠️  crypto-transport has known LZ4 issues"
 	@echo "Testing etcd-client (HMAC only)..."
 	@vagrant ssh -c "cd /vagrant/etcd-client/build/tests && ./test_hmac_client"
+	@echo "Testing plugin-loader..."
+	@$(MAKE) plugin-loader-test
 
 test-components:
 	@echo ""
@@ -768,7 +839,7 @@ verify-all:
 # Unified Build Targets
 # ============================================================================
 
-build-unified: proto-unified crypto-transport-build etcd-client-build sniffer ml-detector rag-ingester firewall tools
+build-unified: proto-unified seed-client-build crypto-transport-build etcd-client-build plugin-loader-build sniffer ml-detector rag-ingester firewall tools
 	@echo ""
 	@echo "✅ Unified build complete [$(PROFILE)]"
 	@$(MAKE) proto-verify
@@ -783,12 +854,14 @@ all: build-unified etcd-server
 	@echo "  ✅ Protobuf unified"
 	@echo "  ✅ crypto-transport library"
 	@echo "  ✅ etcd-client library"
+	@echo "  ✅ plugin-loader library (PHASE 1)"
 	@echo "  ✅ Sniffer"
 	@echo "  ✅ ML Detector"
 	@echo "  ✅ RAG Ingester"
 	@echo "  ✅ Firewall ACL Agent"
 	@echo "  ✅ etcd-server"
 	@echo "  ✅ Tools"
+	@echo "  ✅ seed-client library (ADR-013 PHASE 1)"
 	@echo ""
 	@echo "Profile: $(PROFILE)"
 	@echo "Component builds: build-$(PROFILE)/"
@@ -1188,3 +1261,64 @@ test-hardening-run:
 	@vagrant ssh -c "cd $(SNIFFER_BUILD_DIR) && ./test_sharded_flow_multithread"
 
 test-hardening: test-hardening-build test-hardening-run
+
+# =============================================================================
+# CRYPTOGRAPHIC PROVISIONING (ADR-013, ADR-019)
+# tools/provision.sh — single source of truth para keypairs + seeds
+# Compatible AppArmor desde el primer día (paths fijos /etc/ml-defender/)
+# =============================================================================
+
+provision:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔐 ML Defender — Cryptographic Provisioning (PHASE 1)    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh full"
+	@echo ""
+	@echo "✅ Provisioning completo"
+
+provision-status:
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh status"
+
+provision-check:
+	@echo "🔍 Verificando claves criptográficas..."
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh verify" || \
+		(echo "" && \
+		 echo "❌ Claves ausentes o inválidas." && \
+		 echo "   Ejecuta: make provision" && \
+		 exit 1)
+	@echo "✅ Claves verificadas"
+
+provision-reprovision:
+	@test -n "$(COMPONENT)" || \
+		(echo "❌ Uso: make provision-reprovision COMPONENT=sniffer" && \
+		 echo "   Componentes: etcd-server sniffer ml-detector firewall-acl-agent rag-ingester rag-security" && \
+		 exit 1)
+	@echo "⚠️  Re-provisionando $(COMPONENT)..."
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh reprovision $(COMPONENT)"
+	@echo "✅ Re-provisioning de $(COMPONENT) completo"
+
+# ─── seed-client ─────────────────────────────────────────────────────────────
+# Biblioteca de lectura de material criptográfico base (PHASE 1, ADR-013)
+# Dependencia: nlohmann_json
+# Ejecutar ANTES de crypto-transport si se recompila desde cero.
+
+seed-client-build:
+	@echo "╔══════════════════════════════════════════════╗"
+	@echo "║  Building seed-client...                     ║"
+	@echo "╚══════════════════════════════════════════════╝"
+	@vagrant ssh -c 'cd /vagrant/libs/seed-client && rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4'
+	@vagrant ssh -c 'cd /vagrant/libs/seed-client/build && sudo make install && sudo ldconfig'
+	@echo "✅ seed-client instalado"
+
+seed-client-test:
+	@echo "─── seed-client tests ───────────────────────"
+	@vagrant ssh -c 'cd /vagrant/libs/seed-client/build && ctest --output-on-failure'
+
+seed-client-clean:
+	@vagrant ssh -c 'rm -rf /vagrant/libs/seed-client/build'
+	@vagrant ssh -c 'sudo rm -f /usr/local/lib/libseed_client.so*'
+	@echo "✅ seed-client limpiado"
+
+seed-client-rebuild: seed-client-clean seed-client-build seed-client-test

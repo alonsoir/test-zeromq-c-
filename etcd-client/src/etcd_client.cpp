@@ -1,5 +1,6 @@
 // etcd-client/src/etcd_client.cpp
 #include "etcd_client/etcd_client.hpp"
+#include <crypto_transport/contexts.hpp>
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <mutex>
@@ -10,8 +11,11 @@
 #include <sstream>
 #include <iomanip>
 #include <atomic>
-// Day 60: Crypto + Compression for put_config()
-#include "crypto_transport/crypto_manager.hpp"  // ← Solo este
+// ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient (sustituye CryptoManager)
+// DEPRECATED DAY 98 — crypto_manager.hpp: #include "crypto_transport/crypto_manager.hpp"
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
+#include <lz4.h>
 
 using json = nlohmann::json;
 
@@ -35,20 +39,44 @@ namespace etcd_client {
 
 struct EtcdClient::Impl {
     Config config_;
-    std::string encryption_key_;
+    // DEPRECATED DAY 98 — encryption_key_ sustituido por SeedClient + CryptoTransport
+    // std::string encryption_key_;
     bool connected_ = false;
     mutable std::mutex mutex_;
+    // ADR-013 PHASE 2 — DAY 98
+    std::unique_ptr<ml_defender::SeedClient>           seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport> tx_;
+    std::unique_ptr<crypto_transport::CryptoTransport> rx_;
     // Day 59: Service discovery paths from etcd-server
     ServicePaths service_paths_;
     // Heartbeat thread
     std::thread heartbeat_thread_;
     std::atomic<bool> heartbeat_running_{false};
 
-    // Constructor
+    // Constructor — ADR-013 PHASE 2 (DAY 98)
     explicit Impl(const Config& config)
         : config_(config) {
-        std::cout << "🔧 EtcdClient initialized for component: "
-                  << config_.component_name << std::endl;
+        try {
+            if (!config_.component_config_path.empty()) {
+                seed_client_ = std::make_unique<ml_defender::SeedClient>(
+                    config_.component_config_path);
+                seed_client_->load();
+                tx_ = std::make_unique<crypto_transport::CryptoTransport>(
+                    *seed_client_, ml_defender::crypto::CTX_ETCD_TX);
+                rx_ = std::make_unique<crypto_transport::CryptoTransport>(
+                    *seed_client_, ml_defender::crypto::CTX_ETCD_RX);
+                std::cout << "🔧 EtcdClient initialized with CryptoTransport (HKDF-SHA256): "
+                          << config_.component_name << std::endl;
+            } else {
+                std::cerr << "⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado" << std::endl;
+                std::cout << "🔧 EtcdClient initialized (no crypto): "
+                          << config_.component_name << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "❌ [etcd-client] Error inicializando CryptoTransport: "
+                      << e.what() << std::endl;
+            throw;
+        }
     }
 
     // Destructor
@@ -121,36 +149,44 @@ std::string process_outgoing_data(const std::string& data) {
     std::string processed = data;
     size_t original_size = data.size();
 
-    // Create CryptoManager with encryption key
-    if (!encryption_key_.empty()) {
-        // Convert hex key (64 chars) to binary key (32 bytes)
-        auto key_bytes = EtcdClient::hex_to_bytes(encryption_key_);
-        std::string binary_key(key_bytes.begin(), key_bytes.end());
-
-        crypto::CryptoManager crypto_mgr(binary_key);
-
-        // Step 1: Compress (if enabled and size > threshold)
-        if (config_.compression_enabled &&
-            original_size > static_cast<size_t>(config_.compression_min_size)) {
-            try {
-				processed = crypto_mgr.compress_with_size(processed);
+    // ADR-013 PHASE 2 — DAY 98: LZ4 directo + CryptoTransport
+    // Step 1: Compress con LZ4 (si habilitado y supera umbral)
+    if (config_.compression_enabled &&
+        original_size > static_cast<size_t>(config_.compression_min_size)) {
+        try {
+            int max_compressed = LZ4_compressBound(static_cast<int>(original_size));
+            std::vector<uint8_t> compressed(sizeof(uint32_t) + max_compressed);
+            uint32_t orig_le = static_cast<uint32_t>(original_size);
+            std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
+            int compressed_size = LZ4_compress_default(
+                data.data(),
+                reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
+                static_cast<int>(original_size),
+                max_compressed
+            );
+            if (compressed_size > 0) {
+                compressed.resize(sizeof(uint32_t) + compressed_size);
+                processed.assign(compressed.begin(), compressed.end());
                 std::cout << "📦 Compressed: " << original_size << " → "
                           << processed.size() << " bytes" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "⚠️  Compression failed: " << e.what() << std::endl;
-                processed = data; // Continue without compression
+            } else {
+                std::cerr << "⚠️  LZ4 compression failed — enviando sin comprimir" << std::endl;
             }
+        } catch (const std::exception& e) {
+            std::cerr << "⚠️  Compression exception: " << e.what() << std::endl;
         }
+    }
 
-        // Step 2: Encrypt (if enabled)
-        if (config_.encryption_enabled) {
-            try {
-                processed = crypto_mgr.encrypt(processed);
-                std::cout << "🔒 Encrypted: " << processed.size() << " bytes" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "⚠️  Encryption failed: " << e.what() << std::endl;
-                throw; // Encryption failure is critical
-            }
+    // Step 2: Encrypt con CryptoTransport (si habilitado)
+    if (config_.encryption_enabled && tx_) {
+        try {
+            std::vector<uint8_t> plain_bytes(processed.begin(), processed.end());
+            auto cipher = tx_->encrypt(plain_bytes);
+            std::cout << "🔒 Encrypted: " << cipher.size() << " bytes" << std::endl;
+            return std::string(cipher.begin(), cipher.end());
+        } catch (const std::exception& e) {
+            std::cerr << "⚠️  Encryption failed: " << e.what() << std::endl;
+            throw;
         }
     }
 
@@ -435,10 +471,10 @@ bool EtcdClient::register_component() {
                 std::cerr << "⚠️  No service paths in registration response" << std::endl;
             }
 
-            // Also extract encryption key if present
+            // DEPRECATED DAY 98 — encryption_key del servidor ya no se usa
+            // CryptoTransport deriva la clave desde seed.bin via HKDF (ADR-013)
             if (j.contains("encryption_key")) {
-                pImpl->encryption_key_ = j["encryption_key"].get<std::string>();
-                std::cout << "🔑 Encryption key received" << std::endl;
+                std::cerr << "⚠️  DEPRECATED: encryption_key ignorado — usando CryptoTransport" << std::endl;
             }
 
         } catch (const std::exception& e) {
@@ -655,27 +691,22 @@ bool EtcdClient::rollback_config() {
 }
 
 // Encryption key management
-void EtcdClient::set_encryption_key(const std::string& key) {
-    std::lock_guard<std::mutex> lock(pImpl->mutex_);
-
-    if (key.size() != 32) {
-        throw std::runtime_error("Invalid key size (expected " +
-                                 std::to_string(32) + " bytes)");
-    }
-
-    pImpl->encryption_key_ = key;
-    std::cout << "🔑 Encryption key set" << std::endl;
+void EtcdClient::set_encryption_key(const std::string& /*key*/) {
+    // DEPRECATED DAY 98 — clave gestionada por SeedClient + HKDF (ADR-013)
+    std::cerr << "⚠️  DEPRECATED: set_encryption_key() no-op — usar CryptoTransport via SeedClient" << std::endl;
 }
 
 bool EtcdClient::has_encryption_key() const {
+    // DEPRECATED DAY 98 — retorna true si CryptoTransport está inicializado
     std::lock_guard<std::mutex> lock(pImpl->mutex_);
-    return !pImpl->encryption_key_.empty();
+    return pImpl->tx_ != nullptr;
 }
 
 
 std::string EtcdClient::get_encryption_key() const {
-    std::lock_guard<std::mutex> lock(pImpl->mutex_);
-    return pImpl->encryption_key_;
+    // DEPRECATED DAY 98 — clave HKDF no expuesta (ADR-013)
+    std::cerr << "⚠️  DEPRECATED: get_encryption_key() no disponible con CryptoTransport" << std::endl;
+    return "";
 }
 
 std::string EtcdClient::get_component_config(const std::string& component_name) {

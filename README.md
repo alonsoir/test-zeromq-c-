@@ -3,12 +3,17 @@
 **Open-source, embedded-ML network detection and response system protecting critical infrastructure from ransomware and DDoS attacks.**
 
 [![Via Appia Quality](https://img.shields.io/badge/Via_Appia-Quality-gold)](https://en.wikipedia.org/wiki/Appian_Way)
+[![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 70/70](https://img.shields.io/badge/Tests-70%2F70_passing-brightgreen)]()
+[![Tests: 24/24](https://img.shields.io/badge/Tests-24%2F24_suites-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
+[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--012_PHASE1-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 
-https://alonsoir-test-zeromq-c-.mintlify.app/introduction
+📜 Living contracts: [Protobuf schema](docs/contracts/protobuf-contract.md) · [Pipeline configs](docs/contracts/json-contracts.md) · [RAG API](docs/contracts/rag-security-commands.md)
+
+https://alonsoir-argus.mintlify.app/introduction
 
 ---
 
@@ -22,33 +27,40 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ---
 
-## 📊 Validated Results (DAY 88 — 16 March 2026)
+## 📊 Validated Results (DAY 88 — 16 March 2026, crypto chain DAY 100)
 
-| Metric | Value | Notes |
-|---|---|---|
-| **F1-score (CTU-13 Neris)** | **0.9985** | Stable across 4 replay runs |
-| **Precision** | **0.9969** | |
-| **Recall** | **1.0000** | Zero missed attacks (FN=0) |
-| **True Positives** | **646** | Malicious flows from host 147.32.84.165 |
-| **False Positives** | **2** | VirtualBox multicast/broadcast artifacts — absent in bare-metal |
-| **True Negatives** | **12,075** | |
-| **FPR (ML, Neris evaluation)** | **0.0002%** | |
-| **FPR (Fast Detector, bigFlows)** | **6.61%** | DEBT-FD-001, Path B thresholds |
-| **FP reduction (Fast → ML)** | **~500×** | ML reduces production blocks to zero on bigFlows |
-| **Inference latency** | **0.24–1.06 μs** | Per-class, embedded C++20 |
-| **Throughput ceiling (virtualized)** | **~33–38 Mbps** | VirtualBox NIC limit, not pipeline |
-| **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows |
-| **RAM (full pipeline)** | **~1.28 GB** | Including TinyLlama, stable under load |
-| **Pipeline components** | **6/6 RUNNING** | |
-| **Test suite** | **70/70 passing** | crypto 3/3, etcd-hmac 12/12, ml-detector 9/9, trace_id 46/46 |
+| Metric | Value                                     | Notes                                                                         |
+|---|-------------------------------------------|-------------------------------------------------------------------------------|
+| **F1-score (CTU-13 Neris)** | **0.9985**                                | Stable across 4 replay runs                                                   |
+| **Precision** | **0.9969**                                |                                                                               |
+| **Recall** | **1.0000**                                | Zero missed attacks (FN=0)                                                    |
+| **True Positives** | **646**                                   | Malicious flows from host 147.32.84.165                                       |
+| **False Positives** | **2**                                     | VirtualBox multicast/broadcast artifacts — absent in bare-metal               |
+| **True Negatives** | **12,075**                                |                                                                               |
+| **FPR (ML, Neris evaluation)** | **0.0002%**                               |                                                                               |
+| **FPR (Fast Detector, bigFlows)** | **6.61%**                                 | DEBT-FD-001, Path B thresholds                                                |
+| **FP reduction (Fast → ML)** | **~500×**                                 | ML reduces production blocks to zero on bigFlows                              |
+| **Inference latency** | **0.24–1.06 μs**                          | Per-class, embedded C++20                                                     |
+| **Throughput ceiling (virtualized)** | **~33–38 Mbps**                           | VirtualBox NIC limit, not pipeline                                            |
+| **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows                                           |
+| **RAM (full pipeline)** | **~1.28 GB**                              | Including TinyLlama, stable under load                                        |
+| **Pipeline components** | **6/6 RUNNING**                           |                                                                               |
+| **Test suite** | **24/24 suites passing**                  | crypto-transport, seed-client, etcd-server, rag-ingester, ml-detector + TEST-INTEG-1/2/3 |
 
 **Ground truth clarification.** The CTU-13 Neris capture contains 19,135 total flows. Of these, 646 flows constitute the TP ground truth — those exhibiting active C2 behavioral signatures (IRC bursts, SMB lateral movement, DNS anomalies) from the infected host. The remaining flows are background traffic on the infected host and are not ground-truth positives for NIDS evaluation. See the [preprint](docs/) for full methodology.
+
+### Cryptographic Identity & Forward Secrecy (DAY 95-96)
+
+The pipeline now utilizes an **HKDF-based** derivation strategy:
+1. `tools/provision.sh` generates unique Ed25519 keypairs and 32-byte seeds per component.
+2. `seed-client` reads material from disk (permissions 0600).
+3. `CryptoTransport` uses HKDF to derive session keys, ensuring context isolation and preventing decryption of historical traffic upon seed compromise.
 
 ### Honest Limitations
 
 - Single botnet scenario evaluated (CTU-13 Neris, 2011). Generalizability to modern ransomware families not empirically established.
 - All throughput figures are conservative lower bounds — VirtualBox NIC emulation ceiling ~33–38 Mbps. Bare-metal characterization is P1 future work.
-- 11/40 ML features use `MISSING_FEATURE_SENTINEL = -9999.0f` (Phase 2 pending).
+- 11/40 ML features use `MISSING_FEATURE_SENTINEL = -9999.0f` (centralizado en `common/include/sentinel.hpp`, Phase 2 pending).
 - Fast Detector Path A (DEBT-FD-001) retains compile-time thresholds — JSON migration scheduled for PHASE 2.
 - Single-node deployment; etcd HA not yet implemented.
 - ChaCha20 seed via etcd not recommended for production — peer-to-peer negotiation under design.
@@ -71,6 +83,7 @@ ML Defender implements **Network Detection and Response (NDR)** capabilities: re
 │  │                  │  ShardedFlowManager (16 shards)           │
 │  │                  │  Fast Detector (rule-based heuristics)    │
 │  │                  │  28/40 features extracted                 │
+│  │                  │  plugin-loader (ADR-012, PHASE 1)         │
 │  │                  │  ChaCha20-Poly1305 + LZ4 transport        │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
@@ -125,8 +138,8 @@ vboxmanage --version # 7.x
 ### Build & Deploy
 
 ```bash
-git clone https://github.com/alonsoir/test-zeromq-c-.git
-cd test-zeromq-c-
+git clone https://github.com/alonsoir/argus.git
+cd argus
 make up
 make all
 make pipeline-start
@@ -395,7 +408,10 @@ All code, all analysis scripts, all experiments, and all failures are documented
 - ✅ DAY 87: Stress test completed — 2.37M packets, 0 drops, 0 errors, RAM stable
 - ✅ DAY 88: Paper draft v5 — Consejo de Sabios feedback integrated, arXiv ready
 - ✅ DAY 88: Rename aRGus EDR → **aRGus NDR** — accurate scope
-
+- ✅ DAY 92: SMB detection features — `rst_ratio`, `syn_ack_ratio` extractors + living contracts docs
+- ✅ DAY 93: ADR-012 PHASE 1 — `plugin-loader` + `plugins/hello` + ABI validation via dlopen/dlsym
+- ✅ DAY 95: Cryptographic Provisioning Infrastructure — Ed25519 + ChaCha20 seeds
+- ✅ DAY 96: HKDF Implementation — Isolation of cryptographic domains
 ---
 
 **Via Appia Quality** 🏛️ — Built to last decades

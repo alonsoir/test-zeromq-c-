@@ -1,13 +1,13 @@
 # Protocolo de replay — DAY 86.md
 # Experimento 1
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make up
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make up
 Bringing machine 'defender' up with 'virtualbox' provider...
 Bringing machine 'client' up with 'virtualbox' provider...
 ...
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-stop
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-stop
 🛑 Stopping all pipeline components...
 ✅ Pipeline stopped
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-start
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-start
 
 ...
 ╔════════════════════════════════════════════════════════════╗
@@ -24,8 +24,8 @@ Bringing machine 'client' up with 'virtualbox' provider...
 ✅ sniffer:       RUNNING
 ✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % sleep 15
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-replay-small
+(.venv) aironman@MacBook-Pro-de-Alonso argus % sleep 15
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make test-replay-small
 🧪 Replaying CTU-13 smallFlows.pcap...
 Test start: 2026-03-14 07:16:23.730783 ...
 Actual: 3624 packets (2500833 bytes) sent in 2.00 seconds
@@ -44,49 +44,49 @@ Failed packets:            0
 Truncated packets:         0
 Retried packets (ENOBUFS): 0
 Retried packets (EAGAIN):  0
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:16:12.434] [ml-detector] [info] 📊 Stats: received=18, processed=18, sent=18, attacks=0, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_small.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_small.log
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events XXXX --day "DAY86_small"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events XXXX --day "DAY86_small"
 
 usage: calculate_f1_neris.py [-h] --total-events TOTAL_EVENTS [--day DAY] [--thresholds THRESHOLDS] sniffer_log
 calculate_f1_neris.py: error: argument --total-events: invalid int value: 'XXXX'
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:17:12.443] [ml-detector] [info] 📊 Stats: received=1030, processed=1030, sent=1030, attacks=0, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:18:12.461] [ml-detector] [info] 📊 Stats: received=3370, processed=3370, sent=3370, attacks=0, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "Es obvio que hacer el grep lleva tiempo. Esperamos un poco."
+(.venv) aironman@MacBook-Pro-de-Alonso argus % echo "Es obvio que hacer el grep lleva tiempo. Esperamos un poco."
 Es obvio que hacer el grep lleva tiempo. Esperamos un poco.
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:18:12.461] [ml-detector] [info] 📊 Stats: received=3370, processed=3370, sent=3370, attacks=0, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:19:12.464] [ml-detector] [info] 📊 Stats: received=7435, processed=7435, sent=7435, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:19:12.464] [ml-detector] [info] 📊 Stats: received=7435, processed=7435, sent=7435, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:19:12.464] [ml-detector] [info] 📊 Stats: received=7435, processed=7435, sent=7435, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:20:12.466] [ml-detector] [info] 📊 Stats: received=7441, processed=7441, sent=7441, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:21:12.467] [ml-detector] [info] 📊 Stats: received=7447, processed=7447, sent=7447, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:22:12.467] [ml-detector] [info] 📊 Stats: received=7457, processed=7457, sent=7457, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l /vagrant/logs/lab/ml-detector.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l /vagrant/logs/lab/ml-detector.log
 wc: /vagrant/logs/lab/ml-detector.log: open: No such file or directory
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/ml-detector.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l logs/lab/ml-detector.log
 55474 logs/lab/ml-detector.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % Cuando puedo sacar el número para el script python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events XXXX --day "DAY86_small"
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % Cuando puedo sacar el número para el script python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events XXXX --day "DAY86_small"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:26:12.470] [ml-detector] [info] 📊 Stats: received=7481, processed=7481, sent=7481, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:26:12.470] [ml-detector] [info] 📊 Stats: received=7481, processed=7481, sent=7481, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:26:12.470] [ml-detector] [info] 📊 Stats: received=7481, processed=7481, sent=7481, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 07:26:12.470] [ml-detector] [info] 📊 Stats: received=7481, processed=7481, sent=7481, attacks=1, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events 7481 --day "DAY86_small"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_small.log --total-events 7481 --day "DAY86_small"
 
 ====================================================================
 ML DEFENDER - F1 SCORE CALCULATOR
@@ -130,7 +130,7 @@ CSV line for f1_replay_log.csv:
 DAYDAY86_small,,7481,766,150,0,6565,0.9108,0.8362,1.0000,0.0223
 
 # Experimento 2 — neris (el principal)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
 
 🛑 Stopping all pipeline components...
 ✅ Pipeline stopped
@@ -138,7 +138,7 @@ DAYDAY86_small,,7481,766,150,0,6565,0.9108,0.8362,1.0000,0.0223
 ✅ Logs rotated to /vagrant/logs/lab/archive/
 
 ...
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-status
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-status
 
 ╔════════════════════════════════════════════════════════════╗
 ║  📊 ML Defender Pipeline Status (via TMUX)                ║
@@ -150,7 +150,7 @@ DAYDAY86_small,,7481,766,150,0,6565,0.9108,0.8362,1.0000,0.0223
 ✅ sniffer:       RUNNING
 ✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-health
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-health
 
 ╔══════════════════════════════════════════════════════════════╗
 ║      ML Defender — Pipeline Health Monitor                  ║
@@ -179,7 +179,7 @@ received=16, processed=16, sent=16, attacks=0, errors=(deser:0, feat:0, inf:0)
 
 Me estoy dando cuenta que en el Makefile no tenemos una tarea para arrancar rag-ingester, por eso está parado.
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make rag-ingester-start
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make rag-ingester-start
 🚀 Starting RAG Ingester (Full Context)...
 Ejecución desde la raíz del componente para resolver paths relativos del config...
 
@@ -193,7 +193,7 @@ Ejecución desde la raíz del componente para resolver paths relativos del confi
 ✅ sniffer:       RUNNING
 ✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-health
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-health
 
 ╔══════════════════════════════════════════════════════════════╗
 ║      ML Defender — Pipeline Health Monitor                  ║
@@ -222,7 +222,7 @@ received=52, processed=52, sent=52, attacks=0, errors=(deser:0, feat:0, inf:0)
 
 Por qué ha fallado levantar rag-ingester antes?
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-replay-neris
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make test-replay-neris
 🧪 Replaying CTU-13 Neris botnet (492K events)...
 ...
 Test complete: 2026-03-14 07:43:41.718741
@@ -235,52 +235,52 @@ Failed packets:            2630
 Truncated packets:         0
 Retried packets (ENOBUFS): 0
 Retried packets (EAGAIN):  0
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:45:24.961] [ml-detector] [info] 📊 Stats: received=5941, processed=5941, sent=5941, attacks=0, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:47:24.962] [ml-detector] [info] 📊 Stats: received=11904, processed=11904, sent=11904, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:50:24.972] [ml-detector] [info] 📊 Stats: received=12046, processed=12046, sent=12046, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:50:24.972] [ml-detector] [info] 📊 Stats: received=12046, processed=12046, sent=12046, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:54:24.975] [ml-detector] [info] 📊 Stats: received=12214, processed=12214, sent=12214, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:54:24.975] [ml-detector] [info] 📊 Stats: received=12214, processed=12214, sent=12214, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:54:24.975] [ml-detector] [info] 📊 Stats: received=12214, processed=12214, sent=12214, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:57:25.012] [ml-detector] [info] 📊 Stats: received=12332, processed=12332, sent=12332, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_neris.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_neris.log
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l /tmp/sniffer_neris.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l /tmp/sniffer_neris.log
 38277 /tmp/sniffer_neris.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:59:25.012] [ml-detector] [info] 📊 Stats: received=12444, processed=12444, sent=12444, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 07:59:25.012] [ml-detector] [info] 📊 Stats: received=12444, processed=12444, sent=12444, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:00:25.012] [ml-detector] [info] 📊 Stats: received=12517, processed=12517, sent=12517, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:01:25.015] [ml-detector] [info] 📊 Stats: received=12563, processed=12563, sent=12563, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:01:25.015] [ml-detector] [info] 📊 Stats: received=12563, processed=12563, sent=12563, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "Es suficiente?"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % echo "Es suficiente?"
 Es suficiente?
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12563 --day "DAY86_neris"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12563 --day "DAY86_neris"
 
 
 ====================================================================
@@ -321,10 +321,10 @@ src=192.168.56.1  dst=192.168.56.255
 CSV line for f1_replay_log.csv:
 DAYDAY86_neris,,12563,646,2,0,11915,0.9985,0.9969,1.0000,0.0002
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:02:25.023] [ml-detector] [info] 📊 Stats: received=12605, processed=12605, sent=12605, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12605 --day "DAY86_neris"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12605 --day "DAY86_neris"
 
 
 ====================================================================
@@ -365,16 +365,16 @@ src=192.168.56.1  dst=192.168.56.255
 CSV line for f1_replay_log.csv:
 DAYDAY86_neris,,12605,646,2,0,11957,0.9985,0.9969,1.0000,0.0002
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:04:25.069] [ml-detector] [info] 📊 Stats: received=12685, processed=12685, sent=12685, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:04:25.069] [ml-detector] [info] 📊 Stats: received=12685, processed=12685, sent=12685, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:05:25.073] [ml-detector] [info] 📊 Stats: received=12723, processed=12723, sent=12723, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12723 --day "DAY86_neris"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 12723 --day "DAY86_neris"
 
 
 ====================================================================
@@ -415,16 +415,16 @@ src=192.168.56.1  dst=192.168.56.255
 CSV line for f1_replay_log.csv:
 DAYDAY86_neris,,12723,646,2,0,12075,0.9985,0.9969,1.0000,0.0002
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:16:25.086] [ml-detector] [info] 📊 Stats: received=13034, processed=13034, sent=13034, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:48:25.345] [ml-detector] [info] 📊 Stats: received=13930, processed=13930, sent=13930, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 08:48:25.345] [ml-detector] [info] 📊 Stats: received=13930, processed=13930, sent=13930, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 13930 --day "DAY86_neris"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 13930 --day "DAY86_neris"
 
 
 ====================================================================
@@ -467,16 +467,16 @@ DAYDAY86_neris,,13930,646,2,0,13282,0.9985,0.9969,1.0000,0.0002
 
 Un par de horas más tarde, o algo más...
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 12:04:26.613] [ml-detector] [info] 📊 Stats: received=17866, processed=17866, sent=17866, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 12:04:26.613] [ml-detector] [info] 📊 Stats: received=17866, processed=17866, sent=17866, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 
 [2026-03-14 12:04:26.613] [ml-detector] [info] 📊 Stats: received=17866, processed=17866, sent=17866, attacks=12, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 17866 --day "DAY86_neris"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_neris.log --total-events 17866 --day "DAY86_neris"
 
 
 ====================================================================
@@ -517,11 +517,11 @@ src=192.168.56.1  dst=192.168.56.255
 CSV line for f1_replay_log.csv:
 DAYDAY86_neris,,17866,646,2,0,17218,0.9985,0.9969,1.0000,0.0001
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker %
+(.venv) aironman@MacBook-Pro-de-Alonso argus %
 
 # Experimento 3: bigFlows + CPU/RAM (30 min)
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
 
 🛑 Stopping all pipeline components...
 ✅ Pipeline stopped
@@ -539,9 +539,9 @@ DAYDAY86_neris,,17866,646,2,0,17218,0.9985,0.9969,1.0000,0.0001
 ✅ firewall:      RUNNING
 ╚════════════════════════════════════════════════════════════╝
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "top -b -n 60 -d 10 > /vagrant/logs/lab/top_bigflows.log &"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "top -b -n 60 -d 10 > /vagrant/logs/lab/top_bigflows.log &"
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-replay-big
+(.venv) aironman@MacBook-Pro-de-Alonso argus % make test-replay-big
 
 🧪 Replaying CTU-13 bigFlows.pcap...
 Test start: 2026-03-14 12:15:07.978917 ...
@@ -611,60 +611,60 @@ Failed packets:            0
 Truncated packets:         0
 Retried packets (ENOBUFS): 0
 Retried packets (EAGAIN):  0
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l logs/lab/sniffer.log
 230013 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l logs/lab/sniffer.log
 230025 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "Si, está creciendo el log..."
+(.venv) aironman@MacBook-Pro-de-Alonso argus % echo "Si, está creciendo el log..."
 Si, está creciendo el log...
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % ls -ltah logs/lab/sniffer.log
 -rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % ls -ltah logs/lab/sniffer.log
 -rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
 
 Cual es --total-events?
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events XXXX --day "DAY87_big"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events XXXX --day "DAY87_big"
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l /logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l /logs/lab/sniffer.log
 wc: /logs/lab/sniffer.log: open: No such file or directory
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l logs/lab/sniffer.log
 230013 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % wc -l logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % wc -l logs/lab/sniffer.log
 230025 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "Si, está creciendo el log..."
+(.venv) aironman@MacBook-Pro-de-Alonso argus % echo "Si, está creciendo el log..."
 Si, está creciendo el log...
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah /logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % ls -ltah /logs/lab/sniffer.log
 ls: /logs/lab/sniffer.log: No such file or directory
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % ls -ltah logs/lab/sniffer.log
 -rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/sniffer.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % ls -ltah logs/lab/sniffer.log
 -rw-r--r--@ 1 aironman  staff    11M Mar 14 13:28 logs/lab/sniffer.log
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "cat /vagrant/logs/lab/sniffer.log" > /tmp/sniffer_big.log
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 12:33:57.778] [ml-detector] [info] 📊 Stats: received=37668, processed=37668, sent=37668, attacks=5, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 12:33:57.778] [ml-detector] [info] 📊 Stats: received=37668, processed=37668, sent=37668, attacks=5, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % sleep 60
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % sleep 60
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 12:34:57.778] [ml-detector] [info] 📊 Stats: received=37674, processed=37674, sent=37674, attacks=5, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "sigue creciendo, espero un par de horas..."
+(.venv) aironman@MacBook-Pro-de-Alonso argus % echo "sigue creciendo, espero un par de horas..."
 sigue creciendo, espero un par de horas...
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 12:54:57.880] [ml-detector] [info] 📊 Stats: received=37982, processed=37982, sent=37982, attacks=5, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"
 [2026-03-14 12:54:57.880] [ml-detector] [info] 📊 Stats: received=37982, processed=37982, sent=37982, attacks=5, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % ls -ltah logs/lab/top_bigflows.log
+(.venv) aironman@MacBook-Pro-de-Alonso argus % ls -ltah logs/lab/top_bigflows.log
 ls: logs/lab/top_bigflows.log: No such file or directory
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % echo "amos, no me digas que no se ha creado el fichero que mide el consumo de ram..."
+(.venv) aironman@MacBook-Pro-de-Alonso argus % echo "amos, no me digas que no se ha creado el fichero que mide el consumo de ram..."
 amos, no me digas que no se ha creado el fichero que mide el consumo de ram...
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "ls -ltah /vagrant/logs/lab/top_bigflows.log"  
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "ls -ltah /vagrant/logs/lab/top_bigflows.log"  
 ls: no se puede acceder a '/vagrant/logs/lab/top_bigflows.log': No existe el fichero o el directorio
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"  
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep 'Stats:' /vagrant/logs/lab/ml-detector.log | tail -1"  
 [2026-03-14 13:01:57.962] [ml-detector] [info] 📊 Stats: received=38064, processed=38064, sent=38064, attacks=5, errors=(deser:0, feat:0, inf:0)
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events 38064 --day "DAY87_big"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % python3 scripts/calculate_f1_neris.py /tmp/sniffer_big.log --total-events 38064 --day "DAY87_big"
 
 
 ====================================================================
@@ -708,7 +708,7 @@ src=172.16.133.43  dst=172.16.139.250
 CSV line for f1_replay_log.csv:
 DAYDAY87_big,,38064,0,2517,0,35547,0.0000,0.0000,0.0000,0.0661
 
-(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant ssh defender -c "grep -i 'attack\|ATTACK' /vagrant/logs/lab/ml-detector.log | grep -v '147\.32\.84\.' | head -20"
+(.venv) aironman@MacBook-Pro-de-Alonso argus % vagrant ssh defender -c "grep -i 'attack\|ATTACK' /vagrant/logs/lab/ml-detector.log | grep -v '147\.32\.84\.' | head -20"
 
 - Level 1 (Attack): ✅
   Level 1: ✅ attack_detector (23 features)

@@ -14,10 +14,11 @@
 #include "ml_defender/traffic_detector.hpp"
 #include "ml_defender/internal_detector.hpp"
 
-// 🎯 DAY 27: Crypto-Transport Integration
-#include <crypto_transport/crypto_manager.hpp>
-#include <crypto_transport/utils.hpp>  // 🎯 DAY 29: For hex_to_bytes
+// DEPRECATED DAY 98 — CryptoManager sustituido por CryptoTransport (ADR-013)
+// #include <crypto_transport/crypto_manager.hpp>
+// #include <crypto_transport/utils.hpp>
 #include "contract_validator.h"
+#include <exception>
 
 //ml-detector/src/main.cpp
 using namespace ml_detector;
@@ -64,6 +65,11 @@ spdlog::level::level_enum string_to_log_level(const std::string& level_str) {
 }
 
 int main(int argc, char* argv[]) {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     // Parse command line arguments
     std::string config_path = "../config/ml_detector_config.json";
     bool verbose = false;
@@ -145,43 +151,9 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // 🎯 DAY 29: CRYPTO-TRANSPORT INITIALIZATION WITH HEX→BINARY CONVERSION
-        // ═══════════════════════════════════════════════════════════════════════
-        std::cout << "\n🔐 [crypto] Initializing Crypto-Transport..." << std::endl;
-
-        // Get encryption seed from etcd (HEX format)
-        std::string encryption_seed_hex = etcd_client->get_encryption_seed();
-
-        if (encryption_seed_hex.empty()) {
-            std::cerr << "❌ [crypto] Failed to get encryption seed from etcd" << std::endl;
-            return 1;
-        }
-
-        std::cout << "🔑 [ml-detector] Retrieved encryption seed (" << encryption_seed_hex.size() << " hex chars)" << std::endl;
-
-        // Convert HEX to binary (64 hex chars → 32 bytes)
-        std::string encryption_seed;
-        try {
-            auto key_bytes = crypto_transport::hex_to_bytes(encryption_seed_hex);
-            encryption_seed = std::string(key_bytes.begin(), key_bytes.end());
-        } catch (const std::exception& e) {
-            std::cerr << "❌ [crypto] Failed to convert hex seed: " << e.what() << std::endl;
-            return 1;
-        }
-
-        if (encryption_seed.size() != 32) {
-            std::cerr << "❌ [crypto] Invalid key size: " << encryption_seed.size() << " bytes (expected 32)" << std::endl;
-            return 1;
-        }
-
-        std::cout << "✅ [crypto] Encryption key converted: 32 bytes" << std::endl;
-
-        // Create CryptoManager
-        auto crypto_manager = std::make_shared<crypto::CryptoManager>(encryption_seed);
-
-        std::cout << "✅ [crypto] CryptoManager initialized (ChaCha20-Poly1305 + LZ4)" << std::endl;
-        std::cout << std::endl;
+        // ADR-013 PHASE 2 — DAY 98: CryptoTransport inicializado internamente por ZMQHandler
+        // DEPRECATED DAY 98 — bloque DAY 29 eliminado (etcd seed → CryptoManager)
+        std::cout << "\n🔐 [crypto] CryptoTransport será inicializado por ZMQHandler (ADR-013)" << std::endl;
 
         // Print configuration summary
         std::cout << "╔═══════════════════════════════════════════════════════════════╗\n";
@@ -481,6 +453,7 @@ int main(int argc, char* argv[]) {
         }
 
         // ✨ DAY 27: PASAR crypto_manager AL ZMQHANDLER
+        // ADR-013 PHASE 2 — DAY 98: crypto_manager eliminado, ZMQHandler usa SeedClient interno
         ZMQHandler zmq_handler(
             config,
             model,
@@ -489,7 +462,6 @@ int main(int argc, char* argv[]) {
             ransomware_detector,
             traffic_detector,
             internal_detector,
-            crypto_manager,  // 🎯 DAY 27: NEW PARAMETER
             hmac_key_hex       // Day 63: CSV HMAC key
         );
 

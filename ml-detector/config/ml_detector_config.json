@@ -423,5 +423,14 @@
     "divergence_high_threshold": 0.4,
     "malicious_threshold": 0.7,
     "requires_rag_threshold": 0.85
+  },
+  "identity": {
+    "_comment": "ADR-013 — provision.sh es el unico responsable de crear estas claves.",
+    "_phase": "PHASE 1: seed.bin en claro chmod 0600. PHASE 2: seed.enc via seed-client.",
+    "component_id": "ml-detector",
+    "keys_dir": "/etc/ml-defender/ml-detector",
+    "public_key": "/etc/ml-defender/ml-detector/public.pem",
+    "private_key": "/etc/ml-defender/ml-detector/private.pem",
+    "seed_bin": "/etc/ml-defender/ml-detector/seed.bin"
   }
 }

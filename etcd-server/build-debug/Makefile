@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /vagrant/etcd-server/build-debug
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
@@ -128,6 +138,19 @@ etcd-server: cmake_check_build_system
 etcd-server/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/build
 .PHONY : etcd-server/fast
+
+#=============================================================================
+# Target rules for targets named test_hmac_integration
+
+# Build rule for target.
+test_hmac_integration: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_hmac_integration
+.PHONY : test_hmac_integration
+
+# fast build rule for target.
+test_hmac_integration/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/build
+.PHONY : test_hmac_integration/fast
 
 #=============================================================================
 # Target rules for targets named test_secrets_manager_simple
@@ -268,6 +291,7 @@ src/secrets_manager.o: src/secrets_manager.cpp.o
 # target to build an object file
 src/secrets_manager.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/src/secrets_manager.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.o
 .PHONY : src/secrets_manager.cpp.o
 
@@ -277,6 +301,7 @@ src/secrets_manager.i: src/secrets_manager.cpp.i
 # target to preprocess a source file
 src/secrets_manager.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/src/secrets_manager.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.i
 .PHONY : src/secrets_manager.cpp.i
 
@@ -286,8 +311,33 @@ src/secrets_manager.s: src/secrets_manager.cpp.s
 # target to generate assembly for a file
 src/secrets_manager.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/etcd-server.dir/build.make CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/src/secrets_manager.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_secrets_manager_simple.dir/build.make CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.s
 .PHONY : src/secrets_manager.cpp.s
+
+tests/test_hmac_integration.o: tests/test_hmac_integration.cpp.o
+.PHONY : tests/test_hmac_integration.o
+
+# target to build an object file
+tests/test_hmac_integration.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/tests/test_hmac_integration.cpp.o
+.PHONY : tests/test_hmac_integration.cpp.o
+
+tests/test_hmac_integration.i: tests/test_hmac_integration.cpp.i
+.PHONY : tests/test_hmac_integration.i
+
+# target to preprocess a source file
+tests/test_hmac_integration.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/tests/test_hmac_integration.cpp.i
+.PHONY : tests/test_hmac_integration.cpp.i
+
+tests/test_hmac_integration.s: tests/test_hmac_integration.cpp.s
+.PHONY : tests/test_hmac_integration.s
+
+# target to generate assembly for a file
+tests/test_hmac_integration.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_hmac_integration.dir/build.make CMakeFiles/test_hmac_integration.dir/tests/test_hmac_integration.cpp.s
+.PHONY : tests/test_hmac_integration.cpp.s
 
 tests/test_secrets_manager_simple.o: tests/test_secrets_manager_simple.cpp.o
 .PHONY : tests/test_secrets_manager_simple.o
@@ -321,7 +371,9 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... etcd-server"
+	@echo "... test_hmac_integration"
 	@echo "... test_secrets_manager_simple"
 	@echo "... src/component_registry.o"
 	@echo "... src/component_registry.i"
@@ -341,6 +393,9 @@ help:
 	@echo "... src/secrets_manager.o"
 	@echo "... src/secrets_manager.i"
 	@echo "... src/secrets_manager.s"
+	@echo "... tests/test_hmac_integration.o"
+	@echo "... tests/test_hmac_integration.i"
+	@echo "... tests/test_hmac_integration.s"
 	@echo "... tests/test_secrets_manager_simple.o"
 	@echo "... tests/test_secrets_manager_simple.i"
 	@echo "... tests/test_secrets_manager_simple.s"

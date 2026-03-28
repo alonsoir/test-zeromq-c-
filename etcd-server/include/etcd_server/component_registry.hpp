@@ -7,7 +7,9 @@
 #include <mutex>
 #include <ctime>
 #include <nlohmann/json.hpp>
-#include "crypto_manager.hpp"
+// DEPRECATED DAY 98 — #include "crypto_manager.hpp" — usar CryptoTransport
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
 
 //etcd-server/include/etcd_server/component_registry.hpp
 
@@ -16,7 +18,10 @@ using json = nlohmann::json;
 class ComponentRegistry {
 private:
     std::unordered_map<std::string, json> components_;
-    std::unique_ptr<CryptoManager> crypto_manager_;
+    // DEPRECATED DAY 98 — crypto_manager_ reemplazado por seed_client_ + tx_ + rx_
+    std::unique_ptr<ml_defender::SeedClient>             seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport>   tx_;
+    std::unique_ptr<crypto_transport::CryptoTransport>   rx_;
     bool compression_enabled_ = true;
     bool encryption_enabled_ = true;
 

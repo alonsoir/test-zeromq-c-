@@ -11,6 +11,16 @@
     }
   },
 
+  "identity": {
+    "_comment": "ADR-013 — provision.sh es el único responsable de crear estas claves.",
+    "_phase": "PHASE 1: seed.bin en claro (chmod 0600). PHASE 2: seed.enc via seed-client.",
+    "component_id": "rag-ingester",
+    "keys_dir":     "/etc/ml-defender/rag-ingester",
+    "public_key":   "/etc/ml-defender/rag-ingester/public.pem",
+    "private_key":  "/etc/ml-defender/rag-ingester/private.pem",
+    "seed_bin":     "/etc/ml-defender/rag-ingester/seed.bin"
+  },
+
   "ingester": {
     "input": {
       "source": "file_watch",

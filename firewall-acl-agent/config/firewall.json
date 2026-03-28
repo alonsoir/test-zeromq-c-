@@ -3,7 +3,6 @@
   "_version": "1.2.1",
   "_updated": "2025-02-08 - Day 52: Removed ipset singleton (use ipsets map), removed duplicate logging",
   "_phase": "Day 52 - Config Cleanup: Single source of truth",
-
   "component": {
     "name": "firewall-acl-agent",
     "version": "1.2.1",
@@ -11,14 +10,12 @@
     "type": "firewall",
     "role": "pipeline_endpoint"
   },
-
   "operation": {
     "dry_run": false,
     "simulate_block": true,
     "validation_strictness": "high",
     "max_processing_delay_ms": 10
   },
-
   "_comment_transport": "NEW FOR DAY 23: Decryption + Decompression of incoming data from ml-detector",
   "transport": {
     "compression": {
@@ -39,11 +36,12 @@
       "_comment": "Firewall only DECRYPTS input, does not encrypt output (pipeline endpoint)"
     }
   },
-
   "_comment_etcd": "UPDATED FOR DAY 23: Added crypto_token_path for decryption keys",
   "etcd": {
     "enabled": true,
-    "endpoints": ["localhost:2379"],
+    "endpoints": [
+      "localhost:2379"
+    ],
     "connection_timeout_ms": 5000,
     "retry_attempts": 3,
     "retry_interval_ms": 1000,
@@ -56,7 +54,6 @@
     "lease_ttl_seconds": 60,
     "_comment": "crypto_token_path: where firewall reads decryption keys shared by ml-detector"
   },
-
   "zmq": {
     "endpoint": "tcp://localhost:5572",
     "topic": "",
@@ -69,7 +66,6 @@
     "monitor_interval_sec": 30,
     "_comment": "Receives ENCRYPTED + COMPRESSED data from ml-detector on port 5572"
   },
-
   "_comment_ipsets": "DAY 52: Single source of truth - removed duplicate 'ipset' section",
   "ipsets": {
     "blacklist": {
@@ -95,7 +91,6 @@
       "flush_on_startup": false
     }
   },
-
   "iptables": {
     "chain_name": "ML_DEFENDER_TEST",
     "default_policy": "ACCEPT",
@@ -106,7 +101,6 @@
     "create_chain": true,
     "insert_rule_position": 1
   },
-
   "batch_processor": {
     "batch_size_threshold": 10,
     "batch_time_threshold_ms": 1000,
@@ -115,7 +109,6 @@
     "enable_batching": true,
     "flush_on_shutdown": true
   },
-
   "validation": {
     "validate_ip_addresses": true,
     "validate_confidence_scores": true,
@@ -129,7 +122,6 @@
     "block_localhost": false,
     "block_gateway": false
   },
-
   "logging": {
     "level": "debug",
     "console": true,
@@ -155,7 +147,6 @@
     "batch_timeout_sec": 5,
     "_comment": "Generates CSV batches with HMAC signatures for tamper detection"
   },
-
   "metrics": {
     "enable_export": true,
     "export_interval_sec": 30,
@@ -170,7 +161,6 @@
       "track_decryption_failures": true
     }
   },
-
   "health_check": {
     "enable": true,
     "check_interval_sec": 30,
@@ -184,7 +174,6 @@
       "crypto_token_availability_check": true
     }
   },
-
   "performance": {
     "max_processing_threads": 2,
     "queue_size": 100,
@@ -192,7 +181,6 @@
     "enable_memory_pools": true,
     "memory_pool_size": 100
   },
-
   "security": {
     "require_zmq_topic": true,
     "validate_message_signature": false,
@@ -206,7 +194,6 @@
       "max_decryption_failures_per_minute": 10
     }
   },
-
   "debug": {
     "log_raw_protobuf": true,
     "log_deserialization_errors": true,
@@ -220,7 +207,6 @@
       "log_crypto_operations": true
     }
   },
-
   "testing": {
     "simulate_messages": false,
     "test_message_interval_ms": 5000,
@@ -231,7 +217,6 @@
     ],
     "auto_start_test_mode": false
   },
-
   "_integration_notes": {
     "day52_changes": [
       "Removed 'ipset' singleton section (was duplicate of ipsets.blacklist)",
@@ -263,5 +248,14 @@
       "Requires: LZ4 library",
       "Requires: Code modifications in main.cpp"
     ]
+  },
+  "identity": {
+    "_comment": "ADR-013 — provision.sh es el unico responsable de crear estas claves.",
+    "_phase": "PHASE 1: seed.bin en claro chmod 0600. PHASE 2: seed.enc via seed-client.",
+    "component_id": "firewall-acl-agent",
+    "keys_dir": "/etc/ml-defender/firewall-acl-agent",
+    "public_key": "/etc/ml-defender/firewall-acl-agent/public.pem",
+    "private_key": "/etc/ml-defender/firewall-acl-agent/private.pem",
+    "seed_bin": "/etc/ml-defender/firewall-acl-agent/seed.bin"
   }
 }

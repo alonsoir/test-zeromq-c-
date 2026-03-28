@@ -2,7 +2,7 @@
 
 ## Directorio del Proyecto
 ```
-test-zeromq-c-/
+argus/
 ├── config/
 │   └── sniffer.json                    # Tu configuración adaptada
 ├── src/
@@ -199,7 +199,7 @@ add_executable(service3
 ### En Vagrant/Debian (como root):
 ```bash
 # Compilar
-cd /vagrant/test-zeromq-c-
+cd /vagrant/argus
 mkdir build && cd build
 cmake ..
 make -j4

@@ -15,8 +15,10 @@
 #include "ml_defender/ransomware_detector.hpp"
 #include "ml_defender/traffic_detector.hpp"
 #include "ml_defender/internal_detector.hpp"
-// 🎯 DAY 29: Crypto-Transport for encrypted ZMQ send
-#include <crypto_transport/crypto_manager.hpp>
+// ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient (sustituye CryptoManager)
+// DEPRECATED DAY 98 — #include <crypto_transport/crypto_manager.hpp>
+#include <seed_client/seed_client.hpp>
+#include <crypto_transport/transport.hpp>
 #include <bpf/libbpf.h>
 #include <zmq.hpp>
 #include <memory>
@@ -222,9 +224,10 @@ private:
     RingConsumerStats stats_;
     EventCallback external_callback_;
 
-    // 🎯 DAY 29: Crypto-Transport for encrypted ZMQ send
-    std::shared_ptr<crypto::CryptoManager> crypto_manager_;
-    std::string encryption_seed_;  // Store seed for initialization
+    // ADR-013 PHASE 2 — DAY 98: CryptoTransport via SeedClient
+    // DEPRECATED DAY 98 — crypto_manager_ + encryption_seed_ sustituidos
+    std::unique_ptr<ml_defender::SeedClient>           seed_client_;
+    std::unique_ptr<crypto_transport::CryptoTransport> tx_;
 
     // Layer 1 - Fast Detection (thread-local)
     thread_local static FastDetector fast_detector_;

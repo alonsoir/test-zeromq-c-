@@ -8,6 +8,9 @@
 // - Eliminates race conditions on current_date_, current_log_, events_in_current_file_
 
 #include "rag_logger.hpp"
+#include <crypto_transport/contexts.hpp>
+#include <lz4.h>
+#include <cstring>
 #include "csv_event_writer.hpp"
 #include <fstream>
 #include <sstream>
@@ -21,15 +24,37 @@ namespace ml_defender {
 
     RAGLogger::RAGLogger(const RAGLoggerConfig& config,
                          std::shared_ptr<spdlog::logger> logger,
-                         std::shared_ptr<crypto::CryptoManager> crypto_manager)  // NUEVO
+                         std::shared_ptr<void> /*deprecated_crypto_manager*/)
         : config_(config)
         , logger_(logger)
-        , crypto_manager_(crypto_manager)  // NUEVO
+        // DEPRECATED DAY 98 — crypto_manager ignorado (ADR-013)
+        // , crypto_manager_(crypto_manager)
         , start_time_(std::chrono::system_clock::now())
     {
         logger_->info("🎯 Initializing RAG Logger");
         logger_->info("   Base path: {}", config_.base_path);
         logger_->info("   Deployment: {}", config_.deployment_id);
+
+        // ADR-013 PHASE 2 — DAY 98: CryptoTransport para artefactos cifrados
+        // Fail-closed DAY 99: FATAL en producción, modo degradado solo con MLD_DEV_MODE=1
+        try {
+            artifact_seed_client_ = std::make_unique<ml_defender::SeedClient>(
+                "/etc/ml-defender/ml-detector/ml_detector_config.json");
+            artifact_seed_client_->load();
+            artifact_tx_ = std::make_unique<crypto_transport::CryptoTransport>(
+                *artifact_seed_client_, ml_defender::crypto::CTX_RAG_ARTIFACTS);
+            logger_->info("🔐 RAGLogger artifact encryption: CryptoTransport inicializado");
+        } catch (const std::exception& e) {
+            const char* dev_mode = std::getenv("MLD_DEV_MODE");
+            if (dev_mode && std::string(dev_mode) == "1") {
+                logger_->warn("⚠️  RAGLogger: MLD_DEV_MODE=1 — modo plaintext permitido: {}",
+                              e.what());
+            } else {
+                logger_->critical("💀 RAGLogger: CryptoTransport no disponible: {}", e.what());
+                logger_->critical("💀 Establece MLD_DEV_MODE=1 para modo desarrollo.");
+                std::terminate();
+            }
+        }
         logger_->info("   Node: {}", config_.node_id);
 
         // Ensure directories exist
@@ -413,7 +438,7 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
 
         // 🎯 ADR-001: Save ENCRYPTED protobuf if enabled
         // DAY 75: Guard crypto_manager_ — may be null in test/degraded mode
-        if (config_.save_protobuf_artifacts && crypto_manager_) {
+        if (config_.save_protobuf_artifacts) {
             std::string pb_path = base_filename + ".pb.enc";  // .enc extension
             std::ofstream pb_file(pb_path, std::ios::binary);
 
@@ -422,21 +447,31 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
                 std::string serialized;
                 event.SerializeToString(&serialized);
 
-                // Compress → Encrypt (ADR-001 pipeline)
-                auto compressed = crypto_manager_->compress_with_size(serialized);
-                auto encrypted = crypto_manager_->encrypt(compressed);
-
-                // Write encrypted data
-                pb_file.write(encrypted.data(), encrypted.size());
+                // ADR-013 PHASE 2 — LZ4 + CryptoTransport
+                if (artifact_tx_) {
+                    int orig_size = static_cast<int>(serialized.size());
+                    int max_c = LZ4_compressBound(orig_size);
+                    std::vector<uint8_t> compressed(sizeof(uint32_t) + max_c);
+                    uint32_t orig_le = static_cast<uint32_t>(orig_size);
+                    std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
+                    int c_size = LZ4_compress_default(serialized.data(),
+                        reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
+                        orig_size, max_c);
+                    if (c_size > 0) compressed.resize(sizeof(uint32_t) + c_size);
+                    else compressed = std::vector<uint8_t>(serialized.begin(), serialized.end());
+                    auto encrypted = artifact_tx_->encrypt(compressed);
+                    pb_file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+                } else {
+                    pb_file.write(serialized.data(), serialized.size());
+                }
                 pb_file.close();
 
-                logger_->trace("🔒 Saved encrypted protobuf: {} ({} → {} bytes)",
-                              pb_path, serialized.size(), encrypted.size());
+                logger_->trace("🔒 Saved encrypted protobuf: {}", pb_path);
             }
         }
 
         // 🎯 ADR-001: Save ENCRYPTED JSON if enabled
-        if (config_.save_json_artifacts && crypto_manager_) {
+        if (config_.save_json_artifacts) {
             std::string json_path = base_filename + ".json.enc";  // .enc extension
             std::ofstream json_file(json_path, std::ios::binary);
 
@@ -444,16 +479,26 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
                 // Serialize JSON (pretty print)
                 std::string json_str = json_record.dump(2);
 
-                // Compress → Encrypt (ADR-001 pipeline)
-                auto compressed = crypto_manager_->compress_with_size(json_str);
-                auto encrypted = crypto_manager_->encrypt(compressed);
-
-                // Write encrypted data
-                json_file.write(encrypted.data(), encrypted.size());
+                // ADR-013 PHASE 2 — LZ4 + CryptoTransport
+                if (artifact_tx_) {
+                    int orig_size = static_cast<int>(json_str.size());
+                    int max_c = LZ4_compressBound(orig_size);
+                    std::vector<uint8_t> compressed(sizeof(uint32_t) + max_c);
+                    uint32_t orig_le = static_cast<uint32_t>(orig_size);
+                    std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
+                    int c_size = LZ4_compress_default(json_str.data(),
+                        reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
+                        orig_size, max_c);
+                    if (c_size > 0) compressed.resize(sizeof(uint32_t) + c_size);
+                    else compressed = std::vector<uint8_t>(json_str.begin(), json_str.end());
+                    auto encrypted = artifact_tx_->encrypt(compressed);
+                    json_file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+                } else {
+                    json_file.write(json_str.data(), json_str.size());
+                }
                 json_file.close();
 
-                logger_->trace("🔒 Saved encrypted JSON: {} ({} → {} bytes)",
-                              json_path, json_str.size(), encrypted.size());
+                logger_->trace("🔒 Saved encrypted JSON: {}", json_path);
             }
         }
 
@@ -564,7 +609,7 @@ std::string RAGLogger::calculate_sha256(const std::string& data) {
 std::unique_ptr<RAGLogger> create_rag_logger_from_config(
     const std::string& config_path,
     std::shared_ptr<spdlog::logger> logger,
-    std::shared_ptr<crypto::CryptoManager> crypto_manager) {
+    std::shared_ptr<void> /*deprecated*/) {
 
     // Load config from JSON file
     std::ifstream config_file(config_path);
@@ -587,7 +632,7 @@ std::unique_ptr<RAGLogger> create_rag_logger_from_config(
     config.save_protobuf_artifacts = config_json.value("save_protobuf_artifacts", true);
     config.save_json_artifacts = config_json.value("save_json_artifacts", true);
 
-    return std::make_unique<RAGLogger>(config, logger, crypto_manager);
+    return std::make_unique<RAGLogger>(config, logger);
 }
 
 } // namespace ml_defender

@@ -87,7 +87,7 @@ config.vm.synced_folder "./pcaps", "/opt/pcaps",
 
 **Download on host (macOS):**
 ```bash
-cd ~/Code/test-zeromq-docker/pcaps
+cd ~/Code/argus/pcaps
 wget https://www.malware-traffic-analysis.net/.../attack.pcap.zip
 unzip -P infected attack.pcap.zip
 ```
