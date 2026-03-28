@@ -1,0 +1,39 @@
+site_name: ML Defender (aRGus NDR)
+site_url: https://alonsoir.github.io/argus
+site_description: Open-source embedded-ML NDR for hospitals and schools
+site_author: Alonso Isidoro Roman
+
+repo_name: alonsoir/argus
+repo_url: https://github.com/alonsoir/argus
+
+theme:
+  name: material
+  palette:
+    primary: deep purple
+    accent: amber
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+
+nav:
+  - Home: README.md
+  - Architecture: docs/ARCHITECTURE.md
+  - Backlog: docs/BACKLOG.md
+  - Security Model: docs/SECURITY_MODEL.md
+  - ADRs:
+    - ADR-013 Seed Distribution: "docs/adr/ADR-013 seed distribution component authentication.md"
+    - ADR-021 Topology SSOT: docs/adr/ADR-021-deployment-topology-seed-families.md
+    - ADR-022 Threat Model: docs/adr/ADR-022-threat-model-opcion2-descartada.md
+  - Contracts:
+    - Protobuf: "docs/contracts/Protobuf contracts.md"
+    - JSON: "docs/contracts/JSON contracts.md"
+    - RAG API: "docs/contracts/Rag security commands.md"
+
+plugins:
+  - search
+
+markdown_extensions:
+  - tables
+  - fenced_code
+  - admonition
