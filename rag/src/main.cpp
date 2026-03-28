@@ -13,6 +13,7 @@
 #include <memory>
 #include <cstdio>
 #include <nlohmann/json.hpp>  // probablemente ya incluido via config_manager
+#include <exception>
 
 // ============================================================================
 // GLOBALS
@@ -116,6 +117,11 @@ void testEmbedder() {
 // MAIN
 // ============================================================================
 int main() {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     std::cout << "🚀 Iniciando RAG Security System - Arquitectura Centralizada" << std::endl;
     std::cout << "============================================================" << std::endl;
 

@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <csignal>
+#include <exception>
 
 std::unique_ptr<EtcdServer> g_server;
 std::shared_ptr<etcd_server::SecretsManager> g_secrets_manager;
@@ -22,6 +23,11 @@ void signal_handler(int signal) {
 }
 
 int main() {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     std::cout << "🚀 Iniciando etcd-server v0.3 - Day 54 Grace Period..." << std::endl;
 
     std::signal(SIGINT, signal_handler);

@@ -35,6 +35,7 @@
 // Day 38: etcd-client integration (PRODUCTION CODE)
 #include <etcd_client/etcd_client.hpp>
 #include <crypto_transport/utils.hpp>
+#include <exception>
 
 namespace {
     std::atomic<bool> running{true};
@@ -99,6 +100,11 @@ void save_indices_to_disk() {
 }
 
 int main(int argc, char* argv[]) {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     try {
         // ====================================================================
         // 1. Parse Configuration

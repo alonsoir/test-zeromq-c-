@@ -40,6 +40,7 @@
 #include <fstream>
 #include <algorithm>
 #include <memory>
+#include <exception>
 
 FeatureLogger::VerbosityLevel g_verbosity = FeatureLogger::VerbosityLevel::NONE;
 
@@ -204,6 +205,11 @@ void setup_signal_handlers() {
 // ============================================================================
 
 int main(int argc, char* argv[]) {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     std::cout << "╔════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║         Enhanced Sniffer v3.2 - Hybrid Filtering System       ║\n";
     std::cout << "╚════════════════════════════════════════════════════════════════╝\n";

@@ -18,6 +18,7 @@
 // #include <crypto_transport/crypto_manager.hpp>
 // #include <crypto_transport/utils.hpp>
 #include "contract_validator.h"
+#include <exception>
 
 //ml-detector/src/main.cpp
 using namespace ml_detector;
@@ -64,6 +65,11 @@ spdlog::level::level_enum string_to_log_level(const std::string& level_str) {
 }
 
 int main(int argc, char* argv[]) {
+    // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
+    std::set_terminate([]() {
+        std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
+        std::abort();
+    });
     // Parse command line arguments
     std::string config_path = "../config/ml_detector_config.json";
     bool verbose = false;
