@@ -118,6 +118,25 @@ if(SEED_CLIENT_LIB AND SEED_CLIENT_INCLUDE_DIR)
 else()
     message(FATAL_ERROR "❌ seed-client not found. Run make seed-client-build from project root")
 endif()
+# ============================================================================
+# ADR-012 PHASE 1b — plugin-loader (DAY 100)
+# ============================================================================
+find_library(PLUGIN_LOADER_LIB
+        NAMES plugin_loader
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH
+)
+find_path(PLUGIN_LOADER_INCLUDE_DIR
+        NAMES plugin_loader/plugin_loader.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH
+)
+if(PLUGIN_LOADER_LIB AND PLUGIN_LOADER_INCLUDE_DIR)
+    message(STATUS "✅ Found plugin-loader: ${PLUGIN_LOADER_LIB}")
+else()
+    message(WARNING "⚠️  plugin-loader not found — plugins disabled (non-fatal)")
+    set(PLUGIN_LOADER_LIB "")
+endif()
 
 # ============================================================================
 # CONFIGURATION VALIDATION
@@ -326,6 +345,10 @@ if(SEED_CLIENT_LIB)
     target_include_directories(sniffer PRIVATE ${SEED_CLIENT_INCLUDE_DIR})
 endif()
 
+if(PLUGIN_LOADER_LIB)
+    target_include_directories(sniffer PRIVATE ${PLUGIN_LOADER_INCLUDE_DIR})
+endif()
+
 # ============================================================================
 # COMPILER OPTIONS - Warnings Only
 # ============================================================================
@@ -383,6 +406,12 @@ endif()
 
 if(SEED_CLIENT_LIB)
     list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${SEED_CLIENT_LIB})
+endif()
+
+# ADR-012 PHASE 1b — plugin-loader
+if(PLUGIN_LOADER_LIB)
+    list(APPEND SNIFFER_OPTIONAL_LIBRARIES ${PLUGIN_LOADER_LIB})
+    target_compile_definitions(sniffer PRIVATE PLUGIN_LOADER_ENABLED)
 endif()
 
 # Link all libraries
@@ -544,6 +573,11 @@ if(CRYPTO_TRANSPORT_LIB)
     message(STATUS "   ✅ libsodium: enabled")
 else()
     message(STATUS "   ⚪ crypto-transport library: disabled")
+endif()
+if(PLUGIN_LOADER_LIB)
+    message(STATUS "   ✅ plugin-loader: enabled (ADR-012 PHASE 1b)")
+else()
+    message(STATUS "   ⚪ plugin-loader: disabled")
 endif()
 message(STATUS "   🔐 Encryption ready (via etcd tokens)")
 message(STATUS "")

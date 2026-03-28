@@ -17,6 +17,10 @@
 #include "feature_logger.hpp"
 #include "dual_nic_manager.hpp"
 #include "etcd_client.hpp"
+
+#ifdef PLUGIN_LOADER_ENABLED
+#include "plugin_loader/plugin_loader.hpp"
+#endif
 // Sistema y captura de red
 #include <json/json.h>
 #include <fstream>
@@ -277,6 +281,13 @@ int main(int argc, char* argv[]) {
     // ============================================================================
 
     setup_signal_handlers();
+
+#ifdef PLUGIN_LOADER_ENABLED
+    // ADR-012 PHASE 1b — load plugins from sniffer.json
+    ml_defender::PluginLoader plugin_loader_(config_path);
+    plugin_loader_.load_plugins();
+    std::cout << "✅ [plugin-loader] Plugins loaded (ADR-012 PHASE 1b)" << std::endl;
+#endif
 
     // ============================================================================
     // INITIALIZE PROTOBUF
@@ -760,6 +771,10 @@ if (encryption_seed.empty()) {
             ebpf_loader_ptr = nullptr;
         }
 
+#ifdef PLUGIN_LOADER_ENABLED
+        plugin_loader_.shutdown();
+        std::cout << "✅ [plugin-loader] Plugins shutdown cleanly" << std::endl;
+#endif
         std::cout << "✅ All components stopped cleanly" << std::endl;
 
     } catch (const std::exception& e) {
