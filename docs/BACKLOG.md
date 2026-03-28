@@ -16,74 +16,115 @@
 
 ## ✅ COMPLETADO
 
+### Day 100 (28 Mar 2026) — ADR-021 + ADR-022 + set_terminate() + CI honesto
+
+**set_terminate() en los 6 main() — ADR-022 fail-closed ✅**
+
+`std::set_terminate()` insertado en todos los componentes:
+- sniffer, ml-detector, firewall-acl-agent, rag-ingester, rag, etcd-server
+- Comportamiento: log `[FATAL]` + `std::abort()` ante excepción no capturada
+- `<exception>` añadido donde faltaba
+- 24/24 tests verdes tras el parche
+
+**ADR-021 — deployment.yml SSOT + seed families (FASE 3 documentada) ✅**
+
+Arquitectura de familias de canal documentada:
+- `family_A`: sniffer → ml-detector
+- `family_B`: ml-detector → firewall
+- `family_C`: ml-detector + firewall → rag-ingester
+- `deployment.yml` como única fuente de verdad de topología distribuida
+- Política de versioning de contextos HKDF (`:v1` → bump solo en cambio semántico)
+- Pre-requisito: arXiv submission → milestone gate
+
+**ADR-022 — Threat model formal + Opción 2 descartada ✅**
+
+- Threat model completo documentado (activos, vectores, mitigaciones, límites)
+- Opción 2 (`instance_id` en contexto HKDF) descartada formalmente: reproduce el bug de asimetría por diseño
+- Caso pedagógico para paper arXiv: "el contexto HKDF identifica el canal, no el emisor"
+- TDH validado: TEST-INTEG-1/2/3 detectaron el bug antes de producción
+
+**CI reescrito — honesto y funcional ✅**
+
+- `debian-bookworm` runner eliminado (nunca existió en GitHub Actions)
+- Nuevo workflow `ubuntu-latest`: 5 validaciones estáticas que SÍ corren
+  - JSON configs válidos · CMakeLists presentes · ADRs presentes
+  - `contexts.hpp` simétricos · `set_terminate` en los 6 main()
+- Self-hosted runner para full build+test: backlog post-arXiv
+
+**DEBT-CRYPTO-004b — tools/ migración CTX_* ✅ (cerrado — no aplicable)**
+
+`grep -rn "ml-defender:" tools/ --include="*.cpp"` → sin resultados.
+`tools/` solo contiene scripts shell. No hay CTX_* que migrar. Deuda cerrada.
+
+---
+
+### Day 99 (27 Mar 2026) — contexts.hpp + TEST-INTEG + fail-closed
+
+**ADR-013 PHASE 2 completado — contextos HKDF simétricos ✅**
+
+Bug crítico corregido: contextos asimétricos entre emisor y receptor.
+`crypto-transport/include/crypto_transport/contexts.hpp` — nueva fuente de verdad:
+
+```cpp
+// Contexto = canal, no componente
+constexpr const char* CTX_SNIFFER_TO_ML  = "ml-defender:sniffer-to-ml-detector:v1";
+constexpr const char* CTX_ML_TO_FIREWALL = "ml-defender:ml-detector-to-firewall:v1";
+// ... 6 canales, todos simétricos
+```
+
+**TEST-INTEG-1/2/3 — gate arXiv ✅**
+- TEST-INTEG-1: ping cifrado end-to-end (simétrico → pasa)
+- TEST-INTEG-2: round-trip JSON etcd con LZ4+ChaCha20
+- TEST-INTEG-3: regresión — contextos asimétricos → MAC failure (caso pedagógico)
+
+**Fail-closed EventLoader + RAGLogger ✅**
+
+`EventLoader` y `RAGLogger` lanzan excepción si `CryptoTransport` falla al inicializar.
+Ningún componente arranca con cifrado degradado.
+
+**test_hmac_integration habilitado ✅**
+
+Comentado desde DAY 53. Corregido namespace (`etcd` → `etcd_server`) y macro pollution
+(`#undef manager`). Re-enabled y verde.
+
+**Tests: 24/24 suites ✅** (era 22/22 DAY 98)
+
+---
+
+### Day 98 (26 Mar 2026) — CryptoTransport migración 6/6 componentes
+
+**DEBT-CRYPTO-004 — CryptoManager → CryptoTransport en 6 componentes ✅**
+
+Todos los componentes usan ahora `CryptoTransport` con HKDF-SHA256.
+`CryptoManager` deprecado y eliminado de los paths activos.
+
+**DEBT-ETCD-001 — etcd-client usa CryptoTransport ✅**
+
+**ADR-020 JSONs — flags `enabled` eliminados de los 6 configs ✅**
+
+**Tests: 22/22 suites ✅**
+
+---
+
 ### Day 97 (25 Mar 2026) — CryptoTransport HKDF + libsodium 1.0.19
 
-**CryptoTransport — ADR-013 PHASE 2 completado ✅**
+**CryptoTransport — HKDF-SHA256 + ChaCha20-Poly1305 + nonce 96-bit ✅**
 
-Eslabón central de la cadena de confianza: HKDF-SHA256 nativo via libsodium 1.0.19
-+ ChaCha20-Poly1305 IETF + nonce 96-bit monotónico atómico.
-
-```
-crypto-transport/include/crypto_transport/transport.hpp
-crypto-transport/src/transport.cpp
-crypto-transport/tests/test_crypto_transport.cpp  ← 10 tests TC-CT-001..010
-```
-
-**Cadena de confianza completa:**
 ```
 provision.sh → seed.bin → SeedClient → CryptoTransport(HKDF) → ChaCha20-Poly1305
 ```
 
-**libsodium 1.0.19 desde fuente:**
-- SHA-256 verificado: `018d79fe0a045cca07331d37bd0cb57b2e838c51bc48fd837a1472e50068bbea`
-- `provision.sh`: `install_libsodium_1019()` + `check_entropy()` (DEBT-CRYPTO-003b ✅)
-- Reinstala ZeroMQ post-remove (apt arrastra libzmq5 al quitar libsodium23)
-- CMake: `NO_DEFAULT_PATH` para priorizar `/usr/local` sobre sistema
+- libsodium 1.0.19 desde fuente (SHA-256: `018d79fe...`)
+- `provision.sh`: modos full/status/verify/reprovision
+- CMake: `NO_DEFAULT_PATH` → priorizar `/usr/local`
+- `CryptoManager` DEPRECADO
 
-**Decisiones técnicas resueltas:**
-- API real libsodium 1.0.19: `extract_final(&st, prk[])` → `expand(okm, len, ctx, prk[])`
-- HKDF salt: 32 bytes cero (RFC 5869 default)
-- Nonce layout: `[0x00000000 || uint64_LE_counter]`
-- `CryptoManager` DEPRECADO — sustituido por `CryptoTransport` en DAY 98
-
-**ADR-020 — Cifrado + compresión siempre obligatorios ✅ (documentado)**
-Flags `enabled` eliminados del contrato. Migración JSONs pendiente DAY 98.
-
-**etcd-server CMakeLists:** `add_test()` añadido — tests ahora registrados en ctest.
-
-**Tests: 22/22 suites ✅**
-- crypto-transport: 4/4 · seed-client: 1/1 · etcd-server: 1/1
-- rag-ingester: 7/7 · ml-detector: 9/9
+**ADR-020 documentado ✅ · SECURITY_MODEL.md ✅**
 
 ---
 
-### Day 96 (24 Mar 2026) — seed-client + Makefile dependency order
-
-**libs/seed-client — PHASE 1 completado ✅**
-
-Nueva librería `libseed_client.so` (con underscore — DEBT-NAMING-001 P3 pendiente).
-Tests: 6/6 ✅ · Instalado en: `/usr/local/lib/libseed_client.so.1.0.0`
-
-**Makefile — nueva cadena de dependencias:**
-```
-libseed_client → crypto-transport → etcd-client → componentes
-```
-
-**arXiv outreach DAY 96:** Email enviado a Prof. Yisroel Mirsky (BGU) ✅
-
----
-
+### Day 96 (24 Mar 2026) — seed-client + Makefile dep order
 ### Day 95 (23 Mar 2026) — Cryptographic Provisioning Infrastructure
-
-- `tools/provision.sh`: 4 modos full/status/verify/reprovision
-- Ed25519 keypairs + ChaCha20 seeds (32B) para 6 componentes
-- Paths AppArmor-compatible: `/etc/ml-defender/{component}/` chmod 600
-- Bloque `identity` en los 6 JSONs de componentes (ADR-013)
-- `pipeline-start` depende de `provision-check` (fail-closed security)
-- Consejo DAY 95 (6/7): unanimidad.
-
----
-
 ### Day 93 — ADR-012 PHASE 1: plugin-loader + ABI validation
 ### Day 83 — Ground truth bigFlows + CSV E2E · tag: v0.83.0-day83-main ✅
 ### Days 76–82 — Proto3 · Sentinel · F1=0.9985 · DEBT-FD-001
@@ -92,191 +133,77 @@ libseed_client → crypto-transport → etcd-client → componentes
 
 ---
 
-## 🔄 EN CURSO / INMEDIATO
+## 🔄 PRÓXIMO MILESTONE — arXiv submission
 
-### DAY 98 — Integrar CryptoTransport en los 6 componentes + ADR-020 JSONs
+### P1 — Antes de enviar el paper
+
+| ID | Tarea | Estado |
+|----|-------|--------|
+| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | ⏳ |
+| PAPER-FINAL | Incorporar caso pedagógico ADR-022 al paper | ⏳ |
+| PAPER-FINAL | Actualizar métricas DAY 100 (24/24 tests, contexts.hpp) | ⏳ |
+| DOCS-APPARMOR | 6 perfiles AppArmor por componente | ⏳ |
+
+### P2 — Post-arXiv, pre-FASE 3
+
+| ID | Tarea | Origen |
+|----|-------|--------|
+| DEBT-CRYPTO-003a | `mlock()` seed_client.cpp | ADR-022 threat model |
+| DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie (libsodium 1.0.19 en apt) | P2 |
+| DEBT-INFRA-002 | Sustituir `haveged` por `rng-tools5` + hardware RNG | P2 |
+| FEAT-ROTATION-1 | `provision.sh rotate-all` + política SEED_ROTATION_DAYS | P2 |
+| DEBT-NAMING-001 | `libseed_client` → `libseedclient` (sin underscore) | P3 |
+| ADR-020 | Borrar flags `enabled` de JSONs | DAY tranquilo |
+
+### FASE 3 — Post-arXiv (requiere revisión Consejo)
+
+| ID | Tarea |
+|----|-------|
+| ADR-021 impl. | `deployment.yml` SSOT + families en `provision.sh` |
+| MULTI-VM | Vagrantfile multi-VM con topología distribuida real |
+| CI-FULL | Self-hosted runner "argus-debian-bookworm" |
+| ANSIBLE | Receta Ansible + Jinja2 (patrón Ericsson) |
 
 ---
 
-## 🔐 BACKLOG CRIPTOGRÁFICO
+## 🔐 BACKLOG CRIPTOGRÁFICO ACTIVO
 
-### DEBT-CRYPTO-004 — Migrar CryptoManager → CryptoTransport (🔴 P1 — DAY 98)
-
-`CryptoManager` usa el seed directamente como clave sin HKDF — "USO INCORRECTO"
-documentado en `seed_client.hpp`. Debe sustituirse en los 6 componentes.
-
-**Patrón de migración:**
-```cpp
-// ANTES (CryptoManager — DEPRECADO)
-CryptoManager crypto(seed_string);
-auto encrypted = crypto.encrypt(plaintext);
-
-// DESPUÉS (CryptoTransport — ADR-013 PHASE 2)
-SeedClient sc("/etc/ml-defender/sniffer/sniffer.json");
-sc.load();
-CryptoTransport tx(sc, "ml-defender:sniffer:v1:tx");
-CryptoTransport rx(sc, "ml-defender:sniffer:v1:rx");
-auto encrypted = tx.encrypt(plaintext_bytes);
-```
-
-**Orden de migración:**
-1. `etcd-server/src/crypto_manager.cpp`
-2. `sniffer`
-3. `ml-detector`
-4. `firewall-acl-agent`
-5. `rag-ingester`
-6. `rag-security`
-
-### DEBT-ETCD-001 — etcd-client: integrar CryptoTransport (🔴 P1 — DAY 98)
-
-`etcd-client` usa `CryptoManager`. Migrar a `CryptoTransport` con contexto
-`"ml-defender:etcd-client:v1:tx"`.
-
-### DEBT-CRYPTO-003a — mlock() sobre buffer del seed (🟡 P2 — DAY 98)
+### DEBT-CRYPTO-003a — mlock() sobre buffer del seed (🟡 P2)
 
 ```cpp
 // En seed_client.cpp, tras leer seed.bin:
 mlock(seed_.data(), seed_.size());
 ```
-Evita que el material criptográfico llegue al swap.
-**Decisión pendiente:** ¿fallo fatal o advertencia si mlock() falla con ENOMEM?
+**Decisión consolidada (Consejo DAY 97):** WARNING + log instructivo, no error fatal.
 
 ### FEAT-ROTATION-1 — Política de rotación de seeds (🟡 P2 — DAY 105+)
 
-**Arquitectura decidida (Consejo DAY 97 + Alonso):**
-
-```
-provision.sh     ← único lugar donde vive la política de rotación
-                   SEED_ROTATION_DAYS=30 — single source of truth
-                   nuevo modo: rotate-all (llama a reprovision en orden)
-
-etcd-server      ← almacena provision_meta.json por componente
-                   (fecha, phase, component_id) — ya implementado
-
-rag-security     ← lee metadata de etcd, alerta al admin:
-                   "El seed de sniffer tiene 32 días. Rotación recomendada."
-
-admin root       ← ejecuta el comando cuando decide
-                   sudo bash tools/provision.sh rotate-all
-                   make pipeline-stop && make pipeline-start
-```
-
-**Comandos objetivo:**
-
 ```bash
-# Rotar todas las claves y reiniciar (30 segundos de downtime planificado)
-sudo bash /vagrant/tools/provision.sh rotate-all
+sudo bash tools/provision.sh rotate-all
 make pipeline-stop && make pipeline-start
-
-# Ver estado de rotación
-sudo bash /vagrant/tools/provision.sh status
-# → muestra edad de cada seed y recomendación si > SEED_ROTATION_DAYS
 ```
-
-**Cambios en provision.sh:**
-- Añadir `readonly SEED_ROTATION_DAYS=30` — único parámetro de política
-- Nuevo modo `rotate-all`: reprovision de los 6 componentes en orden con backup
-- Modo `status` ya existente: mostrar edad del seed + alerta si > threshold
-
-**Lo que NO haremos (y por qué):**
-- Hot-reload sin reinicio: requiere coordinación distribuida simultánea entre
-  6 componentes. El riesgo de ventana split-brain (MAC failures silenciosos)
-  supera el beneficio. ENT-4 es el path correcto si algún día se necesita.
-- Política en JSONs de componentes: abre 6 puntos de fallo para una decisión
-  que debe vivir en un único lugar.
-- provision.sh en etcd-server como componente ejecutable: vector de escalada
-  de privilegios. El RAG solo lee metadata, nunca ejecuta.
-
-⚠️ **Rotación siempre requiere reinicio ordenado del pipeline completo.**
-Documentado en `docs/SECURITY_MODEL.md` §3.
-
-### FEAT-CRYPTO-1 — Rotación de claves sin downtime (P3 — ENT-4, PHASE 3+)
-
-⚠️ Rotación con `make provision-reprovision` requiere reinicio ordenado del pipeline.
-Documentar en SECURITY_MODEL.md.
-
-### DEBT-NAMING-001 — libseed_client → libseedclient (P3 — DAY tranquilo)
-
-CMakeLists genera `libseed_client.so` (underscore). Consejo acordó sin underscore.
-No bloquea nada.
-
-### DEBT-INFRA-001 — Migrar a Debian Trixie (13) (🟡 P2 — DAY 105+)
-
-Debian Bookworm solo distribuye libsodium 1.0.18. La compilación desde fuente
-en `provision.sh` es un parche funcional, no una solución de producción:
-- La librería en `/usr/local/lib/` no está gestionada por apt
-- No recibe actualizaciones automáticas de seguridad
-- Entornos con políticas estrictas (hospitales, AAPP) requieren paquetes `.deb` firmados
-
-**Solución:** migrar la box Vagrant de `debian/bookworm64` a `debian/trixie64`.
-Trixie tiene libsodium 1.0.19 en repos oficiales — instalable con `apt-get install libsodium-dev`.
-Requiere validar todas las dependencias del pipeline (etcd, eBPF headers, ZeroMQ) en Trixie.
-
-### DEBT-INFRA-002 — Sustituir haveged por rng-tools5 (🟡 P2 — DAY 105+)
-
-`haveged` no está certificado por NIST, FIPS 140-2/3 ni Common Criteria.
-Es aceptable para desarrollo, no para producción en infraestructura crítica.
-
-**Solución:** `rng-tools5` con detección automática de fuente de hardware:
-- Bare-metal Intel/AMD: RDRAND/RDSEED via `/dev/hwrng`
-- VMs KVM/QEMU: `virtio-rng` device
-- Sin hardware RNG: `jitterentropy-rngd` (certificado BSI, NIST SP 800-90B)
-
-Ver `docs/SECURITY_MODEL.md` §4.2 para detalle completo.
+- `SEED_ROTATION_DAYS=30` — SSOT en provision.sh
+- RAG lee metadata etcd → alerta admin. Nunca ejecuta provision.sh.
+- Hot-reload descartado (split-brain risk) — ENT-4 para PHASE 3+.
 
 ### FEAT-CRYPTO-2 — Handshake efímero Noise (P3 — PHASE 2)
 ### FEAT-CRYPTO-3 — TPM 2.0 / HSM enterprise (P3 — ENT-8)
 
 ---
 
-## 🔴 ADR-020 — Eliminar flags enabled de los 6 JSONs (P1 — DAY 98)
-
-ADR documentado ✅ (`docs/adr/ADR-020-crypto-mandatory.md`).
-Implementación pendiente — eliminar de:
-
-| Componente | JSON |
-|---|---|
-| sniffer | `sniffer/config/sniffer.json` |
-| ml-detector | `ml-detector/config/ml_detector_config.json` |
-| firewall-acl-agent | `firewall-acl-agent/config/firewall.json` |
-| rag-ingester | `rag-ingester/config/rag-ingester.json` |
-| rag-security | `rag/config/rag-config.json` |
-| etcd-server | `etcd-server/config/etcd-server.json` |
-
----
-
-## 🧪 TESTS DE INTEGRACIÓN E2E (P1 — DAY 98)
-
-### TEST-INTEG-1 — Pipeline completo: provision → seed → crypto → mensaje
-### TEST-INTEG-2 — Upload JSON a etcd-server: LZ4 → ChaCha20 → round-trip
-
----
-
 ## 📋 DOCUMENTACIÓN PENDIENTE
 
-### DOCS-1 — SECURITY_MODEL.md
-- Límites PHASE 1 · rotación requiere reinicio · roadmap PHASE 2
-
-### DOCS-1 — SECURITY_MODEL.md ✅ DAY 97
-
-Creado en `docs/SECURITY_MODEL.md`:
-- Cadena de confianza completa
-- Límites PHASE 1 (seed en claro, sin forward secrecy por sesión, mlock() no garantizado)
-- Rotación de seeds — advertencia split-brain
-- Entropía: haveged vs rng-tools5 + hardware RNG
-- CRIME/BREACH — análisis del threat model
-- Threat model alcance PHASE 1
-
-### DOCS-2 — Perfiles AppArmor por componente (6 perfiles)
+### DOCS-2 — Perfiles AppArmor por componente (6 perfiles) ⏳
 
 ---
 
 ## 📋 BACKLOG — COMMUNITY & FEATURES
 
 ### 🟥 P0 — Paper arXiv
-- Draft v5 ✅ · LaTeX ✅ · Email Sebastian Garcia ✅ (sin respuesta)
-- Email Yisroel Mirsky ✅ DAY 96 (esperando)
-- Si sin respuesta 48h → Tier 3: Martin Grill o Battista Biggio
+- Draft v5 ✅ · LaTeX ✅
+- Sebastian Garcia (CTU Prague) ✅ — respondió, recibió PDF
+- Yisroel Mirsky (BGU) ✅ — enviado DAY 96, esperando
+- Pendiente: incorporar ADR-022 caso pedagógico + métricas DAY 100
 
 ### 🟧 P1 — Fast Detector Config (DEBT-FD-001)
 ### 🟨 P2 — Expansión ransomware (prerequisito: DEBT-FD-001)
@@ -304,18 +231,26 @@ DEBT-CRYPTO-001 (nonce 96-bit):       ██████████████
 DEBT-CRYPTO-002 (HKDF libsodium):     ████████████████████ 100% ✅  DAY 97
 DEBT-CRYPTO-003b (entropy check):     ████████████████████ 100% ✅  DAY 97
 ADR-020 (documentado):                ████████████████████ 100% ✅  DAY 97
-plugin-loader ADR-012 PHASE 1:        ████████████████░░░░  80% 🟡  integ. sniffer P3
-DEBT-CRYPTO-004 (migrar CryptoMgr):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P1 DAY 98
-DEBT-ETCD-001 (etcd-client migrar):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P1 DAY 98
-ADR-020 JSONs (eliminar flags):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P1 DAY 98
-DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 98
-TEST-INTEG-1 (pipeline E2E):          ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 98
-TEST-INTEG-2 (etcd JSON round-trip):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 98
 SECURITY_MODEL.md:                    ████████████████████ 100% ✅  DAY 97
+DEBT-CRYPTO-004 (migrar CryptoMgr):   ████████████████████ 100% ✅  DAY 98
+DEBT-ETCD-001 (etcd-client migrar):   ████████████████████ 100% ✅  DAY 98
+ADR-020 JSONs (eliminar flags):       ████████████████████ 100% ✅  DAY 98
+contexts.hpp (HKDF simétricos):       ████████████████████ 100% ✅  DAY 99
+TEST-INTEG-1/2/3 (gate arXiv):        ████████████████████ 100% ✅  DAY 99
+fail-closed EventLoader+RAGLogger:    ████████████████████ 100% ✅  DAY 99
+test_hmac_integration:                ████████████████████ 100% ✅  DAY 99
+set_terminate() 6/6 main():           ████████████████████ 100% ✅  DAY 100
+ADR-021 (topology SSOT + families):   ████████████████████ 100% ✅  DAY 100
+ADR-022 (threat model + Opción 2):    ████████████████████ 100% ✅  DAY 100
+CI honesto (ubuntu-latest):           ████████████████████ 100% ✅  DAY 100
+DEBT-CRYPTO-004b (tools/ CTX_*):      ████████████████████ 100% ✅  DAY 100 (N/A)
+plugin-loader ADR-012 PHASE 1:        ████████████████░░░░  80% 🟡  integ. sniffer P3
+DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
+BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P1 pre-arXiv
 DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
 DEBT-INFRA-002 (rng-tools5):          ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
 FEAT-ROTATION-1 (política rotación):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
-DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 98+
+DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 105+
 Fast Detector Config (DEBT-FD-001):   ████░░░░░░░░░░░░░░░░  20% 🟡  PHASE 2
 FEAT-RANSOM-*:                        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post DEBT-FD-001
 ENT-*:                                ░░░░░░░░░░░░░░░░░░░░   0% ⏳  largo plazo
@@ -336,7 +271,7 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | Seed como material base | seed → HKDF → session_key. Nunca directo ✅ | 95 |
 | Dep order libs | libseed_client → crypto-transport → etcd-client ✅ | 96 |
 | HKDF implementation | libsodium 1.0.19 nativo ✅ | 96-97 |
-| HKDF context format | `"ml-defender:{component}:{version}:{tx\|rx}"` ✅ | 96 |
+| HKDF context format | Contexto = CANAL, no componente ✅ | 99 |
 | Nonce policy | Contador monotónico 96-bit atómico ✅ | 96-97 |
 | C++20 permanente | Migración C++23 solo si kernel/eBPF lo exige ✅ | 96 |
 | Error handling | `throw` en todo el pipeline ✅ | 96 |
@@ -345,32 +280,38 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | Orden operaciones | LZ4 → ChaCha20 (comprimir antes de cifrar) ✅ | 96 |
 | Rotación seeds | Requiere reinicio ordenado ✅ | 96 |
 | libsodium versión | 1.0.19 desde fuente, SHA-256 verificado ✅ | 97 |
-| CryptoManager | DEPRECADO — CryptoTransport lo sustituye ✅ | 97 |
+| CryptoManager | DEPRECADO — CryptoTransport lo sustituye ✅ | 97-98 |
 | CMake sodium path | NO_DEFAULT_PATH → priorizar /usr/local ✅ | 97 |
 | P1 HKDF context | Contexto estático. Forward secrecy = rotación de seeds ✅ | 97 |
-| P2 Migración CryptoMgr | Big-bang controlado. git tag antes del merge ✅ | 97 |
-| P3 mlock() | WARNING + log instructivo, no error fatal ✅ | 97 |
-| P4 test-integ | make test-integ separado, no en ctest normal ✅ | 97 |
+| mlock() | WARNING + log instructivo, no error fatal ✅ | 97 |
 | haveged | Aceptable desarrollo. Producción: rng-tools5 + hardware RNG ✅ | 97 |
-| libsodium build | Parche PHASE 1. DEBT-INFRA-001: migrar a Trixie (13) ✅ | 97 |
+| libsodium build | Parche PHASE 1. DEBT-INFRA-001: migrar a Trixie ✅ | 97 |
 | Política rotación seeds | provision.sh único SSOT. rotate-all + pipeline restart ✅ | 97 |
 | Hot-reload seeds | NO en PHASE 1 — split-brain risk. ENT-4 para PHASE 3+ ✅ | 97 |
 | RAG + rotación | RAG lee metadata etcd, alerta admin. Nunca ejecuta provision.sh ✅ | 97 |
 | etcd-client rol final | Transporte puro de blobs opacos ✅ | 96 |
+| Opción 2 multi-instancia | DESCARTADA — reproduce bug asimetría por diseño ✅ | 100 |
+| FASE 3 seed families | Canal = familia. Un componente puede tener N seeds ✅ | 100 |
+| deployment.yml SSOT | Topología declarativa. Pre-req: arXiv ✅ | 100 |
+| set_terminate() | fail-closed en los 6 main(). abort() ante excepción no capturada ✅ | 100 |
+| CI GitHub Actions | Solo validación estática (ubuntu-latest). Full build = self-hosted ✅ | 100 |
 
 ---
 
 ### Notas del Consejo de Sabios
 
+> DAY 100 (Consejo — revisión cierre DAY 99):
+> "set_terminate() es defensa en profundidad correcta.
+> ADR-022 documenta honestamente los límites del modelo de instancia única.
+> El caso pedagógico del bug de asimetría pertenece al paper arXiv."
+> — Grok · ChatGPT · DeepSeek (origen de las acciones DAY 100)
+
 > DAY 97 (Consejo — unanimidad 5/5):
 > "La rotación real de seeds es el mecanismo correcto de forward secrecy.
-> Big-bang migration DAY 98. mlock() como warning, no fatal.
-> make test-integ separado del ctest normal.
-> haveged aceptable en desarrollo — rng-tools5 + hardware RNG en producción."
+> mlock() como warning, no fatal. make test-integ separado del ctest normal."
 > — ChatGPT5 · DeepSeek · Gemini · Grok · Qwen
 
-> DAY 96: "El diseño sigue RFC 5869 (HKDF), Signal Protocol y TLS 1.3.
-> El contrato en el .hpp es defensa en profundidad contra mal uso."
+> DAY 96: "El diseño sigue RFC 5869 (HKDF), Signal Protocol y TLS 1.3."
 > — Grok · DeepSeek · Gemini · ChatGPT5 (unanimidad 4/4)
 
 > DAY 95: "El seed no es una clave — es material base. HKDF primero."
@@ -378,7 +319,7 @@ ENT-*:                                ░░░░░░░░░░░░░░
 
 ---
 
-*Última actualización: Day 97 (post-Consejo) — 25 Mar 2026*
+*Última actualización: DAY 100 — 28 Mar 2026*
 *Branch: feature/plugin-loader-adr012*
-*Tests: 22/22 suites ✅*
-*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT5, DeepSeek, Qwen, Gemini, Parallel.ai*
+*Tests: 24/24 suites ✅*
+*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai*

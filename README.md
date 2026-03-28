@@ -6,9 +6,10 @@
 [![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 70/70](https://img.shields.io/badge/Tests-70%2F70_passing-brightgreen)]()
+[![Tests: 24/24](https://img.shields.io/badge/Tests-24%2F24_suites-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--012_PHASE1-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 
 📜 Living contracts: [Protobuf schema](docs/contracts/protobuf-contract.md) · [Pipeline configs](docs/contracts/json-contracts.md) · [RAG API](docs/contracts/rag-security-commands.md)
 
@@ -26,7 +27,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ---
 
-## 📊 Validated Results (DAY 88 — 16 March 2026)
+## 📊 Validated Results (DAY 88 — 16 March 2026, crypto chain DAY 100)
 
 | Metric | Value                                     | Notes                                                                         |
 |---|-------------------------------------------|-------------------------------------------------------------------------------|
@@ -44,7 +45,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 | **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows                                           |
 | **RAM (full pipeline)** | **~1.28 GB**                              | Including TinyLlama, stable under load                                        |
 | **Pipeline components** | **6/6 RUNNING**                           |                                                                               |
-| **Test suite** | **76/76 passing**                         | crypto 3/3, etcd-hmac 12/12, ml-detector 9/9, trace_id 46/46, seed-client 6/6 |
+| **Test suite** | **24/24 suites passing**                  | crypto-transport, seed-client, etcd-server, rag-ingester, ml-detector + TEST-INTEG-1/2/3 |
 
 **Ground truth clarification.** The CTU-13 Neris capture contains 19,135 total flows. Of these, 646 flows constitute the TP ground truth — those exhibiting active C2 behavioral signatures (IRC bursts, SMB lateral movement, DNS anomalies) from the infected host. The remaining flows are background traffic on the infected host and are not ground-truth positives for NIDS evaluation. See the [preprint](docs/) for full methodology.
 
