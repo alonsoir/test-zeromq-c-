@@ -16,6 +16,34 @@
 
 ## ✅ COMPLETADO
 
+### Day 101 (29 Mar 2026) — ADR-012 PHASE 1b bug fix + ml-detector plugin-loader
+
+**fix(plugin-loader): extract_enabled_objects ✅**
+
+`extract_enabled_list()` reemplazada por `extract_enabled_objects()`:
+- Parser corregido para array de objetos `{name, path, active, comment}` en lugar de array de strings
+- Filtra `active:false` antes de cargar
+- Ruta explícita desde JSON (`path`), no reconstruida desde `directory`
+- Smoke test: cero WARNINGs de `name/path/active/comment`
+
+**ADR-012 PHASE 1b — ml-detector ✅**
+
+Plugin-loader integrado en ml-detector con guard `#ifdef PLUGIN_LOADER_ENABLED`:
+- `ml-detector/CMakeLists.txt`: find_library + link + define
+- `ml-detector/src/main.cpp`: PluginLoader instanciado + load/shutdown
+- `ml-detector/config/ml_detector_config.json`: sección `plugins` con hello plugin
+- Smoke test: `[plugin:hello] init OK` + `shutdown OK` — invocations=0 overruns=0 errors=0
+
+**arXiv endorser — email enviado ✅**
+
+Email enviado a `andresc@unex.es` (Prof. Andrés Caro Lindo, Cátedra INCIBE-UEx-EPCC).
+PDF v6 adjunto. Esperando respuesta.
+
+**Tests: 24/24 suites ✅*
+*ADR-012 PHASE 1b: sniffer ✅ + ml-detector ✅**
+
+---
+
 ### Day 100 (28 Mar 2026) — ADR-021 + ADR-022 + set_terminate() + CI honesto
 
 **set_terminate() en los 6 main() — ADR-022 fail-closed ✅**
@@ -87,7 +115,8 @@ Ningún componente arranca con cifrado degradado.
 Comentado desde DAY 53. Corregido namespace (`etcd` → `etcd_server`) y macro pollution
 (`#undef manager`). Re-enabled y verde.
 
-**Tests: 24/24 suites ✅** (era 22/22 DAY 98)
+**Tests: 24/24 suites ✅*
+*ADR-012 PHASE 1b: sniffer ✅ + ml-detector ✅** (era 22/22 DAY 98)
 
 ---
 
@@ -148,6 +177,8 @@ provision.sh → seed.bin → SeedClient → CryptoTransport(HKDF) → ChaCha20-
 
 | ID | Tarea | Origen |
 |----|-------|--------|
+| PLUGIN-LOADER-FW | plugin-loader en firewall-acl-agent | ADR-012 PHASE 1b |
+| PLUGIN-LOADER-RAG | plugin-loader en rag-ingester | ADR-012 PHASE 1b |
 | DEBT-CRYPTO-003a | `mlock()` seed_client.cpp | ADR-022 threat model |
 | DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie (libsodium 1.0.19 en apt) | P2 |
 | DEBT-INFRA-002 | Sustituir `haveged` por `rng-tools5` + hardware RNG | P2 |
@@ -244,7 +275,7 @@ ADR-021 (topology SSOT + families):   ██████████████
 ADR-022 (threat model + Opción 2):    ████████████████████ 100% ✅  DAY 100
 CI honesto (ubuntu-latest):           ████████████████████ 100% ✅  DAY 100
 DEBT-CRYPTO-004b (tools/ CTX_*):      ████████████████████ 100% ✅  DAY 100 (N/A)
-plugin-loader ADR-012 PHASE 1:        ████████████████░░░░  80% 🟡  integ. sniffer P3
+plugin-loader ADR-012 PHASE 1b:       ████████████████████ 100% ✅  sniffer+ml-detector DAY 101
 DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
 BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P1 pre-arXiv
 DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
@@ -319,7 +350,8 @@ ENT-*:                                ░░░░░░░░░░░░░░
 
 ---
 
-*Última actualización: DAY 100 — 28 Mar 2026*
-*Branch: feature/plugin-loader-adr012*
+*Última actualización: DAY 101 — 29 Mar 2026*
+*Branch: feature/bare-metal-arxiv*
 *Tests: 24/24 suites ✅*
+*ADR-012 PHASE 1b: sniffer ✅ + ml-detector ✅*
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai*

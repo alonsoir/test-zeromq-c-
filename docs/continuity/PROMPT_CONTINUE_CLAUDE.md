@@ -1,5 +1,5 @@
-# ML Defender — Prompt de Continuidad DAY 101
-## 29 marzo 2026
+# ML Defender — Prompt de Continuidad DAY 102
+## 30 marzo 2026
 
 ---
 
@@ -8,162 +8,148 @@
 **Pipeline:** 6/6 RUNNING
 **Tests:** 24/24 suites ✅
 **Rama activa:** `feature/bare-metal-arxiv`
-**Último merge:** PR #33 → main (DAY 100 completo)
+**Último commit:** ADR-012 PHASE 1b — ml-detector plugin-loader (DAY 101)
 
 ---
 
-## Lo realizado en DAY 100 (completo)
+## Lo realizado en DAY 101 (completo)
 
 | Tarea | Estado |
 |-------|--------|
-| ADR-021 deployment.yml SSOT + seed families | ✅ |
-| ADR-022 threat model + Opción 2 descartada | ✅ |
-| set_terminate() en 6 main() | ✅ |
-| CI reescrito honesto (ubuntu-latest) | ✅ |
-| BACKLOG.md + ARCHITECTURE.md v7.0.0 | ✅ |
-| README badges actualizados | ✅ |
-| PR #33 mergeado → main | ✅ |
-| ADR-012 PHASE 1b: plugin-loader en sniffer | ✅ |
-| Consejo de Sabios DAY 100 (5/7 respuestas) | ✅ |
-| Endorser identificado: Andrés Caro Lindo (UEx) | ✅ |
+| fix(plugin-loader): extract_enabled_objects | ✅ |
+| ADR-012 PHASE 1b — sniffer validado (bug fix) | ✅ |
+| ADR-012 PHASE 1b — ml-detector integrado + validado | ✅ |
+| Email andresc@unex.es (endorser arXiv) + PDF v6 | ✅ enviado |
+| Consejo de Sabios DAY 101 — 5/5 respuestas | ✅ |
+| BACKLOG.md actualizado | ✅ |
+
+---
+
+## Bug fix DAY 101 — extract_enabled_objects
+
+`extract_enabled_list()` iteraba sobre claves del objeto JSON.
+Reemplazada por `extract_enabled_objects()`:
+- Itera objetos `{}` dentro del array `enabled`
+- Filtra `active:false` antes de cargar
+- Lee `name` y `path` explícitos del descriptor JSON
+- Canonical plugin dir: `/usr/lib/ml-defender/plugins/`
+- System lib dir: `/usr/local/lib/` (libplugin_loader.so — NO plugins individuales)
 
 ---
 
 ## ADR-012 PHASE 1b — estado exacto
 
-Plugin-loader integrado en sniffer con guard `#ifdef PLUGIN_LOADER_ENABLED`:
-- `sniffer/CMakeLists.txt`: find_library + link + define
-- `sniffer/src/userspace/main.cpp`: PluginLoader instanciado + load/shutdown
-- `sniffer/config/sniffer.json`: sección `plugins` con hello plugin
+| Componente | Estado | Config |
+|------------|--------|--------|
+| `sniffer` | ✅ DAY 101 | `sniffer/config/sniffer.json` |
+| `ml-detector` | ✅ DAY 101 | `ml-detector/config/ml_detector_config.json` |
+| `firewall-acl-agent` | ⏳ P1 DAY 102 | — |
+| `rag-ingester` | ⏳ P2 | — |
+| `rag-security` | ⏳ P3 | — |
 
-```json
-"plugins": {
-  "enabled": [
-    {
-      "name": "hello",
-      "path": "/usr/local/lib/libplugin_hello.so",
-      "active": false,
-      "comment": "ADR-012 PHASE 1b — validation plugin. Set active:true to enable."
-    }
-  ]
-}
-```
+**Nota:** `rag-security` añadido al roadmap DAY 101 — 5 componentes
+total (no 4). Orden revisado por Consejo DAY 101:
+sniffer ✅ → ml-detector ✅ → **firewall** → rag-ingester → rag-security
 
-**hello plugin activado DAY 101 — pendiente validar en runtime.**
+Patrón establecido (replicar en todos):
+1. `CMakeLists.txt`: find_library + find_path + target_include +
+   target_link + target_compile_definitions(PLUGIN_LOADER_ENABLED)
+2. `src/main.cpp`: `#ifdef PLUGIN_LOADER_ENABLED` →
+   include + instanciar + load_plugins() + shutdown()
+3. `config/*.json`: sección `plugins` con hello plugin `active:true`
+4. Smoke test: `MLD_DEV_MODE=1 ./component -c config.json 2>&1 | grep -i plugin`
 
-**TODO pendiente en main.cpp:**
+---
+
+## Consejo de Sabios DAY 101 — decisiones consolidadas
+
+| Pregunta | Decisión | Origen |
+|----------|----------|--------|
+| Orden plugin-loader | firewall → rag-ingester → rag-security | Unanimidad 5/5 |
+| HKDF paper ubicación | **§6 subsección independiente** | Grok + Qwen (árbitro: Alonso) |
+| TEST-PLUGIN-INVOKE-1 | Necesario antes de seguir con firewall | Unanimidad 5/5 |
+
+**Sobre Q2 (divergencia 3/2):**
+ChatGPT5 + DeepSeek + Gemini → §5.5 con referencia cruzada
+Grok + Qwen → §6 subsección independiente
+Argumento ganador: el bug es un error de *modelo mental*
+(contexto = componente vs canal), invisible al type-checker,
+detectado por TDH. Es metodológico, no solo técnico. §6 lo eleva.
+
+**Nota Consejo:** El archivo `qwen.md` se autoidentifica como DeepSeek.
+Hipótesis del autor: Qwen es una versión modificada del código fuente
+de DeepSeek, entrenada con datasets y pesos distintos. Los razonamientos
+son distinguibles — el Consejo los trata como voces independientes.
+
+---
+
+## DAY 102 — tareas en orden estricto
+
+### TAREA 1 — TEST-PLUGIN-INVOKE-1 (unanimidad Consejo)
+
+Antes de integrar en firewall, validar el hot path de ejecución.
+Crear test unitario en `plugin-loader/tests/` o en la suite del sniffer:
 ```cpp
-// TODO: make plugin-loader always-link in PHASE 2 (ADR-012 PHASE 2)
+// Objetivo: PacketContext sintético → invoke_all() → invocations > 0
+// Verificar: PLUGIN_OK, invocations==1, overruns==0, errors==0
+// El hello plugin no modifica contexto — verificar solo contadores
 ```
-
----
-
-## DAY 101 — primera tarea: activar hello plugin
-
 ```bash
-cd /Users/aironman/CLionProjects/test-zeromq-docker
-git status && git log --oneline -3
-
-# Activar hello plugin
-python3 << 'PYEOF'
-import json
-path = "sniffer/config/sniffer.json"
-with open(path) as f:
-    c = json.load(f)
-c["plugins"]["enabled"][0]["active"] = True
-with open(path, "w") as f:
-    json.dump(c, f, indent=2)
-print("hello plugin activado")
-PYEOF
-
-# Build en VM
-vagrant ssh -c 'cd /vagrant && make sniffer-build 2>&1 | grep -i plugin'
-
-# Tests completos
-vagrant ssh -c 'cd /vagrant && make test 2>&1 | tail -10'
-
-# Smoke test: arrancar sniffer en modo dev
-vagrant ssh -c 'MLD_DEV_MODE=1 /vagrant/sniffer/build/sniffer -c /vagrant/sniffer/config/sniffer.json 2>&1 | grep -i plugin | head -5'
+# Ver si existe suite de tests en plugin-loader
+ls plugin-loader/tests/ 2>/dev/null || echo "no tests dir"
+grep -n "test\|TEST\|gtest\|catch" plugin-loader/CMakeLists.txt | head -10
+# Ver PacketContext — estructura necesaria para el test
+grep -rn "PacketContext\|struct Packet" plugin-loader/include/ | head -10
+grep -rn "struct PacketContext" sniffer/src/ | head -5
 ```
 
----
+### TAREA 2 — PLUGIN-LOADER-FW (P1)
 
-## DAY 101 — segunda tarea: email endorser
+Integrar plugin-loader en `firewall-acl-agent`. Mismo patrón.
+```bash
+grep -n "add_executable\|target_link\|target_compile\|message(STATUS" \
+  firewall-acl-agent/CMakeLists.txt | head -30
+grep -n "main\|config\|shutdown\|return 0" \
+  firewall-acl-agent/src/main.cpp | head -30
+ls firewall-acl-agent/config/
+```
 
-**Redactar y enviar email a Andrés Caro Lindo.**
-(Ver sección Endorser abajo para contexto completo.)
+### TAREA 3 — PAPER-ADR022 §6
 
----
+Subsección "HKDF Context Symmetry: A Pedagogical Case Study in
+Test Driven Hardening". Ubicación: §6 (después de §6.4 TDH o §6.7).
 
-## Consejo de Sabios DAY 100 — síntesis de decisiones
-
-| Pregunta | Decisión consolidada | Origen |
-|----------|---------------------|--------|
-| ADR-022 en paper | Subsección dedicada, no nota al pie | Unanimidad 5/5 |
-| #ifdef vs always-link | Correcto PHASE 1b. TODO: always-link PHASE 2 | Unanimidad 5/5 |
-| Orden plugin-loader | sniffer ✅ → ml-detector → **firewall** → rag-ingester | ChatGPT+DeepSeek+Gemini |
-| Endorser arXiv | Andrés Caro Lindo (UEx) — primera opción | Grok + confirmado |
-
----
-
-## Endorser arXiv — Andrés Caro Lindo
-
-**Email:** `andresc@unex.es`
-**Cargo:** Profesor Titular, Dpto. Ingeniería de Sistemas Informáticos y Telemáticos
-**Rol actual:** Investigador Principal, Cátedra INCIBE-UEx-EPCC (Ciberseguridad)
-**Áreas:** Cybersecurity, Machine Learning, Pattern Recognition
-**Google Scholar:** https://scholar.google.com/citations?user=Eq0Cvb0AAAAJ
-**Grupo:** GIM (Grupo de Ingeniería de Medios) — http://gim.unex.es
-
-**Contexto personal:** Fue profesor de Laboratorio de Programación 2 de Alonso.
-**Framing del email:** Ex-alumno extremeño, proyecto open-source para hospitales
-y escuelas de la región, 100 días de trabajo, F1=0.9985, 24/24 tests, paper
-LaTeX listo. No pedir validación científica — pedir endorsement arXiv cs.CR.
+Estructura sugerida:
+- El error: contexto HKDF = componente (mal) vs canal (correcto)
+- Por qué es invisible al type-checker
+- Cómo TEST-INTEG-3 lo detectó (regresión intencional → MAC failure)
+- La lección: correctness criptográfica requiere tests E2E de protocolo
 
 ---
 
-## Backlog P1 activo DAY 101
+## Endorser arXiv — estado
 
-| ID | Tarea | Prioridad |
-|----|-------|-----------|
-| PLUGIN-HELLO | Activar + validar hello plugin en sniffer real | P1 hoy |
-| ARXIV-ENDORSER | Email a andresc@unex.es | P1 hoy |
-| PAPER-ADR022 | Subsección "HKDF Context Symmetry" en paper | P1 |
-| TODO-PLUGIN | Añadir TODO always-link en main.cpp | 5 min |
-| PLUGIN-LOADER-ML | Integrar plugin-loader en ml-detector | P1 siguiente |
-| PLUGIN-LOADER-FW | Integrar plugin-loader en firewall-acl-agent | P2 |
-| PLUGIN-LOADER-RAG | Integrar plugin-loader en rag-ingester | P3 |
-| BARE-METAL | Stress test sin VirtualBox (cuando haya hardware) | P1 milestone |
-| DEBT-CRYPTO-003a | mlock() seed_client.cpp | P2 |
-
----
-
-## Próximos componentes para plugin-loader
-
-Orden revisado por Consejo DAY 100:
-1. `sniffer` ✅ DAY 100
-2. `ml-detector` — plugins de inferencia + threat intel
-3. `firewall-acl-agent` — plugins de respuesta (notificaciones, logging)
-4. `rag-ingester` — plugins de parseo de fuentes externas
-
-Para cada uno: mismo patrón que sniffer.
-CMakeLists + main (#ifdef guard) + JSON config.
+| Endorser | Estado |
+|----------|--------|
+| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF |
+| Yisroel Mirsky (BGU) | ⏳ enviado DAY 96, sin respuesta |
+| Andrés Caro Lindo (UEx) | ⏳ enviado DAY 101, esperando |
 
 ---
 
 ## Constantes
-
 ```
 Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
 VM:      vagrant ssh -c '...'   ← SIEMPRE -c
-Logs:    /vagrant/logs/lab/
-Keys:    /etc/ml-defender/{component}/seed.bin
-Libs:    /usr/local/lib/ — prioridad sobre /lib/x86_64-linux-gnu/
+Binarios: /vagrant/{component}/build-debug/{component}
+Plugins:  /usr/lib/ml-defender/plugins/   ← plugins individuales
+Libs:     /usr/local/lib/                 ← libplugin_loader.so
+Keys:     /etc/ml-defender/{component}/seed.bin
+dev:      MLD_DEV_MODE=1 → sin seed.bin
 
 macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
 zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
 cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
-dev:     MLD_DEV_MODE=1 → permite arranque sin seed.bin
 ```
 
 ---
@@ -171,11 +157,13 @@ dev:     MLD_DEV_MODE=1 → permite arranque sin seed.bin
 ## Consejo de Sabios — práctica establecida
 
 Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
-DeepSeek, Qwen (Alibaba), Gemini (Google), Parallel.ai
+DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek),
+Gemini (Google), Parallel.ai
 
 ---
 
-*DAY 100 cierre — 28 marzo 2026*
-*Tests: 24/24 ✅ · PR #33 → main ✅ · ADR-012 PHASE 1b ✅*
-*Consejo 5/5 ✅ · Endorser: andresc@unex.es ✅*
+*DAY 101 cierre — 29 marzo 2026*
+*Tests: 24/24 ✅ · ADR-012 PHASE 1b: sniffer ✅ + ml-detector ✅*
+*Bug fix: extract_enabled_objects ✅ · Endorser andresc@unex.es ✅*
+*Consejo 5/5 ✅ · TEST-PLUGIN-INVOKE-1 pendiente DAY 102*
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
