@@ -20,6 +20,10 @@
 #include "contract_validator.h"
 #include <exception>
 
+#ifdef PLUGIN_LOADER_ENABLED
+#include "plugin_loader/plugin_loader.hpp"
+#endif
+
 //ml-detector/src/main.cpp
 using namespace ml_detector;
 
@@ -118,6 +122,13 @@ int main(int argc, char* argv[]) {
 
         ConfigLoader loader(config_path);
         DetectorConfig config = loader.load();
+
+#ifdef PLUGIN_LOADER_ENABLED
+        // ADR-012 PHASE 1b — load plugins from ml_detector_config.json
+        ml_defender::PluginLoader plugin_loader_(config_path);
+        plugin_loader_.load_plugins();
+        std::cout << "✅ [plugin-loader] Plugins loaded (ADR-012 PHASE 1b)" << std::endl;
+#endif
 
         std::cout << "✅ Configuration loaded successfully\n\n" << std::endl;
 
@@ -502,6 +513,10 @@ int main(int argc, char* argv[]) {
         // Log contract validation summary
         mldefender::g_contract_stats.log_summary();
 
+#ifdef PLUGIN_LOADER_ENABLED
+        plugin_loader_.shutdown();
+        std::cout << "✅ [plugin-loader] Plugins shutdown cleanly" << std::endl;
+#endif
         Logger::shutdown();
 
         return 0;

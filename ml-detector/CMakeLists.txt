@@ -424,6 +424,27 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+
+# ============================================================================
+# ADR-012 PHASE 1b — plugin-loader (ml-detector)
+# ============================================================================
+find_library(PLUGIN_LOADER_LIB
+        NAMES plugin_loader
+        PATHS /usr/local/lib
+        NO_DEFAULT_PATH)
+
+find_path(PLUGIN_LOADER_INCLUDE_DIR
+        NAMES plugin_loader/plugin_loader.hpp
+        PATHS /usr/local/include
+        NO_DEFAULT_PATH)
+
+if(PLUGIN_LOADER_LIB AND PLUGIN_LOADER_INCLUDE_DIR)
+    message(STATUS "✅ Found plugin-loader: ${PLUGIN_LOADER_LIB}")
+else()
+    message(WARNING "⚠️  plugin-loader not found — plugins disabled (non-fatal)")
+    set(PLUGIN_LOADER_LIB "")
+endif()
+
 # ============================================================================
 # INSTALLATION
 # ============================================================================
@@ -449,6 +470,13 @@ install(FILES README.md
         COMPONENT documentation
 )
 
+
+# ADR-012 PHASE 1b — plugin-loader
+if(PLUGIN_LOADER_LIB)
+    target_include_directories(ml-detector PRIVATE ${PLUGIN_LOADER_INCLUDE_DIR})
+    target_link_libraries(ml-detector PRIVATE ${PLUGIN_LOADER_LIB})
+    target_compile_definitions(ml-detector PRIVATE PLUGIN_LOADER_ENABLED)
+endif()
 # ============================================================================
 # SUMMARY
 # ============================================================================
