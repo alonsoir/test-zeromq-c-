@@ -85,5 +85,15 @@
       "cv_critical_threshold": 0.15,
       "report_to_etcd": true
     }
+  },
+  "plugins": {
+    "enabled": [
+      {
+        "name": "hello",
+        "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
+        "active": true,
+        "comment": "ADR-012 PHASE 1b — validation plugin"
+      }
+    ]
   }
 }
