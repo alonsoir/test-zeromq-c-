@@ -259,6 +259,27 @@ target_link_libraries(firewall-acl-agent
         firewall_core
         OpenSSL::Crypto
 )
+#===----------------------------------------------------------------------===//
+# ADR-012 PHASE 1b — Plugin Loader (DAY 102)
+#===----------------------------------------------------------------------===//
+find_library(PLUGIN_LOADER_LIB
+    NAMES plugin_loader
+    PATHS /usr/local/lib
+    NO_DEFAULT_PATH
+)
+find_path(PLUGIN_LOADER_INCLUDE_DIR
+    NAMES plugin_loader/plugin_loader.hpp
+    PATHS /usr/local/include
+    NO_DEFAULT_PATH
+)
+if(PLUGIN_LOADER_LIB AND PLUGIN_LOADER_INCLUDE_DIR)
+    message(STATUS "plugin-loader: ${PLUGIN_LOADER_LIB}")
+    target_include_directories(firewall-acl-agent PRIVATE ${PLUGIN_LOADER_INCLUDE_DIR})
+    target_link_libraries(firewall-acl-agent PRIVATE ${PLUGIN_LOADER_LIB} dl)
+    target_compile_definitions(firewall-acl-agent PRIVATE PLUGIN_LOADER_ENABLED)
+else()
+    message(WARNING "plugin-loader not found — PLUGIN_LOADER_ENABLED disabled")
+endif()
 
 # Day 50: Link additional libraries for crash diagnostics
 # Note: execinfo.h is provided by glibc, no additional linking needed on Linux

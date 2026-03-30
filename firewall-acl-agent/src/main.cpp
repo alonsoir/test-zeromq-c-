@@ -27,6 +27,11 @@
 #include <unistd.h>
 #include <exception>
 
+#ifdef PLUGIN_LOADER_ENABLED
+#include "plugin_loader/plugin_loader.hpp"
+#include "plugin_loader/plugin_api.h"
+#endif
+
 using namespace mldefender::firewall;
 
 //===----------------------------------------------------------------------===//
@@ -189,6 +194,10 @@ void print_version() {
 //===----------------------------------------------------------------------===//
 
 int main(int argc, char** argv) {
+#ifdef PLUGIN_LOADER_ENABLED
+    std::unique_ptr<ml_defender::PluginLoader> plugin_loader;
+#endif
+
     // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
     std::set_terminate([]() {
         std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
@@ -263,6 +272,12 @@ int main(int argc, char** argv) {
         config = ConfigLoader::load_from_file(config_path);
 
         std::cout << "[INFO] Configuration loaded successfully" << std::endl;
+
+#ifdef PLUGIN_LOADER_ENABLED
+    plugin_loader = std::make_unique<ml_defender::PluginLoader>(config_path);
+    plugin_loader->load_plugins();
+    std::cout << "[INFO] plugin-loader: " << plugin_loader->loaded_count() << " plugin(s) cargados" << std::endl;
+#endif
         std::cout << "[INFO] Dry-run mode: " << (config.operation.dry_run ? "ENABLED" : "DISABLED") << std::endl;
 
         // Show DRY-RUN status prominently
@@ -682,6 +697,13 @@ int main(int argc, char** argv) {
         FIREWALL_LOG_INFO("════════════════════════════════════════════════════════");
 
         std::cout << "\n[SHUTDOWN] Stopping components..." << std::endl;
+
+#ifdef PLUGIN_LOADER_ENABLED
+        if (plugin_loader) {
+            plugin_loader->shutdown();
+            std::cout << "[INFO] plugin-loader: shutdown OK" << std::endl;
+        }
+#endif
 
         // Export final metrics
         export_metrics(config, subscriber, processor);
