@@ -285,6 +285,7 @@ crypto-transport-clean:
 crypto-transport-test:
 	@echo "🧪 Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+
 plugin-loader-build:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
