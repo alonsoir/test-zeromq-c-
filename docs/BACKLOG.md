@@ -251,3 +251,69 @@ ENT-*:                                ░░░░░░░░░░░░░░
 *Tests: 25/25 suites ✅*
 *ADR-012 PHASE 1b: 5/5 COMPLETA ✅*
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai*
+
+---
+
+## 🔌 FEAT-PLUGIN-CRYPTO-1 — Plugin de CryptoTransport (⏳ PHASE 2 — post-arXiv)
+
+**Objetivo:** Migrar el cifrado ChaCha20-Poly1305/HKDF del core de cada componente
+a un plugin genérico `libplugin_crypto_transport.so`, configurado por identidad JSON.
+
+### Diseño conceptual
+
+```
+config.json → component_id → SeedClient → HKDF(seed, CTX_canal) → ChaCha20-Poly1305
+```
+
+El plugin lee su identidad de `PluginConfig.config_json` (campo `component_id`),
+selecciona el contexto HKDF correcto (`CTX_SNIFFER_TO_ML`, etc.) y gestiona
+el cifrado/descifrado del mensaje de transporte.
+
+### Problema arquitectónico identificado (DAY 102)
+
+El hook actual `plugin_process_packet(PacketContext*)` opera en **capa de red**
+(raw bytes, IPs, puertos). El cifrado opera en **capa de transporte ZMQ**
+(payload protobuf + LZ4 serializado). Son capas distintas — se necesita un
+nuevo hook:
+
+```c
+// Propuesta PHASE 2 — requiere PLUGIN_API_VERSION bump
+PluginResult plugin_process_message(MessageContext* ctx);
+// MessageContext: uint8_t* payload, size_t len, direction tx/rx
+```
+
+**Alternativa:** Ampliar `PacketContext` con campo `serialized_payload`.
+Decisión pendiente — llevar al Consejo DAY 105+.
+
+### Estrategia de migración (dual-mechanism obligatorio)
+
+```
+PHASE 2a: CryptoTransport directo (actual) + CryptoPlugin en paralelo
+          Gate: TEST-INTEG-4 valida equivalencia cifrado/descifrado
+
+PHASE 2b: CryptoTransport directo desactivado
+          Gate: 72h sin regresiones en bare-metal
+
+PHASE 2c: CryptoTransport eliminado del main.cpp de cada componente
+          Código limpio — plugin es el único mecanismo
+```
+
+### Pregunta para el Consejo (DAY 105+)
+
+> ¿Extendemos `plugin_api.h` con `MessageContext` para transporte (API limpia,
+> breaking change), o ampliamos `PacketContext` con `serialized_payload`
+> (no breaking, pero semánticamente impuro)?
+
+### Estado
+
+| Item | Estado |
+|------|--------|
+| plugin_api.h extensión (MessageContext) | ⏳ diseño pendiente |
+| libplugin_crypto_transport.so | ⏳ no iniciado |
+| Dual-mechanism en 5 componentes | ⏳ no iniciado |
+| TEST-INTEG-4 equivalencia | ⏳ no iniciado |
+| Consejo Q1 DAY 105+ | ⏳ pendiente |
+
+**Prerequisitos:** arXiv submission ✅ · PHASE 2 plugin-loader auth (ADR-013)
+**Estimación:** 5-7 días de desarrollo + 2-3 días de validación E2E
+**Prioridad:** P2 PHASE 2 — post-arXiv
