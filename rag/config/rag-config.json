@@ -103,5 +103,15 @@
     "_path_note": "DAY 95: Unificado a /vagrant/logs/lab/ como el resto del pipeline",
     "level": "info",
     "append": true
+  },
+  "plugins": {
+    "enabled": [
+      {
+        "name": "hello",
+        "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
+        "active": true,
+        "comment": "ADR-012 PHASE 1b — validation plugin"
+      }
+    ]
   }
 }

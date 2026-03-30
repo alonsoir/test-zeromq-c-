@@ -206,6 +206,28 @@ if(HAVE_FAISS)
     message(STATUS "✅ FAISS linked to rag-security")
 endif()
 
+#===----------------------------------------------------------------------===//
+# ADR-012 PHASE 1b — Plugin Loader (DAY 102)
+#===----------------------------------------------------------------------===//
+find_library(PLUGIN_LOADER_LIB
+    NAMES plugin_loader
+    PATHS /usr/local/lib
+    NO_DEFAULT_PATH
+)
+find_path(PLUGIN_LOADER_INCLUDE_DIR
+    NAMES plugin_loader/plugin_loader.hpp
+    PATHS /usr/local/include
+    NO_DEFAULT_PATH
+)
+if(PLUGIN_LOADER_LIB AND PLUGIN_LOADER_INCLUDE_DIR)
+    message(STATUS "plugin-loader: ${PLUGIN_LOADER_LIB}")
+    target_include_directories(rag-security PRIVATE ${PLUGIN_LOADER_INCLUDE_DIR})
+    target_link_libraries(rag-security PRIVATE ${PLUGIN_LOADER_LIB} dl)
+    target_compile_definitions(rag-security PRIVATE PLUGIN_LOADER_ENABLED)
+else()
+    message(WARNING "plugin-loader not found — PLUGIN_LOADER_ENABLED disabled")
+endif()
+
 # ============================================================================
 # CONFIGURACIÓN DE COMPILACIÓN - RAG SECURITY
 # ============================================================================
