@@ -15,11 +15,19 @@
 #include <nlohmann/json.hpp>  // probablemente ya incluido via config_manager
 #include <exception>
 
+#ifdef PLUGIN_LOADER_ENABLED
+#include "plugin_loader/plugin_loader.hpp"
+#include "plugin_loader/plugin_api.h"
+#endif
+
 // ============================================================================
 // GLOBALS
 // ============================================================================
 std::unique_ptr<LlamaIntegration> llama_integration;
 std::unique_ptr<Rag::WhiteListManager> whitelist_manager;
+#ifdef PLUGIN_LOADER_ENABLED
+std::unique_ptr<ml_defender::PluginLoader> g_plugin_loader;
+#endif
 
 // NUEVOS: Embedder + FAISS
 std::unique_ptr<rag::IEmbedder> embedder;
@@ -138,6 +146,12 @@ int main() {
             std::cerr << "❌ Error crítico: No se pudo cargar la configuración" << std::endl;
             return 1;
         }
+
+#ifdef PLUGIN_LOADER_ENABLED
+        g_plugin_loader = std::make_unique<ml_defender::PluginLoader>("../config/rag-config.json");
+        g_plugin_loader->load_plugins();
+        std::cout << "[INFO] plugin-loader: " << g_plugin_loader->loaded_count() << " plugin(s) cargados" << std::endl;
+#endif
 
         // 1b. REDIRIGIR LOGS SEGÚN CONFIG — El JSON es la ley
         {
@@ -306,6 +320,13 @@ try {
         }
 
         std::cout << "\n👋 Cerrando sistema..." << std::endl;
+
+#ifdef PLUGIN_LOADER_ENABLED
+        if (g_plugin_loader) {
+            g_plugin_loader->shutdown();
+            std::cout << "[INFO] plugin-loader: shutdown OK" << std::endl;
+        }
+#endif
 
     } catch (const std::exception& e) {
         std::cerr << "❌ Error crítico: " << e.what() << std::endl;

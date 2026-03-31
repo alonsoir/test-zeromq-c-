@@ -37,6 +37,11 @@
 #include <crypto_transport/utils.hpp>
 #include <exception>
 
+#ifdef PLUGIN_LOADER_ENABLED
+#include "plugin_loader/plugin_loader.hpp"
+#include "plugin_loader/plugin_api.h"
+#endif
+
 namespace {
     std::atomic<bool> running{true};
 
@@ -100,6 +105,9 @@ void save_indices_to_disk() {
 }
 
 int main(int argc, char* argv[]) {
+#ifdef PLUGIN_LOADER_ENABLED
+    std::unique_ptr<ml_defender::PluginLoader> plugin_loader;
+#endif
     // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
     std::set_terminate([]() {
         std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
@@ -113,6 +121,12 @@ int main(int argc, char* argv[]) {
 
         spdlog::info("RAG Ingester starting...");
         spdlog::info("Loading configuration from: {}", config_path);
+
+#ifdef PLUGIN_LOADER_ENABLED
+        plugin_loader = std::make_unique<ml_defender::PluginLoader>(config_path);
+        plugin_loader->load_plugins();
+        spdlog::info("plugin-loader: {} plugin(s) cargados", plugin_loader->loaded_count());
+#endif
 
         auto config = rag_ingester::ConfigParser::load(config_path);
 
@@ -534,6 +548,12 @@ int main(int argc, char* argv[]) {
         spdlog::info("  Metadata entries: {}", metadata_db->count());
         spdlog::info("  Bytes processed: {}", final_stats.bytes_processed);
 
+#ifdef PLUGIN_LOADER_ENABLED
+        if (plugin_loader) {
+            plugin_loader->shutdown();
+            spdlog::info("plugin-loader: shutdown OK");
+        }
+#endif
         spdlog::info("RAG Ingester stopped gracefully");
         return 0;
 

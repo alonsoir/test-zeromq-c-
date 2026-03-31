@@ -3,10 +3,10 @@
   "_refactor_notes": {
     "date": "2025-11-15",
     "changes": [
-      "✨ UPDATED: Level 2 DDoS changed from ONNX to Embedded C++20",
-      "✨ UPDATED: Level 2 Ransomware enabled (Embedded C++20)",
-      "✨ UPDATED: Level 3 Web enabled for Traffic classification (Embedded C++20)",
-      "✨ UPDATED: Level 3 Internal already configured, just enabled (Embedded C++20)"
+      "\u2728 UPDATED: Level 2 DDoS changed from ONNX to Embedded C++20",
+      "\u2728 UPDATED: Level 2 Ransomware enabled (Embedded C++20)",
+      "\u2728 UPDATED: Level 3 Web enabled for Traffic classification (Embedded C++20)",
+      "\u2728 UPDATED: Level 3 Internal already configured, just enabled (Embedded C++20)"
     ]
   },
   "component": {
@@ -170,7 +170,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "✨ DDoS Detection - Embedded C++20 RandomForest (100 trees, 612 nodes, <50μs latency)",
+        "description": "\u2728 DDoS Detection - Embedded C++20 RandomForest (100 trees, 612 nodes, <50\u03bcs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "implementation": "native_cpp",
@@ -193,7 +193,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "✨ Ransomware Detection - Embedded C++20 RandomForest (100 trees, 3764 nodes, <55μs latency)",
+        "description": "\u2728 Ransomware Detection - Embedded C++20 RandomForest (100 trees, 3764 nodes, <55\u03bcs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "threshold": 0.75,
@@ -219,7 +219,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "✨ Traffic Classification (Internet vs Internal) - Embedded C++20 RandomForest (100 trees, 1014 nodes, <50μs latency)",
+        "description": "\u2728 Traffic Classification (Internet vs Internal) - Embedded C++20 RandomForest (100 trees, 1014 nodes, <50\u03bcs latency)",
         "requires_scaling": false,
         "timeout_ms": 1,
         "implementation": "native_cpp",
@@ -242,7 +242,7 @@
         "model_file": "",
         "features_count": 10,
         "model_type": "RandomForest-Embedded",
-        "description": "✨ Internal Traffic Analysis - Embedded C++20 RandomForest (100 trees, 940 nodes, <48μs latency) - Lateral Movement & Data Exfiltration",
+        "description": "\u2728 Internal Traffic Analysis - Embedded C++20 RandomForest (100 trees, 940 nodes, <48\u03bcs latency) - Lateral Movement & Data Exfiltration",
         "requires_scaling": false,
         "timeout_ms": 1,
         "implementation": "native_cpp",
@@ -425,12 +425,24 @@
     "requires_rag_threshold": 0.85
   },
   "identity": {
-    "_comment": "ADR-013 — provision.sh es el unico responsable de crear estas claves.",
+    "_comment": "ADR-013 \u2014 provision.sh es el unico responsable de crear estas claves.",
     "_phase": "PHASE 1: seed.bin en claro chmod 0600. PHASE 2: seed.enc via seed-client.",
     "component_id": "ml-detector",
     "keys_dir": "/etc/ml-defender/ml-detector",
     "public_key": "/etc/ml-defender/ml-detector/public.pem",
     "private_key": "/etc/ml-defender/ml-detector/private.pem",
     "seed_bin": "/etc/ml-defender/ml-detector/seed.bin"
+  },
+  "plugins": {
+    "directory": "/usr/lib/ml-defender/plugins",
+    "budget_us": 100,
+    "enabled": [
+      {
+        "name": "hello",
+        "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
+        "active": true,
+        "comment": "ADR-012 PHASE 1b \u2014 validation plugin. Set active:false to disable."
+      }
+    ]
   }
 }

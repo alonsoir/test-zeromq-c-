@@ -31,7 +31,7 @@
 .PHONY: plugin-loader-build plugin-loader-clean plugin-loader-test
 .PHONY: plugin-hello-build plugin-hello-clean
 .PHONY: etcd-server etcd-server-build etcd-server-clean etcd-server-start etcd-server-stop
-.PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs
+.PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs rag-attach
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: test-hardening test-hardening-build test-hardening-run
 .PHONY: day38-step1 day38-step2 day38-step3 day38-step4 day38-step5
@@ -285,6 +285,7 @@ crypto-transport-clean:
 crypto-transport-test:
 	@echo "🧪 Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
+
 plugin-loader-build:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -570,7 +571,7 @@ pipeline-start: provision-check etcd-server-start
 	@$(MAKE) sniffer-start
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  ✅ FULL PIPELINE STARTED (DAY 95 — con provisioning)     ║"
+	@echo "║  ✅ FULL PIPELINE STARTED (DAY 103 — con provisioning)     ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@$(MAKE) pipeline-status
 
@@ -752,6 +753,9 @@ test-components:
 	@echo "Testing etcd-server..."
 	@vagrant ssh -c "cd $(ETCD_SERVER_BUILD_DIR) && ctest --output-on-failure" || echo "⚠️  No etcd-server tests configured"
 	@echo ""
+	@echo "Testing RAG Security..."
+	@vagrant ssh -c "cd $(RAG_BUILD_DIR) && ctest --output-on-failure" || echo "⚠️  No rag-security tests configured"
+	@echo ""
 
 test-all: test-libs test-components
 	@echo ""
@@ -839,7 +843,7 @@ verify-all:
 # Unified Build Targets
 # ============================================================================
 
-build-unified: proto-unified seed-client-build crypto-transport-build etcd-client-build plugin-loader-build sniffer ml-detector rag-ingester firewall tools
+build-unified: proto-unified seed-client-build crypto-transport-build etcd-client-build plugin-loader-build sniffer ml-detector rag-ingester rag-build firewall tools
 	@echo ""
 	@echo "✅ Unified build complete [$(PROFILE)]"
 	@$(MAKE) proto-verify
@@ -1215,8 +1219,12 @@ day38-full: day38-step1 day38-step2 day38-step3
 # ============================================================================
 
 rag-build:
-	@echo "🔨 Building RAG Security System..."
-	@vagrant ssh -c "cd /vagrant/rag && make build"
+	@echo "🔨 Building RAG Security System [$(PROFILE)]..."
+	@vagrant ssh -c 'mkdir -p $(RAG_BUILD_DIR) && \
+		cd $(RAG_BUILD_DIR) && \
+		cmake $(CMAKE_FLAGS) .. && \
+		make -j4'
+	@echo "✅ rag-security built ($(PROFILE))"
 
 rag-clean:
 	@echo "🧹 Cleaning RAG..."
@@ -1240,7 +1248,10 @@ rag-status:
 	@echo "════════════════════════════════════════════════════════════"
 
 rag-logs:
-	@vagrant ssh -c "tail -f /vagrant/logs/rag.log"
+	@vagrant ssh -c "tail -f /vagrant/logs/lab/rag-security.log"
+
+rag-attach:
+	vagrant ssh -- tmux attach -t rag-security
 
 # ============================================================================
 # Test Hardening Suite (Day 46/47)

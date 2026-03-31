@@ -1,27 +1,12 @@
-git add -A
-git commit -m "feat(crypto): DAY 99 — contexts.hpp + TEST-INTEG + fail-closed + test_hmac_integration
+git add BACKLOG.md
+git commit -m "docs: DAY 101 — BACKLOG + prompt continuidad DAY 102
 
-PASO 1: contexts.hpp — constantes HKDF simétricas por canal
-- crypto-transport/include/crypto_transport/contexts.hpp creado e instalado
-- 10 strings hardcodeados → constantes en 7 componentes (sniffer, ml-detector,
-  rag-logger, rag-ingester, firewall-acl-agent, etcd-server, etcd-client)
-- tools/CMakeLists.txt: PkgConfig + LZ4 + libseed_client corregidos
+- extract_enabled_objects bug fix documentado
+- ADR-012 PHASE 1b: sniffer + ml-detector ✅
+- PLUGIN-LOADER-FW + RAG añadidos al backlog P2/P3
+- Endorser andresc@unex.es enviado
 
-PASO 2/3: TEST-INTEG-1/2/3 — gate arXiv completado
-- test_integ_contexts.cpp: round-trip CTX_SNIFFER_TO_ML, todos los canales,
-  JSON→LZ4→encrypt→decrypt byte-a-byte, regresión contextos asimétricos
-
-PASO 4: Fail-closed EventLoader + RAGLogger
-- FATAL + std::terminate() en producción sin seed.bin
-- MLD_DEV_MODE=1 como único escape en desarrollo
-
-PASO 5: test_hmac_integration habilitado
-- Reescrito contra API actual SecretsManager (etcd_server namespace)
-- 4 tests: E2E HMAC, multi-component, key rotation, RAG simulation
-- OpenSSL SN_manager macro pollution resuelto
-
-Tests: 24/24 green (era 22/22 al inicio del día)
-
-Pendiente DAY 100: ADR-021 + ADR-022 (documentar), tools/ migración
-
+Tests: 24/24 ✅
 Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)"
+
+git push

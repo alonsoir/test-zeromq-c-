@@ -257,5 +257,15 @@
     "public_key": "/etc/ml-defender/firewall-acl-agent/public.pem",
     "private_key": "/etc/ml-defender/firewall-acl-agent/private.pem",
     "seed_bin": "/etc/ml-defender/firewall-acl-agent/seed.bin"
+  },
+  "plugins": {
+    "enabled": [
+      {
+        "name": "hello",
+        "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
+        "active": true,
+        "comment": "ADR-012 PHASE 1b — validation plugin"
+      }
+    ]
   }
 }

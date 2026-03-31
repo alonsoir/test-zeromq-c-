@@ -96,22 +96,51 @@ static std::string extract_plugins_block(const std::string& json) {
     return "";
 }
 
-// Extract array of strings from "enabled": ["a","b"]
-static std::vector<std::string> extract_enabled_list(const std::string& plugins_block) {
-    std::vector<std::string> result;
+// Extract enabled plugin descriptors from "enabled": [{name, path, active, ...}]
+// Returns pairs of {name, path} for entries where active==true only.
+static std::vector<std::pair<std::string,std::string>>
+extract_enabled_objects(const std::string& plugins_block) {
+    std::vector<std::pair<std::string,std::string>> result;
     auto pos = plugins_block.find("\"enabled\"");
     if (pos == std::string::npos) return result;
     pos = plugins_block.find("[", pos);
     if (pos == std::string::npos) return result;
-    auto end = plugins_block.find("]", pos);
-    if (end == std::string::npos) return result;
-    std::string arr = plugins_block.substr(pos + 1, end - pos - 1);
-    size_t p = 0;
-    while ((p = arr.find("\"", p)) != std::string::npos) {
-        auto q = arr.find("\"", p + 1);
-        if (q == std::string::npos) break;
-        result.push_back(arr.substr(p + 1, q - p - 1));
-        p = q + 1;
+
+    // Walk each object {...} inside the array
+    for (size_t i = pos + 1; i < plugins_block.size(); ++i) {
+        if (plugins_block[i] == ']') break;
+        if (plugins_block[i] != '{') continue;
+
+        // Extract the object substring
+        int depth = 0; size_t obj_start = i;
+        std::string obj;
+        for (size_t j = i; j < plugins_block.size(); ++j) {
+            if (plugins_block[j] == '{') ++depth;
+            else if (plugins_block[j] == '}') {
+                --depth;
+                if (depth == 0) { obj = plugins_block.substr(obj_start, j - obj_start + 1); i = j; break; }
+            }
+        }
+        if (obj.empty()) continue;
+
+        // active must be true
+        auto act_pos = obj.find("\"active\"");
+        if (act_pos == std::string::npos) continue;
+        auto colon = obj.find(":", act_pos);
+        if (colon == std::string::npos) continue;
+        size_t vstart = colon + 1;
+        while (vstart < obj.size() && obj[vstart] == ' ') ++vstart;
+        if (obj.substr(vstart, 4) != "true") continue;
+
+        // Extract name
+        std::string name = json_string_value(obj, "name");
+        if (name.empty()) continue;
+
+        // Extract path (explicit .so path from JSON)
+        std::string so_path = json_string_value(obj, "path");
+        if (so_path.empty()) continue;
+
+        result.push_back({name, so_path});
     }
     return result;
 }
@@ -146,14 +175,13 @@ void PluginLoader::load_plugins() {
 
     budget_us_ = json_uint_value(plugins_block, "budget_us", 100);
 
-    auto enabled = extract_enabled_list(plugins_block);
+    auto enabled = extract_enabled_objects(plugins_block);
     if (enabled.empty()) {
         std::cerr << "[plugin-loader] INFO: plugins.enabled is empty — no plugins loaded\n";
         return;
     }
 
-    for (const auto& plugin_name : enabled) {
-        std::string so_path = directory + "/libplugin_" + plugin_name + ".so";
+    for (const auto& [plugin_name, so_path] : enabled) {
 
         if (!std::filesystem::exists(so_path)) {
             std::cerr << "[plugin-loader] WARNING: plugin '" << plugin_name
