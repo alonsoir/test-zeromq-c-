@@ -133,7 +133,7 @@ Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
 | MAKEFILE-RAG | Añadir rag tests a test-components y test-all | ✅ DAY 103 |
 | MAKEFILE-RAG | Añadir rag-build a build-unified y pipeline-* | ✅ DAY 103 |
 | PAPER-ADR022 | §6 subsección HKDF Context Symmetry case study | ✅ DAY 103 |
-| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | ⏳ DAY 104 |
+| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | 🔴 BLOQUEADO — sin hardware físico disponible |
 | PAPER-FINAL | Actualizar métricas DAY 102 (25/25 tests, PHASE 1b completa) | ⏳ |
 | DOCS-APPARMOR | 6 perfiles AppArmor por componente | ⏳ |
 
@@ -148,6 +148,9 @@ Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
 | DEBT-INFRA-002 | Sustituir `haveged` por `rng-tools5` + hardware RNG | P2 |
 | FEAT-ROTATION-1 | `provision.sh rotate-all` + política SEED_ROTATION_DAYS | P2 |
 | DEBT-NAMING-001 | `libseed_client` → `libseedclient` (sin underscore) | P3 |
+| BARE-METAL-IMAGE | Imagen Debian Bookworm hardened — deps del Vagrantfile actual, libsodium 1.0.19 (apt si Trixie lo tiene, fuente si no), exportable a USB | P2 — post-build estable |
+| BARE-METAL-VAGRANT | Vagrantfile nuevo con imagen BARE-METAL-IMAGE — validar compilación + pipeline antes de hardware físico | P2 — tras BARE-METAL-IMAGE |
+
 
 ### FASE 3 — Post-arXiv (requiere revisión Consejo)
 
@@ -232,7 +235,7 @@ plugin-loader ADR-012 PHASE 1b 5/5:   ██████████████
 TEST-PLUGIN-INVOKE-1:                 ████████████████████ 100% ✅  DAY 102
 MAKEFILE-RAG alignment:               ████████████████████ 100% ✅  DAY 103
 PAPER-ADR022 §6 (HKDF case study):    ████████████████████ 100% ✅  DAY 103
-BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 104
+BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado por hardware
 DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
 DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
 DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 105+
@@ -349,6 +352,61 @@ SkillContext   → plugin_execute_skill()    [aplicación — futuro]
 **Estimación:** 5-7 días desarrollo + 2-3 días validación E2E
 **Prioridad:** P2 PHASE 2 — post-arXiv
 
+
+---
+
+## 🖥️ BARE-METAL — Imagen hardened + stress test real (⏳ P2 — post-build estable)
+
+**Contexto:**
+
+El stress test en VirtualBox establece un suelo conocido: >33 Mbps sostenidos con
+CPU tranquila (3-4 núcleos), 3.5 GB RAM, en un portátil de desarrollo. El pipeline
+es estable en esas condiciones. La curiosidad legítima es el techo físico real.
+
+El bloqueo es de recursos, no técnico: se necesita una máquina física disponible.
+Estrategia: pedir cesión temporal a contactos mientras avanza el resto del proyecto.
+
+**BARE-METAL-IMAGE — Imagen Debian Bookworm hardened**
+
+Objetivo: imagen bootable / USB con todo lo necesario para compilar y ejecutar
+ML Defender sin depender de Vagrant.
+
+Proceso:
+1. Base: Debian Bookworm 12.x (misma que Vagrantfile actual)
+   - Explorar Debian 13 Trixie si libsodium 1.0.19 está en apt
+   - Si no: compilar 1.0.19 desde fuente + SHA-256 verificado (igual que ahora)
+   - Documentar la decisión abiertamente — no hay nada que ocultar
+2. Instalar todas las dependencias del Vagrantfile actual
+3. Hardening OS: perfiles AppArmor, usuarios mínimos, superficie reducida
+4. Exportar a USB bootable
+5. Todo el proceso documentado en README de la imagen
+
+**BARE-METAL-VAGRANT — Validación previa en VM**
+
+Antes de tocar hardware físico, levantar la imagen en un Vagrantfile nuevo:
+- Verificar que todos los componentes compilan
+- Verificar que el pipeline arranca (6/6 RUNNING)
+- Verificar tests 25/25 en el nuevo entorno
+- Solo si todo pasa → usar en hardware físico
+
+**Nota de diseño:**
+
+Este trabajo ocurre al final, con el software ya estable y la imagen de
+producción definida. No bloquea arXiv ni ningún milestone técnico actual.
+Es la última milla antes de poder decir "corre en bare-metal real".
+
+**Estado:**
+
+| Item | Estado |
+|------|--------|
+| Hardware físico disponible | 🔴 pendiente — gestión con contactos |
+| BARE-METAL-IMAGE | ⏳ no iniciado — después de build estable |
+| BARE-METAL-VAGRANT | ⏳ no iniciado — después de BARE-METAL-IMAGE |
+| Stress test real ≥100 Mbps | ⏳ no iniciado — después de hardware |
+
+**Resultado conocido hoy:** >33 Mbps sostenidos en VirtualBox (NIC bottleneck
+documentado). CPU y RAM con amplio margen. Pipeline estable.
+
 ---
 
 ## 📋 DEBT-PROTO-001 — Revisión contrato protobuf pre-producción (⏳ P3 — FASE 3)
@@ -408,7 +466,7 @@ Cerrar el contrato prematuramente sería over-engineering.
 
 ---
 
-*Última actualización: DAY 103 — 31 Mar 2026*
+*Última actualización: DAY 103 — 31 Mar 2026 (BARE-METAL replanificado)*
 *Branch: feature/bare-metal-arxiv*
 *Tests: 25/25 suites ✅*
 *ADR-012 PHASE 1b: 5/5 COMPLETA ✅*
