@@ -1,29 +1,49 @@
-# ML Defender — Prompt de Continuidad DAY 103
-## 31 marzo 2026
+# ML Defender — Prompt de Continuidad DAY 104
+## 1 abril 2026
 
 ---
 
 ## Estado del sistema
 
 **Pipeline:** 6/6 RUNNING
-**Tests:** 25/25 suites ✅ (nuevo récord — TEST-PLUGIN-INVOKE-1 añadido DAY 102)
-**Rama activa:** `feature/bare-metal-arxiv`
-**Último commit:** ADR-012 PHASE 1b COMPLETA — rag-security plugin-loader (DAY 102)
+**Tests:** 25/25 suites ✅
+**Rama activa:** `feature/bare-metal-arxiv` → **merge a main HOY, primer acto**
+**Último commit:** DAY 103 cierre — README + paper v8 + Consejo consolidado
 
 ---
 
-## Lo realizado en DAY 102 (completo)
+## Lo realizado en DAY 103 (completo)
 
 | Tarea | Estado |
 |-------|--------|
-| TEST-PLUGIN-INVOKE-1 — invoke_all() smoke test | ✅ |
-| ADR-012 PHASE 1b — firewall-acl-agent integrado + validado | ✅ |
-| ADR-012 PHASE 1b — rag-ingester integrado + validado | ✅ |
-| ADR-012 PHASE 1b — rag-security integrado + validado | ✅ |
-| Andrés Caro Lindo (UEx) — respuesta recibida + reply enviado | ✅ |
+| MAKEFILE-RAG — 6 fixes (cmake PROFILE, log path, rag-attach, test-components, build-unified, banner) | ✅ |
+| PAPER §5 — HKDF Context Symmetry case study | ✅ |
+| PAPER v8 — corrección crítica bug HKDF (ChatGPT5): contextos distintos → claves distintas → MAC failures | ✅ |
+| BACKLOG.md — DAY 103 + BARE-METAL replanificado | ✅ |
+| README.md — actualizado DAY 103 | ✅ |
+| Consejo de Sabios — sesión ADR-023 + ADR-024, 5 revisores, decisiones consolidadas | ✅ |
 | git push origin feature/bare-metal-arxiv | ✅ |
 
-**ADR-012 PHASE 1b: 5/5 componentes ✅ COMPLETA**
+**NOTA BARE-METAL:** Bloqueado por hardware físico. No bloquea arXiv ni feature/plugin-crypto.
+Resultado conocido: >33 Mbps VirtualBox, CPU/RAM con amplio margen.
+
+---
+
+## ⚡ PRIMER ACTO DAY 104 — merge + nueva rama
+
+```bash
+cd /Users/aironman/CLionProjects/test-zeromq-docker
+
+# 1 — Merge a main
+git checkout main
+git pull origin main
+git merge feature/bare-metal-arxiv
+git push origin main
+
+# 2 — Nueva rama feature/plugin-crypto
+git checkout -b feature/plugin-crypto
+git push -u origin feature/plugin-crypto
+```
 
 ---
 
@@ -31,290 +51,145 @@
 
 | Endorser | Estado |
 |----------|--------|
-| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF |
+| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF v5 |
 | Yisroel Mirsky (BGU) | ⏳ enviado DAY 96, sin respuesta |
-| Andrés Caro Lindo (UEx) | ✅ confirmado — llamada telefónica jueves 2 abril |
+| Andrés Caro Lindo (UEx/INCIBE) | ✅ endorsement confirmado — llamada HOY jueves 2 abril |
 
-**Nota:** Andrés ofrece colaboración futura (revistas, congresos INCIBE).
-Su número: 657 33 10 10. Él llama o tú llamas el jueves.
-
----
-
-## Patrón ADR-012 PHASE 1b (establecido — replicar si se añaden componentes)
-
-1. `CMakeLists.txt`: find_library(PLUGIN_LOADER_LIB) + find_path + target_include +
-   target_link(dl) + target_compile_definitions(PLUGIN_LOADER_ENABLED)
-2. `src/main.cpp`: `std::unique_ptr<ml_defender::PluginLoader>` global o local
-   (global si hay signal handler que necesita acceso) +
-   `#ifdef PLUGIN_LOADER_ENABLED` guards en include + init + shutdown
-3. `config/*.json`: sección `plugins` con hello plugin `active:true`
-4. Smoke test: `MLD_DEV_MODE=1 ./component 2>&1 | grep -i plugin`
-
-**Nota rag-security:** usa `g_plugin_loader` global (signal handler necesita acceso).
-Resto de componentes: `unique_ptr` local en `main()`.
+**Llamada Andrés:** 657 33 10 10. Él llama o tú llamas.
+**Punto clave:** El endorser no necesita hacer nada antes de que enviemos.
+Indicamos su email en el formulario arXiv → arXiv le manda email de confirmación.
+El envío puede ocurrir en cualquier momento independientemente.
 
 ---
 
-## DAY 103 — tareas en orden estricto
+## Consejo DAY 103 — Decisiones consolidadas
 
-### TAREA 1 — Revisión Makefile rag alignment (URGENTE)
-
-El Makefile tiene inconsistencias con el componente `rag`:
-- `rag-build` delega a `cd /vagrant/rag && make build` (Makefile interno) → siempre Release
-- Resto de componentes usan `cmake $(CMAKE_FLAGS)` directamente → perfil configurable
-- `pipeline-start` / `pipeline-stop` / `pipeline-status` → ¿está rag-security incluido?
-- No hay tarea `rag-attach` para attachear al proceso arrancado en tmux
-- Los tests del rag (test_faiss_basic, test_embedder, test_onnx_basic) no están
-  en `test-components` ni en `test-all`
-
-```bash
-# Exploración antes de tocar nada
-grep -n "rag" Makefile | grep -v "rag-ingester\|#" | head -30
-grep -n "pipeline-start\|pipeline-stop\|pipeline-status" Makefile | head -20
-vagrant ssh -c 'cat /vagrant/rag/Makefile 2>/dev/null | head -40'
-```
-
-Decisiones a tomar:
-- ¿Alinear `rag-build` al patrón de los demás (cmake directo con PROFILE)?
-- ¿Añadir `rag-attach` (tmux attach -t rag-security)?
-- ¿Añadir rag a `test-components`?
-- ¿Añadir `rag-build` a `build-unified`?
-
-### TAREA 2 — PAPER-ADR022 §6
-
-Subsección "HKDF Context Symmetry: A Pedagogical Case Study in
-Test-Driven Hardening". Ubicación: §6 (después de §6.4 TDH o §6.7).
-
-Estructura:
-- El error: contexto HKDF = componente (mal) vs canal (correcto)
-- Por qué es invisible al type-checker (ambos son std::string)
-- Cómo TEST-INTEG-3 lo detectó (regresión intencional → MAC failure)
-- La lección: correctness criptográfica requiere tests E2E de protocolo
-
-### TAREA 3 — Actualizar BACKLOG.md en repo
-
-Reflejar DAY 102: ADR-012 PHASE 1b COMPLETA (5/5), tests 25/25,
-mover PLUGIN-LOADER-FW y PLUGIN-LOADER-RAG de P2 a ✅ COMPLETADO.
-
----
-
-## Constantes
-```
-Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
-VM:      vagrant ssh -c '...'   ← SIEMPRE -c
-         vagrant ssh -- python3 << 'PYEOF' ... PYEOF  ← para scripts Python
-Binarios: /vagrant/{component}/build-debug/{component}
-RAG bin:  /vagrant/rag/build/rag-security  ← build/ no build-debug/
-Plugins:  /usr/lib/ml-defender/plugins/   ← plugins individuales
-Libs:     /usr/local/lib/                 ← libplugin_loader.so
-Keys:     /etc/ml-defender/{component}/seed.bin
-dev:      MLD_DEV_MODE=1 → sin seed.bin
-
-macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
-zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
-zsh:     NUNCA assert(!x) → usar assert(x == false)
-cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
-```
-
----
-
-## Consejo de Sabios — práctica establecida
-
-Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
-DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek),
-Gemini (Google), Parallel.ai
-
----
-
-# ML Defender — Prompt de Continuidad DAY 103
-## 31 marzo 2026
-
----
-
-## Estado del sistema
-
-**Pipeline:** 6/6 RUNNING
-**Tests:** 25/25 suites ✅ (nuevo récord — TEST-PLUGIN-INVOKE-1 añadido DAY 102)
-**Rama activa:** `feature/bare-metal-arxiv`
-**Último commit:** ADR-012 PHASE 1b COMPLETA — rag-security plugin-loader (DAY 102)
-
----
-
-## Lo realizado en DAY 102 (completo)
-
-| Tarea | Estado |
-|-------|--------|
-| TEST-PLUGIN-INVOKE-1 — invoke_all() smoke test | ✅ |
-| ADR-012 PHASE 1b — firewall-acl-agent integrado + validado | ✅ |
-| ADR-012 PHASE 1b — rag-ingester integrado + validado | ✅ |
-| ADR-012 PHASE 1b — rag-security integrado + validado | ✅ |
-| Andrés Caro Lindo (UEx) — respuesta recibida + reply enviado | ✅ |
-| git push origin feature/bare-metal-arxiv | ✅ |
-
-**ADR-012 PHASE 1b: 5/5 componentes ✅ COMPLETA**
-
----
-
-## Endorser arXiv — estado
-
-| Endorser | Estado |
-|----------|--------|
-| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF |
-| Yisroel Mirsky (BGU) | ⏳ enviado DAY 96, sin respuesta |
-| Andrés Caro Lindo (UEx) | ✅ confirmado — llamada telefónica jueves 2 abril |
-
-**Nota:** Andrés ofrece colaboración futura (revistas, congresos INCIBE).
-Su número: 657 33 10 10. Él llama o tú llamas el jueves.
-
----
-
-## Patrón ADR-012 PHASE 1b (establecido — replicar si se añaden componentes)
-
-1. `CMakeLists.txt`: find_library(PLUGIN_LOADER_LIB) + find_path + target_include +
-   target_link(dl) + target_compile_definitions(PLUGIN_LOADER_ENABLED)
-2. `src/main.cpp`: `std::unique_ptr<ml_defender::PluginLoader>` global o local
-   (global si hay signal handler que necesita acceso) +
-   `#ifdef PLUGIN_LOADER_ENABLED` guards en include + init + shutdown
-3. `config/*.json`: sección `plugins` con hello plugin `active:true`
-4. Smoke test: `MLD_DEV_MODE=1 ./component 2>&1 | grep -i plugin`
-
-**Nota rag-security:** usa `g_plugin_loader` global (signal handler necesita acceso).
-Resto de componentes: `unique_ptr` local en `main()`.
-
----
-
-## DAY 103 — tareas en orden estricto
-
-### TAREA 1 — Revisión Makefile rag alignment (URGENTE)
-
-El Makefile tiene inconsistencias con el componente `rag`:
-- `rag-build` delega a `cd /vagrant/rag && make build` (Makefile interno) → siempre Release
-- Resto de componentes usan `cmake $(CMAKE_FLAGS)` directamente → perfil configurable
-- `pipeline-start` / `pipeline-stop` / `pipeline-status` → ¿está rag-security incluido?
-- No hay tarea `rag-attach` para attachear al proceso arrancado en tmux
-- Los tests del rag (test_faiss_basic, test_embedder, test_onnx_basic) no están
-  en `test-components` ni en `test-all`
-
-```bash
-# Exploración antes de tocar nada
-grep -n "rag" Makefile | grep -v "rag-ingester\|#" | head -30
-grep -n "pipeline-start\|pipeline-stop\|pipeline-status" Makefile | head -20
-vagrant ssh -c 'cat /vagrant/rag/Makefile 2>/dev/null | head -40'
-```
-
-Decisiones a tomar:
-- ¿Alinear `rag-build` al patrón de los demás (cmake directo con PROFILE)?
-- ¿Añadir `rag-attach` (tmux attach -t rag-security)?
-- ¿Añadir rag a `test-components`?
-- ¿Añadir `rag-build` a `build-unified`?
-
-### TAREA 2 — PAPER-ADR022 §6
-
-Subsección "HKDF Context Symmetry: A Pedagogical Case Study in
-Test-Driven Hardening". Ubicación: §6 (después de §6.4 TDH o §6.7).
-
-Estructura:
-- El error: contexto HKDF = componente (mal) vs canal (correcto)
-- Por qué es invisible al type-checker (ambos son std::string)
-- Cómo TEST-INTEG-3 lo detectó (regresión intencional → MAC failure)
-- La lección: correctness criptográfica requiere tests E2E de protocolo
-
-### TAREA 3 — Actualizar BACKLOG.md en repo
-
-Reflejar DAY 102: ADR-012 PHASE 1b COMPLETA (5/5), tests 25/25,
-mover PLUGIN-LOADER-FW y PLUGIN-LOADER-RAG de P2 a ✅ COMPLETADO.
-
----
-
-## Constantes
-```
-Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
-VM:      vagrant ssh -c '...'   ← SIEMPRE -c
-         vagrant ssh -- python3 << 'PYEOF' ... PYEOF  ← para scripts Python
-Binarios: /vagrant/{component}/build-debug/{component}
-RAG bin:  /vagrant/rag/build/rag-security  ← build/ no build-debug/
-Plugins:  /usr/lib/ml-defender/plugins/   ← plugins individuales
-Libs:     /usr/local/lib/                 ← libplugin_loader.so
-Keys:     /etc/ml-defender/{component}/seed.bin
-dev:      MLD_DEV_MODE=1 → sin seed.bin
-
-macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
-zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
-zsh:     NUNCA assert(!x) → usar assert(x == false)
-cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
-```
-
----
-
-## Consejo de Sabios — práctica establecida
-
-Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
-DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek),
-Gemini (Google), Parallel.ai
-
----
-
-*DAY 102 cierre — 30 marzo 2026*
-*Tests: 25/25 ✅ · ADR-012 PHASE 1b: 5/5 COMPLETA ✅*
-*Endorser Andrés Caro Lindo confirmado ✅ · Llamada jueves 2 abril*
-*Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
-
----
-
-## Consejo de Sabios — FEAT-PLUGIN-CRYPTO-1 (decisiones consolidadas)
-
-Consulta realizada DAY 102 cierre. Unanimidad 5/0 en las tres preguntas.
-
-### Q1 — Opción A (MessageContext) — unanimidad 5/0
-
-`PacketContext` = capa de red. `MessageContext` = capa de transporte.
-Mezclarlos en Opción B es el mismo *model mental error* que ADR-022.
+### Q1 — MessageContext (ADR-023) — unanimidad 5/0
 
 ```c
-// PHASE 2 — nuevo hook en plugin_api.h
-PluginResult plugin_process_message(MessageContext* ctx);
-// MessageContext: payload, length, max_length, direction tx/rx,
-//                nonce[12], tag[16], result_code
+typedef struct {
+    uint8_t     version;       // MESSAGE_CONTEXT_VERSION = 1
+    uint8_t     direction;     // MLD_TX = 0, MLD_RX = 1
+    uint8_t     nonce[12];     // 96-bit monotonic counter
+    uint8_t     tag[16];       // Poly1305 tag (16 bytes)
+    uint8_t*    payload;       // buffer (in/out)
+    size_t      length;        // longitud actual
+    size_t      max_length;    // capacidad — siempre >= length + 16 (margen Poly1305)
+    const char* channel_id;    // "sniffer-to-ml-detector" — selector contexto HKDF
+    int32_t     result_code;   // 0=OK, -1=MAC failure, -2=buffer overflow
+    uint8_t     reserved[8];   // para sequence_number / timestamp futuro
+} MessageContext;
 ```
 
-### Q2 — Símbolo opcional primero, bump después — unanimidad 5/0
+**Regla crítica (DeepSeek/Gemini):** `max_length` siempre >= `length + 16`.
+El componente host es responsable del margen. El plugin no aloca.
+**Campo crítico (Qwen):** `channel_id` — sin él el plugin no puede seleccionar
+el contexto HKDF correcto. Directamente relacionado con el bug ADR-022.
+
+### Q2 — plugin_process_message() — 4/1 OPCIONAL en PHASE 2a
+
+- PHASE 2a: opcional vía `dlsym`, `PLUGIN_API_VERSION=1` sin bump
+- Log INFO cuando se detecta que un plugin implementa el hook
+- PHASE 2b: bump a VERSION=2 cuando JSON descriptor declare `"layer": "transport"`
+- Gemini (minoría): bump inmediato — mérito técnico registrado, desestimado
+
+### Q3 — ADR-024: Noise Protocol IK — unanimidad 5/0
 
 ```
-PHASE 2a: plugin_process_message() OPCIONAL
-          dlsym() → si existe: plugin de transporte
-                  → si no:    plugin de red (PHASE 1, sigue funcionando)
-          PLUGIN_API_VERSION = 1 (sin bump)
+PSK = HKDF(seed_family, "noise-ik-psk")  ← seed de familia (ADR-021)
 
-PHASE 2b: plugin_process_message() OBLIGATORIO para plugins de transporte
-          PLUGIN_API_VERSION = 2
+Handshake (1-RTT, solo en arranque):
+  Initiator (nuevo componente): -> e, es
+  Responder (miembro existente): <- e, ee, se
+
+Output: clave de sesión con forward secrecy + autenticación mutua
+Sin PKI central. Compatible con libsodium 1.0.19.
+Implementación: Noise-c (C puro).
 ```
 
-### Q3 — Dual-mechanism aprobada con gates adicionales
+### Q4 — Secuenciación — 4/1 diseño en paralelo
 
-| Gate | Descripción |
-|------|-------------|
-| TEST-INTEG-4a | Round-trip idéntico byte a byte |
-| TEST-INTEG-4b | Equivalencia semántica — ml-detector ve features idénticas en ambos paths |
-| TEST-INTEG-4c | Fail-closed ante MAC failure → SIGABRT confirmado |
+- Diseñar ADR-024 ahora (suficiente para mencionar en paper como Future Work)
+- Implementar ADR-023 primero (prerequisito técnico de FEAT-PLUGIN-CRYPTO-1)
+- ADR-024 implementación post-ADR-023
 
-**Regla adicional (DeepSeek):** core `CryptoTransport` read-only durante PHASE 2a.
-Solo se hacen cambios en el plugin. Validación unidireccional: plugin → core.
+---
 
-### Decisiones adicionales
+## DAY 104 — tareas en orden
 
-- **ADR-023** a redactar antes de implementar FEAT-PLUGIN-CRYPTO-1:
-  ```
-  PacketContext  → plugin_process_packet()   [red]
-  MessageContext → plugin_process_message()  [transporte]
-  SkillContext   → plugin_execute_skill()    [aplicación — futuro]
-  ```
-- **Fail-closed confirmado:** MAC failure → `std::terminate()`. Sin modo degradado.
-- **ADR-012 compatible:** plugin crypto *transforma*, no *decide*. No viola restricción de bloqueo.
-- **Insight Gemini:** Opción A = agnositicismo de transporte. ZMQ → QUIC sin tocar sniffer.cpp.
+### TAREA 1 — merge + nueva rama (ver PRIMER ACTO arriba)
 
-**Todo esto es post-arXiv. DAY 103 arranca con Makefile rag alignment.**
+### TAREA 2 — Redactar ADR-023 formal
 
-*DAY 102 cierre — 30 marzo 2026*
-*Tests: 25/25 ✅ · ADR-012 PHASE 1b: 5/5 COMPLETA ✅*
-*Endorser Andrés Caro Lindo confirmado ✅ · Llamada jueves 2 abril*
+Fichero: `docs/adr/ADR-023-multi-layer-plugin-architecture.md`
+
+Contenido mínimo:
+- Contexto: ADR-012 PHASE 1b → único hook `plugin_process_packet(PacketContext*)`
+- Decisión: tres capas, tres contextos, tres hooks independientes
+- `MessageContext` con campos aprobados por el Consejo (ver arriba)
+- Estrategia PHASE 2a/2b/2c + gates TEST-INTEG-4a/4b/4c
+- Regla DeepSeek: core CryptoTransport read-only durante PHASE 2a
+- Minoría Gemini registrada
+
+### TAREA 3 — Redactar ADR-024 borrador
+
+Fichero: `docs/adr/ADR-024-dynamic-group-key-agreement.md`
+
+Contenido mínimo:
+- Problema: componente nuevo que se une a familia en runtime sin redeploy
+- Protocolo: Noise IK + PSK derivado de seed_family (ADR-021)
+- Handshake descrito
+- Implementación: Noise-c + libsodium 1.0.19
+- Estado: DISEÑO — implementación post-arXiv
+
+### TAREA 4 — Llamada Andrés Caro Lindo
+
+---
+
+## Patrón ADR-012 PHASE 1b (establecido)
+
+1. `CMakeLists.txt`: find_library(PLUGIN_LOADER_LIB) + find_path + target_include +
+   target_link(dl) + target_compile_definitions(PLUGIN_LOADER_ENABLED)
+2. `src/main.cpp`: `unique_ptr<PluginLoader>` local en main()
+   (global `g_plugin_loader` solo si hay signal handler)
+3. `config/*.json`: sección `plugins` con hello plugin `active:true`
+4. Smoke test: `MLD_DEV_MODE=1 ./component 2>&1 | grep -i plugin`
+
+---
+
+## Constantes
+```
+Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
+VM:      vagrant ssh -c '...'   ← SIEMPRE -c
+         vagrant ssh -- python3 << 'PYEOF' ... PYEOF  ← para scripts Python
+Binarios: /vagrant/{component}/build-debug/{component}
+RAG bin:  /vagrant/rag/build/rag-security  ← build/ no build-debug/
+Plugins:  /usr/lib/ml-defender/plugins/   ← plugins individuales
+Libs:     /usr/local/lib/                 ← libplugin_loader.so
+Keys:     /etc/ml-defender/{component}/seed.bin
+dev:      MLD_DEV_MODE=1 → sin seed.bin
+
+macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
+zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
+zsh:     NUNCA assert(!x) → usar assert(x == false)
+cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
+rag:     comillas simples en vagrant ssh -c para CMAKE_FLAGS
+```
+
+---
+
+## Consejo de Sabios
+
+Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
+DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek),
+Gemini (Google), Parallel.ai
+
+---
+
+*DAY 103 cierre — 31 marzo 2026*
+*Tests: 25/25 ✅ · Paper: Draft v8 · Makefile rag: alineado*
+*Consejo DAY 103: MessageContext aprobada, Noise IK aprobado*
+*BARE-METAL: bloqueado por hardware, no bloquea arXiv*
+*Endorser Andrés Caro Lindo: llamada HOY jueves 2 abril*
+*Mañana: merge main + feature/plugin-crypto como PRIMER ACTO*
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
