@@ -107,7 +107,7 @@ Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
 | MAKEFILE-RAG | Añadir rag tests a test-components y test-all | ⏳ DAY 103 |
 | MAKEFILE-RAG | Añadir rag-build a build-unified y pipeline-* | ⏳ DAY 103 |
 | PAPER-ADR022 | §6 subsección HKDF Context Symmetry case study | ⏳ DAY 103 |
-| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | ⏳ |
+| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | ⏳ DAY 104 |
 | PAPER-FINAL | Actualizar métricas DAY 102 (25/25 tests, PHASE 1b completa) | ⏳ |
 | DOCS-APPARMOR | 6 perfiles AppArmor por componente | ⏳ |
 
@@ -115,6 +115,8 @@ Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
 
 | ID | Tarea | Origen |
 |----|-------|--------|
+| FEAT-PLUGIN-CRYPTO-1 | Plugin crypto transport — ver sección detallada abajo | DAY 102 |
+| DEBT-PROTO-001 | Revisión contrato protobuf — ver sección detallada abajo | DAY 102 |
 | DEBT-CRYPTO-003a | `mlock()` seed_client.cpp | ADR-022 threat model |
 | DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie (libsodium 1.0.19 en apt) | P2 |
 | DEBT-INFRA-002 | Sustituir `haveged` por `rng-tools5` + hardware RNG | P2 |
@@ -126,6 +128,7 @@ Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
 | ID | Tarea |
 |----|-------|
 | ADR-021 impl. | `deployment.yml` SSOT + families en `provision.sh` |
+| ADR-023 | Multi-Layer Plugin Architecture (MessageContext) — pre-req FEAT-PLUGIN-CRYPTO-1 |
 | MULTI-VM | Vagrantfile multi-VM con topología distribuida real |
 | CI-FULL | Self-hosted runner "argus-debian-bookworm" |
 | ANSIBLE | Receta Ansible + Jinja2 (patrón Ericsson) |
@@ -160,11 +163,18 @@ mlock(seed_.data(), seed_.size());
 ## 📋 BACKLOG — COMMUNITY & FEATURES
 
 ### 🟥 P0 — Paper arXiv
+
 - Draft v6 ✅ · LaTeX ✅
-- Sebastian Garcia (CTU Prague) ✅ — respondió, recibió PDF
-- Yisroel Mirsky (BGU) ⏳ — enviado DAY 96, sin respuesta
-- Andrés Caro Lindo (UEx) ✅ — endorsement confirmado, llamada jueves 2 abril
 - Pendiente: §6 HKDF case study + métricas DAY 102
+
+**Revisores / endorsers:**
+
+| Persona | Perfil | Estado |
+|---------|--------|--------|
+| Sebastian Garcia (CTU Prague) | Autor CTU-13, ML seguridad | ✅ respondió, recibió PDF |
+| Yisroel Mirsky (BGU) | Investigador ML/seguridad | ⏳ enviado DAY 96, sin respuesta |
+| Andrés Caro Lindo (UEx/INCIBE) | Director Cátedra INCIBE-UEx | ✅ endorsement confirmado, llamada jueves 2 abril |
+| Jorge Coronado (QuantiKa14) | DFIR, forense, OSINT, 13 años | ⏳ email enviado — revisión paper + repo |
 
 ### 🟧 P1 — Fast Detector Config (DEBT-FD-001)
 ### 🟨 P2 — Expansión ransomware (prerequisito: DEBT-FD-001)
@@ -196,10 +206,12 @@ plugin-loader ADR-012 PHASE 1b 5/5:   ██████████████
 TEST-PLUGIN-INVOKE-1:                 ████████████████████ 100% ✅  DAY 102
 MAKEFILE-RAG alignment:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 103
 PAPER-ADR022 §6 (HKDF case study):    ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 103
-BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P1 pre-arXiv
+BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 104
 DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
 DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
 DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 105+
+FEAT-PLUGIN-CRYPTO-1:                 ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 post-arXiv
+DEBT-PROTO-001:                       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P3 FASE 3
 Fast Detector Config (DEBT-FD-001):   ████░░░░░░░░░░░░░░░░  20% 🟡  PHASE 2
 ENT-*:                                ░░░░░░░░░░░░░░░░░░░░   0% ⏳  largo plazo
 ```
@@ -224,14 +236,138 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | set_terminate() | fail-closed en los 6 main(). abort() ante excepción no capturada ✅ | 100 |
 | CI GitHub Actions | Solo validación estática (ubuntu-latest). Full build = self-hosted ✅ | 100 |
 | Plugin-loader scope | global si signal handler necesita acceso, local si no ✅ | 102 |
+| Schema protobuf | Abierto intencionado — no cerrar hasta decisión sobre grafos ✅ | 102 |
+| FEAT-PLUGIN-CRYPTO-1 API | Opción A (MessageContext) — unanimidad Consejo 5/0 ✅ | 102 |
+| FEAT-PLUGIN-CRYPTO-1 breaking | Símbolo opcional PHASE 2a → obligatorio PHASE 2b ✅ | 102 |
+
+---
+
+## 🔌 FEAT-PLUGIN-CRYPTO-1 — Plugin de CryptoTransport (⏳ PHASE 2 — post-arXiv)
+
+**Objetivo:** Migrar el cifrado ChaCha20-Poly1305/HKDF del core de cada componente
+a un plugin genérico `libplugin_crypto_transport.so`, configurado por identidad JSON.
+
+### Diseño conceptual
+
+```
+config.json → component_id → SeedClient → HKDF(seed, CTX_canal) → ChaCha20-Poly1305
+```
+
+### Decisiones del Consejo (DAY 102 — unanimidad 5/0)
+
+**Q1 — Opción A (MessageContext) — no Opción B**
+
+```c
+// PHASE 2 — nuevo hook en plugin_api.h
+PluginResult plugin_process_message(MessageContext* ctx);
+// MessageContext: payload, length, max_length, direction tx/rx,
+//                nonce[12], tag[16], result_code
+```
+
+`PacketContext` = capa de red. `MessageContext` = capa de transporte.
+Mezclarlos (Opción B) es el mismo *model mental error* que ADR-022.
+Insight Gemini: Opción A = agnositicismo de transporte (ZMQ → QUIC sin tocar sniffer.cpp).
+
+**Q2 — Símbolo opcional primero, bump después**
+
+```
+PHASE 2a: plugin_process_message() OPCIONAL
+          dlsym() → si existe: plugin de transporte; si no: plugin de red
+          PLUGIN_API_VERSION = 1 (sin bump)
+
+PHASE 2b: plugin_process_message() OBLIGATORIO para plugins de transporte
+          PLUGIN_API_VERSION = 2
+```
+
+**Q3 — Estrategia dual-mechanism con gates adicionales**
+
+```
+PHASE 2a: CryptoTransport (core, read-only) + CryptoPlugin en paralelo
+PHASE 2b: CryptoTransport desactivado
+PHASE 2c: CryptoTransport eliminado del core
+```
+
+| Gate | Descripción |
+|------|-------------|
+| TEST-INTEG-4a | Round-trip idéntico byte a byte |
+| TEST-INTEG-4b | Equivalencia semántica — ml-detector ve features idénticas en ambos paths |
+| TEST-INTEG-4c | Fail-closed ante MAC failure → SIGABRT confirmado |
+
+**Regla adicional (DeepSeek):** core `CryptoTransport` read-only durante PHASE 2a.
+Validación unidireccional: plugin → core.
+
+**Fail-closed confirmado:** MAC failure → `std::terminate()`. Sin modo degradado.
+**ADR-012 compatible:** plugin crypto *transforma*, no *decide*. No viola restricción de bloqueo.
+
+### Prerequisito — ADR-023
+
+Redactar antes de implementar:
+```
+PacketContext  → plugin_process_packet()   [red]
+MessageContext → plugin_process_message()  [transporte]
+SkillContext   → plugin_execute_skill()    [aplicación — futuro]
+```
+
+### Estado
+
+| Item | Estado |
+|------|--------|
+| Decisión API (MessageContext) | ✅ Consejo DAY 102 |
+| ADR-023 Multi-Layer Plugin Architecture | ⏳ redactar antes de implementar |
+| plugin_api.h extensión (MessageContext) | ⏳ diseño pendiente |
+| libplugin_crypto_transport.so | ⏳ no iniciado |
+| Dual-mechanism en 5 componentes | ⏳ no iniciado |
+| TEST-INTEG-4a/4b/4c | ⏳ no iniciado |
+
+**Prerequisitos:** arXiv submission · ADR-023 redactado
+**Estimación:** 5-7 días desarrollo + 2-3 días validación E2E
+**Prioridad:** P2 PHASE 2 — post-arXiv
+
+---
+
+## 📋 DEBT-PROTO-001 — Revisión contrato protobuf pre-producción (⏳ P3 — FASE 3)
+
+**Contexto (DAY 102):**
+
+El contrato protobuf está **intencionadamente abierto** en fase de desarrollo.
+Todos los campos de todos los componentes están en un único fichero `.proto`.
+No hay campo `version` explícito — decisión consciente mientras el schema evoluciona.
+
+Decisión de diseño: no refactorizar ni añadir campos hasta tener certeza.
+Caso pendiente: campos de grafos para topología de red — pueden ser necesarios
+o pueden inferirse desde los features actuales. Hasta saberlo, no se añade nada.
+
+**Tareas cuando llegue el momento:**
+
+- Evaluar si campos de grafos son necesarios o inferibles desde features actuales
+- Si se añaden campos nuevos → introducir versionado explícito (`event_v1` → `event_v2`)
+- Considerar división del `.proto` monolítico en archivos por dominio
+- Validación estricta en frontera entre componentes
+
+**Estado:** Schema abierto intencionado — no es deuda, es diseño consciente.
+Cerrar el contrato prematuramente sería over-engineering.
+
+**Prerequisito:** Decisión sobre grafos · **Prioridad:** P3 FASE 3
+**No bloquea arXiv.**
 
 ---
 
 ### Notas del Consejo de Sabios
 
-> DAY 102 (Consejo — feedback pendiente DAY 103):
-> Preguntas abiertas: Q1 Makefile rag alignment · Q2 estructura §6 paper
-> Q3 orden prioridades P1 pre-arXiv
+> DAY 102 — FEAT-PLUGIN-CRYPTO-1 (unanimidad 5/0):
+> "Opción A (MessageContext) — separación de capas es correcta."
+> "Símbolo opcional PHASE 2a → obligatorio PHASE 2b."
+> "TEST-INTEG-4a/4b/4c como gates. Core read-only durante PHASE 2a."
+> "ADR-023 antes de implementar."
+> — ChatGPT5 · DeepSeek · Gemini · Grok · Qwen
+
+> DAY 102 — Prioridades DAY 103+ (4/1):
+> "Makefile rag alignment + PAPER-ADR022 §6 primero. Bare-metal DAY 104."
+> — ChatGPT5 · DeepSeek · Gemini · Grok (Qwen: bare-metal primero)
+
+> DAY 102 — §6 paper (unanimidad):
+> "Estructura correcta. Título: Pedagogical Case Study (árbitro: Alonso)."
+> "Corregir: TX y RX derivan claves DISTINTAS → MAC failures."
 
 > DAY 101 (Consejo — decisiones consolidadas):
 > "Orden plugin-loader: firewall → rag-ingester → rag-security (unanimidad 5/5)"
@@ -251,69 +387,3 @@ ENT-*:                                ░░░░░░░░░░░░░░
 *Tests: 25/25 suites ✅*
 *ADR-012 PHASE 1b: 5/5 COMPLETA ✅*
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai*
-
----
-
-## 🔌 FEAT-PLUGIN-CRYPTO-1 — Plugin de CryptoTransport (⏳ PHASE 2 — post-arXiv)
-
-**Objetivo:** Migrar el cifrado ChaCha20-Poly1305/HKDF del core de cada componente
-a un plugin genérico `libplugin_crypto_transport.so`, configurado por identidad JSON.
-
-### Diseño conceptual
-
-```
-config.json → component_id → SeedClient → HKDF(seed, CTX_canal) → ChaCha20-Poly1305
-```
-
-El plugin lee su identidad de `PluginConfig.config_json` (campo `component_id`),
-selecciona el contexto HKDF correcto (`CTX_SNIFFER_TO_ML`, etc.) y gestiona
-el cifrado/descifrado del mensaje de transporte.
-
-### Problema arquitectónico identificado (DAY 102)
-
-El hook actual `plugin_process_packet(PacketContext*)` opera en **capa de red**
-(raw bytes, IPs, puertos). El cifrado opera en **capa de transporte ZMQ**
-(payload protobuf + LZ4 serializado). Son capas distintas — se necesita un
-nuevo hook:
-
-```c
-// Propuesta PHASE 2 — requiere PLUGIN_API_VERSION bump
-PluginResult plugin_process_message(MessageContext* ctx);
-// MessageContext: uint8_t* payload, size_t len, direction tx/rx
-```
-
-**Alternativa:** Ampliar `PacketContext` con campo `serialized_payload`.
-Decisión pendiente — llevar al Consejo DAY 105+.
-
-### Estrategia de migración (dual-mechanism obligatorio)
-
-```
-PHASE 2a: CryptoTransport directo (actual) + CryptoPlugin en paralelo
-          Gate: TEST-INTEG-4 valida equivalencia cifrado/descifrado
-
-PHASE 2b: CryptoTransport directo desactivado
-          Gate: 72h sin regresiones en bare-metal
-
-PHASE 2c: CryptoTransport eliminado del main.cpp de cada componente
-          Código limpio — plugin es el único mecanismo
-```
-
-### Pregunta para el Consejo (DAY 105+)
-
-> ¿Extendemos `plugin_api.h` con `MessageContext` para transporte (API limpia,
-> breaking change), o ampliamos `PacketContext` con `serialized_payload`
-> (no breaking, pero semánticamente impuro)?
-
-### Estado
-
-| Item | Estado |
-|------|--------|
-| plugin_api.h extensión (MessageContext) | ⏳ diseño pendiente |
-| libplugin_crypto_transport.so | ⏳ no iniciado |
-| Dual-mechanism en 5 componentes | ⏳ no iniciado |
-| TEST-INTEG-4 equivalencia | ⏳ no iniciado |
-| Consejo Q1 DAY 105+ | ⏳ pendiente |
-
-**Prerequisitos:** arXiv submission ✅ · PHASE 2 plugin-loader auth (ADR-013)
-**Estimación:** 5-7 días de desarrollo + 2-3 días de validación E2E
-**Prioridad:** P2 PHASE 2 — post-arXiv
