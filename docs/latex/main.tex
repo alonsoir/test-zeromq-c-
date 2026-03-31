@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v5 — DAY 88 — March 2026
+% Draft v7 — DAY 103 — March 2026
 % Author: Alonso Isidoro Roman
 % Target: cs.CR
 % ============================================================
@@ -76,7 +76,7 @@ in Resource-Constrained Organizations}}
   \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v5 --- March 2026}
+\date{Draft v7 --- March 2026}
 
 % ============================================================
 \begin{document}
@@ -463,6 +463,103 @@ selects, weighing correctness, maintainability, and coherence.
 
 TDH differs from TDD: the test is written \emph{before the fix}, as a proof of failure ---
 not before the feature, as a specification.
+
+
+\subsection{HKDF Context Symmetry: A Pedagogical Case Study in Test-Driven Hardening}
+\label{subsec:hkdf-context-symmetry}
+
+A subtle but critical defect discovered during the cryptographic integration
+sprint of \emph{ML Defender} illustrates a class of correctness errors that
+are invisible to static analysis yet detectable through end-to-end protocol
+testing. We document it here as a concrete instance of the
+Test-Driven Hardening methodology described in \S\ref{sec:consejo}.
+
+\paragraph{The defect.}
+The \texttt{CryptoTransport} layer derives symmetric keys using
+HKDF-SHA256~\cite{rfc5869} with a context string (\emph{info} parameter)
+that encodes the identity of the communicating parties. The original
+implementation parameterised this context by \emph{component name}:
+
+\begin{lstlisting}[language=C++, caption={Incorrect HKDF context --- component-scoped},
+                   basicstyle=\ttfamily\small, breaklines=true]
+// WRONG: both sides derive identical subkeys
+const std::string ctx = "ml-defender:" + component_name
+                      + ":" + version;
+\end{lstlisting}
+
+Because HKDF is deterministic, both transmitter and receiver derived
+\emph{identical} subkeys from identical contexts. Authentication tags
+produced under these keys verified correctly in unit tests that exercised
+each component in isolation. The defect therefore remained latent until a
+bidirectional channel was exercised end-to-end.
+
+The correct parameterisation encodes \emph{directionality}:
+
+\begin{lstlisting}[language=C++, caption={Correct HKDF context --- channel-scoped},
+                   basicstyle=\ttfamily\small, breaklines=true]
+// RIGHT: tx and rx derive distinct subkeys
+const std::string ctx_tx = "ml-defender:" + component_name
+                          + ":" + version + ":tx";
+const std::string ctx_rx = "ml-defender:" + component_name
+                          + ":" + version + ":rx";
+\end{lstlisting}
+
+The canonical definitions were consolidated in
+\texttt{crypto\_transport/include/crypto\_transport/contexts.hpp},
+providing a single source of truth for all six pipeline components.
+
+\paragraph{Why static analysis cannot catch this.}
+Both the erroneous and correct context strings share the type
+\texttt{std::string}. The C++ type system offers no mechanism to distinguish
+a \emph{transmit context} from a \emph{receive context} at the type level
+without a dedicated wrapper type --- an abstraction whose overhead is not
+warranted in a resource-constrained deployment target. The compiler,
+sanitisers (ASan, TSan), and \texttt{clang-tidy} all accepted both
+formulations without warning. This is a \emph{semantic} correctness
+property, not a syntactic one.
+
+\paragraph{Detection via TEST-INTEG-3.}
+The defect was exposed by \texttt{TEST-INTEG-3}, an integration test
+exercising the full sniffer~$\to$~ml-detector cryptographic channel with an
+intentional regression: the test temporarily restores the component-scoped
+context on one side and asserts that decryption fails with a MAC
+authentication error. Under the correct implementation, this regression
+triggers \texttt{std::terminate()} via the fail-closed handler; under the
+defective implementation, decryption succeeds --- and the test fails
+accordingly.
+
+The key insight is that \texttt{TEST-INTEG-3} does not test encryption or
+decryption in isolation. It tests the \emph{protocol invariant}: that a
+message encrypted on the transmit path is decryptable only on the
+corresponding receive path, and that any violation of this invariant is
+immediately fatal. No unit test of \texttt{CryptoTransport} in isolation
+could have established this property.
+
+\paragraph{Lessons for cryptographic software.}
+This case study yields three transferable observations:
+
+\begin{enumerate}
+  \item \textbf{Cryptographic correctness is a protocol property.}
+        Components that are individually correct may be collectively
+        insecure. End-to-end tests exercising full message round-trips
+        across trust boundaries are the minimal viable test surface for
+        authenticated encryption schemes.
+
+  \item \textbf{Intentional regression tests are first-class citizens.}
+        A test that asserts failure under a known-bad configuration is as
+        valuable as one that asserts success under a known-good one. The
+        TDH methodology mandates both polarities.
+
+  \item \textbf{Single source of truth for cryptographic parameters.}
+        Distributing context strings across six \texttt{main.cpp} files
+        created a silent coordination hazard. Centralising them in a
+        dedicated header eliminated an entire class of latent divergence.
+\end{enumerate}
+
+The defect was discovered on Day~97 of the development timeline, three days
+after \texttt{CryptoTransport} was integrated across all pipeline components.
+Its detection required no external audit: the TDH test suite caught it during
+routine regression testing on the \texttt{feature/bare-metal-arxiv} branch.
 
 \subsection{Attribution}
 
