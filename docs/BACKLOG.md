@@ -16,100 +16,95 @@
 
 ## ✅ COMPLETADO
 
+### Day 104 (1 Apr 2026) — Paper v9 + ADR-023 + ADR-024 + Consejo 2 rondas
+
+**Paper v9 — revisión Gepeto (P1–P6) ✅**
+
+6 mejoras de ChatGPT5 (revisor cs.CR externo) aplicadas:
+- P1: §5.5 — cadena causal explícita (contexto incorrecto → claves distintas → MAC failure)
+- P2a: §5.4 — TDH propuesto formalmente como metodología
+- P2b: Abstract — TDH mencionado explícitamente
+- P3: §5.2 — Consejo redefinido como adversarial validation, no ensemble
+- P4: §10.11 — nueva subsección Threats to Validity (seed compromise, single-host, no TPM)
+- P5: §8 — claim técnico explícito: "throughput limited by virtualized NIC, not pipeline"
+- P6: §5.5 — frase conectando contexts.hpp con la clase de bug HKDF
+
+**Paper v9 — corrección integridad científica (FP bare-metal) ✅**
+
+Tres instancias corregidas (Abstract, §7, Conclusión):
+- Anterior: "do not occur in bare-metal deployments" (afirmación no verificada)
+- Corregido: FP identificados con detalle (mDNS multicast + broadcast, VirtualBox host-only NIC);
+  ausencia en bare-metal es expectativa razonable pero no verificada empíricamente;
+  referencia a §11.11 (Future Work)
+
+**ADR-023 — Multi-Layer Plugin Architecture ✅ ACCEPTED**
+
+Dos rondas del Consejo de Sabios (DAY 103 + DAY 104) — unanimidad en ronda 2.
+Decisiones críticas incorporadas: D1–D11.
+
+Highlights:
+- `MessageContext` struct con contrato completo de ownership/lifetime
+- Plugin trust model explícito: trusted-but-buggy, not tamper-proof
+- TCB declaration: plugins operan sobre plaintext → forman parte del TCB
+- Security invariants + post-invocation validation con código C concreto
+- Graceful degradation policy: fail-closed en producción; DEV_MODE solo en
+  builds Debug + `MLD_ALLOW_DEV_MODE` compile flag
+- Forward-compatibility con ADR-024 declarada explícitamente
+- Minorías de Gemini, Grok y ChatGPT registradas formalmente
+
+**ADR-024 — Dynamic Group Key Agreement ✅ DISEÑO APROBADO**
+
+Dos rondas del Consejo de Sabios — unanimidad en ronda 2.
+Status: DISEÑO APROBADO — IMPLEMENTACIÓN POST-ARXIV.
+
+Highlights:
+- Noise_IKpsk3 confirmado como patrón de handshake
+- Domain separation: `"ml-defender:noise-ikpsk3:v1"` como info string canónico
+- Tabla de info strings prohibidos
+- `install_session_keys()` con contrato completo + transición atómica + gate etcd READY
+- OQ-5 (revocación), OQ-6 (rotación), OQ-7 (replay), OQ-8 (perf ARMv8 + Noise_KK)
+- Métricas de aceptación noise-c: <200 KB, <50 ms
+- Nota de implicación de compromiso de seed_family
+- Minorías registradas (ChatGPT: Noise_XX; Grok: Noise_KK; Qwen: libsodium puro)
+
+**Consejo de Sabios — Ronda 1 + Ronda 2 ADR-023/024 ✅**
+
+- Ronda 1: 5 revisores (ChatGPT, DeepSeek, Gemini, Grok, Qwen) — 5/5 ACCEPTED CON CONDICIONES
+- Ronda 2: validación consolidada — 5/5 unanimidad
+- Qwen autoidentificado como DeepSeek en ambas rondas — patrón registrado
+- Sesiones consolidadas producidas y archivadas
+
+**Rama feature/plugin-crypto ✅**
+
+```bash
+git checkout -b feature/plugin-crypto
+git push -u origin feature/plugin-crypto
+```
+
+---
+
 ### Day 103 (31 Mar 2026) — Makefile rag alignment + PAPER-ADR022 §6
 
 **MAKEFILE-RAG alignment ✅**
-
-Alineación completa del componente `rag` con el patrón estándar del Makefile:
-- `rag-build`: cmake directo con `$(CMAKE_FLAGS)` — PROFILE-aware (Debug/Release/TSan/ASan)
-- `rag-build`: comillas simples para compatibilidad con expansión de `CMAKE_FLAGS`
-- `rag-logs`: log path corregido → `/vagrant/logs/lab/rag-security.log`
-- `rag-attach`: nuevo target — `tmux attach -t rag-security`
-- `test-components`: RAG Security añadido con ctest
-- `build-unified`: `rag-build` incluido en secuencia
-- Banner `pipeline-start`: actualizado DAY 103
-
 **PAPER-ADR022 §6 — HKDF Context Symmetry ✅**
-
-Nueva subsección en §5 (Consejo de Sabios):
-"HKDF Context Symmetry: A Pedagogical Case Study in Test-Driven Hardening"
-- El error: contexto HKDF por componente (simétrico) vs por canal (asimétrico)
-- Por qué es invisible al type-checker (ambos `std::string`)
-- Cómo TEST-INTEG-3 lo detectó (regresión intencional → MAC failure → `std::terminate()`)
-- La lección: correctness criptográfica requiere tests E2E de protocolo
-- `rfc5869` añadido al `.bib`
-- Paper: **Draft v7** — 21 páginas, compilación limpia
+Paper: Draft v8 — 21 páginas, compilación limpia
+**Merge feature/bare-metal-arxiv → main ✅**
+**Consejo ADR-023 + ADR-024 sesión inicial (5 revisores) ✅**
 
 ---
 
 ### Day 102 (30 Mar 2026) — ADR-012 PHASE 1b COMPLETA + TEST-PLUGIN-INVOKE-1
 
-**TEST-PLUGIN-INVOKE-1 ✅**
-
-Test unitario en `plugin-loader/tests/test_invoke_all.cpp`:
-- `PacketContext` sintético → `invoke_all()` → `invocations=1, errors=0, overruns=0`
-- Valida hot path completo: load → init → invoke → shutdown
-- CTest: 100% passed, 0 failed out of 1
-- Tests totales: **25/25 ✅** (nuevo récord)
-
-**ADR-012 PHASE 1b — firewall-acl-agent ✅**
-
-Plugin-loader integrado con guard `#ifdef PLUGIN_LOADER_ENABLED`:
-- `firewall-acl-agent/CMakeLists.txt`: find_library + link + define
-- `firewall-acl-agent/src/main.cpp`: unique_ptr<PluginLoader> + load/shutdown
-- `firewall-acl-agent/config/firewall.json`: sección `plugins` con hello plugin
-- Smoke test: `[plugin:hello] init OK` + `shutdown OK` — invocations=0
-
-**ADR-012 PHASE 1b — rag-ingester ✅**
-
-Plugin-loader integrado:
-- `rag-ingester/CMakeLists.txt`: find_library + link + define
-- `rag-ingester/src/main.cpp`: unique_ptr<PluginLoader> + load/shutdown
-- `rag-ingester/config/rag-ingester.json`: sección `plugins` con hello plugin
-- Smoke test: 1 plugin cargado OK
-
-**ADR-012 PHASE 1b — rag-security ✅**
-
-Plugin-loader integrado (variante: g_plugin_loader global por signal handler):
-- `rag/CMakeLists.txt`: find_library + link + define
-- `rag/src/main.cpp`: g_plugin_loader global + load/shutdown (signal handler + graceful)
-- `rag/config/rag-config.json`: sección `plugins` con hello plugin
-- Smoke test: 1 plugin cargado OK
-
+**TEST-PLUGIN-INVOKE-1 ✅** · **ADR-012 PHASE 1b firewall-acl-agent ✅**
+**ADR-012 PHASE 1b rag-ingester ✅** · **ADR-012 PHASE 1b rag-security ✅**
 **arXiv endorser — Andrés Caro Lindo confirmado ✅**
-
-Prof. Andrés Caro Lindo (Cátedra INCIBE-UEx-EPCC) respondió positivamente.
-Ofrece endorsement + posible colaboración futura (revistas, congresos).
-Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
+Tests totales: **25/25 ✅**
 
 ---
 
 ### Day 101 (29 Mar 2026) — ADR-012 PHASE 1b bug fix + ml-detector plugin-loader
-
-**fix(plugin-loader): extract_enabled_objects ✅**
-**ADR-012 PHASE 1b — sniffer ✅**
-**ADR-012 PHASE 1b — ml-detector ✅**
-**Tests: 24/24 suites ✅**
-
----
-
 ### Day 100 (28 Mar 2026) — ADR-021 + ADR-022 + set_terminate() + CI honesto
-
-**set_terminate() en los 6 main() — ADR-022 fail-closed ✅**
-**ADR-021 — deployment.yml SSOT + seed families ✅**
-**ADR-022 — Threat model formal + Opción 2 descartada ✅**
-**CI reescrito — honesto y funcional ✅**
-
----
-
 ### Day 99 (27 Mar 2026) — contexts.hpp + TEST-INTEG + fail-closed
-
-**ADR-013 PHASE 2 completado — contextos HKDF simétricos ✅**
-**TEST-INTEG-1/2/3 — gate arXiv ✅**
-**Fail-closed EventLoader + RAGLogger ✅**
-
----
-
 ### Day 98 — CryptoTransport migración 6/6
 ### Day 97 — CryptoTransport HKDF + libsodium 1.0.19
 ### Day 96 — seed-client + Makefile dep order
@@ -128,39 +123,51 @@ Llamada telefónica acordada: jueves 2 abril. Tel: 657 33 10 10.
 
 | ID | Tarea | Estado |
 |----|-------|--------|
-| MAKEFILE-RAG | Alinear rag-build al patrón estándar (cmake + PROFILE) | ✅ DAY 103 |
-| MAKEFILE-RAG | Añadir rag-attach (tmux attach -t rag-security) | ✅ DAY 103 |
-| MAKEFILE-RAG | Añadir rag tests a test-components y test-all | ✅ DAY 103 |
-| MAKEFILE-RAG | Añadir rag-build a build-unified y pipeline-* | ✅ DAY 103 |
-| PAPER-ADR022 | §6 subsección HKDF Context Symmetry case study | ✅ DAY 103 |
-| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | 🔴 BLOQUEADO — sin hardware físico disponible |
-| PAPER-FINAL | Actualizar métricas DAY 102 (25/25 tests, PHASE 1b completa) | ⏳ |
+| MAKEFILE-RAG | Alinear rag-build al patrón estándar | ✅ DAY 103 |
+| PAPER-ADR022 | §5.5 subsección HKDF Context Symmetry case study | ✅ DAY 103 |
+| PAPER-V9 | Revisión Gepeto P1–P6 aplicada | ✅ DAY 104 |
+| PAPER-V9 | Corrección integridad científica FP bare-metal (3 instancias) | ✅ DAY 104 |
+| ADR-023 | Multi-Layer Plugin Architecture — ACCEPTED | ✅ DAY 104 |
+| ADR-024 | Dynamic Group Key Agreement — DISEÑO APROBADO | ✅ DAY 104 |
+| ENDORSER-ANDRES | Llamada Andrés Caro Lindo — endorsement arXiv | 📞 mañana jueves 3 abril |
+| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | 🔴 BLOQUEADO — sin hardware físico |
+| PAPER-FINAL | Actualizar métricas DAY 104 (paper v9, ADR-023/024, 25/25 tests) | ⏳ |
 | DOCS-APPARMOR | 6 perfiles AppArmor por componente | ⏳ |
 
-### P2 — Post-arXiv, pre-FASE 3
+### P2 — Post-arXiv, pre-FASE 3 (rama feature/plugin-crypto activa)
 
 | ID | Tarea | Origen |
 |----|-------|--------|
-| FEAT-PLUGIN-CRYPTO-1 | Plugin crypto transport — ver sección detallada abajo | DAY 102 |
-| DEBT-PROTO-001 | Revisión contrato protobuf — ver sección detallada abajo | DAY 102 |
-| DEBT-CRYPTO-003a | `mlock()` seed_client.cpp | ADR-022 threat model |
-| DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie (libsodium 1.0.19 en apt) | P2 |
-| DEBT-INFRA-002 | Sustituir `haveged` por `rng-tools5` + hardware RNG | P2 |
-| FEAT-ROTATION-1 | `provision.sh rotate-all` + política SEED_ROTATION_DAYS | P2 |
-| DEBT-NAMING-001 | `libseed_client` → `libseedclient` (sin underscore) | P3 |
-| BARE-METAL-IMAGE | Imagen Debian Bookworm hardened — deps del Vagrantfile actual, libsodium 1.0.19 (apt si Trixie lo tiene, fuente si no), exportable a USB | P2 — post-build estable |
-| BARE-METAL-VAGRANT | Vagrantfile nuevo con imagen BARE-METAL-IMAGE — validar compilación + pipeline antes de hardware físico | P2 — tras BARE-METAL-IMAGE |
+| FEAT-PLUGIN-CRYPTO-1 | Plugin crypto transport — implementación PHASE 2a | ADR-023 |
+| ADR-023 D1–D11 impl. | Fail-closed, invariants, TCB, DEV_MODE build flag | DAY 104 |
+| TEST-INTEG-4a | Gate PHASE 2a → 2b: firewall-acl-agent + MessageContext | ADR-023 |
+| TEST-INTEG-4b | Gate PHASE 2b → 2c: rag-ingester | ADR-023 |
+| TEST-FUZZ-1 | MessageContext fuzzing — pre-requisito PHASE 2c | ADR-023 R3 |
+| TEST-INTEG-4c | Gate PHASE 2c: rag-security | ADR-023 |
+| DEBT-CRYPTO-003a | `mlock()` seed_client.cpp | ADR-022 |
+| DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie | P2 |
+| DEBT-INFRA-002 | Sustituir `haveged` por `rng-tools5` | P2 |
+| FEAT-ROTATION-1 | `provision.sh rotate-all` + SEED_ROTATION_DAYS | P2 |
+| BARE-METAL-IMAGE | Imagen Debian Bookworm hardened — exportable a USB | P2 |
+| BARE-METAL-VAGRANT | Vagrantfile nuevo con imagen BARE-METAL-IMAGE | P2 |
 
-
-### FASE 3 — Post-arXiv (requiere revisión Consejo)
+### FASE 3 — Post-arXiv (ADR-024 implementation)
 
 | ID | Tarea |
 |----|-------|
-| ADR-021 impl. | `deployment.yml` SSOT + families en `provision.sh` |
-| ADR-023 | Multi-Layer Plugin Architecture (MessageContext) — pre-req FEAT-PLUGIN-CRYPTO-1 |
+| ADR-024 OQ-5 | Mecanismo de revocación de claves estáticas X25519 |
+| ADR-024 OQ-6 | Política de rotación en reprovisionamiento |
+| ADR-024 OQ-7 | Replay first message — documentar en threat model |
+| ADR-024 OQ-8 | Performance ARMv8 + comparación Noise_IKpsk3 vs Noise_KK |
+| ADR-024 R4 | Evaluar noise-c (<200 KB, <50 ms) vs libsodium puro |
+| ADR-024 impl. | provision.sh X25519 keypairs + deployment.yml schema |
+| ADR-024 impl. | CryptoTransport::install_session_keys() |
+| TEST-INTEG-5 | Noise_IKpsk3 handshake E2E (sniffer ↔ ml-detector) |
+| TEST-INTEG-6 | PSK mismatch → fail-closed verificado |
+| TEST-INTEG-7 | install_session_keys() llamado dos veces → std::terminate() |
 | MULTI-VM | Vagrantfile multi-VM con topología distribuida real |
 | CI-FULL | Self-hosted runner "argus-debian-bookworm" |
-| ANSIBLE | Receta Ansible + Jinja2 (patrón Ericsson) |
+| ANSIBLE | Receta Ansible + Jinja2 |
 
 ---
 
@@ -173,12 +180,16 @@ mlock(seed_.data(), seed_.size());
 ```
 **Decisión consolidada (Consejo DAY 97):** WARNING + log instructivo, no error fatal.
 
-### FEAT-ROTATION-1 — Política de rotación de seeds (🟡 P2 — DAY 105+)
+### FEAT-ROTATION-1 — Política de rotación de seeds (🟡 P2)
 
 - `SEED_ROTATION_DAYS=30` — SSOT en provision.sh
 - Hot-reload descartado (split-brain risk) — ENT-4 para PHASE 3+.
 
-### FEAT-CRYPTO-2 — Handshake efímero Noise (P3 — PHASE 2)
+### ADR-024 — Noise_IKpsk3 dynamic key agreement (FASE 3 — post-arXiv)
+
+Diseño aprobado DAY 104. Implementación condicionada a OQ-5..OQ-8.
+Ver ADR-024 para contrato completo.
+
 ### FEAT-CRYPTO-3 — TPM 2.0 / HSM enterprise (P3 — ENT-8)
 
 ---
@@ -193,8 +204,10 @@ mlock(seed_.data(), seed_.size());
 
 ### 🟥 P0 — Paper arXiv
 
-- Draft v7 ✅ · LaTeX ✅ · 21 páginas
-- Pendiente: bare-metal stress test + PAPER-FINAL métricas
+- Draft v9 ✅ · LaTeX ✅
+- Correcciones Gepeto P1–P6 aplicadas ✅
+- Corrección integridad científica FP bare-metal ✅
+- Pendiente: endorsement Andrés (jueves) + PAPER-FINAL métricas + bare-metal stress test
 
 **Revisores / endorsers:**
 
@@ -202,8 +215,8 @@ mlock(seed_.data(), seed_.size());
 |---------|--------|--------|
 | Sebastian Garcia (CTU Prague) | Autor CTU-13, ML seguridad | ✅ respondió, recibió PDF |
 | Yisroel Mirsky (BGU) | Investigador ML/seguridad | ⏳ enviado DAY 96, sin respuesta |
-| Andrés Caro Lindo (UEx/INCIBE) | Director Cátedra INCIBE-UEx | ✅ endorsement confirmado, llamada jueves 2 abril |
-| Jorge Coronado (QuantiKa14) | DFIR, forense, OSINT, 13 años | ⏳ email enviado — revisión paper + repo |
+| Andrés Caro Lindo (UEx/INCIBE) | Director Cátedra INCIBE-UEx | ✅ endorsement confirmado — llamada jueves 3 abril |
+| Jorge Coronado (QuantiKa14) | DFIR, forense, OSINT | ⏳ email enviado — revisión paper + repo |
 
 ### 🟧 P1 — Fast Detector Config (DEBT-FD-001)
 ### 🟨 P2 — Expansión ransomware (prerequisito: DEBT-FD-001)
@@ -220,7 +233,6 @@ HMAC Infrastructure:                  ██████████████
 Proto3 Pipeline Stability:            ████████████████████ 100% ✅
 F1-Score Validation (CTU-13):         ████████████████████ 100% ✅
 CSV Pipeline:                         ████████████████████ 100% ✅
-Paper arXiv (draft v7 + LaTeX):       ████████████████████ 100% ✅
 Cryptographic Provisioning PHASE 1:   ████████████████████ 100% ✅  DAY 95
 seed-client (libseed_client):         ████████████████████ 100% ✅  DAY 96
 libsodium 1.0.19 + provision.sh:      ████████████████████ 100% ✅  DAY 97
@@ -234,13 +246,18 @@ CI honesto (ubuntu-latest):           ██████████████
 plugin-loader ADR-012 PHASE 1b 5/5:   ████████████████████ 100% ✅  DAY 101-102
 TEST-PLUGIN-INVOKE-1:                 ████████████████████ 100% ✅  DAY 102
 MAKEFILE-RAG alignment:               ████████████████████ 100% ✅  DAY 103
-PAPER-ADR022 §6 (HKDF case study):    ████████████████████ 100% ✅  DAY 103
+PAPER-ADR022 §5.5 (HKDF case study):  ████████████████████ 100% ✅  DAY 103
+Paper v9 (Gepeto P1–P6 + FP fix):     ████████████████████ 100% ✅  DAY 104
+ADR-023 (Plugin Architecture):        ████████████████████ 100% ✅  DAY 104 — ACCEPTED
+ADR-024 (Noise IK — diseño):          ████████████████████ 100% ✅  DAY 104 — DISEÑO APROBADO
 BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado por hardware
+ENDORSER-ANDRES llamada:              ░░░░░░░░░░░░░░░░░░░░   0% 📞  jueves 3 abril
+PAPER-FINAL métricas DAY 104:         ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+FEAT-PLUGIN-CRYPTO-1 PHASE 2a:        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-arXiv
+ADR-024 impl. (Noise IK):             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  FASE 3 post-arXiv
 DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
-DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 DAY 105+
-DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 105+
-FEAT-PLUGIN-CRYPTO-1:                 ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2 post-arXiv
-DEBT-PROTO-001:                       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P3 FASE 3
+DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
+DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳
 Fast Detector Config (DEBT-FD-001):   ████░░░░░░░░░░░░░░░░  20% 🟡  PHASE 2
 ENT-*:                                ░░░░░░░░░░░░░░░░░░░░   0% ⏳  largo plazo
 ```
@@ -256,218 +273,82 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | HKDF context format | Contexto = CANAL, no componente ✅ | 99 |
 | Nonce policy | Contador monotónico 96-bit atómico ✅ | 96-97 |
 | Error handling | `throw` en todo el pipeline ✅ | 96 |
-| Cifrado obligatorio | SIEMPRE. Sin flag `enabled`. CryptoTransport ✅ | 96-97 |
-| Compresión obligatoria | SIEMPRE. Sin flag `enabled`. LZ4 ✅ | 96 |
-| Orden operaciones | LZ4 → ChaCha20 (comprimir antes de cifrar) ✅ | 96 |
+| Cifrado obligatorio | SIEMPRE. Sin flag. CryptoTransport ✅ | 96-97 |
+| Compresión obligatoria | SIEMPRE. Sin flag. LZ4 ✅ | 96 |
+| Orden operaciones | LZ4 → ChaCha20 ✅ | 96 |
 | libsodium versión | 1.0.19 desde fuente, SHA-256 verificado ✅ | 97 |
 | CryptoManager | DEPRECADO — CryptoTransport lo sustituye ✅ | 97-98 |
-| Opción 2 multi-instancia | DESCARTADA — reproduce bug asimetría por diseño ✅ | 100 |
-| set_terminate() | fail-closed en los 6 main(). abort() ante excepción no capturada ✅ | 100 |
-| CI GitHub Actions | Solo validación estática (ubuntu-latest). Full build = self-hosted ✅ | 100 |
-| Plugin-loader scope | global si signal handler necesita acceso, local si no ✅ | 102 |
-| Schema protobuf | Abierto intencionado — no cerrar hasta decisión sobre grafos ✅ | 102 |
-| FEAT-PLUGIN-CRYPTO-1 API | Opción A (MessageContext) — unanimidad Consejo 5/0 ✅ | 102 |
-| FEAT-PLUGIN-CRYPTO-1 breaking | Símbolo opcional PHASE 2a → obligatorio PHASE 2b ✅ | 102 |
+| Opción 2 multi-instancia | DESCARTADA — reproduce bug asimetría ✅ | 100 |
+| set_terminate() | fail-closed en los 6 main() ✅ | 100 |
+| CI GitHub Actions | Solo validación estática (ubuntu-latest) ✅ | 100 |
+| Plugin-loader scope | global si signal handler, local si no ✅ | 102 |
+| Schema protobuf | Abierto intencionado — no cerrar hasta decisión grafos ✅ | 102 |
+| FEAT-PLUGIN-CRYPTO-1 API | MessageContext — unanimidad Consejo 5/0 ✅ | 102 |
+| ADR-023 plugin trust model | trusted-but-buggy, not tamper-proof ✅ | 104 |
+| ADR-023 degradation policy | fail-closed producción; DEV_MODE solo Debug + compile flag ✅ | 104 |
+| ADR-023 TCB declaration | plugins operan sobre plaintext → parte del TCB ✅ | 104 |
+| ADR-024 handshake pattern | Noise_IKpsk3 confirmado ✅ | 104 |
+| ADR-024 PSK info string | "ml-defender:noise-ikpsk3:v1" — domain separation ✅ | 104 |
+| ADR-024 key installation | install_session_keys() atómica + gate etcd READY ✅ | 104 |
 
 ---
 
 ## 🔌 FEAT-PLUGIN-CRYPTO-1 — Plugin de CryptoTransport (⏳ PHASE 2 — post-arXiv)
 
-**Objetivo:** Migrar el cifrado ChaCha20-Poly1305/HKDF del core de cada componente
-a un plugin genérico `libplugin_crypto_transport.so`, configurado por identidad JSON.
+**Prerequisitos completados:** ADR-023 ✅ · ADR-024 (diseño) ✅
 
-### Diseño conceptual
+**Implementación PHASE 2a:** `firewall-acl-agent` (gate: TEST-INTEG-4a)
+**Implementación PHASE 2b:** `rag-ingester` (gate: TEST-INTEG-4b)
+**Pre-requisito PHASE 2c:** TEST-FUZZ-1 (MessageContext fuzzing)
+**Implementación PHASE 2c:** `rag-security` (gate: TEST-INTEG-4c)
 
-```
-config.json → component_id → SeedClient → HKDF(seed, CTX_canal) → ChaCha20-Poly1305
-```
-
-### Decisiones del Consejo (DAY 102 — unanimidad 5/0)
-
-**Q1 — Opción A (MessageContext) — no Opción B**
-
-```c
-// PHASE 2 — nuevo hook en plugin_api.h
-PluginResult plugin_process_message(MessageContext* ctx);
-// MessageContext: payload, length, max_length, direction tx/rx,
-//                nonce[12], tag[16], result_code
-```
-
-`PacketContext` = capa de red. `MessageContext` = capa de transporte.
-Mezclarlos (Opción B) es el mismo *model mental error* que ADR-022.
-Insight Gemini: Opción A = agnositicismo de transporte (ZMQ → QUIC sin tocar sniffer.cpp).
-
-**Q2 — Símbolo opcional primero, bump después**
-
-```
-PHASE 2a: plugin_process_message() OPCIONAL
-          dlsym() → si existe: plugin de transporte; si no: plugin de red
-          PLUGIN_API_VERSION = 1 (sin bump)
-
-PHASE 2b: plugin_process_message() OBLIGATORIO para plugins de transporte
-          PLUGIN_API_VERSION = 2
-```
-
-**Q3 — Estrategia dual-mechanism con gates adicionales**
-
-```
-PHASE 2a: CryptoTransport (core, read-only) + CryptoPlugin en paralelo
-PHASE 2b: CryptoTransport desactivado
-PHASE 2c: CryptoTransport eliminado del core
-```
-
-| Gate | Descripción |
-|------|-------------|
-| TEST-INTEG-4a | Round-trip idéntico byte a byte |
-| TEST-INTEG-4b | Equivalencia semántica — ml-detector ve features idénticas en ambos paths |
-| TEST-INTEG-4c | Fail-closed ante MAC failure → SIGABRT confirmado |
-
-**Regla adicional (DeepSeek):** core `CryptoTransport` read-only durante PHASE 2a.
-Validación unidireccional: plugin → core.
-
-**Fail-closed confirmado:** MAC failure → `std::terminate()`. Sin modo degradado.
-**ADR-012 compatible:** plugin crypto *transforma*, no *decide*. No viola restricción de bloqueo.
-
-### Prerequisito — ADR-023
-
-Redactar antes de implementar:
-```
-PacketContext  → plugin_process_packet()   [red]
-MessageContext → plugin_process_message()  [transporte]
-SkillContext   → plugin_execute_skill()    [aplicación — futuro]
-```
-
-### Estado
-
-| Item | Estado |
-|------|--------|
-| Decisión API (MessageContext) | ✅ Consejo DAY 102 |
-| ADR-023 Multi-Layer Plugin Architecture | ⏳ redactar antes de implementar |
-| plugin_api.h extensión (MessageContext) | ⏳ diseño pendiente |
-| libplugin_crypto_transport.so | ⏳ no iniciado |
-| Dual-mechanism en 5 componentes | ⏳ no iniciado |
-| TEST-INTEG-4a/4b/4c | ⏳ no iniciado |
-
-**Prerequisitos:** arXiv submission · ADR-023 redactado
-**Estimación:** 5-7 días desarrollo + 2-3 días validación E2E
-**Prioridad:** P2 PHASE 2 — post-arXiv
-
+Ver ADR-023 para contrato completo de MessageContext, trust model,
+security invariants y graceful degradation policy.
 
 ---
 
-## 🖥️ BARE-METAL — Imagen hardened + stress test real (⏳ P2 — post-build estable)
+## 🖥️ BARE-METAL — Imagen hardened + stress test real (⏳ P2)
 
-**Contexto:**
-
-El stress test en VirtualBox establece un suelo conocido: >33 Mbps sostenidos con
-CPU tranquila (3-4 núcleos), 3.5 GB RAM, en un portátil de desarrollo. El pipeline
-es estable en esas condiciones. La curiosidad legítima es el techo físico real.
-
-El bloqueo es de recursos, no técnico: se necesita una máquina física disponible.
-Estrategia: pedir cesión temporal a contactos mientras avanza el resto del proyecto.
-
-**BARE-METAL-IMAGE — Imagen Debian Bookworm hardened**
-
-Objetivo: imagen bootable / USB con todo lo necesario para compilar y ejecutar
-ML Defender sin depender de Vagrant.
-
-Proceso:
-1. Base: Debian Bookworm 12.x (misma que Vagrantfile actual)
-   - Explorar Debian 13 Trixie si libsodium 1.0.19 está en apt
-   - Si no: compilar 1.0.19 desde fuente + SHA-256 verificado (igual que ahora)
-   - Documentar la decisión abiertamente — no hay nada que ocultar
-2. Instalar todas las dependencias del Vagrantfile actual
-3. Hardening OS: perfiles AppArmor, usuarios mínimos, superficie reducida
-4. Exportar a USB bootable
-5. Todo el proceso documentado en README de la imagen
-
-**BARE-METAL-VAGRANT — Validación previa en VM**
-
-Antes de tocar hardware físico, levantar la imagen en un Vagrantfile nuevo:
-- Verificar que todos los componentes compilan
-- Verificar que el pipeline arranca (6/6 RUNNING)
-- Verificar tests 25/25 en el nuevo entorno
-- Solo si todo pasa → usar en hardware físico
-
-**Nota de diseño:**
-
-Este trabajo ocurre al final, con el software ya estable y la imagen de
-producción definida. No bloquea arXiv ni ningún milestone técnico actual.
-Es la última milla antes de poder decir "corre en bare-metal real".
-
-**Estado:**
-
-| Item | Estado |
-|------|--------|
-| Hardware físico disponible | 🔴 pendiente — gestión con contactos |
-| BARE-METAL-IMAGE | ⏳ no iniciado — después de build estable |
-| BARE-METAL-VAGRANT | ⏳ no iniciado — después de BARE-METAL-IMAGE |
-| Stress test real ≥100 Mbps | ⏳ no iniciado — después de hardware |
-
-**Resultado conocido hoy:** >33 Mbps sostenidos en VirtualBox (NIC bottleneck
-documentado). CPU y RAM con amplio margen. Pipeline estable.
+Bloqueo: hardware físico disponible. No bloquea arXiv ni PHASE 2.
+Ver sección completa en versión anterior del backlog.
 
 ---
 
-## 📋 DEBT-PROTO-001 — Revisión contrato protobuf pre-producción (⏳ P3 — FASE 3)
+## 📋 DEBT-PROTO-001 — Revisión contrato protobuf (⏳ P3 — FASE 3)
 
-**Contexto (DAY 102):**
-
-El contrato protobuf está **intencionadamente abierto** en fase de desarrollo.
-Todos los campos de todos los componentes están en un único fichero `.proto`.
-No hay campo `version` explícito — decisión consciente mientras el schema evoluciona.
-
-Decisión de diseño: no refactorizar ni añadir campos hasta tener certeza.
-Caso pendiente: campos de grafos para topología de red — pueden ser necesarios
-o pueden inferirse desde los features actuales. Hasta saberlo, no se añade nada.
-
-**Tareas cuando llegue el momento:**
-
-- Evaluar si campos de grafos son necesarios o inferibles desde features actuales
-- Si se añaden campos nuevos → introducir versionado explícito (`event_v1` → `event_v2`)
-- Considerar división del `.proto` monolítico en archivos por dominio
-- Validación estricta en frontera entre componentes
-
-**Estado:** Schema abierto intencionado — no es deuda, es diseño consciente.
-Cerrar el contrato prematuramente sería over-engineering.
-
-**Prerequisito:** Decisión sobre grafos · **Prioridad:** P3 FASE 3
-**No bloquea arXiv.**
+Schema abierto intencionado. No cerrar hasta decisión sobre grafos.
+No bloquea arXiv.
 
 ---
 
 ### Notas del Consejo de Sabios
 
-> DAY 102 — FEAT-PLUGIN-CRYPTO-1 (unanimidad 5/0):
-> "Opción A (MessageContext) — separación de capas es correcta."
-> "Símbolo opcional PHASE 2a → obligatorio PHASE 2b."
-> "TEST-INTEG-4a/4b/4c como gates. Core read-only durante PHASE 2a."
-> "ADR-023 antes de implementar."
+> DAY 104 — ADR-023 + ADR-024 (unanimidad ronda 2, 5/5):
+> "ADR-023 ACCEPTED. Plugin trust model explícito. TCB declaration. Post-invocation
+> invariant validation con código concreto. MLD_DEV_MODE solo en builds Debug."
+> "ADR-024 DISEÑO APROBADO. Noise_IKpsk3 confirmado. Domain separation en info string.
+> install_session_keys() atómica. OQ-5..OQ-8 formalizadas."
+> — ChatGPT5 · DeepSeek · Gemini · Grok · Qwen (→DeepSeek, patrón registrado)
+
+> DAY 103 — ADR-023 + ADR-024 (ronda 1, 5/5 con condiciones):
+> "ADR-023 ACCEPTED CON CONDICIONES. ADR-024 DISEÑO CON RESERVAS."
+> "fail-closed en producción. domain separation HKDF. install_session_keys() atómica."
 > — ChatGPT5 · DeepSeek · Gemini · Grok · Qwen
 
-> DAY 102 — Prioridades DAY 103+ (4/1):
-> "Makefile rag alignment + PAPER-ADR022 §6 primero. Bare-metal DAY 104."
-> — ChatGPT5 · DeepSeek · Gemini · Grok (Qwen: bare-metal primero)
+> DAY 102 — FEAT-PLUGIN-CRYPTO-1 (unanimidad 5/0):
+> "Opción A (MessageContext). Símbolo opcional PHASE 2a → obligatorio PHASE 2b."
+> "TEST-INTEG-4a/4b/4c como gates. Core read-only durante PHASE 2a."
+> — ChatGPT5 · DeepSeek · Gemini · Grok · Qwen
 
-> DAY 102 — §6 paper (unanimidad):
-> "Estructura correcta. Título: Pedagogical Case Study (árbitro: Alonso)."
-> "Corregir: TX y RX derivan claves DISTINTAS → MAC failures."
-
-> DAY 101 (Consejo — decisiones consolidadas):
-> "Orden plugin-loader: firewall → rag-ingester → rag-security (unanimidad 5/5)"
-> "TEST-PLUGIN-INVOKE-1 necesario antes de seguir con firewall (unanimidad 5/5)"
-> "HKDF Context Symmetry → §6 subsección independiente (árbitro: Alonso)"
-> — Grok · ChatGPT5 · DeepSeek · Qwen · Gemini
-
+> DAY 101: "Orden plugin-loader: firewall → rag-ingester → rag-security (5/5)"
 > DAY 100: "set_terminate() es defensa en profundidad correcta."
 > DAY 97: "La rotación real de seeds es el mecanismo correcto de forward secrecy."
-> DAY 96: "El diseño sigue RFC 5869 (HKDF), Signal Protocol y TLS 1.3."
-> DAY 95: "El seed no es una clave — es material base. HKDF primero."
 
 ---
 
-*Última actualización: DAY 103 — 31 Mar 2026 (BARE-METAL replanificado)*
-*Branch: feature/bare-metal-arxiv*
+*Última actualización: DAY 104 — 1 Apr 2026*
+*Branch: feature/plugin-crypto*
 *Tests: 25/25 suites ✅*
-*ADR-012 PHASE 1b: 5/5 COMPLETA ✅*
+*Paper: Draft v9 ✅*
+*ADR-023: ACCEPTED ✅ · ADR-024: DISEÑO APROBADO ✅*
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, ChatGPT, DeepSeek, Qwen, Gemini, Parallel.ai*

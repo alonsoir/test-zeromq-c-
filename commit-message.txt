@@ -1,12 +1,7 @@
-git add BACKLOG.md
-git commit -m "docs: DAY 101 — BACKLOG + prompt continuidad DAY 102
-
-- extract_enabled_objects bug fix documentado
-- ADR-012 PHASE 1b: sniffer + ml-detector ✅
-- PLUGIN-LOADER-FW + RAG añadidos al backlog P2/P3
-- Endorser andresc@unex.es enviado
-
-Tests: 24/24 ✅
-Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)"
-
-git push
+cd /Users/aironman/CLionProjects/test-zeromq-docker
+git add docs/adr/ADR-023-multi-layer-plugin-architecture.md \
+        docs/adr/ADR-024-dynamic-group-key-agreement.md \
+        BACKLOG.md \
+        docs/paper/main.tex
+git commit -F commit-day-104.txt
+git push origin feature/plugin-crypto
