@@ -1,5 +1,5 @@
-# ML Defender — Prompt de Continuidad DAY 105
-## 2 abril 2026
+# ML Defender — Prompt de Continuidad DAY 106
+## 3 abril 2026
 
 ---
 
@@ -8,29 +8,43 @@
 **Pipeline:** 6/6 RUNNING
 **Tests:** 25/25 suites ✅
 **Rama activa:** `feature/plugin-crypto`
-**Último commit:** DAY 104 cierre — Paper v9 + ADR-023 ACCEPTED + ADR-024 DISEÑO APROBADO
+**Último commit:** DAY 105 — PHASE 2a MessageContext + TEST-INTEG-4a PASSED + Paper v10
 
 ---
 
-## Lo realizado en DAY 104 (completo)
+## Lo realizado en DAY 105 (completo)
 
 | Tarea | Estado |
 |-------|--------|
-| Rama `feature/plugin-crypto` creada | ✅ |
-| Paper v9 — P1/P2/P3/P4/P5/P6 (Gepeto) | ✅ |
-| Paper v9 — corrección FP bare-metal (3 instancias) | ✅ |
-| ADR-023 Multi-Layer Plugin Architecture — ACCEPTED | ✅ |
-| ADR-024 Dynamic Group Key Agreement — DISEÑO APROBADO | ✅ |
-| Consejo de Sabios — 2 rondas, 5/5 unanimidad | ✅ |
-| BACKLOG.md — DAY 104 actualizado | ✅ |
-| Commit + push a GitHub | ✅ |
-| LinkedIn post (inglés) | ✅ |
-
-**Qwen autoidentificado como DeepSeek en ambas rondas** — patrón registrado.
+| PHASE 2a — `MessageContext` en `plugin_api.h` (D2,D3,D7,D9,D11) | ✅ |
+| PHASE 2a — `invoke_all(MessageContext&)` en `plugin_loader.hpp/.cpp` | ✅ |
+| PHASE 2a — Graceful Degradation D1 + snapshot D8 (pointer) en `plugin_loader.cpp` | ✅ |
+| PHASE 2a — `firewall-acl-agent/src/main.cpp` + TEST-INTEG-4a smoke test | ✅ |
+| Makefile — `firewall` depende de `plugin-loader-build` | ✅ |
+| Paper v10 — §5.6 Plugin Architecture (ADR-023, ADR-024) | ✅ |
+| arXiv — cuenta `alonsoir` creada, código `AFKRBO` enviado a Andrés | ✅ |
+| Consejo de Sabios DAY 105 — 4/5 revisores, ACCEPTED CON CONDICIONES | ✅ |
 
 ---
 
-## ⚡ PRIMER ACTO DAY 105
+## Endorser arXiv — estado
+
+| Endorser | Estado |
+|----------|--------|
+| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF |
+| Yisroel Mirsky (BGU) | ⏳ sin respuesta |
+| Andrés Caro Lindo (UEx/INCIBE) | 📧 código AFKRBO enviado |
+
+**Código endorsement:** `AFKRBO`
+**URL para Andrés:** `https://arxiv.org/auth/endorse?x=AFKRBO`
+**Cuenta arXiv:** `alonsoir` / `alonsoir@gmail.com`
+**ZIP LaTeX listo:** `argus_ndr_v10.zip` (main.tex + references.bib)
+
+Si no hay respuesta → llamar al **657 33 10 10**.
+
+---
+
+## ⚡ PRIMER ACTO DAY 106
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
@@ -40,100 +54,109 @@ git pull origin feature/plugin-crypto
 
 ---
 
-## Endorser arXiv — estado
+## TAREA 1 — Cierre PHASE 2a: decisiones Consejo DAY 105 (BLOQUEANTE para 4b)
 
-| Endorser | Estado |
-|----------|--------|
-| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF v5 |
-| Yisroel Mirsky (BGU) | ⏳ enviado DAY 96, sin respuesta |
-| Andrés Caro Lindo (UEx/INCIBE) | ✅ endorsement confirmado — **llamada HOY jueves 3 abril** |
+El Consejo (4/4 unanimidad en la mayoría) ha identificado 4 items obligatorios
+antes de avanzar a PHASE 2b (rag-ingester):
 
-**Llamada Andrés:** 657 33 10 10. Él llama o tú llamas.
-**Punto clave:** indicar su email en el formulario arXiv → arXiv le envía
-confirmación. El envío puede ocurrir en cualquier momento tras el endorsement.
+### 1a — D8-v2: CRC32 del payload en debug builds (mayoría 3/4)
+
+En `plugin_loader.cpp`, en `invoke_all(MessageContext&)`, añadir antes de la
+invocación del plugin:
+
+```cpp
+// D8-v2: CRC32 snapshot del payload (debug builds)
+#ifdef MLD_ALLOW_DEV_MODE
+uint32_t crc_before = crc32_fast(ctx.payload, ctx.payload_len);
+#endif
+```
+
+Y tras la invocación, comparar:
+
+```cpp
+#ifdef MLD_ALLOW_DEV_MODE
+uint32_t crc_after = crc32_fast(ctx.payload, ctx.payload_len);
+if (crc_after != crc_before) {
+    std::cerr << "[plugin-loader] SECURITY D8: plugin '" << p->name
+              << "' modificó contenido del payload (CRC mismatch)\n";
+    stats_[i].errors++;
+}
+#endif
+```
+
+Implementar `crc32_fast()` como función estática simple en `plugin_loader.cpp`.
+
+### 1b — TEST-INTEG-4a-PLUGIN: plugin de test con símbolo exportado (4/4)
+
+Crear `plugins/test-message/plugin_test_message.cpp` con 3 variantes
+seleccionables por variable de entorno:
+
+- **Variante A** (`MLD_TEST_VARIANT=A`): exporta símbolo, result_code=0,
+  no modifica nada → debe pasar sin errores
+- **Variante B** (`MLD_TEST_VARIANT=B`): intenta `const_cast` sobre `direction`
+  → D8-v2 debe detectarlo (CRC no cambia para direction, pero pointer check sí)
+- **Variante C** (`MLD_TEST_VARIANT=C`): devuelve result_code=-1
+  → host registra error en stats, no std::terminate()
+
+Gate: smoke test con Variante A pasa, Variante B produce D8 log, Variante C
+produce error en stats sin crash.
+
+### 1c — nonce/tag NULL documentado en plugin_api.h (4/4)
+
+Añadir en `plugin_api.h` antes de los campos nonce/tag:
+
+```c
+/* nonce: 12-byte ChaCha20 nonce.
+ * tag:   16-byte Poly1305 MAC tag.
+ *
+ * Production guarantee: nonce != NULL && tag != NULL.
+ * Test/config mode (--test-config, MLD_DEV_MODE): MAY be NULL.
+ * Plugins MUST check for NULL before dereferencing.
+ */
+```
+
+### 1d — Makefile deps: plugin-loader-build en 4 componentes restantes (4/4)
+
+```bash
+python3 << 'PYEOF'
+path = "Makefile"
+with open(path, "r") as f:
+    content = f.read()
+
+replacements = [
+    ("sniffer: proto etcd-client-build",
+     "sniffer: proto etcd-client-build plugin-loader-build"),
+    ("ml-detector: proto etcd-client-build",
+     "ml-detector: proto etcd-client-build plugin-loader-build"),
+    ("rag-ingester: proto etcd-client-build crypto-transport-build",
+     "rag-ingester: proto etcd-client-build crypto-transport-build plugin-loader-build"),
+    ("rag-build:",
+     "rag-build: plugin-loader-build"),
+]
+
+for old, new in replacements:
+    if old in content:
+        content = content.replace(old, new)
+        print(f"OK: {old[:40]}...")
+    else:
+        print(f"NOT FOUND: {old[:40]}...")
+
+with open(path, "w") as f:
+    f.write(content)
+PYEOF
+```
 
 ---
 
-## TAREA 0 — Llamada Andrés Caro Lindo (HOY)
+## TAREA 2 — Llamada Andrés / submit arXiv
 
-Objetivo: confirmar proceso de endorsement arXiv cs.CR.
-Preguntas clave:
-1. ¿Puede hacer el endorsement desde su cuenta arXiv directamente?
-2. ¿Prefiere revisar el paper v9 antes de endorsar?
-3. ¿Hay algo del abstract o afiliación informal (UEx) que quiera ajustar?
+Si Andrés ha respondido o endorsado → continuar submission en `https://arxiv.org/user`.
+Si no ha respondido → llamar al **657 33 10 10**.
 
----
-
-## TAREA 1 — PHASE 2a: firewall-acl-agent + MessageContext
-
-Implementar ADR-023 PHASE 2a según el contrato aprobado.
-
-### Steps
-
-1. Añadir `MessageContext` a `plugin-loader/include/plugin_api.h`
-   (`PLUGIN_API_VERSION = 1`)
-2. Implementar resolución de `plugin_process_message()` en `PluginLoader`
-   (`dlsym`; aplicar Graceful Degradation Policy D1+D10)
-3. Añadir post-invocation validation (snapshot + byte-wise comparison — D8)
-4. Integrar en `firewall-acl-agent/src/main.cpp`
-   (`#ifdef PLUGIN_LOADER_ENABLED`)
-5. **Core `CryptoTransport` read-only** (no modificar paths de cifrado)
-6. Actualizar `firewall-acl-agent/config/firewall.json` con sección `plugins`
-
-### Gate: TEST-INTEG-4a
-
-- `plugin_process_message()` invocado sobre al menos un `MessageContext` real
-- Post-invocation invariants verificados
-- `result_code == 0` confirmado
-- `CryptoTransport` decryption path sin modificar (diff check)
-
----
-
-## TAREA 2 — PAPER-FINAL: actualizar métricas DAY 104
-
-Actualizar en Overleaf:
-- Tests: 25/25 (ya estaba)
-- ADR-023 ACCEPTED + ADR-024 DISEÑO APROBADO mencionados en §5
-- Branch activa: `feature/plugin-crypto`
-- Draft v9 → confirmar si se sube como v9 a arXiv o se espera a v10
-
----
-
-## ADR-023 — Decisiones críticas a implementar en DAY 105
-
-| ID | Decisión | Dónde implementar |
-|----|----------|-------------------|
-| D1 | fail-closed producción; DEV_MODE solo escape | `plugin_loader.cpp` |
-| D2 | ownership/lifetime channel_id + payload contrato | `plugin_api.h` + docs |
-| D3 | direction/nonce/tag read-only para plugin | `plugin_api.h` comentarios |
-| D7 | trust model declarado | `plugin_api.h` header comment |
-| D8 | post-invocation validation con snapshot | `plugin_loader.cpp` |
-| D9 | TCB declaration | `plugin_api.h` header comment |
-| D10 | MLD_DEV_MODE solo en Debug + MLD_ALLOW_DEV_MODE | `CMakeLists.txt` + `plugin_loader.cpp` |
-| D11 | forward-compatibility ADR-024 | `plugin_api.h` comentario |
-
----
-
-## ADR-024 — Open Questions a resolver antes de implementar (FASE 3)
-
-| ID | Open Question |
-|----|---------------|
-| OQ-5 | Revocación de claves estáticas X25519 si nodo robado |
-| OQ-6 | Rotación en reprovisionamiento — sesiones activas afectadas |
-| OQ-7 | Replay primer mensaje — documentar en threat model |
-| OQ-8 | Performance ARMv8 + comparación Noise_IKpsk3 vs Noise_KK |
-
-**ADR-024 no bloquea DAY 105.** Implementación post-arXiv.
-
----
-
-## Patrón ADR-012 PHASE 1b (establecido)
-
-1. `CMakeLists.txt`: find_library + target_link(dl) + target_compile_definitions(PLUGIN_LOADER_ENABLED)
-2. `src/main.cpp`: `unique_ptr<PluginLoader>` local (global solo si signal handler)
-3. `config/*.json`: sección `plugins` con hello plugin `active:true`
-4. Smoke test: `MLD_DEV_MODE=1 ./component 2>&1 | grep -i plugin`
-   (solo válido en Debug + MLD_ALLOW_DEV_MODE builds)
+Guión:
+> *"Andrés, te reenvié un email de arXiv. Entras en
+> arxiv.org/auth/endorse?x=AFKRBO con tu cuenta arXiv y confirmas.
+> Son 2 minutos."*
 
 ---
 
@@ -161,15 +184,15 @@ rag:     comillas simples en vagrant ssh -c para CMAKE_FLAGS
 ## Consejo de Sabios
 
 Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
-DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek en ambas rondas,
-patrón registrado DAY 103–104),
+DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek, patrón consolidado DAY 103–105),
 Gemini (Google), Parallel.ai
+ChatGPT5: primera ausencia registrada DAY 105.
 
 ---
 
-*DAY 104 cierre — 1 abril 2026*
-*Tests: 25/25 ✅ · Paper: Draft v9 · Rama: feature/plugin-crypto*
-*ADR-023: ACCEPTED · ADR-024: DISEÑO APROBADO*
-*Consejo: 2 rondas, unanimidad 5/5*
-*Endorser Andrés Caro Lindo: llamada HOY jueves 3 abril*
+*DAY 105 cierre — 2 abril 2026*
+*Tests: 25/25 ✅ · Paper: Draft v10 · Rama: feature/plugin-crypto*
+*PHASE 2a: COMPLETA (TEST-INTEG-4a PASSED)*
+*Consejo: ACCEPTED CON CONDICIONES — 4 items DAY 106 antes de PHASE 2b*
+*arXiv: cuenta alonsoir ✅ · AFKRBO enviado a Andrés ✅*
 *Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*

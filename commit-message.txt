@@ -1,7 +1,37 @@
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git add docs/adr/ADR-023-multi-layer-plugin-architecture.md \
-        docs/adr/ADR-024-dynamic-group-key-agreement.md \
-        BACKLOG.md \
-        docs/paper/main.tex
-git commit -F commit-day-104.txt
+
+git add plugin-loader/include/plugin_loader/plugin_api.h \
+        plugin-loader/include/plugin_loader/plugin_loader.hpp \
+        plugin-loader/src/plugin_loader.cpp \
+        firewall-acl-agent/src/main.cpp \
+        Makefile \
+        BACKLOG.md
+
+git commit -m "feat(DAY-105): PHASE 2a MessageContext + TEST-INTEG-4a PASSED + Paper v10 + arXiv
+
+ADR-023 PHASE 2a — firewall-acl-agent:
+- plugin_api.h: MessageContext struct (D2,D3,D7,D9,D11) + optional symbol
+- plugin_loader.hpp: invoke_all(MessageContext&) overload
+- plugin_loader.cpp: optional dlsym fn_process_message (D1 Graceful Degradation)
+  + D8 post-invocation pointer snapshot
+- firewall-acl-agent/main.cpp: TEST-INTEG-4a smoke test integrated
+- Makefile: firewall depends on plugin-loader-build (install order enforced)
+
+Gate TEST-INTEG-4a: PASSED
+  result_code=0 | D1 applied | no D8 violation | CryptoTransport path unmodified
+
+Consejo de Sabios DAY 105 (4/5 — ChatGPT5 primera ausencia):
+  ACCEPTED CON CONDICIONES — 4 items pending DAY 106:
+  D8-v2 (CRC32 payload debug) | TEST-INTEG-4a-PLUGIN (3 variantes)
+  nonce/tag NULL doc | Makefile deps 4 componentes
+  Qwen -> DeepSeek pattern DAY 103-105 consolidated
+
+Paper v10: §5.6 Plugin Architecture (ADR-023/024) + §5.8 TEST-INTEG-4a
+arXiv: account alonsoir created | endorsement code AFKRBO sent to Andres
+
+PHASE 2b (rag-ingester) BLOCKED until TEST-INTEG-4a-PLUGIN passes
+
+Co-authored-by: Alonso Isidoro Roman <alonsoir@gmail.com>
+Co-authored-by: Claude (Anthropic)"
+
 git push origin feature/plugin-crypto

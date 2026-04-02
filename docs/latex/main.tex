@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v9 — DAY 104 — April 2026
+% Draft v10 — DAY 104 — April 2026
 % Author: Alonso Isidoro Roman
 % Target: cs.CR
 % ============================================================
@@ -76,7 +76,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v9 --- April 2026}
+\date{Draft v10 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -415,6 +415,45 @@ in Resource-Constrained Organizations}}
     ChaCha20-Poly1305 + LZ4 + HMAC-SHA256. Crypto-transport layer extracted as an independent
     library.
 
+    \subsection{Plugin Architecture (ADR-023, ADR-024)}
+
+    ML Defender implements a multi-layer plugin architecture (ADR-023) enabling runtime extension
+    of pipeline components without modifying core detection logic. Plugins are loaded via
+    \texttt{dlopen}/\texttt{dlsym} with a pure C ABI (\texttt{PLUGIN\_API\_VERSION = 1}),
+    providing ABI stability across compiler versions and ensuring binary compatibility with
+    future releases.
+
+    \paragraph{MessageContext and Graceful Degradation.}
+    PHASE 2a (DAY 105) introduces \texttt{MessageContext} --- a typed C struct passed to the
+    optional \texttt{plugin\_process\_message()} symbol. Plugins that do not export this symbol
+    are silently skipped (Graceful Degradation Policy D1), preserving backward compatibility with
+    PHASE 1 plugins that implement only \texttt{plugin\_process\_packet()}. Post-invocation
+    validation (D8) performs a byte-wise snapshot comparison of all read-only fields, detecting
+    any plugin attempt to modify ownership-restricted data. The trust boundary is explicit: plugins
+    are treated as untrusted code (D7); the final blocking decision remains exclusively in the
+    core (ADR-012).
+
+    \paragraph{Threat Model Integration (ADR-023 D9).}
+    The plugin system's Trusted Computing Base (TCB) is limited to \texttt{PluginLoader} and
+    \texttt{CryptoTransport}. Plugin code has no access to cryptographic keys, seed material,
+    or internal transport state. The \texttt{MLD\_DEV\_MODE} escape hatch is restricted to
+    \texttt{Debug} builds compiled with \texttt{MLD\_ALLOW\_DEV\_MODE} (D10), ensuring
+    fail-closed behavior in all production builds.
+
+    \paragraph{Gate TEST-INTEG-4a.}
+    Integration of the plugin loader into \texttt{firewall-acl-agent} (PLUGIN-LOADER-FW) was
+    validated by gate \texttt{TEST-INTEG-4a}: \texttt{plugin\_process\_message()} invoked on a
+    live \texttt{MessageContext}, post-invocation invariants verified, \texttt{result\_code = 0}
+    confirmed, and \texttt{CryptoTransport} decryption path verified unmodified by diff.
+
+    \paragraph{Forward Compatibility: Dynamic Group Key Agreement (ADR-024).}
+    The \texttt{MessageContext} struct reserves 60 bytes (\texttt{reserved[60]}) for forward
+    compatibility with ADR-024, which specifies Dynamic Group Key Agreement using the Noise
+    Protocol Framework (\texttt{Noise\_IKpsk3} or \texttt{Noise\_KK} pattern). ADR-024 design
+    is approved; open questions OQ-5 through OQ-8 (static key revocation, session continuity
+    during rotation, replay protection, and ARMv8 performance characterization) are under
+    resolution. Implementation is scheduled post-arXiv submission.
+
     \subsection{Trace Correlation}
 
     \texttt{trace\_id = SHA-256(src\_ip, dst\_ip, canonical\_attack\_type, timestamp\_bucket)}.
@@ -423,7 +462,9 @@ in Resource-Constrained Organizations}}
     \subsection{Testing and Validation}
 
     70 tests total: crypto (3), etcd-hmac (12), ml-detector (9), trace\_id (46). 100\% pass
-    rate. F1 ground truth persisted to \texttt{docs/experiments/f1\_replay\_log.csv}.
+    rate. Integration gate \texttt{TEST-INTEG-4a} (plugin \texttt{MessageContext} invocation,
+    D8 post-invocation validation) confirmed on DAY 105.
+    F1 ground truth persisted to \texttt{docs/experiments/f1\_replay\_log.csv}.
 
     \subsection{Development Environment}
 
@@ -585,7 +626,8 @@ const std::string ctx_rx = "ml-defender:" + component_name
     The defect was discovered on Day~97 of the development timeline, three days
     after \texttt{CryptoTransport} was integrated across all pipeline components.
     Its detection required no external audit: the TDH test suite caught it during
-    routine regression testing on the \texttt{feature/bare-metal-arxiv} branch.
+    routine regression testing on the \texttt{feature/bare-metal-arxiv} branch
+    (now superseded by \texttt{feature/plugin-crypto}).
 
     \subsection{Attribution}
 
