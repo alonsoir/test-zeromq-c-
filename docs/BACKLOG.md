@@ -312,6 +312,24 @@ ENT-*:                                ░░░░░░░░░░░░░░
 
 ---
 
+---
+[ADR-025 / PHASE 2a]
+- PLUGIN-SIGN-1: Implementar verificación Ed25519 en plugin_loader.cpp
+  (O_NOFOLLOW + fstat + size check + fd discipline + dlopen desde fd)
+- PLUGIN-SIGN-2: Actualizar provision.sh con --reset
+  (confirmación, timestamp, fingerprint, movido de .sig a invalidated/)
+- PLUGIN-SIGN-3: Inyección pubkey en CMakeLists.txt (MLD_PLUGIN_PUBKEY_HEX)
+- PLUGIN-SIGN-4: Actualizar JSON config schemas — require_signature, allowed_key_id
+- PLUGIN-SIGN-5: Actualizar systemd units (Restart=always + unset LD_PRELOAD)
+- TEST-INTEG-SIGN-1 a 7: Suite de tests de integración de verificación de firma
+
+[Diferido — imagen Debian hardened]
+- AppArmor profile para /usr/lib/ml-defender/plugins/ (solo root escribe)
+- IMA para integridad del binario verificador
+- ADR futuro: Runtime Monitoring con Falco (regla ml-defender-plugin-modified ya redactada en ADR-025)
+- Seccomp por plugin (PHASE 3)
+- D12: allowed_key_id por componente (PHASE 2)
+---
 ### Notas del Consejo de Sabios
 
 > DAY 105 — PHASE 2a (4/5 revisores, ChatGPT5 ausente por primera vez):
