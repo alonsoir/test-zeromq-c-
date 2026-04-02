@@ -24,6 +24,7 @@
 #include "firewall/etcd_client.hpp"
 
 #include <json/json.h>
+#include <cstring>
 #include <unistd.h>
 #include <exception>
 
@@ -277,6 +278,33 @@ int main(int argc, char** argv) {
     plugin_loader = std::make_unique<ml_defender::PluginLoader>(config_path);
     plugin_loader->load_plugins();
     std::cout << "[INFO] plugin-loader: " << plugin_loader->loaded_count() << " plugin(s) cargados" << std::endl;
+
+    // TEST-INTEG-4a: invocar plugin_process_message() con MessageContext real
+    // Gate: result_code==0 + CryptoTransport decryption path sin modificar
+    if (plugin_loader->loaded_count() > 0) {
+        const char* synthetic_payload =
+            "{\"event\":\"TEST-INTEG-4a\",\"src_ip\":\"192.168.1.1\",\"threat\":\"none\"}";
+        ::MessageContext msg_ctx{};  // C ABI — namespace global (extern "C")
+        msg_ctx.payload     = reinterpret_cast<const uint8_t*>(synthetic_payload);
+        msg_ctx.payload_len = std::strlen(synthetic_payload);
+        msg_ctx.src_ip      = 0xC0A80101; // 192.168.1.1
+        msg_ctx.dst_ip      = 0xC0A80164; // 192.168.1.100
+        msg_ctx.src_port    = 12345;
+        msg_ctx.dst_port    = 5572;
+        msg_ctx.protocol    = 6;  // TCP
+        msg_ctx.direction   = 0;  // RX
+        msg_ctx.nonce       = nullptr; // no disponible pre-decrypt — válido en smoke test
+        msg_ctx.tag         = nullptr;
+        msg_ctx.result_code = 0;
+        msg_ctx.annotation[0] = '\0';
+
+        plugin_loader->invoke_all(msg_ctx);
+        std::cout << "[INFO] TEST-INTEG-4a: result_code=" << msg_ctx.result_code;
+        if (msg_ctx.annotation[0] != '\0') {
+            std::cout << " annotation='" << msg_ctx.annotation << "'";
+        }
+        std::cout << std::endl;
+    }
 #endif
         std::cout << "[INFO] Dry-run mode: " << (config.operation.dry_run ? "ENABLED" : "DISABLED") << std::endl;
 

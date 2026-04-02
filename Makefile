@@ -493,7 +493,7 @@ firewall-start:
 	@vagrant ssh -c "tmux new-session -d -s firewall 'mkdir -p /vagrant/logs/lab && cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG) >> /vagrant/logs/lab/firewall-agent.log 2>&1'"
 	@sleep 2
 
-firewall: proto etcd-client-build
+firewall: proto etcd-client-build plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building Firewall ACL Agent [$(PROFILE)]              ║"
