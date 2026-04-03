@@ -16,6 +16,50 @@
 
 ## ✅ COMPLETADO
 
+### Day 106 (3 Apr 2026) — PHASE 2a CERRADA + TEST-INTEG-4a-PLUGIN + arXiv submitted
+
+**PHASE 2a — 4 condiciones Consejo DAY 105: TODAS CERRADAS ✅**
+
+**1c — nonce/tag NULL contract en `plugin_api.h` ✅**
+- Production guarantee: `nonce != NULL && tag != NULL`
+- Test/config mode (`--test-config`, `MLD_DEV_MODE`): MAY be NULL
+- Plugins MUST check for NULL before dereferencing
+
+**1d — Makefile deps: `plugin-loader-build` en 4 componentes restantes ✅**
+- `sniffer`, `ml-detector`, `rag-ingester`, `rag-build` ahora dependen de `plugin-loader-build`
+- `firewall-acl-agent` ya lo tenía desde DAY 105
+- Los 5 componentes con plugins correctamente declarados
+
+**1a — D8-v2: CRC32 payload integrity en `plugin_loader.cpp` ✅**
+- `crc32_fast()` implementado como función estática (CRC-32/ISO-HDLC, 0xEDB88320)
+- Guarded por `#ifdef MLD_ALLOW_DEV_MODE` (debug builds únicamente)
+- Snapshot antes de invocación, comparación después
+- CRC mismatch → `SECURITY D8-v2` log + `stats_.errors++`
+- Cierra el gap del D8 existente (pointer identity → content integrity)
+
+**1b — TEST-INTEG-4a-PLUGIN: 3/3 variantes PASSED ✅**
+- `plugins/test-message/plugin_test_message.cpp` — variantes A/B/C via `MLD_TEST_VARIANT`
+- `plugins/test-message/CMakeLists.txt` — builds `libplugin_test_message.so`
+- `plugins/test-message/test_variants.cpp` — runner standalone
+- `plugins/test-message/test_config.json` — config aislado (no toca producción)
+- `make plugin-integ-test` integrado en suite `test-libs`
+
+Resultados:
+```
+Variant A: errors=0, result_code=0       → PASS
+Variant B: D8 VIOLATION detectada        → PASS
+Variant C: PLUGIN_ERROR, sin crash       → PASS
+TEST-INTEG-4a-PLUGIN: PASSED (0 failures)
+```
+
+**arXiv submission ✅**
+- Draft v11: UEx eliminada, 3 figuras TikZ, spec hardware corregida (Intel i9 2.5GHz 32GB DDR4)
+- TDH repo link añadido: https://github.com/alonsoir/test-driven-hardening
+- Submission ID: `7438768` — STATUS: submitted (pendiente moderación)
+- Endorsers: Sebastian Garcia (CTU Prague) ✅, Andrés Caro Lindo (UEx/INCIBE) ✅
+
+---
+
 ### Day 105 (2 Apr 2026) — PHASE 2a + Paper v10 + arXiv cuenta creada
 
 **ADR-023 PHASE 2a — firewall-acl-agent + MessageContext ✅**
@@ -104,33 +148,25 @@ Tests totales: **25/25 ✅**
 
 ---
 
-## 🔄 PRÓXIMO MILESTONE — arXiv submission + PHASE 2a cierre
+## 🔜 PRÓXIMO — PHASE 2b (DESBLOQUEADA)
 
-### P0 — arXiv (bloqueado por endorsement)
+### ADR-023 PHASE 2b — rag-ingester + MessageContext
 
-| ID | Tarea | Estado |
-|----|-------|--------|
-| ENDORSER-ANDRES | Endorsement arXiv cs.CR — código AFKRBO enviado | 📧 esperando respuesta |
-| ARXIV-SUBMIT | Continuar submission en arxiv.org/user | ⏳ post-endorsement |
-| BARE-METAL | Stress test sin VirtualBox — validar ≥100 Mbps | 🔴 BLOQUEADO — sin hardware físico |
+**Archivos a tocar:**
+- `rag-ingester/src/main.cpp` — añadir `PluginLoader`, `invoke_all(MessageContext&)`
+- `rag-ingester/CMakeLists.txt` — linkear `libplugin_loader.so`
+- `rag-ingester/config/rag-ingester.json` — añadir sección `plugins`
 
-### P1 — PHASE 2a cierre (DAY 106 — rama feature/plugin-crypto)
+**Gate:** TEST-INTEG-4b — patrón idéntico a TEST-INTEG-4a
 
-**BLOQUEANTE antes de avanzar a PHASE 2b:**
+**Secuencia completa PHASE 2:**
+- PHASE 2a — firewall-acl-agent ✅ (DAY 105-106)
+- PHASE 2b — rag-ingester ⏳
+- PHASE 2c — sniffer ⏳
+- PHASE 2d — ml-detector ⏳
+- PHASE 2e — rag-security (usa `g_plugin_loader` global para signal handler) ⏳
 
-| ID | Tarea | Origen | Estado |
-|----|-------|--------|--------|
-| D8-v2 | CRC32 payload snapshot en debug builds | Consejo DAY 105 (3/4) | 🔴 DAY 106 |
-| TEST-INTEG-4a-PLUGIN | Plugin de test con símbolo exportado — 3 variantes | Consejo DAY 105 (4/4) | 🔴 DAY 106 |
-| nullptr-doc | nonce/tag NULL documentado en plugin_api.h | Consejo DAY 105 (4/4) | 🔴 DAY 106 |
-| MAKEFILE-DEPS | Dependencia plugin-loader-build en sniffer, ml-detector, rag-ingester, rag-security | Consejo DAY 105 (4/4) | 🔴 DAY 106 |
-
-**TEST-INTEG-4a-PLUGIN — variantes requeridas:**
-- Variante A: exporta símbolo, result_code=0, no modifica nada → debe pasar
-- Variante B: intenta modificar campo read-only (`direction`) → D8 debe detectarlo
-- Variante C: devuelve result_code=-1 → host registra error (no std::terminate())
-
-### P2 — PHASE 2b y siguientes (post-cierre PHASE 2a)
+### P2 — Post-PHASE 2
 
 | ID | Tarea | Origen |
 |----|-------|--------|
@@ -184,6 +220,17 @@ mlock(seed_.data(), seed_.size());
 Diseño aprobado DAY 104. Implementación condicionada a OQ-5..OQ-8.
 Layout reserved[60] a documentar al iniciar implementación.
 
+### ADR-025 — Plugin Integrity Verification (Ed25519 + TOCTOU-safe dlopen)
+
+Estado: **APPROVED** (DAY 102). Implementación post-PHASE 2 completa.
+
+- PLUGIN-SIGN-1: Verificación Ed25519 en plugin_loader.cpp (O_NOFOLLOW + fstat + fd discipline)
+- PLUGIN-SIGN-2: provision.sh --reset (confirmación, timestamp, fingerprint)
+- PLUGIN-SIGN-3: Inyección pubkey en CMakeLists.txt (MLD_PLUGIN_PUBKEY_HEX)
+- PLUGIN-SIGN-4: JSON config schemas — require_signature, allowed_key_id
+- PLUGIN-SIGN-5: systemd units (Restart=always + unset LD_PRELOAD)
+- TEST-INTEG-SIGN-1 → TEST-INTEG-SIGN-7
+
 ### FEAT-CRYPTO-3 — TPM 2.0 / HSM enterprise (P3 — ENT-8)
 
 ---
@@ -196,26 +243,15 @@ Layout reserved[60] a documentar al iniciar implementación.
 
 ## 📋 BACKLOG — COMMUNITY & FEATURES
 
-### 🟥 P0 — Paper arXiv
-
-- Draft v10 ✅ · LaTeX + ZIP ✅
-- Cuenta arXiv `alonsoir` creada ✅
-- Código endorsement AFKRBO generado ✅
-- Pendiente: endorsement Andrés → submission
-
-**Revisores / endorsers:**
-
-| Persona | Perfil | Estado |
-|---------|--------|--------|
-| Sebastian Garcia (CTU Prague) | Autor CTU-13, ML seguridad | ✅ respondió, recibió PDF |
-| Yisroel Mirsky (BGU) | Investigador ML/seguridad | ⏳ enviado DAY 96, sin respuesta |
-| Andrés Caro Lindo (UEx/INCIBE) | Director Cátedra INCIBE-UEx | 📧 código AFKRBO enviado DAY 105 |
-| Jorge Coronado (QuantiKa14) | DFIR, forense, OSINT | ⏳ email enviado — revisión paper + repo |
-
 ### 🟧 P1 — Fast Detector Config (DEBT-FD-001)
 ### 🟨 P2 — Expansión ransomware (prerequisito: DEBT-FD-001)
 ### 🟨 P2 — Pipeline reentrenamiento
 ### 🟩 P3 — Enterprise (ENT-1..8)
+
+**ENT-1 — Federated Threat Intelligence**
+Arquitectura planificada (Fig 3 del paper v11): telemetría anónima → agregación central →
+classifiers reentrenados distribuidos como plugins firmados (ADR-025).
+Estado: diseño documentado en paper, implementación post-pipeline-estabilización.
 
 ---
 
@@ -246,16 +282,17 @@ ADR-023 (Plugin Architecture):        ██████████████
 ADR-024 (Noise IK — diseño):          ████████████████████ 100% ✅  DAY 104 — DISEÑO APROBADO
 PHASE 2a firewall (MessageContext):   ████████████████████ 100% ✅  DAY 105 — TEST-INTEG-4a PASSED
 Paper v10 (§5.6 Plugin Arch.):        ████████████████████ 100% ✅  DAY 105
-arXiv cuenta + endorsement AFKRBO:    ████████████████████ 100% ✅  DAY 105
-D8-v2 (CRC32 payload debug):          ░░░░░░░░░░░░░░░░░░░░   0% 🔴  DAY 106
-TEST-INTEG-4a-PLUGIN (3 variantes):   ░░░░░░░░░░░░░░░░░░░░   0% 🔴  DAY 106 — bloquea 4b
-nullptr-doc (nonce/tag en API):       ░░░░░░░░░░░░░░░░░░░░   0% 🔴  DAY 106
-MAKEFILE-DEPS (4 componentes):        ░░░░░░░░░░░░░░░░░░░░   0% 🔴  DAY 106
-ENDORSER-ANDRES (código AFKRBO):      ████████░░░░░░░░░░░░  40% 📧  esperando respuesta
-ARXIV-SUBMIT:                         ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-endorsement
-PHASE 2b rag-ingester:                ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-TEST-INTEG-4a-PLUGIN
+arXiv cuenta + endorsement:           ████████████████████ 100% ✅  DAY 105-106
+D8-v2 (CRC32 payload debug):          ████████████████████ 100% ✅  DAY 106
+TEST-INTEG-4a-PLUGIN (3 variantes):   ████████████████████ 100% ✅  DAY 106 — make plugin-integ-test
+nullptr-doc (nonce/tag en API):       ████████████████████ 100% ✅  DAY 106
+MAKEFILE-DEPS (5 componentes):        ████████████████████ 100% ✅  DAY 106
+Paper v11 (3 figuras TikZ + UEx):     ████████████████████ 100% ✅  DAY 106
+arXiv submitted:                      ████████████████████ 100% ✅  DAY 106 — submit/7438768
+PHASE 2b rag-ingester:                ░░░░░░░░░░░░░░░░░░░░   0% ⏳  SIGUIENTE
 BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado por hardware
 ADR-024 impl. (Noise IK):             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  FASE 3 post-arXiv
+ADR-025 impl. (plugin signing):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 2 completa
 DEBT-CRYPTO-003a (mlock seed):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
 DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  P2
 DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳
@@ -291,46 +328,21 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | ADR-024 handshake pattern | Noise_IKpsk3 confirmado ✅ | 104 |
 | ADR-024 PSK info string | "ml-defender:noise-ikpsk3:v1" — domain separation ✅ | 104 |
 | ADR-024 key installation | install_session_keys() atómica + gate etcd READY ✅ | 104 |
-| D8 snapshot mode | pointer comparison + CRC32 payload (debug) — Consejo 3/4 ✅ | 105 |
-| nonce/tag nullable | NULL permitido en test-config mode, non-NULL en producción ✅ | 105 |
-| Makefile dep order | plugin-loader-build explícito en todos los componentes ✅ | 105 |
+| D8 snapshot mode | pointer comparison + CRC32 payload (debug) — Consejo 3/4 ✅ | 105-106 |
+| nonce/tag nullable | NULL permitido en test-config mode, non-NULL en producción ✅ | 106 |
+| Makefile dep order | plugin-loader-build explícito en todos los componentes ✅ | 106 |
 | reserved[60] layout | suficiente; layout formal a documentar en ADR-024 ✅ | 105 |
+| test_config.json | Config aislado para tests de plugin — no tocar producción ✅ | 106 |
 
 ---
 
-## 🔌 FEAT-PLUGIN-CRYPTO-1 — Plugin de CryptoTransport
-
-**Prerequisitos completados:** ADR-023 ✅ · ADR-024 (diseño) ✅
-
-**PHASE 2a:** `firewall-acl-agent` ✅ DAY 105
-- Gate TEST-INTEG-4a: PASSED (D1 validado)
-- Gate TEST-INTEG-4a-PLUGIN: 🔴 PENDIENTE DAY 106 (D8 a validar)
-
-**PHASE 2b:** `rag-ingester` — BLOQUEADA hasta TEST-INTEG-4a-PLUGIN
-**Pre-requisito PHASE 2c:** TEST-FUZZ-1 (MessageContext fuzzing)
-**PHASE 2c:** `rag-security`
-
----
-
----
-[ADR-025 / PHASE 2a]
-- PLUGIN-SIGN-1: Implementar verificación Ed25519 en plugin_loader.cpp
-  (O_NOFOLLOW + fstat + size check + fd discipline + dlopen desde fd)
-- PLUGIN-SIGN-2: Actualizar provision.sh con --reset
-  (confirmación, timestamp, fingerprint, movido de .sig a invalidated/)
-- PLUGIN-SIGN-3: Inyección pubkey en CMakeLists.txt (MLD_PLUGIN_PUBKEY_HEX)
-- PLUGIN-SIGN-4: Actualizar JSON config schemas — require_signature, allowed_key_id
-- PLUGIN-SIGN-5: Actualizar systemd units (Restart=always + unset LD_PRELOAD)
-- TEST-INTEG-SIGN-1 a 7: Suite de tests de integración de verificación de firma
-
-[Diferido — imagen Debian hardened]
-- AppArmor profile para /usr/lib/ml-defender/plugins/ (solo root escribe)
-- IMA para integridad del binario verificador
-- ADR futuro: Runtime Monitoring con Falco (regla ml-defender-plugin-modified ya redactada en ADR-025)
-- Seccomp por plugin (PHASE 3)
-- D12: allowed_key_id por componente (PHASE 2)
----
 ### Notas del Consejo de Sabios
+
+> DAY 106 — PHASE 2a cierre (paper + arXiv):
+> "PHASE 2a completamente cerrada. Todas las condiciones del Consejo DAY 105 satisfechas.
+> TEST-INTEG-4a-PLUGIN 3/3 variantes PASSED. arXiv submit/7438768 submitted.
+> PHASE 2b desbloqueada."
+> — Claude (Anthropic)
 
 > DAY 105 — PHASE 2a (4/5 revisores, ChatGPT5 ausente por primera vez):
 > "ACCEPTED CON CONDICIONES. D8 pointer-only insuficiente — añadir CRC32 (3/4).
@@ -352,10 +364,9 @@ ENT-*:                                ░░░░░░░░░░░░░░
 
 ---
 
-*Última actualización: DAY 105 — 2 Apr 2026*
+*Última actualización: DAY 106 — 3 Apr 2026*
 *Branch: feature/plugin-crypto*
-*Tests: 25/25 suites ✅*
-*Paper: Draft v10 ✅*
-*PHASE 2a: COMPLETA (TEST-INTEG-4a PASSED) · TEST-INTEG-4a-PLUGIN: 🔴 DAY 106*
-*arXiv: cuenta alonsoir ✅ · código AFKRBO enviado a Andrés ✅*
+*Tests: 25/25 suites ✅ + TEST-INTEG-4a-PLUGIN 3/3 ✅*
+*Paper: Draft v11 ✅ · arXiv: submit/7438768 SUBMITTED ✅*
+*PHASE 2a: COMPLETAMENTE CERRADA · PHASE 2b: DESBLOQUEADA*
 *Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, DeepSeek, Qwen, Gemini, Parallel.ai*

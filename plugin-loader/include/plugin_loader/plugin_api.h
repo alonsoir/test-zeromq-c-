@@ -95,6 +95,13 @@ typedef struct MessageContext {
     // Read-only: metadatos crypto (D3)
     // nonce y tag son propiedad del CryptoTransport.
     // El plugin puede inspeccionarlos pero NUNCA modificarlos ni liberarlos.
+    //
+    // nonce: 12-byte ChaCha20 nonce (contador monotónico 96-bit, ADR-017).
+    // tag:   16-byte Poly1305 MAC tag.
+    //
+    // Production guarantee: nonce != NULL && tag != NULL.
+    // Test/config mode (--test-config, MLD_DEV_MODE): MAY be NULL.
+    // Plugins MUST check for NULL before dereferencing.
     const uint8_t* nonce;   // 12 bytes — contador monotónico 96-bit (ADR-017)
     const uint8_t* tag;     // 16 bytes — MAC Poly1305
 

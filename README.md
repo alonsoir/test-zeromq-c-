@@ -6,13 +6,27 @@
 [![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 25/25](https://img.shields.io/badge/Tests-25%2F25_suites-brightgreen)]()
+[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
-[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--012_PHASE1b_COMPLETA-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2a_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
+[![arXiv](https://img.shields.io/badge/arXiv-submitted_cs.CR-red)](https://arxiv.org/search/?searchtype=author&query=Roman%2C+Alonso+Isidoro)
+[![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
 [![Docs](https://img.shields.io/badge/Docs-alonsoir.github.io%2Fargus-blue)](https://alonsoir.github.io/argus/)
 
 📜 Living contracts: [Protobuf schema](https://github.com/alonsoir/argus/blob/main/docs/contracts/Protobuf%20contracts.md) · [Pipeline configs](https://github.com/alonsoir/argus/blob/main/docs/contracts/JSON%20contracts.md) · [RAG API](https://github.com/alonsoir/argus/blob/main/docs/contracts/Rag%20security%20commands.md)
+
+---
+
+## 📄 Preprint
+
+ML Defender (aRGus NDR) is documented in a preprint submitted to **arXiv cs.CR** (April 2026).
+The paper covers architecture, cryptographic transport, plugin system, evaluation results (F1=0.9985),
+and the Consejo de Sabios / Test-Driven Hardening methodology.
+
+**arXiv submission:** `submit/7438768` — pending moderation. Link will be updated here upon publication.
+**Code:** https://github.com/alonsoir/argus
+**TDH methodology:** https://github.com/alonsoir/test-driven-hardening
 
 ---
 
@@ -26,7 +40,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ---
 
-## 📊 Validated Results (DAY 103 — 31 March 2026)
+## 📊 Validated Results (DAY 106 — 3 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -44,8 +58,8 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 | **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows |
 | **RAM (full pipeline)** | **~3.5 GB** | Including TinyLlama, 3-4 cores, stable under load |
 | **Pipeline components** | **6/6 RUNNING** | |
-| **Test suite** | **25/25 suites passing** | NEW RECORD — DAY 102 |
-| **Plugin Loader** | **ADR-012 PHASE 1b — 5/5 COMPLETA** | All components integrated — DAY 101-102 |
+| **Test suite** | **25/25 suites + TEST-INTEG-4a-PLUGIN 3/3** | DAY 106 |
+| **Plugin Loader** | **ADR-023 PHASE 2a COMPLETE** | firewall-acl-agent integrated — DAY 105-106 |
 
 **Ground truth clarification.** The CTU-13 Neris capture contains 19,135 total flows. Of these, 646 flows constitute the TP ground truth — those exhibiting active C2 behavioral signatures (IRC bursts, SMB lateral movement, DNS anomalies) from the infected host. The remaining flows are background traffic on the infected host and are not ground-truth positives for NIDS evaluation. See the [preprint](docs/) for full methodology.
 
@@ -104,7 +118,7 @@ ML Defender implements **Network Detection and Response (NDR)** capabilities: re
 │  ┌──────────────────┐                                            │
 │  │ firewall-acl     │  Autonomous blocking via ipset/iptables   │
 │  │ agent (C++20)    │  HMAC-SHA256 verified CSV logs            │
-│  │                  │  plugin-loader (ADR-012, PHASE 1b ✅)     │
+│  │                  │  plugin-loader ADR-023 PHASE 2a ✅        │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
@@ -193,9 +207,19 @@ Arithmetic maximum over two continuous scores in [0,1]. Fast Detector provides s
 
 A critical defect discovered during cryptographic integration: HKDF contexts parameterised by *component name* produce identical subkeys on both sides of a channel, making MAC forgery undetectable. The fix parameterises by *direction* (`:tx`/`:rx`). The defect was invisible to the compiler and all sanitisers — caught exclusively by `TEST-INTEG-3`, an intentional regression test asserting MAC failure. Documented as a pedagogical case study in the accompanying preprint (§5, Test-Driven Hardening).
 
-### Plugin Loader Architecture (ADR-012 — PHASE 1b COMPLETA)
+### Plugin Loader Architecture (ADR-023 PHASE 2a COMPLETE)
 
-All six pipeline components integrate `libplugin_loader.so` via lazy `dlopen`/`dlsym` with pure C ABI (`plugin_api.h`). Guard pattern: `#ifdef PLUGIN_LOADER_ENABLED`. Signal handlers requiring global access use `g_plugin_loader`; all others use `std::unique_ptr<PluginLoader>` local to `main()`. Individual plugins in `/usr/lib/ml-defender/plugins/`, system libraries in `/usr/local/lib/`.
+`firewall-acl-agent` now runs `plugin_process_message(MessageContext&)` with full D8-v2
+payload integrity verification (CRC32, debug builds). All six pipeline components integrate
+`libplugin_loader.so` via lazy `dlopen`/`dlsym` with pure C ABI (`plugin_api.h`).
+Plugin trust model: untrusted code (D7). Blocking decisions remain exclusively in core (ADR-012).
+Plugin integrity verification via Ed25519 signatures: ADR-025 (approved, pending implementation).
+
+### Test-Driven Hardening (TDH)
+
+A methodology for building security-critical distributed systems where correctness properties
+are protocol-level, not component-level. Tests are written *before the fix*, as proofs of failure.
+Repository: https://github.com/alonsoir/test-driven-hardening
 
 ### Sentinel Value Taxonomy (DAY 79)
 
@@ -223,37 +247,41 @@ All configuration comes from JSON at runtime. No hardcoded constants in producti
 | JSON-driven thresholds | ✅ No hardcoded security parameters |
 | Fail-closed design (std::set_terminate) | ✅ All 6 main() functions |
 | Local LLM inference (no cloud) | ✅ TinyLlama, no network exfiltration |
-| Plugin Loader (ADR-012 PHASE 1b) | ✅ All 6 components |
-| Dynamic group key agreement | ❌ ADR-024 — scheduled post-arXiv |
+| Plugin Loader PHASE 1b (ADR-012) | ✅ All 6 components |
+| Plugin MessageContext D8-v2 (ADR-023) | ✅ firewall-acl-agent — PHASE 2a complete |
+| Plugin integrity via Ed25519 (ADR-025) | ❌ Approved, pending implementation |
+| Dynamic group key agreement (ADR-024) | ❌ Design approved — scheduled post-PHASE 2 |
 | etcd HA | ❌ Single-node — future work |
 
 ---
 
 ## 🗺️ Roadmap
 
-### P0 — arXiv submission (in progress)
-- [x] Draft v7 ready — 21 pages, LaTeX, compiled clean
-- [x] Sebastian Garcia (CTU Prague) — endorser, received PDF
-- [x] Andrés Caro Lindo (UEx/INCIBE) — endorsement confirmed, call Thursday 2 April
-- [ ] arXiv submission (cs.CR)
+### ✅ DONE — arXiv submission
+- [x] Draft v11 ready — 3 TikZ figures, LaTeX compiled clean
+- [x] Sebastian Garcia (CTU Prague) — endorser confirmed
+- [x] Andrés Caro Lindo (UEx/INCIBE) — endorser confirmed
+- [x] arXiv submitted — `submit/7438768` cs.CR (pending moderation)
 
-### P1 — feature/plugin-crypto (next branch)
-- [ ] ADR-023 — Multi-Layer Plugin Architecture (MessageContext, SkillContext)
-- [ ] ADR-024 — Dynamic Group Key Agreement (runtime, no redeploy)
-- [ ] FEAT-PLUGIN-CRYPTO-1 PHASE 2a — `plugin_process_message()` optional
-- [ ] TEST-INTEG-4a/4b/4c — validation gates
-- [ ] PAPER-FINAL — update metrics + mention ADR-024 as planned future work
+### 🔜 NEXT — PHASE 2b (rag-ingester)
+- [ ] ADR-023 PHASE 2b — `rag-ingester` + `plugin_process_message()`
+- [ ] TEST-INTEG-4b gate
+- [ ] PHASE 2c/2d/2e — sniffer, ml-detector, rag-security
 
-### P2 — Post-arXiv
+### P1 — feature/plugin-crypto (active branch)
+- [ ] ADR-024 — Dynamic Group Key Agreement (Noise_IKpsk3, runtime, no redeploy)
+- [ ] ADR-025 — Plugin Integrity Verification (Ed25519 + TOCTOU-safe dlopen)
+- [ ] TEST-INTEG-SIGN-1 through TEST-INTEG-SIGN-7
+
+### P2 — Post-PHASE 2
 - [ ] BARE-METAL-IMAGE — Debian Bookworm hardened, exportable to USB
-- [ ] BARE-METAL-VAGRANT — validate image in new Vagrantfile before physical hardware
 - [ ] BARE-METAL stress test — pending physical machine availability
 - [ ] DEBT-FD-001 — Fast Detector Path A → JSON
 - [ ] DEBT-CRYPTO-003a — `mlock()` on seed buffer
 - [ ] DOCS-APPARMOR — 6 AppArmor profiles
 
 ### Enterprise Features (MIT license — core always free)
-- ENT-1: Federated Threat Intelligence
+- ENT-1: Federated Threat Intelligence (architecture documented in paper Fig 3)
 - ENT-2: Attack Graph Generation (GraphML + STIX 2.1)
 - ENT-3: P2P Seed Distribution — eliminate etcd as crypto authority
 - ENT-4: Hot-Reload configuration
@@ -277,7 +305,7 @@ F1=0.9985 confirmed stable across 4 independent replay runs. 2 FP = VirtualBox m
 
 ### Minimum (validated)
 - Consumer laptop running VirtualBox + Vagrant
-- 16 GB host RAM, ~3.5 GB guest RAM under full load
+- 32 GB host RAM (Intel Core i9 2.5 GHz validated), ~3.5 GB guest RAM under full load
 - Dual vNIC (bridged)
 
 ### Recommended Production Target (~150–200 USD)
@@ -290,7 +318,7 @@ F1=0.9985 confirmed stable across 4 independent replay runs. 2 FP = VirtualBox m
 
 ## 🧠 Consejo de Sabios — Multi-Model Peer Review
 
-ML Defender was developed through a structured multi-model AI collaboration methodology across 103 days of continuous development. Seven large language models served as intellectual co-reviewers:
+ML Defender was developed through a structured multi-model AI collaboration methodology across 106 days of continuous development. Seven large language models served as intellectual co-reviewers:
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Parallel.ai**
 
@@ -328,7 +356,7 @@ All code, all analysis scripts, all experiments, and all failures are documented
 
 **Datasets**: CTU-13 (Czech Technical University, Sebastian Garcia et al.), CIC-IDS2017 (UNB), MAWI Working Group
 
-**Preprint**: *ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and Anomalous Traffic Detection in Resource-Constrained Organizations* — Draft v7, DAY 103, March 2026. arXiv submission in progress (cs.CR).
+**Preprint**: *ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and Anomalous Traffic Detection in Resource-Constrained Organizations* — Draft v11, DAY 106, April 2026. arXiv submission in progress (cs.CR).
 
 ---
 
@@ -354,6 +382,10 @@ All code, all analysis scripts, all experiments, and all failures are documented
 - ✅ DAY 102: TEST-PLUGIN-INVOKE-1 — 25/25 tests ✅ nuevo récord
 - ✅ DAY 103: Makefile rag alignment — PROFILE-aware, rag-attach, test-components
 - ✅ DAY 103: Paper Draft v7 — §5 HKDF Context Symmetry case study added
+- ✅ DAY 104: ADR-023 ACCEPTED + ADR-024 design approved — Consejo unanimidad
+- ✅ DAY 105: PHASE 2a firewall-acl-agent — TEST-INTEG-4a PASSED
+- ✅ DAY 106: PHASE 2a CLOSED — D8-v2 CRC32 + TEST-INTEG-4a-PLUGIN 3/3 PASSED
+- ✅ DAY 106: Paper Draft v11 — 3 TikZ figures + arXiv SUBMITTED (submit/7438768)
 
 ---
 

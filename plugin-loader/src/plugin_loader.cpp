@@ -13,6 +13,20 @@
 #include <sstream>
 #include <iostream>
 
+// D8-v2: CRC32 del contenido del payload (debug builds only)
+#ifdef MLD_ALLOW_DEV_MODE
+static uint32_t crc32_fast(const uint8_t* data, size_t len) {
+    if (!data || len == 0) return 0;
+    uint32_t crc = 0xFFFFFFFFu;
+    for (size_t i = 0; i < len; ++i) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; ++j)
+            crc = (crc >> 1) ^ (0xEDB88320u & -(crc & 1u));
+    }
+    return crc ^ 0xFFFFFFFFu;
+}
+#endif // MLD_ALLOW_DEV_MODE
+
 // Minimal JSON parsing — evitamos dependencia de nlohmann aquí.
 // El componente host ya tiene nlohmann; usamos una lectura simple
 // basada en buscar la clave "plugins" en el JSON raw.
@@ -340,6 +354,22 @@ void PluginLoader::invoke_all(MessageContext& ctx) {
         const uint8_t* snap_nonce      = ctx.nonce;
         const uint8_t* snap_tag        = ctx.tag;
 
+        // D8-light: validación lightweight de payload (release + debug)
+        // Detecta corrupción catastrófica sin overhead en datapath crítico.
+        static constexpr size_t MAX_PLUGIN_PAYLOAD_SIZE = 65536u; // 64KB
+        if (ctx.payload == nullptr || ctx.payload_len == 0 ||
+            ctx.payload_len > MAX_PLUGIN_PAYLOAD_SIZE) {
+            std::cerr << "[plugin-loader] SECURITY D8-light: payload inválido"
+                      << " (ptr=" << static_cast<const void*>(ctx.payload)
+                      << ") -- std::terminate()\n";
+            std::terminate();
+        }
+
+#ifdef MLD_ALLOW_DEV_MODE
+        // D8-v2: CRC32 snapshot del contenido del payload antes de invocar
+        uint32_t crc_before = crc32_fast(ctx.payload, ctx.payload_len);
+#endif
+
         auto t0 = std::chrono::steady_clock::now();
         PluginResult r = p->fn_process_message(&ctx);
         auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -365,6 +395,18 @@ void PluginLoader::invoke_all(MessageContext& ctx) {
             // D1 fail-closed: se registra el error; en PHASE 2 el plugin será descargado.
             // En DEV_MODE (MLD_ALLOW_DEV_MODE): solo warning, no se aborta.
         }
+#ifdef MLD_ALLOW_DEV_MODE
+        // D8-v2: verificar integridad del contenido del payload
+        {
+            uint32_t crc_after = crc32_fast(ctx.payload, ctx.payload_len);
+            if (crc_after != crc_before) {
+                std::cerr << "[plugin-loader] SECURITY D8-v2: plugin '" << p->name
+                          << "' modificó contenido del payload (CRC mismatch: "
+                          << std::hex << crc_before << " -> " << crc_after << std::dec << ")\n";
+                stats_[i].errors++;
+            }
+        }
+#endif
 
         stats_[i].invocations++;
 
