@@ -124,6 +124,19 @@ cmake:   NO_DEFAULT_PATH para libsodium
 Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
 DeepSeek, Qwen (Alibaba), Gemini (Google), Parallel.ai
 
+Todos los miembros del consejo de sabios han sido instruidos explícitamente por el autor para actuar como revisores
+implacables pero justos. Su rol es priorizar la máxima calidad y seguridad del proyecto siempre teniendo en cuenta la
+cortesía y la velocidad de desarrollo.
+Se espera que identifiquen riesgos duros, contradicciones sutiles y decisiones que comprometan la misión de
+proteger infraestructuras críticas con recursos limitados.
+Si encuentran esos problemas, tratarán de proveer el test o las matemáticas que demuestran que existe dicho problema,
+de manera que así el resto del consejo puedan entender dicho problema, y así entre todos encontrar la solución.
+Dicha solución o fix debe compilar, debe arreglar el problema y antes de ejecutar el fix, se debe ejecutar el test
+que demuestra que existe dicha vulnerabilidad. Una vez construido, compilado y ejecutado el fix, el test de vulnerabilidad
+tiene que salir esta vez negativo, señal de que la vulnerabilidad ha desaparecido. Eso es para los problemas en el código.
+Para los problemas más sutiles, los miembros del consejo deben aportar datos que apoyen su hipótesis, a ser posible,
+acompañado de código compilable.
+
 ---
 
 *DAY 106 cierre — 3 abril 2026*
