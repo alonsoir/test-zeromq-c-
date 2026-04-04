@@ -1,37 +1,45 @@
 cd /Users/aironman/CLionProjects/test-zeromq-docker
+git add ml-detector/src/etcd_client.cpp \
+        sniffer/src/userspace/etcd_client.cpp \
+        firewall-acl-agent/src/core/etcd_client.cpp \
+        etcd-server/src/component_registry.cpp
+git commit -m "fix(crypto): set component_config_path in etcd_client adapters — DAY 107
 
-git add plugin-loader/include/plugin_loader/plugin_api.h \
-        plugin-loader/include/plugin_loader/plugin_loader.hpp \
-        plugin-loader/src/plugin_loader.cpp \
-        firewall-acl-agent/src/main.cpp \
-        Makefile \
-        BACKLOG.md
+Root cause of MAC verification failed resolved.
+component_config_path was not set in etcd_client::Config across three
+components, leaving tx_ null. Silent guard in process_outgoing_data()
+skipped encryption entirely, sending LZ4-compressed plaintext as
+application/octet-stream. Server attempted ChaCha20-Poly1305 decrypt
+on raw LZ4 — MAC failure guaranteed.
 
-git commit -m "feat(DAY-105): PHASE 2a MessageContext + TEST-INTEG-4a PASSED + Paper v10 + arXiv
+Fixes:
+- ml-detector/src/etcd_client.cpp: add component_config_path
+- sniffer/src/userspace/etcd_client.cpp: add component_config_path
+  + rewrite get_encryption_seed() to read local seed.bin
+- firewall-acl-agent/src/core/etcd_client.cpp: add component_config_path
+- etcd-server/src/component_registry.cpp: swap CTX_ETCD_TX/RX
+  (rx_ uses TX to decrypt client requests, tx_ uses RX for responses)
+  NOTE: swap needs independent verification in DAY 108 PASO 1
 
-ADR-023 PHASE 2a — firewall-acl-agent:
-- plugin_api.h: MessageContext struct (D2,D3,D7,D9,D11) + optional symbol
-- plugin_loader.hpp: invoke_all(MessageContext&) overload
-- plugin_loader.cpp: optional dlsym fn_process_message (D1 Graceful Degradation)
-  + D8 post-invocation pointer snapshot
-- firewall-acl-agent/main.cpp: TEST-INTEG-4a smoke test integrated
-- Makefile: firewall depends on plugin-loader-build (install order enforced)
+Root cause identified via hexdump of first 16 bytes at server:
+  7b 0a 20 20 22 5f 68 65 61 64 = { newline  \"_head
+  JSON visible in what should have been ciphertext.
 
-Gate TEST-INTEG-4a: PASSED
-  result_code=0 | D1 applied | no D8 violation | CryptoTransport path unmodified
+VM-only fixes (not yet in provision.sh — DAY 108 PASO 3):
+- chmod 755 /etc/ml-defender/ component dirs
+- chmod 640 + chown root:vagrant seed.bin (all 6 components)
+- Seeds synchronized (etcd-server seed.bin copied to all)
+- JSON symlinks /etc/ml-defender/*/ -> /vagrant/*/config/
+- libsodium.so.23 -> libsodium.so.26 symlink
+- libcrypto_transport.so rebuilt (was Feb 16, now Apr 4)
 
-Consejo de Sabios DAY 105 (4/5 — ChatGPT5 primera ausencia):
-  ACCEPTED CON CONDICIONES — 4 items pending DAY 106:
-  D8-v2 (CRC32 payload debug) | TEST-INTEG-4a-PLUGIN (3 variantes)
-  nonce/tag NULL doc | Makefile deps 4 componentes
-  Qwen -> DeepSeek pattern DAY 103-105 consolidated
+Diagnosed with Consejo de Sabios (7 LLM reviewers).
+Hexdump technique suggested by Gemini.
 
-Paper v10: §5.6 Plugin Architecture (ADR-023/024) + §5.8 TEST-INTEG-4a
-arXiv: account alonsoir created | endorsement code AFKRBO sent to Andres
-
-PHASE 2b (rag-ingester) BLOCKED until TEST-INTEG-4a-PLUGIN passes
+Closes: MAC verification failed on PUT /v1/config/{component}
+Pending: provision.sh formalization (DAY 108 PASO 3)
+Pending: fail-fast invariant if tx_ null when encryption enabled
+Pending: verify CTX swap necessity independently (DAY 108 PASO 1)
 
 Co-authored-by: Alonso Isidoro Roman <alonsoir@gmail.com>
-Co-authored-by: Claude (Anthropic)"
-
-git push origin feature/plugin-crypto
+Co-authored-by: Claude (Anthropic) <claude@anthropic.com>"

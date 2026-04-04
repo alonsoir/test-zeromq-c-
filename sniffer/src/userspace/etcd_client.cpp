@@ -32,7 +32,7 @@ struct EtcdClient::Impl {
         config.encryption_enabled = true;
         config.compression_enabled = true;
         config.compression_min_size = 0;
-
+        config.component_config_path = "/etc/ml-defender/sniffer/sniffer.json";
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
 
@@ -187,19 +187,17 @@ std::string EtcdClient::get_encryption_status() {
 }
 
 std::string EtcdClient::get_encryption_seed() const {
-    if (!pImpl || !pImpl->client_) {
-        std::cerr << "❌ [Sniffer] EtcdClient not initialized" << std::endl;
+    // ADR-013 PHASE 2 — seed local
+    const std::string seed_path = "/etc/ml-defender/sniffer/seed.bin";
+    std::ifstream f(seed_path, std::ios::binary);
+    if (!f.is_open()) {
+        std::cerr << "❌ [Sniffer] No se puede abrir seed.bin" << std::endl;
         return "";
     }
-
-    std::string seed = pImpl->client_->get_encryption_key();
-
-    if (seed.empty()) {
-        std::cerr << "❌ [Sniffer] Failed to get encryption seed" << std::endl;
-    } else {
-        std::cout << "🔑 [Sniffer] Encryption seed obtained (" << seed.size() << " bytes)" << std::endl;
-    }
-
+    std::string seed(32, '\0');
+    f.read(&seed[0], 32);
+    if (f.gcount() != 32) { return ""; }
+    std::cout << "🔑 [Sniffer] Seed cargado localmente (32 bytes)" << std::endl;
     return seed;
 }
 } // namespace sniffer

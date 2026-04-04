@@ -32,7 +32,7 @@ struct EtcdClient::Impl {
         config.port = port_;
         config.encryption_enabled = true;
         config.compression_enabled = true;
-
+        config.component_config_path = "/etc/ml-defender/firewall-acl-agent/firewall.json";
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
 

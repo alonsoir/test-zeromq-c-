@@ -32,7 +32,7 @@ struct EtcdClient::Impl {
         config.port = port_;
         config.encryption_enabled = (endpoint.find("http://") != 0);
         config.compression_enabled = true;
-
+        config.component_config_path = "/etc/ml-defender/ml-detector/ml_detector_config.json";
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
         client_->connect();
     }

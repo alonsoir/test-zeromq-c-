@@ -1,147 +1,78 @@
-# ML Defender — Prompt de Continuidad DAY 107
-## 3 abril 2026
+Soy Alonso (aRGus NDR, ML Defender, DAY 108).
+Lee el transcript de DAY 107 antes de responder nada.
 
----
+CONTEXTO DAY 107 (sesión de troubleshooting intenso):
+Pipeline 6/6 RUNNING. Root cause resuelto: component_config_path no
+seteado en etcd_client.cpp → tx_ null → datos LZ4 sin cifrar enviados
+como octet-stream → MAC failure garantizado en servidor.
 
-## Estado del sistema
+FIXES EN CÓDIGO FUENTE (commiteados en feature/plugin-crypto):
+1. ml-detector/src/etcd_client.cpp
+   → component_config_path = "/etc/ml-defender/ml-detector/ml_detector_config.json"
+2. sniffer/src/userspace/etcd_client.cpp  
+   → component_config_path = "/etc/ml-defender/sniffer/sniffer.json"
+   → get_encryption_seed() reescrito para leer seed.bin local
+3. firewall-acl-agent/src/core/etcd_client.cpp
+   → component_config_path = "/etc/ml-defender/firewall-acl-agent/firewall.json"
+4. etcd-server/src/component_registry.cpp
+   → swap CTX_ETCD_TX/RX (rx_ usa TX, tx_ usa RX)
+   → PENDIENTE VERIFICAR si era necesario (ver PASO 1)
 
-**Pipeline:** 6/6 RUNNING
-**Tests:** 25/25 suites ✅ + TEST-INTEG-4a-PLUGIN (3/3 variantes) ✅
-**Rama activa:** `feature/plugin-crypto`
-**Último commit:** DAY 106 — PHASE 2a CLOSED + TEST-INTEG-4a-PLUGIN PASSED + paper arXiv submitted
+FIXES SOLO EN VM (NO en provision.sh — estado frágil):
+- chmod 755 /etc/ml-defender/{6 componentes}/
+- chmod 640 + chown root:vagrant en seed.bin de todos
+- Seeds sincronizados manualmente (cp etcd-server/seed.bin → otros 5)
+- Symlinks JSON /etc/ml-defender/*/  → /vagrant/*/config/
+- ln -sf libsodium.so.26 libsodium.so.23 + ldconfig
+- libcrypto_transport.so reconstruida (era feb 16, ahora abr 4)
 
----
+SI HACES vagrant destroy && vagrant up HOY → pipeline NO arranca.
+provision.sh genera seeds independientes, deja dirs drwx------ root,
+no crea symlinks JSON, no sincroniza seeds.
 
-## Lo realizado en DAY 106 (completo)
+ORDEN OBLIGATORIO DAY 108 (no saltarse pasos):
 
-| Tarea | Estado |
-|-------|--------|
-| 1c — nonce/tag NULL contract en `plugin_api.h` | ✅ |
-| 1d — Makefile deps: `plugin-loader-build` en sniffer, ml-detector, rag-ingester, rag-build | ✅ |
-| 1a — CRC32 D8-v2 en `plugin_loader.cpp` (`crc32_fast()` + snapshot antes/después) | ✅ |
-| 1b — `plugins/test-message/plugin_test_message.cpp` variantes A/B/C | ✅ |
-| TEST-INTEG-4a-PLUGIN — 3/3 variantes PASSED | ✅ |
-| Paper Draft v11 — UEx eliminada, 3 figuras TikZ añadidas | ✅ |
-| arXiv submit — `submit/7438768` STATUS: submitted | ✅ |
+PASO 1 — Verificar swap CTX (crítico, 5 min):
+Revertir en etcd-server/src/component_registry.cpp:
+rx_ → CTX_ETCD_RX (original)
+tx_ → CTX_ETCD_TX (original)
+rm -rf etcd-server/build-debug && make pipeline-stop && make pipeline-start
+sleep 10 && make pipeline-status
+Si 6/6 RUNNING → swap era innecesario, dejarlo revertido
+Si MAC falla → restaurar swap, documentar como ADR-026
 
----
+PASO 2 — Añadir invariant fail-fast (los 3 adaptadores etcd_client.cpp):
+if (config_.encryption_enabled && !tx_) {
+std::terminate(); // FATAL: component_config_path no seteado
+}
 
-## arXiv — estado
+PASO 3 — Formalizar provision.sh (gate obligatorio antes de PHASE 2b):
+a) Un solo seed maestro → distribuir a 6 componentes
+b) chmod 755 directorios, 640 seed.bin, chown root:vagrant
+c) Symlinks JSON automáticos para los 6 componentes
+d) ln -sf libsodium.so.26 libsodium.so.23 + ldconfig
+e) Rebuild libcrypto_transport si fecha < hoy
 
-| Item | Estado |
-|------|--------|
-| Cuenta | `alonsoir` / `alonsoir@gmail.com` |
-| Submission ID | `7438768` |
-| Status | **submitted** — pendiente moderación (1-2 días hábiles) |
-| Endorsers | Sebastian Garcia (CTU Prague) ✅, Andrés Caro Lindo (UEx) ✅ |
+PASO 4 — Gate de calidad:
+vagrant destroy && vagrant up
+make pipeline-start && sleep 15 && make pipeline-status
+Debe dar 6/6 RUNNING sin intervención manual.
+Si no → volver a PASO 3.
 
-Cuando llegue el arXiv ID definitivo (`2504.XXXXX`) → actualizar README.md y paper.
+PASO 5 — Solo si PASO 4 verde:
+PHASE 2b: plugin_process_message() en rag-ingester
+Gate: TEST-INTEG-4b (MessageContext, result_code=0)
+Patrón: igual que firewall-acl-agent DAY 105
 
----
+DEUDA PENDIENTE (no bloqueante):
+- Unificar sniffer bajo SeedClient (eliminar get_encryption_seed manual)
+- SeedClient v2: aceptar 640 con warning en dev, 600 en prod
+- ADR-025 (Plugin Integrity Ed25519) — post PHASE 2b
+- arXiv submit/7438768 — pendiente moderación
+- Feedback Consejo DAY 107: ya recibido y procesado
 
-## ⚡ PRIMER ACTO DAY 107
-
-```bash
-cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout feature/plugin-crypto
-git pull origin feature/plugin-crypto
-make pipeline-status
-```
-
----
-
-## PHASE 2b — rag-ingester (DESBLOQUEADA)
-
-PHASE 2a completamente cerrada. Siguiente: integrar `plugin_process_message()` en `rag-ingester`.
-
-### Patrón a seguir (igual que firewall-acl-agent DAY 105):
-
-**Archivos a tocar:**
-- `rag-ingester/src/main.cpp` — añadir `PluginLoader`, llamar `invoke_all(MessageContext&)`
-- `rag-ingester/CMakeLists.txt` — linkear `libplugin_loader.so`
-- `rag-ingester/config/rag-ingester.json` — añadir sección `plugins`
-
-**Gate:** TEST-INTEG-4b — `plugin_process_message()` invocado en `rag-ingester` con `MessageContext`, post-invocation invariants verified, `result_code=0`.
-
-### Después de rag-ingester: 3 componentes restantes
-- `sniffer` (PHASE 2c)
-- `ml-detector` (PHASE 2d)
-- `rag-security` (PHASE 2e) — usa `g_plugin_loader` global para signal handler
-
----
-
-## ADR-025 — Plugin Integrity Verification (Ed25519 + TOCTOU-safe dlopen)
-
-Estado: **APPROVED** por Consejo (DAY 102). Implementación post-PHASE 2 completa.
-
-Archivos a tocar cuando llegue el momento:
-- `plugin_loader.cpp`
-- `plugin-loader/CMakeLists.txt`
-- `tools/provision.sh` (--reset flag)
-- JSON config schemas (6 componentes)
-- systemd units
-- Tests: TEST-INTEG-SIGN-1 → TEST-INTEG-SIGN-7
-
----
-
-## Archivos nuevos DAY 106
-
-```
-plugin-loader/include/plugin_loader/plugin_api.h   ← nonce/tag NULL contract (1c)
-plugin-loader/src/plugin_loader.cpp                 ← crc32_fast() + D8-v2 (1a)
-plugins/test-message/plugin_test_message.cpp        ← variantes A/B/C (1b)
-plugins/test-message/CMakeLists.txt
-plugins/test-message/test_variants.cpp
-plugins/test-message/test_config.json
-Makefile                                            ← plugin-loader-build deps (1d)
-```
-
----
-
-## Constantes
-
-```
-Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
-VM:      vagrant ssh -c '...'   ← SIEMPRE -c
-         vagrant ssh -- python3 << 'PYEOF' ... PYEOF  ← para scripts Python
-Binarios: /vagrant/{component}/build-debug/{component}
-RAG bin:  /vagrant/rag/build/rag-security  ← build/ no build-debug/
-Plugins:  /usr/lib/ml-defender/plugins/
-Libs:     /usr/local/lib/  ← libplugin_loader.so
-Keys:     /etc/ml-defender/{component}/seed.bin
-dev:      MLD_DEV_MODE=1 / MLD_ALLOW_DEV_MODE → solo Debug builds
-Config fw: /vagrant/firewall-acl-agent/config/firewall.json  ← NO firewall-acl-agent.json
-
-macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
-zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
-cmake:   NO_DEFAULT_PATH para libsodium
-```
-
----
-
-## Consejo de Sabios
-
-Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
-DeepSeek, Qwen (Alibaba), Gemini (Google), Parallel.ai
-
-Todos los miembros del consejo de sabios han sido instruidos explícitamente por el autor para actuar como revisores
-implacables pero justos. Su rol es priorizar la máxima calidad y seguridad del proyecto siempre teniendo en cuenta la
-cortesía y la velocidad de desarrollo.
-Se espera que identifiquen riesgos duros, contradicciones sutiles y decisiones que comprometan la misión de
-proteger infraestructuras críticas con recursos limitados.
-Si encuentran esos problemas, tratarán de proveer el test o las matemáticas que demuestran que existe dicho problema,
-de manera que así el resto del consejo puedan entender dicho problema, y así entre todos encontrar la solución.
-Dicha solución o fix debe compilar, debe arreglar el problema y antes de ejecutar el fix, se debe ejecutar el test
-que demuestra que existe dicha vulnerabilidad. Una vez construido, compilado y ejecutado el fix, el test de vulnerabilidad
-tiene que salir esta vez negativo, señal de que la vulnerabilidad ha desaparecido. Eso es para los problemas en el código.
-Para los problemas más sutiles, los miembros del consejo deben aportar datos que apoyen su hipótesis, a ser posible,
-acompañado de código compilable.
-
----
-
-*DAY 106 cierre — 3 abril 2026*
-*Tests: 25/25 ✅ + TEST-INTEG-4a-PLUGIN 3/3 ✅*
-*PHASE 2a: COMPLETAMENTE CERRADA*
-*arXiv: submit/7438768 SUBMITTED ✅*
-*Próximo: PHASE 2b — rag-ingester*
-*Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
+Consejo DAY 107 unánime en:
+- swap CTX: revertir y verificar (mayoría)
+- doble path seed: deuda técnica, unificar en SeedClient
+- permisos 640: aceptar en dev con warning, 600 en prod
+- invariant fail-fast: añadir urgente
