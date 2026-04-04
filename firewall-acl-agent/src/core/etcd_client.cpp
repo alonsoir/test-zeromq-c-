@@ -147,15 +147,17 @@ std::string EtcdClient::get_crypto_seed() const {
         return "";
     }
 
-std::string seed = pImpl->client_->get_encryption_key();
-
-    if (seed.empty()) {
-        std::cerr << "❌ [firewall-acl-agent] Failed to get crypto seed from etcd" << std::endl;
-    } else {
-        std::cout << "🔑 [firewall-acl-agent] Retrieved crypto seed: "
-                  << seed.substr(0, 16) << "..." << std::endl;
+    // ADR-013 PHASE 2 — seed local, no del servidor
+    const std::string seed_path = "/etc/ml-defender/firewall-acl-agent/seed.bin";
+    std::ifstream f(seed_path, std::ios::binary);
+    if (!f.is_open()) {
+        std::cerr << "❌ [firewall-acl-agent] No se puede abrir seed.bin" << std::endl;
+        return "";
     }
-
+    std::string seed(32, '\0');
+    f.read(&seed[0], 32);
+    if (f.gcount() != 32) { return ""; }
+    std::cout << "🔑 [firewall-acl-agent] Seed cargado localmente (32 bytes)" << std::endl;
     return seed;
 }
 
