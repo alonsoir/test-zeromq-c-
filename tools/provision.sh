@@ -257,10 +257,9 @@ create_component_dir() {
         log_item "Directorio creado: $dir"
     fi
 
-    # Permisos: solo root puede leer el directorio en sí
-    chmod 700 "$dir"
-    # root:root — los binarios del pipeline corren con sudo donde necesitan claves
-    chown root:root "$dir"
+    # Permisos: root escribe, vagrant lee (necesario para SeedClient en dev)
+    chmod 755 "$dir"
+    chown root:vagrant "$dir"
 }
 
 # Genera keypair Ed25519 para un componente
@@ -304,8 +303,8 @@ generate_seed() {
 
     # 32 bytes de /dev/urandom — fuente de entropía del SO
     openssl rand -out "$seed_file" ${SEED_BYTES}
-    chmod 600 "$seed_file"
-    chown root:root "$seed_file"
+    chmod 640 "$seed_file"
+    chown root:vagrant "$seed_file"
 
     # Verificación de integridad: el seed debe tener exactamente SEED_BYTES
     local actual_size
@@ -319,8 +318,8 @@ generate_seed() {
     # Guardar también en hex para debugging (chmod 600)
     # Solo en PHASE 1 — en PHASE 2 el hex también irá cifrado
     openssl rand -hex ${SEED_BYTES} > "${dir}/seed.hex"
-    chmod 600 "${dir}/seed.hex"
-    chown root:root "${dir}/seed.hex"
+    chmod 640 "${dir}/seed.hex"
+    chown root:vagrant "${dir}/seed.hex"
 
     log_item "Seed ChaCha20 (${SEED_BYTES}B) generado para ${component}"
 }
@@ -675,6 +674,99 @@ provision_full() {
     # Provisionar plugins
     provision_plugins
     provision_ebpf_plugins
+
+    # ── FIX DAY 107: seed maestro → distribuir a los 5 componentes restantes ──
+    log_section "Sincronización de seed maestro (etcd-server → 5 componentes)"
+    local master_seed="${KEYS_ROOT}/etcd-server/seed.bin"
+    if [[ ! -f "$master_seed" ]]; then
+        log_error "Seed maestro no encontrado: $master_seed"
+        exit 1
+    fi
+    for component in sniffer ml-detector firewall-acl-agent rag-ingester rag-security; do
+        local dst="${KEYS_ROOT}/${component}/seed.bin"
+        cp "$master_seed" "$dst"
+        chmod 640 "$dst"
+        chown root:vagrant "$dst"
+        log_item "Seed sincronizado → ${component}"
+    done
+    log_info "Seeds sincronizados (todos los componentes usan el seed de etcd-server)"
+
+    # ── FIX DAY 107: symlinks JSON /etc/ml-defender/* → /vagrant/*/config/ ──
+    log_section "Symlinks JSON config (6 componentes)"
+    declare -A CONFIG_MAP=(
+        ["etcd-server"]="/vagrant/etcd-server/config"
+        ["sniffer"]="/vagrant/sniffer/config"
+        ["ml-detector"]="/vagrant/ml-detector/config"
+        ["firewall-acl-agent"]="/vagrant/firewall-acl-agent/config"
+        ["rag-ingester"]="/vagrant/rag-ingester/config"
+        ["rag-security"]="/vagrant/rag-security/config"
+    )
+    for component in "${COMPONENTS[@]}"; do
+        local link_dir="${KEYS_ROOT}/${component}"
+        local target="${CONFIG_MAP[$component]}"
+        if [[ -d "$target" ]]; then
+            # Crear symlinks para cada JSON en el directorio config
+            for json_file in "${target}"/*.json; do
+                [[ -f "$json_file" ]] || continue
+                local fname
+                fname=$(basename "$json_file")
+                local link_path="${link_dir}/${fname}"
+                if [[ ! -L "$link_path" ]]; then
+                    ln -sf "$json_file" "$link_path"
+                    log_item "Symlink: ${link_path} → ${json_file}"
+                fi
+            done
+        else
+            log_warn "Config dir no existe aún: ${target} (se creará en pipeline-start)"
+        fi
+    done
+
+    # ── FIX DAY 107: libsodium.so.23 → libsodium.so.26 + ldconfig ────────────
+    log_section "libsodium compat symlink (so.23 → so.26)"
+    local so26
+    so26=$(find /usr/local/lib -name "libsodium.so.26" 2>/dev/null | head -1)
+    if [[ -n "$so26" ]]; then
+        local so_dir
+        so_dir=$(dirname "$so26")
+        if [[ ! -L "${so_dir}/libsodium.so.23" ]]; then
+            ln -sf "${so_dir}/libsodium.so.26" "${so_dir}/libsodium.so.23"
+            log_item "Symlink creado: ${so_dir}/libsodium.so.23 → libsodium.so.26"
+        else
+            log_info "Symlink libsodium.so.23 ya existe"
+        fi
+        ldconfig
+        log_item "ldconfig ejecutado"
+    else
+        log_warn "libsodium.so.26 no encontrada — instalar primero con install_libsodium_1019"
+    fi
+
+    # ── FIX DAY 107: verificar/rebuild libcrypto_transport si es antigua ──────
+    log_section "libcrypto_transport.so — verificación de fecha"
+    local lib_path="/usr/local/lib/libcrypto_transport.so"
+    local today
+    today=$(date +%Y-%m-%d)
+    if [[ -f "$lib_path" ]]; then
+        local lib_date
+        lib_date=$(date -r "$lib_path" +%Y-%m-%d 2>/dev/null || echo "unknown")
+        if [[ "$lib_date" < "$today" ]]; then
+            log_warn "libcrypto_transport.so fecha: ${lib_date} — rebuilding"
+            if [[ -d "/vagrant/crypto-transport" ]]; then
+                pushd /vagrant/crypto-transport > /dev/null
+                mkdir -p build && cd build
+                cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local                     -DCMAKE_PREFIX_PATH=/usr/local > /dev/null 2>&1
+                make -j"$(nproc)" > /dev/null 2>&1 && make install > /dev/null 2>&1
+                ldconfig
+                popd > /dev/null
+                log_item "libcrypto_transport.so rebuilt y reinstalada"
+            else
+                log_warn "/vagrant/crypto-transport no encontrado — rebuild manual requerido"
+            fi
+        else
+            log_info "libcrypto_transport.so actualizada (${lib_date})"
+        fi
+    else
+        log_warn "libcrypto_transport.so no encontrada en ${lib_path}"
+    fi
 
     # Verificación final
     log_section "Verificación post-provisioning"
