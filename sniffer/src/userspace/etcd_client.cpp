@@ -33,6 +33,11 @@ struct EtcdClient::Impl {
         config.compression_enabled = true;
         config.compression_min_size = 0;
         config.component_config_path = "/etc/ml-defender/sniffer/sniffer.json";
+        // INVARIANT (ADR-027): encryption_enabled requiere component_config_path.
+        // Sin él, SeedClient no inicializa, datos van en claro → MAC failure garantizado.
+        if (config.encryption_enabled && config.component_config_path.empty()) {
+            std::terminate(); // FATAL: setear component_config_path en etcd_client::Config
+        }
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
 

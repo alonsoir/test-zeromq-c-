@@ -33,6 +33,11 @@ struct EtcdClient::Impl {
         config.encryption_enabled = (endpoint.find("http://") != 0);
         config.compression_enabled = true;
         config.component_config_path = "/etc/ml-defender/ml-detector/ml_detector_config.json";
+        // INVARIANT (ADR-027): encryption_enabled requiere component_config_path.
+        // Sin él, SeedClient no inicializa, datos van en claro → MAC failure garantizado.
+        if (config.encryption_enabled && config.component_config_path.empty()) {
+            std::terminate(); // FATAL: setear component_config_path en etcd_client::Config
+        }
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
         client_->connect();
     }
