@@ -263,6 +263,10 @@ All configuration comes from JSON at runtime. No hardcoded constants in producti
 - [x] Andrés Caro Lindo (UEx/INCIBE) — endorser confirmed
 - [x] arXiv submitted — `submit/7438768` cs.CR (pending moderation)
 
+### 🔨 DAY 109 — Antes de PHASE 2b
+- [ ] `MLD_ALLOW_UNCRYPTED` flag en 3 adaptadores `etcd_client.cpp`
+- [ ] `mkdir -p /vagrant/rag-security/config` + symlink en `provision.sh`
+
 ### 🔜 NEXT — PHASE 2b (rag-ingester)
 - [ ] ADR-023 PHASE 2b — `rag-ingester` + `plugin_process_message()`
 - [ ] TEST-INTEG-4b gate
@@ -386,7 +390,10 @@ All code, all analysis scripts, all experiments, and all failures are documented
 - ✅ DAY 105: PHASE 2a firewall-acl-agent — TEST-INTEG-4a PASSED
 - ✅ DAY 106: PHASE 2a CLOSED — D8-v2 CRC32 + TEST-INTEG-4a-PLUGIN 3/3 PASSED
 - ✅ DAY 106: Paper Draft v11 — 3 TikZ figures + arXiv SUBMITTED (submit/7438768)
-
+- ✅ DAY 107: MAC failure root cause — component_config_path + CTX swap confirmado
+- ✅ DAY 108: provision.sh reproducible — vagrant destroy → 6/6 RUNNING sin intervención
+- ✅ DAY 108: ADR-026 (P2P Fleet) + ADR-027 (CTX swap) — escritos y commiteados
+- 
 ---
 
 **Via Appia Quality** 🏛️ — Built to last decades

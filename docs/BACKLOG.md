@@ -16,6 +16,43 @@
 
 ## ✅ COMPLETADO
 
+### Day 107–108 (4–5 Apr 2026) — MAC failure root cause + provision.sh formalizado + ADR-026/027
+
+**DAY 107 — Root cause MAC verification failed ✅**
+- Root cause: `component_config_path` no seteado en `etcd_client.cpp` de ml-detector,
+  sniffer y firewall → `tx_` null → datos en claro → MAC failure garantizado
+- Fix: `component_config_path` seteado en los 3 adaptadores
+- Fix: `get_encryption_seed()` reescrito en sniffer para leer seed.bin local
+- Fix confirmado: swap `CTX_ETCD_TX/RX` en `etcd-server/src/component_registry.cpp`
+  necesario y correcto (verificado DAY 108 PASO 1)
+- Pipeline 6/6 RUNNING al cierre de sesión
+
+**DAY 108 — provision.sh reproducible + ADR-026/027 + gate PASO 4 verde ✅**
+
+- **PASO 1**: Swap CTX_ETCD_TX/RX verificado empíricamente — necesario (ADR-027)
+- **PASO 2**: Invariant fail-fast en 3 adaptadores `etcd_client.cpp`:
+  `if (config_.encryption_enabled && config.component_config_path.empty()) std::terminate()`
+- **PASO 3**: provision.sh formalizado — 9 fixes:
+    - `create_component_dir`: chmod 755 + chown root:vagrant (era 700 root:root)
+    - `generate_seed`: chmod 640 + chown root:vagrant (era 600 root:root)
+    - Seed maestro: etcd-server/seed.bin distribuido a los 5 componentes
+    - Symlinks JSON automáticos: /etc/ml-defender/*/ → /vagrant/*/config/*.json
+    - libsodium compat: ln -sf libsodium.so.26 libsodium.so.23 + ldconfig
+    - `install_shared_libs()`: build + install seed-client, crypto-transport,
+      plugin-loader, etcd-client, libsnappy
+    - `check_dependencies()`: tmux añadido con auto-install
+    - libcrypto_transport: rebuild automático si fecha < hoy
+- **PASO 4**: `vagrant destroy && vagrant up` → 6/6 RUNNING sin intervención manual ✅
+- **ADR-026**: Arquitectura P2P Fleet Federated — formaliza Consejo DAY 104
+- **ADR-027**: CTX_ETCD_TX/RX swap — principio mirror cliente/servidor documentado
+
+**Consejo de Sabios DAY 108 — 5 revisores (Qwen auto-identifica DeepSeek, patrón DAY 103-108) ✅**
+- Q1: `std::terminate()` prod + `MLD_ALLOW_UNCRYPTED` dev (no `MLD_DEV_MODE`) — aprobado
+- Q2: rebuild limpio siempre en `install_shared_libs()` — unánime
+- Q3: plugin rag-ingester read-only (`ctx_readonly.payload = nullptr`) — 4/5
+- Q4: `rag-security/config` crear en provision.sh — unánime
+- Nuevos ítems: TEST-PROVISION-1 (ChatGPT5), ADR-028 RAG Ingestion Trust Model (ChatGPT5)
+
 ### Day 106 (3 Apr 2026) — PHASE 2a CERRADA + TEST-INTEG-4a-PLUGIN + arXiv submitted
 
 **PHASE 2a — 4 condiciones Consejo DAY 105: TODAS CERRADAS ✅**
@@ -179,6 +216,10 @@ Tests totales: **25/25 ✅**
 | FEAT-ROTATION-1 | `provision.sh rotate-all` + SEED_ROTATION_DAYS | P2 |
 | BARE-METAL-IMAGE | Imagen Debian Bookworm hardened — exportable a USB | P2 |
 | BARE-METAL-VAGRANT | Vagrantfile nuevo con imagen BARE-METAL-IMAGE | P2 |
+| MLD_ALLOW_UNCRYPTED | Flag explícito para desactivar fail-fast en dev | Consejo DAY 108 |
+| TEST-PROVISION-1 | Gate CI: vagrant destroy → up → 6/6 RUNNING | ChatGPT5 DAY 108 |
+| ADR-028 | RAG Ingestion Trust Model — antes de write-capable plugins | ChatGPT5 DAY 108 |
+| UX install_shared_libs | Mensaje "~2 min intencional" en provision.sh | Consejo DAY 108 |
 
 ### FASE 3 — Post-arXiv (ADR-024 implementation)
 
@@ -298,6 +339,11 @@ DEBT-INFRA-001 (Debian Trixie):       ░░░░░░░░░░░░░░
 DOCS-2 (AppArmor profiles):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳
 Fast Detector Config (DEBT-FD-001):   ████░░░░░░░░░░░░░░░░  20% 🟡  PHASE 2
 ENT-*:                                ░░░░░░░░░░░░░░░░░░░░   0% ⏳  largo plazo
+provision.sh reproducible (destroy→6/6): ████████████████████ 100% ✅  DAY 108
+ADR-026 (P2P Fleet Federated):           ████████████████████ 100% ✅  DAY 108 — BORRADOR
+ADR-027 (CTX swap etcd):                 ████████████████████ 100% ✅  DAY 108 — ACEPTADO
+MLD_ALLOW_UNCRYPTED invariant:           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 109
+rag-security/config en provision.sh:     ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 109
 ```
 
 ---
@@ -333,10 +379,21 @@ ENT-*:                                ░░░░░░░░░░░░░░
 | Makefile dep order | plugin-loader-build explícito en todos los componentes ✅ | 106 |
 | reserved[60] layout | suficiente; layout formal a documentar en ADR-024 ✅ | 105 |
 | test_config.json | Config aislado para tests de plugin — no tocar producción ✅ | 106 |
+| CTX_ETCD swap (server mirror) | Servidor invierte TX/RX respecto al cliente — ADR-027 ✅ | 107–108 |
+| provision.sh reproducibilidad | vagrant destroy → up → 6/6 sin intervención manual ✅ | 108 |
+| plugin rag-ingester trust | read-only, payload=nullptr, Consejo 4/5 ✅ | 108 |
 
 ---
 
 ### Notas del Consejo de Sabios
+> DAY 108 — provision.sh formalizado + ADR-026/027 + PASO 4 verde:
+> "Q1: terminate prod + MLD_ALLOW_UNCRYPTED dev. Q2: rebuild limpio unánime.
+> Q3: rag-ingester plugin read-only (ctx_readonly.payload=nullptr) — 4/5.
+> Q4: rag-security/config en provision.sh — unánime.
+> Nuevos: TEST-PROVISION-1 como gate CI, ADR-028 RAG Ingestion Trust Model.
+> Nota: Qwen auto-identifica como DeepSeek — patrón consolidado DAY 103-108,
+> comportamiento de entrenamiento, no identidad real (acceso verificado chat.qwen.ai)."
+> — ChatGPT5 · DeepSeek · Gemini · Grok · Qwen (auto-identifica DeepSeek)
 
 > DAY 106 — PHASE 2a cierre (paper + arXiv):
 > "PHASE 2a completamente cerrada. Todas las condiciones del Consejo DAY 105 satisfechas.
@@ -364,9 +421,9 @@ ENT-*:                                ░░░░░░░░░░░░░░
 
 ---
 
-*Última actualización: DAY 106 — 3 Apr 2026*
+*Última actualización: DAY 108 — 5 Apr 2026*
 *Branch: feature/plugin-crypto*
 *Tests: 25/25 suites ✅ + TEST-INTEG-4a-PLUGIN 3/3 ✅*
 *Paper: Draft v11 ✅ · arXiv: submit/7438768 SUBMITTED ✅*
+*Pipeline: 6/6 RUNNING reproducible desde cero (vagrant destroy) ✅*
 *PHASE 2a: COMPLETAMENTE CERRADA · PHASE 2b: DESBLOQUEADA*
-*Co-authored-by: Alonso Isidoro Román + Claude (Anthropic), Grok, DeepSeek, Qwen, Gemini, Parallel.ai*

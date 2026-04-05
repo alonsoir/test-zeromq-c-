@@ -1,45 +1,27 @@
-cd /Users/aironman/CLionProjects/test-zeromq-docker
-git add ml-detector/src/etcd_client.cpp \
-        sniffer/src/userspace/etcd_client.cpp \
-        firewall-acl-agent/src/core/etcd_client.cpp \
-        etcd-server/src/component_registry.cpp
-git commit -m "fix(crypto): set component_config_path in etcd_client adapters — DAY 107
+## 3. Commit final
 
-Root cause of MAC verification failed resolved.
-component_config_path was not set in etcd_client::Config across three
-components, leaving tx_ null. Silent guard in process_outgoing_data()
-skipped encryption entirely, sending LZ4-compressed plaintext as
-application/octet-stream. Server attempted ChaCha20-Poly1305 decrypt
-on raw LZ4 — MAC failure guaranteed.
+Una vez tengas el feedback del Consejo y la síntesis, este es el commit:
 
-Fixes:
-- ml-detector/src/etcd_client.cpp: add component_config_path
-- sniffer/src/userspace/etcd_client.cpp: add component_config_path
-  + rewrite get_encryption_seed() to read local seed.bin
-- firewall-acl-agent/src/core/etcd_client.cpp: add component_config_path
-- etcd-server/src/component_registry.cpp: swap CTX_ETCD_TX/RX
-  (rx_ uses TX to decrypt client requests, tx_ uses RX for responses)
-  NOTE: swap needs independent verification in DAY 108 PASO 1
+```bash
+git add docs/consejo/CONSEJO-DAY108-informe.md \
+        docs/consejo/CONSEJO-DAY108-feedback-*.md \
+        docs/consejo/CONSEJO-DAY108-sintesis.md
 
-Root cause identified via hexdump of first 16 bytes at server:
-  7b 0a 20 20 22 5f 68 65 61 64 = { newline  \"_head
-  JSON visible in what should have been ciphertext.
+git commit -m "docs(consejo): DAY 108 informe + feedback + síntesis
 
-VM-only fixes (not yet in provision.sh — DAY 108 PASO 3):
-- chmod 755 /etc/ml-defender/ component dirs
-- chmod 640 + chown root:vagrant seed.bin (all 6 components)
-- Seeds synchronized (etcd-server seed.bin copied to all)
-- JSON symlinks /etc/ml-defender/*/ -> /vagrant/*/config/
-- libsodium.so.23 -> libsodium.so.26 symlink
-- libcrypto_transport.so rebuilt (was Feb 16, now Apr 4)
+Sesión: formalización provision.sh + ADR-026/027 + gate PASO 4 verde
 
-Diagnosed with Consejo de Sabios (7 LLM reviewers).
-Hexdump technique suggested by Gemini.
+Preguntas abiertas respondidas por Consejo:
+- Q1: std::terminate() vs MLD_DEV_MODE en invariant fail-fast
+- Q2: etcd-client cmake desde cero vs caché en install_shared_libs
+- Q3: PHASE 2b — plugin en rag-ingester: read-only vs modificar MessageContext
+- Q4: rag-security/config — provision.sh vs rag-security-start
 
-Closes: MAC verification failed on PUT /v1/config/{component}
-Pending: provision.sh formalization (DAY 108 PASO 3)
-Pending: fail-fast invariant if tx_ null when encryption enabled
-Pending: verify CTX swap necessity independently (DAY 108 PASO 1)
+Decisiones del árbitro incorporadas en síntesis.
+PHASE 2b desbloqueada: plugin_process_message() en rag-ingester
+Gate: TEST-INTEG-4b (MessageContext, result_code=0)"
+```
 
-Co-authored-by: Alonso Isidoro Roman <alonsoir@gmail.com>
-Co-authored-by: Claude (Anthropic) <claude@anthropic.com>"
+---
+
+Hasta mañana, Alonso. El pipeline está sólido. 🛡️
