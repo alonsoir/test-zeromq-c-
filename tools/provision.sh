@@ -641,6 +641,87 @@ status_all() {
 # MODO FULL — Provisioning completo
 # =============================================================================
 
+# =============================================================================
+# SHARED LIBS — build e install de seed-client + crypto-transport
+# Necesario tras vagrant destroy: los headers y .so desaparecen de /usr/local
+# =============================================================================
+install_shared_libs() {
+    log_section "Shared libs (seed-client + crypto-transport + plugin-loader)"
+
+    # ── seed-client ──────────────────────────────────────────────────────────
+    if pkg-config --exists seed_client 2>/dev/null || \
+       [[ -f /usr/local/lib/libseed_client.so ]]; then
+        log_info "seed-client ya instalada — saltando"
+    else
+        log_item "Compilando seed-client..."
+        local sc_dir="/vagrant/libs/seed-client"
+        if [[ ! -d "$sc_dir" ]]; then
+            log_error "seed-client no encontrada en ${sc_dir}"
+            exit 1
+        fi
+        rm -rf "${sc_dir}/build"
+        mkdir -p "${sc_dir}/build"
+        pushd "${sc_dir}/build" > /dev/null
+        cmake -DCMAKE_BUILD_TYPE=Release .. > /dev/null 2>&1
+        make -j"$(nproc)" > /dev/null 2>&1
+        make install > /dev/null 2>&1
+        ldconfig
+        popd > /dev/null
+        log_item "seed-client instalada en /usr/local"
+    fi
+
+    # ── crypto-transport ─────────────────────────────────────────────────────
+    if [[ -f /usr/local/lib/libcrypto_transport.so ]] && \
+       [[ -f /usr/local/include/crypto_transport/transport.hpp ]]; then
+        log_info "crypto-transport ya instalada — saltando"
+    else
+        log_item "Compilando crypto-transport..."
+        local ct_dir="/vagrant/crypto-transport"
+        if [[ ! -d "$ct_dir" ]]; then
+            log_error "crypto-transport no encontrada en ${ct_dir}"
+            exit 1
+        fi
+        rm -rf "${ct_dir}/build"
+        mkdir -p "${ct_dir}/build"
+        pushd "${ct_dir}/build" > /dev/null
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=/usr/local \
+              -DCMAKE_PREFIX_PATH=/usr/local \
+              .. > /dev/null 2>&1
+        make -j"$(nproc)" > /dev/null 2>&1
+        make install > /dev/null 2>&1
+        ldconfig
+        popd > /dev/null
+        log_item "crypto-transport instalada en /usr/local"
+    fi
+
+    # ── plugin-loader ─────────────────────────────────────────────────────────
+    if [[ -f /usr/local/lib/libplugin_loader.so ]]; then
+        log_info "plugin-loader ya instalada — saltando"
+    else
+        log_item "Compilando plugin-loader..."
+        local pl_dir="/vagrant/plugin-loader"
+        if [[ ! -d "$pl_dir" ]]; then
+            log_warn "plugin-loader no encontrada en ${pl_dir} — saltando"
+        else
+            rm -rf "${pl_dir}/build"
+            mkdir -p "${pl_dir}/build"
+            pushd "${pl_dir}/build" > /dev/null
+            cmake -DCMAKE_BUILD_TYPE=Release \
+                  -DCMAKE_INSTALL_PREFIX=/usr/local \
+                  -DCMAKE_PREFIX_PATH=/usr/local \
+                  .. > /dev/null 2>&1
+            make -j"$(nproc)" > /dev/null 2>&1
+            make install > /dev/null 2>&1
+            ldconfig
+            popd > /dev/null
+            log_item "plugin-loader instalada en /usr/local"
+        fi
+    fi
+
+    log_info "Shared libs OK"
+}
+
 provision_full() {
     echo -e "\n${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BOLD}║  ML Defender — Provisioning Criptográfico PHASE 1            ║${NC}"
@@ -656,6 +737,7 @@ provision_full() {
     check_dependencies
     check_entropy
     install_libsodium_1019
+    install_shared_libs
 
     # Crear directorio raíz
     if [[ ! -d "$KEYS_ROOT" ]]; then
