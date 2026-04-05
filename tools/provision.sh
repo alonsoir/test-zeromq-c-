@@ -725,6 +725,39 @@ install_shared_libs() {
         fi
     fi
 
+    # ── libsnappy (apt) ──────────────────────────────────────────────────────
+    if ! dpkg -l libsnappy1v5 2>/dev/null | grep -q "^ii"; then
+        log_item "Instalando libsnappy..."
+        apt-get install -y --quiet libsnappy1v5 libsnappy-dev >/dev/null 2>&1
+        log_item "libsnappy instalada"
+    else
+        log_info "libsnappy ya instalada — saltando"
+    fi
+
+    # ── etcd-client ───────────────────────────────────────────────────────────
+    if [[ -f /usr/local/lib/libetcd_client.so ]]; then
+        log_info "etcd-client ya instalada — saltando"
+    else
+        log_item "Instalando etcd-client..."
+        local ec_dir="/vagrant/etcd-client"
+        if [[ ! -d "$ec_dir" ]]; then
+            log_error "etcd-client no encontrada en ${ec_dir}"
+            exit 1
+        fi
+        rm -rf "${ec_dir}/build"
+        mkdir -p "${ec_dir}/build"
+        pushd "${ec_dir}/build" > /dev/null
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=/usr/local \
+              -DCMAKE_PREFIX_PATH=/usr/local \
+              .. > /dev/null 2>&1
+        make -j"$(nproc)" > /dev/null 2>&1
+        make install > /dev/null 2>&1
+        ldconfig
+        popd > /dev/null
+        log_item "etcd-client instalada en /usr/local"
+    fi
+
     log_info "Shared libs OK"
 }
 
