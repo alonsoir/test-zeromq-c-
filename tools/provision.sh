@@ -81,11 +81,17 @@ check_dependencies() {
     command -v jq         >/dev/null 2>&1 || missing+=("jq")
     command -v wget       >/dev/null 2>&1 || missing+=("wget")
     command -v pkg-config >/dev/null 2>&1 || missing+=("pkg-config")
+    command -v tmux       >/dev/null 2>&1 || missing+=("tmux")
 
     if [[ ${#missing[@]} -gt 0 ]]; then
         log_error "Dependencias faltantes: ${missing[*]}"
-        echo "  Instalar: apt-get install -y openssl jq wget pkg-config"
-        exit 1
+        echo "  Instalando dependencias faltantes..."
+        apt-get install -y --quiet "${missing[@]}" >/dev/null 2>&1 || {
+            log_error "No se pudieron instalar: ${missing[*]}"
+            echo "  Instalar manualmente: apt-get install -y openssl jq wget pkg-config tmux"
+            exit 1
+        }
+        log_item "Dependencias instaladas: ${missing[*]}"
     fi
 
     # Verificar que OpenSSL soporta Ed25519
