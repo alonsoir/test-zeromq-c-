@@ -838,7 +838,18 @@ provision_full() {
                 fi
             done
         else
-            log_warn "Config dir no existe aún: ${target} (se creará en pipeline-start)"
+            mkdir -p "$target"
+            log_item "Config dir creado: ${target}"
+            for json_file in "${target}"/*.json; do
+                [[ -f "$json_file" ]] || continue
+                local fname
+                fname=$(basename "$json_file")
+                local link_path="${link_dir}/${fname}"
+                if [[ ! -L "$link_path" ]]; then
+                    ln -sf "$json_file" "$link_path"
+                    log_item "Symlink: ${link_path} → ${json_file}"
+                fi
+            done
         fi
     done
 

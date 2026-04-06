@@ -36,7 +36,14 @@ struct EtcdClient::Impl {
         // INVARIANT (ADR-027): encryption_enabled requiere component_config_path.
         // Sin él, SeedClient no inicializa, datos van en claro → MAC failure garantizado.
         if (config.encryption_enabled && config.component_config_path.empty()) {
-            std::terminate(); // FATAL: setear component_config_path en etcd_client::Config
+            if (getenv("MLD_ALLOW_UNCRYPTED")) {
+                std::cerr << "FATAL[DEV]: encryption_enabled pero component_config_path vacio. "
+                          << "MLD_ALLOW_UNCRYPTED activo - continuando sin cifrado. "
+                          << "NUNCA en produccion.\n";
+                return; // constructor: continuar sin cifrado en dev mode
+            } else {
+                std::terminate(); // FATAL: produccion - fallo total garantizado
+            }
         }
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
         client_->connect();
