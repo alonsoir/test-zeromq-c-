@@ -320,17 +320,10 @@ plugin-loader-test:
 	@vagrant ssh -c "cd /vagrant/plugin-loader/build && ctest --output-on-failure"
 
 plugin-integ-test:
-	@echo "🧪 TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
-	@vagrant ssh -c ' \
-	  cd /tmp && \
-	  g++ -std=c++20 -o test_variants \
-	    /vagrant/plugins/test-message/test_variants.cpp \
-	    -I/usr/local/include \
-	    -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && \
-	  MLD_ALLOW_DEV_MODE=1 ./test_variants && \
-	  echo "✅ TEST-INTEG-4a-PLUGIN PASSED" || echo "❌ TEST-INTEG-4a-PLUGIN FAILED"'
-
-
+	@echo "TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_variants /vagrant/plugins/test-message/test_variants.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_variants && echo TEST-INTEG-4a PASSED || echo TEST-INTEG-4a FAILED'
+	@echo "TEST-INTEG-4b: plugin READ-ONLY contract (rag-ingester PHASE 2b)..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4b /vagrant/plugins/test-message/test_integ_4b.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4b && echo TEST-INTEG-4b PASSED || echo TEST-INTEG-4b FAILED'
 plugin-hello-build: plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
