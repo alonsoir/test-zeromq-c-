@@ -79,7 +79,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v11 --- April 2026}
+\date{Draft v12 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -275,10 +275,41 @@ in Resource-Constrained Organizations}}
     destination diversity --- features detectable even when payloads are encrypted.
 
     \subsection{Out-of-Scope Attacks}
-    Application-layer attacks generating statistically normal traffic; low-and-slow attacks
-    within benign statistical distributions; insider threats; attacks targeting the ML Defender
-    host itself. Future work in Section~\ref{sec:future} addresses some of these through expanded
-    detection vectors (FEAT-NET-1, FEAT-AUTH-1).
+    \label{sec:threatmodel:outofscope}
+
+    Application-layer attacks generating statistically normal traffic; low-and-slow
+    attacks within benign statistical distributions; insider threats; attacks
+    targeting the ML Defender host itself. Future work in
+    Section~\ref{sec:future} addresses some of these through expanded detection
+    vectors (FEAT-NET-1, FEAT-AUTH-1).
+
+    \paragraph{Physical and removable-media vectors (conscious design decision).}
+    ML Defender does not monitor file system activity, removable storage, or
+    USB-borne payloads. This is an intentional architectural boundary, not an
+    oversight.
+
+    The guiding principle of the pipeline is \emph{network surveillance}: every
+    component --- eBPF/XDP capture, flow-level feature extraction, ML-based
+    classification, firewall response --- operates on network traffic. File
+    integrity and endpoint state are out of the monitored surface by design.
+
+    Removable-media threats are addressed at the organizational and hardware
+    layer: USB ports in the DMZ should be physically or firmware-disabled by the
+    IT team before deployment; internal policy should prohibit removable media on
+    monitored hosts. This is standard practice under frameworks such as
+    CIS~Controls~v8~\cite{ciscontrols2021} and is the responsibility of the
+    deploying organization, not of an NDR system.
+
+    For organizations that require file integrity monitoring on top of network
+    detection, ML Defender is designed to operate in \emph{complementary mode}
+    alongside battle-tested open-source tools such as Wazuh~\cite{wazuh2024} and
+    NIST-aligned scanners. Wazuh provides HIDS capabilities (file integrity
+    monitoring, log analysis, rootkit detection) that cover precisely the
+    endpoint surface that ML Defender consciously excludes. The two systems are
+    architecturally orthogonal: ML Defender defends the network perimeter; Wazuh
+    defends the host state. Together they constitute a layered defense appropriate
+    for the target organizations. Integration via raw TCP event streaming is
+    described as Future Work (\S\ref{sec:future:wazuh}).
 
 % ============================================================
     \section{Architecture}
@@ -497,6 +528,43 @@ in Resource-Constrained Organizations}}
         HA etcd cluster is in the project backlog. Peer-to-peer seed negotiation is under design.}
         \label{fig:ha-deployment}
     \end{figure}
+
+
+    \subsection{Integration Philosophy: Composability over Monolithism}
+    \label{sec:integration:philosophy}
+
+    ML Defender is designed to operate as a composable component within a broader
+    security ecosystem, not as a monolithic solution claiming to cover every threat
+    vector. The pipeline's guiding principle --- \emph{network surveillance} ---
+    is complemented, not replaced, by tools that cover orthogonal surfaces.
+
+    \paragraph{Protocol design constraint.}
+    All external integrations must use the same transport stack as the pipeline
+    itself: raw TCP sockets for transport, Protocol Buffers for serialization, and
+    ChaCha20-Poly1305 for encryption. HTTP, Kafka, WebSocket, and broker-based
+    architectures are explicitly out of scope. This constraint is not arbitrary:
+    it ensures that the resource footprint, latency characteristics, and
+    cryptographic guarantees of any integrated source are consistent with the
+    pipeline's design targets for resource-constrained environments.
+
+    \paragraph{FEAT-INT-1: Wazuh and NIST scanner integration (planned).}
+    \label{sec:future:wazuh}
+    A planned integration layer will allow Wazuh agents~\cite{wazuh2024} and
+    NIST-aligned file integrity scanners deployed on DMZ hosts to emit events
+    directly into the ML Defender pipeline via raw TCP sockets. Events are
+    serialized as Protocol Buffers messages at the source and ingested by
+    \texttt{rag-ingester} via the existing ZeroMQ transport. The Noise Protocol
+    IK handshake (ADR-024) provides mutual authentication between the Wazuh
+    agent adapter and \texttt{rag-ingester}.
+
+    The motivation is graph quality: correlating network anomalies detected by
+    \texttt{ml-detector} and \texttt{firewall-acl-agent} with file integrity
+    violations reported by Wazuh on the same host produces composite attack
+    patterns that neither system observes independently. A ransomware attack in
+    its lateral-movement phase typically exhibits \emph{simultaneous} network
+    spread and file encryption activity; correlation in the RAG subsystem surfaces
+    this composite signature. This integration requires ADR-028 (RAG Ingestion
+    Trust Model) to be approved before implementation.
 
     \subsection{Service Coordination (etcd-server)}
 
@@ -1340,6 +1408,13 @@ const std::string ctx_rx = "ml-defender:" + component_name
         revision of this paper will document the implementation.}
         \label{fig:federated}
     \end{figure}
+
+    \textbf{11.16 Wazuh/NIST Integration (FEAT-INT-1).}
+    Raw TCP streaming from Wazuh agents~\cite{wazuh2024} and NIST-aligned
+    scanners into \texttt{rag-ingester} for composite attack graph correlation.
+    Protocol design, motivation, and architectural constraints documented in
+    \S\ref{sec:integration:philosophy}. Requires ADR-028 (RAG Ingestion Trust
+    Model). Deferred to post-PHASE-2 pipeline stabilization.
 
 % ============================================================
     \section{Conclusion}
