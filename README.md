@@ -9,6 +9,7 @@
 [![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2b_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![ADR-028](https://img.shields.io/badge/ADR--028-RAG_Trust_Model_APPROVED-green)](docs/adr/ADR-028.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-submitted_cs.CR-red)](https://arxiv.org/search/?searchtype=author&query=Roman%2C+Alonso+Isidoro)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -140,6 +141,9 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | MLD_ALLOW_UNCRYPTED escape hatch | ✅ Dev-only, explicit FATAL[DEV] log |
 | Plugin Loader PHASE 2a (firewall) | ✅ MessageContext D8-v2 CRC32 |
 | Plugin Loader PHASE 2b (rag-ingester) | ✅ READ-ONLY contract, TEST-INTEG-4b PASSED |
+| ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS como TCB lógico, anti-poisoning |
+| Validation Layer D4 (rate-limit+antidating) | ✅ Configurable JSON, MAX_DRIFT 300s default |
+| Rollback lógico RAG (SQLite valid flag) | ✅ O(1), no reindexación FAISS |
 | D8-light READ-ONLY exception | ✅ nullptr+0 legitimate contract |
 | Plugin integrity via Ed25519 (ADR-025) | ❌ Approved, pending post-PHASE 2 |
 | Dynamic group key agreement (ADR-024) | ❌ Design approved, post-PHASE 2 |
@@ -157,6 +161,7 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 - [x] D8-light: READ-ONLY exception (nullptr+0 legitimate)
 - [x] TEST-INTEG-4b: PASSED (make plugin-integ-test covers 4a+4b)
 - [x] Paper Draft v12: threat model scope + Integration Philosophy §4
+- [x] ADR-028: RAG Ingestion Trust Model — APROBADO Consejo 5/5 (2 rondas)
 
 ### 🔜 NEXT — PHASE 2c/2d/2e
 - [ ] PHASE 2c — sniffer + plugin_process_message() + TEST-INTEG-4c
@@ -210,7 +215,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 106: Paper Draft v11 + arXiv SUBMITTED (submit/7438768)
 - ✅ DAY 107: MAC failure root cause resolved
 - ✅ DAY 108: provision.sh reproducible · ADR-026/027 committed
-- ✅ DAY 109: PHASE 2b CLOSED · D8-light READ-ONLY · TEST-INTEG-4b · Paper v12
+- ✅ DAY 109: PHASE 2b CLOSED · D8-light READ-ONLY · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
 
 ---
 

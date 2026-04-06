@@ -1,27 +1,17 @@
-## 3. Commit final
+cd /Users/aironman/CLionProjects/test-zeromq-docker && \
+cp /path/to/downloads/README.md . && \
+cp /path/to/downloads/BACKLOG.md . && \
+cp /path/to/downloads/DAY110_prompt.md docs/ && \
+cp /path/to/downloads/CONSEJO_DAY109_prompt.md docs/ && \
+git add README.md BACKLOG.md docs/DAY110_prompt.md docs/CONSEJO_DAY109_prompt.md && \
+git commit -m "docs(day109): BACKLOG + README + DAY110 prompt + Consejo DAY109
 
-Una vez tengas el feedback del Consejo y la síntesis, este es el commit:
-
-```bash
-git add docs/consejo/CONSEJO-DAY108-informe.md \
-        docs/consejo/CONSEJO-DAY108-feedback-*.md \
-        docs/consejo/CONSEJO-DAY108-sintesis.md
-
-git commit -m "docs(consejo): DAY 108 informe + feedback + síntesis
-
-Sesión: formalización provision.sh + ADR-026/027 + gate PASO 4 verde
-
-Preguntas abiertas respondidas por Consejo:
-- Q1: std::terminate() vs MLD_DEV_MODE en invariant fail-fast
-- Q2: etcd-client cmake desde cero vs caché en install_shared_libs
-- Q3: PHASE 2b — plugin en rag-ingester: read-only vs modificar MessageContext
-- Q4: rag-security/config — provision.sh vs rag-security-start
-
-Decisiones del árbitro incorporadas en síntesis.
-PHASE 2b desbloqueada: plugin_process_message() en rag-ingester
-Gate: TEST-INTEG-4b (MessageContext, result_code=0)"
-```
-
----
-
-Hasta mañana, Alonso. El pipeline está sólido. 🛡️
+README: badge PHASE 2b, threat model scope section, Integration Philosophy,
+security table actualizada, roadmap PHASE 2c/2d/2e.
+BACKLOG: DAY 109 completado, PHASE 2b cerrada, estado global actualizado,
+decisiones de diseño consolidadas (MLD_ALLOW_UNCRYPTED, D8-light READ-ONLY,
+integration protocol, threat model scope).
+docs/DAY110_prompt.md: continuidad para mañana.
+docs/CONSEJO_DAY109_prompt.md: 4 preguntas (D8-light flag, PHASE 2c contrato,
+Integration Philosophy justificación, ADR-028 timing)." && \
+git push origin feature/plugin-crypto

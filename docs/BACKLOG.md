@@ -126,7 +126,7 @@ El sniffer tiene acceso al payload del paquete en el punto de invocación.
 | TEST-INTEG-4c | Gate PHASE 2c: sniffer + plugin | ADR-023 |
 | TEST-INTEG-4d | Gate PHASE 2d: ml-detector | ADR-023 |
 | TEST-INTEG-4e | Gate PHASE 2e: rag-security | ADR-023 |
-| ADR-028 | RAG Ingestion Trust Model — antes de write-capable plugins | ChatGPT5 DAY 108 |
+| ADR-028 | RAG Ingestion Trust Model — APROBADO DAY 109. Implementar antes de primer plugin write-capable | ChatGPT5 DAY 108 · Consejo DAY 109 |
 | TEST-PROVISION-1 | Gate CI: vagrant destroy → up → 6/6 RUNNING | ChatGPT5 DAY 108 |
 | DEBT-SNIFFER-SEED | Unificar sniffer bajo SeedClient (eliminar get_encryption_seed manual) | DAY 107 |
 | arXiv Replace v12 | Subir main_v12.tex cuando submit/7438768 sea anunciado | DAY 109 |
@@ -165,6 +165,7 @@ set_terminate() 6/6 main():           ██████████████
 plugin-loader ADR-012 PHASE 1b 6/6:   ████████████████████ 100% ✅  DAY 101-102
 ADR-023 PHASE 2a (firewall):          ████████████████████ 100% ✅  DAY 105 — TEST-INTEG-4a
 ADR-023 PHASE 2b (rag-ingester):      ████████████████████ 100% ✅  DAY 109 — TEST-INTEG-4b
+ADR-028 (RAG Ingestion Trust Model):  ████████████████████ 100% ✅  DAY 109 — APROBADO Consejo 5/5
 D8-light READ-ONLY contract:          ████████████████████ 100% ✅  DAY 109
 MLD_ALLOW_UNCRYPTED escape hatch:     ████████████████████ 100% ✅  DAY 109
 provision.sh rag-security config:     ████████████████████ 100% ✅  DAY 109
@@ -195,6 +196,10 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 | D8-light READ-ONLY | nullptr+0 es contrato legítimo, no violación ✅ | 109 |
 | Integration protocol | raw TCP + protobuf + ChaCha20, sin HTTP/Kafka/WS ✅ | 109 |
 | Threat model scope | NDR = vigilancia de red; USB/físico fuera por diseño ✅ | 109 |
+| RAG trust model | FAISS = parte del TCB lógico; plugins no son fuente de verdad ✅ | 109 |
+| D4 order en Validation Layer | rate-limit → antidating → sintaxis → tamaño → ratios ✅ | 109 |
+| Rollback lógico RAG | SQLite valid flag O(1); TrustAwareFAISSIndex en roadmap ✅ | 109 |
+| Trust levels RAG | TRUST_PIPELINE + TRUST_EXTERNAL; TRUST_INTERNAL en roadmap ✅ | 109 |
 
 ---
 
@@ -220,4 +225,4 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 *Tests: 25/25 + TEST-INTEG-4a 3/3 + TEST-INTEG-4b PASSED*
 *Paper: Draft v12 ✅ · arXiv: submit/7438768 SUBMITTED ✅ (pendiente moderación)*
 *Pipeline: 6/6 RUNNING reproducible desde cero ✅*
-*PHASE 2a: ✅ · PHASE 2b: ✅ · PHASE 2c/2d/2e: ⏳*
+*PHASE 2a: ✅ · PHASE 2b: ✅ · PHASE 2c/2d/2e: ⏳ · ADR-028: ✅ APROBADO*
