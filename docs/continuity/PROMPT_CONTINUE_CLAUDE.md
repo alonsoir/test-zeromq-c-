@@ -1,88 +1,82 @@
-# ML Defender (aRGus NDR) — DAY 110 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 111 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
-## Estado al cierre de DAY 109
+## Estado al cierre de DAY 110
 
 ### Completado hoy
 
-**FIX-A** ✅ — `MLD_ALLOW_UNCRYPTED` escape hatch en 3 adaptadores `etcd_client.cpp`
-(ml-detector, sniffer, firewall-acl-agent). En producción: `std::terminate()`. En dev:
-`cerr FATAL[DEV] + return` (constructor void, no `return false`).
+**PASO 2 — PluginMode + mode field (Q1 Consejo DAY 109) ✅**
+- `plugin_api.h`: enum `PluginMode` (NORMAL=0, READONLY=1), `annotation[64]` restaurado,
+  `mode uint8_t` consume 1 byte de `reserved[60]` → `reserved[59]`
+- `plugin_loader.cpp`: D8-pre coherence check — READONLY+payload!=nullptr → std::terminate()
+  snap_mode añadido a snapshot D8 y al invariant check
+- `rag-ingester/src/main.cpp`: PHASE 2b reconstruida — PluginLoader init + ctx_readonly
+  con mode=PLUGIN_MODE_READONLY antes de embed_chronos(), early return si result_code!=0
+- `test_integ_4b.cpp`: TEST-INTEG-4b PASSED (Caso A + Caso B)
 
-**FIX-B** ✅ — `provision.sh`: `mkdir -p /vagrant/rag-security/config` + symlinks JSON
-automáticos. Eliminado warning "Config dir no existe aún". Idempotente, verificado.
+**PASO 3 — PHASE 2c sniffer (Q2 Consejo DAY 109) ✅**
+- `ring_consumer.hpp`: set_plugin_loader() setter + plugin_loader_ member
+- `ring_consumer.cpp`: invoke_all(ctx_msg) en process_raw_event() con payload real,
+  mode=PLUGIN_MODE_NORMAL, result_code!=0 → events_dropped++ + return
+- `sniffer/src/userspace/main.cpp`: set_plugin_loader(&plugin_loader_) tras set_stats_interval()
+- `sniffer.json`: hello plugin active=false (D1 Graceful Degradation OK)
+- Pipeline: 6/6 RUNNING con binarios actualizados
 
-**PHASE 2b** ✅ — `plugin_process_message()` en `rag-ingester/src/main.cpp`.
-Contrato READ-ONLY: `ctx_readonly.payload = nullptr`, `ctx_readonly.payload_len = 0`.
-Inserción antes de `embed_chronos()`. Early return si `result_code != 0`.
+**PASO 4 — Paper v13 (Q3 Consejo DAY 109) ✅**
+- §4 Integration Philosophy: 4 argumentos como enumerate LaTeX
+- Compilación limpia Overleaf confirmada
 
-**D8-light READ-ONLY fix** ✅ — `plugin-loader/src/plugin_loader.cpp`:
-`is_readonly = (payload == nullptr && payload_len == 0)`. CRC32 protegido también.
+**Incidente DAY 110:**
+Tres ficheros críticos estaban vacíos (0 bytes) en la rama. Backups .backup intactos.
+El backup de rag-ingester/src/main.cpp era pre-PHASE 2b — reconstruida desde cero.
+Lección: noclobber en scripts + check de ficheros 0 bytes pendiente de implementar.
 
-**TEST-INTEG-4b** ✅ PASSED — variantes A (accept) y B (reject, D8 VIOLATION).
-Integrado en `make plugin-integ-test` (4a + 4b secuencial).
+**Commits DAY 110:**
+- Commit 1: feat(plugin-api): PluginMode + mode + PHASE 2b reconstruida + TEST-INTEG-4b
+- Commit 2: feat(sniffer): PHASE 2c — plugin_process_message con payload real
+- Push: ebc1d0e7..360faf8b feature/plugin-crypto
 
-**Paper Draft v12** ✅ — §3.4 Out-of-Scope expandido (vector físico/USB consciente),
-§4 Integration Philosophy nueva subsección, §11.16 referencia corta. Compilación
-limpia Overleaf. Pendiente: Replace en arXiv cuando submit/7438768 sea anunciado.
-
-**Commits DAY 109:** da7355d8 → 81ab2101 → d13b35d1 → [hash cierre]
-**Estado pipeline:** 6/6 RUNNING. Branch: `feature/plugin-crypto`.
+**Estado pipeline:** 6/6 RUNNING. Branch: feature/plugin-crypto.
 
 ---
 
-## Consejo DAY 109 — Decisiones (5/5 respondieron)
+## Consejo DAY 110 — Decisiones (5/5 respondieron)
 
 **Nota de acta:** Qwen (chat.qwen.ai) se auto-identifica como DeepSeek — patrón
-consolidado DAY 103-109. Registrado como Qwen en todas las actas.
+consolidado DAY 103-110. Registrado como Qwen en todas las actas.
 
-**Q1 — Flag explícito READ-ONLY: APROBADO 4/5** (Grok en minoría)
-Añadir `uint8_t mode` a `MessageContext` en `plugin_api.h` (1 byte de `reserved[60]`).
-`PLUGIN_MODE_NORMAL=0`, `PLUGIN_MODE_READONLY=1`. D8-light valida coherencia:
-`mode==READONLY → payload DEBE ser nullptr`. Convierte contrato implícito en verificable.
+**Q1-111 — PHASE 2d antes de 2e: UNANIMIDAD 5/5**
+ml-detector sigue patrón limpio (set_plugin_loader + member). rag-security tiene
+patrón especial (g_plugin_loader global + signal handler async-signal-safe) que
+merece atención dedicada después.
 
-**Q2 — PHASE 2c sniffer: payload real, UNANIMIDAD 5/5**
-El sniffer es el punto más privilegiado del pipeline. Sin payload, plugins inútiles.
-El payload del sniffer son headers IP/TCP/UDP capturados por XDP — no TLS plaintext.
-Contrato: payload presente, D8-v2 CRC32 activo, result_code!=0 → paquete descartado.
+**FIX-C — D8-pre inverso OBLIGATORIO (ChatGPT5)**
+El contrato actual solo valida READONLY+payload!=nullptr. Falta la inversa:
+NORMAL + payload == nullptr → std::terminate().
+El contrato es bidireccional. Sin este fix, PHASE 2c no está completamente cerrada.
 
-**Q3 — §4 Integration Philosophy: expandir, UNANIMIDAD 5/5**
-Cuatro argumentos a añadir al paper v13:
-1. Latencia determinista (HTTP/Kafka = jitter inaceptable para respuesta <10ms)
-2. Superficie de ataque (parsers HTTP = fuente histórica de CVEs; raw TCP reduce >90%)
-3. Sin broker = sin SPOF (Kafka/Redis incompatibles con host único 150-200 USD)
-4. Footprint mínimo (sin librdkafka, sin libcurl, sin boost.asio)
+**FIX-D — MAX_PLUGIN_PAYLOAD_SIZE OBLIGATORIO (ChatGPT5)**
+Sniffer recibe payload real de red — datos arbitrarios sin límite de tamaño.
+Hard limit en plugin_loader antes de invocar: payload_len > MAX → std::terminate().
+Valor propuesto: 64KB. Esto es D8 extendido, no opcional.
 
-**Q4 — ADR-028: diferir hasta primer plugin write-capable (Grok + DeepSeek 2/2)**
-Gemini + Qwen querían aprobarlo antes de PHASE 2c. Grok + DeepSeek: diferir evita
-documentación prematura. Decisión: diferir, pero documentar en backlog.
+**REC-1 — ADR-029 antes de PHASE 2e (DeepSeek)**
+Documentar g_plugin_loader + restricciones async-signal-safe antes de implementar
+PHASE 2e. No bloqueante para 2d.
 
----
+**REC-2 — noclobber + check 0-bytes en CI (ChatGPT5 + Gemini)**
+set -o noclobber en scripts de cierre. find . -name "*.cpp" -size 0 en CI o make check.
+No bloqueante, P2.
 
-## ADR-028 — Qué es y cuándo escribirlo
-
-**ADR-028 NO existe aún.** Fue nombrado por ChatGPT5 en Consejo DAY 108 como
-"RAG Ingestion Trust Model" pero nunca se ha escrito. Solo existe como ítem en backlog.
-
-**Lo que debe cubrir ADR-028:**
-- Qué recursos puede leer un plugin (MessageContext fields, payload según mode)
-- Qué recursos puede escribir (result_code, annotation — y nada más por ahora)
-- Qué recursos son absolutamente protegidos (índice FAISS, SQLite, etcd)
-- Auditoría de operaciones de escritura
-- Política de rollback ante corrupción de contexto
-- Distinción formal entre PLUGIN_MODE_READONLY y PLUGIN_MODE_READWRITE
-
-**Relación con Q1:** ADR-028 es el documento que hace el flag `mode` legalmente
-vinculante en la arquitectura. Sin ADR-028, el flag es un mecanismo sin contrato.
-Con ADR-028, el flag tiene semántica formal.
-
-**Cuándo escribirlo:** Antes del primer plugin write-capable. No es bloqueante para
-PHASE 2c (sniffer es read-only en cuanto a modificación de payload).
+**Contenido TEST-INTEG-4c (Grok):**
+- Caso A: payload no-nulo, longitud correcta → PLUGIN_OK, errors==0
+- Caso B: plugin intenta modificar payload → D8-light VIOLATION detectada
+- Caso C: result_code!=0 → paquete descartado, no llega a ml-detector, no crash
 
 ---
 
-## Orden DAY 110 (no saltarse)
+## Orden DAY 111 (no saltarse)
 
 ### PASO 1 — Verificar estado
 ```bash
@@ -92,53 +86,76 @@ git pull origin feature/plugin-crypto
 make pipeline-status
 ```
 
-### PASO 2 — Añadir `mode` a MessageContext (Q1 Consejo)
+### PASO 2 — FIX-C: D8-pre inverso
 
-Archivo: `plugin-loader/include/plugin_loader/plugin_api.h`
-
-```c
-// Añadir enum y campo mode a MessageContext
-typedef enum {
-    PLUGIN_MODE_NORMAL   = 0,  // acceso normal al payload
-    PLUGIN_MODE_READONLY = 1   // rag-ingester: payload=nullptr garantizado
-} PluginMode;
-
-// En MessageContext, sustituir primer byte de reserved[60] por mode:
-uint8_t  mode;        // PluginMode — consume 1 byte de reserved[60]
-uint8_t  reserved[59]; // era [60]
+Archivo: `plugin-loader/src/plugin_loader.cpp`
+En `invoke_all(MessageContext& ctx)`, añadir tras el check READONLY:
+```cpp
+// D8-pre inverso (FIX-C, Consejo DAY 110 — ChatGPT5 obligatorio)
+// PLUGIN_MODE_NORMAL garantiza payload presente. payload==nullptr = violación.
+if (ctx.mode == PLUGIN_MODE_NORMAL &&
+    (ctx.payload == nullptr || ctx.payload_len == 0)) {
+    std::cerr << "[plugin-loader] SECURITY: PLUGIN_MODE_NORMAL violado — "
+              << "payload es nullptr antes de invocar plugin '"
+              << p->name << "' — std::terminate()\n";
+    std::terminate();
+}
 ```
 
-Actualizar `plugin_loader.cpp`: validar coherencia
-`mode==READONLY && (payload!=nullptr || payload_len!=0) → std::terminate()`.
+Gate: compilar + make plugin-integ-test verde (4a + 4b no deben romperse).
 
-Actualizar `rag-ingester/src/main.cpp`:
-`ctx_readonly.mode = PLUGIN_MODE_READONLY;` (explícito).
+### PASO 3 — FIX-D: MAX_PLUGIN_PAYLOAD_SIZE
 
-Actualizar test `test_integ_4b.cpp`: verificar que `mode` se propaga correctamente.
+Archivo: `plugin-loader/include/plugin_loader/plugin_loader.hpp`
+Añadir constexpr:
+```cpp
+static constexpr size_t MAX_PLUGIN_PAYLOAD_SIZE = 65536; // 64KB — D8 extendido
+```
 
-Gate: `make plugin-integ-test` verde (4a + 4b).
+Archivo: `plugin-loader/src/plugin_loader.cpp`
+En `invoke_all(MessageContext& ctx)`, tras FIX-C:
+```cpp
+// D8-pre size limit (FIX-D, Consejo DAY 110 — ChatGPT5 obligatorio)
+if (ctx.payload != nullptr && ctx.payload_len > MAX_PLUGIN_PAYLOAD_SIZE) {
+    std::cerr << "[plugin-loader] SECURITY: payload_len=" << ctx.payload_len
+              << " excede MAX_PLUGIN_PAYLOAD_SIZE=" << MAX_PLUGIN_PAYLOAD_SIZE
+              << " — std::terminate()\n";
+    std::terminate();
+}
+```
 
-### PASO 3 — PHASE 2c: sniffer + plugin_process_message()
+Gate: compilar + make plugin-integ-test verde (4a + 4b).
+Instalar header actualizado en VM: vagrant ssh -c 'sudo cp ...'
 
-Contrato: payload real, `mode = PLUGIN_MODE_NORMAL`, D8-v2 CRC32 activo.
-Archivos: `sniffer/src/userspace/main.cpp`, `sniffer/CMakeLists.txt`,
-`sniffer/config/sniffer.json`.
-Gate: TEST-INTEG-4c.
+### PASO 4 — TEST-INTEG-4c
 
-### PASO 4 — Paper v13 (§4 Integration Philosophy expandida)
+Escribir plugins/test-message/test_integ_4c.cpp con los 3 casos de Grok:
+- Caso A: NORMAL + payload real presente → PLUGIN_OK, errors==0
+- Caso B: NORMAL + plugin modifica campo read-only → D8 VIOLATION
+- Caso C: NORMAL + result_code=-1 → error registrado, no crash, no llega a next stage
 
-Añadir los 4 argumentos del Consejo al §4. Actualizar draft.
-Pendiente también: Replace en arXiv cuando submit/7438768 sea anunciado.
+Añadir al Makefile target plugin-integ-test (tras 4b).
+Gate: make plugin-integ-test verde (4a + 4b + 4c).
+
+### PASO 5 — PHASE 2d: ml-detector
+
+Solo si PASOS 2-4 están verdes.
+Archivos: ml-detector/src/main.cpp, ml-detector/CMakeLists.txt
+Mismo patrón que sniffer: set_plugin_loader() + member + invoke_all()
+Contrato: payload post-inferencia, mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 activo.
+Gate: TEST-INTEG-4d.
 
 ---
 
 ## Deuda pendiente (no bloqueante)
 
 - ADR-028: escribir antes del primer plugin write-capable
-- Unificar sniffer bajo SeedClient (eliminar `get_encryption_seed` manual)
+- ADR-029: g_plugin_loader + async-signal-safe (antes de PHASE 2e)
+- REC-2: noclobber + check 0-bytes CI (P2)
+- PHASE 2e (rag-security) — tras 2d
 - ADR-025 (Plugin Integrity Ed25519) — post PHASE 2 completa
 - TEST-PROVISION-1 como gate CI formal (post PHASE 2)
-- PHASE 2d (ml-detector) y 2e (rag-security) tras 2c
+- arXiv Replace v13 cuando submit/7438768 sea anunciado
 
 ---
 
@@ -146,23 +163,20 @@ Pendiente también: Replace en arXiv cuando submit/7438768 sea anunciado.
 
 ### Proyecto
 - **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios.
-- **Branch activa**: `feature/plugin-crypto`
-- **Repositorio**: `https://github.com/alonsoir/argus`
-- **arXiv**: `submit/7438768` — pendiente moderación (cs.CR).
-  Draft v12 listo para Replace cuando v1 sea anunciada.
+- **Branch activa**: feature/plugin-crypto
+- **Repositorio**: https://github.com/alonsoir/argus
+- **arXiv**: submit/7438768 — pendiente moderación (cs.CR).
+  Draft v13 listo para Replace cuando v1 sea anunciada.
 
 ### Comandos VM críticos
-- Editar ficheros en VM: `vagrant ssh -- python3 << 'PYEOF'`
-- Comandos simples: `vagrant ssh -c '...'`
-- NUNCA `sed -i` sin `-e ''` en macOS
-- Firewall config: `/vagrant/firewall-acl-agent/config/firewall.json`
-- CMake: `NO_DEFAULT_PATH` para libsodium
-- CI: `.github/workflows/ci.yml`
+- Editar ficheros en VM: python3 << 'PYEOF' (nunca sed -i sin -e '' en macOS)
+- vagrant ssh -c '...' con comillas simples para CMAKE_FLAGS
+- Restaurar backup: cp fichero.cpp.backup fichero.cpp — SIEMPRE verificar con wc -l
+- NUNCA > fichero para escribir código — usar python3 heredoc o cat << 'EOF'
+- CMake: NO_DEFAULT_PATH para libsodium
+- CI: .github/workflows/ci.yml
 
 ### Consejo de Sabios (7 miembros)
-Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI), DeepSeek, Qwen (Alibaba),
-Gemini (Google), Parallel.ai. Revisores rigurosos e implacables. Demostrar
-problemas con tests compilables o matemáticas antes de proponer fixes.
-Verificar que test de vulnerabilidad retorna negativo tras aplicar fix.
-**Qwen se auto-identifica como DeepSeek — comportamiento de entrenamiento,
-no identidad real. Registrar como Qwen en todas las actas.**
+Claude, Grok, ChatGPT, DeepSeek, Qwen (Alibaba), Gemini, Parallel.ai.
+Qwen se auto-identifica como DeepSeek — registrar como Qwen en actas.
+FIX-C y FIX-D son OBLIGATORIOS antes de cerrar PHASE 2c (ChatGPT5 DAY 110).

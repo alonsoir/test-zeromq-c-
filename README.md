@@ -6,9 +6,9 @@
 [![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG-brightgreen)]()
+[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
-[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2b_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2c_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![ADR-028](https://img.shields.io/badge/ADR--028-RAG_Trust_Model_APPROVED-green)](docs/adr/ADR-028.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-submitted_cs.CR-red)](https://arxiv.org/search/?searchtype=author&query=Roman%2C+Alonso+Isidoro)
@@ -18,6 +18,9 @@
 📜 Living contracts: [Protobuf schema](https://github.com/alonsoir/argus/blob/main/docs/contracts/Protobuf%20contracts.md) · [Pipeline configs](https://github.com/alonsoir/argus/blob/main/docs/contracts/JSON%20contracts.md) · [RAG API](https://github.com/alonsoir/argus/blob/main/docs/contracts/Rag%20security%20commands.md)
 
 ---
+
+⚠️ Active development branch: `feature/plugin-crypto`
+For current state, see that branch. `main` is behind.
 
 ## 📄 Preprint
 
@@ -141,6 +144,8 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | MLD_ALLOW_UNCRYPTED escape hatch | ✅ Dev-only, explicit FATAL[DEV] log |
 | Plugin Loader PHASE 2a (firewall) | ✅ MessageContext D8-v2 CRC32 |
 | Plugin Loader PHASE 2b (rag-ingester) | ✅ READ-ONLY contract, TEST-INTEG-4b PASSED |
+| Plugin Loader PHASE 2c (sniffer) | ✅ payload real, mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 |
+| PluginMode field (mode uint8_t) | ✅ D8-pre coherence check, READONLY+payload→terminate() |
 | ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS como TCB lógico, anti-poisoning |
 | Validation Layer D4 (rate-limit+antidating) | ✅ Configurable JSON, MAX_DRIFT 300s default |
 | Rollback lógico RAG (SQLite valid flag) | ✅ O(1), no reindexación FAISS |
@@ -162,6 +167,14 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 - [x] TEST-INTEG-4b: PASSED (make plugin-integ-test covers 4a+4b)
 - [x] Paper Draft v12: threat model scope + Integration Philosophy §4
 - [x] ADR-028: RAG Ingestion Trust Model — APROBADO Consejo 5/5 (2 rondas)
+
+### ✅ DONE — DAY 110
+- [x] PluginMode enum + mode field en MessageContext (Q1 Consejo DAY 109)
+- [x] D8-pre coherence check: READONLY+payload!=nullptr → std::terminate()
+- [x] PHASE 2b: rag-ingester plugin_process_message() reconstruida
+- [x] TEST-INTEG-4b: PASSED (Caso A + Caso B)
+- [x] PHASE 2c: sniffer plugin_process_message() con payload real
+- [x] Paper v13: §4 Integration Philosophy — 4 argumentos formales
 
 ### 🔜 NEXT — PHASE 2c/2d/2e
 - [ ] PHASE 2c — sniffer + plugin_process_message() + TEST-INTEG-4c
@@ -216,6 +229,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 107: MAC failure root cause resolved
 - ✅ DAY 108: provision.sh reproducible · ADR-026/027 committed
 - ✅ DAY 109: PHASE 2b CLOSED · D8-light READ-ONLY · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
+- ✅ DAY 110: PluginMode + PHASE 2c CLOSED · TEST-INTEG-4b · Paper v13 · 6/6 RUNNING
 
 ---
 

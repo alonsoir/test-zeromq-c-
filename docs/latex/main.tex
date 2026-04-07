@@ -542,10 +542,29 @@ in Resource-Constrained Organizations}}
     All external integrations must use the same transport stack as the pipeline
     itself: raw TCP sockets for transport, Protocol Buffers for serialization, and
     ChaCha20-Poly1305 for encryption. HTTP, Kafka, WebSocket, and broker-based
-    architectures are explicitly out of scope. This constraint is not arbitrary:
-    it ensures that the resource footprint, latency characteristics, and
-    cryptographic guarantees of any integrated source are consistent with the
-    pipeline's design targets for resource-constrained environments.
+    architectures are explicitly out of scope. This constraint is not arbitrary.
+    Four independent arguments support it:
+
+    \begin{enumerate}
+        \item \textbf{Deterministic latency.} HTTP and Kafka introduce non-deterministic
+        scheduling jitter incompatible with sub-10\,ms response requirements. Raw TCP
+        over ZeroMQ provides predictable, bounded delivery latency.
+
+        \item \textbf{Reduced attack surface.} HTTP parsers have historically been a
+        primary source of remotely exploitable CVEs (buffer overflows, request
+        smuggling, header injection). Raw TCP with Protocol Buffers framing eliminates
+        this parser surface by more than 90\%.
+
+        \item \textbf{No broker, no single point of failure.} Kafka and Redis require
+        dedicated broker infrastructure incompatible with single-host deployments at
+        the 150--200\,USD target. Every additional process is a failure domain; the
+        pipeline's ZeroMQ topology has no mandatory broker.
+
+        \item \textbf{Minimal footprint.} Eliminating HTTP, Kafka, and WebSocket
+        transport removes \texttt{librdkafka}, \texttt{libcurl}, and
+        \texttt{boost.asio} from the dependency tree --- a non-trivial reduction in
+        binary size and attack surface for resource-constrained deployment targets.
+    \end{enumerate}
 
     \paragraph{FEAT-INT-1: Wazuh and NIST scanner integration (planned).}
     \label{sec:future:wazuh}
