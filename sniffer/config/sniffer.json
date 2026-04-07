@@ -574,7 +574,7 @@
       {
         "name": "hello",
         "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
-        "active": true,
+        "active": false,
         "comment": "ADR-012 PHASE 1b \u2014 validation plugin. Set active:true to enable."
       }
     ]

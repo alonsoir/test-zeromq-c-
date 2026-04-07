@@ -565,6 +565,56 @@ void RingBufferConsumer::process_raw_event(const SimpleEvent& event, [[maybe_unu
         }
     }
 
+#ifdef PLUGIN_LOADER_ENABLED
+    // PHASE 2c: plugin_process_message con payload real (ADR-023)
+    // mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 activo, result_code!=0 → paquete descartado
+    if (plugin_loader_ && event.payload_len > 0) {
+        MessageContext ctx_msg{};
+        ctx_msg.payload     = event.payload;
+        ctx_msg.payload_len = event.payload_len;
+        ctx_msg.mode        = PLUGIN_MODE_NORMAL;
+        ctx_msg.src_ip      = event.src_ip;
+        ctx_msg.dst_ip      = event.dst_ip;
+        ctx_msg.src_port    = event.src_port;
+        ctx_msg.dst_port    = event.dst_port;
+        ctx_msg.protocol    = event.protocol;
+        ctx_msg.direction   = 0;  // RX — capturado por XDP
+        ctx_msg.nonce       = nullptr;  // sniffer: pre-encrypt, no nonce aún
+        ctx_msg.tag         = nullptr;
+        ctx_msg.result_code = 0;
+        plugin_loader_->invoke_all(ctx_msg);
+        if (ctx_msg.result_code != 0) {
+            // Plugin señaló anomalía — descartar paquete
+            stats_.events_dropped++;
+            return;
+        }
+    }
+#endif
+#ifdef PLUGIN_LOADER_ENABLED
+    // PHASE 2c: plugin_process_message con payload real (ADR-023)
+    // mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 activo, result_code!=0 → paquete descartado
+    if (plugin_loader_ && event.payload_len > 0) {
+        MessageContext ctx_msg{};
+        ctx_msg.payload     = event.payload;
+        ctx_msg.payload_len = event.payload_len;
+        ctx_msg.mode        = PLUGIN_MODE_NORMAL;
+        ctx_msg.src_ip      = event.src_ip;
+        ctx_msg.dst_ip      = event.dst_ip;
+        ctx_msg.src_port    = event.src_port;
+        ctx_msg.dst_port    = event.dst_port;
+        ctx_msg.protocol    = event.protocol;
+        ctx_msg.direction   = 0;  // RX — capturado por XDP
+        ctx_msg.nonce       = nullptr;  // sniffer: pre-encrypt, no nonce aún
+        ctx_msg.tag         = nullptr;
+        ctx_msg.result_code = 0;
+        plugin_loader_->invoke_all(ctx_msg);
+        if (ctx_msg.result_code != 0) {
+            // Plugin señaló anomalía — descartar paquete
+            stats_.events_dropped++;
+            return;
+        }
+    }
+#endif
     // Deep Analysis (thread-safe)
     if (ransomware_enabled_ && ransomware_processor_) {
         ransomware_processor_->process_packet(event);
