@@ -231,7 +231,7 @@ int main(int argc, char* argv[]) {
                 // Contrato: payload=nullptr, mode=PLUGIN_MODE_READONLY
                 // Early return si result_code != 0 (ADR-023)
                 {
-                    ml_defender::MessageContext ctx_readonly{};
+                    MessageContext ctx_readonly{};
                     ctx_readonly.payload     = nullptr;
                     ctx_readonly.payload_len = 0;
                     ctx_readonly.mode        = PLUGIN_MODE_READONLY;
