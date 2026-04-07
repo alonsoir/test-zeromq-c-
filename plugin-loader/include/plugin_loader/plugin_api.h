@@ -60,6 +60,18 @@ typedef struct PacketContext {
 
 
 // ----------------------------------------------------------------------------
+// PluginMode — modo de invocación del plugin (Q1 Consejo DAY 109)
+// PLUGIN_MODE_NORMAL:   payload presente, D8-v2 CRC32 activo (sniffer, PHASE 2c)
+// PLUGIN_MODE_READONLY: payload=nullptr garantizado (rag-ingester, PHASE 2b)
+// El loader valida coherencia pre-invocación (D8):
+//   PLUGIN_MODE_READONLY && (payload!=nullptr || payload_len!=0) → std::terminate()
+// ----------------------------------------------------------------------------
+typedef enum {
+    PLUGIN_MODE_NORMAL   = 0,  // acceso normal al payload
+    PLUGIN_MODE_READONLY = 1   // rag-ingester: payload=nullptr garantizado
+} PluginMode;
+
+// ----------------------------------------------------------------------------
 // MessageContext — contexto por mensaje ZMQ, pasado a plugin_process_message()
 // ADR-023 PHASE 2a — Integración firewall-acl-agent
 //
@@ -109,11 +121,14 @@ typedef struct MessageContext {
     // result_code: 0 = OK, !=0 = plugin señaliza anomalía
     //   NOTA: result_code != 0 NO bloquea por sí solo — el core decide.
     int            result_code;
-    // annotation: anotación opcional null-terminated (max 63 chars + null)
+    // annotation: anotacion opcional null-terminated (max 63 chars + null)
     char           annotation[64];
-
+    // mode: PluginMode — consume 1 byte de reserved (Q1 Consejo DAY 109)
+    // El loader valida coherencia pre-invocación (D8):
+    //   PLUGIN_MODE_READONLY && (payload!=nullptr || payload_len!=0) → std::terminate()
+    uint8_t        mode;          // PluginMode — ver enum arriba
     // Reservado: forward-compatibility ADR-024 (D11)
-    uint8_t        reserved[60];
+    uint8_t        reserved[59];  // era [60] — 1 byte consumido por mode
 } MessageContext;
 
 // ----------------------------------------------------------------------------
