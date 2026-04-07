@@ -1,12 +1,17 @@
-git add BACKLOG.md
-git commit -m "docs: DAY 101 — BACKLOG + prompt continuidad DAY 102
+cd /Users/aironman/CLionProjects/test-zeromq-docker && \
+cp /path/to/downloads/README.md . && \
+cp /path/to/downloads/BACKLOG.md . && \
+cp /path/to/downloads/DAY110_prompt.md docs/ && \
+cp /path/to/downloads/CONSEJO_DAY109_prompt.md docs/ && \
+git add README.md BACKLOG.md docs/DAY110_prompt.md docs/CONSEJO_DAY109_prompt.md && \
+git commit -m "docs(day109): BACKLOG + README + DAY110 prompt + Consejo DAY109
 
-- extract_enabled_objects bug fix documentado
-- ADR-012 PHASE 1b: sniffer + ml-detector ✅
-- PLUGIN-LOADER-FW + RAG añadidos al backlog P2/P3
-- Endorser andresc@unex.es enviado
-
-Tests: 24/24 ✅
-Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)"
-
-git push
+README: badge PHASE 2b, threat model scope section, Integration Philosophy,
+security table actualizada, roadmap PHASE 2c/2d/2e.
+BACKLOG: DAY 109 completado, PHASE 2b cerrada, estado global actualizado,
+decisiones de diseño consolidadas (MLD_ALLOW_UNCRYPTED, D8-light READ-ONLY,
+integration protocol, threat model scope).
+docs/DAY110_prompt.md: continuidad para mañana.
+docs/CONSEJO_DAY109_prompt.md: 4 preguntas (D8-light flag, PHASE 2c contrato,
+Integration Philosophy justificación, ADR-028 timing)." && \
+git push origin feature/plugin-crypto

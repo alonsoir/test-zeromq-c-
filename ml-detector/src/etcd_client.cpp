@@ -32,7 +32,19 @@ struct EtcdClient::Impl {
         config.port = port_;
         config.encryption_enabled = (endpoint.find("http://") != 0);
         config.compression_enabled = true;
-
+        config.component_config_path = "/etc/ml-defender/ml-detector/ml_detector_config.json";
+        // INVARIANT (ADR-027): encryption_enabled requiere component_config_path.
+        // Sin él, SeedClient no inicializa, datos van en claro → MAC failure garantizado.
+        if (config.encryption_enabled && config.component_config_path.empty()) {
+            if (getenv("MLD_ALLOW_UNCRYPTED")) {
+                std::cerr << "FATAL[DEV]: encryption_enabled pero component_config_path vacio. "
+                          << "MLD_ALLOW_UNCRYPTED activo - continuando sin cifrado. "
+                          << "NUNCA en produccion.\n";
+                return; // constructor: continuar sin cifrado en dev mode
+            } else {
+                std::terminate(); // FATAL: produccion - fallo total garantizado
+            }
+        }
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
         client_->connect();
     }

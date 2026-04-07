@@ -1,196 +1,182 @@
-# ML Defender — Prompt de Continuidad DAY 104
-## 1 abril 2026
+# ML Defender (aRGus NDR) — DAY 111 Continuity Prompt
+
+Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
+
+## Estado al cierre de DAY 110
+
+### Completado hoy
+
+**PASO 2 — PluginMode + mode field (Q1 Consejo DAY 109) ✅**
+- `plugin_api.h`: enum `PluginMode` (NORMAL=0, READONLY=1), `annotation[64]` restaurado,
+  `mode uint8_t` consume 1 byte de `reserved[60]` → `reserved[59]`
+- `plugin_loader.cpp`: D8-pre coherence check — READONLY+payload!=nullptr → std::terminate()
+  snap_mode añadido a snapshot D8 y al invariant check
+- `rag-ingester/src/main.cpp`: PHASE 2b reconstruida — PluginLoader init + ctx_readonly
+  con mode=PLUGIN_MODE_READONLY antes de embed_chronos(), early return si result_code!=0
+- `test_integ_4b.cpp`: TEST-INTEG-4b PASSED (Caso A + Caso B)
+
+**PASO 3 — PHASE 2c sniffer (Q2 Consejo DAY 109) ✅**
+- `ring_consumer.hpp`: set_plugin_loader() setter + plugin_loader_ member
+- `ring_consumer.cpp`: invoke_all(ctx_msg) en process_raw_event() con payload real,
+  mode=PLUGIN_MODE_NORMAL, result_code!=0 → events_dropped++ + return
+- `sniffer/src/userspace/main.cpp`: set_plugin_loader(&plugin_loader_) tras set_stats_interval()
+- `sniffer.json`: hello plugin active=false (D1 Graceful Degradation OK)
+- Pipeline: 6/6 RUNNING con binarios actualizados
+
+**PASO 4 — Paper v13 (Q3 Consejo DAY 109) ✅**
+- §4 Integration Philosophy: 4 argumentos como enumerate LaTeX
+- Compilación limpia Overleaf confirmada
+
+**Incidente DAY 110:**
+Tres ficheros críticos estaban vacíos (0 bytes) en la rama. Backups .backup intactos.
+El backup de rag-ingester/src/main.cpp era pre-PHASE 2b — reconstruida desde cero.
+Lección: noclobber en scripts + check de ficheros 0 bytes pendiente de implementar.
+
+**Commits DAY 110:**
+- Commit 1: feat(plugin-api): PluginMode + mode + PHASE 2b reconstruida + TEST-INTEG-4b
+- Commit 2: feat(sniffer): PHASE 2c — plugin_process_message con payload real
+- Push: ebc1d0e7..360faf8b feature/plugin-crypto
+
+**Estado pipeline:** 6/6 RUNNING. Branch: feature/plugin-crypto.
 
 ---
 
-## Estado del sistema
+## Consejo DAY 110 — Decisiones (5/5 respondieron)
 
-**Pipeline:** 6/6 RUNNING
-**Tests:** 25/25 suites ✅
-**Rama activa:** `main` (feature/bare-metal-arxiv mergeada ✅)
-**Último commit:** DAY 103 cierre — README + paper v8 + Consejo consolidado
+**Nota de acta:** Qwen (chat.qwen.ai) se auto-identifica como DeepSeek — patrón
+consolidado DAY 103-110. Registrado como Qwen en todas las actas.
+
+**Q1-111 — PHASE 2d antes de 2e: UNANIMIDAD 5/5**
+ml-detector sigue patrón limpio (set_plugin_loader + member). rag-security tiene
+patrón especial (g_plugin_loader global + signal handler async-signal-safe) que
+merece atención dedicada después.
+
+**FIX-C — D8-pre inverso OBLIGATORIO (ChatGPT5)**
+El contrato actual solo valida READONLY+payload!=nullptr. Falta la inversa:
+NORMAL + payload == nullptr → std::terminate().
+El contrato es bidireccional. Sin este fix, PHASE 2c no está completamente cerrada.
+
+**FIX-D — MAX_PLUGIN_PAYLOAD_SIZE OBLIGATORIO (ChatGPT5)**
+Sniffer recibe payload real de red — datos arbitrarios sin límite de tamaño.
+Hard limit en plugin_loader antes de invocar: payload_len > MAX → std::terminate().
+Valor propuesto: 64KB. Esto es D8 extendido, no opcional.
+
+**REC-1 — ADR-029 antes de PHASE 2e (DeepSeek)**
+Documentar g_plugin_loader + restricciones async-signal-safe antes de implementar
+PHASE 2e. No bloqueante para 2d.
+
+**REC-2 — noclobber + check 0-bytes en CI (ChatGPT5 + Gemini)**
+set -o noclobber en scripts de cierre. find . -name "*.cpp" -size 0 en CI o make check.
+No bloqueante, P2.
+
+**Contenido TEST-INTEG-4c (Grok):**
+- Caso A: payload no-nulo, longitud correcta → PLUGIN_OK, errors==0
+- Caso B: plugin intenta modificar payload → D8-light VIOLATION detectada
+- Caso C: result_code!=0 → paquete descartado, no llega a ml-detector, no crash
 
 ---
 
-## Lo realizado en DAY 103 (completo)
+## Orden DAY 111 (no saltarse)
 
-| Tarea | Estado |
-|-------|--------|
-| MAKEFILE-RAG — 6 fixes (cmake PROFILE, log path, rag-attach, test-components, build-unified, banner) | ✅ |
-| PAPER §5 — HKDF Context Symmetry case study | ✅ |
-| PAPER v8 — corrección crítica bug HKDF (ChatGPT5): contextos distintos → claves distintas → MAC failures | ✅ |
-| BACKLOG.md — DAY 103 + BARE-METAL replanificado | ✅ |
-| README.md — actualizado DAY 103 | ✅ |
-| Consejo de Sabios — sesión ADR-023 + ADR-024, 5 revisores, decisiones consolidadas | ✅ |
-| Revisión Gepeto (ChatGPT5 como revisor cs.CR) — 6 mejoras identificadas | ✅ |
-| Merge feature/bare-metal-arxiv → main | ✅ |
-
-**NOTA BARE-METAL:** Bloqueado por hardware físico. No bloquea arXiv ni feature/plugin-crypto.
-
----
-
-## ⚡ PRIMER ACTO DAY 104 — nueva rama
-
+### PASO 1 — Verificar estado
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout main
-git pull origin main
-git checkout -b feature/plugin-crypto
-git push -u origin feature/plugin-crypto
+git checkout feature/plugin-crypto
+git pull origin feature/plugin-crypto
+make pipeline-status
 ```
+
+### PASO 2 — FIX-C: D8-pre inverso
+
+Archivo: `plugin-loader/src/plugin_loader.cpp`
+En `invoke_all(MessageContext& ctx)`, añadir tras el check READONLY:
+```cpp
+// D8-pre inverso (FIX-C, Consejo DAY 110 — ChatGPT5 obligatorio)
+// PLUGIN_MODE_NORMAL garantiza payload presente. payload==nullptr = violación.
+if (ctx.mode == PLUGIN_MODE_NORMAL &&
+    (ctx.payload == nullptr || ctx.payload_len == 0)) {
+    std::cerr << "[plugin-loader] SECURITY: PLUGIN_MODE_NORMAL violado — "
+              << "payload es nullptr antes de invocar plugin '"
+              << p->name << "' — std::terminate()\n";
+    std::terminate();
+}
+```
+
+Gate: compilar + make plugin-integ-test verde (4a + 4b no deben romperse).
+
+### PASO 3 — FIX-D: MAX_PLUGIN_PAYLOAD_SIZE
+
+Archivo: `plugin-loader/include/plugin_loader/plugin_loader.hpp`
+Añadir constexpr:
+```cpp
+static constexpr size_t MAX_PLUGIN_PAYLOAD_SIZE = 65536; // 64KB — D8 extendido
+```
+
+Archivo: `plugin-loader/src/plugin_loader.cpp`
+En `invoke_all(MessageContext& ctx)`, tras FIX-C:
+```cpp
+// D8-pre size limit (FIX-D, Consejo DAY 110 — ChatGPT5 obligatorio)
+if (ctx.payload != nullptr && ctx.payload_len > MAX_PLUGIN_PAYLOAD_SIZE) {
+    std::cerr << "[plugin-loader] SECURITY: payload_len=" << ctx.payload_len
+              << " excede MAX_PLUGIN_PAYLOAD_SIZE=" << MAX_PLUGIN_PAYLOAD_SIZE
+              << " — std::terminate()\n";
+    std::terminate();
+}
+```
+
+Gate: compilar + make plugin-integ-test verde (4a + 4b).
+Instalar header actualizado en VM: vagrant ssh -c 'sudo cp ...'
+
+### PASO 4 — TEST-INTEG-4c
+
+Escribir plugins/test-message/test_integ_4c.cpp con los 3 casos de Grok:
+- Caso A: NORMAL + payload real presente → PLUGIN_OK, errors==0
+- Caso B: NORMAL + plugin modifica campo read-only → D8 VIOLATION
+- Caso C: NORMAL + result_code=-1 → error registrado, no crash, no llega a next stage
+
+Añadir al Makefile target plugin-integ-test (tras 4b).
+Gate: make plugin-integ-test verde (4a + 4b + 4c).
+
+### PASO 5 — PHASE 2d: ml-detector
+
+Solo si PASOS 2-4 están verdes.
+Archivos: ml-detector/src/main.cpp, ml-detector/CMakeLists.txt
+Mismo patrón que sniffer: set_plugin_loader() + member + invoke_all()
+Contrato: payload post-inferencia, mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 activo.
+Gate: TEST-INTEG-4d.
 
 ---
 
-## Endorser arXiv — estado
+## Deuda pendiente (no bloqueante)
 
-| Endorser | Estado |
-|----------|--------|
-| Sebastian Garcia (CTU Prague) | ✅ respondió, recibió PDF v5 |
-| Yisroel Mirsky (BGU) | ⏳ enviado DAY 96, sin respuesta |
-| Andrés Caro Lindo (UEx/INCIBE) | ✅ endorsement confirmado — llamada HOY jueves 2 abril |
-
-**Llamada Andrés:** 657 33 10 10. Él llama o tú llamas.
-**Punto clave:** Indicamos su email en el formulario arXiv → arXiv le manda
-confirmación. El envío puede ocurrir en cualquier momento.
+- ADR-028: escribir antes del primer plugin write-capable
+- ADR-029: g_plugin_loader + async-signal-safe (antes de PHASE 2e)
+- REC-2: noclobber + check 0-bytes CI (P2)
+- PHASE 2e (rag-security) — tras 2d
+- ADR-025 (Plugin Integrity Ed25519) — post PHASE 2 completa
+- TEST-PROVISION-1 como gate CI formal (post PHASE 2)
+- arXiv Replace v13 cuando submit/7438768 sea anunciado
 
 ---
 
-## TAREA 0 — Paper v9 (Overleaf) — revisión Gepeto
+## Contexto permanente
 
-Gepeto (ChatGPT5 como revisor cs.CR externo) revisó la v8 y detectó 6 mejoras.
-Ninguna requiere código nuevo. Todas son framing y redacción.
+### Proyecto
+- **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios.
+- **Branch activa**: feature/plugin-crypto
+- **Repositorio**: https://github.com/alonsoir/argus
+- **arXiv**: submit/7438768 — pendiente moderación (cs.CR).
+  Draft v13 listo para Replace cuando v1 sea anunciada.
 
-### 🔴 Críticas (hacer antes de arXiv)
+### Comandos VM críticos
+- Editar ficheros en VM: python3 << 'PYEOF' (nunca sed -i sin -e '' en macOS)
+- vagrant ssh -c '...' con comillas simples para CMAKE_FLAGS
+- Restaurar backup: cp fichero.cpp.backup fichero.cpp — SIEMPRE verificar con wc -l
+- NUNCA > fichero para escribir código — usar python3 heredoc o cat << 'EOF'
+- CMake: NO_DEFAULT_PATH para libsodium
+- CI: .github/workflows/ci.yml
 
-**P1 — HKDF §5.5: añadir causa→efecto explícito**
-
-```text
-Incorrect context → different derived keys → MAC verification fails
-Correct context   → identical derived keys → successful authentication
-```
-Rematar con:
-```text
-This class of error is undetectable without end-to-end protocol validation.
-```
-
-**P2 — TDH §5.4 + Abstract: declararlo explícitamente como metodología propuesta**
-
-```text
-Test-Driven Hardening (TDH) is proposed as a methodology for building
-security-critical distributed systems.
-```
-
-**P3 — Consejo §5.1: aclarar que NO es ensemble, ES adversarial validation**
-
-```text
-The Council does not average outputs. It introduces structured disagreement
-as a mechanism to expose hidden assumptions and validate architectural decisions.
-```
-
-**P4 — §10 Limitations: añadir mini subsección Threats to Validity**
-
-Tres puntos mínimos:
-1. Seed compromise — qué pasa si seed.bin se filtra
-2. Single-host assumption — sin distributed key agreement aún (ADR-024 pendiente)
-3. No hardware root of trust — no TPM / secure enclave
-
-### 🟡 Recomendadas
-
-**P5 — §7 Throughput: claim técnico explícito**
-```text
-The observed throughput is limited by the virtualized NIC, not the pipeline.
-```
-
-**P6 — §5.5 ADR-023: frase conectando con bug HKDF**
-```text
-This design avoids semantic overloading of data structures across layers,
-a common source of subtle security and correctness bugs.
-```
-
----
-
-## TAREA 1 — Redactar ADR-023 formal
-
-Fichero: `docs/adr/ADR-023-multi-layer-plugin-architecture.md`
-
-```c
-typedef struct {
-    uint8_t     version;       // MESSAGE_CONTEXT_VERSION = 1
-    uint8_t     direction;     // MLD_TX = 0, MLD_RX = 1
-    uint8_t     nonce[12];     // 96-bit monotonic counter
-    uint8_t     tag[16];       // Poly1305 tag (16 bytes)
-    uint8_t*    payload;       // buffer (in/out)
-    size_t      length;        // longitud actual
-    size_t      max_length;    // capacidad — siempre >= length + 16
-    const char* channel_id;    // "sniffer-to-ml-detector" — selector HKDF
-    int32_t     result_code;   // 0=OK, -1=MAC failure, -2=buffer overflow
-    uint8_t     reserved[8];   // para sequence_number / timestamp futuro
-} MessageContext;
-```
-
-- Estrategia PHASE 2a/2b/2c + gates TEST-INTEG-4a/4b/4c
-- plugin_process_message() opcional vía dlsym, PLUGIN_API_VERSION=1
-- Core CryptoTransport read-only durante PHASE 2a (DeepSeek)
-- Minoría Gemini registrada (bump inmediato desestimado)
-
-## TAREA 2 — Redactar ADR-024 borrador
-
-Fichero: `docs/adr/ADR-024-dynamic-group-key-agreement.md`
-
-```
-PSK = HKDF(seed_family, "noise-ik-psk")  ← seed de familia (ADR-021)
-Handshake (1-RTT, solo en arranque):
-  Initiator: -> e, es
-  Responder:  <- e, ee, se
-Implementación: Noise-c + libsodium 1.0.19
-Estado: DISEÑO — implementación post-arXiv
-```
-
-## TAREA 3 — Llamada Andrés Caro Lindo
-
----
-
-## Patrón ADR-012 PHASE 1b (establecido)
-
-1. `CMakeLists.txt`: find_library + target_link(dl) + target_compile_definitions(PLUGIN_LOADER_ENABLED)
-2. `src/main.cpp`: `unique_ptr<PluginLoader>` local (global solo si signal handler)
-3. `config/*.json`: sección `plugins` con hello plugin `active:true`
-4. Smoke test: `MLD_DEV_MODE=1 ./component 2>&1 | grep -i plugin`
-
----
-
-## Constantes
-```
-Raíz:    /Users/aironman/CLionProjects/test-zeromq-docker
-VM:      vagrant ssh -c '...'   ← SIEMPRE -c
-         vagrant ssh -- python3 << 'PYEOF' ... PYEOF  ← para scripts Python
-Binarios: /vagrant/{component}/build-debug/{component}
-RAG bin:  /vagrant/rag/build/rag-security  ← build/ no build-debug/
-Plugins:  /usr/lib/ml-defender/plugins/
-Libs:     /usr/local/lib/  ← libplugin_loader.so
-Keys:     /etc/ml-defender/{component}/seed.bin
-dev:      MLD_DEV_MODE=1 → sin seed.bin
-
-macOS:   NUNCA sed -i sin -e '' → Python3 heredoc
-zsh:     NUNCA Python inline con paréntesis → heredoc 'PYEOF'
-zsh:     NUNCA assert(!x) → usar assert(x == false)
-cmake:   NO_DEFAULT_PATH para libsodium — priorizar /usr/local
-rag:     comillas simples en vagrant ssh -c para CMAKE_FLAGS
-```
-
----
-
-## Consejo de Sabios
-
-Revisores: Claude (Anthropic), Grok (xAI), ChatGPT (OpenAI),
-DeepSeek, Qwen (Alibaba — se autoidentifica como DeepSeek),
-Gemini (Google), Parallel.ai
-
----
-
-*DAY 103 cierre — 31 marzo 2026*
-*Tests: 25/25 ✅ · Paper: Draft v8 · Rama: main*
-*Consejo: MessageContext aprobada · Noise IK aprobado*
-*Gepeto: 6 mejoras paper identificadas — P1/P2/P3/P4 críticas*
-*Endorser Andrés Caro Lindo: llamada HOY jueves 2 abril*
-*Co-authored-by: Alonso Isidoro Roman + Claude (Anthropic)*
+### Consejo de Sabios (7 miembros)
+Claude, Grok, ChatGPT, DeepSeek, Qwen (Alibaba), Gemini, Parallel.ai.
+Qwen se auto-identifica como DeepSeek — registrar como Qwen en actas.
+FIX-C y FIX-D son OBLIGATORIOS antes de cerrar PHASE 2c (ChatGPT5 DAY 110).

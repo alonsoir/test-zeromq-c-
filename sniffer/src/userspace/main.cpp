@@ -720,6 +720,14 @@ if (encryption_seed.empty()) {
 
         // Configure stats interval from monitoring config
         ring_consumer.set_stats_interval(g_config.monitoring.stats_interval_seconds);
+#ifdef PLUGIN_LOADER_ENABLED
+        ring_consumer.set_plugin_loader(&plugin_loader_);
+        std::cout << "✅ [PHASE 2c] plugin_loader conectado a RingBufferConsumer" << std::endl;
+#endif
+#ifdef PLUGIN_LOADER_ENABLED
+        ring_consumer.set_plugin_loader(&plugin_loader_);
+        std::cout << "✅ [PHASE 2c] plugin_loader conectado a RingBufferConsumer" << std::endl;
+#endif
 
         if (!ring_consumer.initialize(ring_fd, thread_manager)) {
             std::cerr << "❌ Failed to initialize RingBufferConsumer" << std::endl;

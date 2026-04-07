@@ -31,8 +31,9 @@ struct PluginLoader::LoadedPlugin {
     const char*  (*fn_version)()         = nullptr;
     int          (*fn_api_version)()     = nullptr;
     PluginResult (*fn_init)(const PluginConfig*) = nullptr;
-    PluginResult (*fn_process)(PacketContext*)    = nullptr;
-    void         (*fn_shutdown)()        = nullptr;
+    PluginResult (*fn_process)(PacketContext*)         = nullptr;
+    PluginResult (*fn_process_message)(MessageContext*) = nullptr;  // ADR-023 PHASE 2a — opcional
+    void         (*fn_shutdown)()                       = nullptr;
 
     std::string   name;
 
@@ -255,6 +256,14 @@ void PluginLoader::load_plugins() {
             }
         }
 
+        // Resolución opcional de plugin_process_message (ADR-023 D1 Graceful Degradation)
+        plugin->fn_process_message = reinterpret_cast<PluginResult(*)(MessageContext*)>(
+            dlsym(handle, "plugin_process_message"));
+        if (!plugin->fn_process_message) {
+            std::cerr << "[plugin-loader] INFO: plugin '" << plugin_name
+                      << "' no exporta plugin_process_message — Graceful Degradation D1 aplicada\n";
+        }
+
         plugin->name = plugin->fn_name();
         plugins_.push_back(plugin);
         stats_.push_back(PluginStats{plugin->name, 0, 0, 0});
@@ -311,5 +320,78 @@ void PluginLoader::shutdown() {
 
 const std::vector<PluginStats>& PluginLoader::stats() const { return stats_; }
 size_t PluginLoader::loaded_count() const { return plugins_.size(); }
+
+void PluginLoader::invoke_all(MessageContext& ctx) {
+    for (size_t i = 0; i < plugins_.size(); ++i) {
+        auto& p = plugins_[i];
+
+        // D1 Graceful Degradation: si no exporta el símbolo, skip silencioso
+        if (!p->fn_process_message) continue;
+        // D8-pre: validacion de coherencia mode (Q1 Consejo DAY 109)
+        // PLUGIN_MODE_READONLY garantiza payload=nullptr. Violacion = terminate().
+        if (ctx.mode == PLUGIN_MODE_READONLY &&
+            (ctx.payload != nullptr || ctx.payload_len != 0)) {
+            std::cerr << "[plugin-loader] SECURITY: PLUGIN_MODE_READONLY violado "
+                      << "payload no es nullptr antes de invocar plugin '"
+                      << p->name << "' std::terminate()\n";
+            std::terminate();
+        }
+
+        // D8: snapshot de campos read-only antes de invocar el plugin
+        const uint8_t* snap_payload   = ctx.payload;
+        size_t         snap_len        = ctx.payload_len;
+        uint32_t       snap_src_ip     = ctx.src_ip;
+        uint32_t       snap_dst_ip     = ctx.dst_ip;
+        uint16_t       snap_src_port   = ctx.src_port;
+        uint16_t       snap_dst_port   = ctx.dst_port;
+        uint8_t        snap_protocol   = ctx.protocol;
+        uint8_t        snap_direction  = ctx.direction;
+        uint8_t        snap_mode       = ctx.mode;
+        const uint8_t* snap_nonce      = ctx.nonce;
+        const uint8_t* snap_tag        = ctx.tag;
+
+        auto t0 = std::chrono::steady_clock::now();
+        PluginResult r = p->fn_process_message(&ctx);
+        auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - t0).count();
+
+        // D8: post-invocation validation — byte-wise comparison de campos read-only
+        bool invariant_ok =
+            (ctx.payload    == snap_payload)  &&
+            (ctx.payload_len == snap_len)     &&
+            (ctx.src_ip     == snap_src_ip)   &&
+            (ctx.dst_ip     == snap_dst_ip)   &&
+            (ctx.src_port   == snap_src_port) &&
+            (ctx.dst_port   == snap_dst_port) &&
+            (ctx.protocol   == snap_protocol) &&
+            (ctx.direction  == snap_direction)&&
+            (ctx.nonce      == snap_nonce)    &&
+            (ctx.tag        == snap_tag)        &&
+            (ctx.mode       == snap_mode);
+
+        if (!invariant_ok) {
+            std::cerr << "[plugin-loader] SECURITY: plugin '" << p->name
+                      << "' modificó campos read-only en MessageContext — D8 VIOLATION\n";
+            stats_[i].errors++;
+            // D1 fail-closed: se registra el error; en PHASE 2 el plugin será descargado.
+            // En DEV_MODE (MLD_ALLOW_DEV_MODE): solo warning, no se aborta.
+        }
+
+        stats_[i].invocations++;
+
+        if (r == PLUGIN_ERROR) {
+            stats_[i].errors++;
+            std::cerr << "[plugin-loader] WARNING: plugin '" << p->name
+                      << "' returned PLUGIN_ERROR en MessageContext\n";
+        }
+
+        if (static_cast<uint32_t>(elapsed_us) > budget_us_) {
+            stats_[i].budget_overruns++;
+            std::cerr << "[plugin-loader] WARNING: plugin '" << p->name
+                      << "' overrun: " << elapsed_us << "us > " << budget_us_ << "us budget\n";
+        }
+    }
+}
+
 
 }  // namespace ml_defender

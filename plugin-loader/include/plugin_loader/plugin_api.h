@@ -58,6 +58,79 @@ typedef struct PacketContext {
     int            threat_hint;
 } PacketContext;
 
+
+// ----------------------------------------------------------------------------
+// PluginMode — modo de invocación del plugin (Q1 Consejo DAY 109)
+// PLUGIN_MODE_NORMAL:   payload presente, D8-v2 CRC32 activo (sniffer, PHASE 2c)
+// PLUGIN_MODE_READONLY: payload=nullptr garantizado (rag-ingester, PHASE 2b)
+// El loader valida coherencia pre-invocación (D8):
+//   PLUGIN_MODE_READONLY && (payload!=nullptr || payload_len!=0) → std::terminate()
+// ----------------------------------------------------------------------------
+typedef enum {
+    PLUGIN_MODE_NORMAL   = 0,  // acceso normal al payload
+    PLUGIN_MODE_READONLY = 1   // rag-ingester: payload=nullptr garantizado
+} PluginMode;
+
+// ----------------------------------------------------------------------------
+// MessageContext — contexto por mensaje ZMQ, pasado a plugin_process_message()
+// ADR-023 PHASE 2a — Integración firewall-acl-agent
+//
+// Trust model (D7): plugins son código de terceros — tratados como UNTRUSTED.
+//   El loader valida invariantes post-invocación (D8).
+//   La decisión de bloqueo pertenece SIEMPRE al core (ADR-012).
+//
+// TCB (D9): solo PluginLoader + CryptoTransport pertenecen al TCB.
+//   El plugin NO tiene acceso a claves ni a CryptoTransport interno.
+//
+// Forward-compatibility (D11): reserved[60] reservado para ADR-024
+//   (Dynamic Group Key Agreement — campos a definir en FASE 3).
+// ----------------------------------------------------------------------------
+typedef struct MessageContext {
+    // Read-only: payload post-decrypt + post-decompress (D2)
+    // Ownership: el host retiene el buffer. El plugin NO debe liberar ni retener.
+    // Lifetime:  válido SOLO durante la llamada a plugin_process_message().
+    const uint8_t* payload;
+    size_t         payload_len;
+
+    // Read-only: metadatos de flujo (D2)
+    uint32_t       src_ip;
+    uint32_t       dst_ip;
+    uint16_t       src_port;
+    uint16_t       dst_port;
+    uint8_t        protocol;
+
+    // Read-only: dirección de transporte (D3)
+    // 0 = RX (entrante desde ml-detector), 1 = TX (saliente)
+    // El plugin NUNCA debe modificar este campo.
+    uint8_t        direction;
+
+    // Read-only: metadatos crypto (D3)
+    // nonce y tag son propiedad del CryptoTransport.
+    // El plugin puede inspeccionarlos pero NUNCA modificarlos ni liberarlos.
+    //
+    // nonce: 12-byte ChaCha20 nonce (contador monotónico 96-bit, ADR-017).
+    // tag:   16-byte Poly1305 MAC tag.
+    //
+    // Production guarantee: nonce != NULL && tag != NULL.
+    // Test/config mode (--test-config, MLD_DEV_MODE): MAY be NULL.
+    // Plugins MUST check for NULL before dereferencing.
+    const uint8_t* nonce;   // 12 bytes — contador monotónico 96-bit (ADR-017)
+    const uint8_t* tag;     // 16 bytes — MAC Poly1305
+
+    // Write: salida del plugin
+    // result_code: 0 = OK, !=0 = plugin señaliza anomalía
+    //   NOTA: result_code != 0 NO bloquea por sí solo — el core decide.
+    int            result_code;
+    // annotation: anotacion opcional null-terminated (max 63 chars + null)
+    char           annotation[64];
+    // mode: PluginMode — consume 1 byte de reserved (Q1 Consejo DAY 109)
+    // El loader valida coherencia pre-invocación (D8):
+    //   PLUGIN_MODE_READONLY && (payload!=nullptr || payload_len!=0) → std::terminate()
+    uint8_t        mode;          // PluginMode — ver enum arriba
+    // Reservado: forward-compatibility ADR-024 (D11)
+    uint8_t        reserved[59];  // era [60] — 1 byte consumido por mode
+} MessageContext;
+
 // ----------------------------------------------------------------------------
 // PluginResult — código de retorno de las funciones del plugin
 // ----------------------------------------------------------------------------
@@ -80,6 +153,18 @@ int          plugin_api_version();    // debe retornar PLUGIN_API_VERSION
 PluginResult plugin_init(const PluginConfig* config);
 PluginResult plugin_process_packet(PacketContext* ctx);
 void         plugin_shutdown();
+
+// ----------------------------------------------------------------------------
+// Símbolo OPCIONAL — plugin_process_message() (ADR-023 PHASE 2a)
+// ----------------------------------------------------------------------------
+// Si el plugin no exporta este símbolo, el loader aplica Graceful Degradation
+// Policy D1: skip silencioso en producción.
+// Si PLUGIN_API_VERSION se incrementa en el futuro, este símbolo se volverá
+// obligatorio — documentado en ADR-023 D11.
+// La DECISIÓN FINAL de bloqueo pertenece siempre al core (ADR-012).
+// ----------------------------------------------------------------------------
+PluginResult plugin_process_message(MessageContext* ctx);
+
 
 #ifdef __cplusplus
 }

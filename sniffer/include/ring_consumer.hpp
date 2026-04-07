@@ -30,7 +30,13 @@
 #include <atomic>
 #include <array>
 #include <functional>
-#include "flow/sharded_flow_manager.hpp"  // DAY 45
+#include "flow/sharded_flow_manager.hpp"
+#ifdef PLUGIN_LOADER_ENABLED
+#include <plugin_loader/plugin_loader.hpp>
+#endif
+#ifdef PLUGIN_LOADER_ENABLED
+#include <plugin_loader/plugin_loader.hpp>
+#endif  // DAY 45
 
 namespace sniffer {
 
@@ -119,6 +125,11 @@ public:
     // Configuration
     void set_event_callback(EventCallback callback);
     void set_stats_interval(int seconds) { stats_interval_seconds_ = seconds; }
+#ifdef PLUGIN_LOADER_ENABLED
+#endif
+#ifdef PLUGIN_LOADER_ENABLED
+    void set_plugin_loader(ml_defender::PluginLoader* pl) { plugin_loader_ = pl; }
+#endif
 
 private:
     // CONSTANTS - Processing statistics
@@ -176,7 +187,12 @@ private:
 
     // Configuration
     SnifferConfig config_;
-    FastDetectorConfig fast_detector_config_;  // Day 12 - Externalized thresholds
+    FastDetectorConfig fast_detector_config_;
+#ifdef PLUGIN_LOADER_ENABLED
+#endif
+#ifdef PLUGIN_LOADER_ENABLED
+    ml_defender::PluginLoader* plugin_loader_ = nullptr;  // PHASE 2c — set via set_plugin_loader()
+#endif  // Day 12 - Externalized thresholds
     int stats_interval_seconds_{30};  // Default 30 seconds todo esto hay que cambiarlo, quitar números mágicos
 
     // Ring buffer

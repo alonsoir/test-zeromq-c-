@@ -48,6 +48,12 @@ public:
     // Mide latencia. Si elapsed_us > budget_us_, incrementa budget_overruns.
     void invoke_all(PacketContext& ctx);
 
+    // Invoca plugin_process_message() en todos los plugins que lo exporten.
+    // ADR-023 PHASE 2a — Graceful Degradation D1: plugins sin este símbolo
+    // son silenciosamente omitidos (no son descartados del loader).
+    // Post-invocation: valida invariantes read-only (D8).
+    void invoke_all(MessageContext& ctx);
+
     // Llama a plugin_shutdown() en todos los plugins y hace dlclose.
     void shutdown();
 

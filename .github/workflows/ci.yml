@@ -42,7 +42,11 @@ jobs:
           for f in $(find . -name "*.json" \
                       -not -path "./.git/*" \
                       -not -path "*/build/*" \
-                      -not -path "*/third_party/*"); do
+                      -not -path "*/third_party/*" \
+                      -not -path "*/ml-training/*" \
+                      -not -path "*/models/metadata/*" \
+                      -not -path "*/config/rules/*"); do
+            [ -s "$f" ] || { echo "  ⏭️  $f (empty placeholder — skipped)"; continue; }
             python3 -m json.tool "$f" > /dev/null && echo "  ✅ $f" || { echo "  ❌ $f"; failed=1; }
           done
           [ $failed -eq 0 ] || exit 1

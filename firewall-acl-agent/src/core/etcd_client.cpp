@@ -32,7 +32,19 @@ struct EtcdClient::Impl {
         config.port = port_;
         config.encryption_enabled = true;
         config.compression_enabled = true;
-
+        config.component_config_path = "/etc/ml-defender/firewall-acl-agent/firewall.json";
+        // INVARIANT (ADR-027): encryption_enabled requiere component_config_path.
+        // Sin él, SeedClient no inicializa, datos van en claro → MAC failure garantizado.
+        if (config.encryption_enabled && config.component_config_path.empty()) {
+            if (getenv("MLD_ALLOW_UNCRYPTED")) {
+                std::cerr << "FATAL[DEV]: encryption_enabled pero component_config_path vacio. "
+                          << "MLD_ALLOW_UNCRYPTED activo - continuando sin cifrado. "
+                          << "NUNCA en produccion.\n";
+                return; // constructor: continuar sin cifrado en dev mode
+            } else {
+                std::terminate(); // FATAL: produccion - fallo total garantizado
+            }
+        }
         client_ = std::make_unique<etcd_client::EtcdClient>(config);
     }
 
@@ -147,15 +159,17 @@ std::string EtcdClient::get_crypto_seed() const {
         return "";
     }
 
-std::string seed = pImpl->client_->get_encryption_key();
-
-    if (seed.empty()) {
-        std::cerr << "❌ [firewall-acl-agent] Failed to get crypto seed from etcd" << std::endl;
-    } else {
-        std::cout << "🔑 [firewall-acl-agent] Retrieved crypto seed: "
-                  << seed.substr(0, 16) << "..." << std::endl;
+    // ADR-013 PHASE 2 — seed local, no del servidor
+    const std::string seed_path = "/etc/ml-defender/firewall-acl-agent/seed.bin";
+    std::ifstream f(seed_path, std::ios::binary);
+    if (!f.is_open()) {
+        std::cerr << "❌ [firewall-acl-agent] No se puede abrir seed.bin" << std::endl;
+        return "";
     }
-
+    std::string seed(32, '\0');
+    f.read(&seed[0], 32);
+    if (f.gcount() != 32) { return ""; }
+    std::cout << "🔑 [firewall-acl-agent] Seed cargado localmente (32 bytes)" << std::endl;
     return seed;
 }
 

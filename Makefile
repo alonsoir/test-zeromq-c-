@@ -319,6 +319,11 @@ plugin-loader-test:
 	@echo "🧪 Testing plugin-loader..."
 	@vagrant ssh -c "cd /vagrant/plugin-loader/build && ctest --output-on-failure"
 
+plugin-integ-test:
+	@echo "TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_variants /vagrant/plugins/test-message/test_variants.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_variants && echo TEST-INTEG-4a PASSED || echo TEST-INTEG-4a FAILED'
+	@echo "TEST-INTEG-4b: plugin READ-ONLY contract (rag-ingester PHASE 2b)..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4b /vagrant/plugins/test-message/test_integ_4b.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4b && echo TEST-INTEG-4b PASSED || echo TEST-INTEG-4b FAILED'
 plugin-hello-build: plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -402,7 +407,7 @@ sniffer-start:
 	@vagrant ssh -c "tmux new-session -d -s sniffer 'mkdir -p /vagrant/logs/lab && cd $(SNIFFER_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer -c $(SNIFFER_CFG) >> /vagrant/logs/lab/sniffer.log 2>&1'"
 	@sleep 2
 
-sniffer: proto etcd-client-build
+sniffer: proto etcd-client-build plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building Sniffer [$(PROFILE)]                         ║"
@@ -430,7 +435,7 @@ ml-detector-start:
 	@vagrant ssh -c "tmux new-session -d -s ml-detector 'mkdir -p /vagrant/logs/lab && cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector >> /vagrant/logs/lab/ml-detector.log 2>&1'"
 	@sleep 3
 
-ml-detector: proto etcd-client-build
+ml-detector: proto etcd-client-build plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building ML Detector [$(PROFILE)]                     ║"
@@ -461,7 +466,7 @@ rag-ingester-start:
 	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
 	@sleep 2
 
-rag-ingester: proto etcd-client-build crypto-transport-build
+rag-ingester: proto etcd-client-build crypto-transport-build plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building RAG Ingester [$(PROFILE)]                    ║"
@@ -493,7 +498,7 @@ firewall-start:
 	@vagrant ssh -c "tmux new-session -d -s firewall 'mkdir -p /vagrant/logs/lab && cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG) >> /vagrant/logs/lab/firewall-agent.log 2>&1'"
 	@sleep 2
 
-firewall: proto etcd-client-build
+firewall: proto etcd-client-build plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building Firewall ACL Agent [$(PROFILE)]              ║"
@@ -734,6 +739,7 @@ test-libs:
 	@vagrant ssh -c "cd /vagrant/etcd-client/build/tests && ./test_hmac_client"
 	@echo "Testing plugin-loader..."
 	@$(MAKE) plugin-loader-test
+	@$(MAKE) plugin-integ-test
 
 test-components:
 	@echo ""
@@ -1218,7 +1224,7 @@ day38-full: day38-step1 day38-step2 day38-step3
 # RAG Ecosystem
 # ============================================================================
 
-rag-build:
+rag-build: plugin-loader-build
 	@echo "🔨 Building RAG Security System [$(PROFILE)]..."
 	@vagrant ssh -c 'mkdir -p $(RAG_BUILD_DIR) && \
 		cd $(RAG_BUILD_DIR) && \

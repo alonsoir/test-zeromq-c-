@@ -34,13 +34,11 @@
 
 // Day 38: etcd-client integration (PRODUCTION CODE)
 #include <etcd_client/etcd_client.hpp>
+// DAY 109 PHASE 2b: plugin-loader
+#include <plugin_loader/plugin_loader.hpp>
+#include <plugin_loader/plugin_api.h>
 #include <crypto_transport/utils.hpp>
 #include <exception>
-
-#ifdef PLUGIN_LOADER_ENABLED
-#include "plugin_loader/plugin_loader.hpp"
-#include "plugin_loader/plugin_api.h"
-#endif
 
 namespace {
     std::atomic<bool> running{true};
@@ -105,9 +103,6 @@ void save_indices_to_disk() {
 }
 
 int main(int argc, char* argv[]) {
-#ifdef PLUGIN_LOADER_ENABLED
-    std::unique_ptr<ml_defender::PluginLoader> plugin_loader;
-#endif
     // SET_TERMINATE — DAY 100 (ADR-022: fail-closed, unhandled exceptions)
     std::set_terminate([]() {
         std::cerr << "[FATAL] std::terminate() called — unhandled exception or contract violation\n";
@@ -121,12 +116,6 @@ int main(int argc, char* argv[]) {
 
         spdlog::info("RAG Ingester starting...");
         spdlog::info("Loading configuration from: {}", config_path);
-
-#ifdef PLUGIN_LOADER_ENABLED
-        plugin_loader = std::make_unique<ml_defender::PluginLoader>(config_path);
-        plugin_loader->load_plugins();
-        spdlog::info("plugin-loader: {} plugin(s) cargados", plugin_loader->loaded_count());
-#endif
 
         auto config = rag_ingester::ConfigParser::load(config_path);
 
@@ -164,6 +153,14 @@ int main(int argc, char* argv[]) {
 
         spdlog::info("Initializing MultiIndexManager...");
         rag_ingester::MultiIndexManager index_manager;
+
+        // ====================================================================
+        // 3.7. Initialize PluginLoader (DAY 109 PHASE 2b — ADR-023)
+        // ====================================================================
+        spdlog::info("Initializing PluginLoader (PHASE 2b)...");
+        ml_defender::PluginLoader plugin_loader(config_path);
+        plugin_loader.load_plugins();
+        spdlog::info("PluginLoader: {} plugin(s) loaded", plugin_loader.loaded_count());
 
         // Set global pointer for save_indices_to_disk()
         g_index_manager = &index_manager;
@@ -230,6 +227,23 @@ int main(int argc, char* argv[]) {
                     event.confidence
                 );
 
+                // DAY 109 PHASE 2b: plugin_process_message READ-ONLY
+                // Contrato: payload=nullptr, mode=PLUGIN_MODE_READONLY
+                // Early return si result_code != 0 (ADR-023)
+                {
+                    MessageContext ctx_readonly{};
+                    ctx_readonly.payload     = nullptr;
+                    ctx_readonly.payload_len = 0;
+                    ctx_readonly.mode        = PLUGIN_MODE_READONLY;
+                    ctx_readonly.result_code = 0;
+                    plugin_loader.invoke_all(ctx_readonly);
+                    if (ctx_readonly.result_code != 0) {
+                        spdlog::warn("Plugin anomaly (result_code={}) — skipping event {}",
+                            ctx_readonly.result_code, event.event_id);
+                        events_failed++;
+                        return;
+                    }
+                }
                 // Day 38.5: Generate embeddings
                 auto chronos_emb = embedder.embed_chronos(event);
                 auto sbert_emb = embedder.embed_sbert(event);
@@ -548,12 +562,6 @@ int main(int argc, char* argv[]) {
         spdlog::info("  Metadata entries: {}", metadata_db->count());
         spdlog::info("  Bytes processed: {}", final_stats.bytes_processed);
 
-#ifdef PLUGIN_LOADER_ENABLED
-        if (plugin_loader) {
-            plugin_loader->shutdown();
-            spdlog::info("plugin-loader: shutdown OK");
-        }
-#endif
         spdlog::info("RAG Ingester stopped gracefully");
         return 0;
 
