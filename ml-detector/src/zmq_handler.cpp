@@ -797,6 +797,32 @@ void ZMQHandler::process_event(const std::string& message) {
             event.set_threat_category("NORMAL");
         }
 
+        // ADR-012 PHASE 2d — invoke plugins post-inferencia (Consejo DAY 111)
+        if (plugin_loader_ != nullptr) {
+            std::string serialized = event.SerializeAsString();
+            MessageContext ctx{};
+            ctx.payload     = reinterpret_cast<const uint8_t*>(serialized.data());
+            ctx.payload_len = serialized.size();
+            ctx.mode        = PLUGIN_MODE_NORMAL;
+            ctx.result_code = 0;
+            // IPs son strings en protobuf — usar 0 (payload contiene el evento completo)
+            ctx.src_ip      = 0;
+            ctx.dst_ip      = 0;
+            ctx.src_port    = static_cast<uint16_t>(event.network_features().source_port());
+            ctx.dst_port    = static_cast<uint16_t>(event.network_features().destination_port());
+            ctx.protocol    = static_cast<uint8_t>(event.network_features().protocol_number());
+            ctx.direction   = 0;
+            ctx.nonce       = nullptr;
+            ctx.tag         = nullptr;
+            memset(ctx.annotation, 0, sizeof(ctx.annotation));
+            memset(ctx.reserved,   0, sizeof(ctx.reserved));
+            plugin_loader_->invoke_all(ctx);
+            if (ctx.result_code != 0) {
+                logger_->warn("[plugin-loader] plugin returned error={} — dropping event {}",
+                              ctx.result_code, event.event_id());
+                return;
+            }
+        }
         // Send enriched event
         send_enriched_event(event);
 

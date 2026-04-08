@@ -477,6 +477,9 @@ int main(int argc, char* argv[]) {
         );
 
         zmq_handler.start();
+        // ADR-012 PHASE 2d — conectar plugin_loader_ al ZMQHandler (Consejo DAY 111)
+        zmq_handler.set_plugin_loader(&plugin_loader_);
+        std::cout << "✅ [plugin-loader] PluginLoader conectado a ZMQHandler (PHASE 2d)" << std::endl;
 
         log->info("✅ ML Detector initialization complete");
         log->info("   Press Ctrl+C to stop");
