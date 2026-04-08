@@ -31,6 +31,8 @@ struct PluginStats {
 // ----------------------------------------------------------------------------
 // PluginLoader — gestor de plugins dlopen-based
 // ----------------------------------------------------------------------------
+static constexpr size_t MAX_PLUGIN_PAYLOAD_SIZE = 65536; // 64KB — D8 extendido (FIX-D, Consejo DAY 110)
+
 class PluginLoader {
 public:
     // config_json_path: ruta al JSON del componente host (ej: "config/sniffer.json")
