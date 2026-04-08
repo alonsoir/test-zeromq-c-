@@ -1,82 +1,73 @@
-# ML Defender (aRGus NDR) — DAY 111 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 112 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
-## Estado al cierre de DAY 110
+## Estado al cierre de DAY 111
 
-### Completado hoy
+### Hito del día
+**arXiv:2604.04952 [cs.CR] PUBLICADO** — Viernes 3 Apr 2026, 05:20:13 UTC.
+DOI: https://doi.org/10.48550/arXiv.2604.04952
+"ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and
+Anomalous Traffic Detection in Resource-Constrained Organizations"
+— Alonso Isidoro Román. 28 páginas, cs.CR, MIT license.
 
-**PASO 2 — PluginMode + mode field (Q1 Consejo DAY 109) ✅**
-- `plugin_api.h`: enum `PluginMode` (NORMAL=0, READONLY=1), `annotation[64]` restaurado,
-  `mode uint8_t` consume 1 byte de `reserved[60]` → `reserved[59]`
-- `plugin_loader.cpp`: D8-pre coherence check — READONLY+payload!=nullptr → std::terminate()
-  snap_mode añadido a snapshot D8 y al invariant check
-- `rag-ingester/src/main.cpp`: PHASE 2b reconstruida — PluginLoader init + ctx_readonly
-  con mode=PLUGIN_MODE_READONLY antes de embed_chronos(), early return si result_code!=0
-- `test_integ_4b.cpp`: TEST-INTEG-4b PASSED (Caso A + Caso B)
+### Completado DAY 111
 
-**PASO 3 — PHASE 2c sniffer (Q2 Consejo DAY 109) ✅**
-- `ring_consumer.hpp`: set_plugin_loader() setter + plugin_loader_ member
-- `ring_consumer.cpp`: invoke_all(ctx_msg) en process_raw_event() con payload real,
-  mode=PLUGIN_MODE_NORMAL, result_code!=0 → events_dropped++ + return
-- `sniffer/src/userspace/main.cpp`: set_plugin_loader(&plugin_loader_) tras set_stats_interval()
-- `sniffer.json`: hello plugin active=false (D1 Graceful Degradation OK)
-- Pipeline: 6/6 RUNNING con binarios actualizados
+**FIX-C — D8-pre inverso OBLIGATORIO ✅**
+- `plugin_loader.cpp`: PLUGIN_MODE_NORMAL + payload==nullptr → std::terminate()
+- Contrato D8-pre bidireccional completo (READONLY y NORMAL cubiertos)
 
-**PASO 4 — Paper v13 (Q3 Consejo DAY 109) ✅**
-- §4 Integration Philosophy: 4 argumentos como enumerate LaTeX
-- Compilación limpia Overleaf confirmada
+**FIX-D — MAX_PLUGIN_PAYLOAD_SIZE OBLIGATORIO ✅**
+- `plugin_loader.hpp`: constexpr MAX_PLUGIN_PAYLOAD_SIZE = 65536 (64KB)
+- `plugin_loader.cpp`: payload_len > MAX → std::terminate()
 
-**Incidente DAY 110:**
-Tres ficheros críticos estaban vacíos (0 bytes) en la rama. Backups .backup intactos.
-El backup de rag-ingester/src/main.cpp era pre-PHASE 2b — reconstruida desde cero.
-Lección: noclobber en scripts + check de ficheros 0 bytes pendiente de implementar.
+**TEST-INTEG-4c — 3/3 PASSED ✅**
+- Caso A: NORMAL + payload real → PLUGIN_OK, errors==0
+- Caso B: NORMAL + plugin modifica campo read-only → D8 VIOLATION detectada
+- Caso C: NORMAL + result_code=-1 → error registrado, no crash
 
-**Commits DAY 110:**
-- Commit 1: feat(plugin-api): PluginMode + mode + PHASE 2b reconstruida + TEST-INTEG-4b
-- Commit 2: feat(sniffer): PHASE 2c — plugin_process_message con payload real
-- Push: ebc1d0e7..360faf8b feature/plugin-crypto
+**PHASE 2d — ml-detector ✅**
+- `zmq_handler.hpp`: set_plugin_loader() setter + plugin_loader_ member + include
+- `zmq_handler.cpp`: invoke_all(ctx) post-inferencia, payload=evento serializado,
+  mode=PLUGIN_MODE_NORMAL, early return si result_code!=0
+- `main.cpp`: set_plugin_loader(&plugin_loader_) tras zmq_handler.start()
+- Compilación limpia. 6/6 RUNNING.
 
-**Estado pipeline:** 6/6 RUNNING. Branch: feature/plugin-crypto.
+**ADR-029 — g_plugin_loader + async-signal-safe ✅**
+- Documenta patrón global obligatorio para rag-security (único componente con este patrón)
+- D1: static PluginLoader* g_plugin_loader = nullptr
+- D2: signal handler solo async-signal-safe (write(), dlclose(), signal(), raise())
+- D3: orden inicialización obligatorio (loader → asignación → signal handlers)
+- D4: invoke_all en rag-security → modo READONLY
+- D5: invoke_all NUNCA desde signal handler
+- TEST-INTEG-4e definido (3 casos)
 
----
-
-## Consejo DAY 110 — Decisiones (5/5 respondieron)
-
-**Nota de acta:** Qwen (chat.qwen.ai) se auto-identifica como DeepSeek — patrón
-consolidado DAY 103-110. Registrado como Qwen en todas las actas.
-
-**Q1-111 — PHASE 2d antes de 2e: UNANIMIDAD 5/5**
-ml-detector sigue patrón limpio (set_plugin_loader + member). rag-security tiene
-patrón especial (g_plugin_loader global + signal handler async-signal-safe) que
-merece atención dedicada después.
-
-**FIX-C — D8-pre inverso OBLIGATORIO (ChatGPT5)**
-El contrato actual solo valida READONLY+payload!=nullptr. Falta la inversa:
-NORMAL + payload == nullptr → std::terminate().
-El contrato es bidireccional. Sin este fix, PHASE 2c no está completamente cerrada.
-
-**FIX-D — MAX_PLUGIN_PAYLOAD_SIZE OBLIGATORIO (ChatGPT5)**
-Sniffer recibe payload real de red — datos arbitrarios sin límite de tamaño.
-Hard limit en plugin_loader antes de invocar: payload_len > MAX → std::terminate().
-Valor propuesto: 64KB. Esto es D8 extendido, no opcional.
-
-**REC-1 — ADR-029 antes de PHASE 2e (DeepSeek)**
-Documentar g_plugin_loader + restricciones async-signal-safe antes de implementar
-PHASE 2e. No bloqueante para 2d.
-
-**REC-2 — noclobber + check 0-bytes en CI (ChatGPT5 + Gemini)**
-set -o noclobber en scripts de cierre. find . -name "*.cpp" -size 0 en CI o make check.
-No bloqueante, P2.
-
-**Contenido TEST-INTEG-4c (Grok):**
-- Caso A: payload no-nulo, longitud correcta → PLUGIN_OK, errors==0
-- Caso B: plugin intenta modificar payload → D8-light VIOLATION detectada
-- Caso C: result_code!=0 → paquete descartado, no llega a ml-detector, no crash
+**Commits DAY 111:**
+- Commit 1 (b23eca66): FIX-C + FIX-D + TEST-INTEG-4c
+- Commit 2 (58d73c04): PHASE 2d ml-detector
+- Commit 3: ADR-029
+- Branch: feature/plugin-crypto
 
 ---
 
-## Orden DAY 111 (no saltarse)
+## Consejo DAY 111 — Preguntas para DAY 112
+
+**Q1-112 — PHASE 2e: ¿invoke_all READONLY o NORMAL en rag-security?**
+ADR-029 D4 establece READONLY. ¿Hay algún caso donde NORMAL tenga sentido
+dado que rag-security es guardián de la memoria semántica?
+
+**Q2-112 — TEST-INTEG-4e Caso C: ¿cómo testear SIGTERM sin fork()?**
+Caso C requiere verificar que shutdown limpio ocurre bajo señal.
+¿Subprocess con kill()? ¿alarm() + signal handler en el test?
+¿O simplemente simular la lógica del handler sin señal real?
+
+**Q3-112 — arXiv Replace v13: ¿subir ahora o esperar indexación completa?**
+v1 está anunciada (2604.04952). Draft v13 está listo.
+¿Riesgo de Replace antes de que Google Scholar/Semantic Scholar indexen v1?
+
+---
+
+## Orden DAY 112 (no saltarse)
 
 ### PASO 1 — Verificar estado
 ```bash
@@ -86,76 +77,81 @@ git pull origin feature/plugin-crypto
 make pipeline-status
 ```
 
-### PASO 2 — FIX-C: D8-pre inverso
+### PASO 2 — PHASE 2e: rag-security
 
-Archivo: `plugin-loader/src/plugin_loader.cpp`
-En `invoke_all(MessageContext& ctx)`, añadir tras el check READONLY:
+Siguiendo ADR-029 D1-D5 estrictamente.
+
+**Archivos a tocar:**
+- `rag-security/src/main.cpp`
+
+**Patrón D1-D3:**
 ```cpp
-// D8-pre inverso (FIX-C, Consejo DAY 110 — ChatGPT5 obligatorio)
-// PLUGIN_MODE_NORMAL garantiza payload presente. payload==nullptr = violación.
-if (ctx.mode == PLUGIN_MODE_NORMAL &&
-    (ctx.payload == nullptr || ctx.payload_len == 0)) {
-    std::cerr << "[plugin-loader] SECURITY: PLUGIN_MODE_NORMAL violado — "
-              << "payload es nullptr antes de invocar plugin '"
-              << p->name << "' — std::terminate()\n";
-    std::terminate();
+// ADR-029 D1: global requerido para async-signal-safe signal handler
+static ml_defender::PluginLoader* g_plugin_loader = nullptr;
+
+// En main(), orden obligatorio (ADR-029 D3):
+// 1. PluginLoader construido
+ml_defender::PluginLoader plugin_loader(config_path);
+plugin_loader.load_plugins();
+// 2. Asignación ANTES de signal handlers
+g_plugin_loader = &plugin_loader;
+// 3. Instalar signal handlers
+signal(SIGTERM, signal_handler);
+signal(SIGINT,  signal_handler);
+```
+
+**Signal handler D2:**
+```cpp
+static void signal_handler(int sig) {
+    const char msg[] = "[rag-security] signal received — shutting down\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    if (g_plugin_loader != nullptr) {
+        g_plugin_loader->shutdown();
+    }
+    signal(sig, SIG_DFL);
+    raise(sig);
 }
 ```
 
-Gate: compilar + make plugin-integ-test verde (4a + 4b no deben romperse).
-
-### PASO 3 — FIX-D: MAX_PLUGIN_PAYLOAD_SIZE
-
-Archivo: `plugin-loader/include/plugin_loader/plugin_loader.hpp`
-Añadir constexpr:
+**invoke_all D4 — READONLY:**
 ```cpp
-static constexpr size_t MAX_PLUGIN_PAYLOAD_SIZE = 65536; // 64KB — D8 extendido
-```
-
-Archivo: `plugin-loader/src/plugin_loader.cpp`
-En `invoke_all(MessageContext& ctx)`, tras FIX-C:
-```cpp
-// D8-pre size limit (FIX-D, Consejo DAY 110 — ChatGPT5 obligatorio)
-if (ctx.payload != nullptr && ctx.payload_len > MAX_PLUGIN_PAYLOAD_SIZE) {
-    std::cerr << "[plugin-loader] SECURITY: payload_len=" << ctx.payload_len
-              << " excede MAX_PLUGIN_PAYLOAD_SIZE=" << MAX_PLUGIN_PAYLOAD_SIZE
-              << " — std::terminate()\n";
-    std::terminate();
+if (g_plugin_loader != nullptr) {
+    MessageContext ctx{};
+    ctx.payload     = nullptr;  // READONLY: sin payload
+    ctx.payload_len = 0;
+    ctx.mode        = PLUGIN_MODE_READONLY;
+    ctx.result_code = 0;
+    // ... campos de red del evento
+    g_plugin_loader->invoke_all(ctx);
+    // READONLY: result_code ignorado (D4 — guardián semántico)
 }
 ```
 
-Gate: compilar + make plugin-integ-test verde (4a + 4b).
-Instalar header actualizado en VM: vagrant ssh -c 'sudo cp ...'
+Gate: compilar + make plugin-integ-test verde (4a+4b+4c) + TEST-INTEG-4e.
 
-### PASO 4 — TEST-INTEG-4c
+### PASO 3 — TEST-INTEG-4e
 
-Escribir plugins/test-message/test_integ_4c.cpp con los 3 casos de Grok:
-- Caso A: NORMAL + payload real presente → PLUGIN_OK, errors==0
-- Caso B: NORMAL + plugin modifica campo read-only → D8 VIOLATION
-- Caso C: NORMAL + result_code=-1 → error registrado, no crash, no llega a next stage
+3 casos según ADR-029:
+- Caso A: READONLY + evento real → PLUGIN_OK, result_code ignorado
+- Caso B: g_plugin_loader=nullptr → invoke_all no llamado, no crash
+- Caso C: simulación lógica signal handler → shutdown limpio
 
-Añadir al Makefile target plugin-integ-test (tras 4b).
-Gate: make plugin-integ-test verde (4a + 4b + 4c).
+Gate: make plugin-integ-test verde (4a+4b+4c+4e).
 
-### PASO 5 — PHASE 2d: ml-detector
+### PASO 4 — Commit + actualizar README/BACKLOG
 
-Solo si PASOS 2-4 están verdes.
-Archivos: ml-detector/src/main.cpp, ml-detector/CMakeLists.txt
-Mismo patrón que sniffer: set_plugin_loader() + member + invoke_all()
-Contrato: payload post-inferencia, mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 activo.
-Gate: TEST-INTEG-4d.
+### PASO 5 (opcional) — arXiv Replace v13
+Solo si Consejo DAY 112 da luz verde en Q3.
 
 ---
 
 ## Deuda pendiente (no bloqueante)
 
-- ADR-028: escribir antes del primer plugin write-capable
-- ADR-029: g_plugin_loader + async-signal-safe (antes de PHASE 2e)
 - REC-2: noclobber + check 0-bytes CI (P2)
-- PHASE 2e (rag-security) — tras 2d
 - ADR-025 (Plugin Integrity Ed25519) — post PHASE 2 completa
 - TEST-PROVISION-1 como gate CI formal (post PHASE 2)
-- arXiv Replace v13 cuando submit/7438768 sea anunciado
+- arXiv Replace v13 — pendiente decisión Consejo Q3-112
+- DEBT-SNIFFER-SEED — unificar sniffer bajo SeedClient
 
 ---
 
@@ -163,20 +159,25 @@ Gate: TEST-INTEG-4d.
 
 ### Proyecto
 - **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios.
+- **arXiv**: arXiv:2604.04952 [cs.CR] — PUBLICADO 3 Apr 2026 ✅
 - **Branch activa**: feature/plugin-crypto
 - **Repositorio**: https://github.com/alonsoir/argus
-- **arXiv**: submit/7438768 — pendiente moderación (cs.CR).
-  Draft v13 listo para Replace cuando v1 sea anunciada.
 
 ### Comandos VM críticos
 - Editar ficheros en VM: python3 << 'PYEOF' (nunca sed -i sin -e '' en macOS)
 - vagrant ssh -c '...' con comillas simples para CMAKE_FLAGS
-- Restaurar backup: cp fichero.cpp.backup fichero.cpp — SIEMPRE verificar con wc -l
-- NUNCA > fichero para escribir código — usar python3 heredoc o cat << 'EOF'
+- NUNCA > fichero para escribir código — usar python3 heredoc
 - CMake: NO_DEFAULT_PATH para libsodium
 - CI: .github/workflows/ci.yml
+
+### PHASE 2 estado
+- 2a ✅ firewall (TEST-INTEG-4a)
+- 2b ✅ rag-ingester READONLY (TEST-INTEG-4b)
+- 2c ✅ sniffer NORMAL payload real (TEST-INTEG-4c)
+- 2d ✅ ml-detector post-inferencia
+- 2e ⏳ rag-security (ADR-029 documentado, listo para implementar)
 
 ### Consejo de Sabios (7 miembros)
 Claude, Grok, ChatGPT, DeepSeek, Qwen (Alibaba), Gemini, Parallel.ai.
 Qwen se auto-identifica como DeepSeek — registrar como Qwen en actas.
-FIX-C y FIX-D son OBLIGATORIOS antes de cerrar PHASE 2c (ChatGPT5 DAY 110).
+ADR-029 aprobado implícitamente por unanimidad DAY 110 (REC-1 DeepSeek).
