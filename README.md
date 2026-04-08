@@ -6,12 +6,12 @@
 [![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b-brightgreen)]()
+[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b_4c-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
-[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2c_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
-[![ADR-028](https://img.shields.io/badge/ADR--028-RAG_Trust_Model_APPROVED-green)](docs/adr/ADR-028.md)
+[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2d_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![ADR-029](https://img.shields.io/badge/ADR--029-async--signal--safe_APPROVED-green)](docs/adr/ADR-029-rag-security-global-plugin-loader-async-signal-safe.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
-[![arXiv](https://img.shields.io/badge/arXiv-submitted_cs.CR-red)](https://arxiv.org/search/?searchtype=author&query=Roman%2C+Alonso+Isidoro)
+[![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
 [![Docs](https://img.shields.io/badge/Docs-alonsoir.github.io%2Fargus-blue)](https://alonsoir.github.io/argus/)
 
@@ -24,14 +24,15 @@ For current state, see that branch. `main` is behind.
 
 ## 📄 Preprint
 
-ML Defender (aRGus NDR) is documented in a preprint submitted to **arXiv cs.CR** (April 2026).
-The paper covers architecture, cryptographic transport, plugin system, evaluation results (F1=0.9985),
-and the Consejo de Sabios / Test-Driven Hardening methodology.
+**ML Defender (aRGus NDR)** is documented in a peer-reviewed preprint published on **arXiv cs.CR** (April 2026).
 
-**arXiv submission:** `submit/7438768` — pending moderation. Link will be updated here upon publication.
-**Draft v12** ready for Replace submission once v1 is announced.
+> *ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and Anomalous Traffic Detection in Resource-Constrained Organizations*
+> — Alonso Isidoro Román
+
+**arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)
+**DOI:** https://doi.org/10.48550/arXiv.2604.04952
+**Published:** 3 April 2026 · 28 pages · MIT license
 **Code:** https://github.com/alonsoir/argus
-**TDH methodology:** https://github.com/alonsoir/test-driven-hardening
 
 ---
 
@@ -55,7 +56,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 
 ---
 
-## 📊 Validated Results (DAY 109 — 6 April 2026)
+## 📊 Validated Results (DAY 111 — 8 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -71,10 +72,10 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Inference latency** | **0.24–1.06 μs** | Per-class, embedded C++20 |
 | **Throughput ceiling (virtualized)** | **~33–38 Mbps** | VirtualBox NIC limit, not pipeline |
 | **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows |
-| **RAM (full pipeline)** | **~3.5 GB** | Including TinyLlama, 3-4 cores, stable under load |
+| **RAM (full pipeline)** | **~1.28 GB** | Stable under load |
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `vagrant destroy` |
-| **Test suite** | **25/25 suites + TEST-INTEG-4a 3/3 + TEST-INTEG-4b PASSED** | DAY 109 |
-| **Plugin Loader** | **ADR-023 PHASE 2b COMPLETE** | rag-ingester READ-ONLY contract |
+| **Test suite** | **25/25 + TEST-INTEG-4a 3/3 + TEST-INTEG-4b + TEST-INTEG-4c 3/3** | DAY 111 |
+| **Plugin Loader** | **ADR-023 PHASE 2d COMPLETE** | ml-detector post-inference contract |
 
 ---
 
@@ -90,13 +91,14 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  │  sniffer (C++20) │  eBPF/XDP zero-copy packet capture        │
 │  │                  │  ShardedFlowManager (16 shards)           │
 │  │                  │  Fast Detector (rule-based heuristics)    │
-│  │                  │  28/40 features · plugin-loader PHASE 1b  │
+│  │                  │  plugin-loader PHASE 2c ✅ NORMAL         │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (ChaCha20-Poly1305 encrypted)                  │
 │  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4× Embedded RandomForest classifiers     │
 │  │  (C++20)         │  DDoS: 0.24 μs | Ransomware: 1.06 μs     │
-│  │                  │  Maximum Threat Wins · plugin-loader 1b   │
+│  │                  │  Maximum Threat Wins                      │
+│  │                  │  plugin-loader PHASE 2d ✅ post-inference  │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
@@ -106,28 +108,33 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │ firewall-acl     │  Autonomous blocking via ipset/iptables   │
-│  │ agent (C++20)    │  plugin-loader ADR-023 PHASE 2a ✅        │
+│  │ agent (C++20)    │  plugin-loader PHASE 2a ✅ NORMAL         │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag-ingester    │  FAISS + SQLite event ingestion           │
-│  │  (C++20)         │  plugin-loader ADR-023 PHASE 2b ✅        │
-│  │                  │  READ-ONLY plugin contract (pre-FAISS)    │
+│  │  (C++20)         │  plugin-loader PHASE 2b ✅ READONLY       │
+│  │                  │  Anti-poisoning trust model (ADR-028)     │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag-security    │  TinyLlama natural language interface      │
 │  │  (C++20+LLM)     │  Local inference — no cloud exfiltration  │
-│  │                  │  plugin-loader PHASE 1b ✅                 │
+│  │                  │  plugin-loader PHASE 2e ⏳ (ADR-029)      │
 │  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ### Integration Philosophy
 
-ML Defender is composable, not monolithic. All external integrations use the same transport stack: **raw TCP + Protocol Buffers + ChaCha20-Poly1305**. No HTTP, no Kafka, no WebSocket. This ensures resource footprint and cryptographic guarantees remain consistent with resource-constrained deployment targets.
+ML Defender is composable, not monolithic. All external integrations use the same transport stack: **raw TCP + Protocol Buffers + ChaCha20-Poly1305**. No HTTP, no Kafka, no WebSocket. Four reasons:
 
-**FEAT-INT-1 (planned):** Wazuh agents and NIST-aligned scanners on DMZ hosts emit events via raw TCP → protobuf → ZeroMQ → rag-ingester. Graph quality motivation: correlating ML Defender's network anomalies with Wazuh's file integrity events produces composite attack signatures that neither system observes independently.
+1. **Deterministic latency** (<10ms; no HTTP/Kafka jitter)
+2. **Attack surface** (no HTTP parsers = no CVE surface; >90% reduction)
+3. **No broker = no SPOF** (Kafka/Redis incompatible with $150–200 single-node target)
+4. **Minimal footprint** (no librdkafka, no libcurl, no boost.asio)
+
+**FEAT-INT-1 (planned):** Wazuh agents emit events via raw TCP → protobuf → ZeroMQ → rag-ingester.
 
 ---
 
@@ -141,49 +148,36 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | HMAC-SHA256 log integrity | ✅ All CSV logs |
 | Autonomous blocking (ipset/iptables) | ✅ Millisecond response |
 | Fail-closed design (std::terminate) | ✅ All 6 main() functions |
-| MLD_ALLOW_UNCRYPTED escape hatch | ✅ Dev-only, explicit FATAL[DEV] log |
-| Plugin Loader PHASE 2a (firewall) | ✅ MessageContext D8-v2 CRC32 |
-| Plugin Loader PHASE 2b (rag-ingester) | ✅ READ-ONLY contract, TEST-INTEG-4b PASSED |
-| Plugin Loader PHASE 2c (sniffer) | ✅ payload real, mode=PLUGIN_MODE_NORMAL, D8-v2 CRC32 |
-| PluginMode field (mode uint8_t) | ✅ D8-pre coherence check, READONLY+payload→terminate() |
-| ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS como TCB lógico, anti-poisoning |
-| Validation Layer D4 (rate-limit+antidating) | ✅ Configurable JSON, MAX_DRIFT 300s default |
-| Rollback lógico RAG (SQLite valid flag) | ✅ O(1), no reindexación FAISS |
-| D8-light READ-ONLY exception | ✅ nullptr+0 legitimate contract |
+| D8-pre bidireccional (FIX-C + FIX-D) | ✅ NORMAL+nullptr→terminate, 64KB hard limit |
+| Plugin Loader PHASE 2a (firewall) | ✅ NORMAL contract, TEST-INTEG-4a PASSED |
+| Plugin Loader PHASE 2b (rag-ingester) | ✅ READONLY contract, TEST-INTEG-4b PASSED |
+| Plugin Loader PHASE 2c (sniffer) | ✅ NORMAL + payload real, TEST-INTEG-4c 3/3 |
+| Plugin Loader PHASE 2d (ml-detector) | ✅ NORMAL post-inference, DAY 111 |
+| Plugin Loader PHASE 2e (rag-security) | ⏳ ADR-029 approved, DAY 112 |
+| ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS anti-poisoning |
+| ADR-029 async-signal-safe pattern | ✅ Documented, g_plugin_loader global |
 | Plugin integrity via Ed25519 (ADR-025) | ❌ Approved, pending post-PHASE 2 |
 | Dynamic group key agreement (ADR-024) | ❌ Design approved, post-PHASE 2 |
 | provision.sh reproducible (destroy→6/6) | ✅ DAY 108 |
-| rag-security/config auto-created | ✅ DAY 109 |
 
 ---
 
 ## 🗺️ Roadmap
 
-### ✅ DONE — DAY 109
-- [x] FIX-A: MLD_ALLOW_UNCRYPTED escape hatch (3 etcd_client.cpp adapters)
-- [x] FIX-B: provision.sh rag-security config dir + symlink
-- [x] PHASE 2b: rag-ingester plugin_process_message() READ-ONLY contract
-- [x] D8-light: READ-ONLY exception (nullptr+0 legitimate)
-- [x] TEST-INTEG-4b: PASSED (make plugin-integ-test covers 4a+4b)
-- [x] Paper Draft v12: threat model scope + Integration Philosophy §4
-- [x] ADR-028: RAG Ingestion Trust Model — APROBADO Consejo 5/5 (2 rondas)
+### ✅ DONE — DAY 111
+- [x] FIX-C: D8-pre inverso — PLUGIN_MODE_NORMAL + nullptr → std::terminate()
+- [x] FIX-D: MAX_PLUGIN_PAYLOAD_SIZE 64KB hard limit
+- [x] TEST-INTEG-4c: 3/3 PASSED (NORMAL payload real, D8 VIOLATION, result_code error)
+- [x] PHASE 2d: ml-detector invoke_all post-inferencia
+- [x] ADR-029: g_plugin_loader + async-signal-safe (rag-security pattern)
+- [x] **arXiv:2604.04952 [cs.CR] PUBLICADO** 🎉
 
-### ✅ DONE — DAY 110
-- [x] PluginMode enum + mode field en MessageContext (Q1 Consejo DAY 109)
-- [x] D8-pre coherence check: READONLY+payload!=nullptr → std::terminate()
-- [x] PHASE 2b: rag-ingester plugin_process_message() reconstruida
-- [x] TEST-INTEG-4b: PASSED (Caso A + Caso B)
-- [x] PHASE 2c: sniffer plugin_process_message() con payload real
-- [x] Paper v13: §4 Integration Philosophy — 4 argumentos formales
-
-### 🔜 NEXT — PHASE 2c/2d/2e
-- [ ] PHASE 2c — sniffer + plugin_process_message() + TEST-INTEG-4c
-- [ ] PHASE 2d — ml-detector + TEST-INTEG-4d
-- [ ] PHASE 2e — rag-security (g_plugin_loader global) + TEST-INTEG-4e
+### 🔜 NEXT — DAY 112
+- [ ] PHASE 2e: rag-security (ADR-029 D1-D5) + TEST-INTEG-4e
+- [ ] arXiv Replace v13 (pending Consejo Q3-112)
 
 ### P1 — feature/plugin-crypto (active branch)
 - [ ] ADR-025 — Plugin Integrity Verification (Ed25519 + TOCTOU-safe dlopen)
-- [ ] ADR-028 — RAG Ingestion Trust Model (before write-capable plugins)
 - [ ] ADR-024 — Dynamic Group Key Agreement (Noise_IKpsk3)
 
 ### P2 — Post-PHASE 2
@@ -219,7 +213,7 @@ Seven large language models serve as intellectual co-reviewers across all develo
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Parallel.ai**
 
-Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §5 (Consejo de Sabios).
+Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §5 (Consejo de Sabios / Test-Driven Hardening).
 
 ---
 
@@ -230,6 +224,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 108: provision.sh reproducible · ADR-026/027 committed
 - ✅ DAY 109: PHASE 2b CLOSED · D8-light READ-ONLY · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
 - ✅ DAY 110: PluginMode + PHASE 2c CLOSED · TEST-INTEG-4b · Paper v13 · 6/6 RUNNING
+- ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉 · FIX-C/D · TEST-INTEG-4c · PHASE 2d · ADR-029
 
 ---
 
