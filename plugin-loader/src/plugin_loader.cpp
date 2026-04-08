@@ -337,6 +337,22 @@ void PluginLoader::invoke_all(MessageContext& ctx) {
             std::terminate();
         }
 
+        // D8-pre inverso (FIX-C, Consejo DAY 110 — ChatGPT5 obligatorio)
+        // PLUGIN_MODE_NORMAL garantiza payload presente. payload==nullptr = violacion.
+        if (ctx.mode == PLUGIN_MODE_NORMAL &&
+            (ctx.payload == nullptr || ctx.payload_len == 0)) {
+            std::cerr << "[plugin-loader] SECURITY: PLUGIN_MODE_NORMAL violado — "
+                      << "payload es nullptr antes de invocar plugin '"
+                      << p->name << "' — std::terminate()\n";
+            std::terminate();
+        }
+        // D8-pre size limit (FIX-D, Consejo DAY 110 — ChatGPT5 obligatorio)
+        if (ctx.payload != nullptr && ctx.payload_len > MAX_PLUGIN_PAYLOAD_SIZE) {
+            std::cerr << "[plugin-loader] SECURITY: payload_len=" << ctx.payload_len
+                      << " excede MAX_PLUGIN_PAYLOAD_SIZE=" << MAX_PLUGIN_PAYLOAD_SIZE
+                      << " — std::terminate()\n";
+            std::terminate();
+        }
         // D8: snapshot de campos read-only antes de invocar el plugin
         const uint8_t* snap_payload   = ctx.payload;
         size_t         snap_len        = ctx.payload_len;

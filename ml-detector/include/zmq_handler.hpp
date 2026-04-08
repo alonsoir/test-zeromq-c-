@@ -30,6 +30,7 @@
 
 // Day 63: CSV Event Writer
 #include "csv_event_writer.hpp"
+#include "plugin_loader/plugin_loader.hpp"  // ADR-012 PHASE 2d
 
 namespace ml_detector {
 
@@ -66,6 +67,8 @@ public:
 
     Stats get_stats() const;
     void reset_stats();
+    // ADR-012 PHASE 2d — plugin_loader setter (Consejo DAY 111)
+    void set_plugin_loader(ml_defender::PluginLoader* pl) { plugin_loader_ = pl; }
 
     void start_memory_monitoring();
     void stop_memory_monitoring();
@@ -118,6 +121,8 @@ private:
     // 🎯 DAY 14: RAG Logger
     std::unique_ptr<ml_defender::RAGLogger> rag_logger_;
     uint64_t events_processed_total_{0};
+    // ADR-012 PHASE 2d — plugin_loader (Consejo DAY 111)
+    ml_defender::PluginLoader* plugin_loader_ = nullptr;
     std::chrono::system_clock::time_point start_time_;
 
     // Day 66: CsvEventWriter standalone (activo aunque RAG Logger falle)
