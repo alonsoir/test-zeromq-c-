@@ -26,7 +26,8 @@
 std::unique_ptr<LlamaIntegration> llama_integration;
 std::unique_ptr<Rag::WhiteListManager> whitelist_manager;
 #ifdef PLUGIN_LOADER_ENABLED
-std::unique_ptr<ml_defender::PluginLoader> g_plugin_loader;
+// ADR-029 D1: raw pointer global requerido para async-signal-safe signal handler
+static ml_defender::PluginLoader* g_plugin_loader = nullptr;
 #endif
 
 // NUEVOS: Embedder + FAISS
@@ -38,22 +39,18 @@ std::unique_ptr<faiss::IndexFlatL2> attack_index;
 // ============================================================================
 // SIGNAL HANDLER
 // ============================================================================
-void signalHandler(int signal) {
-    std::cout << "\n🛑 Señal " << signal << " recibida. Cerrando..." << std::endl;
-
-    if (whitelist_manager) {
-        whitelist_manager.reset();
+// ADR-029 D2: async-signal-safe — solo write(), signal(), raise()
+// NO usar std::cout, malloc, ni reset() de unique_ptr desde aquí
+static void signalHandler(int sig) {
+    const char msg[] = "[rag-security] signal received — shutting down\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+#ifdef PLUGIN_LOADER_ENABLED
+    if (g_plugin_loader != nullptr) {
+        g_plugin_loader->shutdown();
     }
-    if (llama_integration) {
-        llama_integration.reset();
-    }
-    if (embedder) {
-        embedder.reset();
-    }
-
-    // FAISS indices se destruyen automáticamente
-
-    exit(0);
+#endif
+    signal(sig, SIG_DFL);
+    raise(sig);
 }
 
 // ============================================================================
@@ -133,9 +130,7 @@ int main() {
     std::cout << "🚀 Iniciando RAG Security System - Arquitectura Centralizada" << std::endl;
     std::cout << "============================================================" << std::endl;
 
-    // Configurar manejador de señales
-    std::signal(SIGINT, signalHandler);
-    std::signal(SIGTERM, signalHandler);
+    // ADR-029 D3: señales instaladas post g_plugin_loader (ver bloque PLUGIN_LOADER_ENABLED abajo)
 
     try {
         // ====================================================================
@@ -148,10 +143,15 @@ int main() {
         }
 
 #ifdef PLUGIN_LOADER_ENABLED
-        g_plugin_loader = std::make_unique<ml_defender::PluginLoader>("../config/rag-config.json");
-        g_plugin_loader->load_plugins();
-        std::cout << "[INFO] plugin-loader: " << g_plugin_loader->loaded_count() << " plugin(s) cargados" << std::endl;
+        // ADR-029 D1+D3: construir loader, asignar global, luego instalar señales
+        static ml_defender::PluginLoader plugin_loader("../config/rag-config.json");
+        plugin_loader.load_plugins();
+        g_plugin_loader = &plugin_loader;  // D3: asignación ANTES de signal handlers
+        std::cout << "[INFO] plugin-loader: " << plugin_loader.loaded_count() << " plugin(s) cargados" << std::endl;
 #endif
+        // ADR-029 D3: instalar signal handlers DESPUÉS de asignar g_plugin_loader
+        std::signal(SIGTERM, signalHandler);
+        std::signal(SIGINT,  signalHandler);
 
         // 1b. REDIRIGIR LOGS SEGÚN CONFIG — El JSON es la ley
         {
@@ -316,6 +316,18 @@ try {
                 if (input.empty()) continue;
                 if (input == "exit" || input == "quit") break;
                 whitelist_manager->processCommand(input);
+#ifdef PLUGIN_LOADER_ENABLED
+                // ADR-029 D4: READONLY — guardián semántico, result_code ignorado
+                if (g_plugin_loader != nullptr) {
+                    MessageContext ctx{};
+                    ctx.payload     = nullptr;  // READONLY: sin payload
+                    ctx.payload_len = 0;
+                    ctx.mode        = PLUGIN_MODE_READONLY;
+                    ctx.result_code = 0;
+                    g_plugin_loader->invoke_all(ctx);
+                    // D4: result_code no comprobado — rag-security es guardián semántico
+                }
+#endif
             }
         }
 
@@ -324,6 +336,7 @@ try {
 #ifdef PLUGIN_LOADER_ENABLED
         if (g_plugin_loader) {
             g_plugin_loader->shutdown();
+            g_plugin_loader = nullptr;  // evitar double-shutdown desde signal handler
             std::cout << "[INFO] plugin-loader: shutdown OK" << std::endl;
         }
 #endif

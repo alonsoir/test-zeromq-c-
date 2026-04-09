@@ -135,8 +135,10 @@ D8-pre coherence check:               ██████████████
 Paper v13:                            ████████████████████ 100% ✅  DAY 110
 ADR-028 (RAG Ingestion Trust Model):  ████████████████████ 100% ✅  DAY 109
 arXiv PUBLICADO (2604.04952):         ████████████████████ 100% ✅  DAY 111 🎉
-ADR-023 PHASE 2e (rag-security):      ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 112
-TEST-INTEG-4e:                        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 112
+ADR-023 PHASE 2e (rag-security):      ████████████████████ 100% ✅  DAY 112
+TEST-INTEG-4e (gate PHASE 2e):        ████████████████████ 100% ✅  DAY 112
+ADR-030 (AppArmor-Hardened variant):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  BACKLOG post-PHASE 3
+ADR-031 (seL4/Genode research):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  BACKLOG post-ADR-030
 arXiv Replace v13:                    ░░░░░░░░░░░░░░░░░░░░   0% ⏳  pendiente Consejo Q3-112
 ADR-025 impl. (plugin signing):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 2
 ADR-024 impl. (Noise IK):             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  FASE 3
@@ -155,6 +157,8 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 | MAX_PLUGIN_PAYLOAD_SIZE | 64KB hard limit, std::terminate() si excedido | 111 |
 | PHASE 2d contrato | payload=evento serializado, NORMAL, post-inferencia | 111 |
 | ADR-029 g_plugin_loader | global exclusivo rag-security, async-signal-safe | 111 |
+| ADR-030 AppArmor-Hardened | variante producción Linux+AppArmor, Vagrant-compatible, ARM64/x86 | 112 |
+| ADR-031 seL4/Genode | investigación pura, spike GO/NO-GO obligatorio, XDP inviable en guest | 112 |
 | PHASE 2e invoke_all modo | READONLY — guardián semántico, result_code ignorado | 111 |
 | PluginMode field | flag explícito uint8_t, D8-pre enforce | 110 |
 | Integration Philosophy | 4 argumentos: latencia, superficie, SPOF, footprint | 110 |
@@ -163,6 +167,14 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 ---
 
 ### Notas del Consejo de Sabios
+
+> DAY 112 — PHASE 2e completa + ADR-030/031 incorporados:
+> "PHASE 2e: rag-security integrado con ADR-029 D1-D5. TEST-INTEG-4e 3/3 PASSED.
+> PHASE 2 Multi-Layer Plugin Architecture COMPLETA (5/5 componentes, 4a+4b+4c+4e).
+> ADR-030 (AppArmor-Hardened) y ADR-031 (seL4/Genode) aprobados por Consejo 5/5
+> unanimidad DAY 109. Incorporados a BACKLOG como deuda post-PHASE 3.
+> Commit: 10d678ed. Branch: feature/plugin-crypto."
+> — Claude (Anthropic) · DAY 112
 
 > DAY 111 — FIX-C/D + PHASE 2d + ADR-029:
 > "Consejo no convocado. Implementación directa de mandatos DAY 110.
@@ -174,9 +186,9 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 
 ---
 
-*Última actualización: DAY 111 — 8 Apr 2026*
+*Última actualización: DAY 112 — 9 Apr 2026*
 *Branch: feature/plugin-crypto*
-*Tests: 25/25 + TEST-INTEG-4a 3/3 + TEST-INTEG-4b PASSED + TEST-INTEG-4c 3/3 PASSED*
+*Tests: 25/25 + TEST-INTEG-4a 3/3 + TEST-INTEG-4b PASSED + TEST-INTEG-4c 3/3 PASSED + TEST-INTEG-4e 3/3 PASSED*
 *Paper: Draft v13 ✅ · arXiv: 2604.04952 PUBLICADO ✅*
 *Pipeline: 6/6 RUNNING ✅*
-*PHASE 2a: ✅ · 2b: ✅ · 2c: ✅ · 2d: ✅ · 2e: ⏳*
+*PHASE 2: ✅ COMPLETA (2a+2b+2c+2d+2e) · ADR-030/031: BACKLOG ⏳*

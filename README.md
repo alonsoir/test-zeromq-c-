@@ -6,9 +6,9 @@
 [![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b_4c-brightgreen)]()
+[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b_4c_4e-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
-[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2d_COMPLETE-blue)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
+[![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2_COMPLETE_5%2F5-brightgreen)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![ADR-029](https://img.shields.io/badge/ADR--029-async--signal--safe_APPROVED-green)](docs/adr/ADR-029-rag-security-global-plugin-loader-async-signal-safe.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
@@ -56,7 +56,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 
 ---
 
-## 📊 Validated Results (DAY 111 — 8 April 2026)
+## 📊 Validated Results (DAY 112 — 9 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -74,8 +74,8 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows |
 | **RAM (full pipeline)** | **~1.28 GB** | Stable under load |
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `vagrant destroy` |
-| **Test suite** | **25/25 + TEST-INTEG-4a 3/3 + TEST-INTEG-4b + TEST-INTEG-4c 3/3** | DAY 111 |
-| **Plugin Loader** | **ADR-023 PHASE 2d COMPLETE** | ml-detector post-inference contract |
+| **Plugin Loader** | **ADR-023 PHASE 2 COMPLETE (5/5)** | 2a+2b+2c+2d+2e — TEST-INTEG-4a+4b+4c+4e PASSED |
+| **Test suite** | **25/25 + 4a 3/3 + 4b + 4c 3/3 + 4e 3/3** | DAY 112 |
 
 ---
 
@@ -120,7 +120,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  ┌──────────────────┐                                            │
 │  │  rag-security    │  TinyLlama natural language interface      │
 │  │  (C++20+LLM)     │  Local inference — no cloud exfiltration  │
-│  │                  │  plugin-loader PHASE 2e ⏳ (ADR-029)      │
+│  │                  │  plugin-loader PHASE 2e ✅ READONLY (ADR-029) │
 │  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -153,7 +153,9 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | Plugin Loader PHASE 2b (rag-ingester) | ✅ READONLY contract, TEST-INTEG-4b PASSED |
 | Plugin Loader PHASE 2c (sniffer) | ✅ NORMAL + payload real, TEST-INTEG-4c 3/3 |
 | Plugin Loader PHASE 2d (ml-detector) | ✅ NORMAL post-inference, DAY 111 |
-| Plugin Loader PHASE 2e (rag-security) | ⏳ ADR-029 approved, DAY 112 |
+| Plugin Loader PHASE 2e (rag-security) | ✅ READONLY contract, TEST-INTEG-4e 3/3, DAY 112 |
+| ADR-030 AppArmor-Hardened variant | ✅ BACKLOG — producción ARM64/x86, post-PHASE 3 |
+| ADR-031 seL4/Genode research | ✅ BACKLOG — investigación pura, spike GO/NO-GO obligatorio |
 | ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS anti-poisoning |
 | ADR-029 async-signal-safe pattern | ✅ Documented, g_plugin_loader global |
 | Plugin integrity via Ed25519 (ADR-025) | ❌ Approved, pending post-PHASE 2 |
@@ -170,6 +172,9 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 - [x] TEST-INTEG-4c: 3/3 PASSED (NORMAL payload real, D8 VIOLATION, result_code error)
 - [x] PHASE 2d: ml-detector invoke_all post-inferencia
 - [x] ADR-029: g_plugin_loader + async-signal-safe (rag-security pattern)
+- [x] PHASE 2e: rag-security READONLY contract + TEST-INTEG-4e 3/3 PASSED
+- [x] ADR-030: AppArmor-Hardened variant (BACKLOG, post-PHASE 3)
+- [x] ADR-031: seL4/Genode research variant (BACKLOG, spike obligatorio)
 - [x] **arXiv:2604.04952 [cs.CR] PUBLICADO** 🎉
 
 ### 🔜 NEXT — DAY 112
