@@ -1,73 +1,83 @@
-# ML Defender (aRGus NDR) — DAY 112 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 113 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
-## Estado al cierre de DAY 111
+## Estado al cierre de DAY 112
 
-### Hito del día
-**arXiv:2604.04952 [cs.CR] PUBLICADO** — Viernes 3 Apr 2026, 05:20:13 UTC.
-DOI: https://doi.org/10.48550/arXiv.2604.04952
-"ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and
-Anomalous Traffic Detection in Resource-Constrained Organizations"
-— Alonso Isidoro Román. 28 páginas, cs.CR, MIT license.
+### Hitos del día
+**PHASE 2 Multi-Layer Plugin Architecture: COMPLETA ✅**
+5/5 componentes integrados. make plugin-integ-test: 4a+4b+4c+4e PASSED.
 
-### Completado DAY 111
+**ADR-030 + ADR-031 incorporados al repositorio y BACKLOG.**
 
-**FIX-C — D8-pre inverso OBLIGATORIO ✅**
-- `plugin_loader.cpp`: PLUGIN_MODE_NORMAL + payload==nullptr → std::terminate()
-- Contrato D8-pre bidireccional completo (READONLY y NORMAL cubiertos)
+### Completado DAY 112
 
-**FIX-D — MAX_PLUGIN_PAYLOAD_SIZE OBLIGATORIO ✅**
-- `plugin_loader.hpp`: constexpr MAX_PLUGIN_PAYLOAD_SIZE = 65536 (64KB)
-- `plugin_loader.cpp`: payload_len > MAX → std::terminate()
+**PHASE 2e — rag-security ✅**
+- `rag/src/main.cpp` reescrito con ADR-029 D1-D5 completos:
+  - D1: `static ml_defender::PluginLoader* g_plugin_loader = nullptr`
+  - D2: `signalHandler` async-signal-safe (write()+shutdown()+raise())
+  - D3: orden inicialización: loader → asignación → signal handlers
+  - D4: invoke_all READONLY post-processCommand, result_code ignorado
+  - D5: invoke_all NUNCA desde signal handler
+  - double-shutdown guard: `g_plugin_loader = nullptr` tras shutdown()
 
-**TEST-INTEG-4c — 3/3 PASSED ✅**
-- Caso A: NORMAL + payload real → PLUGIN_OK, errors==0
-- Caso B: NORMAL + plugin modifica campo read-only → D8 VIOLATION detectada
-- Caso C: NORMAL + result_code=-1 → error registrado, no crash
+**TEST-INTEG-4e 3/3 PASSED ✅**
+- Caso A: READONLY + evento real → errors=0, result_code ignorado
+- Caso B: g_plugin_loader=nullptr → invoke_all no llamado, no crash
+- Caso C: simulación signal handler → shutdown limpio, g_plugin_loader=nullptr
 
-**PHASE 2d — ml-detector ✅**
-- `zmq_handler.hpp`: set_plugin_loader() setter + plugin_loader_ member + include
-- `zmq_handler.cpp`: invoke_all(ctx) post-inferencia, payload=evento serializado,
-  mode=PLUGIN_MODE_NORMAL, early return si result_code!=0
-- `main.cpp`: set_plugin_loader(&plugin_loader_) tras zmq_handler.start()
-- Compilación limpia. 6/6 RUNNING.
+**ADR-030 — aRGus-AppArmor-Hardened ✅ (BACKLOG)**
+- Variante producción Linux 6.12 LTS + Debian 13 + AppArmor enforcing
+- Vagrant-compatible. ARM64 (Raspberry Pi 4/5) + x86-64
+- Mitiga confused deputy AppArmor (Hugo Vázquez Caramés)
+- Activar post-PHASE 3. Bloqueado: hardware Pi pendiente adquisición
+- Aprobado Consejo 5/5 unanimidad DAY 109
 
-**ADR-029 — g_plugin_loader + async-signal-safe ✅**
-- Documenta patrón global obligatorio para rag-security (único componente con este patrón)
-- D1: static PluginLoader* g_plugin_loader = nullptr
-- D2: signal handler solo async-signal-safe (write(), dlclose(), signal(), raise())
-- D3: orden inicialización obligatorio (loader → asignación → signal handlers)
-- D4: invoke_all en rag-security → modo READONLY
-- D5: invoke_all NUNCA desde signal handler
-- TEST-INTEG-4e definido (3 casos)
+**ADR-031 — aRGus-seL4-Genode ✅ (BACKLOG/RESEARCH)**
+- Investigación pura: ¿cuánto cuesta seguridad formal en rendimiento real?
+- seL4 ~12.000 líneas C verificadas Isabelle/HOL. Guest Linux no privilegiado
+- XDP inviable en guest (H1) → fallback libpcap obligatorio
+- Overhead estimado 40-60%. Spike técnico 2-3 semanas obligatorio
+- QEMU directo (Vagrant incompatible). Raspberry Pi 5 preferida (EL2)
+- Activa post-ADR-030 + spike GO
+- Aprobado Consejo 5/5 unanimidad DAY 109
 
-**Commits DAY 111:**
-- Commit 1 (b23eca66): FIX-C + FIX-D + TEST-INTEG-4c
-- Commit 2 (58d73c04): PHASE 2d ml-detector
-- Commit 3: ADR-029
+**README.md + BACKLOG.md actualizados ✅**
+
+**Commits DAY 112:**
+- Commit 1 (10d678ed): PHASE 2e + TEST-INTEG-4e
+- Commit 2 (1691db06): BACKLOG + ADR-030/031 + README
 - Branch: feature/plugin-crypto
 
 ---
 
-## Consejo DAY 111 — Preguntas para DAY 112
+## Consejo DAY 112 — Preguntas abiertas para DAY 113
 
 **Q1-112 — PHASE 2e: ¿invoke_all READONLY o NORMAL en rag-security?**
-ADR-029 D4 establece READONLY. ¿Hay algún caso donde NORMAL tenga sentido
-dado que rag-security es guardián de la memoria semántica?
+Respondido: READONLY por ADR-029 D4. rag-security es guardián semántico,
+no actúa sobre eventos — no hay caso válido para NORMAL.
 
 **Q2-112 — TEST-INTEG-4e Caso C: ¿cómo testear SIGTERM sin fork()?**
-Caso C requiere verificar que shutdown limpio ocurre bajo señal.
-¿Subprocess con kill()? ¿alarm() + signal handler en el test?
-¿O simplemente simular la lógica del handler sin señal real?
+Respondido: simulación de lógica del handler sin señal real. Caso C
+verifica las postcondiciones (shutdown ejecutado, g_plugin_loader=nullptr)
+sin necesidad de fork()/kill(). Resultado: limpio y suficiente.
 
-**Q3-112 — arXiv Replace v13: ¿subir ahora o esperar indexación completa?**
-v1 está anunciada (2604.04952). Draft v13 está listo.
-¿Riesgo de Replace antes de que Google Scholar/Semantic Scholar indexen v1?
+**Q3-112 — arXiv Replace v13: ¿subir ahora o esperar indexación?**
+Decisión: ESPERAR. v1 publicada el 3 de abril. Google Scholar / Semantic
+Scholar tardan 1-2 semanas en indexar. No hay urgencia. Subir v13 cuando
+v1 esté indexada en Scholar.
+
+**Pendiente DAY 113:**
+- Incorporar implicaciones Mythos Preview en el paper (DAY 108 pendiente):
+  (1) axioma kernel inseguro como limitación declarada del scope
+  (2) aRGus válido contra threat model real hospitales/municipios
+  (3) detección de red como capa defensiva incluso con kernel comprometido
+  (4) referencia a Glasswing/Mythos como contexto temporal del paper
+  Esto desbloquea arXiv Replace v13.
 
 ---
 
-## Orden DAY 112 (no saltarse)
+## Orden DAY 113
 
 ### PASO 1 — Verificar estado
 ```bash
@@ -75,93 +85,59 @@ cd /Users/aironman/CLionProjects/test-zeromq-docker
 git checkout feature/plugin-crypto
 git pull origin feature/plugin-crypto
 make pipeline-status
+make plugin-integ-test
 ```
 
-### PASO 2 — PHASE 2e: rag-security
+### PASO 2 — Paper: incorporar implicaciones Mythos Preview
+Editar `main.tex` (LaTeX en Overleaf o local):
+- §Threat Model: añadir axioma kernel inseguro como limitación declarada
+- §Conclusions o §Discussion: aRGus válido dentro de su capa aunque kernel comprometido
+- §Related Work o footnote: referencia a Mythos Preview + ADR-030/031 como trabajo futuro
+- Gate: Draft v14 producido, compilación limpia en Overleaf
 
-Siguiendo ADR-029 D1-D5 estrictamente.
+### PASO 3 — arXiv Replace v13 (si Scholar ya indexó v1)
+Verificar: https://scholar.google.com/scholar?q=arXiv:2604.04952
+Si indexado → subir v13 al panel arXiv.
+Si no → documentar como pendiente y continuar.
 
-**Archivos a tocar:**
-- `rag-security/src/main.cpp`
+### PASO 4 — Decisión: ¿abrir PR feature/plugin-crypto → main?
+PHASE 2 completa. Candidato natural para merge.
+Consejo DAY 113 debe pronunciarse sobre timing del merge.
 
-**Patrón D1-D3:**
-```cpp
-// ADR-029 D1: global requerido para async-signal-safe signal handler
-static ml_defender::PluginLoader* g_plugin_loader = nullptr;
-
-// En main(), orden obligatorio (ADR-029 D3):
-// 1. PluginLoader construido
-ml_defender::PluginLoader plugin_loader(config_path);
-plugin_loader.load_plugins();
-// 2. Asignación ANTES de signal handlers
-g_plugin_loader = &plugin_loader;
-// 3. Instalar signal handlers
-signal(SIGTERM, signal_handler);
-signal(SIGINT,  signal_handler);
-```
-
-**Signal handler D2:**
-```cpp
-static void signal_handler(int sig) {
-    const char msg[] = "[rag-security] signal received — shutting down\n";
-    write(STDERR_FILENO, msg, sizeof(msg) - 1);
-    if (g_plugin_loader != nullptr) {
-        g_plugin_loader->shutdown();
-    }
-    signal(sig, SIG_DFL);
-    raise(sig);
-}
-```
-
-**invoke_all D4 — READONLY:**
-```cpp
-if (g_plugin_loader != nullptr) {
-    MessageContext ctx{};
-    ctx.payload     = nullptr;  // READONLY: sin payload
-    ctx.payload_len = 0;
-    ctx.mode        = PLUGIN_MODE_READONLY;
-    ctx.result_code = 0;
-    // ... campos de red del evento
-    g_plugin_loader->invoke_all(ctx);
-    // READONLY: result_code ignorado (D4 — guardián semántico)
-}
-```
-
-Gate: compilar + make plugin-integ-test verde (4a+4b+4c) + TEST-INTEG-4e.
-
-### PASO 3 — TEST-INTEG-4e
-
-3 casos según ADR-029:
-- Caso A: READONLY + evento real → PLUGIN_OK, result_code ignorado
-- Caso B: g_plugin_loader=nullptr → invoke_all no llamado, no crash
-- Caso C: simulación lógica signal handler → shutdown limpio
-
-Gate: make plugin-integ-test verde (4a+4b+4c+4e).
-
-### PASO 4 — Commit + actualizar README/BACKLOG
-
-### PASO 5 (opcional) — arXiv Replace v13
-Solo si Consejo DAY 112 da luz verde en Q3.
+### PASO 5 (opcional) — Iniciar ADR-025 implementación
+Plugin Integrity Verification (Ed25519). Post-PHASE 2, desbloqueado.
+Solo si PASO 2 y 3 completos.
 
 ---
 
 ## Deuda pendiente (no bloqueante)
 
+- Paper Mythos Preview integration (DAY 108) — PASO 2 DAY 113
+- arXiv Replace v13 — esperar indexación v1 en Scholar
+- PR feature/plugin-crypto → main — candidato post-DAY 113
+- ADR-025 impl. (Plugin Integrity Ed25519) — post-PHASE 2 ✅ desbloqueado
 - REC-2: noclobber + check 0-bytes CI (P2)
-- ADR-025 (Plugin Integrity Ed25519) — post PHASE 2 completa
-- TEST-PROVISION-1 como gate CI formal (post PHASE 2)
-- arXiv Replace v13 — pendiente decisión Consejo Q3-112
+- TEST-PROVISION-1 como gate CI formal
 - DEBT-SNIFFER-SEED — unificar sniffer bajo SeedClient
+- ADR-030 activación — post-PHASE 3 + hardware Pi
+- ADR-031 spike técnico — post-ADR-030
 
 ---
 
 ## Contexto permanente
 
 ### Proyecto
-- **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios.
+- **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios
 - **arXiv**: arXiv:2604.04952 [cs.CR] — PUBLICADO 3 Apr 2026 ✅
 - **Branch activa**: feature/plugin-crypto
 - **Repositorio**: https://github.com/alonsoir/argus
+
+### PHASE 2 estado — COMPLETA
+- 2a ✅ firewall        (TEST-INTEG-4a 3/3)
+- 2b ✅ rag-ingester    (TEST-INTEG-4b)
+- 2c ✅ sniffer         (TEST-INTEG-4c 3/3)
+- 2d ✅ ml-detector     (post-inferencia)
+- 2e ✅ rag-security    (TEST-INTEG-4e 3/3, ADR-029 D1-D5)
 
 ### Comandos VM críticos
 - Editar ficheros en VM: python3 << 'PYEOF' (nunca sed -i sin -e '' en macOS)
@@ -170,14 +146,15 @@ Solo si Consejo DAY 112 da luz verde en Q3.
 - CMake: NO_DEFAULT_PATH para libsodium
 - CI: .github/workflows/ci.yml
 
-### PHASE 2 estado
-- 2a ✅ firewall (TEST-INTEG-4a)
-- 2b ✅ rag-ingester READONLY (TEST-INTEG-4b)
-- 2c ✅ sniffer NORMAL payload real (TEST-INTEG-4c)
-- 2d ✅ ml-detector post-inferencia
-- 2e ⏳ rag-security (ADR-029 documentado, listo para implementar)
-
 ### Consejo de Sabios (7 miembros)
 Claude, Grok, ChatGPT, DeepSeek, Qwen (Alibaba), Gemini, Parallel.ai.
 Qwen se auto-identifica como DeepSeek — registrar como Qwen en actas.
-ADR-029 aprobado implícitamente por unanimidad DAY 110 (REC-1 DeepSeek).
+
+### Notas arquitectónicas seL4 (DAY 112)
+- XDP requiere acceso directo a descriptores DMA de la NIC física
+- Bajo Genode, el datapath pasa por virtio-net → XDP inviable en guest
+- eBPF kernel programs: mismo problema
+- Sniffer es el único componente que toca kernel space hoy
+- Fallback libpcap ya previsto en ADR-031
+- Todo el resto del pipeline (ZeroMQ, ONNX, FAISS, plugins): userspace, sin cambios
+- El spike técnico es una pregunta acotada: solo el mecanismo de captura
