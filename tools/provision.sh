@@ -417,6 +417,167 @@ reprovision_component() {
     log_warn "Re-provisioning completo. Los demás componentes que intercambiaban claves con ${component} pueden necesitar re-provisioning también."
 }
 
+
+
+# =============================================================================
+# SIGN PLUGIN (ADR-025 D1)
+# Firma un plugin .so con la clave privada Ed25519 de firma de plugins.
+# Genera <plugin>.so.sig (64 bytes, Ed25519 detached signature).
+#
+# USO: sign_plugin <path_to_plugin.so>
+#
+# PREREQUISITOS:
+#   - /etc/ml-defender/plugins/plugin_signing.sk debe existir
+#     (generado por provision_plugin_signing_keypair)
+#   - openssl con soporte Ed25519 (>= 1.1.1)
+#
+# NOTAS:
+#   - La clave privada NUNCA sale de este host
+#   - El .sig se deposita junto al .so (mismo directorio)
+#   - Repetible: re-firmar sobreescribe el .sig anterior
+#   - Rotacion de clave: provision.sh --reset (ADR-025 D11)
+# =============================================================================
+
+sign_plugin() {
+    local so_path="$1"
+    local sig_path="${so_path}.sig"
+    local private_key="${KEYS_ROOT}/plugins/plugin_signing.sk"
+
+    if [[ -z "$so_path" ]]; then
+        log_error "sign_plugin: se requiere path al .so"
+        return 1
+    fi
+
+    if [[ ! -f "$so_path" ]]; then
+        log_error "sign_plugin: plugin no encontrado: ${so_path}"
+        return 1
+    fi
+
+    if [[ ! -f "$private_key" ]]; then
+        log_error "sign_plugin: clave privada no encontrada: ${private_key}"
+        log_error "  Ejecuta: sudo bash tools/provision.sh full"
+        return 1
+    fi
+
+    openssl pkeyutl -sign \
+        -inkey "$private_key" \
+        -rawin \
+        -in  "$so_path" \
+        -out "$sig_path" 2>/dev/null
+
+    if [[ $? -ne 0 ]]; then
+        log_error "sign_plugin: firma fallida para ${so_path}"
+        return 1
+    fi
+
+    local sig_size
+    sig_size=$(stat -c%s "$sig_path" 2>/dev/null || stat -f%z "$sig_path" 2>/dev/null)
+
+    if [[ "$sig_size" -ne 64 ]]; then
+        log_error "sign_plugin: .sig size inesperado ${sig_size} bytes (esperado 64)"
+        return 1
+    fi
+
+    log_item "Plugin firmado: $(basename ${so_path}) → $(basename ${sig_path}) (${sig_size} bytes)"
+    return 0
+}
+
+# =============================================================================
+# SIGN ALL PLUGINS (ADR-025)
+# Firma todos los plugins instalados en /usr/lib/ml-defender/plugins/
+# Llamado desde: make sign-plugins
+# =============================================================================
+
+sign_all_plugins() {
+    log_section "Firma de plugins (ADR-025 D1)"
+
+    local plugins_dir="/usr/lib/ml-defender/plugins"
+
+    if [[ ! -d "$plugins_dir" ]]; then
+        log_warn "Directorio de plugins no encontrado: ${plugins_dir}"
+        return 0
+    fi
+
+    local count=0
+    local failed=0
+
+    for so_file in "${plugins_dir}"/*.so; do
+        [[ -f "$so_file" ]] || continue
+        if sign_plugin "$so_file"; then
+            count=$((count+1))
+        else
+            failed=$((failed+1))
+        fi
+    done
+
+    if [[ $count -eq 0 && $failed -eq 0 ]]; then
+        log_item "No hay plugins .so en ${plugins_dir}"
+        return 0
+    fi
+
+    if [[ $failed -gt 0 ]]; then
+        log_error "${failed} plugin(s) no firmados — verifica la clave privada"
+        return 1
+    fi
+
+    log_info "${count} plugin(s) firmados correctamente"
+    return 0
+}
+
+# =============================================================================
+# PLUGIN SIGNING KEYPAIR (ADR-025)
+# Keypair dedicado a firma offline de plugins .so
+# OPERACION DE BOOTSTRAPPING UNICO:
+#   - Se genera UNA SOLA VEZ en el primer provision full
+#   - Si ya existe: warning + skip (nunca sobreescribir silenciosamente)
+#   - La private key NUNCA sale del host de build/dev
+#   - En produccion: solo la pubkey llega hardcodeada en el binario (CMake)
+#   - Rotacion: provision.sh --reset (ADR-025 D11) operacion manual explicita
+# Paths:
+#   Private key: /etc/ml-defender/plugins/plugin_signing.sk  (0600, root:root)
+#   Public key:  /etc/ml-defender/plugins/plugin_signing.pk  (0644, root:root)
+# La pubkey raw (32 bytes hex) se inyecta en CMakeLists.txt como
+# MLD_PLUGIN_PUBKEY_HEX para hardcodear en el binario del plugin-loader.
+# =============================================================================
+
+provision_plugin_signing_keypair() {
+    log_section "Plugin Signing Keypair (ADR-025)"
+
+    local signing_dir="${KEYS_ROOT}/plugins"
+    local private_key="${signing_dir}/plugin_signing.sk"
+    local public_key="${signing_dir}/plugin_signing.pk"
+
+    mkdir -p "$signing_dir"
+    chmod 755 "$signing_dir"
+
+    if [[ -f "$private_key" ]] && [[ -f "$public_key" ]]; then
+        log_warn "Plugin signing keypair ya existe -- skip (usa --reset para rotar)"
+        local pubkey_hex
+        pubkey_hex=$(openssl pkey -in "$public_key" -pubin -outform DER 2>/dev/null | tail -c 32 | od -A n -t x1 | tr -d " \n")
+        log_item "Public key hex (MLD_PLUGIN_PUBKEY_HEX): ${pubkey_hex}"
+        return 0
+    fi
+
+    openssl genpkey -algorithm ed25519 -out "$private_key" 2>/dev/null
+    chmod 600 "$private_key"
+    chown root:root "$private_key"
+
+    openssl pkey -in "$private_key" -pubout -out "$public_key" 2>/dev/null
+    chmod 644 "$public_key"
+    chown root:root "$public_key"
+
+    local pubkey_hex
+    pubkey_hex=$(openssl pkey -in "$public_key" -pubin -outform DER 2>/dev/null | tail -c 32 | od -A n -t x1 | tr -d " \n")
+
+    log_item "Plugin signing keypair generado"
+    log_item "Private key: ${private_key} (0600 -- NUNCA fuera de este host)"
+    log_item "Public key:  ${public_key} (0644)"
+    log_item ""
+    log_item ">>> MLD_PLUGIN_PUBKEY_HEX=${pubkey_hex} <<<"
+    log_item "    Hardcodear en plugin-loader/CMakeLists.txt (ADR-025 D7)"
+    log_item "    Esta es la UNICA vez que se muestra en provision.sh"
+}
+
 # =============================================================================
 # PLUGINS USERSPACE (ADR-017)
 # Lee los JSONs de componentes y provisiona los plugins declarados
@@ -795,6 +956,7 @@ provision_full() {
     # Provisionar plugins
     provision_plugins
     provision_ebpf_plugins
+    provision_plugin_signing_keypair
 
     # ── FIX DAY 107: seed maestro → distribuir a los 5 componentes restantes ──
     log_section "Sincronización de seed maestro (etcd-server → 5 componentes)"
@@ -934,6 +1096,10 @@ case "$MODE" in
         status_all
         ;;
 
+    sign)
+        check_root
+        sign_all_plugins
+        ;;
     verify)
         check_root
         verify_all
@@ -970,7 +1136,7 @@ case "$MODE" in
         echo "  USO:"
         echo "    sudo bash tools/provision.sh full                 # Provisiona todo"
         echo "    sudo bash tools/provision.sh status               # Tabla de estado"
-        echo "    sudo bash tools/provision.sh verify               # Verifica integridad"
+        echo "    sudo bash tools/provision.sh verify               # Verifica integridad\n    sudo bash tools/provision.sh sign                 # Firma todos los plugins (ADR-025)"
         echo "    sudo bash tools/provision.sh reprovision <name>   # Re-provisiona uno"
         echo ""
         echo "  COMPONENTES: ${COMPONENTS[*]}"

@@ -1,11 +1,16 @@
 // ============================================================================
 // plugin_loader.cpp — ML Defender Plugin Loader Implementation
 // ============================================================================
-// dlopen/dlsym lazy loading. Sin crypto. Sin seed-client (PHASE 1).
+// dlopen/dlsym lazy loading + Ed25519 verification (ADR-025 PHASE 2).
+// Verificacion: prefix check + O_NOFOLLOW + fstat + SHA-256 + Ed25519 + /proc/self/fd
 // ============================================================================
 
 #include "plugin_loader/plugin_loader.hpp"
 #include <dlfcn.h>
+#include <sodium.h>      // ADR-025: Ed25519 + SHA-256
+#include <fcntl.h>       // ADR-025: O_NOFOLLOW, O_CLOEXEC
+#include <sys/stat.h>    // ADR-025: fstat, S_ISREG
+#include <unistd.h>      // ADR-025: read, close
 #include <chrono>
 #include <stdexcept>
 #include <filesystem>
@@ -158,6 +163,136 @@ PluginLoader::~PluginLoader() {
     }
 }
 
+
+// ============================================================================
+// verify_plugin_signature — ADR-025 Ed25519 + TOCTOU-safe dlopen
+// D1: Ed25519 offline, D2: O_NOFOLLOW+fstat+size, D3: prefix check,
+// D4: fd discipline, D5: .sig fd, D6: SHA-256 forense, D7: pubkey hardcoded,
+// D9: fail-closed std::terminate() si require_signature=true
+// Retorna fd_so abierto (caller cierra tras dlopen) o -1 en dev mode
+// ============================================================================
+
+static constexpr size_t MIN_PLUGIN_SIZE = 4096;
+static constexpr size_t MAX_PLUGIN_SIZE = 10 * 1024 * 1024;
+static constexpr size_t MAX_SIG_SIZE    = 512;
+static const std::string ALLOWED_PREFIX = "/usr/lib/ml-defender/plugins/";
+
+static bool hex_to_bytes(const std::string& hex, unsigned char* out, size_t expected_len) {
+    if (hex.size() != expected_len * 2) return false;
+    for (size_t i = 0; i < expected_len; ++i) {
+        try { out[i] = static_cast<unsigned char>(std::stoi(hex.substr(i*2, 2), nullptr, 16)); }
+        catch (...) { return false; }
+    }
+    return true;
+}
+
+static int verify_plugin_signature(const std::string& so_path,
+                                   const std::string& sig_path,
+                                   bool require_signature,
+                                   const std::string& plugin_name) {
+    namespace fs = std::filesystem;
+
+    // D3: prefix check ANTES de open()
+    auto canon_so  = fs::weakly_canonical(so_path);
+    auto canon_sig = fs::weakly_canonical(sig_path);
+    if (canon_so.string().substr(0, ALLOWED_PREFIX.size())  != ALLOWED_PREFIX ||
+        canon_sig.string().substr(0, ALLOWED_PREFIX.size()) != ALLOWED_PREFIX) {
+        std::cerr << "[plugin-loader] CRITICAL: path outside allowed prefix: " << so_path << "\n";
+        if (require_signature) std::terminate();
+        return -1;
+    }
+
+    // D2: open .so con O_NOFOLLOW
+    int fd_so = open(so_path.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+    if (fd_so < 0) {
+        std::cerr << "[plugin-loader] CRITICAL: cannot open plugin (symlink?): " << so_path << "\n";
+        if (require_signature) std::terminate();
+        return -1;
+    }
+    struct stat st_so;
+    if (fstat(fd_so, &st_so) < 0 || !S_ISREG(st_so.st_mode) ||
+        st_so.st_size < static_cast<off_t>(MIN_PLUGIN_SIZE) ||
+        st_so.st_size > static_cast<off_t>(MAX_PLUGIN_SIZE)) {
+        std::cerr << "[plugin-loader] CRITICAL: plugin size/type invalid: " << so_path << "\n";
+        close(fd_so);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+
+    // D5: open .sig con O_NOFOLLOW
+    int fd_sig = open(sig_path.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+    if (fd_sig < 0) {
+        std::cerr << "[plugin-loader] CRITICAL: .sig not found for '" << plugin_name << "'\n";
+        close(fd_so);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+    struct stat st_sig;
+    if (fstat(fd_sig, &st_sig) < 0 || !S_ISREG(st_sig.st_mode) ||
+        st_sig.st_size > static_cast<off_t>(MAX_SIG_SIZE) || st_sig.st_size < 64) {
+        std::cerr << "[plugin-loader] CRITICAL: .sig size invalid: " << sig_path << "\n";
+        close(fd_so); close(fd_sig);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+
+    // D4: leer .so desde fd
+    std::vector<unsigned char> so_buf(static_cast<size_t>(st_so.st_size));
+    if (read(fd_so, so_buf.data(), so_buf.size()) != static_cast<ssize_t>(so_buf.size())) {
+        std::cerr << "[plugin-loader] CRITICAL: read error: " << so_path << "\n";
+        close(fd_so); close(fd_sig);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+
+    // Leer .sig desde fd
+    std::vector<unsigned char> sig_buf(static_cast<size_t>(st_sig.st_size));
+    if (read(fd_sig, sig_buf.data(), sig_buf.size()) != static_cast<ssize_t>(sig_buf.size())) {
+        std::cerr << "[plugin-loader] CRITICAL: read error: " << sig_path << "\n";
+        close(fd_so); close(fd_sig);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+    close(fd_sig);
+
+    // D6: SHA-256 forense
+    unsigned char sha256[crypto_hash_sha256_BYTES];
+    crypto_hash_sha256(sha256, so_buf.data(), so_buf.size());
+    char sha256_hex[crypto_hash_sha256_BYTES * 2 + 1];
+    for (size_t i = 0; i < crypto_hash_sha256_BYTES; ++i)
+        snprintf(sha256_hex + i*2, 3, "%02x", sha256[i]);
+    std::cerr << "[plugin-loader] INFO: '" << plugin_name
+              << "' SHA-256=" << sha256_hex
+              << " size=" << st_so.st_size
+              << " mtime=" << st_so.st_mtime << "\n";
+
+    // D7: pubkey hardcodeada en binario via CMake
+    static const std::string PUBKEY_HEX = MLD_PLUGIN_PUBKEY_HEX;
+    unsigned char pubkey[crypto_sign_PUBLICKEYBYTES];
+    if (!hex_to_bytes(PUBKEY_HEX, pubkey, crypto_sign_PUBLICKEYBYTES)) {
+        std::cerr << "[plugin-loader] CRITICAL: MLD_PLUGIN_PUBKEY_HEX malformed\n";
+        close(fd_so);
+        std::terminate();
+    }
+
+    // D1: verificacion Ed25519
+    if (sig_buf.size() != crypto_sign_BYTES) {
+        std::cerr << "[plugin-loader] CRITICAL: .sig wrong size " << sig_buf.size() << "\n";
+        close(fd_so);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+    if (crypto_sign_verify_detached(sig_buf.data(), so_buf.data(), so_buf.size(), pubkey) != 0) {
+        std::cerr << "[plugin-loader] CRITICAL: Ed25519 INVALID for '" << plugin_name << "'\n";
+        close(fd_so);
+        if (require_signature) std::terminate();
+        return -1;
+    }
+
+    std::cerr << "[plugin-loader] INFO: '" << plugin_name << "' signature OK\n";
+    return fd_so;
+}
+
 void PluginLoader::load_plugins() {
     std::string raw = read_file(config_path_);
     if (raw.empty()) {
@@ -184,16 +319,26 @@ void PluginLoader::load_plugins() {
 
     for (const auto& [plugin_name, so_path] : enabled) {
 
-        if (!std::filesystem::exists(so_path)) {
-            std::cerr << "[plugin-loader] WARNING: plugin '" << plugin_name
-                      << "' not found at " << so_path << " — skipping\n";
+        // ADR-025: require_signature=true produccion, false con MLD_ALLOW_DEV_MODE=1
+        bool require_sig = true;
+        const char* dev_mode = std::getenv("MLD_ALLOW_DEV_MODE");
+        if (dev_mode && std::string(dev_mode) == "1") require_sig = false;
+
+        std::string sig_path = so_path + ".sig";
+        int fd_so = verify_plugin_signature(so_path, sig_path, require_sig, plugin_name);
+        if (fd_so < 0) {
+            std::cerr << "[plugin-loader] WARNING: '" << plugin_name
+                      << "' skipped (sig check failed, dev mode)\n";
             continue;
         }
 
-        void* handle = dlopen(so_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+        // D4: dlopen via /proc/self/fd/ — nunca volver al path en disco
+        std::string fd_path = "/proc/self/fd/" + std::to_string(fd_so);
+        void* handle = dlopen(fd_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+        close(fd_so); // cerrar DESPUES de dlopen (D4)
         if (!handle) {
             std::cerr << "[plugin-loader] WARNING: dlopen failed for '" << plugin_name
-                      << "': " << dlerror() << " — skipping\n";
+                      << "': " << dlerror() << " â skipping\n";
             continue;
         }
 

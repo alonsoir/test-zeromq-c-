@@ -319,6 +319,14 @@ plugin-loader-test:
 	@echo "🧪 Testing plugin-loader..."
 	@vagrant ssh -c "cd /vagrant/plugin-loader/build && ctest --output-on-failure"
 
+
+# ADR-025: firma todos los plugins instalados en /usr/lib/ml-defender/plugins/
+# Prerequisito: provision.sh full (keypair generado)
+# Repetible: re-firmar sobreescribe .sig anterior
+sign-plugins:
+	@echo "Firmando plugins (ADR-025 D1)..."
+	@vagrant ssh -c 'sudo bash /vagrant/tools/provision.sh sign'
+
 plugin-integ-test:
 	@echo "TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_variants /vagrant/plugins/test-message/test_variants.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_variants && echo TEST-INTEG-4a PASSED || echo TEST-INTEG-4a FAILED'

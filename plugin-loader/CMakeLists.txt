@@ -30,6 +30,37 @@ set(PUBLIC_HEADERS
     include/plugin_loader/plugin_loader.hpp
 )
 
+
+# ============================================================================
+# LIBSODIUM (ADR-025 — Ed25519 plugin verification)
+# NO_DEFAULT_PATH: use only libsodium compiled from source (DAY 96-97)
+# ============================================================================
+find_library(SODIUM_LIB sodium
+    PATHS /usr/local/lib /usr/lib
+    NO_DEFAULT_PATH
+)
+if(NOT SODIUM_LIB)
+    message(FATAL_ERROR "libsodium not found — run: sudo bash tools/provision.sh full")
+endif()
+find_path(SODIUM_INCLUDE sodium.h
+    PATHS /usr/local/include /usr/include
+    NO_DEFAULT_PATH
+)
+message(STATUS "libsodium: ${SODIUM_LIB}")
+
+# ============================================================================
+# MLD_PLUGIN_PUBKEY_HEX (ADR-025 D7)
+# Ed25519 public key hardcoded in binary — NOT a secret, correct by design
+# Source: /etc/ml-defender/plugins/plugin_signing.pk (raw 32 bytes, hex)
+# To update: provision.sh --reset then recompile
+# ============================================================================
+if(NOT DEFINED MLD_PLUGIN_PUBKEY_HEX OR MLD_PLUGIN_PUBKEY_HEX STREQUAL "")
+    set(MLD_PLUGIN_PUBKEY_HEX "b824bcd7a14f6e19a0d8c9be86110828060e600723d12e118dccc95c862c8468")
+    message(STATUS "MLD_PLUGIN_PUBKEY_HEX: using default dev key")
+else()
+    message(STATUS "MLD_PLUGIN_PUBKEY_HEX: injected via CMake -D")
+endif()
+
 # ============================================================================
 # LIBRARY TARGET
 # ============================================================================
@@ -41,14 +72,20 @@ target_include_directories(plugin_loader
         $<INSTALL_INTERFACE:include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${SODIUM_INCLUDE}
 )
 
 # dl for dlopen/dlsym
 target_link_libraries(plugin_loader
     PRIVATE
         ${CMAKE_DL_LIBS}
+        ${SODIUM_LIB}
 )
 
+target_compile_definitions(plugin_loader
+    PRIVATE
+        MLD_PLUGIN_PUBKEY_HEX="${MLD_PLUGIN_PUBKEY_HEX}"
+)
 target_compile_options(plugin_loader
     PRIVATE
         -Wall
@@ -92,7 +129,7 @@ message(STATUS "plugin-loader Library Configuration")
 message(STATUS "========================================")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Phase: 1 — no crypto, no seed-client")
+message(STATUS "Phase: 2 — Ed25519 plugin verification (ADR-025)")
 message(STATUS "  Auth: PHASE 2 (ADR-013, seed-client DAY 95-96)")
 message(STATUS "Public Headers:")
 foreach(header ${PUBLIC_HEADERS})
