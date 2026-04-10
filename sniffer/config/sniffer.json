@@ -43,7 +43,7 @@
       "promiscuous": true,
       "capture_direction": "ingress_only",
       "_behavior": "Captures packets DESTINED to this host (interface_mode=1)",
-      "_day11_test": "Attack from OSX: nmap, hping3 \u2192 192.168.56.20"
+      "_day11_test": "Attack from OSX: nmap, hping3 → 192.168.56.20"
     },
     "gateway_interface": {
       "name": "eth2",
@@ -561,7 +561,7 @@
     }
   },
   "identity": {
-    "_comment": "ADR-013 \u2014 provision.sh es el unico responsable de crear estas claves.",
+    "_comment": "ADR-013 — provision.sh es el unico responsable de crear estas claves.",
     "_phase": "PHASE 1: seed.bin en claro chmod 0600. PHASE 2: seed.enc via seed-client.",
     "component_id": "sniffer",
     "keys_dir": "/etc/ml-defender/sniffer",
@@ -575,7 +575,9 @@
         "name": "hello",
         "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
         "active": false,
-        "comment": "ADR-012 PHASE 1b \u2014 validation plugin. Set active:true to enable."
+        "comment": "ADR-012 PHASE 1b — validation plugin. Set active:true to enable.",
+        "require_signature": true,
+        "allowed_key_id": "ed25519:2026-04-prod"
       }
     ]
   }

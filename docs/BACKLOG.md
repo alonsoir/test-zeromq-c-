@@ -192,3 +192,23 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 *Paper: Draft v13 ✅ · arXiv: 2604.04952 PUBLICADO ✅*
 *Pipeline: 6/6 RUNNING ✅*
 *PHASE 2: ✅ COMPLETA (2a+2b+2c+2d+2e) · ADR-030/031: BACKLOG ⏳*
+## DEBT-TOOLS-001 — Synthetic injectors: integrar plugin-loader (ADR-025)
+
+**Prioridad:** P3 (no bloqueante)
+**Origen:** DAY 113 — observacion durante implementacion ADR-025
+**Ficheros afectados:**
+- `tools/synthetic_sniffer_injector.cpp`
+- `tools/synthetic_ml_output_injector.cpp`
+- `tools/generate_synthetic_events.cpp`
+
+**Descripcion:**
+Los scripts de stress actuan como sustitutos de los componentes reales para pruebas
+de carga. Actualmente usan ZeroMQ + crypto-transport pero NO integran plugin-loader.
+Los componentes reales ahora cargan plugins con verificacion Ed25519 (ADR-025).
+Para que los synthetic injectors sean representativos del comportamiento real,
+deben tambien instanciar PluginLoader y cargar plugins firmados.
+
+**Condicion de activacion:** Post-ADR-025 estable en main. Antes de stress tests
+formales de PHASE 3.
+
+**Dependencias:** ADR-025 (Ed25519), make sign-plugins (firma previa al test)

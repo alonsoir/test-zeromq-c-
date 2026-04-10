@@ -24,20 +24,17 @@
       "El bloque identity/transport se define aquí para uniformidad y PHASE 2."
     ]
   },
-
   "id": "rag-security-system",
-
   "identity": {
     "_comment": "ADR-013 — provision.sh es el único responsable de crear estas claves.",
     "_phase": "PHASE 1: seed.bin en claro (chmod 0600). PHASE 2: seed.enc via seed-client.",
     "_transport_note": "rag-security actualmente NO usa transporte cifrado (ver _architecture_note).",
     "component_id": "rag-security",
-    "keys_dir":     "/etc/ml-defender/rag-security",
-    "public_key":   "/etc/ml-defender/rag-security/public.pem",
-    "private_key":  "/etc/ml-defender/rag-security/private.pem",
-    "seed_bin":     "/etc/ml-defender/rag-security/seed.bin"
+    "keys_dir": "/etc/ml-defender/rag-security",
+    "public_key": "/etc/ml-defender/rag-security/public.pem",
+    "private_key": "/etc/ml-defender/rag-security/private.pem",
+    "seed_bin": "/etc/ml-defender/rag-security/seed.bin"
   },
-
   "transport": {
     "_comment": "Preparado para PHASE 2. Actualmente rag-security no cifra/descifra tráfico.",
     "encryption": {
@@ -52,7 +49,6 @@
       "_enabled_note": "false — no aplica en el flujo actual de lectura FAISS/SQLite"
     }
   },
-
   "rag": {
     "host": "localhost",
     "port": 8080,
@@ -110,7 +106,9 @@
         "name": "hello",
         "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
         "active": true,
-        "comment": "ADR-012 PHASE 1b — validation plugin"
+        "comment": "ADR-012 PHASE 1b — validation plugin",
+        "require_signature": true,
+        "allowed_key_id": "ed25519:2026-04-prod"
       }
     ]
   }
