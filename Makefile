@@ -323,6 +323,12 @@ plugin-loader-test:
 # ADR-025: firma todos los plugins instalados en /usr/lib/ml-defender/plugins/
 # Prerequisito: provision.sh full (keypair generado)
 # Repetible: re-firmar sobreescribe .sig anterior
+
+# ADR-025: TEST-INTEG-SIGN-1 a 7 — verificacion Ed25519 plugin loader
+test-sign:
+	@echo "TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_sign /vagrant/plugins/test-message/test_integ_sign.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_sign && echo TEST-INTEG-SIGN PASSED || echo TEST-INTEG-SIGN FAILED'
+
 sign-plugins:
 	@echo "Firmando plugins (ADR-025 D1)..."
 	@vagrant ssh -c 'sudo bash /vagrant/tools/provision.sh sign'
@@ -336,6 +342,8 @@ plugin-integ-test:
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4c /vagrant/plugins/test-message/test_integ_4c.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4c && echo TEST-INTEG-4c PASSED || echo TEST-INTEG-4c FAILED'
 	@echo "TEST-INTEG-4e: rag-security READONLY + ADR-029 D1-D5..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4e /vagrant/plugins/test-message/test_integ_4e.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4e && echo TEST-INTEG-4e PASSED || echo TEST-INTEG-4e FAILED'
+	@echo "TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_sign /vagrant/plugins/test-message/test_integ_sign.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_sign && echo TEST-INTEG-SIGN PASSED || echo TEST-INTEG-SIGN FAILED'
 plugin-hello-build: plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
