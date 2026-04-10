@@ -78,6 +78,35 @@ hardcodeada contra hex-edit.
 
 ## Orden DAY 114
 
+Memoria actualizada. El prompt de continuidad DAY 114 queda así con el PASO 0 al frente:
+
+---
+
+**PASO 0 — URGENTE: Rebuild del pipeline (HACER ESTO PRIMERO)**
+
+```bash
+cd /Users/aironman/CLionProjects/test-zeromq-docker
+grep -n "pipeline-build\|build-all\|all-build" Makefile | head -10
+```
+
+```bash
+make pipeline-build 2>&1 | tail -30
+```
+
+```bash
+make pipeline-status
+```
+
+**Causa conocida:** al cambiar `libplugin_loader.so` (ADR-025, añadir libsodium), los binarios de los 6 componentes quedaron obsoletos pero no se recompilaron. `firewall-acl-agent/build/firewall_acl_agent` no existe. El rebuild debería resolverlo limpiamente.
+
+Si `make pipeline-build` no existe como target, buscar el equivalente con el grep de arriba antes de ejecutar nada más.
+
+---
+
+Todo lo demás del orden DAY 114 (TEST-INTEG-4d, signal safety, merge, paper) viene después de confirmar el pipeline verde.
+
+Descansa bien. Hasta mañana. 🛡️
+
 ### PASO 1 — Verificar estado base
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
