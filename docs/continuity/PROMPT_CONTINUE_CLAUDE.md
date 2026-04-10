@@ -1,126 +1,151 @@
-# ML Defender (aRGus NDR) — DAY 113 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 114 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
-## Estado al cierre de DAY 112
+## Estado al cierre de DAY 113
 
 ### Hitos del día
-**PHASE 2 Multi-Layer Plugin Architecture: COMPLETA ✅**
-5/5 componentes integrados. make plugin-integ-test: 4a+4b+4c+4e PASSED.
+**ADR-025 Plugin Integrity Verification: IMPLEMENTADO ✅**
+Ed25519 offline signing + TOCTOU-safe dlopen. 7/7 SIGN tests PASSED.
+make test: 11/11 PASSED (4a+4b+4c+4e+SIGN-1..7).
+Rama: feature/plugin-integrity-ed25519. Commits: eb2c88d9, a3819bc3, 1eb40e8b.
+PENDIENTE DE MERGE: condicionado a TEST-INTEG-4d + signal safety review.
 
-**ADR-030 + ADR-031 incorporados al repositorio y BACKLOG.**
+**Paper Draft v14: COMPILACIÓN LIMPIA ✅**
+Glasswing/Mythos integrado. Párrafo revisado pendiente de aplicar (ver abajo).
+arXiv Replace v13 pendiente: Scholar bloqueó verificación por rate limit.
 
-### Completado DAY 112
-
-**PHASE 2e — rag-security ✅**
-- `rag/src/main.cpp` reescrito con ADR-029 D1-D5 completos:
-  - D1: `static ml_defender::PluginLoader* g_plugin_loader = nullptr`
-  - D2: `signalHandler` async-signal-safe (write()+shutdown()+raise())
-  - D3: orden inicialización: loader → asignación → signal handlers
-  - D4: invoke_all READONLY post-processCommand, result_code ignorado
-  - D5: invoke_all NUNCA desde signal handler
-  - double-shutdown guard: `g_plugin_loader = nullptr` tras shutdown()
-
-**TEST-INTEG-4e 3/3 PASSED ✅**
-- Caso A: READONLY + evento real → errors=0, result_code ignorado
-- Caso B: g_plugin_loader=nullptr → invoke_all no llamado, no crash
-- Caso C: simulación signal handler → shutdown limpio, g_plugin_loader=nullptr
-
-**ADR-030 — aRGus-AppArmor-Hardened ✅ (BACKLOG)**
-- Variante producción Linux 6.12 LTS + Debian 13 + AppArmor enforcing
-- Vagrant-compatible. ARM64 (Raspberry Pi 4/5) + x86-64
-- Mitiga confused deputy AppArmor (Hugo Vázquez Caramés)
-- Activar post-PHASE 3. Bloqueado: hardware Pi pendiente adquisición
-- Aprobado Consejo 5/5 unanimidad DAY 109
-
-**ADR-031 — aRGus-seL4-Genode ✅ (BACKLOG/RESEARCH)**
-- Investigación pura: ¿cuánto cuesta seguridad formal en rendimiento real?
-- seL4 ~12.000 líneas C verificadas Isabelle/HOL. Guest Linux no privilegiado
-- XDP inviable en guest (H1) → fallback libpcap obligatorio
-- Overhead estimado 40-60%. Spike técnico 2-3 semanas obligatorio
-- QEMU directo (Vagrant incompatible). Raspberry Pi 5 preferida (EL2)
-- Activa post-ADR-030 + spike GO
-- Aprobado Consejo 5/5 unanimidad DAY 109
-
-**README.md + BACKLOG.md actualizados ✅**
-
-**Commits DAY 112:**
-- Commit 1 (10d678ed): PHASE 2e + TEST-INTEG-4e
-- Commit 2 (1691db06): BACKLOG + ADR-030/031 + README
-- Branch: feature/plugin-crypto
+**Consejo DAY 113: ACTAS CERRADAS ✅**
+5 miembros respondieron. Veredictos definitivos del árbitro registrados.
 
 ---
 
-## Consejo DAY 112 — Preguntas abiertas para DAY 113
+## Veredictos árbitro DAY 113 (DEFINITIVOS)
 
-**Q1-112 — PHASE 2e: ¿invoke_all READONLY o NORMAL en rag-security?**
-Respondido: READONLY por ADR-029 D4. rag-security es guardián semántico,
-no actúa sobre eventos — no hay caso válido para NORMAL.
+**Q1 — Merge feature/plugin-integrity-ed25519 → main:**
+CONDICIONADO. Dos condiciones bloqueantes antes del merge:
+1. TEST-INTEG-4d (ml-detector + plugin-loader) — verificar si existe o implementar
+2. Async-signal-safety de shutdown() en plugin_loader.cpp — revisar y documentar
+   Una vez ambas en verde → merge autorizado.
 
-**Q2-112 — TEST-INTEG-4e Caso C: ¿cómo testear SIGTERM sin fork()?**
-Respondido: simulación de lógica del handler sin señal real. Caso C
-verifica las postcondiciones (shutdown ejecutado, g_plugin_loader=nullptr)
-sin necesidad de fork()/kill(). Resultado: limpio y suficiente.
+**Q2 — provision.sh --reset (D11):**
+P1 post-merge. Deadline: 7 días naturales tras el merge.
+Registrado en BACKLOG como DEBT-ADR025-D11.
 
-**Q3-112 — arXiv Replace v13: ¿subir ahora o esperar indexación?**
-Decisión: ESPERAR. v1 publicada el 3 de abril. Google Scholar / Semantic
-Scholar tardan 1-2 semanas en indexar. No hay urgencia. Subir v13 cuando
-v1 esté indexada en Scholar.
+**Q3 — Siguiente prioridad:**
+PHASE 3 (pipeline hardening) UNÁNIME. Sin discusión.
+ADR-026 (Fleet/XGBoost/BitTorrent) diferido — construir sobre buenos andamios.
 
-**Pendiente DAY 113:**
-- Incorporar implicaciones Mythos Preview en el paper (DAY 108 pendiente):
-  (1) axioma kernel inseguro como limitación declarada del scope
-  (2) aRGus válido contra threat model real hospitales/municipios
-  (3) detección de red como capa defensiva incluso con kernel comprometido
-  (4) referencia a Glasswing/Mythos como contexto temporal del paper
-  Esto desbloquea arXiv Replace v13.
+**Q4 — DEBT-TOOLS-001:**
+SUBIDO A P2. Los synthetic injectors son tabla de salvación TDH, no solo
+herramientas de rendimiento. Ayudan a encontrar errores de implementación
+en PCAP replay. Sin PluginLoader integrado, los stress tests ejercitan un
+sistema distinto al de producción. Antes del próximo PCAP replay.
+
+**Q5 — Párrafo Glasswing/Mythos:**
+Texto revisado ADOPTADO. Aplicar en Overleaf antes de arXiv Replace v13.
+Texto exacto para sustituir el párrafo actual en §Related Work:
+
+\paragraph{AI-native security reasoning and the evolving threat landscape.}
+This paper was written and submitted in April 2026, concurrent with the
+announcement of Anthropic's Project Glasswing~\cite{anthropic2026glasswing},
+which demonstrated that AI models can autonomously identify and chain
+kernel-level vulnerabilities --- including local privilege escalation to
+root in Linux --- at a scale and speed previously requiring specialized
+human expertise. These results represent a shift in the threat landscape:
+AI-augmented offensive capabilities are no longer theoretical.
+This directly motivates the explicit kernel security boundary axiom in
+\S\ref{sec:threatmodel:kernel}: aRGus NDR assumes the kernel as a
+potentially compromised boundary and shifts its trust anchor to
+verifiable network behavioral patterns. The network remains an observable
+chokepoint even when the host is not. The hardened deployment variants
+ADR-030 (AppArmor) and ADR-031 (seL4) documented in
+\S\ref{sec:future:hardened} are a direct architectural response to this
+trajectory.
+
+**Observación ChatGPT-5 RECHAZADA (registrada como posición de minoría):**
+ChatGPT-5 sugirió fail-isolated (skip plugin sin matar proceso). Rechazado
+por el árbitro. Filosofía del proyecto: todo o nada. Un componente con plugin
+comprometido no arranca — en un pipeline que salva vidas, no arrancar
+es preferible a arrancar comprometido. Se repara rápido y se relanza.
+
+**Observación Gemini ACEPTADA → incorporada a spec PHASE 3:**
+AppArmor en PHASE 3 debe denegar acceso de escritura a los binarios
+/usr/bin/ml-defender-* incluso para root, protegiendo la clave pública
+hardcodeada contra hex-edit.
 
 ---
 
-## Orden DAY 113
+## Orden DAY 114
 
-### PASO 1 — Verificar estado
+### PASO 1 — Verificar estado base
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout feature/plugin-crypto
-git pull origin feature/plugin-crypto
-make pipeline-status
+git checkout feature/plugin-integrity-ed25519
+git pull origin feature/plugin-integrity-ed25519
 make plugin-integ-test
 ```
 
-### PASO 2 — Paper: incorporar implicaciones Mythos Preview
-Editar `main.tex` (LaTeX en Overleaf o local):
-- §Threat Model: añadir axioma kernel inseguro como limitación declarada
-- §Conclusions o §Discussion: aRGus válido dentro de su capa aunque kernel comprometido
-- §Related Work o footnote: referencia a Mythos Preview + ADR-030/031 como trabajo futuro
-- Gate: Draft v14 producido, compilación limpia en Overleaf
+### PASO 2 — Condición bloqueante 1: TEST-INTEG-4d
+Verificar si existe test_integ_4d.cpp para ml-detector:
+```bash
+ls plugins/test-message/test_integ_4d.cpp 2>/dev/null || echo "NO EXISTE"
+grep -n "4d\|TEST-INTEG-4d" Makefile | head -10
+```
+Si no existe: implementar siguiendo el patrón de test_integ_4c.cpp
+(tres casos: NORMAL con payload, D8 VIOLATION campo read-only, result_code=-1 no crash)
+para validar ml-detector + plugin-loader integration.
 
-### PASO 3 — arXiv Replace v13 (si Scholar ya indexó v1)
-Verificar: https://scholar.google.com/scholar?q=arXiv:2604.04952
-Si indexado → subir v13 al panel arXiv.
-Si no → documentar como pendiente y continuar.
+### PASO 3 — Condición bloqueante 2: async-signal-safety
+Revisar plugin_loader.cpp shutdown() — verificar que solo hace operaciones
+async-signal-safe (write(), close(), cambio de atomic<bool>).
+ADR-029 D2-D5 ya establecen las reglas; verificar cumplimiento.
 
-### PASO 4 — Decisión: ¿abrir PR feature/plugin-crypto → main?
-PHASE 2 completa. Candidato natural para merge.
-Consejo DAY 113 debe pronunciarse sobre timing del merge.
+### PASO 4 — Merge (si PASO 2 y 3 en verde)
+```bash
+git checkout main
+git pull origin main
+git merge feature/plugin-integrity-ed25519
+git tag v0.3.0-plugin-integrity
+git push origin main --tags
+```
 
-### PASO 5 (opcional) — Iniciar ADR-025 implementación
-Plugin Integrity Verification (Ed25519). Post-PHASE 2, desbloqueado.
-Solo si PASO 2 y 3 completos.
+### PASO 5 — Paper: aplicar párrafo revisado Glasswing en Overleaf
+Sustituir el párrafo actual en §Related Work con el texto del Q5 arriba.
+Compilar → Draft v14 FINAL.
+Verificar indexación arXiv:2604.04952 en Scholar → subir Replace v13 si indexado.
+
+### PASO 6 — Abrir rama PHASE 3
+```bash
+git checkout -b feature/phase3-hardening
+git push -u origin feature/phase3-hardening
+```
+Scope inicial PHASE 3:
+- systemd units: Restart=always, RestartSec=5s, unset LD_PRELOAD (ADR-025 D10)
+- AppArmor profiles básicos para los 6 componentes
+  - Incluir: denegar escritura en /usr/bin/ml-defender-* incluso para root
+- CI gate: TEST-PROVISION-1 como gate formal
+- DEBT-ADR025-D11: provision.sh --reset (P1, deadline 7 días)
 
 ---
 
-## Deuda pendiente (no bloqueante)
+## Deuda pendiente (priorizada)
 
-- Paper Mythos Preview integration (DAY 108) — PASO 2 DAY 113
-- arXiv Replace v13 — esperar indexación v1 en Scholar
-- PR feature/plugin-crypto → main — candidato post-DAY 113
-- ADR-025 impl. (Plugin Integrity Ed25519) — post-PHASE 2 ✅ desbloqueado
-- REC-2: noclobber + check 0-bytes CI (P2)
-- TEST-PROVISION-1 como gate CI formal
-- DEBT-SNIFFER-SEED — unificar sniffer bajo SeedClient
-- ADR-030 activación — post-PHASE 3 + hardware Pi
-- ADR-031 spike técnico — post-ADR-030
+P0 (bloqueante merge):
+- TEST-INTEG-4d ml-detector + plugin-loader
+- Async-signal-safety review shutdown()
+
+P1 (post-merge, deadline 7 días):
+- DEBT-ADR025-D11: provision.sh --reset
+
+P2 (antes del próximo PCAP replay):
+- DEBT-TOOLS-001: synthetic injectors integrar PluginLoader + plugins firmados
+
+P3:
+- REC-2: noclobber + check 0-bytes CI
+- DEBT-SNIFFER-SEED: unificar sniffer bajo SeedClient
+- ADR-030 activación: post-PHASE 3 + hardware Pi
+- ADR-031 spike técnico: post-ADR-030
 
 ---
 
@@ -129,32 +154,34 @@ Solo si PASO 2 y 3 completos.
 ### Proyecto
 - **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios
 - **arXiv**: arXiv:2604.04952 [cs.CR] — PUBLICADO 3 Apr 2026 ✅
-- **Branch activa**: feature/plugin-crypto
+- **Branch activa**: feature/plugin-integrity-ed25519 (pendiente merge)
 - **Repositorio**: https://github.com/alonsoir/argus
 
-### PHASE 2 estado — COMPLETA
-- 2a ✅ firewall        (TEST-INTEG-4a 3/3)
-- 2b ✅ rag-ingester    (TEST-INTEG-4b)
-- 2c ✅ sniffer         (TEST-INTEG-4c 3/3)
-- 2d ✅ ml-detector     (post-inferencia)
-- 2e ✅ rag-security    (TEST-INTEG-4e 3/3, ADR-029 D1-D5)
+### ADR-025 keypair dev
+- Private key: /etc/ml-defender/plugins/plugin_signing.sk (VM only)
+- MLD_PLUGIN_PUBKEY_HEX: b824bcd7a14f6e19a0d8c9be86110828060e600723d12e118dccc95c862c8468
+- Firmar plugins: make sign-plugins
 
-### Comandos VM críticos
-- Editar ficheros en VM: python3 << 'PYEOF' (nunca sed -i sin -e '' en macOS)
-- vagrant ssh -c '...' con comillas simples para CMAKE_FLAGS
-- NUNCA > fichero para escribir código — usar python3 heredoc
-- CMake: NO_DEFAULT_PATH para libsodium
-- CI: .github/workflows/ci.yml
+### Patrón robusto para scripts en VM (NUNCA sed -i en macOS)
+cat > /tmp/script.py << 'PYEOF' → vagrant upload → vagrant ssh -c 'sudo python3 /tmp/script.py'
 
 ### Consejo de Sabios (7 miembros)
 Claude, Grok, ChatGPT, DeepSeek, Qwen (Alibaba), Gemini, Parallel.ai.
-Qwen se auto-identifica como DeepSeek — registrar como Qwen en actas.
+Qwen se auto-identifica como DeepSeek — 6ª vez, patrón consolidado.
+Parallel.ai no respondió en DAY 113.
 
-### Notas arquitectónicas seL4 (DAY 112)
-- XDP requiere acceso directo a descriptores DMA de la NIC física
-- Bajo Genode, el datapath pasa por virtio-net → XDP inviable en guest
-- eBPF kernel programs: mismo problema
-- Sniffer es el único componente que toca kernel space hoy
-- Fallback libpcap ya previsto en ADR-031
-- Todo el resto del pipeline (ZeroMQ, ONNX, FAISS, plugins): userspace, sin cambios
-- El spike técnico es una pregunta acotada: solo el mecanismo de captura
+### PHASE 2 — COMPLETA (condicionada a TEST-INTEG-4d)
+- 2a ✅ firewall        (TEST-INTEG-4a 3/3)
+- 2b ✅ rag-ingester    (TEST-INTEG-4b)
+- 2c ✅ sniffer         (TEST-INTEG-4c 3/3)
+- 2d ⚠️ ml-detector    (TEST-INTEG-4d PENDIENTE VERIFICACIÓN)
+- 2e ✅ rag-security    (TEST-INTEG-4e 3/3)
+
+### ADR-025 — IMPLEMENTADO, PENDIENTE MERGE
+11/11 tests PASSED. Merge condicionado a TEST-INTEG-4d + signal safety.
+
+### Filosofía core
+"Un escudo, nunca una espada."
+"La verdad por delante, siempre."
+Fail-closed: todo o nada. Un componente comprometido = pipeline no arranca.
+En un sistema que salva vidas, no arrancar es preferible a arrancar comprometido.

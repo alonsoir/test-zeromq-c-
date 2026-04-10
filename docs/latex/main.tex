@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v13 — DAY 109 — April 2026
+% Draft v14 — DAY 113 — April 2026
 % Author: Alonso Isidoro Roman
 % Target: cs.CR
 % ============================================================
@@ -79,7 +79,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v13 --- April 2026}
+\date{Draft v14 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -254,6 +254,20 @@ in Resource-Constrained Organizations}}
     formally documented in the systems security literature. Section~\ref{sec:consejo} describes
     the \emph{Consejo de Sabios} methodology.
 
+    \paragraph{AI-native security reasoning and the evolving threat landscape.}
+    This paper was written and submitted in April 2026, a moment marked by the
+    emergence of AI systems capable of sophisticated reasoning about kernel-level
+    threat models --- including Anthropic's Glasswing project and its Mythos Preview
+    capability~\cite{anthropic2026glasswing}, which demonstrated that AI-assisted security analysis can reason about
+    low-level attack surfaces with a depth previously requiring specialized human
+    expertise. This context directly motivates the explicit kernel security boundary
+    axiom in \S\ref{sec:threatmodel:kernel}: while ML Defender's threat model is
+    calibrated for the realistic adversary profile of its target organizations, the
+    threat landscape is evolving, and kernel-level attack sophistication is increasing.
+    The hardened variants ADR-030 and ADR-031 (\S\ref{sec:future:hardened}) are a
+    direct architectural response to this trajectory. ML Defender is positioned as a
+    network defensive layer that remains valid and effective within its declared scope,
+    complementary to --- not competing with --- deeper host-level security capabilities.
 % ============================================================
     \section{Threat Model}
 % ============================================================
@@ -268,6 +282,30 @@ in Resource-Constrained Organizations}}
     The system assumes the attacker cannot: fully mimic benign traffic distributions across all
     monitored features simultaneously; compromise the ML Defender host; manipulate feature
     extraction; or tamper with HMAC-SHA256 protected event logs.
+
+    \subsection{Kernel Security Boundary (Explicit Axiom)}
+    \label{sec:threatmodel:kernel}
+
+    ML Defender assumes the host kernel is not actively compromised at deployment time.
+    This is a declared scope boundary, not an oversight.
+
+    An adversary with root access or kernel-level persistence --- via a rootkit, a
+    compromised eBPF JIT, or memory-resident malware --- can bypass userspace detection
+    mechanisms regardless of their sophistication. This is a fundamental property of all
+    userspace security software, not a specific weakness of ML Defender.
+
+    This assumption is consistent with the threat model of the target organizations
+    (hospitals, schools, municipalities), where the realistic adversary is an
+    opportunistic network attacker exploiting known vulnerabilities, not a state-level
+    actor with pre-established kernel-level persistence. Against this realistic threat
+    model, ML Defender's network detection layer remains effective: lateral movement,
+    C2 communication, and data exfiltration must traverse the network regardless of
+    kernel state. The network is the choke point; it remains observable even when the
+    host is not.
+
+    Hardened deployment variants addressing kernel security are documented as future
+    work: ADR-030 (AppArmor-enforcing) and ADR-031 (seL4 microkernel),
+    both described in \S\ref{sec:future:hardened}.
 
     \subsection{Detection Surface}
     Detection occurs at the network flow level. ML Defender focuses on connection frequency,
@@ -1294,7 +1332,19 @@ const std::string ctx_rx = "ml-defender:" + component_name
         \item \textbf{No hardware root of trust.} The current design does not leverage TPM
         or secure enclave primitives. Physical access to the host enables seed extraction.
         Hardware-anchored key storage is identified as a future hardening target.
+
     \end{enumerate}
+
+    \textbf{10.12 Kernel Security Boundary.} ML Defender operates in userspace; eBPF/XDP
+    programs execute in the kernel but are loaded by userspace. An adversary with
+    pre-existing kernel-level access (rootkit, compromised eBPF JIT) can bypass the
+    detection pipeline. This limitation is shared by all userspace NDR systems and is
+    consistent with the declared scope boundary (\S\ref{sec:threatmodel:kernel}).
+    The realistic threat model for target organizations does not assume such adversaries:
+    opportunistic ransomware operators attack via the network, not via pre-established
+    kernel persistence. Network detection remains a valid and necessary defensive layer
+    even under this constraint. Hardened variants (ADR-030, ADR-031) address this in
+    future work (\S\ref{sec:future:hardened}).
 
 % ============================================================
     \section{Future Work}
@@ -1435,6 +1485,29 @@ const std::string ctx_rx = "ml-defender:" + component_name
     \S\ref{sec:integration:philosophy}. Requires ADR-028 (RAG Ingestion Trust
     Model). Deferred to post-PHASE-2 pipeline stabilization.
 
+    \textbf{11.17 Hardened Deployment Variants (ADR-030, ADR-031).}
+    \label{sec:future:hardened}
+    Two hardened deployment variants are documented as architectural decisions, both
+    targeting a stronger kernel security posture:
+
+    \textbf{ADR-030 (aRGus-AppArmor-Hardened):} Debian~13 + Linux~6.12~LTS +
+    AppArmor enforcing mode. Full eBPF/XDP pipeline preserved. Compatible with ARM64
+    (Raspberry Pi~4/5) and x86-64. This is the planned production-hardened variant,
+    providing mandatory access control against confused-deputy attacks on plugin
+    loading (motivated by the analysis of Hugo V\'azquez Caram\'es). Activation:
+    post-PHASE-3 + hardware acquisition.
+
+    \textbf{ADR-031 (aRGus-seL4-Genode):} Pure research variant on the seL4
+    formally verified microkernel (${\sim}$12,000 lines of C verified in
+    Isabelle/HOL). Linux runs as an unprivileged guest under Genode; XDP is
+    infeasible in this model (no direct DMA access from guest), so libpcap is the
+    mandatory capture fallback. The performance delta between eBPF/XDP and libpcap
+    under seL4 is itself a measurable scientific contribution. Estimated overhead:
+    40--60\%. Activation: post-ADR-030 + technical spike (2--3 weeks).
+
+    Both variants will be validated in Vagrant first, then on bare-metal. Results
+    will be published with measured honesty; ADR-031 will not be merged into
+    \texttt{main} regardless of outcome.
 % ============================================================
     \section{Conclusion}
 % ============================================================

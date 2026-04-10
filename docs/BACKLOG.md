@@ -1,4 +1,25 @@
 # ML Defender (aRGus NDR) — BACKLOG
+
+## ADR-025 — Plugin Integrity Verification (Ed25519) — COMPLETADO DAY 113 ✅
+
+**Estado:** IMPLEMENTADO Y TESTEADO
+**Rama:** feature/plugin-integrity-ed25519
+**Commits:** eb2c88d9, a3819bc3, 1eb40e8b
+
+Implementación completa:
+- plugin_loader.cpp: D1-D9 (prefix check, O_NOFOLLOW, fstat, SHA-256, Ed25519, /proc/self/fd)
+- CMakeLists.txt: libsodium + MLD_PLUGIN_PUBKEY_HEX hardcodeado
+- provision.sh: bootstrapping keypair + sign_plugin() + sign_all_plugins() + modo sign
+- make sign-plugins: funcional
+- TEST-INTEG-SIGN-1..7: 7/7 PASSED
+- JSON configs (5 componentes): require_signature:true + allowed_key_id:ed25519:2026-04-prod
+- make test: 11/11 PASSED
+
+Pendiente de esta ADR:
+- provision.sh --reset (D11, rotación manual de claves) — diferido
+- systemd units (Restart=always, unset LD_PRELOAD) — diferido post-PHASE 3
+
+
 ## Via Appia Quality 🏛️
 
 ---
@@ -194,7 +215,7 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 *PHASE 2: ✅ COMPLETA (2a+2b+2c+2d+2e) · ADR-030/031: BACKLOG ⏳*
 ## DEBT-TOOLS-001 — Synthetic injectors: integrar plugin-loader (ADR-025)
 
-**Prioridad:** P3 (no bloqueante)
+**Prioridad:** P2 (antes de cualquier PCAP replay / stress test formal)
 **Origen:** DAY 113 — observacion durante implementacion ADR-025
 **Ficheros afectados:**
 - `tools/synthetic_sniffer_injector.cpp`
@@ -208,7 +229,27 @@ Los componentes reales ahora cargan plugins con verificacion Ed25519 (ADR-025).
 Para que los synthetic injectors sean representativos del comportamiento real,
 deben tambien instanciar PluginLoader y cargar plugins firmados.
 
-**Condicion de activacion:** Post-ADR-025 estable en main. Antes de stress tests
-formales de PHASE 3.
+**Condicion de activacion:** Antes del proximo PCAP replay stress test.
+Razon: los injectors son tabla de salvacion TDH — ayudan a encontrar errores de
+implementacion bajo carga real, no solo miden rendimiento. Sin PluginLoader integrado,
+los stress tests ejercitan un sistema distinto al de produccion. Decision arbitro DAY 113.
 
 **Dependencias:** ADR-025 (Ed25519), make sign-plugins (firma previa al test)
+
+## DEBT-ADR025-D11 — provision.sh --reset (rotacion de claves Ed25519)
+
+**Prioridad:** P1 post-merge feature/plugin-integrity-ed25519
+**Deadline:** 7 dias naturales tras el merge a main
+**Origen:** ADR-025 D11 — decision Consejo DAY 113 (unanimidad P1)
+
+Implementar en tools/provision.sh:
+- Confirmacion interactiva: escribir literalmente RESET-KEYS
+- Nuevo keypair Ed25519 con timestamp en nombre: plugin_signing_key_YYYYMMDD_HHMMSS.sk
+- Mostrar fingerprint nueva pubkey hex para hardcodear en CMakeLists.txt
+- Mover .sig existentes a /var/lib/ml-defender/invalidated/<timestamp>/
+- Registrar en syslog: KEY ROTATION: old signatures invalidated at <timestamp>
+- Mensaje explicito: pipeline no arrancara hasta re-firmar todos los plugins
+- NO generar nuevas firmas automaticamente
+
+Tests requeridos: al menos TEST-PROVISION-RESET-1 (verificar precondiciones y postcondiciones)
+Nota: No existe cron de rotacion automatica — es antipatron en sistemas criticos.
