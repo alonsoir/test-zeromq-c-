@@ -6,8 +6,9 @@
 [![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
-[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b_4c_4e-brightgreen)]()
+[![Tests: 25/25 + INTEG](https://img.shields.io/badge/Tests-25%2F25_%2B_INTEG_4a_4b_4c_4d_4e-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
+[![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2_COMPLETE_5%2F5-brightgreen)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![ADR-029](https://img.shields.io/badge/ADR--029-async--signal--safe_APPROVED-green)](docs/adr/ADR-029-rag-security-global-plugin-loader-async-signal-safe.md)
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
@@ -19,8 +20,8 @@
 
 ---
 
-⚠️ Active development branch: `feature/plugin-crypto`
-For current state, see that branch. `main` is behind.
+⚠️ Active development branch: `feature/phase3-hardening`
+For current state, see that branch. `main` is tagged `v0.3.0-plugin-integrity`.
 
 ## 📄 Preprint
 
@@ -31,7 +32,7 @@ For current state, see that branch. `main` is behind.
 
 **arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)
 **DOI:** https://doi.org/10.48550/arXiv.2604.04952
-**Published:** 3 April 2026 · 28 pages · MIT license
+**Published:** 3 April 2026 · Draft v15 · MIT license
 **Code:** https://github.com/alonsoir/argus
 
 ---
@@ -56,7 +57,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 
 ---
 
-## 📊 Validated Results (DAY 112 — 9 April 2026)
+## 📊 Validated Results (DAY 114 — 11 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -74,8 +75,9 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows |
 | **RAM (full pipeline)** | **~1.28 GB** | Stable under load |
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `vagrant destroy` |
-| **Plugin Loader** | **ADR-023 PHASE 2 COMPLETE (5/5)** | 2a+2b+2c+2d+2e — TEST-INTEG-4a+4b+4c+4e PASSED |
-| **Test suite** | **25/25 + 4a 3/3 + 4b + 4c 3/3 + 4e 3/3** | DAY 112 |
+| **Plugin Loader** | **ADR-023 PHASE 2 COMPLETE (5/5)** | 2a+2b+2c+2d+2e — 12/12 INTEG tests PASSED |
+| **Plugin Integrity** | **ADR-025 MERGED — v0.3.0-plugin-integrity** | Ed25519 + TOCTOU-safe dlopen, 7/7 SIGN tests |
+| **Test suite** | **25/25 + 4a 3/3 + 4b + 4c 3/3 + 4d 3/3 + 4e 3/3 + SIGN-1..7** | DAY 114 |
 
 ---
 
@@ -148,47 +150,59 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | HMAC-SHA256 log integrity | ✅ All CSV logs |
 | Autonomous blocking (ipset/iptables) | ✅ Millisecond response |
 | Fail-closed design (std::terminate) | ✅ All 6 main() functions |
+| Async-signal-safe handlers (DEBT-SIGNAL-001) | ✅ write(STDERR_FILENO), verified via objdump |
+| std::atomic shutdown_called_ (DEBT-SIGNAL-002) | ✅ DAY 114 |
 | D8-pre bidireccional (FIX-C + FIX-D) | ✅ NORMAL+nullptr→terminate, 64KB hard limit |
-| Plugin Loader PHASE 2a (firewall) | ✅ NORMAL contract, TEST-INTEG-4a PASSED |
+| Plugin Loader PHASE 2a (firewall) | ✅ NORMAL contract, TEST-INTEG-4a 3/3 |
 | Plugin Loader PHASE 2b (rag-ingester) | ✅ READONLY contract, TEST-INTEG-4b PASSED |
 | Plugin Loader PHASE 2c (sniffer) | ✅ NORMAL + payload real, TEST-INTEG-4c 3/3 |
-| Plugin Loader PHASE 2d (ml-detector) | ✅ NORMAL post-inference, DAY 111 |
-| Plugin Loader PHASE 2e (rag-security) | ✅ READONLY contract, TEST-INTEG-4e 3/3, DAY 112 |
-| ADR-030 AppArmor-Hardened variant | ✅ BACKLOG — producción ARM64/x86, post-PHASE 3 |
-| ADR-031 seL4/Genode research | ✅ BACKLOG — investigación pura, spike GO/NO-GO obligatorio |
+| Plugin Loader PHASE 2d (ml-detector) | ✅ NORMAL post-inference, TEST-INTEG-4d 3/3 DAY 114 |
+| Plugin Loader PHASE 2e (rag-security) | ✅ READONLY contract, TEST-INTEG-4e 3/3 |
+| Plugin integrity Ed25519 (ADR-025) | ✅ MERGED main — v0.3.0-plugin-integrity — SIGN-1..7 |
 | ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS anti-poisoning |
 | ADR-029 async-signal-safe pattern | ✅ Documented, g_plugin_loader global |
-| Plugin integrity via Ed25519 (ADR-025) | ❌ Approved, pending post-PHASE 2 |
-| Dynamic group key agreement (ADR-024) | ❌ Design approved, post-PHASE 2 |
+| ADR-030 AppArmor-Hardened variant | ⏳ BACKLOG — post-PHASE 3, ARM64/x86 |
+| ADR-031 seL4/Genode research | ⏳ BACKLOG — spike GO/NO-GO obligatorio |
+| ADR-032 Plugin Distribution Chain (HSM) | ⏳ APROBADO — YubiKey OpenPGP Ed25519, post-PHASE 3 |
+| ADR-033 TPM Measured Boot | ⏳ PROPUESTO — post-ADR-032 |
+| Dynamic group key agreement (ADR-024) | ⏳ Design approved, post-PHASE 3 |
 | provision.sh reproducible (destroy→6/6) | ✅ DAY 108 |
 
 ---
 
 ## 🗺️ Roadmap
 
-### ✅ DONE — DAY 111
-- [x] FIX-C: D8-pre inverso — PLUGIN_MODE_NORMAL + nullptr → std::terminate()
-- [x] FIX-D: MAX_PLUGIN_PAYLOAD_SIZE 64KB hard limit
-- [x] TEST-INTEG-4c: 3/3 PASSED (NORMAL payload real, D8 VIOLATION, result_code error)
-- [x] PHASE 2d: ml-detector invoke_all post-inferencia
-- [x] ADR-029: g_plugin_loader + async-signal-safe (rag-security pattern)
-- [x] PHASE 2e: rag-security READONLY contract + TEST-INTEG-4e 3/3 PASSED
-- [x] ADR-030: AppArmor-Hardened variant (BACKLOG, post-PHASE 3)
-- [x] ADR-031: seL4/Genode research variant (BACKLOG, spike obligatorio)
+### ✅ DONE — DAY 114
+- [x] ADR-025: Plugin Integrity Ed25519 + TOCTOU-safe dlopen — **MERGED main** 🎉
+- [x] Tag: **v0.3.0-plugin-integrity**
+- [x] TEST-INTEG-4d: ml-detector PHASE 2d, 3/3 PASSED
+- [x] DEBT-SIGNAL-001/002: async-signal-safe handlers + atomic<bool>
+- [x] arXiv Replace v15 submitted (Draft v15 — Glasswing paragraph revised)
+- [x] ADR-032: Plugin Distribution Chain (YubiKey HSM) — APROBADO por Consejo
+- [x] PHASE 3 branch opened: `feature/phase3-hardening`
+
+### ✅ DONE — DAY 111–113
+- [x] FIX-C/D: D8-pre bidireccional + MAX_PLUGIN_PAYLOAD_SIZE
+- [x] TEST-INTEG-4c/4e: 3/3 PASSED
+- [x] PHASE 2d/2e: ml-detector + rag-security plugin integration
+- [x] ADR-029/030/031 documented
 - [x] **arXiv:2604.04952 [cs.CR] PUBLICADO** 🎉
 
-### 🔜 NEXT — DAY 112
-- [ ] PHASE 2e: rag-security (ADR-029 D1-D5) + TEST-INTEG-4e
-- [ ] arXiv Replace v13 (pending Consejo Q3-112)
+### 🔜 NEXT — PHASE 3 (feature/phase3-hardening)
+- [ ] systemd units: Restart=always, RestartSec=5s, unset LD_PRELOAD
+- [ ] DEBT-SIGN-AUTO: automated idempotent plugin signing (build-time only)
+- [ ] DEBT-HELLO-001: BUILD_DEV_PLUGINS=OFF + JSON production clean
+- [ ] TEST-PROVISION-1: CI gate (vagrant destroy → 6/6 RUNNING)
+- [ ] AppArmor profiles: 6 components + deny write /usr/bin/ml-defender-*
+- [ ] DEBT-ADR025-D11: provision.sh --reset (deadline 18 Apr)
 
-### P1 — feature/plugin-crypto (active branch)
-- [ ] ADR-025 — Plugin Integrity Verification (Ed25519 + TOCTOU-safe dlopen)
-- [ ] ADR-024 — Dynamic Group Key Agreement (Noise_IKpsk3)
-
-### P2 — Post-PHASE 2
+### P3 — Post-PHASE 3
+- [ ] ADR-032 Fase A: manifest JSON format + multi-key loader + revocation
+- [ ] ADR-032 Fase B: YubiKey OpenPGP signing (hardware acquisition)
+- [ ] ADR-030 activation: AppArmor enforcing + Raspberry Pi hardware
+- [ ] ADR-031 spike: seL4/Genode (2–3 weeks)
+- [ ] ADR-033: TPM 2.0 Measured Boot (proposed)
 - [ ] BARE-METAL stress test
-- [ ] DEBT-FD-001 — Fast Detector → JSON thresholds
-- [ ] TEST-PROVISION-1 — CI gate: vagrant destroy → 6/6 RUNNING
 
 ---
 
@@ -218,7 +232,7 @@ Seven large language models serve as intellectual co-reviewers across all develo
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Parallel.ai**
 
-Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §5 (Consejo de Sabios / Test-Driven Hardening).
+Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §6 (Consejo de Sabios / Test-Driven Hardening).
 
 ---
 
@@ -227,9 +241,12 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 106: Paper Draft v11 + arXiv SUBMITTED (submit/7438768)
 - ✅ DAY 107: MAC failure root cause resolved
 - ✅ DAY 108: provision.sh reproducible · ADR-026/027 committed
-- ✅ DAY 109: PHASE 2b CLOSED · D8-light READ-ONLY · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
-- ✅ DAY 110: PluginMode + PHASE 2c CLOSED · TEST-INTEG-4b · Paper v13 · 6/6 RUNNING
-- ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉 · FIX-C/D · TEST-INTEG-4c · PHASE 2d · ADR-029
+- ✅ DAY 109: PHASE 2b CLOSED · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
+- ✅ DAY 110: PluginMode + PHASE 2c CLOSED · Paper v13 · 6/6 RUNNING
+- ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉 · FIX-C/D · PHASE 2d · ADR-029
+- ✅ DAY 112: PHASE 2e CLOSED · TEST-INTEG-4e 3/3 · ADR-030/031 documented
+- ✅ DAY 113: ADR-025 IMPLEMENTED · 11/11 tests · Paper v14
+- ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · TEST-INTEG-4d · Signal safety · arXiv v15 · ADR-032 APROBADO
 
 ---
 

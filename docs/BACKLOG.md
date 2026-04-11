@@ -104,6 +104,10 @@ DOI: https://doi.org/10.48550/arXiv.2604.04952
 | ADR-031 spike | seL4/Genode técnico (2–3 semanas) | post-ADR-030 |
 | ADR-026 | Fleet telemetry + XGBoost + BitTorrent distribution | diferido: construir sobre buenos andamios |
 | ADR-024 impl | Noise_IKpsk3 dynamic key agreement | FASE 3 post-PHASE 3 |
+| ADR-032 Fase A | Plugin Distribution Chain: formato manifest JSON + multi-key loader + revocación | DAY 114, Consejo ADR-032 |
+| ADR-032 Fase B | Plugin Distribution Chain: YubiKey OpenPGP (2× unidades) + firma HSM | post-ADR-032-A + hardware |
+| ADR-033 | Platform Integrity: TPM 2.0 Measured Boot | propuesto DAY 114 |
+| DEBT-CLI-001 | ml-defender verify-plugin --bundle CLI tool | Qwen, Consejo ADR-032 |
 | BARE-METAL-IMAGE | Imagen Debian Bookworm hardened exportable a USB | P3 |
 | BARE-METAL stress | tcpreplay 100/250/500/1000 Mbps en NIC físico | P3 |
 | DEBT-FD-001 | Fast Detector Path A → JSON thresholds | DAY 80 |
@@ -151,6 +155,9 @@ ADR-024 Noise_IKpsk3 impl:            ░░░░░░░░░░░░░░
 BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado hardware
 DEBT-FD-001 (JSON thresholds):        ████░░░░░░░░░░░░░░░░  20% 🟡
 TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  PHASE 3
+ADR-032 Fase A (manifest+multikey):   ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 3
+ADR-032 Fase B (YubiKey HSM):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-ADR-032-A + hardware
+ADR-033 (TPM measured boot):          ░░░░░░░░░░░░░░░░░░░░   0% ⏳  propuesto
 ```
 
 ---
@@ -169,6 +176,10 @@ TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░
 | ADR-030 AppArmor-Hardened | variante producción, denegar write /usr/bin/ml-defender-* incluso para root | 112+113 |
 | ADR-031 seL4/Genode | investigación pura, spike GO/NO-GO obligatorio | 112 |
 | ADR-026 timing | diferido — construir sobre buenos andamios primero (PHASE 3) | 113 |
+| ADR-032 autoridad de firma | Clave privada NUNCA en disco producción. YubiKey OpenPGP Ed25519 (no PIV). 2 unidades. Multi-key en loader. | 114 |
+| ADR-032 formato .sig | JSON embebido: manifest + firma Ed25519 cubre sha256(so) + sha256(manifest) | 114 |
+| ADR-032 customer_id | Control lógico, no barrera criptográfica fuerte. Documentado explícitamente. | 114 |
+| ADR-033 TPM | ADR separado. No mezclar con distribución de plugins. | 114 |
 
 ---
 
@@ -217,8 +228,13 @@ make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
 > Incidente DAY 114: pipeline no arrancó tras rebuild — causa: libplugin_hello.so
 > no desplegado ni firmado. ADR-025 fail-closed funcionó correctamente.
 > DEBT-SIGN-AUTO y DEBT-OPS-001/002 registrados."
+> DAY 114 — ADR-032 APROBADO (Plugin Distribution Chain):
+> "YubiKey OpenPGP (no PIV) para Ed25519 — corrección técnica crítica.
+> Formato .sig embebido (opción B, 4/5). Multi-key en loader desde día 1.
+> customer_id como control lógico documentado. Revocación: revocation.json firmado offline.
+> ADR-033 propuesto (TPM measured boot, separado). Soberanía open-source documentada.
+> Dos YubiKeys obligatorios (principal + backup). DEBT-CLI-001 registrado."
 > — Claude (Anthropic) · DAY 114
-
 ---
 
 *Última actualización: DAY 114 — 11 Apr 2026*
@@ -227,4 +243,5 @@ make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
 *Paper: Draft v15 ✅ · arXiv Replace v15: submitted (submit/7467190) ✅*
 *Pipeline: 6/6 RUNNING ✅*
 *ADR-025: MERGEADO main ✅ · Tag: v0.3.0-plugin-integrity*
+*ADR-032: APROBADO ✅ · ADR-033: PROPUESTO ⏳*
 *PHASE 2: ✅ COMPLETA · PHASE 3: ⏳ EN CURSO*
