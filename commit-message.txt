@@ -1,17 +1,15 @@
-cd /Users/aironman/CLionProjects/test-zeromq-docker && \
-cp /path/to/downloads/README.md . && \
-cp /path/to/downloads/BACKLOG.md . && \
-cp /path/to/downloads/DAY110_prompt.md docs/ && \
-cp /path/to/downloads/CONSEJO_DAY109_prompt.md docs/ && \
-git add README.md BACKLOG.md docs/DAY110_prompt.md docs/CONSEJO_DAY109_prompt.md && \
-git commit -m "docs(day109): BACKLOG + README + DAY110 prompt + Consejo DAY109
+docs: ADR-032 APROBADO -- Plugin Distribution Chain HSM signing
 
-README: badge PHASE 2b, threat model scope section, Integration Philosophy,
-security table actualizada, roadmap PHASE 2c/2d/2e.
-BACKLOG: DAY 109 completado, PHASE 2b cerrada, estado global actualizado,
-decisiones de diseño consolidadas (MLD_ALLOW_UNCRYPTED, D8-light READ-ONLY,
-integration protocol, threat model scope).
-docs/DAY110_prompt.md: continuidad para mañana.
-docs/CONSEJO_DAY109_prompt.md: 4 preguntas (D8-light flag, PHASE 2c contrato,
-Integration Philosophy justificación, ADR-028 timing)." && \
-git push origin feature/plugin-crypto
+- YubiKey OpenPGP (no PIV) + Ed25519 -- correccion tecnica Consejo
+- Formato .sig JSON embebido (opcion B unanime)
+- Multi-key support en loader desde dia 1
+- customer_id como control logico documentado
+- Revocacion: revocation.json firmado offline
+- ADR-033 propuesto: TPM measured boot (separado)
+- Soberania open-source documentada
+
+docs: DAY 114 cierre -- README + ADR-032 + prompt DAY 115 v2
+
+- README: badges, milestones, security properties actualizados
+- ADR-032: Plugin Distribution Chain APROBADO (YubiKey OpenPGP)
+- Prompt DAY 115: PHASE 3 + roadmap post-PHASE 3 (ADR-024, stress, etcd refactor)

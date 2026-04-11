@@ -1,180 +1,194 @@
-# ML Defender (aRGus NDR) — DAY 114 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 115 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
-## Estado al cierre de DAY 113
+## Estado al cierre de DAY 114
 
 ### Hitos del día
-**ADR-025 Plugin Integrity Verification: IMPLEMENTADO ✅**
-Ed25519 offline signing + TOCTOU-safe dlopen. 7/7 SIGN tests PASSED.
-make test: 11/11 PASSED (4a+4b+4c+4e+SIGN-1..7).
-Rama: feature/plugin-integrity-ed25519. Commits: eb2c88d9, a3819bc3, 1eb40e8b.
-PENDIENTE DE MERGE: condicionado a TEST-INTEG-4d + signal safety review.
+**ADR-025 Plugin Integrity Verification: MERGEADO A MAIN ✅**
+Tag: v0.3.0-plugin-integrity. 12/12 tests PASSED.
+DEBT-SIGNAL-001/002 resueltos. TEST-INTEG-4d implementado y PASSED.
+Commits: 65a29034 (merge), a16a0795 (docs+backlog), commit final README+ADR-032.
 
-**Paper Draft v14: COMPILACIÓN LIMPIA ✅**
-Glasswing/Mythos integrado. Párrafo revisado pendiente de aplicar (ver abajo).
-arXiv Replace v13 pendiente: Scholar bloqueó verificación por rate limit.
+**arXiv Replace v15 SUBMITTED ✅**
+submit/7467190. Draft v15. Párrafo Glasswing revisado.
 
-**Consejo DAY 113: ACTAS CERRADAS ✅**
-5 miembros respondieron. Veredictos definitivos del árbitro registrados.
+**ADR-032 Plugin Distribution Chain: APROBADO por Consejo ✅**
+YubiKey OpenPGP Ed25519 (NO PIV — corrección técnica crítica).
+Formato .sig embebido (Opción B, 4/5). Multi-key en loader. Revocación offline.
+Docs: docs/adr/ADR-032-plugin-distribution-chain.md
 
----
-
-## Veredictos árbitro DAY 113 (DEFINITIVOS)
-
-**Q1 — Merge feature/plugin-integrity-ed25519 → main:**
-CONDICIONADO. Dos condiciones bloqueantes antes del merge:
-1. TEST-INTEG-4d (ml-detector + plugin-loader) — verificar si existe o implementar
-2. Async-signal-safety de shutdown() en plugin_loader.cpp — revisar y documentar
-   Una vez ambas en verde → merge autorizado.
-
-**Q2 — provision.sh --reset (D11):**
-P1 post-merge. Deadline: 7 días naturales tras el merge.
-Registrado en BACKLOG como DEBT-ADR025-D11.
-
-**Q3 — Siguiente prioridad:**
-PHASE 3 (pipeline hardening) UNÁNIME. Sin discusión.
-ADR-026 (Fleet/XGBoost/BitTorrent) diferido — construir sobre buenos andamios.
-
-**Q4 — DEBT-TOOLS-001:**
-SUBIDO A P2. Los synthetic injectors son tabla de salvación TDH, no solo
-herramientas de rendimiento. Ayudan a encontrar errores de implementación
-en PCAP replay. Sin PluginLoader integrado, los stress tests ejercitan un
-sistema distinto al de producción. Antes del próximo PCAP replay.
-
-**Q5 — Párrafo Glasswing/Mythos:**
-Texto revisado ADOPTADO. Aplicar en Overleaf antes de arXiv Replace v13.
-Texto exacto para sustituir el párrafo actual en §Related Work:
-
-\paragraph{AI-native security reasoning and the evolving threat landscape.}
-This paper was written and submitted in April 2026, concurrent with the
-announcement of Anthropic's Project Glasswing~\cite{anthropic2026glasswing},
-which demonstrated that AI models can autonomously identify and chain
-kernel-level vulnerabilities --- including local privilege escalation to
-root in Linux --- at a scale and speed previously requiring specialized
-human expertise. These results represent a shift in the threat landscape:
-AI-augmented offensive capabilities are no longer theoretical.
-This directly motivates the explicit kernel security boundary axiom in
-\S\ref{sec:threatmodel:kernel}: aRGus NDR assumes the kernel as a
-potentially compromised boundary and shifts its trust anchor to
-verifiable network behavioral patterns. The network remains an observable
-chokepoint even when the host is not. The hardened deployment variants
-ADR-030 (AppArmor) and ADR-031 (seL4) documented in
-\S\ref{sec:future:hardened} are a direct architectural response to this
-trajectory.
-
-**Observación ChatGPT-5 RECHAZADA (registrada como posición de minoría):**
-ChatGPT-5 sugirió fail-isolated (skip plugin sin matar proceso). Rechazado
-por el árbitro. Filosofía del proyecto: todo o nada. Un componente con plugin
-comprometido no arranca — en un pipeline que salva vidas, no arrancar
-es preferible a arrancar comprometido. Se repara rápido y se relanza.
-
-**Observación Gemini ACEPTADA → incorporada a spec PHASE 3:**
-AppArmor en PHASE 3 debe denegar acceso de escritura a los binarios
-/usr/bin/ml-defender-* incluso para root, protegiendo la clave pública
-hardcodeada contra hex-edit.
+**PHASE 3 abierta: feature/phase3-hardening ✅**
 
 ---
 
-## Orden DAY 114
+## Veredictos árbitro DAY 114 (DEFINITIVOS)
 
-Memoria actualizada. El prompt de continuidad DAY 114 queda así con el PASO 0 al frente:
+### Consejo DAY 114 — Q1-Q4 (PHASE 3)
+Ver síntesis en docs/counsil/
+
+**Orden PHASE 3 DEFINITIVO:**
+1. systemd units (Restart=always, RestartSec=5s, unset LD_PRELOAD)
+2. DEBT-SIGN-AUTO (firma build-time ÚNICAMENTE, nunca en producción hot)
+3. DEBT-HELLO-001 (BUILD_DEV_PLUGINS=OFF + JSON limpios + validate-prod-configs)
+4. TEST-PROVISION-1 (CI gate)
+5. AppArmor profiles (6 componentes + denegar write /usr/bin/ml-defender-* para root)
+6. DEBT-ADR025-D11 (provision.sh --reset — **deadline 18 Apr, NO SE MUEVE**)
+
+**DEBT-SIGN-AUTO restricción de seguridad crítica:**
+Firma automática SOLO en build/provision time con artefactos recién compilados.
+NUNCA firmar automáticamente en producción — solo verificar.
+
+### Consejo ADR-032
+Ver síntesis en docs/counsil/
+**Corrección técnica crítica:** YubiKey PIV NO soporta Ed25519. Usar applet OpenPGP.
 
 ---
 
-**PASO 0 — URGENTE: Rebuild del pipeline (HACER ESTO PRIMERO)**
+## PASO 0 — Verificación de estabilidad del pipeline (SIEMPRE PRIMERO)
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-grep -n "pipeline-build\|build-all\|all-build" Makefile | head -10
+git checkout feature/phase3-hardening
+git pull origin feature/phase3-hardening
+make pipeline-stop
+make pipeline-build 2>&1 | tail -5
+vagrant ssh -c "ls -la /usr/lib/ml-defender/plugins/"
+# Esperar: .so + .sig para CADA plugin en JSON configs
+make sign-plugins
+vagrant ssh -c "grep -h 'libplugin' /vagrant/*/config/*.json 2>/dev/null | sort -u"
+# Verificar que CADA plugin referenciado tiene .so + .sig
+make pipeline-start && make pipeline-status
+# Esperar: 6/6 RUNNING
+make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
+# Esperar: 12/12 PASSED
 ```
 
-```bash
-make pipeline-build 2>&1 | tail -30
-```
-
-```bash
-make pipeline-status
-```
-
-**Causa conocida:** al cambiar `libplugin_loader.so` (ADR-025, añadir libsodium), los binarios de los 6 componentes quedaron obsoletos pero no se recompilaron. `firewall-acl-agent/build/firewall_acl_agent` no existe. El rebuild debería resolverlo limpiamente.
-
-Si `make pipeline-build` no existe como target, buscar el equivalente con el grep de arriba antes de ejecutar nada más.
+**Solo si 6/6 RUNNING y 12/12 PASSED se continúa.**
 
 ---
 
-Todo lo demás del orden DAY 114 (TEST-INTEG-4d, signal safety, merge, paper) viene después de confirmar el pipeline verde.
+## Orden DAY 115
 
-Descansa bien. Hasta mañana. 🛡️
+### TAREA PRIORITARIA DAY 115: Sesión Consejo ADR-024
 
-### PASO 1 — Verificar estado base
+**ADR-024 (Noise_IKpsk3 P2P) tiene 4 preguntas abiertas sin resolver desde DAY 104:**
+- OQ-5: revocación de clave estática
+- OQ-6: continuidad de sesión durante rotación de clave
+- OQ-7: replay protection
+- OQ-8: rendimiento en ARMv8
+
+**Antes de implementar ADR-024, lanzar sesión específica al Consejo con estas 4 preguntas.**
+Generar el documento de consulta, lanzarlo a los 7 modelos, sintetizar veredictos, actualizar ADR-024.
+
 ```bash
-cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout feature/plugin-integrity-ed25519
-git pull origin feature/plugin-integrity-ed25519
-make plugin-integ-test
+# Revisar ADR-024 actual:
+cat /Users/aironman/CLionProjects/test-zeromq-docker/docs/adr/ADR-024*.md
 ```
 
-### PASO 2 — Condición bloqueante 1: TEST-INTEG-4d
-Verificar si existe test_integ_4d.cpp para ml-detector:
-```bash
-ls plugins/test-message/test_integ_4d.cpp 2>/dev/null || echo "NO EXISTE"
-grep -n "4d\|TEST-INTEG-4d" Makefile | head -10
-```
-Si no existe: implementar siguiendo el patrón de test_integ_4c.cpp
-(tres casos: NORMAL con payload, D8 VIOLATION campo read-only, result_code=-1 no crash)
-para validar ml-detector + plugin-loader integration.
+### PASO 1 — systemd units (PHASE 3, ítem 1)
 
-### PASO 3 — Condición bloqueante 2: async-signal-safety
-Revisar plugin_loader.cpp shutdown() — verificar que solo hace operaciones
-async-signal-safe (write(), close(), cambio de atomic<bool>).
-ADR-029 D2-D5 ya establecen las reglas; verificar cumplimiento.
-
-### PASO 4 — Merge (si PASO 2 y 3 en verde)
+Verificar si existen:
 ```bash
-git checkout main
-git pull origin main
-git merge feature/plugin-integrity-ed25519
-git tag v0.3.0-plugin-integrity
-git push origin main --tags
+vagrant ssh -c "ls /etc/systemd/system/ml-defender* 2>/dev/null || echo 'NO EXISTEN'"
+find /Users/aironman/CLionProjects/test-zeromq-docker -name "*.service" 2>/dev/null
 ```
 
-### PASO 5 — Paper: aplicar párrafo revisado Glasswing en Overleaf
-Sustituir el párrafo actual en §Related Work con el texto del Q5 arriba.
-Compilar → Draft v14 FINAL.
-Verificar indexación arXiv:2604.04952 en Scholar → subir Replace v13 si indexado.
+Crear para los 6 componentes con:
+- `Restart=always`
+- `RestartSec=5s`
+- `Environment="LD_PRELOAD="` (unset explícito)
+- Capabilities mínimas necesarias
 
-### PASO 6 — Abrir rama PHASE 3
-```bash
-git checkout -b feature/phase3-hardening
-git push -u origin feature/phase3-hardening
+### PASO 2 — DEBT-SIGN-AUTO (PHASE 3, ítem 2)
+
+provision.sh check-plugins:
+- Solo en provisioning: firmar plugins recién compilados sin .sig
+- En producción: SOLO verificar, nunca firmar
+- Idempotente: si ya firmado con clave actual → skip
+- Integrar en Makefile (check-and-sign-plugins target antes de pipeline-start)
+
+### PASO 3 — DEBT-HELLO-001 (PHASE 3, ítem 3)
+
+```cmake
+option(BUILD_DEV_PLUGINS "Build development plugins" OFF)
+if(BUILD_DEV_PLUGINS)
+    add_subdirectory(plugins/hello)
+endif()
 ```
-Scope inicial PHASE 3:
-- systemd units: Restart=always, RestartSec=5s, unset LD_PRELOAD (ADR-025 D10)
-- AppArmor profiles básicos para los 6 componentes
-  - Incluir: denegar escritura en /usr/bin/ml-defender-* incluso para root
-- CI gate: TEST-PROVISION-1 como gate formal
-- DEBT-ADR025-D11: provision.sh --reset (P1, deadline 7 días)
+
+```bash
+# make validate-prod-configs:
+# Falla si algún JSON de producción referencia libplugin_hello
+grep -r "libplugin_hello" */config/
+```
 
 ---
 
-## Deuda pendiente (priorizada)
+## Roadmap post-PHASE 3 (REGISTRADO DAY 114)
 
-P0 (bloqueante merge):
-- TEST-INTEG-4d ml-detector + plugin-loader
-- Async-signal-safety review shutdown()
+**Este roadmap está acordado y debe reflejarse en BACKLOG y README tras completar PHASE 3.**
 
-P1 (post-merge, deadline 7 días):
-- DEBT-ADR025-D11: provision.sh --reset
+### Bloque A — ADR-024 Noise_IKpsk3 (P2P cifrado sin HA)
 
-P2 (antes del próximo PCAP replay):
-- DEBT-TOOLS-001: synthetic injectors integrar PluginLoader + plugins firmados
+**Contexto:** ADR-024 implementa canal cifrado directo entre componentes via
+Noise Protocol Framework (Noise_IKpsk3 o Noise_KK). Modo simple, sin HA,
+sin etcd en el hot path para cifrado.
 
-P3:
-- REC-2: noclobber + check 0-bytes CI
-- DEBT-SNIFFER-SEED: unificar sniffer bajo SeedClient
-- ADR-030 activación: post-PHASE 3 + hardware Pi
-- ADR-031 spike técnico: post-ADR-030
+**Precondición:** OQ-5/6/7/8 resueltas por Consejo (DAY 115).
+
+**Orden:**
+1. Sesión Consejo OQ-5..8 → veredictos árbitro
+2. Implementación ADR-024 en rama feature/adr024-noise-p2p
+3. Tests de integración E2E cifrado P2P
+
+### Bloque B — Stress test CTU-13 Neris con pipeline real
+
+**Precondición:** PHASE 3 completa + DEBT-TOOLS-001 resuelto.
+
+**DEBT-TOOLS-001 CRÍTICO:** Los synthetic injectors en tools/ deben integrar
+PluginLoader + plugins firmados (Ed25519) ANTES del stress test.
+Sin esto, el stress test ejercita un sistema distinto al de producción.
+
+```
+tools/synthetic_sniffer_injector.cpp     → integrar PluginLoader
+tools/synthetic_ml_output_injector.cpp   → integrar PluginLoader
+tools/generate_synthetic_events.cpp      → integrar PluginLoader
+```
+
+**Orden:**
+1. DEBT-TOOLS-001: refactorizar injectors con PluginLoader + plugins firmados
+2. make sign-plugins (firmar plugins para stress test)
+3. Stress test CTU-13 Neris con pipeline real (6/6 + plugins)
+4. Verificar F1 = 0.9985 se mantiene con plugins activos
+5. Stress test con bigFlows (throughput ceiling)
+
+### Bloque C — Refactoring etcd legacy
+
+**Contexto:** etcd-server y etcd-client tienen actualmente dos roles:
+1. Distribución de JSON configs (MANTENER)
+2. Intermediario de cifrado / semillas (DEPRECAR → reemplazar por ADR-024)
+
+**Arquitectura objetivo:**
+```
+etcd-server: SOLO para
+  - Distribución de JSON configs
+  - Registro heartbeat de componentes
+  - Seed distribution (mientras no haya ADR-032 Fase B)
+
+Componentes entre sí: ZeroMQ + Noise_IKpsk3 (ADR-024)
+  - Sin etcd en el hot path
+  - Sin legacy etcd-client en la lógica de cifrado
+```
+
+**Precondición:** ADR-024 implementado y validado (Bloque A completo).
+
+**Orden:**
+1. Identificar todo el código legacy etcd-client en los 6 componentes
+2. Crear rama feature/refactor-etcd-legacy
+3. Migrar cifrado de canal a ADR-024
+4. Mantener etcd solo para config distribution + heartbeat
+5. Tests de regresión completos (F1 + stress)
 
 ---
 
@@ -182,35 +196,50 @@ P3:
 
 ### Proyecto
 - **aRGus NDR (ML Defender)**: C++20 NDR para hospitales, escuelas, municipios
-- **arXiv**: arXiv:2604.04952 [cs.CR] — PUBLICADO 3 Apr 2026 ✅
-- **Branch activa**: feature/plugin-integrity-ed25519 (pendiente merge)
+- **arXiv**: arXiv:2604.04952 [cs.CR] — PUBLICADO + Replace v15 submitted ✅
+- **Branch activa**: feature/phase3-hardening
 - **Repositorio**: https://github.com/alonsoir/argus
+- **Tag estable**: v0.3.0-plugin-integrity (main)
+
+### Regla de oro del pipeline
+**Estable = 6/6 RUNNING + 12/12 plugin-integ-test PASSED**
+**+ ls /usr/lib/ml-defender/plugins/ muestra .so + .sig para CADA plugin en JSON configs**
+Tras cualquier cambio en libplugin_loader.so o plugins:
+stop → build → sign → verify → start → status → plugin-integ-test
 
 ### ADR-025 keypair dev
 - Private key: /etc/ml-defender/plugins/plugin_signing.sk (VM only)
 - MLD_PLUGIN_PUBKEY_HEX: b824bcd7a14f6e19a0d8c9be86110828060e600723d12e118dccc95c862c8468
-- Firmar plugins: make sign-plugins
+- Firmar: make sign-plugins
+
+### DEBT-ADR025-D11 deadline
+provision.sh --reset — **deadline 18 Apr 2026**. No negociable.
+
+### Deuda activa PHASE 3 (orden definitivo)
+1. systemd units ← DAY 115 PASO 1
+2. DEBT-SIGN-AUTO ← DAY 115 PASO 2
+3. DEBT-HELLO-001 ← DAY 115 PASO 3
+4. TEST-PROVISION-1
+5. AppArmor profiles
+6. DEBT-ADR025-D11 (deadline 18 Apr)
+
+### Roadmap post-PHASE 3 (acordado DAY 114)
+A. ADR-024 Noise_IKpsk3 P2P (OQ-5..8 → Consejo DAY 115 mañana)
+B. DEBT-TOOLS-001 + Stress test CTU-13 Neris con pipeline real
+C. Refactoring etcd legacy (etcd = solo config + heartbeat)
 
 ### Patrón robusto para scripts en VM (NUNCA sed -i en macOS)
 cat > /tmp/script.py << 'PYEOF' → vagrant upload → vagrant ssh -c 'sudo python3 /tmp/script.py'
 
 ### Consejo de Sabios (7 miembros)
 Claude, Grok, ChatGPT, DeepSeek, Qwen (Alibaba), Gemini, Parallel.ai.
-Qwen se auto-identifica como DeepSeek — 6ª vez, patrón consolidado.
-Parallel.ai no respondió en DAY 113.
+Qwen se auto-identifica como DeepSeek — patrón consolidado.
 
-### PHASE 2 — COMPLETA (condicionada a TEST-INTEG-4d)
-- 2a ✅ firewall        (TEST-INTEG-4a 3/3)
-- 2b ✅ rag-ingester    (TEST-INTEG-4b)
-- 2c ✅ sniffer         (TEST-INTEG-4c 3/3)
-- 2d ⚠️ ml-detector    (TEST-INTEG-4d PENDIENTE VERIFICACIÓN)
-- 2e ✅ rag-security    (TEST-INTEG-4e 3/3)
-
-### ADR-025 — IMPLEMENTADO, PENDIENTE MERGE
-11/11 tests PASSED. Merge condicionado a TEST-INTEG-4d + signal safety.
+### PHASE 2 — COMPLETA ✅
+2a+2b+2c+2d+2e. 12/12 tests PASSED.
 
 ### Filosofía core
 "Un escudo, nunca una espada."
 "La verdad por delante, siempre."
-Fail-closed: todo o nada. Un componente comprometido = pipeline no arranca.
-En un sistema que salva vidas, no arrancar es preferible a arrancar comprometido.
+Fail-closed. PHASE 3: operación segura, no solo seguridad.
+ADR-032: la autoridad de firma y el servidor de producción NO comparten dominio de confianza.
