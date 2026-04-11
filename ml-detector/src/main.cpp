@@ -1,5 +1,6 @@
 #include <iostream>
 #include <csignal>
+#include <unistd.h>
 #include <atomic>
 #include <thread>
 #include <chrono>
@@ -32,7 +33,9 @@ static std::atomic<bool> shutdown_requested(false);
 
 void signal_handler(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
-        std::cout << "\n🛑 Shutdown signal received..." << std::endl;
+        // async-signal-safe: write() only (DEBT-SIGNAL-001)
+        static const char msg[] = "\n[Signal] Shutdown signal received\n";
+        write(STDERR_FILENO, msg, sizeof(msg) - 1);
         shutdown_requested.store(true);
     }
 }

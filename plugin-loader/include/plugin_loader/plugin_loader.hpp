@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 // ============================================================================
 // plugin_loader.hpp — ML Defender Plugin Loader Interface
 // ============================================================================
@@ -71,7 +72,7 @@ private:
     std::vector<PluginStats>                   stats_;
     std::string                                config_path_;
     uint32_t                                   budget_us_ = 100; // default: 100µs
-    bool                                       shutdown_called_ = false;
+    std::atomic<bool>                          shutdown_called_{false};
 };
 
 }  // namespace ml_defender

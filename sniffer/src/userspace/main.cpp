@@ -188,7 +188,10 @@ std::shared_ptr<sniffer::ThreadManager> thread_manager = nullptr;
 // ============================================================================
 
 void signal_handler(int signum) {
-    std::cout << "\n[Signal] Received signal " << signum << " - initiating graceful shutdown..." << std::endl;
+    // async-signal-safe: write() only (DEBT-SIGNAL-001)
+    static const char msg[] = "\n[Signal] Shutdown signal received\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    (void)signum;
     g_running = false;
 }
 

@@ -340,10 +340,13 @@ plugin-integ-test:
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4b /vagrant/plugins/test-message/test_integ_4b.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4b && echo TEST-INTEG-4b PASSED || echo TEST-INTEG-4b FAILED'
 	@echo "TEST-INTEG-4c: plugin NORMAL contract (sniffer PHASE 2c)..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4c /vagrant/plugins/test-message/test_integ_4c.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4c && echo TEST-INTEG-4c PASSED || echo TEST-INTEG-4c FAILED'
+	@echo "TEST-INTEG-4d: plugin NORMAL contract (ml-detector PHASE 2d)..."
+	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4d /vagrant/plugins/test-message/test_integ_4d.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4d && echo TEST-INTEG-4d PASSED || echo TEST-INTEG-4d FAILED'
 	@echo "TEST-INTEG-4e: rag-security READONLY + ADR-029 D1-D5..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_4e /vagrant/plugins/test-message/test_integ_4e.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_integ_4e && echo TEST-INTEG-4e PASSED || echo TEST-INTEG-4e FAILED'
 	@echo "TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_sign /vagrant/plugins/test-message/test_integ_sign.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_sign && echo TEST-INTEG-SIGN PASSED || echo TEST-INTEG-SIGN FAILED'
+
 plugin-hello-build: plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
