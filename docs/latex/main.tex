@@ -1,7 +1,7 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v14 — DAY 113 — April 2026
-% Author: Alonso Isidoro Roman
+% Draft v15 — DAY 114 — April 2026
+% % Author: Alonso Isidoro Román
 % Target: cs.CR
 % ============================================================
 
@@ -79,7 +79,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v14 --- April 2026}
+\date{Draft v15 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -255,19 +255,21 @@ in Resource-Constrained Organizations}}
     the \emph{Consejo de Sabios} methodology.
 
     \paragraph{AI-native security reasoning and the evolving threat landscape.}
-    This paper was written and submitted in April 2026, a moment marked by the
-    emergence of AI systems capable of sophisticated reasoning about kernel-level
-    threat models --- including Anthropic's Glasswing project and its Mythos Preview
-    capability~\cite{anthropic2026glasswing}, which demonstrated that AI-assisted security analysis can reason about
-    low-level attack surfaces with a depth previously requiring specialized human
-    expertise. This context directly motivates the explicit kernel security boundary
-    axiom in \S\ref{sec:threatmodel:kernel}: while ML Defender's threat model is
-    calibrated for the realistic adversary profile of its target organizations, the
-    threat landscape is evolving, and kernel-level attack sophistication is increasing.
-    The hardened variants ADR-030 and ADR-031 (\S\ref{sec:future:hardened}) are a
-    direct architectural response to this trajectory. ML Defender is positioned as a
-    network defensive layer that remains valid and effective within its declared scope,
-    complementary to --- not competing with --- deeper host-level security capabilities.
+    This paper was written and submitted in April 2026, concurrent with the
+    announcement of Anthropic's Project Glasswing~\cite{anthropic2026glasswing},
+    which demonstrated that AI models can autonomously identify and chain
+    kernel-level vulnerabilities --- including local privilege escalation to
+    root in Linux --- at a scale and speed previously requiring specialized
+    human expertise. These results represent a shift in the threat landscape:
+    AI-augmented offensive capabilities are no longer theoretical.
+    This directly motivates the explicit kernel security boundary axiom in
+    \S\ref{sec:threatmodel:kernel}: aRGus NDR assumes the kernel as a
+    potentially compromised boundary and shifts its trust anchor to
+    verifiable network behavioral patterns. The network remains an observable
+    chokepoint even when the host is not. The hardened deployment variants
+    ADR-030 (AppArmor) and ADR-031 (seL4) documented in
+    \S\ref{sec:future:hardened} are a direct architectural response to this
+    trajectory.
 % ============================================================
     \section{Threat Model}
 % ============================================================
