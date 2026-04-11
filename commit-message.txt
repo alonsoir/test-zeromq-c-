@@ -1,17 +1,8 @@
-cd /Users/aironman/CLionProjects/test-zeromq-docker && \
-cp /path/to/downloads/README.md . && \
-cp /path/to/downloads/BACKLOG.md . && \
-cp /path/to/downloads/DAY110_prompt.md docs/ && \
-cp /path/to/downloads/CONSEJO_DAY109_prompt.md docs/ && \
-git add README.md BACKLOG.md docs/DAY110_prompt.md docs/CONSEJO_DAY109_prompt.md && \
-git commit -m "docs(day109): BACKLOG + README + DAY110 prompt + Consejo DAY109
+docs: DAY 114 final -- sintesis consejo, prompt DAY 115, BACKLOG v114
 
-README: badge PHASE 2b, threat model scope section, Integration Philosophy,
-security table actualizada, roadmap PHASE 2c/2d/2e.
-BACKLOG: DAY 109 completado, PHASE 2b cerrada, estado global actualizado,
-decisiones de diseño consolidadas (MLD_ALLOW_UNCRYPTED, D8-light READ-ONLY,
-integration protocol, threat model scope).
-docs/DAY110_prompt.md: continuidad para mañana.
-docs/CONSEJO_DAY109_prompt.md: 4 preguntas (D8-light flag, PHASE 2c contrato,
-Integration Philosophy justificación, ADR-028 timing)." && \
-git push origin feature/plugin-crypto
+- BACKLOG: ADR-025 mergeado, PHASE 3 scope, procedimiento estabilidad pipeline
+- Sintesis Consejo DAY 114: Q1-Q4 veredictos, DEBT-SIGN-AUTO security fix
+- Prompt DAY 115: PASO 0 obligatorio + orden PHASE 3 definitivo
+- DEBT-SIGN-AUTO: firma SOLO en build/provision time, NUNCA en produccion hot
+- DEBT-HELLO-001: BUILD_DEV_PLUGINS=OFF + validate-prod-configs
+- Orden PHASE 3: systemd > SIGN-AUTO > HELLO > CI > AppArmor > --reset
