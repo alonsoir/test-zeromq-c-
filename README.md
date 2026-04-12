@@ -11,6 +11,7 @@
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2_COMPLETE_5%2F5-brightgreen)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![ADR-029](https://img.shields.io/badge/ADR--029-async--signal--safe_APPROVED-green)](docs/adr/ADR-029-rag-security-global-plugin-loader-async-signal-safe.md)
+[![PHASE 3](https://img.shields.io/badge/PHASE_3-4%2F6_items_DONE-yellow)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -57,7 +58,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 
 ---
 
-## 📊 Validated Results (DAY 114 — 11 April 2026)
+## 📊 Validated Results (DAY 115 — 12 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -78,6 +79,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Plugin Loader** | **ADR-023 PHASE 2 COMPLETE (5/5)** | 2a+2b+2c+2d+2e — 12/12 INTEG tests PASSED |
 | **Plugin Integrity** | **ADR-025 MERGED — v0.3.0-plugin-integrity** | Ed25519 + TOCTOU-safe dlopen, 7/7 SIGN tests |
 | **Test suite** | **25/25 + 4a 3/3 + 4b + 4c 3/3 + 4d 3/3 + 4e 3/3 + SIGN-1..7** | DAY 114 |
+| **PHASE 3 CI gate** | **TEST-PROVISION-1 PASSED 5/5** | DAY 115 |
 
 ---
 
@@ -153,55 +155,61 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | Async-signal-safe handlers (DEBT-SIGNAL-001) | ✅ write(STDERR_FILENO), verified via objdump |
 | std::atomic shutdown_called_ (DEBT-SIGNAL-002) | ✅ DAY 114 |
 | D8-pre bidireccional (FIX-C + FIX-D) | ✅ NORMAL+nullptr→terminate, 64KB hard limit |
-| Plugin Loader PHASE 2a (firewall) | ✅ NORMAL contract, TEST-INTEG-4a 3/3 |
-| Plugin Loader PHASE 2b (rag-ingester) | ✅ READONLY contract, TEST-INTEG-4b PASSED |
-| Plugin Loader PHASE 2c (sniffer) | ✅ NORMAL + payload real, TEST-INTEG-4c 3/3 |
-| Plugin Loader PHASE 2d (ml-detector) | ✅ NORMAL post-inference, TEST-INTEG-4d 3/3 DAY 114 |
-| Plugin Loader PHASE 2e (rag-security) | ✅ READONLY contract, TEST-INTEG-4e 3/3 |
-| Plugin integrity Ed25519 (ADR-025) | ✅ MERGED main — v0.3.0-plugin-integrity — SIGN-1..7 |
-| ADR-028 RAG Ingestion Trust Model | ✅ APROBADO — FAISS anti-poisoning |
-| ADR-029 async-signal-safe pattern | ✅ Documented, g_plugin_loader global |
-| ADR-030 AppArmor-Hardened variant | ⏳ BACKLOG — post-PHASE 3, ARM64/x86 |
-| ADR-031 seL4/Genode research | ⏳ BACKLOG — spike GO/NO-GO obligatorio |
-| ADR-032 Plugin Distribution Chain (HSM) | ⏳ APROBADO — YubiKey OpenPGP Ed25519, post-PHASE 3 |
-| ADR-033 TPM Measured Boot | ⏳ PROPUESTO — post-ADR-032 |
-| Dynamic group key agreement (ADR-024) | ⏳ Design approved, post-PHASE 3 |
+| Plugin Loader PHASE 2a–2e (all 6 components) | ✅ 12/12 INTEG tests PASSED |
+| Plugin integrity Ed25519 (ADR-025) | ✅ MERGED main — v0.3.0-plugin-integrity |
+| Plugin signing key rotation (DEBT-SIGN-AUTO) | ✅ provision.sh check-plugins dev/prod modes |
+| Dev plugins blocked from production (DEBT-HELLO-001) | ✅ BUILD_DEV_PLUGINS=OFF + validate-prod-configs gate |
+| systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset, min capabilities |
+| CI gate TEST-PROVISION-1 (5 checks) | ✅ pipeline-start dependency — DAY 115 |
+| ADR-028 RAG Ingestion Trust Model | ✅ FAISS anti-poisoning |
+| ADR-024 Noise_IKpsk3 — OQs 5..8 closed | ✅ Design complete, implementation post-PHASE 3 |
+| provision.sh --reset (key rotation) | ⏳ DEBT-ADR025-D11 — deadline 18 Apr 2026 |
+| AppArmor profiles (6 components) | ⏳ PHASE 3 ítem 5 — complain→enforce |
+| ADR-032 Plugin Distribution Chain (HSM) | ⏳ APROBADO — YubiKey OpenPGP Ed25519 |
+| ADR-033 TPM Measured Boot | ⏳ PROPUESTO |
+| Dynamic group key agreement (ADR-024 impl) | ⏳ Post-PHASE 3 |
 | provision.sh reproducible (destroy→6/6) | ✅ DAY 108 |
 
 ---
 
 ## 🗺️ Roadmap
 
-### ✅ DONE — DAY 114
+### ✅ DONE — DAY 115 (12 Apr 2026)
+- [x] ADR-024 OQ-5..8 closed — Noise_IKpsk3 design complete, implementation unblocked
+- [x] **PHASE 3 ítem 1:** 6 systemd units (Restart=always, LD_PRELOAD=unset, build-active profiles)
+- [x] **PHASE 3 ítem 2:** DEBT-SIGN-AUTO — provision.sh check-plugins (dev sign / prod verify-only)
+- [x] **PHASE 3 ítem 3:** DEBT-HELLO-001 — BUILD_DEV_PLUGINS=OFF + production JSONs cleaned (bug: 4 components had active:true)
+- [x] **PHASE 3 ítem 4:** TEST-PROVISION-1 CI gate — 5 checks, pipeline-start dependency
+
+### ✅ DONE — DAY 114 (11 Apr 2026)
 - [x] ADR-025: Plugin Integrity Ed25519 + TOCTOU-safe dlopen — **MERGED main** 🎉
 - [x] Tag: **v0.3.0-plugin-integrity**
 - [x] TEST-INTEG-4d: ml-detector PHASE 2d, 3/3 PASSED
 - [x] DEBT-SIGNAL-001/002: async-signal-safe handlers + atomic<bool>
-- [x] arXiv Replace v15 submitted (Draft v15 — Glasswing paragraph revised)
-- [x] ADR-032: Plugin Distribution Chain (YubiKey HSM) — APROBADO por Consejo
+- [x] arXiv Replace v15 submitted
+- [x] ADR-032: Plugin Distribution Chain (YubiKey HSM) — APROBADO
 - [x] PHASE 3 branch opened: `feature/phase3-hardening`
 
 ### ✅ DONE — DAY 111–113
 - [x] FIX-C/D: D8-pre bidireccional + MAX_PLUGIN_PAYLOAD_SIZE
 - [x] TEST-INTEG-4c/4e: 3/3 PASSED
 - [x] PHASE 2d/2e: ml-detector + rag-security plugin integration
-- [x] ADR-029/030/031 documented
 - [x] **arXiv:2604.04952 [cs.CR] PUBLICADO** 🎉
 
-### 🔜 NEXT — PHASE 3 (feature/phase3-hardening)
-- [ ] systemd units: Restart=always, RestartSec=5s, unset LD_PRELOAD
-- [ ] DEBT-SIGN-AUTO: automated idempotent plugin signing (build-time only)
-- [ ] DEBT-HELLO-001: BUILD_DEV_PLUGINS=OFF + JSON production clean
-- [ ] TEST-PROVISION-1: CI gate (vagrant destroy → 6/6 RUNNING)
-- [ ] AppArmor profiles: 6 components + deny write /usr/bin/ml-defender-*
-- [ ] DEBT-ADR025-D11: provision.sh --reset (deadline 18 Apr)
+### 🔜 NEXT — PHASE 3 remaining (feature/phase3-hardening)
+- [ ] **DEBT-ADR025-D11:** provision.sh --reset (key rotation without auto-signing) — **deadline 18 Apr**
+- [ ] **TEST-PROVISION-1 checks 6+7:** file permissions + JSON/plugin consistency
+- [ ] **AppArmor profiles:** 6 components — complain → audit → enforce
 
 ### P3 — Post-PHASE 3
+- [ ] ADR-024 Noise_IKpsk3 implementation (OQs closed, ready to build)
+- [ ] DEBT-TOOLS-001: synthetic injectors + PluginLoader integration
+- [ ] Stress test CTU-13 Neris with real pipeline (F1=0.9985 with plugins active)
 - [ ] ADR-032 Fase A: manifest JSON format + multi-key loader + revocation
 - [ ] ADR-032 Fase B: YubiKey OpenPGP signing (hardware acquisition)
 - [ ] ADR-030 activation: AppArmor enforcing + Raspberry Pi hardware
+- [ ] etcd legacy refactoring (etcd = config distribution + heartbeat only)
 - [ ] ADR-031 spike: seL4/Genode (2–3 weeks)
-- [ ] ADR-033: TPM 2.0 Measured Boot (proposed)
 - [ ] BARE-METAL stress test
 
 ---
@@ -224,6 +232,12 @@ make test-replay-neris
 python3 scripts/calculate_f1_neris.py logs/lab/sniffer.log --total-events 19135
 ```
 
+### CI Gate (PHASE 3)
+```bash
+make test-provision-1   # 5 checks: keys, plugin sigs, prod configs, symlinks, systemd units
+make validate-prod-configs   # ensure no dev plugins in production JSON configs
+```
+
 ---
 
 ## 🧠 Consejo de Sabios — Multi-Model Peer Review
@@ -238,7 +252,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 
 ## 🗺️ Milestones
 
-- ✅ DAY 106: Paper Draft v11 + arXiv SUBMITTED (submit/7438768)
+- ✅ DAY 106: Paper Draft v11 + arXiv SUBMITTED
 - ✅ DAY 107: MAC failure root cause resolved
 - ✅ DAY 108: provision.sh reproducible · ADR-026/027 committed
 - ✅ DAY 109: PHASE 2b CLOSED · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
@@ -247,6 +261,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 112: PHASE 2e CLOSED · TEST-INTEG-4e 3/3 · ADR-030/031 documented
 - ✅ DAY 113: ADR-025 IMPLEMENTED · 11/11 tests · Paper v14
 - ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · TEST-INTEG-4d · Signal safety · arXiv v15 · ADR-032 APROBADO
+- ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉 · ADR-024 OQs 5..8 closed · TEST-PROVISION-1 CI gate · DEBT-HELLO-001 (bug: 4×active:true fixed)
 
 ---
 

@@ -17,99 +17,93 @@
 
 ## ✅ COMPLETADO
 
+### DAY 115 (12 Apr 2026) — PHASE 3 ítems 1-4 + ADR-024 OQs cerradas
+
+**ADR-024 OQ-5..8: CERRADAS (Consejo unanimidad) ✅**
+- OQ-5: allowed_static_keys en deployment.yml + caché local + re-provision si seed_family comprometida
+- OQ-6: Dual-key T=24h + versioned deployment.yml + secuencia 5 pasos cero downtime
+- OQ-7: Riesgo replay aceptado v1 + nftables rate-limiting + trigger v2 si WAN
+- OQ-8: Noise_IKpsk3 mantenido + benchmark ARMv8 obligatorio pre-producción
+- ADR-024 actualizado con Recovery Contract + TEST-INTEG-8/9
+
+**PHASE 3 ítem 1 — systemd units ✅**
+- 6 units: Restart=always, RestartSec=5s, Environment="LD_PRELOAD="
+- set-build-profile.sh: symlinks build-active → build-debug|release
+- DEBT-RAG-BUILD-001 registrado; DEBT-SYSTEMD-001: checklist RPi documentado
+
+**PHASE 3 ítem 2 — DEBT-SIGN-AUTO ✅**
+- provision.sh check-plugins: sign-if-needed dev, verify-only producción. Idempotente.
+
+**PHASE 3 ítem 3 — DEBT-HELLO-001 ✅**
+- BUILD_DEV_PLUGINS=OFF guard. libplugin_hello eliminado de 5 JSONs.
+- Bug resuelto: 4 componentes tenían active:true. make validate-prod-configs añadido.
+
+**PHASE 3 ítem 4 — TEST-PROVISION-1 ✅**
+- 5 checks CI gate. pipeline-start depende de test-provision-1.
+- Commits: df976d90, a1b23882 (feature/phase3-hardening)
+
+---
+
 ### DAY 114 (11 Apr 2026) — ADR-025 MERGE + Signal Safety + TEST-INTEG-4d + arXiv v15
 
 **ADR-025 Plugin Integrity Verification: MERGEADO A MAIN ✅**
-Tag: v0.3.0-plugin-integrity
-- Ed25519 offline signing + TOCTOU-safe dlopen, 12/12 tests PASSED
-- DEBT-SIGNAL-001: signal handlers async-signal-safe (write() en lugar de std::cout)
-- DEBT-SIGNAL-002: shutdown_called_ bool → std::atomic<bool>
-- TEST-INTEG-4d: ml-detector PHASE 2d, 3/3 PASSED (NUEVO)
-- Commits: 65a29034 (merge), 37c22423 (docs v15)
+Tag: v0.3.0-plugin-integrity. 12/12 tests PASSED.
+DEBT-SIGNAL-001/002 resueltos. TEST-INTEG-4d PASSED.
+Commits: 65a29034 (merge), 37c22423 (docs v15)
 
-**arXiv Replace v15 SUBMITTED ✅**
-- submit/7467190 — Replacement of 2604.04952
-- Párrafo Glasswing/Mythos revisado (veredicto Q5 árbitro DAY 113)
-- Draft v15 — DAY 114 — April 2026
+**arXiv Replace v15 SUBMITTED ✅** — submit/7467190
 
-**Rama PHASE 3 abierta ✅**
-- feature/phase3-hardening creada desde main
-
-**Deuda registrada DAY 114:**
-- DEBT-HELLO-001: eliminar libplugin_hello.so de configs de producción (PHASE 3)
-- DEBT-OPS-001: make redeploy-plugins (build+sign+deploy en un solo target)
-- DEBT-OPS-002: documentación operativa + sección Troubleshooting pipeline
+**ADR-032 Plugin Distribution Chain: APROBADO ✅**
+YubiKey OpenPGP Ed25519 (NO PIV). Formato .sig embebido. Multi-key loader.
 
 ---
 
-### DAY 113 (10 Apr 2026) — ADR-025 IMPLEMENTADO + Paper v14
-
-**ADR-025 Plugin Integrity Verification: IMPLEMENTADO ✅**
-Ed25519 offline signing + TOCTOU-safe dlopen. 7/7 SIGN tests PASSED.
-make test: 11/11 PASSED (4a+4b+4c+4e+SIGN-1..7).
-Rama: feature/plugin-integrity-ed25519. Commits: eb2c88d9, a3819bc3, 1eb40e8b.
-
-**Paper Draft v14: COMPILACIÓN LIMPIA ✅**
-Glasswing/Mythos integrado (párrafo revisado por árbitro DAY 113).
-
-**Consejo DAY 113: ACTAS CERRADAS ✅**
-
----
-
-### DAY 112 (9 Apr 2026) — PHASE 2e + ADR-030/031
-*(ver historial git)*
-
-### DAY 111 (8 Apr 2026) — FIX-C/D + PHASE 2d + ADR-029 + arXiv PUBLICADO
-**🎉 arXiv:2604.04952 [cs.CR] PUBLICADO**
-DOI: https://doi.org/10.48550/arXiv.2604.04952
-
-### DAY 110–62
-*(ver historial completo en git log)*
+### DAY 113 — ADR-025 IMPLEMENTADO + Paper v14 *(ver git log)*
+### DAY 111 — arXiv:2604.04952 PUBLICADO 🎉 · DOI: https://doi.org/10.48550/arXiv.2604.04952
+### DAY 110–62 *(ver historial completo en git log)*
 
 ---
 
 ## 📋 BACKLOG ACTIVO
 
-### P0 — PHASE 3 (rama: feature/phase3-hardening)
+### P0 — PHASE 3 restante (rama: feature/phase3-hardening)
 
-| ID | Tarea | Origen |
-|----|-------|--------|
-| PHASE3-SYSTEMD | systemd units: Restart=always, RestartSec=5s, unset LD_PRELOAD | ADR-025 D10 |
-| PHASE3-APPARMOR | AppArmor profiles básicos 6 componentes + denegar write /usr/bin/ml-defender-* para root | Gemini DAY 113 |
-| PHASE3-CI | TEST-PROVISION-1 como gate formal CI | ChatGPT5 DAY 108 |
-| DEBT-HELLO-001 | Eliminar libplugin_hello.so de JSON configs producción + CMake flag BUILD_DEV_PLUGINS=OFF | DAY 114 |
-| DEBT-OPS-001 | make redeploy-plugins: build+sign+deploy en un solo target | DAY 114 |
-| DEBT-OPS-002 | Documentación operativa actualizada + sección Troubleshooting (árbol: pipeline no arranca → causas → solución) | DAY 114 |
+| ID | Tarea | Estado | Deadline |
+|----|-------|--------|---------|
+| **DEBT-ADR025-D11** | provision.sh --reset: regenera seed_family + keypairs Ed25519 + keypair firma. SIN auto-firma. Mensaje claro post-reset indicando `make sign-plugins`. | 🔴 URGENTE | **18 Apr** |
+| PHASE3-APPARMOR | AppArmor profiles 6 componentes. Flujo: complain → audit → enforce. Incluir paths de provision.sh --reset. Denegar write /usr/bin/ml-defender-* para root. | 🔴 TODO | post --reset |
+| TEST-PROVISION-CHECK6 | Check #6: permisos ficheros sensibles (*.sk, deployment.yml no world-writable) | ⏳ TODO | DAY 116 |
+| TEST-PROVISION-CHECK7 | Check #7: consistencia JSONs — cada plugin referenciado tiene .so + .sig presente | ⏳ TODO | DAY 116 |
+| DEBT-OPS-001 | make redeploy-plugins: build+sign+deploy en un solo target | ⏳ TODO | post-PHASE3 |
+| DEBT-OPS-002 | Documentación operativa + sección Troubleshooting pipeline | ⏳ TODO | post-PHASE3 |
 
-### P1 — Deuda inmediata post-merge
+### P1 — Deuda inmediata
 
 | ID | Tarea | Deadline | Origen |
 |----|-------|----------|--------|
-| DEBT-ADR025-D11 | provision.sh --reset: rotación manual keypair Ed25519 | 7 días desde merge (18 Apr) | ADR-025 D11, árbitro DAY 113 |
-| DEBT-SIGN-AUTO | Firma automática de plugins: provision.sh consciente de plugins no firmados o parcialmente firmados. Vagrantfile + Makefile integrados. Sin relanzar si todo está firmado; completar lo que falte si está parcial. | PHASE 3 | DAY 114 troubleshooting |
+| DEBT-RAG-BUILD-001 | rag/CMakeLists.txt: build-debug/release igual que resto de componentes | Pre-RPi | DAY 115 |
+| REC-2 | noclobber + check 0-bytes en CI | PHASE 3 | Consejo DAY 110 |
 
 ### P2 — Antes del próximo PCAP replay
 
 | ID | Tarea | Origen |
 |----|-------|--------|
-| DEBT-TOOLS-001 | Synthetic injectors: integrar PluginLoader + plugins firmados (Ed25519) | Árbitro DAY 113 |
-| REC-2 | noclobber + check 0-bytes CI | Consejo DAY 110 |
+| DEBT-TOOLS-001 | Synthetic injectors: integrar PluginLoader + plugins firmados Ed25519 (3 ficheros) | Árbitro DAY 113 |
 | DEBT-SNIFFER-SEED | Unificar sniffer bajo SeedClient | DAY 107 |
 
 ### P3 — Post-PHASE 3
 
 | ID | Tarea | Origen |
 |----|-------|--------|
+| ADR-024 impl | Noise_IKpsk3 P2P (feature/adr024-noise-p2p). OQs 5..8 cerradas. | DAY 115 |
 | ADR-030 activación | AppArmor enforcing + hardware Pi | post-PHASE 3 |
 | ADR-031 spike | seL4/Genode técnico (2–3 semanas) | post-ADR-030 |
-| ADR-026 | Fleet telemetry + XGBoost + BitTorrent distribution | diferido: construir sobre buenos andamios |
-| ADR-024 impl | Noise_IKpsk3 dynamic key agreement | FASE 3 post-PHASE 3 |
-| ADR-032 Fase A | Plugin Distribution Chain: formato manifest JSON + multi-key loader + revocación | DAY 114, Consejo ADR-032 |
-| ADR-032 Fase B | Plugin Distribution Chain: YubiKey OpenPGP (2× unidades) + firma HSM | post-ADR-032-A + hardware |
+| ADR-026 | Fleet telemetry + XGBoost + BitTorrent distribution | diferido |
+| ADR-032 Fase A | Plugin Distribution Chain: manifest JSON + multi-key loader + revocación | DAY 114 |
+| ADR-032 Fase B | YubiKey OpenPGP (2× unidades) + firma HSM | post-ADR-032-A + hardware |
 | ADR-033 | Platform Integrity: TPM 2.0 Measured Boot | propuesto DAY 114 |
-| DEBT-CLI-001 | ml-defender verify-plugin --bundle CLI tool | Qwen, Consejo ADR-032 |
-| BARE-METAL-IMAGE | Imagen Debian Bookworm hardened exportable a USB | P3 |
-| BARE-METAL stress | tcpreplay 100/250/500/1000 Mbps en NIC físico | P3 |
+| DEBT-CLI-001 | ml-defender verify-plugin --bundle CLI tool | Consejo ADR-032 |
+| BARE-METAL stress | tcpreplay en NIC físico | bloqueado hardware |
 | DEBT-FD-001 | Fast Detector Path A → JSON thresholds | DAY 80 |
 | DEBT-CRYPTO-003a | mlock() en seed_client.cpp | ADR-022 |
 | DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie | P3 |
@@ -125,39 +119,27 @@ F1-Score Validation (CTU-13):         ██████████████
 CryptoTransport (HKDF+nonce+AEAD):    ████████████████████ 100% ✅  DAY 97
 contexts.hpp (HKDF simétricos):       ████████████████████ 100% ✅  DAY 99
 TEST-INTEG-1/2/3 (gate arXiv):        ████████████████████ 100% ✅  DAY 99
-set_terminate() 6/6 main():           ████████████████████ 100% ✅  DAY 100
-plugin-loader ADR-012 PHASE 1b 6/6:   ████████████████████ 100% ✅  DAY 101-102
-ADR-023 PHASE 2a (firewall):          ████████████████████ 100% ✅  DAY 105-106
-ADR-023 PHASE 2b (rag-ingester):      ████████████████████ 100% ✅  DAY 109-110
-ADR-023 PHASE 2c (sniffer):           ████████████████████ 100% ✅  DAY 111
-ADR-023 PHASE 2d (ml-detector):       ████████████████████ 100% ✅  DAY 111+114
-ADR-023 PHASE 2e (rag-security):      ████████████████████ 100% ✅  DAY 112
+plugin-loader ADR-012 PHASE 1b 6/6:   ████████████████████ 100% ✅  DAY 102
+ADR-023 PHASE 2a-2e (6 componentes):  ████████████████████ 100% ✅  DAY 105-112
 ADR-025 Plugin Integrity (Ed25519):   ████████████████████ 100% ✅  DAY 113-114 🎉
-TEST-INTEG-4a 3/3:                    ████████████████████ 100% ✅  DAY 105
-TEST-INTEG-4b:                        ████████████████████ 100% ✅  DAY 109
-TEST-INTEG-4c 3/3:                    ████████████████████ 100% ✅  DAY 111
-TEST-INTEG-4d 3/3:                    ████████████████████ 100% ✅  DAY 114 🎉
-TEST-INTEG-4e 3/3:                    ████████████████████ 100% ✅  DAY 112
+TEST-INTEG-4a/4b/4c/4d/4e:           ████████████████████ 100% ✅  DAY 114
 TEST-INTEG-SIGN-1..7:                 ████████████████████ 100% ✅  DAY 113
-DEBT-SIGNAL-001 (async-signal-safe):  ████████████████████ 100% ✅  DAY 114 🎉
-DEBT-SIGNAL-002 (atomic<bool>):       ████████████████████ 100% ✅  DAY 114 🎉
+DEBT-SIGNAL-001/002:                  ████████████████████ 100% ✅  DAY 114 🎉
 arXiv:2604.04952 PUBLICADO:           ████████████████████ 100% ✅  DAY 111 🎉
 arXiv Replace v15 SUBMITTED:          ████████████████████ 100% ✅  DAY 114 🎉
-PHASE 3 (hardening):                  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/phase3-hardening
-DEBT-ADR025-D11 (--reset):            ░░░░░░░░░░░░░░░░░░░░   0% ⏳  deadline 18 Apr
-DEBT-SIGN-AUTO (firma automática):    ░░░░░░░░░░░░░░░░░░░░   0% ⏳  PHASE 3
-DEBT-HELLO-001 (rm hello plugin):     ░░░░░░░░░░░░░░░░░░░░   0% ⏳  PHASE 3
-DEBT-TOOLS-001 (injectors+plugins):   ░░░░░░░░░░░░░░░░░░░░   0% ⏳  antes PCAP replay
-ADR-030 AppArmor activación:          ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 3
-ADR-031 seL4 spike:                   ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-ADR-030
-ADR-026 Fleet/XGBoost/BitTorrent:     ░░░░░░░░░░░░░░░░░░░░   0% ⏳  diferido
-ADR-024 Noise_IKpsk3 impl:            ░░░░░░░░░░░░░░░░░░░░   0% ⏳  FASE 3
-BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado hardware
-DEBT-FD-001 (JSON thresholds):        ████░░░░░░░░░░░░░░░░  20% 🟡
-TEST-PROVISION-1 (CI gate):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  PHASE 3
-ADR-032 Fase A (manifest+multikey):   ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 3
-ADR-032 Fase B (YubiKey HSM):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-ADR-032-A + hardware
-ADR-033 (TPM measured boot):          ░░░░░░░░░░░░░░░░░░░░   0% ⏳  propuesto
+ADR-024 OQs 5..8 CERRADAS:           ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 1 (systemd units):      ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 2 (DEBT-SIGN-AUTO):     ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 3 (DEBT-HELLO-001):     ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 4 (TEST-PROVISION-1):   ████████████████████ 100% ✅  DAY 115 🎉
+DEBT-ADR025-D11 (--reset):           ░░░░░░░░░░░░░░░░░░░░   0% 🔴  deadline 18 Apr
+PHASE 3 ítem 5 (AppArmor):           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 116
+TEST-PROVISION-1 checks 6+7:         ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 116
+ADR-024 Noise_IKpsk3 impl:           ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 3
+DEBT-TOOLS-001 (injectors+plugins):  ░░░░░░░░░░░░░░░░░░░░   0% ⏳  pre-stress test
+ADR-032 Fase A:                      ░░░░░░░░░░░░░░░░░░░░   0% ⏳  post-PHASE 3
+BARE-METAL stress test:              ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado hardware
+DEBT-FD-001 (JSON thresholds):       ████░░░░░░░░░░░░░░░░  20% 🟡
 ```
 
 ---
@@ -167,81 +149,50 @@ ADR-033 (TPM measured boot):          ░░░░░░░░░░░░░░
 | Decisión | Resolución | DAY |
 |---|---|---|
 | Fail-closed plugin loading | std::terminate() si require_signature:true y plugin sin firma | 113 |
-| Plugin hello en producción | PROHIBIDO — DEBT-HELLO-001, eliminar en PHASE 3 | 114 |
-| Signal handlers | write(STDERR_FILENO) exclusivamente, sin std::cout/cerr | 114 |
+| Plugin hello en producción | PROHIBIDO — validate-prod-configs gate en Makefile | 115 |
+| Signal handlers | write(STDERR_FILENO) exclusivamente | 114 |
 | shutdown_called_ | std::atomic<bool> obligatorio | 114 |
-| Firma automática plugins | provision.sh debe detectar plugins sin firmar y firmarlos; Makefile/Vagrantfile conscientes | 114 |
+| Firma automática plugins | NUNCA en producción. Dev: provision.sh check-plugins. | 115 |
+| provision.sh --reset | Regenera claves SIN auto-firma. Operador firma manualmente. | 115 |
+| AppArmor | complain → audit → enforce. Incluir paths de --reset en perfiles. | 115 |
+| ADR-024 OQ-5 revocación | allowed_static_keys en deployment.yml + caché local | 115 |
+| ADR-024 OQ-6 rotación | Dual-key T=24h + versioned deployment.yml | 115 |
+| ADR-024 OQ-7 replay | Aceptado v1 + nftables. Timestamp obligatorio si WAN. | 115 |
+| ADR-024 OQ-8 rendimiento | Noise_IKpsk3 v1. Benchmark ARMv8 pre-prod. | 115 |
 | D8-pre bidireccional | READONLY+payload→terminate + NORMAL+nullptr→terminate | 111 |
-| MAX_PLUGIN_PAYLOAD_SIZE | 64KB hard limit, std::terminate() si excedido | 111 |
-| ADR-030 AppArmor-Hardened | variante producción, denegar write /usr/bin/ml-defender-* incluso para root | 112+113 |
-| ADR-031 seL4/Genode | investigación pura, spike GO/NO-GO obligatorio | 112 |
-| ADR-026 timing | diferido — construir sobre buenos andamios primero (PHASE 3) | 113 |
-| ADR-032 autoridad de firma | Clave privada NUNCA en disco producción. YubiKey OpenPGP Ed25519 (no PIV). 2 unidades. Multi-key en loader. | 114 |
-| ADR-032 formato .sig | JSON embebido: manifest + firma Ed25519 cubre sha256(so) + sha256(manifest) | 114 |
-| ADR-032 customer_id | Control lógico, no barrera criptográfica fuerte. Documentado explícitamente. | 114 |
-| ADR-033 TPM | ADR separado. No mezclar con distribución de plugins. | 114 |
+| MAX_PLUGIN_PAYLOAD_SIZE | 64KB hard limit, std::terminate() | 111 |
+| ADR-032 autoridad de firma | YubiKey OpenPGP Ed25519 (no PIV). 2 unidades. | 114 |
 
 ---
 
 ## 🔑 Procedimiento de verificación de estabilidad del pipeline
 
-**Ejecutar en este orden al inicio de cada sesión o tras cualquier cambio en libplugin_loader.so, plugins, o configuración:**
-
 ```bash
-# 1. Parar pipeline limpio
 make pipeline-stop
-
-# 2. Reconstruir todo
 make pipeline-build
-
-# 3. Verificar firma de plugins (firmar los que falten)
 make sign-plugins
-
-# 4. Verificar que todos los plugins están firmados
-vagrant ssh -c "ls -la /usr/lib/ml-defender/plugins/"
-# Esperar: .so + .sig para CADA plugin listado en los JSON configs
-
-# 5. Verificar JSON configs: plugins declarados vs presentes
-# (ver sección Troubleshooting en DEBT-OPS-002)
-
-# 6. Relanzar y verificar status
-make pipeline-start
-make pipeline-status
-# Esperar: 6/6 RUNNING
-
-# 7. Ejecutar tests de integración
-make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
-# Esperar: 12/12 PASSED
+vagrant ssh -c "ls -la /usr/lib/ml-defender/plugins/"  # .so + .sig para CADA plugin
+make test-provision-1   # CI gate: 5 checks (6+7 pendientes DAY 116)
+make pipeline-start && make pipeline-status  # 6/6 RUNNING
+make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"  # 12/12 PASSED
 ```
 
-**Causa conocida de fallo post-rebuild:** si libplugin_loader.so cambia (nueva firma, nueva dependencia), los binarios de componentes deben recompilarse Y los plugins deben estar firmados en /usr/lib/ml-defender/plugins/ con .sig válido. Sin .sig → std::terminate() fail-closed.
+---
+
+### Notas del Consejo de Sabios — DAY 115
+
+> "4 ítems de PHASE 3 cerrados + ADR-024 OQs 5..8 resueltas en una mañana de domingo.
+> Hallazgo crítico: 4 componentes con active:true para hello plugin en producción — bug de
+> seguridad resuelto. TEST-PROVISION-1 es ahora el root of truth del pipeline.
+> Próximo: DEBT-ADR025-D11 (deadline 18 Apr) → AppArmor complain → enforce.
+> Checks 6+7 a añadir en TEST-PROVISION-1: permisos ficheros sensibles + consistencia JSONs."
+> — Consejo de Sabios (6 miembros) · DAY 115 · Unanimidad en Q1/Q2/Q4. Q3: 4/6 DEBT-ADR025-D11 primero.
 
 ---
 
-### Notas del Consejo de Sabios
-
-> DAY 114 — ADR-025 MERGE + Signal Safety + TEST-INTEG-4d + arXiv v15:
-> "ADR-025 mergeado a main. Tag v0.3.0-plugin-integrity. 12/12 tests PASSED.
-> DEBT-SIGNAL-001/002 resueltos: signal handlers async-signal-safe verificados
-> a nivel binario (objdump). TEST-INTEG-4d implementado y PASSED (ml-detector PHASE 2d).
-> arXiv Replace v15 submitted (submit/7467190). PHASE 3 abierta.
-> Incidente DAY 114: pipeline no arrancó tras rebuild — causa: libplugin_hello.so
-> no desplegado ni firmado. ADR-025 fail-closed funcionó correctamente.
-> DEBT-SIGN-AUTO y DEBT-OPS-001/002 registrados."
-> DAY 114 — ADR-032 APROBADO (Plugin Distribution Chain):
-> "YubiKey OpenPGP (no PIV) para Ed25519 — corrección técnica crítica.
-> Formato .sig embebido (opción B, 4/5). Multi-key en loader desde día 1.
-> customer_id como control lógico documentado. Revocación: revocation.json firmado offline.
-> ADR-033 propuesto (TPM measured boot, separado). Soberanía open-source documentada.
-> Dos YubiKeys obligatorios (principal + backup). DEBT-CLI-001 registrado."
-> — Claude (Anthropic) · DAY 114
----
-
-*Última actualización: DAY 114 — 11 Apr 2026*
+*Última actualización: DAY 115 — 12 Apr 2026*
 *Branch activa: feature/phase3-hardening*
-*Tests: 25/25 + TEST-INTEG-4a 3/3 + 4b + 4c 3/3 + 4d 3/3 + 4e 3/3 + SIGN-1..7*
-*Paper: Draft v15 ✅ · arXiv Replace v15: submitted (submit/7467190) ✅*
-*Pipeline: 6/6 RUNNING ✅*
-*ADR-025: MERGEADO main ✅ · Tag: v0.3.0-plugin-integrity*
-*ADR-032: APROBADO ✅ · ADR-033: PROPUESTO ⏳*
-*PHASE 2: ✅ COMPLETA · PHASE 3: ⏳ EN CURSO*
+*Tests: 12/12 plugin-integ-test PASSED · 6/6 RUNNING*
+*arXiv: 2604.04952 · v15 submitted ✅ · Tag: v0.3.0-plugin-integrity*
+*PHASE 2: ✅ COMPLETA · PHASE 3: 4/6 ✅ EN CURSO*
+*"Via Appia Quality — Un escudo, nunca una espada."*
