@@ -1,0 +1,48 @@
+# ML Defender — sniffer (eBPF/XDP)
+# Install: sudo install -m 0644 ml-defender-sniffer.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable ml-defender-sniffer
+
+[Unit]
+Description=ML Defender — sniffer (eBPF/XDP packet capture)
+Documentation=https://github.com/alonsoir/argus
+After=network-online.target ml-defender-etcd-server.service ml-defender-ml-detector.service
+Wants=network-online.target
+Requires=ml-defender-etcd-server.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+WorkingDirectory=/vagrant/sniffer/build-active
+
+EnvironmentFile=/etc/ml-defender/build.env
+Environment="LD_PRELOAD="
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="LD_LIBRARY_PATH=/usr/local/lib"
+
+ExecStart=/vagrant/sniffer/build-active/sniffer -c ../config/sniffer.json
+
+Restart=always
+RestartSec=5s
+StartLimitInterval=300
+StartLimitBurst=10
+
+TimeoutStartSec=30s
+TimeoutStopSec=10s
+
+LimitNOFILE=65536
+
+# Capabilities mínimas para eBPF/XDP
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_ADMIN CAP_BPF
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_ADMIN CAP_BPF
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ml-defender-sniffer
+
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

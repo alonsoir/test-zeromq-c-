@@ -29,7 +29,27 @@
 .PHONY: tools-build tools-clean tools-synthetic-gen
 .PHONY: crypto-transport-build crypto-transport-clean crypto-transport-test
 .PHONY: plugin-loader-build plugin-loader-clean plugin-loader-test
-.PHONY: plugin-hello-build plugin-hello-clean
+.PHONY: plugin-hello-build plugin-hello-clean validate-prod-configs
+# DEBT-HELLO-001 (PHASE 3, DAY 115)
+# Falla si algún JSON de producción referencia libplugin_hello.
+# Ejecutar antes de pipeline-start en CI/CD (TEST-PROVISION-1).
+validate-prod-configs:
+	@echo "🔍 Validando que libplugin_hello NO está en configs de producción..."
+	@if vagrant ssh -c "grep -rl --include='*.json' 'libplugin_hello' \
+	    /vagrant/sniffer/config/ \
+	    /vagrant/firewall-acl-agent/config/ \
+	    /vagrant/ml-detector/config/ \
+	    /vagrant/rag/config/ \
+	    /vagrant/rag-ingester/config/ \
+	    /vagrant/etcd-server/config/ 2>/dev/null" 2>/dev/null | grep -v '.backup'; then \
+		echo ""; \
+		echo "❌ DEBT-HELLO-001: libplugin_hello encontrado en configs de producción"; \
+		echo "   Ejecuta: python3 tools/debt_hello_001.py para limpiar"; \
+		exit 1; \
+	fi
+	@echo "✅ validate-prod-configs: libplugin_hello ausente en todos los configs"
+
+
 .PHONY: etcd-server etcd-server-build etcd-server-clean etcd-server-start etcd-server-stop
 .PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs rag-attach
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
