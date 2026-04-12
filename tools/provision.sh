@@ -1079,6 +1079,130 @@ provision_full() {
     fi
 }
 
+
+# =============================================================================
+# DEBT-SIGN-AUTO — PHASE 3 (DAY 115)
+# check_plugins_smart: firma-si-necesario en provisioning, solo-verifica en producción
+#
+# REGLA DE ORO (Consejo DAY 114):
+#   Firma automática SOLO en build/provision time con artefactos recién compilados.
+#   NUNCA firmar automáticamente en producción — solo verificar.
+#
+# USO:
+#   provision.sh check-plugins             # dev/provisioning: sign if needed
+#   provision.sh check-plugins --production # producción: verify-only, fail si inválido
+#
+# IDEMPOTENCIA:
+#   Si .sig existe Y es válido para la clave pública actual → skip.
+#   Si .sig ausente O inválido → (re-)firmar (solo en dev).
+# =============================================================================
+
+# Verifica que el .sig de un .so es válido para la clave pública actual.
+# Retorna 0 si válido, 1 si inválido o ausente.
+verify_plugin_sig() {
+    local so_path="$1"
+    local sig_path="${so_path}.sig"
+    local public_key="${KEYS_ROOT}/plugins/plugin_signing.pk"
+
+    [[ -f "$sig_path"    ]] || return 1
+    [[ -f "$public_key"  ]] || return 1
+
+    openssl pkeyutl -verify \
+        -pubin -inkey "$public_key" \
+        -rawin \
+        -in      "$so_path" \
+        -sigfile "$sig_path" \
+        >/dev/null 2>&1
+}
+
+# Lógica principal DEBT-SIGN-AUTO.
+# $1: --production (opcional) → verify-only mode
+check_plugins_smart() {
+    local production_mode=false
+    [[ "${1:-}" == "--production" ]] && production_mode=true
+
+    local plugins_dir="/usr/lib/ml-defender/plugins"
+    local public_key="${KEYS_ROOT}/plugins/plugin_signing.pk"
+    local private_key="${KEYS_ROOT}/plugins/plugin_signing.sk"
+
+    log_section "check-plugins (DEBT-SIGN-AUTO, ADR-025)"
+
+    if $production_mode; then
+        log_item "Modo: PRODUCCIÓN — solo verificar, nunca firmar"
+    else
+        log_item "Modo: PROVISIONING — firmar si necesario"
+    fi
+
+    if [[ ! -d "$plugins_dir" ]]; then
+        log_warn "Directorio de plugins no encontrado: ${plugins_dir}"
+        return 0
+    fi
+
+    if [[ ! -f "$public_key" ]]; then
+        log_error "Clave pública de firma no encontrada: ${public_key}"
+        log_error "Ejecuta: sudo bash tools/provision.sh full"
+        return 1
+    fi
+
+    local count_ok=0
+    local count_signed=0
+    local count_failed=0
+    local found_any=false
+
+    for so_file in "${plugins_dir}"/*.so; do
+        [[ -f "$so_file" ]] || continue
+        found_any=true
+        local name
+        name=$(basename "$so_file")
+
+        if verify_plugin_sig "$so_file"; then
+            # .sig válido para clave actual
+            log_item "${name}: .sig válido — skip"
+            count_ok=$((count_ok + 1))
+        else
+            # .sig ausente o inválido para clave actual
+            if $production_mode; then
+                log_error "${name}: .sig ausente o inválido en modo PRODUCCIÓN"
+                count_failed=$((count_failed + 1))
+            else
+                # Provisioning: firmar
+                if [[ ! -f "$private_key" ]]; then
+                    log_error "Clave privada no encontrada: ${private_key}"
+                    log_error "Ejecuta: sudo bash tools/provision.sh full"
+                    count_failed=$((count_failed + 1))
+                    continue
+                fi
+                log_item "${name}: firmando..."
+                if sign_plugin "$so_file"; then
+                    count_signed=$((count_signed + 1))
+                else
+                    count_failed=$((count_failed + 1))
+                fi
+            fi
+        fi
+    done
+
+    if [[ "$found_any" == "false" ]]; then
+        log_item "No hay plugins .so en ${plugins_dir}"
+        return 0
+    fi
+
+    echo ""
+    [[ $count_ok     -gt 0 ]] && log_info "${count_ok} plugin(s) ya firmados y válidos (skip)"
+    [[ $count_signed -gt 0 ]] && log_info "${count_signed} plugin(s) firmados ahora"
+
+    if [[ $count_failed -gt 0 ]]; then
+        log_error "${count_failed} plugin(s) fallidos"
+        if $production_mode; then
+            log_error "PRODUCCIÓN: pipeline NO debe arrancar con plugins sin firma válida"
+        fi
+        return 1
+    fi
+
+    log_info "check-plugins completado — todos los plugins firmados y verificados"
+    return 0
+}
+
 # =============================================================================
 # ENTRY POINT
 # =============================================================================
@@ -1100,6 +1224,14 @@ case "$MODE" in
         check_root
         sign_all_plugins
         ;;
+
+    check-plugins)
+        check_root
+        PROD_FLAG="${2:-}"
+        check_plugins_smart "$PROD_FLAG"
+        ;;
+
+
     verify)
         check_root
         verify_all

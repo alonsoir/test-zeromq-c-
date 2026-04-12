@@ -570,15 +570,6 @@
     "seed_bin": "/etc/ml-defender/sniffer/seed.bin"
   },
   "plugins": {
-    "enabled": [
-      {
-        "name": "hello",
-        "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
-        "active": false,
-        "comment": "ADR-012 PHASE 1b — validation plugin. Set active:true to enable.",
-        "require_signature": true,
-        "allowed_key_id": "ed25519:2026-04-prod"
-      }
-    ]
+    "enabled": []
   }
 }

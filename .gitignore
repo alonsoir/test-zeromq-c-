@@ -207,3 +207,5 @@ Vagrantfile.backup*
 # Logs en raíz
 stress_*.log
 stress_live.log
+*/build-active
+shared/indices/

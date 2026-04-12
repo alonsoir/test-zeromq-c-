@@ -79,15 +79,6 @@
     }
   },
   "plugins": {
-    "enabled": [
-      {
-        "name": "hello",
-        "path": "/usr/lib/ml-defender/plugins/libplugin_hello.so",
-        "active": true,
-        "comment": "ADR-012 PHASE 1b — validation plugin",
-        "require_signature": true,
-        "allowed_key_id": "ed25519:2026-04-prod"
-      }
-    ]
+    "enabled": []
   }
 }

@@ -29,7 +29,27 @@
 .PHONY: tools-build tools-clean tools-synthetic-gen
 .PHONY: crypto-transport-build crypto-transport-clean crypto-transport-test
 .PHONY: plugin-loader-build plugin-loader-clean plugin-loader-test
-.PHONY: plugin-hello-build plugin-hello-clean
+.PHONY: plugin-hello-build plugin-hello-clean validate-prod-configs
+# DEBT-HELLO-001 (PHASE 3, DAY 115)
+# Falla si algún JSON de producción referencia libplugin_hello.
+# Ejecutar antes de pipeline-start en CI/CD (TEST-PROVISION-1).
+validate-prod-configs:
+	@echo "🔍 Validando que libplugin_hello NO está en configs de producción..."
+	@if vagrant ssh -c "grep -rl --include='*.json' 'libplugin_hello' \
+	    /vagrant/sniffer/config/ \
+	    /vagrant/firewall-acl-agent/config/ \
+	    /vagrant/ml-detector/config/ \
+	    /vagrant/rag/config/ \
+	    /vagrant/rag-ingester/config/ \
+	    /vagrant/etcd-server/config/ 2>/dev/null" 2>/dev/null | grep -v '.backup'; then \
+		echo ""; \
+		echo "❌ DEBT-HELLO-001: libplugin_hello encontrado en configs de producción"; \
+		echo "   Ejecuta: python3 tools/debt_hello_001.py para limpiar"; \
+		exit 1; \
+	fi
+	@echo "✅ validate-prod-configs: libplugin_hello ausente en todos los configs"
+
+
 .PHONY: etcd-server etcd-server-build etcd-server-clean etcd-server-start etcd-server-stop
 .PHONY: rag-build rag-clean rag-start rag-stop rag-status rag-logs rag-attach
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
@@ -40,7 +60,7 @@
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
 .PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
-.PHONY: provision provision-status provision-check provision-reprovision
+.PHONY: provision provision-status provision-check provision-reprovision test-provision-1
 .PHONY: seed-client-build seed-client-test seed-client-clean seed-client-rebuild
 
 # ============================================================================
@@ -586,7 +606,72 @@ logs-lab-clean:
 pipeline-health:
 	@bash scripts/pipeline_health.sh
 
-pipeline-start: provision-check etcd-server-start
+
+# =============================================================================
+# TEST-PROVISION-1 — CI Gate PHASE 3 (DAY 115)
+# Verifica que el entorno está listo para arrancar el pipeline de forma segura.
+# Encadena todos los checks de PHASE 3 ítems 1-4.
+#
+# USO:
+#   make test-provision-1          # CI gate completo
+#   make pipeline-start            # llama a test-provision-1 automáticamente
+#
+# CHECKS:
+#   1. Claves criptográficas (provision.sh verify)
+#   2. Plugins firmados (provision.sh check-plugins --production)
+#   3. No dev plugins en prod configs (validate-prod-configs)
+#   4. build-active symlinks presentes (set-build-profile.sh ejecutado)
+#   5. systemd units instalados en /etc/systemd/system/
+# =============================================================================
+
+test-provision-1:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔍 TEST-PROVISION-1 — CI Gate PHASE 3                   ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "── Check 1/5: Claves criptográficas ──"
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh verify" || \
+		(echo "❌ CHECK 1 FAILED: claves ausentes o inválidas" && \
+		 echo "   Ejecuta: make provision" && exit 1)
+	@echo "✅ Check 1/5 OK"
+	@echo ""
+	@echo "── Check 2/5: Firmas de plugins (producción) ──"
+	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh check-plugins --production" || \
+		(echo "❌ CHECK 2 FAILED: plugins sin firma válida" && \
+		 echo "   Ejecuta: make sign-plugins" && exit 1)
+	@echo "✅ Check 2/5 OK"
+	@echo ""
+	@echo "── Check 3/5: Configs de producción (sin dev plugins) ──"
+	@$(MAKE) validate-prod-configs || \
+		(echo "❌ CHECK 3 FAILED: dev plugins en configs de producción" && exit 1)
+	@echo "✅ Check 3/5 OK"
+	@echo ""
+	@echo "── Check 4/5: build-active symlinks ──"
+	@vagrant ssh -c "test -L /vagrant/sniffer/build-active && \
+		test -L /vagrant/ml-detector/build-active && \
+		test -L /vagrant/firewall-acl-agent/build-active && \
+		test -L /vagrant/etcd-server/build-active && \
+		test -L /vagrant/rag-ingester/build-active" || \
+		(echo "❌ CHECK 4 FAILED: build-active symlinks ausentes" && \
+		 echo "   Ejecuta: vagrant ssh -c 'sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug'" && \
+		 exit 1)
+	@echo "✅ Check 4/5 OK"
+	@echo ""
+	@echo "── Check 5/5: systemd units instalados ──"
+	@vagrant ssh -c "systemctl list-unit-files ml-defender-*.service 2>/dev/null | grep -c 'ml-defender'" | \
+		grep -q "6" || \
+		(echo "❌ CHECK 5 FAILED: systemd units no instalados (esperado: 6)" && \
+		 echo "   Ejecuta: vagrant ssh -c 'sudo bash /vagrant/etcd-server/config/install-systemd-units.sh'" && \
+		 exit 1)
+	@echo "✅ Check 5/5 OK"
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ TEST-PROVISION-1 PASSED — entorno listo               ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+
+pipeline-start: test-provision-1 etcd-server-start
 	@echo "⏳ Waiting for etcd-server to stabilize (Seed generation)..."
 	@sleep 4
 	@$(MAKE) rag-start
