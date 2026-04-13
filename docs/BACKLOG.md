@@ -14,6 +14,15 @@
 
 ---
 
+## 📋 POLÍTICA DE DEUDA TÉCNICA
+
+- **Bloqueante:** se cierra dentro de la feature en que se detectó. No hay merge a main sin test verde.
+- **No bloqueante con feature natural:** se asigna a la feature destino. Documentada con ID de feature.
+- **No bloqueante sin feature natural:** se acumula hasta abrir `feature/tech-debt-cleanup` (3+ DEBTs sin destino claro).
+- **Toda deuda tiene test de cierre.** Implementado sin test = no cerrado.
+
+---
+
 ## ✅ COMPLETADO
 
 ### DAY 116 (13 Apr 2026) — PHASE 3 CORE + Bug crítico seed_family
@@ -23,7 +32,7 @@
 - reset_plugin_signing_keypair(): backup + regeneración + mensaje operacional
 - TEST-RESET-1/2/3: PASSED
 - Nueva pubkey dev: c44a4fe2bfe4ee8ad86f840277625e10ca1c97e85671f366c38a38e6bf02d575
-- Bug arquitectural resuelto: seeds independientes → HKDF MAC fail
+- Bug arquitectural resuelto: seeds independientes → HKDF MAC fail → ver ADR-021 addendum
 - Commits: 3c0a214f
 
 **TEST-PROVISION-1 checks 6+7 ✅**
@@ -36,121 +45,257 @@
 - 0 denials con pipeline 6/6 + 12/12 PASSED
 - Commit: efe203bf
 
+**Documentación DAY 116 ✅**
+- README.md + BACKLOG.md actualizados
+- ADR-021 addendum: INVARIANTE-SEED-001 + threat model RAM
+- Prompt de continuidad DAY 117
+- Commit: 9bf0209d
+
 ---
 
 ### DAY 115 (12 Apr 2026) — PHASE 3 ítems 1-4 + ADR-024 OQs
 
-*(ver BACKLOG anterior)*
+**ADR-024 OQ-5..8: CERRADAS (Consejo unanimidad) ✅**
+- OQ-5: allowed_static_keys en deployment.yml + caché local
+- OQ-6: Dual-key T=24h + versioned deployment.yml + secuencia 5 pasos cero downtime
+- OQ-7: Riesgo replay aceptado v1 + nftables rate-limiting
+- OQ-8: Noise_IKpsk3 mantenido + benchmark ARMv8 obligatorio pre-producción
+- ADR-024 actualizado con Recovery Contract + TEST-INTEG-8/9
 
-### DAY 114 y anteriores
+**PHASE 3 ítem 1 — systemd units ✅**
+- 6 units: Restart=always, RestartSec=5s, Environment="LD_PRELOAD="
+- set-build-profile.sh: symlinks build-active → build-debug|release
 
-*(ver git log)*
+**PHASE 3 ítem 2 — DEBT-SIGN-AUTO ✅**
+- provision.sh check-plugins: sign-if-needed dev, verify-only producción. Idempotente.
+
+**PHASE 3 ítem 3 — DEBT-HELLO-001 ✅**
+- BUILD_DEV_PLUGINS=OFF guard. libplugin_hello eliminado de 5 JSONs.
+- Bug resuelto: 4 componentes tenían active:true. make validate-prod-configs añadido.
+
+**PHASE 3 ítem 4 — TEST-PROVISION-1 (5/5) ✅**
+- 5 checks CI gate. pipeline-start depende de test-provision-1.
+- Commits: df976d90, a1b23882
+
+---
+
+### DAY 114 (11 Apr 2026) — ADR-025 MERGE + Signal Safety + arXiv v15
+
+**ADR-025 Plugin Integrity: MERGEADO A MAIN ✅**
+- Tag: v0.3.0-plugin-integrity. 12/12 tests PASSED.
+- DEBT-SIGNAL-001/002 resueltos. TEST-INTEG-4d PASSED.
+- Commits: 65a29034 (merge), 37c22423 (docs v15)
+
+**arXiv Replace v15 SUBMITTED ✅** — submit/7467190
+
+**ADR-032 Plugin Distribution Chain: APROBADO ✅**
+- YubiKey OpenPGP Ed25519 (NO PIV). Formato .sig embebido. Multi-key loader.
+
+---
+
+### DAY 113 — ADR-025 IMPLEMENTADO + Paper v14 *(ver git log)*
+### DAY 111 — arXiv:2604.04952 PUBLICADO 🎉 · DOI: https://doi.org/10.48550/arXiv.2604.04952
+### DAY 110–62 *(ver historial completo en git log)*
 
 ---
 
 ## 📋 BACKLOG ACTIVO
 
-### P0 — DAY 117 (inmediato)
+### P0 — BLOQUEANTES feature/phase3-hardening
+**No hay merge a main hasta que todos tengan test verde.**
 
-| ID | Tarea | Deadline |
-|----|-------|---------|
-| **DEBT-VAGRANTFILE-001** | Añadir apparmor-utils al bloque apt del Vagrantfile | DAY 117 |
-| **DEBT-SEED-PERM-001** | Corregir mensaje SeedClient: chmod 600 → chmod 640. Añadir TEST-PERMS-SEED | DAY 117 |
-| **ADR-021-ADDENDUM** | Documentar INVARIANTE-SEED-001 + threat model RAM + regresión vs multi-familia | DAY 117 |
-| **TEST-INVARIANT-SEED** | Verifica post-reset: todos los seed.bin son byte-a-byte idénticos | DAY 117 |
-| **APPARMOR-ENFORCE** | Enforce secuencial: etcd-server → rag-* → ml-detector → firewall → sniffer (48h) | DAY 117-118 |
+| ID | Tarea | Test de cierre | Deadline |
+|----|-------|---------------|---------|
+| **DEBT-VAGRANTFILE-001** | Añadir apparmor-utils al bloque apt del Vagrantfile | vagrant provision → which aa-complain OK sin instalación manual | DAY 117 |
+| **DEBT-SEED-PERM-001** | Corregir mensaje SeedClient: chmod 600 → chmod 640 + condición check | TEST-PERMS-SEED: 640 sin warning · 600 warning correcto · 644 warning | DAY 117 |
+| **REC-2** | set -o noclobber en scripts + check 0-bytes pre-commit/CI | Script con > no trunca fichero existente · hook rechaza 0-bytes | DAY 117 |
+| **TEST-INVARIANT-SEED** | Test post-reset: todos los seed.bin byte-a-byte idénticos | 6 seeds iguales tras --reset · falla si alguno difiere | DAY 117 |
+| **TEST-PROVISION-1 echoes** | Actualizar "Check X/5" y "5/5 OK" → "7/7" en todos los echoes del Makefile | make test-provision-1 \| grep '5/5' → vacío | DAY 117 |
+| **Backup policy .bak.*** | keep last 2 backups por componente en reset_all_keys() | 3 resets → max 12 backups (2×6) · el más antiguo se elimina | DAY 117 |
+| **ADR-021 addendum** | Commitear al repo docs/adr/ con INVARIANTE-SEED-001 + threat model RAM | git log docs/adr/ muestra commit del addendum | DAY 117 |
+| **docs/Recovery Contract** | OQ-6 ADR-024: rotación zero downtime 5 pasos en docs/operations/ | Fichero existe con 5 pasos · referenciado desde ADR-024 | DAY 117 |
+| **DEBT-RAG-BUILD-001** | rag-security: build-active symlink igual que resto de componentes | set-build-profile.sh incluye rag-security → build-active → build-debug ✅ | DAY 117 |
+| **apparmor-utils check #8** | Añadir check #8 a TEST-PROVISION-1: aa-complain presente | make test-provision-1 check #8 verde | DAY 117 |
+| **apparmor-promote.sh** | tools/apparmor-promote.sh: enforce → monitor 5min → rollback automático si denials | promote.sh etcd-server → enforce + 0 denials → estado confirmado | DAY 117 |
+| **AppArmor enforce 5/6** | Enforce secuencial: etcd-server → rag-security → rag-ingester → ml-detector → firewall | TEST-APPARMOR-ENFORCE: 6/6 RUNNING + 12/12 PASSED con 5 perfiles enforce | DAY 117 |
+| **AppArmor enforce sniffer** | 48h mínimo en complain → enforce con apparmor-promote.sh | pipeline 6/6 + 0 denials con sniffer en enforce | DAY 118+ |
 
-### P1 — Deuda de seguridad crítica
+---
 
-| ID | Tarea | Contexto |
-|----|-------|---------|
-| **DEBT-CRYPTO-003a** | mlock() + explicit_bzero(seed) post-derivación HKDF en seed_client.cpp. El seed solo se necesita durante la derivación — post-bzero solo viven los subkeys. | RAM forensics threat — DAY 116 |
-| DEBT-RAG-BUILD-001 | rag/CMakeLists.txt: build-debug/release como resto de componentes | DAY 115 |
+### P1 — Deuda de seguridad crítica (→ feature/crypto-hardening)
 
-### P2 — Post-enforce AppArmor
+| ID | Tarea | Test de cierre | Contexto |
+|----|-------|---------------|---------|
+| **DEBT-CRYPTO-003a** | mlock() + explicit_bzero(seed) post-derivación HKDF en seed_client.cpp. Post-bzero solo viven los subkeys en RAM con mlock(). | Verificar con valgrind/ASan que seed no permanece en heap post-derivación | RAM forensics threat — DAY 116. Ver ADR-021 addendum. |
+| **DEBT-SNIFFER-SEED** | Unificar sniffer bajo SeedClient | sniffer arranca con SeedClient como resto de componentes | DAY 107 |
+| **docs/CRYPTO-INVARIANTS.md** | Tabla invariantes criptográficos + tests de validación asociados | Fichero existe con tabla: invariante · componentes · test | DAY 116 — ver ADR-021 addendum |
+| **ADR-021 multi-familia** | Reimplementar seed_families por canal para topología multi-nodo | Test canal aislado: compromiso componente A no expone seed canal B | DAY 116 addendum — en single-node seed compartido es aceptable |
 
-| ID | Tarea | Origen |
-|----|-------|--------|
-| **APPARMOR-PROMOTE-SH** | tools/apparmor-promote.sh: enforce → monitor 5min → rollback si denials | Consejo DAY 116 (Qwen) |
-| DOCS-RECOVERY-CONTRACT | Documento operacional rotación claves zero downtime (OQ-6 ADR-024) | Consejo DAY 115 |
-| DOCS-CRYPTO-INVARIANTS | docs/CRYPTO-INVARIANTS.md con tabla invariantes + tests de validación | Consejo DAY 116 |
-| REC-2 | noclobber + check 0-bytes en CI | Consejo DAY 110 |
+---
 
-### P3 — Post-PHASE 3
+### P2 — Post-enforce AppArmor (→ feature/ops-tooling)
 
-| ID | Tarea | Origen |
-|----|-------|--------|
-| **ADR-026** | XGBoost plugins Track 1. Precision ≥ 0.99 (gate médico). Pre-req: AppArmor enforce completo + DEBTs cerrados | DAY 104 |
-| ADR-024 impl | Noise_IKpsk3 P2P. OQs 5..8 cerradas, listo para implementar | DAY 115 |
-| ADR-032 Fase A | Plugin Distribution Chain: manifest JSON + multi-key loader + revocación | DAY 114 |
-| ADR-032 Fase B | YubiKey OpenPGP (2× unidades) + firma HSM | post-ADR-032-A |
-| **ADR-033** | TPM 2.0 Measured Boot. Objetivo: seed_family nunca en userspace RAM. Derivación HKDF en hardware. Solución definitiva a RAM forensics threat. | DAY 116 |
-| ADR-029 | Variantes hardened: A=AppArmor+eBPF/XDP · B=AppArmor+libpcap · C=seL4+libpcap. x86 + ARM RPi. Delta A vs C = coste medible de seguridad formal. | DAY 109 |
-| ADR-021 multi-familia | Reimplementar seed_families por canal para topología multi-nodo. En single-node el seed compartido es aceptable; en multi-nodo limita blast radius. | DAY 116 addendum |
-| DEBT-TOOLS-001 | Synthetic injectors: PluginLoader + plugins firmados | DAY 113 |
-| BARE-METAL stress | tcpreplay en NIC físico | bloqueado hardware |
-| DEBT-FD-001 | Fast Detector Path A → JSON thresholds | DAY 80 |
+| ID | Tarea | Test de cierre | Origen |
+|----|-------|---------------|--------|
+| **DEBT-OPS-001** | make redeploy-plugins: build+sign+deploy en un solo target | make redeploy-plugins → plugins firmados y desplegados sin pasos manuales | BACKLOG original |
+| **DEBT-OPS-002** | Documentación operativa + sección Troubleshooting pipeline | docs/operations/troubleshooting.md con síntomas → solución | BACKLOG original |
+
+---
+
+### P3 — Post-PHASE 3 (features futuras)
+
+| ID | Tarea | Test de cierre | Feature destino |
+|----|-------|---------------|----------------|
+| **ADR-026** | XGBoost plugins Track 1. Precision ≥ 0.99 (gate médico). DPIA requerida pre-producción. Pre-req: AppArmor enforce completo + todos los DEBTs bloqueantes cerrados. | Plugin XGBoost cargado + firmado + F1 ≥ 0.9985 en replay CTU-13 | feature/adr026-xgboost |
+| **DEBT-TOOLS-001** | Synthetic injectors + PluginLoader + plugins firmados Ed25519 | Injectors generan tráfico procesado por plugin correctamente | feature/adr026-xgboost |
+| **DEBT-FD-001** | Fast Detector Path A → thresholds desde JSON, no hardcoded | sniffer.json controla thresholds · tests con valores distintos pasan | feature/adr026-xgboost |
+| ADR-024 impl | Noise_IKpsk3 P2P. OQs 5..8 cerradas DAY 115. Listo. | TEST-INTEG-8/9 PASSED (definidos en ADR-024) | feature/adr024-noise-p2p |
+| ADR-032 Fase A | Manifest JSON + multi-key loader + revocación. Ver ADR-032 DAY 114. | Plugin cargado desde manifest firmado + revocación funciona | feature/adr032-hsm |
+| ADR-032 Fase B | YubiKey OpenPGP (2× unidades) + firma HSM. Pre-req: hardware. | Plugin firmado con YubiKey verificado por plugin-loader | feature/adr032-hsm (post-hardware) |
+| **ADR-033 TPM** | TPM 2.0 Measured Boot. seed_family nunca en userspace. Solución definitiva RAM forensics. Ver ADR-021 addendum DAY 116. | seed no presente en /proc/PID/mem post-arranque | feature/crypto-hardening |
+| ADR-029 | Variantes hardened A/B/C. x86 + ARM RPi. Delta A vs C publicable. | F1 ≥ 0.9985 + 0 paquetes perdidos bajo carga X Mbps en cada variante | feature/bare-metal |
+| ADR-021 multi-familia | Reimplementar seed_families por canal para multi-nodo. | Test: compromiso componente A no expone seed canal B | feature/crypto-hardening |
+| DEBT-INFRA-001 | Migrar box Vagrant a Debian Trixie | vagrant up desde Vagrantfile nuevo → 6/6 RUNNING | feature/bare-metal |
+| DEBT-CLI-001 | ml-defender verify-plugin --bundle CLI. Ver ADR-032 DAY 114. | CLI verifica bundle sin pipeline activo | feature/adr032-hsm |
+| BARE-METAL stress | tcpreplay en NIC físico. 0 drops a 100 Mbps. | 0 drops · latencia < 2× baseline VM | bloqueado hardware |
+
+---
+
+### ⏸️ POSPUESTO — ADR-033 Institutional Knowledge Base via RAG
+
+**Estado:** POSPUESTO indefinidamente. No es una feature activa.
+
+**Decisión del Consejo (DAY 116, unanimidad):**
+La idea es correcta pero prematura. El source of truth actual (ADRs + BACKLOG + scripts)
+es suficiente. Cualquier mecanismo de curación manual muere en DAY 150 en modo solopreneur.
+El RAG con docs obsoletos es peor que no tener RAG.
+
+**Condiciones de activación** (cualquiera desbloquea):
+1. Un operador no resuelve un incidente porque el conocimiento no está accesible.
+2. El número de ADRs supera 40 y la búsqueda manual se vuelve lenta.
+3. Un segundo contribuidor se incorpora y necesita onboarding estructurado.
+
+**Alternativa más simple cuando llegue el momento:**
+`ONBOARDING.md` con estructura "si te encuentras X, mira Y". Sin infraestructura nueva.
+El 90% del contenido ya existe en ADRs y commits. Solo hay que reorganizarlo.
+
+**Si se activa:** modelo "Golden Sources" — RAG indexa directamente ADRs + BACKLOG + tools/.
+`make discover-knowledge` como gate de CI para coherencia, no como generador de docs nuevos.
 
 ---
 
 ## 🔑 Decisiones de diseño consolidadas
 
-| Decisión | Resolución | DAY |
+| Decisión | Resolución | ADR/DAY |
 |---|---|---|
-| seed_family single-node | UN seed compartido para 6 componentes — INVARIANTE-SEED-001 | 116 |
-| seed_family multi-nodo | Un seed por familia de canal (ADR-021) — pendiente implementación | 100/116 |
-| RAM protection del seed | explicit_bzero post-HKDF + mlock subkeys. Solución definitiva: TPM (ADR-033) | 116 |
-| Firma automática plugins | NUNCA en producción. Dev: provision.sh check-plugins | 115 |
-| provision.sh --reset | Regenera claves SIN auto-firma. Operador firma manualmente post-reset | 116 |
-| AppArmor | complain → audit → enforce. Sniffer: 48h mínimo en complain | 116 |
-| AppArmor enforce orden | etcd-server → rag-* → ml-detector → firewall → sniffer (último) | 116 |
-| Plugin integrity | Ed25519 + TOCTOU-safe dlopen. Fail-closed std::terminate | 113 |
-| D8-pre bidireccional | READONLY+payload→terminate + NORMAL+nullptr→terminate | 111 |
-| ADR-032 autoridad firma | YubiKey OpenPGP Ed25519 (no PIV). 2 unidades. | 114 |
+| seed_family single-node | UN seed compartido para 6 componentes — INVARIANTE-SEED-001 | ADR-021 addendum · DAY 116 |
+| seed_family multi-nodo | Un seed por familia de canal — blast radius limitado a canal comprometido | ADR-021 · DAY 100/116 |
+| RAM protection del seed | explicit_bzero(seed) post-HKDF + mlock(subkeys). Definitivo: TPM ADR-033 | ADR-021 addendum · DAY 116 |
+| Firma automática plugins | NUNCA en producción. Dev: provision.sh check-plugins. DEBT-SIGN-AUTO | ADR-025 · DAY 115 |
+| provision.sh --reset | Regenera claves SIN auto-firma. Operador firma manualmente post-reset | ADR-025 D11 · DAY 116 |
+| AppArmor estrategia | complain → audit → enforce. Sniffer: 48h mínimo en complain | Consejo Q1 · DAY 116 |
+| AppArmor enforce orden | etcd-server → rag-* → ml-detector → firewall → sniffer (último) | Consejo Q1 unanimidad · DAY 116 |
+| Plugin integrity | Ed25519 + TOCTOU-safe dlopen + fail-closed std::terminate | ADR-025 · DAY 113 |
+| D8-pre bidireccional | READONLY+payload→terminate + NORMAL+nullptr→terminate | ADR-023 FIX-C · DAY 111 |
+| MAX_PLUGIN_PAYLOAD_SIZE | 64KB hard limit, std::terminate() | ADR-023 FIX-D · DAY 111 |
+| ADR-032 autoridad firma | YubiKey OpenPGP Ed25519 (NO PIV). 2 unidades. Firma y prod no comparten dominio | ADR-032 · DAY 114 |
+| XGBoost vs FT-Transformer | XGBoost Track 1 Year 1. vLLM explainability Track 2 Year 2-3 | ADR-026 pre · DAY 104 |
+| Precision gate médico | Precision ≥ 0.99 obligatorio antes de producción en hospitales | Consejo · DAY 104 · DPIA requerida |
+| HKDF telemetría | HTTPS:443. LZ4 antes de ChaCha20 siempre | ADR-013/020 · DAY 94 |
+| Deuda bloqueante | Cierra en su feature. Sin merge a main sin test verde | Política · DAY 116 |
+| Deuda no bloqueante | Asignada a feature destino o tech-debt-cleanup | Política · DAY 116 |
+| ADR-033 KB RAG | POSPUESTO. Condiciones de activación definidas. Alternativa: ONBOARDING.md | Consejo · DAY 116 |
+
+---
+
+## 🔑 Procedimiento de verificación de estabilidad del pipeline
+
+```bash
+make pipeline-stop
+make pipeline-build 2>&1 | tail -5
+vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug"
+make sign-plugins
+make test-provision-1      # CI gate: 7/7 checks
+make pipeline-start && make pipeline-status  # 6/6 RUNNING
+make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"  # 12/12 PASSED
+```
+
+**Regla de oro:** 6/6 RUNNING + 12/12 PASSED = pipeline estable.
+Tras cualquier cambio: stop → build → sign → test-provision-1 → start → status → plugin-integ-test.
 
 ---
 
 ## 📊 Estado global del proyecto
 
-Foundation + Thread-Safety:           ████████████████████ 100% ✅
-HMAC Infrastructure:                  ████████████████████ 100% ✅
-F1-Score Validation (CTU-13):         ████████████████████ 100% ✅
-CryptoTransport (HKDF+nonce+AEAD):    ████████████████████ 100% ✅
-Plugin-loader ADR-023 PHASE 2 (6/6):  ████████████████████ 100% ✅
-ADR-025 Plugin Integrity (Ed25519):   ████████████████████ 100% ✅ DAY 114 🎉
-arXiv:2604.04952 PUBLICADO:           ████████████████████ 100% ✅ DAY 111 🎉
-arXiv Replace v15:                    ████████████████████ 100% ✅ DAY 114 🎉
-ADR-024 OQs 5..8:                     ████████████████████ 100% ✅ DAY 115 🎉
-PHASE 3 ítems 1-4:                    ████████████████████ 100% ✅ DAY 115 🎉
-DEBT-ADR025-D11 (--reset):            ████████████████████ 100% ✅ DAY 116 🎉
-TEST-PROVISION-1 (7/7):               ████████████████████ 100% ✅ DAY 116 🎉
-AppArmor complain (6/6):              ████████████████████ 100% ✅ DAY 116 🎉
-AppArmor enforce (5/6):               ░░░░░░░░░░░░░░░░░░░░   0% 🔄 DAY 117
-AppArmor enforce sniffer:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳ DAY 118+
-DEBT-VAGRANTFILE-001:                 ░░░░░░░░░░░░░░░░░░░░   0% 🔄 DAY 117
-DEBT-SEED-PERM-001:                   ░░░░░░░░░░░░░░░░░░░░   0% 🔄 DAY 117
-DEBT-CRYPTO-003a (mlock+bzero):       ░░░░░░░░░░░░░░░░░░░░   0% ⏳ P1
-ADR-026 XGBoost Track 1:              ░░░░░░░░░░░░░░░░░░░░   0% ⏳ DAY 118+
-ADR-033 TPM Measured Boot:            ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-PHASE 4
-BARE-METAL stress test:               ░░░░░░░░░░░░░░░░░░░░   0% 🔴 bloqueado hardware
-DEBT-FD-001:                          ████░░░░░░░░░░░░░░░░  20% 🟡
+```
+Foundation + Thread-Safety:            ████████████████████ 100% ✅
+HMAC Infrastructure:                   ████████████████████ 100% ✅
+F1-Score Validation (CTU-13 Neris):    ████████████████████ 100% ✅  F1=0.9985 · Recall=1.0000
+CryptoTransport (HKDF+nonce+AEAD):     ████████████████████ 100% ✅  DAY 97
+contexts.hpp (HKDF simétricos):        ████████████████████ 100% ✅  DAY 99
+TEST-INTEG-1/2/3 (gate arXiv):         ████████████████████ 100% ✅  DAY 99
+plugin-loader ADR-012 PHASE 1b:        ████████████████████ 100% ✅  DAY 102
+ADR-023 PHASE 2a-2e (6 componentes):   ████████████████████ 100% ✅  DAY 105-112
+ADR-025 Plugin Integrity (Ed25519):    ████████████████████ 100% ✅  DAY 113-114 🎉
+TEST-INTEG-4a/4b/4c/4d/4e:            ████████████████████ 100% ✅  DAY 114
+TEST-INTEG-SIGN-1..7:                  ████████████████████ 100% ✅  DAY 113
+DEBT-SIGNAL-001/002:                   ████████████████████ 100% ✅  DAY 114 🎉
+arXiv:2604.04952 PUBLICADO:            ████████████████████ 100% ✅  DAY 111 🎉
+arXiv Replace v15 SUBMITTED:           ████████████████████ 100% ✅  DAY 114 🎉
+ADR-024 OQs 5..8 CERRADAS:            ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 1 (systemd units):        ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 2 (DEBT-SIGN-AUTO):       ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 3 (DEBT-HELLO-001):       ████████████████████ 100% ✅  DAY 115 🎉
+PHASE 3 ítem 4 (TEST-PROVISION-1 5/5): ████████████████████ 100% ✅  DAY 115 🎉
+DEBT-ADR025-D11 (--reset):             ████████████████████ 100% ✅  DAY 116 🎉
+TEST-PROVISION-1 (7/7 checks):         ████████████████████ 100% ✅  DAY 116 🎉
+AppArmor complain (6/6 perfiles):      ████████████████████ 100% ✅  DAY 116 🎉
+AppArmor enforce (5/6):                ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+AppArmor enforce sniffer:              ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 118+
+DEBT-VAGRANTFILE-001:                  ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+DEBT-SEED-PERM-001 + TEST-PERMS-SEED:  ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+REC-2 (noclobber + 0-bytes):           ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+TEST-INVARIANT-SEED:                   ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+TEST-PROVISION-1 echoes 7/7:           ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+Backup policy .bak.*:                  ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+ADR-021 addendum (repo):               ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+docs/Recovery Contract:                ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+DEBT-RAG-BUILD-001:                    ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+apparmor-utils check #8:               ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+apparmor-promote.sh:                   ░░░░░░░░░░░░░░░░░░░░   0% 🔄  DAY 117
+DEBT-CRYPTO-003a (mlock+bzero):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/crypto-hardening
+ADR-026 XGBoost Track 1:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  DAY 118+ (post-enforce)
+ADR-024 Noise_IKpsk3 impl:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/adr024-noise-p2p
+ADR-032 Fase A:                        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/adr032-hsm
+ADR-033 TPM Measured Boot:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/crypto-hardening
+ADR-029 variantes hardened:            ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/bare-metal
+BARE-METAL stress test:                ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado hardware
+DEBT-FD-001 (JSON thresholds):         ████░░░░░░░░░░░░░░░░  20% 🟡
+```
 
 ---
 
 ### Notas del Consejo de Sabios — DAY 116
 
 > "PHASE 3 CORE completada. Bug arquitectural crítico resuelto: seeds independientes
-> rompían HKDF/MAC — INVARIANTE-SEED-001 ahora explícito. AppArmor 6/6 en complain,
-> 0 denials. TEST-PROVISION-1 a 7/7 checks.
+> rompían HKDF/MAC — INVARIANTE-SEED-001 ahora explícita en ADR-021 addendum.
+> AppArmor 6/6 en complain, 0 denials. TEST-PROVISION-1 a 7/7.
+> 13 DEBTs bloqueantes identificados para DAY 117-118.
 >
-> Consejo unánime: AppArmor enforce DAY 117 (orden: etcd-server → rag-* → ml-detector
-> → firewall → sniffer 48h). DEBTs VAGRANTFILE-001 + SEED-PERM-001 DAY 117.
-> ADR-026 XGBoost solo cuando enforce completo. Addendum ADR-021 obligatorio.
+> Consejo unánime: AppArmor enforce DAY 117 (etcd-server → rag-* → ml-detector →
+> firewall → sniffer 48h). DEBTs VAGRANTFILE-001 + SEED-PERM-001 DAY 117.
+> ADR-026 XGBoost solo cuando enforce completo y DEBTs cerrados.
 >
-> Amenaza identificada: RAM forensics sobre seed_family compartido. Mitigación:
-> explicit_bzero(seed) post-HKDF + mlock(subkeys). Solución definitiva: ADR-033 TPM.
-> Blast radius en multi-nodo: reimplementar seed_families por canal (ADR-021)."
-> — Consejo de Sabios (5 miembros) · DAY 116
+> Amenaza RAM forensics sobre seed_family: mitigación DEBT-CRYPTO-003a
+> (explicit_bzero + mlock). Solución definitiva: ADR-033 TPM post-PHASE 4.
+>
+> ADR-033 Knowledge Base RAG: POSPUESTO por unanimidad. Prematuro.
+> Alternativa cuando llegue: ONBOARDING.md + Golden Sources.
+> Condiciones de activación definidas.
+>
+> Política de deuda técnica formalizada: bloqueante cierra en su feature,
+> no bloqueante asignada a feature destino. Toda deuda tiene test de cierre."
+> — Consejo de Sabios (6 miembros) · DAY 116
 
 ---
 
@@ -158,5 +303,5 @@ DEBT-FD-001:                          ████░░░░░░░░░░
 *Branch activa: feature/phase3-hardening*
 *Tests: 12/12 plugin-integ-test PASSED · 7/7 TEST-PROVISION-1 · 6/6 RUNNING*
 *arXiv: 2604.04952 · v15 submitted ✅ · Tag: v0.3.0-plugin-integrity*
-*PHASE 3: CORE COMPLETADO ✅ | DEBTs PENDIENTES: 3*
+*PHASE 3: CORE COMPLETADO ✅ | 13 DEBTs bloqueantes pendientes · merge cuando todos en verde*
 *"Via Appia Quality — Un escudo, nunca una espada."*
