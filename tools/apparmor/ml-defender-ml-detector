@@ -1,0 +1,32 @@
+#include <tunables/global>
+
+/vagrant/ml-detector/build-active/ml-detector flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  /vagrant/ml-detector/build-*/ml-detector r,
+  /usr/local/lib/libcrypto_transport.so mr,
+  /usr/local/lib/libseed_client.so mr,
+  /usr/local/lib/libplugin_loader.so mr,
+  /usr/lib/** mr,
+  /lib/** mr,
+
+  /etc/ml-defender/ml-detector/ r,
+  /etc/ml-defender/ml-detector/** r,
+
+  /vagrant/logs/lab/ml-detector.log w,
+  /vagrant/logs/lab/ rw,
+  /vagrant/shared/ rw,
+  /vagrant/shared/** rw,
+
+  # Provision --reset paths
+  /etc/ml-defender/ml-detector.bak.*/ rw,
+  /etc/ml-defender/ml-detector.bak.*/** rw,
+
+  network tcp,
+  network unix,
+
+  /proc/self/** r,
+
+  deny /usr/bin/ml-defender-* w,
+}

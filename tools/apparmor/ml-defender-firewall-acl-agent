@@ -1,0 +1,41 @@
+#include <tunables/global>
+
+/vagrant/firewall-acl-agent/build-active/firewall_acl_agent flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  /vagrant/firewall-acl-agent/build-*/firewall_acl_agent r,
+  /usr/local/lib/libcrypto_transport.so mr,
+  /usr/local/lib/libseed_client.so mr,
+  /usr/local/lib/libplugin_loader.so mr,
+  /usr/lib/** mr,
+  /lib/** mr,
+
+  /etc/ml-defender/firewall-acl-agent/ r,
+  /etc/ml-defender/firewall-acl-agent/** r,
+
+  /vagrant/logs/lab/firewall.log w,
+  /vagrant/logs/lab/ rw,
+
+  # Provision --reset paths
+  /etc/ml-defender/firewall-acl-agent.bak.*/ rw,
+  /etc/ml-defender/firewall-acl-agent.bak.*/** rw,
+
+  network tcp,
+  network unix,
+
+  # Firewall capabilities
+  capability net_admin,
+  capability net_raw,
+
+  # iptables / ipset
+  /sbin/iptables ix,
+  /sbin/iptables-legacy ix,
+  /sbin/ipset ix,
+  /usr/sbin/iptables ix,
+  /usr/sbin/ipset ix,
+  /proc/net/** r,
+  /proc/self/** r,
+
+  deny /usr/bin/ml-defender-* w,
+}
