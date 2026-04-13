@@ -419,6 +419,135 @@ reprovision_component() {
 
 
 
+
+# =============================================================================
+# RESET PLUGIN SIGNING KEYPAIR (ADR-025 D11)
+# Fuerza regeneración del keypair de firma de plugins, con backup previo.
+# NUNCA auto-firma plugins — operador debe ejecutar make sign-plugins después.
+# =============================================================================
+reset_plugin_signing_keypair() {
+    log_section "Reset Plugin Signing Keypair (ADR-025 D11)"
+
+    local signing_dir="${KEYS_ROOT}/plugins"
+    local private_key="${signing_dir}/plugin_signing.sk"
+    local public_key="${signing_dir}/plugin_signing.pk"
+
+    # Backup obligatorio antes de borrar
+    if [[ -f "$private_key" ]] || [[ -f "$public_key" ]]; then
+        local backup_dir="${signing_dir}.bak.$(date +%Y%m%d_%H%M%S)"
+        mkdir -p "$backup_dir"
+        [[ -f "$private_key" ]] && cp "$private_key" "$backup_dir/"
+        [[ -f "$public_key"  ]] && cp "$public_key"  "$backup_dir/"
+        chmod 700 "$backup_dir"
+        log_item "Backup plugin signing keypair: $backup_dir"
+        rm -f "$private_key" "$public_key"
+    fi
+
+    # Regenerar
+    mkdir -p "$signing_dir"
+    chmod 755 "$signing_dir"
+
+    openssl genpkey -algorithm ed25519 -out "$private_key" 2>/dev/null
+    chmod 600 "$private_key"
+    chown root:root "$private_key"
+
+    openssl pkey -in "$private_key" -pubout -out "$public_key" 2>/dev/null
+    chmod 644 "$public_key"
+    chown root:root "$public_key"
+
+    local pubkey_hex
+    pubkey_hex=$(openssl pkey -in "$public_key" -pubin -outform DER 2>/dev/null | tail -c 32 | od -A n -t x1 | tr -d " \n")
+
+    log_warn "Plugin signing keypair ROTADO"
+    log_item ">>> NUEVA MLD_PLUGIN_PUBKEY_HEX=${pubkey_hex} <<<"
+    log_item "    ⚠️  Hardcodear en plugin-loader/CMakeLists.txt y recompilar"
+    log_item "    ⚠️  Los plugins existentes (.sig) son INVÁLIDOS hasta re-firma"
+}
+
+# =============================================================================
+# RESET ALL KEYS (ADR-025 D11 — provision.sh --reset)
+# Rota: seed_family + keypairs Ed25519 de 6 componentes + keypair firma plugins
+# NO auto-firma plugins. Post-reset: operador debe ejecutar make sign-plugins.
+# En dev con flag --dev: llama a check-plugins (firma automática).
+# =============================================================================
+reset_all_keys() {
+    local dev_mode="${1:-false}"
+
+    log_warn "════════════════════════════════════════════════════"
+    log_warn "  RESET COMPLETO DE CLAVES — ADR-025 D11"
+    log_warn "  Esto invalida TODOS los plugins firmados actuales"
+    log_warn "════════════════════════════════════════════════════"
+
+    # Confirmación explícita requerida (excepto si CI=true)
+    if [[ "${CI:-false}" != "true" ]]; then
+        echo ""
+        read -r -p "  ¿Confirmar reset completo de claves? [escribe 'RESET' para continuar]: " confirm
+        if [[ "$confirm" != "RESET" ]]; then
+            log_error "Reset cancelado por el operador"
+            exit 1
+        fi
+    fi
+
+    # SEED FAMILY: generar UN solo seed compartido para todos los componentes.
+    # Todos deben derivar HKDF desde el mismo seed para que CryptoTransport
+    # produzca claves compatibles (CTX_ETCD_TX/RX). ADR-021.
+    log_section "Generando seed_family compartido (ADR-021)"
+    local shared_seed_tmp
+    shared_seed_tmp=$(mktemp)
+    openssl rand -out "$shared_seed_tmp" ${SEED_BYTES}
+    chmod 600 "$shared_seed_tmp"
+
+    log_section "Reset keypairs + seed_family de componentes (6/6)"
+    for component in "${COMPONENTS[@]}"; do
+        local dir="${KEYS_ROOT}/${component}"
+
+        log_warn "Re-provisionando ${component} — borrando claves existentes"
+        if [[ -d "$dir" ]]; then
+            local backup_dir="${dir}.bak.$(date +%Y%m%d_%H%M%S)"
+            cp -r "$dir" "$backup_dir"
+            chmod 700 "$backup_dir"
+            log_item "Backup creado: $backup_dir"
+            rm -f "${dir}/private.pem" "${dir}/public.pem"                   "${dir}/seed.bin"    "${dir}/seed.hex"                   "${dir}/fingerprint.txt" "${dir}/provision_meta.json"
+        fi
+
+        # Regenerar keypair Ed25519
+        provision_component "$component"
+
+        # Sobreescribir seed con el seed_family compartido
+        cp "$shared_seed_tmp" "${dir}/seed.bin"
+        chmod 640 "${dir}/seed.bin"
+        chown root:vagrant "${dir}/seed.bin"
+        log_item "seed_family aplicado a ${component}"
+    done
+
+    rm -f "$shared_seed_tmp"
+    log_item "seed_family distribuido a ${#COMPONENTS[@]} componentes"
+
+    log_section "Reset plugin signing keypair"
+    reset_plugin_signing_keypair
+
+    log_section "Verificación post-reset"
+    verify_all
+
+    echo ""
+    log_warn "════════════════════════════════════════════════════"
+    log_warn "  CLAVES ROTADAS — PIPELINE EN FAIL-CLOSED"
+    log_warn "  Los plugins existentes NO están firmados con la nueva clave."
+    log_warn ""
+    log_warn "  ACCIÓN REQUERIDA (operador):"
+    log_warn "    1. Actualizar MLD_PLUGIN_PUBKEY_HEX en CMakeLists.txt"
+    log_warn "    2. Recompilar:   make pipeline-build"
+    log_warn "    3. Re-firmar:    make sign-plugins"
+    log_warn "    4. Verificar:    make test-provision-1"
+    log_warn "    5. Arrancar:     make pipeline-start"
+    log_warn "════════════════════════════════════════════════════"
+
+    if [[ "$dev_mode" == "true" ]]; then
+        log_warn "Modo --dev: ejecutando check-plugins automáticamente..."
+        bash /vagrant/tools/provision.sh check-plugins
+    fi
+}
+
 # =============================================================================
 # SIGN PLUGIN (ADR-025 D1)
 # Firma un plugin .so con la clave privada Ed25519 de firma de plugins.
@@ -1269,7 +1398,9 @@ case "$MODE" in
         echo "    sudo bash tools/provision.sh full                 # Provisiona todo"
         echo "    sudo bash tools/provision.sh status               # Tabla de estado"
         echo "    sudo bash tools/provision.sh verify               # Verifica integridad\n    sudo bash tools/provision.sh sign                 # Firma todos los plugins (ADR-025)"
-        echo "    sudo bash tools/provision.sh reprovision <name>   # Re-provisiona uno"
+        echo "    sudo bash tools/provision.sh reprovision <name>   # Re-provisiona uno
+    sudo bash tools/provision.sh --reset               # Rota TODAS las claves (ADR-025 D11)
+    sudo bash tools/provision.sh --reset --dev         # Reset + auto-firma (solo dev)"
         echo ""
         echo "  COMPONENTES: ${COMPONENTS[*]}"
         echo ""
@@ -1283,6 +1414,21 @@ case "$MODE" in
         echo "    SHA-256:           ${SODIUM_SHA256}"
         echo "    HKDF nativo:       crypto_kdf_hkdf_sha256_extract/expand"
         echo ""
+        ;;
+
+
+    --reset)
+        check_root
+        check_dependencies
+        DEV_MODE="false"
+        [[ "${COMPONENT}" == "--dev" ]] && DEV_MODE="true"
+        reset_all_keys "$DEV_MODE"
+        ;;
+
+    --reset--dev|"--reset --dev")
+        check_root
+        check_dependencies
+        reset_all_keys "true"
         ;;
 
     *)
