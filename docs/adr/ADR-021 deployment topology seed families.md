@@ -206,3 +206,30 @@ nunca entra en userspace; la derivación HKDF ocurre dentro del TPM. Post-PHASE 
 | TPM derivación hardware | ⏳ ADR-033 post-PHASE 4 |
 
 *Addendum — DAY 116 — 13 Abril 2026*
+
+### Addendum DAY 117 — 14 Abril 2026
+
+#### INVARIANTE-SEED-001 — Validación en producción
+
+TEST-INVARIANT-SEED implementado y ejecutado:
+- 3 resets consecutivos (`provision.sh --reset`) → 6 seeds idénticos en cada reset
+- `make test-invariant-seed` integrado en `make test-all` como CI gate
+- Hashes únicos post-reset: 1/1 (PASSED)
+
+#### Regresión vs multi-familia
+
+INVARIANTE-SEED-001 aplica exclusivamente a deployments single-node (PHASE 3).
+En producción multi-nodo, cada familia tendrá su propio seed distinto — el test
+deberá parametrizarse por familia. Esta extensión corresponde a la fase de
+`deployment.yml` multi-familia (columna ⏳ en tabla de implementación).
+
+#### Backup policy operacional
+
+`cleanup_old_backups()` implementada en `provision.sh`:
+- Máximo 2 backups por componente/dir
+- Llamada automática en: `reprovision_component`, `reset_all_keys`,
+  `reset_plugin_signing_keypair`
+- Test: 3 resets → 14 backups (2 × 7 targets: 6 componentes + plugins signing)
+- Backups más antiguos eliminados automáticamente al superar el límite
+
+*Addendum — DAY 117 — 14 Abril 2026*
