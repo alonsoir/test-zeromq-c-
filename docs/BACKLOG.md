@@ -383,3 +383,45 @@ del pipeline.
 
 **Pre-requisitos:** ADR-034 + topología multi-VM funcionando
 **Feature destino:** feature/bare-metal (fase tardía)
+
+---
+
+### ADR-036 — Formal Verification Baseline — Decisiones del Consejo (DAY 117)
+
+**Estado:** BORRADOR APROBADO CON REFINAMIENTOS — pendiente incorporar al ADR
+
+**Veredictos consolidados (5/5 modelos):**
+
+**OQ-1 — Frama-C vs CBMC:** Enfoque híbrido.
+CBMC para baseline inicial (propiedades de seguridad acotadas, rápido, contraejemplos concretos).
+Frama-C/WP para demostración deductiva completa en componentes P0.
+Orden: CBMC primero → Frama-C para certificación.
+
+**OQ-2 — C++20:** ASan + UBSan + contratos informales anotados. Punto.
+No hay herramientas de verificación formal maduras para C++20 en 2026.
+Revisión del estado del arte en 2027.
+
+**OQ-3 — Certificación:** IEC 62443-4-2 SL2 como objetivo realista (corto/medio plazo).
+ENS High para despliegues públicos en España.
+Common Criteria EAL4+ solo para Variante C como investigación — no producto inmediato.
+Separar verificación técnica (ADR-036) de certificación (ADR-037 futuro).
+
+**OQ-4 — Variante A vs C:** Variante A primero y completa (8 meses estimados).
+Variante C como research track separado — rama `research/sel4-verification`.
+No en paralelo. No bloquea roadmap principal.
+
+**Refinamientos obligatorios al ADR antes de ACEPTADO:**
+- Reducir Fase A a 2 componentes P0: seed_client + crypto-transport únicamente
+- P5 (terminación pipeline) → reformular como "ausencia de deadlocks bajo carga"
+- Añadir Definition of Done explícita
+- Añadir criterio de parada temporal: 3 meses → re-evaluar si P1+P3 no demostradas
+- Añadir sección "código fuera de alcance" (libsodium, FAISS, ZeroMQ → environment assumptions)
+- Unificar toolchain en `make verify-P0`
+- Separar certificación en ADR-037 (futuro)
+
+**Estimación de esfuerzo (DeepSeek):**
+Variante A completa: ~8 meses en solitario.
+Variante C: ~13 meses (5 meses adicionales sobre Variante A).
+
+**Feature destino:** feature/formal-verification
+**Pre-requisitos:** ADR-029 + ADR-034 + ADR-035 + merge de todas las features anteriores
