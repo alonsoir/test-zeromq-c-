@@ -15,7 +15,7 @@ fi
 
 COMPONENTS=(
     "/vagrant/etcd-server"
-    # "/vagrant/rag"  -- DEBT-RAG-BUILD-001: rag/build no sigue convencion build-debug/build-release
+    "/vagrant/rag"
     "/vagrant/rag-ingester"
     "/vagrant/ml-detector"
     "/vagrant/sniffer"
@@ -39,11 +39,10 @@ done
 
 # Guardar perfil activo
 mkdir -p /etc/ml-defender
-echo "ML_DEFENDER_BUILD=build-${PROFILE}" > /etc/ml-defender/build.env
+echo "ML_DEFENDER_BUILD=build-${PROFILE}" >| /etc/ml-defender/build.env
 echo "ML_DEFENDER_PROFILE=${PROFILE}" >> /etc/ml-defender/build.env
 
 echo ""
 echo "  Perfil activo guardado en /etc/ml-defender/build.env"
-echo "  ⚠️  rag-security usa /vagrant/rag/build/ fijo (DEBT-RAG-BUILD-001)"
 echo "  Recarga units: sudo systemctl daemon-reload"
 echo "═══ Listo ═══"

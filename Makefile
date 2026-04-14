@@ -1372,9 +1372,9 @@ rag-clean:
 	@vagrant ssh -c "cd /vagrant/rag && make clean"
 
 rag-start:
-	@echo "🚀 Starting rag-security (from /vagrant/rag/build)..."
+	@echo "🚀 Starting rag-security (from /vagrant/rag/build-active)..."
 	@vagrant ssh -c "tmux kill-session -t rag-security 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s rag-security 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag/build && ./rag-security >> /vagrant/logs/lab/rag-security.log 2>&1'"
+	@vagrant ssh -c "tmux new-session -d -s rag-security 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag/build-active && ./rag-security >> /vagrant/logs/lab/rag-security.log 2>&1'"
 	@sleep 2
 
 rag-stop:
