@@ -1,4 +1,20 @@
-# ML Defender (aRGus NDR) — DAY 117 Continuity Prompt
+Leídas las 5 respuestas. Resumen de veredictos consolidados:
+
+**Q1 — ALLOWED sniffer:** 4/5 dicen revisar el log completo antes de enforce. Solo Qwen dice proceder directamente confiando en el rollback. **Veredicto: revisar primero.** Acción DAY 118: `sudo journalctl -k | grep -E 'apparmor.*sniffer|ALLOWED.*sniffer' -A3 -B3` antes de ejecutar promote.
+
+**Q2 — noclobber audit:** Unanimidad en hacer audit, pero división entre completo (ChatGPT, Grok) vs limitado a rutas críticas (DeepSeek, Qwen). **Veredicto práctico: audit limitado a ficheros críticos** — `/etc/`, `.sk`, `seed.bin`, `*.sig`. Tiempo estimado: 30 minutos.
+
+**Q3 — Merge strategy:** **Unanimidad total: `git merge --no-ff`.** Trazabilidad científica sobre limpieza visual. Tag anotado `v0.4.0-phase3-hardening` con changelog estructurado.
+
+**Q4 — XGBoost:** **Unanimidad: rama separada** `feature/adr026-xgboost`. Feature flag en JSON solo dentro de la rama para testing A/B interno, nunca en main hasta que Precision ≥ 0.99 + F1 ≥ 0.9985.
+
+**¿Segunda ronda?** No es necesaria. Los 4 veredictos son claros y accionables. Nota: Parallel.ai no respondió — lo dejamos para DAY 118 si quieres intentarlo de nuevo.
+
+Escribo el prompt de continuidad ahora.
+
+---
+
+# ML Defender (aRGus NDR) — DAY 118 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -10,23 +26,23 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
 ---
 
-## Estado al cierre de DAY 116
+## Estado al cierre de DAY 117
 
 ### Hitos completados
-- DEBT-ADR025-D11: provision.sh --reset con seed_family compartido ✅
-  - TEST-RESET-1/2/3: PASSED
-  - Bug crítico: seeds independientes → HKDF MAC fail → resuelto
-  - Nueva pubkey dev: c44a4fe2bfe4ee8ad86f840277625e10ca1c97e85671f366c38a38e6bf02d575
-  - seed_family compartido: 75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360
-- TEST-PROVISION-1 7/7 checks ✅ (check #6 permisos + #7 consistencia JSONs)
-- AppArmor 6 perfiles complain mode, 0 denials ✅
-- Commits: 3c0a214f, e01b5919, efe203bf (feature/phase3-hardening)
+- 12/13 DEBTs bloqueantes `feature/phase3-hardening` cerrados ✅
+- AppArmor enforce 5/6: etcd-server, rag-security, rag-ingester, ml-detector, firewall-acl-agent (0 denials cada uno) ✅
+- tools/apparmor-promote.sh: complain→enforce con rollback automático ✅
+- TEST-PROVISION-1 8/8 · make test-all CI gate completo ✅
+- DEBT-VAGRANTFILE-001, DEBT-SEED-PERM-001, REC-2, TEST-INVARIANT-SEED, Backup policy, ADR-021 addendum, Recovery Contract, DEBT-RAG-BUILD-001 ✅
+- Pubkey dev rotada (3 resets): `e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
+- arXiv Draft v15 recibido de Cornell ✅
+- Commits: 85197f96 → fac4cd54 (7 commits)
 
-### Consejo DAY 116 — Veredictos
-- Q1 AppArmor: etcd-server → rag-* → ml-detector → firewall → sniffer (48h mínimo)
-- Q2 DEBT-SEED-PERM-001: opción (a) corregir mensaje + test (unanimidad)
-- Q3 Próxima fase: AppArmor enforce + DEBTs antes de ADR-026 (unanimidad)
-- Q4 seed_family: addendum ADR-021 (árbitro)
+### Consejo DAY 117 — Veredictos
+- Q1 ALLOWED sniffer: revisar log completo antes de enforce (4/5) — ver detalle antes de promote
+- Q2 noclobber: audit limitado a ficheros críticos (`/etc/`, `.sk`, `seed.bin`, `*.sig`)
+- Q3 merge: `git merge --no-ff` unanimidad — trazabilidad científica
+- Q4 XGBoost: rama separada `feature/adr026-xgboost` hasta Precision ≥ 0.99 + F1 ≥ 0.9985
 
 ---
 
@@ -44,172 +60,124 @@ make test-provision-1
 make pipeline-start && make pipeline-status
 # Esperar: 6/6 RUNNING
 make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
-# Esperar: 12/12 PASSED
+# Esperar: 6/6 PASSED
 ```
 
-**Solo si 6/6 RUNNING y 12/12 PASSED se continúa.**
+**Solo si 6/6 RUNNING y 6/6 PASSED se continúa.**
 
 ---
 
 ## CRITERIO DE CIERRE DE FEATURE
 
-La feature/phase3-hardening NO puede mergearse a main hasta que
-todos los items siguientes tengan test verde:
+La feature/phase3-hardening se mergea a main cuando:
 
-□ DEBT-VAGRANTFILE-001    + vagrant provision OK con apparmor-utils
-□ DEBT-SEED-PERM-001      + TEST-PERMS-SEED verde
-□ REC-2                   + noclobber funciona + hook rechaza 0-bytes
-□ TEST-INVARIANT-SEED     + 6 seeds idénticos post-reset (gate en suite)
-□ TEST-PROVISION-1 (7/7)  + todos los echoes muestran 7/7
-□ ADR-021 addendum        + commiteado al repo docs/adr/
-□ AppArmor enforce 5/6    + TEST-APPARMOR-ENFORCE: 6/6 + 12/12 con enforce
-□ AppArmor sniffer        + 48h complain → enforce DAY 118+
-□ apparmor-promote.sh     + tools/apparmor-promote.sh funcional
-□ apparmor-utils check    + TEST-PROVISION-1 check #8
-□ docs/Recovery Contract  + OQ-6 ADR-024 documentado
-□ Backup policy .bak.*    + 3 resets → max 2 backups por componente
-□ DEBT-RAG-BUILD-001      + rag-security usa build-active symlink
+✅ 12/13 DEBTs cerrados (DAY 117)
+□ AppArmor enforce sniffer + TEST-APPARMOR-ENFORCE final
+□ noclobber audit ficheros críticos
+□ CHANGELOG-v0.4.0.md
+□ git merge --no-ff → main + tag v0.4.0-phase3-hardening
 
 ---
 
-## Orden DAY 117
+## Orden DAY 118
 
-### PASO 1 — DEBT-VAGRANTFILE-001 (5 min)
+### PASO 1 — Revisar ALLOWED sniffer (Consejo Q1)
 ```bash
-grep -n 'apt-get\|apt install\|apparmor' Vagrantfile | head -10
+vagrant ssh -c "sudo journalctl -k | grep -E 'apparmor.*sniffer|ALLOWED.*sniffer' -A3 -B3"
 ```
-Añadir `apparmor-utils` a la línea de instalación de paquetes.
-**Test de cierre:** `vagrant provision 2>&1 | grep apparmor-utils`
-O en su defecto: `vagrant ssh -c "which aa-complain"` sin instalación manual previa.
+Clasificar el evento. Si es legítimo y cubierto por el perfil → proceder.
+Si revela gap → actualizar perfil con `aa-logprof` antes de enforce.
 
-### PASO 2 — DEBT-SEED-PERM-001 + TEST-PERMS-SEED
+### PASO 2 — AppArmor enforce sniffer
 ```bash
-vagrant ssh -c "grep -n 'chmod 600\|chmod 640\|0600\|0640\|perm' \
-  /vagrant/libs/seed-client/src/seed_client.cpp | head -15"
-```
-Cambiar condición check: `!= 0600` → `!= 0640`.
-Cambiar mensaje warning: `chmod 600` → `chmod 640`.
-**Test de cierre TEST-PERMS-SEED:**
-- seed.bin con permisos 640 → NO warning
-- seed.bin con permisos 600 → SÍ warning (mensaje correcto)
-- seed.bin con permisos 644 → SÍ warning
-  Añadir al suite de tests o a make test-provision-1 como check #8 (apparmor-utils)
-  y TEST-PERMS-SEED separado.
-
-### PASO 3 — REC-2: noclobber + 0-bytes
-```bash
-grep -n 'noclobber\|set -o\|0-byte\|zero.*byte' /vagrant/tools/provision.sh | head -10
-grep -rn 'noclobber' /vagrant/Makefile /vagrant/tools/ | head -10
-```
-Añadir `set -o noclobber` al inicio de provision.sh y scripts que usen redirección.
-Añadir check pre-commit o en CI: rechazar ficheros de 0 bytes.
-**Test de cierre:** script con `>` no trunca fichero existente → falla con error.
-
-### PASO 4 — TEST-INVARIANT-SEED
-Implementar test que verifica post-reset todos los seed.bin son idénticos:
-```bash
-# El test debe ejecutar --reset y luego comparar:
-vagrant ssh -c 'sudo bash -c "
-  hashes=""
-  for c in etcd-server ml-detector sniffer firewall-acl-agent rag-ingester rag-security; do
-    h=\$(od -A n -t x1 /etc/ml-defender/\$c/seed.bin | tr -d \" \\n\")
-    hashes=\"\$hashes \$h\"
-  done
-  unique=\$(echo \$hashes | tr \" \" \"\\n\" | sort -u | wc -l)
-  [ \"\$unique\" -eq 1 ] && echo PASSED || echo FAILED
-"'
-```
-Integrar en `make test-reset` o en TEST-PROVISION-1 como check.
-
-### PASO 5 — TEST-PROVISION-1 echoes 5/5 → 7/7
-```bash
-vagrant ssh -c "grep -n '5/5\|5\/5' /vagrant/Makefile"
-```
-Actualizar todos los echoes "Check X/5" y "5/5 OK" a "7/7".
-**Test de cierre:** `make test-provision-1 2>&1 | grep '5/5'` → vacío.
-
-### PASO 6 — Backup policy .bak.*
-En `reset_all_keys()` y `reset_plugin_signing_keypair()`, añadir limpieza:
-keep last 2 backups por componente, eliminar el más antiguo si hay 3+.
-**Test de cierre:** ejecutar --reset 3 veces → `ls /etc/ml-defender/*.bak.* | wc -l`
-≤ 12 (2 backups × 6 componentes).
-
-### PASO 7 — ADR-021 addendum
-Escribir el addendum en `docs/adr/ADR-021-*.md` (o inline en el ADR existente).
-Contenido: INVARIANTE-SEED-001, regresión vs multi-familia, threat model RAM,
-DEBT-CRYPTO-003a como mitigación, ADR-033 como solución definitiva.
-**Test de cierre:** `git log docs/adr/` muestra commit del addendum.
-
-### PASO 8 — docs/Recovery Contract (OQ-6 ADR-024)
-Documento operacional: rotación de claves con zero downtime.
-5 pasos: dual-key T=24h + versioned deployment.yml + secuencia.
-Guardar en `docs/operations/key-rotation-contract.md`.
-**Test de cierre:** fichero existe y tiene los 5 pasos documentados.
-
-### PASO 9 — DEBT-RAG-BUILD-001
-```bash
-vagrant ssh -c "grep -n 'build\|RAG_BUILD\|rag.*build' /vagrant/rag/CMakeLists.txt | head -10"
-vagrant ssh -c "ls -la /vagrant/rag/build-active 2>/dev/null || echo 'NO SYMLINK'"
-```
-Crear build-active symlink para rag-security igual que los demás componentes.
-Actualizar set-build-profile.sh para incluir rag-security.
-**Test de cierre:** `set-build-profile.sh debug` → rag-security: build-active → build-debug ✅
-
-### PASO 10 — apparmor-utils en TEST-PROVISION-1 (check #8)
-Añadir al Makefile check #8:
-```bash
-vagrant ssh -c "which aa-complain aa-enforce aa-logprof > /dev/null 2>&1 \
-  && echo OK || echo FAIL"
-```
-Fallo → mensaje claro: "Ejecuta: sudo apt-get install -y apparmor-utils"
-
-### PASO 11 — tools/apparmor-promote.sh
-Script que:
-1. Recibe componente como parámetro
-2. Ejecuta aa-enforce
-3. Reinicia pipeline
-4. Monitorea journalctl 5 minutos
-5. Si hay denials AppArmor → rollback automático a aa-complain + log
-6. Si 0 denials → confirma enforce + log auditado
-   **Test de cierre:** promote.sh etcd-server → enforce + 0 denials → estado enforce confirmado.
-
-### PASO 12 — AppArmor enforce secuencial
-Usando apparmor-promote.sh:
-```bash
-bash tools/apparmor-promote.sh etcd-server
-# Verificar: 6/6 RUNNING + 0 denials → siguiente
-bash tools/apparmor-promote.sh rag-security
-bash tools/apparmor-promote.sh rag-ingester
-bash tools/apparmor-promote.sh ml-detector
-# Verificar: 6/6 RUNNING + 0 denials → siguiente
-bash tools/apparmor-promote.sh firewall-acl-agent
-# sniffer: NO enforce hasta 48h mínimo en complain (DAY 118+)
+vagrant ssh -c "sudo bash /vagrant/tools/apparmor-promote.sh sniffer 2>&1"
 ```
 **Test de cierre TEST-APPARMOR-ENFORCE:**
-`make plugin-integ-test` → 12/12 PASSED con 5/6 perfiles en enforce.
+```bash
+make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
+vagrant ssh -c "sudo aa-status 2>&1 | awk '/enforce mode/{found=1;next} /complain mode/{found=0} found && /vagrant/{print}'"
+# Esperado: 6/6 en enforce
+```
+
+### PASO 3 — noclobber audit ficheros críticos (Consejo Q2)
+```bash
+grep -n '>[^|]' tools/provision.sh | grep -E '/etc/|\.sk|seed\.bin|\.sig|\.pem|\.pk|\.env'
+```
+Para cada ocurrencia: decidir si es intencional (`>|` + comentario) o protegida (`>` está bien).
+**Test de cierre:** `make test-all` verde tras cambios.
+
+### PASO 4 — CHANGELOG-v0.4.0.md
+Crear `docs/CHANGELOG-v0.4.0.md` con estructura:
+```markdown
+## Security
+## Operations  
+## Tests
+## Bug fixes
+```
+Referenciando commits y ADRs del DAY 115-118.
+
+### PASO 5 — Merge a main
+```bash
+git checkout main
+git pull origin main
+git merge --no-ff feature/phase3-hardening -m "Merge feature/phase3-hardening
+
+PHASE 3 hardening completion — v0.4.0:
+- AppArmor enforce 6/6 componentes (0 denials)
+- TEST-PROVISION-1 8/8 + make test-all CI gate
+- INVARIANTE-SEED-001 + backup policy
+- Recovery Contract (OQ-6 ADR-024)
+- tools/apparmor-promote.sh rollback automático
+- Pubkey dev rotada post-reset documentada
+
+Closes: DEBT-VAGRANTFILE-001, DEBT-SEED-PERM-001, REC-2,
+TEST-INVARIANT-SEED, Backup policy, ADR-021 addendum,
+docs/Recovery Contract, DEBT-RAG-BUILD-001, apparmor-utils #8,
+apparmor-promote.sh, AppArmor enforce 6/6"
+
+git tag -a v0.4.0-phase3-hardening -m "PHASE 3 hardening complete"
+git push origin main --tags
+```
+
+### PASO 6 — Actualizar BACKLOG.md + README.md (merge completado)
+- Mover feature/phase3-hardening → COMPLETADO
+- Badge AppArmor → 6/6 enforce
+- Abrir `feature/adr026-xgboost` en roadmap
+
+### PASO 7 — Abrir feature/adr026-xgboost
+```bash
+git checkout main
+git checkout -b feature/adr026-xgboost
+git push origin feature/adr026-xgboost
+```
+Crear `docs/XGBOOST-VALIDATION.md` con checklist de métricas obligatorias (Precision ≥ 0.99, F1 ≥ 0.9985, gate médico, revisión Consejo).
 
 ---
 
 ## Contexto permanente
 
-### ADR-025 keypair dev (post-reset DAY 116)
-MLD_PLUGIN_PUBKEY_HEX: c44a4fe2bfe4ee8ad86f840277625e10ca1c97e85671f366c38a38e6bf02d575
+### ADR-025 keypair dev (post-reset DAY 117)
+MLD_PLUGIN_PUBKEY_HEX: `e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
 
-### seed_family post-reset DAY 116
+### seed_family post-reset DAY 117
 Seed compartido (6 componentes): 75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360
 INVARIANTE-SEED-001: todos los seed.bin DEBEN ser idénticos.
 
+### Lección operacional crítica (DAY 117)
+`provision.sh --reset` rota la keypair Ed25519. Pubkey hardcoded en CMakeLists.
+**Siempre después de --reset:** `make pipeline-build` + `make sign-plugins` + `make test-all`
+
 ### Regla de oro del pipeline
-6/6 RUNNING + 12/12 plugin-integ-test PASSED
+6/6 RUNNING + make test-all VERDE
 
 ### Patrón robusto para scripts en VM
-
+```bash
 cat > /tmp/script.py << 'PYEOF'
 ...
 PYEOF
 vagrant upload /tmp/script.py /tmp/script.py
 vagrant ssh -c "sudo python3 /tmp/script.py"
-
+```
 NUNCA sed -i en macOS. NUNCA Python inline con paréntesis en zsh.
 
 ### DEBTs no bloqueantes (NO tocar en esta feature)
@@ -225,25 +193,30 @@ NUNCA sed -i en macOS. NUNCA Python inline con paréntesis en zsh.
 
 ### PHASE 3 estado
 
-systemd units              ✅ DAY 115
-DEBT-SIGN-AUTO             ✅ DAY 115
-DEBT-HELLO-001             ✅ DAY 115
-TEST-PROVISION-1 (5/5)     ✅ DAY 115
-DEBT-ADR025-D11 --reset    ✅ DAY 116
-TEST-PROVISION-1 (7/7)     ✅ DAY 116
-AppArmor complain (6/6)    ✅ DAY 116
-DEBT-VAGRANTFILE-001       🔄 DAY 117
-DEBT-SEED-PERM-001         🔄 DAY 117
-REC-2 noclobber            🔄 DAY 117
-TEST-INVARIANT-SEED        🔄 DAY 117
-TEST-PROVISION-1 (7/7 echoes) 🔄 DAY 117
-Backup policy .bak.*       🔄 DAY 117
-ADR-021 addendum           🔄 DAY 117
-Recovery Contract          🔄 DAY 117
-DEBT-RAG-BUILD-001         🔄 DAY 117
-apparmor-utils check #8    🔄 DAY 117
-apparmor-promote.sh        🔄 DAY 117
-AppArmor enforce (5/6)     🔄 DAY 117
-AppArmor enforce sniffer   ⏳ DAY 118+ (48h complain)
-────────────────────────────────────────
-MERGE A MAIN: cuando 1-19 cerrados + sniffer enforce DAY 118+
+systemd units                  ✅ DAY 115
+DEBT-SIGN-AUTO                 ✅ DAY 115
+DEBT-HELLO-001                 ✅ DAY 115
+TEST-PROVISION-1 (5/5)         ✅ DAY 115
+DEBT-ADR025-D11 --reset        ✅ DAY 116
+AppArmor complain (6/6)        ✅ DAY 116
+DEBT-VAGRANTFILE-001           ✅ DAY 117
+DEBT-SEED-PERM-001             ✅ DAY 117
+REC-2 noclobber                ✅ DAY 117
+TEST-INVARIANT-SEED            ✅ DAY 117
+TEST-PROVISION-1 (8/8)         ✅ DAY 117
+Backup policy .bak.*           ✅ DAY 117
+ADR-021 addendum               ✅ DAY 117
+Recovery Contract              ✅ DAY 117
+DEBT-RAG-BUILD-001             ✅ DAY 117
+apparmor-utils check #8        ✅ DAY 117
+apparmor-promote.sh            ✅ DAY 117
+AppArmor enforce (5/6)         ✅ DAY 117
+noclobber audit crítico        🔄 DAY 118
+AppArmor enforce sniffer       🔄 DAY 118
+CHANGELOG-v0.4.0.md            🔄 DAY 118
+MERGE A MAIN                   🔄 DAY 118
+────────────────────────────────────────────
+Tag: v0.4.0-phase3-hardening · post merge DAY 118
+
+---
+

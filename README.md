@@ -11,7 +11,7 @@
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2_COMPLETE_5%2F5-brightgreen)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
 [![PHASE 3](https://img.shields.io/badge/PHASE_3-CORE_COMPLETADO-yellow)]()
-[![AppArmor](https://img.shields.io/badge/AppArmor-6_perfiles_complain-yellow)]()
+[![AppArmor](https://img.shields.io/badge/AppArmor-5%2F6_enforce_1%2F6_complain-brightgreen)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -74,7 +74,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Plugin integ tests** | **12/12 PASSED** | TEST-INTEG-4a/4b/4c/4d/4e + SIGN |
 | **CI gate** | **TEST-PROVISION-1 PASSED 7/7** | DAY 116 |
 | **Key rotation** | **provision.sh --reset VALIDATED** | TEST-RESET-1/2/3 PASSED — DAY 116 |
-| **AppArmor** | **6 profiles complain mode** | 0 denials — DAY 116 |
+| **AppArmor** | **5/6 enforce · 1/6 complain (sniffer)** | 0 denials — DAY 117 |
 
 ---
 
@@ -136,7 +136,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset |
 | CI gate TEST-PROVISION-1 (7/7 checks) | ✅ DAY 116 |
 | Key rotation provision.sh --reset | ✅ seed_family compartido — DAY 116 |
-| AppArmor profiles (6 components) | 🔄 complain mode — enforce DAY 117 |
+| AppArmor profiles (6 components) | ✅ 5/6 enforce · sniffer complain DAY 118+ |
 | explicit_bzero(seed) post-HKDF | ⏳ DEBT-CRYPTO-003a |
 | mlock() derived keys | ⏳ DEBT-CRYPTO-003a |
 | TPM measured boot (seed in hardware) | ⏳ ADR-033 post-PHASE 4 |
@@ -145,6 +145,14 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 ---
 
 ## 🗺️ Roadmap
+
+### ✅ DONE — DAY 117 (14 Apr 2026)
+- [x] 12/13 DEBTs bloqueantes PHASE 3 cerrados
+- [x] AppArmor enforce 5/6 (etcd-server, rag-security, rag-ingester, ml-detector, firewall) — 0 denials
+- [x] tools/apparmor-promote.sh — rollback automático si denials
+- [x] TEST-PROVISION-1 8/8 · make test-all CI gate completo
+- [x] DEBT-RAG-BUILD-001 · DEBT-SEED-PERM-001 · REC-2 · backup policy · ADR-021 addendum · Recovery Contract
+- [x] arXiv Draft v15 recibido de Cornell
 
 ### ✅ DONE — DAY 116 (13 Apr 2026)
 - [x] **PHASE 3 ítem 5:** DEBT-ADR025-D11 — provision.sh --reset con seed_family compartido (TEST-RESET-1/2/3 PASSED)
@@ -160,12 +168,10 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 - [x] **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉
 - [x] arXiv Replace v15 submitted
 
-### 🔜 NEXT — DAY 117
-- [ ] DEBT-VAGRANTFILE-001: apparmor-utils en Vagrantfile provision
-- [ ] DEBT-SEED-PERM-001: corregir mensaje SeedClient (chmod 640, no 600)
-- [ ] ADR-021 addendum: INVARIANTE-SEED-001 + threat model RAM
-- [ ] TEST-INVARIANT-SEED: gate post-reset
-- [ ] AppArmor enforce: etcd-server → rag-* → ml-detector → firewall → sniffer (48h complain)
+### 🔜 NEXT — DAY 118
+- [ ] AppArmor enforce sniffer (48h complain cumplidas)
+- [ ] Merge feature/phase3-hardening → main
+- [ ] Abrir feature/adr026-xgboost
 
 ### P3 — Post-PHASE 3
 - [ ] DEBT-CRYPTO-003a: mlock() + explicit_bzero(seed) post-HKDF derivation
@@ -191,7 +197,7 @@ make pipeline-status
 
 ### CI Gate (PHASE 3)
 ```bash
-make test-provision-1   # 7 checks: keys, plugin sigs, prod configs, symlinks, systemd, perms, json-consistency
+make test-all   # CI gate completo: libs + components + TEST-PROVISION-1 (8/8) + TEST-INVARIANT-SEED + plugin-integ-test
 ```
 
 ### Key Rotation
@@ -220,6 +226,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · arXiv v15
 - ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉 · TEST-PROVISION-1 CI gate
 - ✅ DAY 116: **PHASE 3 CORE COMPLETADO** 🎉 · --reset + AppArmor complain · INVARIANTE-SEED-001
+- ✅ DAY 117: **PHASE 3 DEBTs CERRADOS** 🎉 · AppArmor 5/6 enforce · make test-all CI gate · arXiv v15
 
 ---
 
