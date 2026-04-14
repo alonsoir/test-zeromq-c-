@@ -26,6 +26,7 @@
 # =============================================================================
 
 set -euo pipefail
+set -o noclobber          # REC-2: prevenir truncado accidental con >
 
 # =============================================================================
 # CONFIGURACIÓN — SINGLE SOURCE OF TRUTH

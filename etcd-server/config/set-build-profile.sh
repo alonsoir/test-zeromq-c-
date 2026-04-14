@@ -5,6 +5,7 @@
 # Desde Mac: vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug"
 
 set -euo pipefail
+set -o noclobber          # REC-2: prevenir truncado accidental con >
 
 PROFILE="${1:-}"
 if [[ "$PROFILE" != "debug" && "$PROFILE" != "release" ]]; then
