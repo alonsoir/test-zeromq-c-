@@ -69,3 +69,19 @@ add_test(NAME seed_client_tests
         COMMAND test_seed_client
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+# ─── TEST-PERMS-SEED (DEBT-SEED-PERM-001) ────────────────────────────────────
+add_executable(test_perms_seed
+        tests/test_perms_seed.cpp
+)
+target_link_libraries(test_perms_seed
+        PRIVATE seed_client
+        PRIVATE nlohmann_json::nlohmann_json
+)
+target_include_directories(test_perms_seed PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+add_test(NAME perms_seed_tests
+        COMMAND test_perms_seed
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)

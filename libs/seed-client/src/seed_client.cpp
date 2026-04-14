@@ -183,13 +183,13 @@ void SeedClient::check_seed_permissions(const std::string& seed_path) const {
     }
 
     const mode_t perms = st.st_mode & 0777;
-    if (perms != 0600) {
+    if (perms != 0640) {
         // Advertencia — no es un error fatal, pero sí un problema de seguridad
         std::ostringstream oss;
         oss << "[SeedClient] ADVERTENCIA DE SEGURIDAD: seed.bin tiene permisos "
             << std::oct << perms << std::dec
-            << " en lugar de 0600. Path: " << seed_path
-            << " — ejecuta: chmod 600 " << seed_path;
+            << " en lugar de 0640. Path: " << seed_path
+            << " — ejecuta: chmod 640 " << seed_path;
         // stderr para no contaminar stdout del pipeline
         fputs((oss.str() + "\n").c_str(), stderr);
     }
