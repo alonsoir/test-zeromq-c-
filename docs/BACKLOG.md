@@ -326,3 +326,60 @@ DEBT-FD-001 (JSON thresholds):         ████░░░░░░░░░�
 *arXiv: 2604.04952 · v15 submitted ✅ · Tag: v0.3.0-plugin-integrity*
 *PHASE 3: CORE COMPLETADO ✅ | 13 DEBTs bloqueantes pendientes · merge cuando todos en verde*
 *"Via Appia Quality — Un escudo, nunca una espada."*
+---
+
+### ADR-034 — Deployment Topology Declarativa (⏳ post-ADR-026)
+
+**Concepto:** `deployment.yml` como SSOT de topología física del hospital.
+Describe plantas, nodos por planta, y componentes por nodo.
+Ansible + Jinja2 iteran el fichero y generan configuraciones por nodo.
+Jenkins orquesta el pipeline CI/CD completo.
+
+**Tres capas:**
+1. `deployment.yml` — topología declarativa (plantas × nodos × componentes)
+2. Ansible + Jinja2 — motor de despliegue. Jenkins como orquestador CI/CD.
+3. seed_families por planta — ADR-021 multi-familia: blast radius limitado a planta comprometida.
+
+**Ejemplo real (hospital):**
+```yaml
+floors:
+  - floor: 1
+    nodes: 1
+    components: {sniffer: 1, ml-detector: 2, firewall: 1}
+  - floor: 2
+    nodes: 10
+    components: {sniffer: 10, ml-detector: 10, firewall: 10}
+aggregation:
+  rag-ingester: 30   # suma ml-detector+firewall de todas las plantas
+  rag-security: 1    # único punto de consulta semántica
+```
+
+**Pregunta abierta (para el Consejo cuando llegue):**
+Aggregation fanout: 30 rag-ingesters → 1 FAISS+SQLite sin colisiones,
+sin duplicados, con trazabilidad de origen por planta.
+Opciones: ZeroMQ PUSH/PULL, particionado por trace_id,
+rag-ingester-coordinator como nuevo componente.
+
+**Pre-requisitos:** ADR-026 XGBoost + ADR-029 bare-metal + MULTI-VM + ANSIBLE
+**Feature destino:** feature/bare-metal (fase tardía)
+
+---
+
+### ADR-035 — etcd-server Alta Disponibilidad (⏳ post-ADR-034)
+
+**Concepto:** etcd-server en modo cluster (3 nodos mínimo) para eliminar
+SPOF en topología multi-nodo. Sin etcd HA, una topología de 30+ nodos
+tiene un punto único de fallo en registro de componentes y distribución
+de seeds.
+
+**Dependencia directa con ADR-034:** deployment.yml debe describir
+el cluster etcd (quorum, líder, réplicas) además de los componentes
+del pipeline.
+
+**Opciones a evaluar por el Consejo:**
+1. etcd nativo (3 nodos, Raft consensus) — la más robusta
+2. etcd embebido con replicación simplificada — más ligero para hospitales pequeños
+3. Consul como alternativa — mayor superficie pero más features
+
+**Pre-requisitos:** ADR-034 + topología multi-VM funcionando
+**Feature destino:** feature/bare-metal (fase tardía)
