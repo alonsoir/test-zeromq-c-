@@ -69,6 +69,49 @@ Anotar en el log de operaciones (o commit de git):
 
 ---
 
+---
+
+## Lección aprendida DAY 117 — pubkey hardcoded tras reset
+
+**Problema:** Tras ejecutar `provision.sh --reset` múltiples veces (test de backup
+policy), la keypair de firma de plugins rotó. Los binarios tenían la pubkey anterior
+hardcoded en `plugin-loader/CMakeLists.txt` → `TEST-INTEG-SIGN FAILED`.
+
+**Síntoma:**
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+terminate called without an active exception
+TEST-INTEG-SIGN FAILED
+
+**Causa raíz:** `MLD_PLUGIN_PUBKEY_HEX` en `plugin-loader/CMakeLists.txt` es un
+valor hardcoded en tiempo de compilación (ADR-025 D7). Cada `--reset` rota la
+keypair en `/etc/ml-defender/plugins/` pero NO recompila los binarios.
+
+**Solución:**
+```bash
+# 1. Obtener nueva pubkey
+vagrant ssh -c "sudo python3 -c \"
+import subprocess, base64
+pem = subprocess.run(['cat', '/etc/ml-defender/plugins/plugin_signing.pk'],
+    capture_output=True).stdout
+raw = base64.b64decode(''.join(pem.decode().strip().split('\n')[1:-1]))
+print(raw[-32:].hex())
+\""
+
+# 2. Actualizar plugin-loader/CMakeLists.txt con nueva pubkey
+# 3. Recompilar
+make pipeline-build
+# 4. Re-firmar plugins
+make sign-plugins
+# 5. Verificar
+make plugin-integ-test
+```
+
+**Regla de oro:** `provision.sh --reset` → siempre `make pipeline-build` +
+`make sign-plugins` + `make test-all`.
+
+**Pubkey activa post-reset DAY 117:**
+`e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
+
 ## Roadmap
 
 - **PHASE 3 (actual):** Rotación con reinicio controlado. ~30s downtime.
