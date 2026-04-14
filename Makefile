@@ -630,24 +630,24 @@ test-provision-1:
 	@echo "║  🔍 TEST-PROVISION-1 — CI Gate PHASE 3                   ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@echo ""
-	@echo "── Check 1/7: Claves criptográficas ──"
+	@echo "── Check 1/8: Claves criptográficas ──"
 	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh verify" || \
 		(echo "❌ CHECK 1 FAILED: claves ausentes o inválidas" && \
 		 echo "   Ejecuta: make provision" && exit 1)
-	@echo "✅ Check 1/7 OK"
+	@echo "✅ Check 1/8 OK"
 	@echo ""
-	@echo "── Check 2/7: Firmas de plugins (producción) ──"
+	@echo "── Check 2/8: Firmas de plugins (producción) ──"
 	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh check-plugins --production" || \
 		(echo "❌ CHECK 2 FAILED: plugins sin firma válida" && \
 		 echo "   Ejecuta: make sign-plugins" && exit 1)
-	@echo "✅ Check 2/7 OK"
+	@echo "✅ Check 2/8 OK"
 	@echo ""
-	@echo "── Check 3/7: Configs de producción (sin dev plugins) ──"
+	@echo "── Check 3/8: Configs de producción (sin dev plugins) ──"
 	@$(MAKE) validate-prod-configs || \
 		(echo "❌ CHECK 3 FAILED: dev plugins en configs de producción" && exit 1)
-	@echo "✅ Check 3/7 OK"
+	@echo "✅ Check 3/8 OK"
 	@echo ""
-	@echo "── Check 4/7: build-active symlinks ──"
+	@echo "── Check 4/8: build-active symlinks ──"
 	@vagrant ssh -c "test -L /vagrant/sniffer/build-active && \
 		test -L /vagrant/ml-detector/build-active && \
 		test -L /vagrant/firewall-acl-agent/build-active && \
@@ -656,28 +656,34 @@ test-provision-1:
 		(echo "❌ CHECK 4 FAILED: build-active symlinks ausentes" && \
 		 echo "   Ejecuta: vagrant ssh -c 'sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug'" && \
 		 exit 1)
-	@echo "✅ Check 4/7 OK"
+	@echo "✅ Check 4/8 OK"
 	@echo ""
-	@echo "── Check 5/7: systemd units instalados ──"
+	@echo "── Check 5/8: systemd units instalados ──"
 	@vagrant ssh -c "systemctl list-unit-files ml-defender-*.service 2>/dev/null | grep -c 'ml-defender'" | \
 		grep -q "6" || \
 		(echo "❌ CHECK 5 FAILED: systemd units no instalados (esperado: 6)" && \
 		 echo "   Ejecuta: vagrant ssh -c 'sudo bash /vagrant/etcd-server/config/install-systemd-units.sh'" && \
 		 exit 1)
-	@echo "✅ Check 5/7 OK"
+	@echo "✅ Check 5/8 OK"
 	@echo ""
 	@echo ""
-	@echo "── Check 6/7: Permisos ficheros sensibles ──"
+	@echo "── Check 6/8: Permisos ficheros sensibles ──"
 	@vagrant ssh -c "sudo find /etc/ml-defender -type f \( -name '*.sk' \) -perm /022 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
 		(echo "❌ CHECK 6 FAILED: .sk con permisos world/group-writable" && exit 1) || true
 	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' ! -perm 640 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
 		(echo "❌ CHECK 6 FAILED: seed.bin con permisos incorrectos (esperado: 640)" && exit 1) || true
-	@echo "✅ Check 6/7 OK"
+	@echo "✅ Check 6/8 OK"
 	@echo ""
-	@echo "── Check 7/7: Consistencia JSONs con plugins reales ──"
+	@echo "── Check 7/8: Consistencia JSONs con plugins reales ──"
 	@vagrant ssh -c "python3 /vagrant/tools/check-json-plugins.py" || \
 		(echo "❌ CHECK 7 FAILED: plugins referenciados en JSONs sin .so o .sig" && exit 1)
-	@echo "✅ Check 7/7 OK"
+	@echo "✅ Check 7/8 OK"
+	@echo ""
+	@echo "── Check 8/8: apparmor-utils instalado ──"
+	@vagrant ssh -c "/usr/sbin/aa-complain --help > /dev/null 2>&1 && /usr/sbin/aa-enforce --help > /dev/null 2>&1 && echo OK || echo FAIL" | grep -q OK || \
+		(echo "❌ CHECK 8 FAILED: apparmor-utils no instalado" && \
+		 echo "   Ejecuta: vagrant ssh -c \"sudo apt-get install -y apparmor-utils\"" && exit 1)
+	@echo "✅ Check 8/8 OK"
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  ✅ TEST-PROVISION-1 PASSED — entorno listo               ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
