@@ -392,6 +392,28 @@ provision_component() {
     log_info "${component} provisionado correctamente"
 }
 
+# Mantiene máximo 2 backups por componente — elimina el más antiguo si hay 3+
+# USO: cleanup_old_backups <base_dir>  (ej: /etc/ml-defender/etcd-server)
+cleanup_old_backups() {
+    local base_dir="$1"
+    local parent
+    parent="$(dirname "$base_dir")"
+    local name
+    name="$(basename "$base_dir")"
+    local backups=()
+    while IFS= read -r -d $'\0' d; do
+        backups+=("$d")
+    done < <(find "$parent" -maxdepth 1 -name "${name}.bak.*" -type d -print0 | sort -z)
+    local count=${#backups[@]}
+    if (( count >= 3 )); then
+        local to_delete=$(( count - 2 ))
+        for (( i=0; i<to_delete; i++ )); do
+            rm -rf "${backups[$i]}"
+            log_item "Backup antiguo eliminado: ${backups[$i]}"
+        done
+    fi
+}
+
 # Re-provisiona forzando regeneración (borra claves existentes)
 reprovision_component() {
     local component="$1"
@@ -405,6 +427,7 @@ reprovision_component() {
         cp -r "$dir" "$backup_dir"
         chmod 700 "$backup_dir"
         log_item "Backup creado: $backup_dir"
+        cleanup_old_backups "$dir"
 
         rm -f "${dir}/private.pem" \
               "${dir}/public.pem" \
@@ -441,6 +464,7 @@ reset_plugin_signing_keypair() {
         [[ -f "$public_key"  ]] && cp "$public_key"  "$backup_dir/"
         chmod 700 "$backup_dir"
         log_item "Backup plugin signing keypair: $backup_dir"
+        cleanup_old_backups "$signing_dir"
         rm -f "$private_key" "$public_key"
     fi
 
@@ -508,6 +532,7 @@ reset_all_keys() {
             cp -r "$dir" "$backup_dir"
             chmod 700 "$backup_dir"
             log_item "Backup creado: $backup_dir"
+            cleanup_old_backups "$dir"
             rm -f "${dir}/private.pem" "${dir}/public.pem"                   "${dir}/seed.bin"    "${dir}/seed.hex"                   "${dir}/fingerprint.txt" "${dir}/provision_meta.json"
         fi
 
