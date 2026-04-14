@@ -1,10 +1,10 @@
 #include <tunables/global>
 
-/vagrant/rag/build/rag-security flags=(complain) {
+/vagrant/rag/build-active/rag-security flags=(complain) {
   #include <abstractions/base>
   #include <abstractions/nameservice>
 
-  /vagrant/rag/build/rag-security r,
+  /vagrant/rag/build-active/rag-security r,
   /usr/local/lib/libcrypto_transport.so mr,
   /usr/local/lib/libseed_client.so mr,
   /usr/lib/** mr,
