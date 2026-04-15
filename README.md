@@ -10,8 +10,8 @@
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2_COMPLETE_5%2F5-brightgreen)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
-[![PHASE 3](https://img.shields.io/badge/PHASE_3-CORE_COMPLETADO-yellow)]()
-[![AppArmor](https://img.shields.io/badge/AppArmor-5%2F6_enforce_1%2F6_complain-brightgreen)]()
+[![PHASE 3](https://img.shields.io/badge/PHASE_3-COMPLETADO-brightgreen)]()
+[![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -21,8 +21,7 @@
 
 ---
 
-⚠️ Active development branch: `feature/phase3-hardening`
-For current state, see that branch. `main` is tagged `v0.3.0-plugin-integrity`.
+✅ `main` is tagged `v0.4.0-phase3-hardening` — PHASE 3 complete. Next: `feature/adr026-xgboost`.
 
 ## 📄 Preprint
 
@@ -72,9 +71,9 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `vagrant destroy` |
 | **Plugin integrity** | **ADR-025 MERGED — v0.3.0-plugin-integrity** | Ed25519 + TOCTOU-safe dlopen |
 | **Plugin integ tests** | **12/12 PASSED** | TEST-INTEG-4a/4b/4c/4d/4e + SIGN |
-| **CI gate** | **TEST-PROVISION-1 PASSED 7/7** | DAY 116 |
+| **CI gate** | **TEST-PROVISION-1 PASSED 8/8** | DAY 118 |
 | **Key rotation** | **provision.sh --reset VALIDATED** | TEST-RESET-1/2/3 PASSED — DAY 116 |
-| **AppArmor** | **5/6 enforce · 1/6 complain (sniffer)** | 0 denials — DAY 117 |
+| **AppArmor** | **6/6 enforce** | 0 denials — DAY 118 |
 
 ---
 
@@ -134,9 +133,9 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | Plugin signing key rotation | ✅ provision.sh check-plugins dev/prod modes |
 | Dev plugins blocked from production | ✅ BUILD_DEV_PLUGINS=OFF + validate-prod-configs |
 | systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset |
-| CI gate TEST-PROVISION-1 (7/7 checks) | ✅ DAY 116 |
+| CI gate TEST-PROVISION-1 (8/8 checks) | ✅ DAY 118 |
 | Key rotation provision.sh --reset | ✅ seed_family compartido — DAY 116 |
-| AppArmor profiles (6 components) | ✅ 5/6 enforce · sniffer complain DAY 118+ |
+| AppArmor profiles (6 components) | ✅ 6/6 enforce — DAY 118 |
 | explicit_bzero(seed) post-HKDF | ⏳ DEBT-CRYPTO-003a |
 | mlock() derived keys | ⏳ DEBT-CRYPTO-003a |
 | TPM measured boot (seed in hardware) | ⏳ ADR-033 post-PHASE 4 |
@@ -145,6 +144,22 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 ---
 
 ## 🗺️ Roadmap
+
+### ✅ DONE — DAY 118 (15 Apr 2026)
+- [x] **PHASE 3 COMPLETADA — v0.4.0-phase3-hardening MERGEADO A MAIN** 🎉
+- [x] AppArmor enforce 6/6 (sniffer enforce — 0 denials) ✅
+- [x] TEST-APPARMOR-ENFORCE: make test-all verde · 6/6 aa-status enforce ✅
+- [x] noclobber audit ficheros críticos — limpio ✅
+- [x] CHANGELOG-v0.4.0.md creado ✅
+- [x] git merge --no-ff + tag v0.4.0-phase3-hardening + push ✅
+
+### ✅ DONE — DAY 118 (15 Apr 2026)
+- [x] **PHASE 3 COMPLETADA — v0.4.0-phase3-hardening MERGEADO A MAIN** 🎉
+- [x] AppArmor enforce 6/6 (sniffer enforce — 0 denials) ✅
+- [x] TEST-APPARMOR-ENFORCE: make test-all verde · 6/6 aa-status enforce ✅
+- [x] noclobber audit ficheros críticos — limpio ✅
+- [x] CHANGELOG-v0.4.0.md creado ✅
+- [x] git merge --no-ff + tag v0.4.0-phase3-hardening + push ✅
 
 ### ✅ DONE — DAY 117 (14 Apr 2026)
 - [x] 12/13 DEBTs bloqueantes PHASE 3 cerrados
@@ -168,10 +183,10 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 - [x] **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉
 - [x] arXiv Replace v15 submitted
 
-### 🔜 NEXT — DAY 118
-- [ ] AppArmor enforce sniffer (48h complain cumplidas)
-- [ ] Merge feature/phase3-hardening → main
-- [ ] Abrir feature/adr026-xgboost
+### 🔜 NEXT — feature/adr026-xgboost
+- [ ] Abrir rama feature/adr026-xgboost
+- [ ] XGBOOST-VALIDATION.md con gate: Precision ≥ 0.99 + F1 ≥ 0.9985
+- [ ] Consejo review pre-merge
 
 ### P3 — Post-PHASE 3
 - [ ] DEBT-CRYPTO-003a: mlock() + explicit_bzero(seed) post-HKDF derivation
@@ -226,6 +241,8 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · arXiv v15
 - ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉 · TEST-PROVISION-1 CI gate
 - ✅ DAY 116: **PHASE 3 CORE COMPLETADO** 🎉 · --reset + AppArmor complain · INVARIANTE-SEED-001
+- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉 · AppArmor 6/6 enforce · CHANGELOG · tag v0.4.0-phase3-hardening
+- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉 · AppArmor 6/6 enforce · CHANGELOG · tag v0.4.0-phase3-hardening
 - ✅ DAY 117: **PHASE 3 DEBTs CERRADOS** 🎉 · AppArmor 5/6 enforce · make test-all CI gate · arXiv v15
 
 ---
