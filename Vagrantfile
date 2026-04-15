@@ -324,6 +324,29 @@ LIBBPF_PROFILE
       else
         echo "✅ FAISS already installed"
       fi
+      # XGBoost 3.2.0 (C API + Python) - ADR-026 Track 1
+      if [ ! -f /usr/local/lib/libxgboost.so ]; then
+        echo "🔍 Installing XGBoost 3.2.0..."
+        pip3 install xgboost==3.2.0 --break-system-packages
+        # Headers C++ desde tag oficial
+        mkdir -p /usr/local/include/xgboost
+        curl -fsSL https://raw.githubusercontent.com/dmlc/xgboost/v3.2.0/include/xgboost/c_api.h \
+          -o /usr/local/include/xgboost/c_api.h
+        curl -fsSL https://raw.githubusercontent.com/dmlc/xgboost/v3.2.0/include/xgboost/base.h \
+          -o /usr/local/include/xgboost/base.h
+        # Librería compartida al path estándar
+        XGBOOST_SO=$(find /home/vagrant/.local /root/.local -name 'libxgboost.so' 2>/dev/null | head -1)
+        if [ -n "$XGBOOST_SO" ]; then
+          cp "$XGBOOST_SO" /usr/local/lib/libxgboost.so
+          ldconfig
+          echo "✅ XGBoost installed: $(python3 -c 'import xgboost; print(xgboost.__version__)')"
+        else
+          echo "❌ libxgboost.so not found after pip install"
+          exit 1
+        fi
+      else
+        echo "✅ XGBoost already installed"
+      fi
 
       # etcd-cpp-api
       if [ ! -f /usr/local/lib/libetcd-cpp-api.so ] && [ ! -f /usr/local/lib/libetcd-cpp-api.a ]; then
