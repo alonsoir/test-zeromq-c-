@@ -1,0 +1,42 @@
+#include <tunables/global>
+
+/vagrant/sniffer/build-active/sniffer flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  /vagrant/sniffer/build-*/sniffer r,
+  /usr/local/lib/libcrypto_transport.so mr,
+  /usr/local/lib/libseed_client.so mr,
+  /usr/local/lib/libplugin_loader.so mr,
+  /usr/lib/** mr,
+  /lib/** mr,
+
+  /etc/ml-defender/sniffer/ r,
+  /etc/ml-defender/sniffer/** r,
+
+  /vagrant/logs/lab/sniffer.log w,
+  /vagrant/logs/lab/ rw,
+
+  # Provision --reset paths
+  /etc/ml-defender/sniffer.bak.*/ rw,
+  /etc/ml-defender/sniffer.bak.*/** rw,
+
+  network tcp,
+  network unix,
+  network raw,
+  network packet,
+
+  # eBPF/XDP capabilities
+  capability net_raw,
+  capability net_admin,
+  capability sys_admin,
+  capability bpf,
+
+  /proc/sys/net/** r,
+  /sys/fs/bpf/ rw,
+  /sys/fs/bpf/** rw,
+  /proc/self/** r,
+  /dev/net/tun rw,
+
+  deny /usr/bin/ml-defender-* w,
+}

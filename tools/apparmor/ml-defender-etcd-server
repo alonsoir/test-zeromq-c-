@@ -1,0 +1,36 @@
+#include <tunables/global>
+
+/vagrant/etcd-server/build-active/etcd-server flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  # Binario
+  /vagrant/etcd-server/build-*/etcd-server r,
+  /usr/local/lib/libcrypto_transport.so mr,
+  /usr/local/lib/libseed_client.so mr,
+  /usr/lib/** mr,
+  /lib/** mr,
+
+  # Claves y seeds (lectura)
+  /etc/ml-defender/etcd-server/ r,
+  /etc/ml-defender/etcd-server/** r,
+
+  # Logs
+  /vagrant/logs/lab/etcd-server.log w,
+  /vagrant/logs/lab/ rw,
+
+  # Provision --reset paths (ADR-025 D11)
+  /etc/ml-defender/etcd-server.bak.*/ rw,
+  /etc/ml-defender/etcd-server.bak.*/** rw,
+
+  # Network
+  network tcp,
+  network unix,
+
+  # Proc/sys
+  /proc/self/** r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+
+  # Denegar escritura en binarios del sistema
+  deny /usr/bin/ml-defender-* w,
+}

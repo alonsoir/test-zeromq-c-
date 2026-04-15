@@ -5,6 +5,7 @@
 # Desde Mac: vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug"
 
 set -euo pipefail
+set -o noclobber          # REC-2: prevenir truncado accidental con >
 
 PROFILE="${1:-}"
 if [[ "$PROFILE" != "debug" && "$PROFILE" != "release" ]]; then
@@ -14,7 +15,7 @@ fi
 
 COMPONENTS=(
     "/vagrant/etcd-server"
-    # "/vagrant/rag"  -- DEBT-RAG-BUILD-001: rag/build no sigue convencion build-debug/build-release
+    "/vagrant/rag"
     "/vagrant/rag-ingester"
     "/vagrant/ml-detector"
     "/vagrant/sniffer"
@@ -38,11 +39,10 @@ done
 
 # Guardar perfil activo
 mkdir -p /etc/ml-defender
-echo "ML_DEFENDER_BUILD=build-${PROFILE}" > /etc/ml-defender/build.env
+echo "ML_DEFENDER_BUILD=build-${PROFILE}" >| /etc/ml-defender/build.env
 echo "ML_DEFENDER_PROFILE=${PROFILE}" >> /etc/ml-defender/build.env
 
 echo ""
 echo "  Perfil activo guardado en /etc/ml-defender/build.env"
-echo "  ⚠️  rag-security usa /vagrant/rag/build/ fijo (DEBT-RAG-BUILD-001)"
 echo "  Recarga units: sudo systemctl daemon-reload"
 echo "═══ Listo ═══"

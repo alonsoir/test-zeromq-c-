@@ -122,9 +122,114 @@ constexpr const char* CTX_SNIFFER_TO_ML_V2 = "ml-defender:sniffer-to-ml-detector
 
 ---
 
-## Revisión del Consejo de Sabios
+## Addendum DAY 116 — 13 Abril 2026
 
-Esta ADR fue propuesta durante la revisión de cierre DAY 99.
-FASE 3 completa pasará por nueva revisión del Consejo antes de implementarse.
+### Invariante criptográfico descubierto: seed_family compartido
 
-*DAY 100 — 2026-03-28*
+**Contexto del hallazgo:**
+Durante la implementación de `provision.sh --reset` (DEBT-ADR025-D11, DAY 116),
+la primera versión de `reset_all_keys()` generó seeds independientes para cada
+componente. Resultado: HKDF derivó claves distintas en cada extremo del canal →
+MAC verification failed en todos los PUTs de configuración. Pipeline en fail-closed.
+
+**Root cause:** el invariante "todos los componentes comparten el mismo seed_family
+en despliegue single-node" estaba implícito en el código desde DAY 95, nunca
+documentado explícitamente.
+
+**Fix aplicado (commit 3c0a214f):** `reset_all_keys()` genera UN seed aleatorio
+y lo distribuye a los 6 componentes antes de regenerar los keypairs Ed25519.
+
+### Invariante explícito
+
+> **INVARIANTE-SEED-001:** En un despliegue single-node, todos los componentes
+> del pipeline DEBEN compartir el mismo `seed.bin` (seed_family). HKDF deriva
+> subkeys distintos por canal mediante el contexto (CTX_ETCD_TX/RX, etc.), pero
+> el material raíz es común. Cualquier operación que regenere seeds DEBE
+> distribuir el mismo valor a los 6 componentes.
+
+**Test de validación:** TEST-INVARIANT-SEED — verifica que post-reset todos los
+`seed.bin` de los 6 componentes son byte-a-byte idénticos.
+
+### Regresión respecto al modelo multi-familia original
+
+El diseño original de este ADR (DAY 100) definía seed_families distintas por canal:
+- family_A: sniffer ↔ ml-detector
+- family_B: ml-detector ↔ firewall
+- family_C: ml-detector ↔ firewall ↔ rag-ingester
+
+Este modelo es arquitecturalmente superior: un componente comprometido solo expone
+los seeds de los canales en que participa. El blast radius queda contenido.
+
+La simplificación a seed único fue una decisión pragmática para el despliegue
+single-node actual (un solo Vagrantfile, 6 componentes en el mismo host). En esta
+topología, la separación por familias no aporta protección real porque un atacante
+con acceso al host tiene acceso a todos los seed.bin igualmente.
+
+**Implicación para producción multi-nodo:** el modelo de familias DEBE reimplementarse
+cuando los componentes estén en hosts separados. La separación por familia limita
+el blast radius de un host comprometido — el atacante solo obtiene los seeds de
+los canales que pasan por ese host, no el seed raíz global.
+
+### Amenaza de inspección de RAM (nueva — DAY 116)
+
+**Amenaza identificada:** un atacante con capacidad de RAM forensics en cualquier
+componente puede extraer el seed_family de memoria, comprometiendo la raíz de
+confianza criptográfica de todo el pipeline.
+
+**Mitigación aplicable (sin hardware):**
+El seed solo se necesita durante la derivación HKDF. El flujo correcto es:
+seed.bin → load → HKDF derive(tx_key, rx_key) → explicit_bzero(seed) → mlock(tx_key, rx_key)
+
+Post-derivación, el seed no debe permanecer en RAM. Los subkeys derivados deben
+estar protegidos con mlock() para evitar swap a disco.
+
+Un atacante que obtiene los subkeys de un canal comprometido NO puede reconstruir
+el seed ni los subkeys de otros canales.
+
+**Deuda técnica:** DEBT-CRYPTO-003a — implementar mlock() + explicit_bzero(seed)
+post-derivación en seed_client.cpp. Ya estaba en backlog; ahora tiene contexto
+de amenaza explícito.
+
+**Mitigación definitiva (hardware):** ADR-033 (TPM 2.0 Measured Boot) — el seed
+nunca entra en userspace; la derivación HKDF ocurre dentro del TPM. Post-PHASE 4.
+
+### Estado de implementación actualizado
+
+| Elemento | Estado |
+|---|---|
+| contexts.hpp — contextos v1 | ✅ DAY 99 |
+| seed_family single-node compartido | ✅ DAY 116 (INVARIANTE-SEED-001) |
+| explicit_bzero(seed) post-derivación | ⏳ DEBT-CRYPTO-003a |
+| mlock() subkeys derivados | ⏳ DEBT-CRYPTO-003a |
+| deployment.yml — schema multi-familia | ⏳ producción multi-nodo |
+| provision.sh — multi-seed por familia | ⏳ producción multi-nodo |
+| TPM derivación hardware | ⏳ ADR-033 post-PHASE 4 |
+
+*Addendum — DAY 116 — 13 Abril 2026*
+
+### Addendum DAY 117 — 14 Abril 2026
+
+#### INVARIANTE-SEED-001 — Validación en producción
+
+TEST-INVARIANT-SEED implementado y ejecutado:
+- 3 resets consecutivos (`provision.sh --reset`) → 6 seeds idénticos en cada reset
+- `make test-invariant-seed` integrado en `make test-all` como CI gate
+- Hashes únicos post-reset: 1/1 (PASSED)
+
+#### Regresión vs multi-familia
+
+INVARIANTE-SEED-001 aplica exclusivamente a deployments single-node (PHASE 3).
+En producción multi-nodo, cada familia tendrá su propio seed distinto — el test
+deberá parametrizarse por familia. Esta extensión corresponde a la fase de
+`deployment.yml` multi-familia (columna ⏳ en tabla de implementación).
+
+#### Backup policy operacional
+
+`cleanup_old_backups()` implementada en `provision.sh`:
+- Máximo 2 backups por componente/dir
+- Llamada automática en: `reprovision_component`, `reset_all_keys`,
+  `reset_plugin_signing_keypair`
+- Test: 3 resets → 14 backups (2 × 7 targets: 6 componentes + plugins signing)
+- Backups más antiguos eliminados automáticamente al superar el límite
+
+*Addendum — DAY 117 — 14 Abril 2026*

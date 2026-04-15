@@ -1,0 +1,6 @@
+Leídas las 5 respuestas. Resumen de veredictos consolidados:
+Q1 — ALLOWED sniffer: 4/5 dicen revisar el log completo antes de enforce. Solo Qwen dice proceder directamente confiando en el rollback. Veredicto: revisar primero. Acción DAY 118: sudo journalctl -k | grep -E 'apparmor.*sniffer|ALLOWED.*sniffer' -A3 -B3 antes de ejecutar promote.
+Q2 — noclobber audit: Unanimidad en hacer audit, pero división entre completo (ChatGPT, Grok) vs limitado a rutas críticas (DeepSeek, Qwen). Veredicto práctico: audit limitado a ficheros críticos — /etc/, .sk, seed.bin, *.sig. Tiempo estimado: 30 minutos.
+Q3 — Merge strategy: Unanimidad total: git merge --no-ff. Trazabilidad científica sobre limpieza visual. Tag anotado v0.4.0-phase3-hardening con changelog estructurado.
+Q4 — XGBoost: Unanimidad: rama separada feature/adr026-xgboost. Feature flag en JSON solo dentro de la rama para testing A/B interno, nunca en main hasta que Precision ≥ 0.99 + F1 ≥ 0.9985.
+¿Segunda ronda? No es necesaria. Los 4 veredictos son claros y accionables. Nota: Parallel.ai no respondió — lo dejamos para DAY 118 si quieres intentarlo de nuevo.

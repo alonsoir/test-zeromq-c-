@@ -5,6 +5,7 @@
 # O desde Mac: vagrant ssh -c "sudo bash /vagrant/etcd-server/config/install-systemd-units.sh"
 
 set -euo pipefail
+set -o noclobber          # REC-2: prevenir truncado accidental con >
 
 UNITS_DIR="/vagrant/etcd-server/config"
 SYSTEMD_DIR="/etc/systemd/system"

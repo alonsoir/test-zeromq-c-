@@ -10,8 +10,8 @@
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![Plugin Loader](https://img.shields.io/badge/Plugin_Loader-ADR--023_PHASE2_COMPLETE_5%2F5-brightgreen)](docs/adr/ADR-012%20plugin%20loader%20architecture.md)
-[![ADR-029](https://img.shields.io/badge/ADR--029-async--signal--safe_APPROVED-green)](docs/adr/ADR-029-rag-security-global-plugin-loader-async-signal-safe.md)
-[![PHASE 3](https://img.shields.io/badge/PHASE_3-4%2F6_items_DONE-yellow)]()
+[![PHASE 3](https://img.shields.io/badge/PHASE_3-CORE_COMPLETADO-yellow)]()
+[![AppArmor](https://img.shields.io/badge/AppArmor-5%2F6_enforce_1%2F6_complain-brightgreen)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -52,40 +52,33 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ML Defender is a **Network Detection and Response (NDR)** system. Its guiding principle is **network surveillance**: every component operates on network traffic — packet capture, flow-level feature extraction, ML classification, firewall response.
 
-**Physical and removable-media vectors are explicitly out of scope by conscious design decision.** File system activity, USB-borne payloads, and removable storage are not monitored. This is an architectural boundary, not an oversight. USB ports in the DMZ should be physically or firmware-disabled by the IT team; internal policy should prohibit removable media on monitored hosts (CIS Controls v8).
+**Physical and removable-media vectors are explicitly out of scope by conscious design decision.** File system activity, USB-borne payloads, and removable storage are not monitored. This is an architectural boundary, not an oversight.
 
-**Complementary mode with Wazuh:** for organizations requiring file integrity monitoring, ML Defender is designed to operate alongside battle-tested tools like [Wazuh](https://wazuh.com). The two systems are architecturally orthogonal — ML Defender defends the network perimeter; Wazuh defends the host state. Integration via raw TCP event streaming is on the roadmap (FEAT-INT-1).
+**Complementary mode with Wazuh:** for organizations requiring file integrity monitoring, ML Defender is designed to operate alongside battle-tested tools like [Wazuh](https://wazuh.com). Integration via raw TCP event streaming is on the roadmap (FEAT-INT-1).
 
 ---
 
-## 📊 Validated Results (DAY 115 — 12 April 2026)
+## 📊 Validated Results (DAY 116 — 13 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
 | **F1-score (CTU-13 Neris)** | **0.9985** | Stable across 4 replay runs |
 | **Precision** | **0.9969** | |
 | **Recall** | **1.0000** | Zero missed attacks (FN=0) |
-| **True Positives** | **646** | Malicious flows from host 147.32.84.165 |
-| **False Positives** | **2** | VirtualBox multicast/broadcast artifacts — absent in bare-metal |
-| **True Negatives** | **12,075** | |
-| **FPR (ML, Neris evaluation)** | **0.0002%** | |
-| **FPR (Fast Detector, bigFlows)** | **6.61%** | DEBT-FD-001, Path B thresholds |
-| **FP reduction (Fast → ML)** | **~500×** | ML reduces production blocks to zero on bigFlows |
 | **Inference latency** | **0.24–1.06 μs** | Per-class, embedded C++20 |
 | **Throughput ceiling (virtualized)** | **~33–38 Mbps** | VirtualBox NIC limit, not pipeline |
-| **Stress test** | **2,374,845 packets — 0 drops, 0 errors** | 100 Mbps requested, loop=3 bigFlows |
+| **Stress test** | **2,374,845 packets — 0 drops** | 100 Mbps requested, loop=3 bigFlows |
 | **RAM (full pipeline)** | **~1.28 GB** | Stable under load |
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `vagrant destroy` |
-| **Plugin Loader** | **ADR-023 PHASE 2 COMPLETE (5/5)** | 2a+2b+2c+2d+2e — 12/12 INTEG tests PASSED |
-| **Plugin Integrity** | **ADR-025 MERGED — v0.3.0-plugin-integrity** | Ed25519 + TOCTOU-safe dlopen, 7/7 SIGN tests |
-| **Test suite** | **25/25 + 4a 3/3 + 4b + 4c 3/3 + 4d 3/3 + 4e 3/3 + SIGN-1..7** | DAY 114 |
-| **PHASE 3 CI gate** | **TEST-PROVISION-1 PASSED 5/5** | DAY 115 |
+| **Plugin integrity** | **ADR-025 MERGED — v0.3.0-plugin-integrity** | Ed25519 + TOCTOU-safe dlopen |
+| **Plugin integ tests** | **12/12 PASSED** | TEST-INTEG-4a/4b/4c/4d/4e + SIGN |
+| **CI gate** | **TEST-PROVISION-1 PASSED 7/7** | DAY 116 |
+| **Key rotation** | **provision.sh --reset VALIDATED** | TEST-RESET-1/2/3 PASSED — DAY 116 |
+| **AppArmor** | **5/6 enforce · 1/6 complain (sniffer)** | 0 denials — DAY 117 |
 
 ---
 
 ## 🏗️ Architecture
-
-```
 ┌──────────────────────────────────────────────────────────────────┐
 │                       ML Defender Pipeline                       │
 ├──────────────────────────────────────────────────────────────────┤
@@ -101,13 +94,12 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4× Embedded RandomForest classifiers     │
 │  │  (C++20)         │  DDoS: 0.24 μs | Ransomware: 1.06 μs     │
-│  │                  │  Maximum Threat Wins                      │
 │  │                  │  plugin-loader PHASE 2d ✅ post-inference  │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
 │  │  etcd-server     │  Component registration + JSON config     │
-│  │  (C++20)         │  HMAC key management + crypto seeds       │
+│  │  (C++20)         │  HMAC key management + seed distribution  │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
@@ -118,28 +110,14 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  ┌──────────────────┐                                            │
 │  │  rag-ingester    │  FAISS + SQLite event ingestion           │
 │  │  (C++20)         │  plugin-loader PHASE 2b ✅ READONLY       │
-│  │                  │  Anti-poisoning trust model (ADR-028)     │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag-security    │  TinyLlama natural language interface      │
 │  │  (C++20+LLM)     │  Local inference — no cloud exfiltration  │
-│  │                  │  plugin-loader PHASE 2e ✅ READONLY (ADR-029) │
+│  │                  │  plugin-loader PHASE 2e ✅ READONLY       │
 │  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
-```
-
-### Integration Philosophy
-
-ML Defender is composable, not monolithic. All external integrations use the same transport stack: **raw TCP + Protocol Buffers + ChaCha20-Poly1305**. No HTTP, no Kafka, no WebSocket. Four reasons:
-
-1. **Deterministic latency** (<10ms; no HTTP/Kafka jitter)
-2. **Attack surface** (no HTTP parsers = no CVE surface; >90% reduction)
-3. **No broker = no SPOF** (Kafka/Redis incompatible with $150–200 single-node target)
-4. **Minimal footprint** (no librdkafka, no libcurl, no boost.asio)
-
-**FEAT-INT-1 (planned):** Wazuh agents emit events via raw TCP → protobuf → ZeroMQ → rag-ingester.
-
 ---
 
 ## 🔐 Security Properties
@@ -152,64 +130,56 @@ ML Defender is composable, not monolithic. All external integrations use the sam
 | HMAC-SHA256 log integrity | ✅ All CSV logs |
 | Autonomous blocking (ipset/iptables) | ✅ Millisecond response |
 | Fail-closed design (std::terminate) | ✅ All 6 main() functions |
-| Async-signal-safe handlers (DEBT-SIGNAL-001) | ✅ write(STDERR_FILENO), verified via objdump |
-| std::atomic shutdown_called_ (DEBT-SIGNAL-002) | ✅ DAY 114 |
-| D8-pre bidireccional (FIX-C + FIX-D) | ✅ NORMAL+nullptr→terminate, 64KB hard limit |
-| Plugin Loader PHASE 2a–2e (all 6 components) | ✅ 12/12 INTEG tests PASSED |
 | Plugin integrity Ed25519 (ADR-025) | ✅ MERGED main — v0.3.0-plugin-integrity |
-| Plugin signing key rotation (DEBT-SIGN-AUTO) | ✅ provision.sh check-plugins dev/prod modes |
-| Dev plugins blocked from production (DEBT-HELLO-001) | ✅ BUILD_DEV_PLUGINS=OFF + validate-prod-configs gate |
-| systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset, min capabilities |
-| CI gate TEST-PROVISION-1 (5 checks) | ✅ pipeline-start dependency — DAY 115 |
-| ADR-028 RAG Ingestion Trust Model | ✅ FAISS anti-poisoning |
-| ADR-024 Noise_IKpsk3 — OQs 5..8 closed | ✅ Design complete, implementation post-PHASE 3 |
-| provision.sh --reset (key rotation) | ⏳ DEBT-ADR025-D11 — deadline 18 Apr 2026 |
-| AppArmor profiles (6 components) | ⏳ PHASE 3 ítem 5 — complain→enforce |
-| ADR-032 Plugin Distribution Chain (HSM) | ⏳ APROBADO — YubiKey OpenPGP Ed25519 |
-| ADR-033 TPM Measured Boot | ⏳ PROPUESTO |
-| Dynamic group key agreement (ADR-024 impl) | ⏳ Post-PHASE 3 |
-| provision.sh reproducible (destroy→6/6) | ✅ DAY 108 |
+| Plugin signing key rotation | ✅ provision.sh check-plugins dev/prod modes |
+| Dev plugins blocked from production | ✅ BUILD_DEV_PLUGINS=OFF + validate-prod-configs |
+| systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset |
+| CI gate TEST-PROVISION-1 (7/7 checks) | ✅ DAY 116 |
+| Key rotation provision.sh --reset | ✅ seed_family compartido — DAY 116 |
+| AppArmor profiles (6 components) | ✅ 5/6 enforce · sniffer complain DAY 118+ |
+| explicit_bzero(seed) post-HKDF | ⏳ DEBT-CRYPTO-003a |
+| mlock() derived keys | ⏳ DEBT-CRYPTO-003a |
+| TPM measured boot (seed in hardware) | ⏳ ADR-033 post-PHASE 4 |
+| ADR-032 Plugin Distribution Chain (HSM) | ⏳ YubiKey OpenPGP Ed25519 |
 
 ---
 
 ## 🗺️ Roadmap
 
+### ✅ DONE — DAY 117 (14 Apr 2026)
+- [x] 12/13 DEBTs bloqueantes PHASE 3 cerrados
+- [x] AppArmor enforce 5/6 (etcd-server, rag-security, rag-ingester, ml-detector, firewall) — 0 denials
+- [x] tools/apparmor-promote.sh — rollback automático si denials
+- [x] TEST-PROVISION-1 8/8 · make test-all CI gate completo
+- [x] DEBT-RAG-BUILD-001 · DEBT-SEED-PERM-001 · REC-2 · backup policy · ADR-021 addendum · Recovery Contract
+- [x] arXiv Draft v15 recibido de Cornell
+
+### ✅ DONE — DAY 116 (13 Apr 2026)
+- [x] **PHASE 3 ítem 5:** DEBT-ADR025-D11 — provision.sh --reset con seed_family compartido (TEST-RESET-1/2/3 PASSED)
+- [x] **PHASE 3 ítem 6:** TEST-PROVISION-1 checks #6 (permisos) + #7 (consistencia JSONs) → 7/7
+- [x] **PHASE 3 ítem 7:** AppArmor 6 perfiles en complain mode — 0 denials
+- [x] Bug arquitectural crítico resuelto: seeds independientes → HKDF MAC fail (INVARIANTE-SEED-001 documentado en ADR-021 addendum)
+
 ### ✅ DONE — DAY 115 (12 Apr 2026)
-- [x] ADR-024 OQ-5..8 closed — Noise_IKpsk3 design complete, implementation unblocked
-- [x] **PHASE 3 ítem 1:** 6 systemd units (Restart=always, LD_PRELOAD=unset, build-active profiles)
-- [x] **PHASE 3 ítem 2:** DEBT-SIGN-AUTO — provision.sh check-plugins (dev sign / prod verify-only)
-- [x] **PHASE 3 ítem 3:** DEBT-HELLO-001 — BUILD_DEV_PLUGINS=OFF + production JSONs cleaned (bug: 4 components had active:true)
-- [x] **PHASE 3 ítem 4:** TEST-PROVISION-1 CI gate — 5 checks, pipeline-start dependency
+- [x] ADR-024 OQ-5..8 closed
+- [x] PHASE 3 ítems 1–4: systemd, DEBT-SIGN-AUTO, DEBT-HELLO-001, TEST-PROVISION-1 (5/5)
 
 ### ✅ DONE — DAY 114 (11 Apr 2026)
-- [x] ADR-025: Plugin Integrity Ed25519 + TOCTOU-safe dlopen — **MERGED main** 🎉
-- [x] Tag: **v0.3.0-plugin-integrity**
-- [x] TEST-INTEG-4d: ml-detector PHASE 2d, 3/3 PASSED
-- [x] DEBT-SIGNAL-001/002: async-signal-safe handlers + atomic<bool>
+- [x] **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉
 - [x] arXiv Replace v15 submitted
-- [x] ADR-032: Plugin Distribution Chain (YubiKey HSM) — APROBADO
-- [x] PHASE 3 branch opened: `feature/phase3-hardening`
 
-### ✅ DONE — DAY 111–113
-- [x] FIX-C/D: D8-pre bidireccional + MAX_PLUGIN_PAYLOAD_SIZE
-- [x] TEST-INTEG-4c/4e: 3/3 PASSED
-- [x] PHASE 2d/2e: ml-detector + rag-security plugin integration
-- [x] **arXiv:2604.04952 [cs.CR] PUBLICADO** 🎉
-
-### 🔜 NEXT — PHASE 3 remaining (feature/phase3-hardening)
-- [ ] **DEBT-ADR025-D11:** provision.sh --reset (key rotation without auto-signing) — **deadline 18 Apr**
-- [ ] **TEST-PROVISION-1 checks 6+7:** file permissions + JSON/plugin consistency
-- [ ] **AppArmor profiles:** 6 components — complain → audit → enforce
+### 🔜 NEXT — DAY 118
+- [ ] AppArmor enforce sniffer (48h complain cumplidas)
+- [ ] Merge feature/phase3-hardening → main
+- [ ] Abrir feature/adr026-xgboost
 
 ### P3 — Post-PHASE 3
-- [ ] ADR-024 Noise_IKpsk3 implementation (OQs closed, ready to build)
-- [ ] DEBT-TOOLS-001: synthetic injectors + PluginLoader integration
-- [ ] Stress test CTU-13 Neris with real pipeline (F1=0.9985 with plugins active)
-- [ ] ADR-032 Fase A: manifest JSON format + multi-key loader + revocation
-- [ ] ADR-032 Fase B: YubiKey OpenPGP signing (hardware acquisition)
-- [ ] ADR-030 activation: AppArmor enforcing + Raspberry Pi hardware
-- [ ] etcd legacy refactoring (etcd = config distribution + heartbeat only)
-- [ ] ADR-031 spike: seL4/Genode (2–3 weeks)
+- [ ] DEBT-CRYPTO-003a: mlock() + explicit_bzero(seed) post-HKDF derivation
+- [ ] ADR-024 Noise_IKpsk3 implementation
+- [ ] ADR-026 XGBoost plugins Track 1 (Precision ≥ 0.99 gate médico)
+- [ ] ADR-032 Fase A: manifest + multi-key loader
+- [ ] ADR-033 TPM 2.0 Measured Boot (seed_family en hardware)
+- [ ] ADR-029 variantes hardened: AppArmor+eBPF/XDP · AppArmor+libpcap · seL4+libpcap
 - [ ] BARE-METAL stress test
 
 ---
@@ -225,17 +195,16 @@ make pipeline-start
 make pipeline-status
 ```
 
-### F1 Validation
-```bash
-make pipeline-stop && make logs-lab-clean && make pipeline-start && sleep 15
-make test-replay-neris
-python3 scripts/calculate_f1_neris.py logs/lab/sniffer.log --total-events 19135
-```
-
 ### CI Gate (PHASE 3)
 ```bash
-make test-provision-1   # 5 checks: keys, plugin sigs, prod configs, symlinks, systemd units
-make validate-prod-configs   # ensure no dev plugins in production JSON configs
+make test-all   # CI gate completo: libs + components + TEST-PROVISION-1 (8/8) + TEST-INVARIANT-SEED + plugin-integ-test
+```
+
+### Key Rotation
+```bash
+# Rotate ALL keys (seeds + Ed25519 keypairs + plugin signing keypair)
+sudo CI=true bash tools/provision.sh --reset   # dev only
+# Then: update MLD_PLUGIN_PUBKEY_HEX in CMakeLists.txt → rebuild → sign → start
 ```
 
 ---
@@ -246,22 +215,18 @@ Seven large language models serve as intellectual co-reviewers across all develo
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Parallel.ai**
 
-Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §6 (Consejo de Sabios / Test-Driven Hardening).
+Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §6.
 
 ---
 
 ## 🗺️ Milestones
 
-- ✅ DAY 106: Paper Draft v11 + arXiv SUBMITTED
-- ✅ DAY 107: MAC failure root cause resolved
-- ✅ DAY 108: provision.sh reproducible · ADR-026/027 committed
-- ✅ DAY 109: PHASE 2b CLOSED · TEST-INTEG-4b · Paper v12 · ADR-028 APROBADO
-- ✅ DAY 110: PluginMode + PHASE 2c CLOSED · Paper v13 · 6/6 RUNNING
-- ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉 · FIX-C/D · PHASE 2d · ADR-029
-- ✅ DAY 112: PHASE 2e CLOSED · TEST-INTEG-4e 3/3 · ADR-030/031 documented
-- ✅ DAY 113: ADR-025 IMPLEMENTED · 11/11 tests · Paper v14
-- ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · TEST-INTEG-4d · Signal safety · arXiv v15 · ADR-032 APROBADO
-- ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉 · ADR-024 OQs 5..8 closed · TEST-PROVISION-1 CI gate · DEBT-HELLO-001 (bug: 4×active:true fixed)
+- ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉
+- ✅ DAY 113: ADR-025 IMPLEMENTED · 11/11 tests
+- ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · arXiv v15
+- ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉 · TEST-PROVISION-1 CI gate
+- ✅ DAY 116: **PHASE 3 CORE COMPLETADO** 🎉 · --reset + AppArmor complain · INVARIANTE-SEED-001
+- ✅ DAY 117: **PHASE 3 DEBTs CERRADOS** 🎉 · AppArmor 5/6 enforce · make test-all CI gate · arXiv v15
 
 ---
 

@@ -55,7 +55,7 @@ message(STATUS "libsodium: ${SODIUM_LIB}")
 # To update: provision.sh --reset then recompile
 # ============================================================================
 if(NOT DEFINED MLD_PLUGIN_PUBKEY_HEX OR MLD_PLUGIN_PUBKEY_HEX STREQUAL "")
-    set(MLD_PLUGIN_PUBKEY_HEX "b824bcd7a14f6e19a0d8c9be86110828060e600723d12e118dccc95c862c8468")
+    set(MLD_PLUGIN_PUBKEY_HEX "e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d")
     message(STATUS "MLD_PLUGIN_PUBKEY_HEX: using default dev key")
 else()
     message(STATUS "MLD_PLUGIN_PUBKEY_HEX: injected via CMake -D")

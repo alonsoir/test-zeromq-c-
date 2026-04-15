@@ -60,7 +60,7 @@ validate-prod-configs:
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
 .PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
 .PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
-.PHONY: provision provision-status provision-check provision-reprovision test-provision-1
+.PHONY: provision provision-status provision-check provision-reprovision test-provision-1 test-invariant-seed
 .PHONY: seed-client-build seed-client-test seed-client-clean seed-client-rebuild
 
 # ============================================================================
@@ -630,24 +630,24 @@ test-provision-1:
 	@echo "║  🔍 TEST-PROVISION-1 — CI Gate PHASE 3                   ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@echo ""
-	@echo "── Check 1/5: Claves criptográficas ──"
+	@echo "── Check 1/8: Claves criptográficas ──"
 	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh verify" || \
 		(echo "❌ CHECK 1 FAILED: claves ausentes o inválidas" && \
 		 echo "   Ejecuta: make provision" && exit 1)
-	@echo "✅ Check 1/5 OK"
+	@echo "✅ Check 1/8 OK"
 	@echo ""
-	@echo "── Check 2/5: Firmas de plugins (producción) ──"
+	@echo "── Check 2/8: Firmas de plugins (producción) ──"
 	@vagrant ssh -c "sudo bash /vagrant/tools/provision.sh check-plugins --production" || \
 		(echo "❌ CHECK 2 FAILED: plugins sin firma válida" && \
 		 echo "   Ejecuta: make sign-plugins" && exit 1)
-	@echo "✅ Check 2/5 OK"
+	@echo "✅ Check 2/8 OK"
 	@echo ""
-	@echo "── Check 3/5: Configs de producción (sin dev plugins) ──"
+	@echo "── Check 3/8: Configs de producción (sin dev plugins) ──"
 	@$(MAKE) validate-prod-configs || \
 		(echo "❌ CHECK 3 FAILED: dev plugins en configs de producción" && exit 1)
-	@echo "✅ Check 3/5 OK"
+	@echo "✅ Check 3/8 OK"
 	@echo ""
-	@echo "── Check 4/5: build-active symlinks ──"
+	@echo "── Check 4/8: build-active symlinks ──"
 	@vagrant ssh -c "test -L /vagrant/sniffer/build-active && \
 		test -L /vagrant/ml-detector/build-active && \
 		test -L /vagrant/firewall-acl-agent/build-active && \
@@ -656,19 +656,52 @@ test-provision-1:
 		(echo "❌ CHECK 4 FAILED: build-active symlinks ausentes" && \
 		 echo "   Ejecuta: vagrant ssh -c 'sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug'" && \
 		 exit 1)
-	@echo "✅ Check 4/5 OK"
+	@echo "✅ Check 4/8 OK"
 	@echo ""
-	@echo "── Check 5/5: systemd units instalados ──"
+	@echo "── Check 5/8: systemd units instalados ──"
 	@vagrant ssh -c "systemctl list-unit-files ml-defender-*.service 2>/dev/null | grep -c 'ml-defender'" | \
 		grep -q "6" || \
 		(echo "❌ CHECK 5 FAILED: systemd units no instalados (esperado: 6)" && \
 		 echo "   Ejecuta: vagrant ssh -c 'sudo bash /vagrant/etcd-server/config/install-systemd-units.sh'" && \
 		 exit 1)
-	@echo "✅ Check 5/5 OK"
+	@echo "✅ Check 5/8 OK"
 	@echo ""
+	@echo ""
+	@echo "── Check 6/8: Permisos ficheros sensibles ──"
+	@vagrant ssh -c "sudo find /etc/ml-defender -type f \( -name '*.sk' \) -perm /022 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
+		(echo "❌ CHECK 6 FAILED: .sk con permisos world/group-writable" && exit 1) || true
+	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' ! -perm 640 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
+		(echo "❌ CHECK 6 FAILED: seed.bin con permisos incorrectos (esperado: 640)" && exit 1) || true
+	@echo "✅ Check 6/8 OK"
+	@echo ""
+	@echo "── Check 7/8: Consistencia JSONs con plugins reales ──"
+	@vagrant ssh -c "python3 /vagrant/tools/check-json-plugins.py" || \
+		(echo "❌ CHECK 7 FAILED: plugins referenciados en JSONs sin .so o .sig" && exit 1)
+	@echo "✅ Check 7/8 OK"
+	@echo ""
+	@echo "── Check 8/8: apparmor-utils instalado ──"
+	@vagrant ssh -c "/usr/sbin/aa-complain --help > /dev/null 2>&1 && /usr/sbin/aa-enforce --help > /dev/null 2>&1 && echo OK || echo FAIL" | grep -q OK || \
+		(echo "❌ CHECK 8 FAILED: apparmor-utils no instalado" && \
+		 echo "   Ejecuta: vagrant ssh -c \"sudo apt-get install -y apparmor-utils\"" && exit 1)
+	@echo "✅ Check 8/8 OK"
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  ✅ TEST-PROVISION-1 PASSED — entorno listo               ║"
 	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+
+test-invariant-seed:
+	@echo ""
+	@echo "── TEST-INVARIANT-SEED: 6 seeds idénticos post-reset ──"
+	@vagrant ssh -c 'sudo bash -c " \
+	  hashes=\"\" ; \
+	  for c in etcd-server ml-detector sniffer firewall-acl-agent rag-ingester rag-security; do \
+	    h=\$$(od -A n -t x1 /etc/ml-defender/\$$c/seed.bin | tr -d \" \\n\") ; \
+	    hashes=\"\$$hashes \$$h\" ; \
+	  done ; \
+	  unique=\$$(echo \$$hashes | tr \" \" \"\\n\" | sort -u | grep -v \"^$$\" | wc -l) ; \
+	  echo \"Hashes únicos: \$$unique\" ; \
+	  [ \"\$$unique\" -eq 1 ] && echo \"✅ TEST-INVARIANT-SEED PASSED\" || { echo \"❌ TEST-INVARIANT-SEED FAILED\"; exit 1; } \
+	"' || (echo "❌ INVARIANTE-SEED-001 violado: seeds divergentes" && exit 1)
 	@echo ""
 
 pipeline-start: test-provision-1 etcd-server-start
@@ -871,7 +904,7 @@ test-components:
 	@vagrant ssh -c "cd $(RAG_BUILD_DIR) && ctest --output-on-failure" || echo "⚠️  No rag-security tests configured"
 	@echo ""
 
-test-all: test-libs test-components
+test-all: test-libs test-components test-provision-1 test-invariant-seed plugin-integ-test
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  ✅ ALL TESTS COMPLETE                                    ║"
@@ -1345,9 +1378,9 @@ rag-clean:
 	@vagrant ssh -c "cd /vagrant/rag && make clean"
 
 rag-start:
-	@echo "🚀 Starting rag-security (from /vagrant/rag/build)..."
+	@echo "🚀 Starting rag-security (from /vagrant/rag/build-active)..."
 	@vagrant ssh -c "tmux kill-session -t rag-security 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s rag-security 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag/build && ./rag-security >> /vagrant/logs/lab/rag-security.log 2>&1'"
+	@vagrant ssh -c "tmux new-session -d -s rag-security 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag/build-active && ./rag-security >> /vagrant/logs/lab/rag-security.log 2>&1'"
 	@sleep 2
 
 rag-stop:

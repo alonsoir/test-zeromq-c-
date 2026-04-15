@@ -250,6 +250,8 @@ LIBBPF_PROFILE
 
       # Firewall
       apt-get install -y iptables ipset libxtables-dev
+      # AppArmor
+      apt-get install -y apparmor-utils apparmor-profiles
 
       # RAG dependencies
       apt-get install -y libboost-all-dev libtool autoconf automake libgrpc-dev libgrpc++-dev \
