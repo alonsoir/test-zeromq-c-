@@ -179,6 +179,13 @@ Commits: 85197f96 → fac4cd54 (7 commits)
 | ID | Tarea | Test de cierre | Feature destino |
 |----|-------|---------------|----------------|
 | **ADR-026** | XGBoost plugins Track 1. Precision ≥ 0.99 (gate médico). DPIA requerida pre-producción. Pre-req: AppArmor enforce completo + todos los DEBTs bloqueantes cerrados. | Plugin XGBoost cargado + firmado + F1 ≥ 0.9985 en replay CTU-13 | feature/adr026-xgboost |
+| **OBS-1 / DEBT-XGBOOST-SIGN-001** | Firma Ed25519 del modelo (.ubj.sig). Mismo esquema ADR-025. Verificación antes de XGBoosterLoadModel. **BLOQUEANTE merge.** | make sign-models → .ubj.sig válido · plugin_init verifica antes de cargar | feature/adr026-xgboost |
+| **OBS-2 / TEST-INTEG-XGBOOST-1** | Test unitario: cargar modelo juguete + plugin_invoke con MessageContext sintético + verificar salida ∈ [0,1] y no NaN. **BLOQUEANTE merge.** | make test-all incluye TEST-INTEG-XGBOOST-1 verde | feature/adr026-xgboost |
+| **OBS-3 / DEBT-XGBOOST-LATENCY** | Medir latencia por inferencia desde Fase 3. Para tabla comparativa RF vs XGBoost en §4 paper. | Latencia registrada en cada run de validación CTU-13 | feature/adr026-xgboost |
+| **OBS-5 / DEBT-XGBOOST-CONTRACTS** | Contratos informales ADR-036 en xgboost_plugin.cpp: @requires @ensures @invariant. | Comentarios presentes antes de merge | feature/adr026-xgboost |
+| **OBS-6 / DEBT-XGBOOST-CACHE** | Cache modelo en plugin_init: static BoosterHandle. Evitar reload en cada invocación. | Plugin no recarga modelo en llamadas sucesivas | feature/adr026-xgboost |
+| **DEBT-XGBOOST-SOFTFAIL-001** | Soft-fail: si XGBoost no carga, ml-detector continúa con RF + "Modo Protección Degradada" + alerta RAG. Arquitectura: std::vector<PluginHandle> + lógica fallback. | ml-detector no termina si XGBoost falla, pero alerta CRITICAL | feature/phase5-resilience |
+| **DEBT-XGBOOST-PROVISION-001** | ✅ DAY 118 — Vagrantfile bloque XGBoost 3.2.0 (líneas 327-348). Fallback apt pendiente DAY 119. | vagrant destroy && vagrant up → XGBoost 3.2.0 disponible | feature/adr026-xgboost |
 | **DEBT-TOOLS-001** | Synthetic injectors + PluginLoader + plugins firmados Ed25519 | Injectors generan tráfico procesado por plugin correctamente | feature/adr026-xgboost |
 | **DEBT-FD-001** | Fast Detector Path A → thresholds desde JSON, no hardcoded | sniffer.json controla thresholds · tests con valores distintos pasan | feature/adr026-xgboost |
 | ADR-024 impl | Noise_IKpsk3 P2P. OQs 5..8 cerradas DAY 115. Listo. | TEST-INTEG-8/9 PASSED (definidos en ADR-024) | feature/adr024-noise-p2p |
@@ -237,6 +244,10 @@ El 90% del contenido ya existe en ADRs y commits. Solo hay que reorganizarlo.
 | Deuda bloqueante | Cierra en su feature. Sin merge a main sin test verde | Política · DAY 116 |
 | Deuda no bloqueante | Asignada a feature destino o tech-debt-cleanup | Política · DAY 116 |
 | ADR-033 KB RAG | POSPUESTO. Condiciones de activación definidas. Alternativa: ONBOARDING.md | Consejo · DAY 116 |
+| XGBoost feature set | Opción A: mismo feature set que RF baseline. Ablation study XGBoost feature importance como experimento secundario. | Consejo unanimidad · DAY 118 |
+| XGBoost formato modelo | JSON en repo (auditoría), .ubj en producción (runtime). Firma Ed25519 obligatoria (.ubj.sig). | Consejo unanimidad · DAY 118 |
+| plugin_invoke arquitectura | Opción B: ml-detector pre-procesa features → float32[] en payload. Plugin agnóstico al formato ZeroMQ. | Consejo unanimidad · DAY 118 |
+| std::terminate() XGBoost v0.1 | Fail-closed unanimidad. Integridad > Disponibilidad en v0.1. Soft-fail → DEBT-XGBOOST-SOFTFAIL-001 PHASE 5. | Consejo unanimidad (incl. Gemini 2ª ronda) · DAY 118 |
 
 ---
 
@@ -296,7 +307,7 @@ DEBT-RAG-BUILD-001:                    █████████████�
 apparmor-utils check #8:               ████████████████████ 100% ✅  DAY 117 🎉
 apparmor-promote.sh:                   ████████████████████ 100% ✅  DAY 117 🎉
 DEBT-CRYPTO-003a (mlock+bzero):        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/crypto-hardening
-ADR-026 XGBoost Track 1:               ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/adr026-xgboost
+ADR-026 XGBoost Track 1:               ██░░░░░░░░░░░░░░░░░░  10% 🟡  feature/adr026-xgboost (skeleton + Vagrantfile DAY 118)
 ADR-024 Noise_IKpsk3 impl:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/adr024-noise-p2p
 ADR-032 Fase A:                        ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/adr032-hsm
 ADR-033 TPM Measured Boot:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳  feature/crypto-hardening
@@ -304,6 +315,34 @@ ADR-029 variantes hardened:            ░░░░░░░░░░░░░�
 BARE-METAL stress test:                ░░░░░░░░░░░░░░░░░░░░   0% 🔴  bloqueado hardware
 DEBT-FD-001 (JSON thresholds):         ████░░░░░░░░░░░░░░░░  20% 🟡
 ```
+
+---
+
+### Notas del Consejo de Sabios — DAY 118 (segunda ronda incluida)
+
+> "PHASE 3 COMPLETADA. AppArmor 6/6 enforce, 13/13 DEBTs cerrados, merge --no-ff,
+> tag v0.4.0-phase3-hardening. PHASE 4 abierta: feature/adr026-xgboost.
+>
+> Q1 UNANIMIDAD: Opción A — mismo feature set que RF. La única variable que cambia
+> es el algoritmo. Opción B como ablation study secundario.
+>
+> Q2 UNANIMIDAD: JSON en repo (auditoría científica), .ubj en producción
+> (3× más rápido de cargar, menor superficie). Firma Ed25519 del modelo BLOQUEANTE.
+>
+> Q3 UNANIMIDAD: Opción B — ml-detector pre-procesa features y serializa como
+> float32[] en payload. Plugin XGBoost agnóstico al formato ZeroMQ.
+>
+> Q4 MAYORÍA: pip 3.2.0 primero + fallback apt + docs/OFFLINE-DEPLOYMENT.md.
+>
+> OBS-4 segunda ronda (Gemini rectifica): std::terminate() en v0.1 UNANIMIDAD.
+> Integridad sobre disponibilidad. Soft-fail → DEBT-XGBOOST-SOFTFAIL-001 PHASE 5.
+> Condición: Garantía del Provisioning (provision.sh verifica modelo antes de arranque).
+>
+> Items bloqueantes nuevos para merge a main feature/adr026-xgboost:
+> OBS-1: firma Ed25519 del modelo (.ubj.sig) igual que plugins.
+> OBS-2: TEST-INTEG-XGBOOST-1 en make test-all.
+> Items no bloqueantes: OBS-3 latencia, OBS-5 contratos ADR-036, OBS-6 cache modelo."
+> — Consejo de Sabios (5/7 + segunda ronda Gemini) · DAY 118
 
 ---
 
@@ -331,11 +370,11 @@ DEBT-FD-001 (JSON thresholds):         ████░░░░░░░░░�
 
 ---
 
-*Última actualización: DAY 118 — 15 Abril 2026*
-*Branch activa: main (feature/adr026-xgboost abierta)*
+*Última actualización: DAY 118 cierre — 15 Abril 2026*
+*Branch activa: feature/adr026-xgboost (main @ v0.4.0-phase3-hardening)*
 *Tests: make test-all VERDE · TEST-PROVISION-1 8/8 · 6/6 RUNNING · AppArmor 6/6 enforce*
 *arXiv: 2604.04952 · v15 ✅ · Tag: v0.4.0-phase3-hardening*
-*PHASE 3: COMPLETADA ✅ · PHASE 4: feature/adr026-xgboost abierta*
+*PHASE 3: COMPLETADA ✅ · PHASE 4: feature/adr026-xgboost skeleton DAY 118 · Consejo veredictos incorporados*
 *"Via Appia Quality — Un escudo, nunca una espada."*
 ---
 

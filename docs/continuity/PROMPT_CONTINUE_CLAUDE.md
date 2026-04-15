@@ -1,20 +1,4 @@
-Leídas las 5 respuestas. Resumen de veredictos consolidados:
-
-**Q1 — ALLOWED sniffer:** 4/5 dicen revisar el log completo antes de enforce. Solo Qwen dice proceder directamente confiando en el rollback. **Veredicto: revisar primero.** Acción DAY 118: `sudo journalctl -k | grep -E 'apparmor.*sniffer|ALLOWED.*sniffer' -A3 -B3` antes de ejecutar promote.
-
-**Q2 — noclobber audit:** Unanimidad en hacer audit, pero división entre completo (ChatGPT, Grok) vs limitado a rutas críticas (DeepSeek, Qwen). **Veredicto práctico: audit limitado a ficheros críticos** — `/etc/`, `.sk`, `seed.bin`, `*.sig`. Tiempo estimado: 30 minutos.
-
-**Q3 — Merge strategy:** **Unanimidad total: `git merge --no-ff`.** Trazabilidad científica sobre limpieza visual. Tag anotado `v0.4.0-phase3-hardening` con changelog estructurado.
-
-**Q4 — XGBoost:** **Unanimidad: rama separada** `feature/adr026-xgboost`. Feature flag en JSON solo dentro de la rama para testing A/B interno, nunca en main hasta que Precision ≥ 0.99 + F1 ≥ 0.9985.
-
-**¿Segunda ronda?** No es necesaria. Los 4 veredictos son claros y accionables. Nota: Parallel.ai no respondió — lo dejamos para DAY 118 si quieres intentarlo de nuevo.
-
-Escribo el prompt de continuidad ahora.
-
----
-
-# ML Defender (aRGus NDR) — DAY 118 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 119 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -26,32 +10,80 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
 ---
 
-## Estado al cierre de DAY 117
+## Estado al cierre de DAY 118
 
 ### Hitos completados
-- 12/13 DEBTs bloqueantes `feature/phase3-hardening` cerrados ✅
-- AppArmor enforce 5/6: etcd-server, rag-security, rag-ingester, ml-detector, firewall-acl-agent (0 denials cada uno) ✅
-- tools/apparmor-promote.sh: complain→enforce con rollback automático ✅
-- TEST-PROVISION-1 8/8 · make test-all CI gate completo ✅
-- DEBT-VAGRANTFILE-001, DEBT-SEED-PERM-001, REC-2, TEST-INVARIANT-SEED, Backup policy, ADR-021 addendum, Recovery Contract, DEBT-RAG-BUILD-001 ✅
-- Pubkey dev rotada (3 resets): `e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
-- arXiv Draft v15 recibido de Cornell ✅
-- Commits: 85197f96 → fac4cd54 (7 commits)
+- **PHASE 3 CERRADA** ✅ — `git merge --no-ff` + tag `v0.4.0-phase3-hardening` (da0296cd)
+- AppArmor 6/6 enforce (0 denials) ✅ · make test-all VERDE ✅
+- CHANGELOG-v0.4.0.md ✅ · README + BACKLOG actualizados ✅
+- **`feature/adr026-xgboost` abierta** ✅ — commit `9500300a`
+    - `plugins/xgboost/CMakeLists.txt` ✅
+    - `plugins/xgboost/xgboost_plugin.cpp` (skeleton fail-closed) ✅
+    - `docs/XGBOOST-VALIDATION.md` ✅
+    - Vagrantfile bloque XGBoost 3.2.0 (líneas 327-348) ✅
+    - `docs/consejo/CONSEJO-DAY118-sintesis.md` ✅
 
-### Consejo DAY 117 — Veredictos
-- Q1 ALLOWED sniffer: revisar log completo antes de enforce (4/5) — ver detalle antes de promote
-- Q2 noclobber: audit limitado a ficheros críticos (`/etc/`, `.sk`, `seed.bin`, `*.sig`)
-- Q3 merge: `git merge --no-ff` unanimidad — trazabilidad científica
-- Q4 XGBoost: rama separada `feature/adr026-xgboost` hasta Precision ≥ 0.99 + F1 ≥ 0.9985
+### XGBoost en VM (instalación manual DAY 118 — pendiente verificar desde cero)
+- `/usr/local/lib/libxgboost.so` + `/usr/local/include/xgboost/` ✅ (manual)
+- Compilación C con `-lxgboost` OK ✅
+- **DAY 119 PASO 0: verificar que Vagrantfile reproduce esto desde cero**
+
+### Consejo DAY 118 — Veredictos DEFINITIVOS (5/7 + segunda ronda Gemini)
+
+| Q | Veredicto | Unanimidad |
+|---|-----------|------------|
+| Q1 feature set | Opción A — mismo que RF | 5/5 ✅ |
+| Q2 formato modelo | JSON repo + .ubj producción + .ubj.sig | 5/5 ✅ |
+| Q3 plugin_invoke | Opción B — ml-detector pre-procesa float32[] | 5/5 ✅ |
+| Q4 Vagrantfile | pip 3.2.0 + fallback apt + docs offline | 4/5 ✅ |
+| OBS-4 std::terminate | Fail-closed v0.1 — Integridad > Disponibilidad | 5/5 ✅ |
+
+### Items bloqueantes nuevos (merge feature/adr026-xgboost → main)
+- **OBS-1 / DEBT-XGBOOST-SIGN-001**: firma Ed25519 del modelo (.ubj.sig)
+- **OBS-2 / TEST-INTEG-XGBOOST-1**: test en make test-all
+
+### Items no bloqueantes (backlog)
+- OBS-3: latencia desde Fase 3 (para paper §4)
+- OBS-5: contratos informales ADR-036 en código
+- OBS-6: cache modelo en plugin_init
+- DEBT-XGBOOST-SOFTFAIL-001 → feature/phase5-resilience
 
 ---
 
-## PASO 0 — Verificación de estabilidad (SIEMPRE PRIMERO)
+## PASO 0 — ESPECIAL DAY 119: Vagrantfile desde cero (SIEMPRE PRIMERO)
+
+**⚠️ DAY 119 arranca con vagrant destroy. No saltar este paso.**
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout feature/phase3-hardening
-git pull origin feature/phase3-hardening
+git checkout feature/adr026-xgboost
+git pull origin feature/adr026-xgboost
+
+# Destruir y recrear VM desde cero
+vagrant destroy -f
+vagrant up
+# Esperar ~20-30 minutos — provisioning completo
+
+# Verificar XGBoost instalado automáticamente
+vagrant ssh -c "sudo ldconfig -p | grep xgboost"
+# Esperado: libxgboost.so (libc6,x86-64) => /usr/local/lib/libxgboost.so
+
+vagrant ssh -c "python3 -c 'import xgboost; print(xgboost.__version__)'"
+# Esperado: 3.2.0
+
+vagrant ssh -c "ls /usr/local/include/xgboost/"
+# Esperado: base.h  c_api.h
+
+# Test compilación C API
+vagrant ssh -c "echo '#include <xgboost/c_api.h>\n#include <stdio.h>\nint main(){printf(\"OK\\n\");return 0;}' > /tmp/t.c && gcc /tmp/t.c -lxgboost -o /tmp/t && /tmp/t"
+# Esperado: OK
+```
+
+**Si PASO 0 falla:** diagnosticar bloque Vagrantfile (líneas 327-348) antes de continuar.
+
+### Luego: verificación pipeline estándar
+
+```bash
 make pipeline-stop
 make pipeline-build 2>&1 | tail -5
 vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug"
@@ -67,107 +99,75 @@ make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
 
 ---
 
-## CRITERIO DE CIERRE DE FEATURE
+## Orden DAY 119
 
-La feature/phase3-hardening se mergea a main cuando:
-
-✅ 12/13 DEBTs cerrados (DAY 117)
-□ AppArmor enforce sniffer + TEST-APPARMOR-ENFORCE final
-□ noclobber audit ficheros críticos
-□ CHANGELOG-v0.4.0.md
-□ git merge --no-ff → main + tag v0.4.0-phase3-hardening
-
----
-
-## Orden DAY 118
-
-### PASO 1 — Revisar ALLOWED sniffer (Consejo Q1)
+### PASO 1 — Fallback apt en Vagrantfile (Q4 Consejo)
+Actualizar bloque XGBoost con fallback:
 ```bash
-vagrant ssh -c "sudo journalctl -k | grep -E 'apparmor.*sniffer|ALLOWED.*sniffer' -A3 -B3"
+pip3 install xgboost==3.2.0 --break-system-packages || {
+    echo "⚠️  PyPI inaccesible — fallback apt (versión no garantizada)"
+    apt-get install -y python3-xgboost
+    echo "❗ WARNING: xgboost $(python3 -c 'import xgboost; print(xgboost.__version__)')"
+    echo "❗ Para reproducibilidad científica, usar xgboost==3.2.0"
+}
 ```
-Clasificar el evento. Si es legítimo y cubierto por el perfil → proceder.
-Si revela gap → actualizar perfil con `aa-logprof` antes de enforce.
+Crear `docs/OFFLINE-DEPLOYMENT.md` con instrucciones para entornos air-gapped.
 
-### PASO 2 — AppArmor enforce sniffer
+### PASO 2 — Compilar plugin_xgboost
 ```bash
-vagrant ssh -c "sudo bash /vagrant/tools/apparmor-promote.sh sniffer 2>&1"
-```
-**Test de cierre TEST-APPARMOR-ENFORCE:**
-```bash
+make pipeline-build 2>&1 | grep -E "plugin_xgboost|error:|warning:"
+make sign-plugins
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
-vagrant ssh -c "sudo aa-status 2>&1 | awk '/enforce mode/{found=1;next} /complain mode/{found=0} found && /vagrant/{print}'"
-# Esperado: 6/6 en enforce
 ```
+Esperado: `libplugin_xgboost.so` compilado sin errores + `libplugin_xgboost.so.sig` ✅
 
-### PASO 3 — noclobber audit ficheros críticos (Consejo Q2)
+### PASO 3 — Localizar feature set RF baseline
 ```bash
-grep -n '>[^|]' tools/provision.sh | grep -E '/etc/|\.sk|seed\.bin|\.sig|\.pem|\.pk|\.env'
+find /vagrant/ml-detector -name "*.h" -o -name "*.cpp" 2>/dev/null | \
+  xargs grep -l -i "feature\|extract" 2>/dev/null
 ```
-Para cada ocurrencia: decidir si es intencional (`>|` + comentario) o protegida (`>` está bien).
-**Test de cierre:** `make test-all` verde tras cambios.
+Identificar: columnas exactas, orden, normalización.
+Documentar en `docs/xgboost/features.md` (Opción A — mismo que RF).
 
-### PASO 4 — CHANGELOG-v0.4.0.md
-Crear `docs/CHANGELOG-v0.4.0.md` con estructura:
-```markdown
-## Security
-## Operations  
-## Tests
-## Bug fixes
+### PASO 4 — Script entrenamiento XGBoost (Fase 2)
+Crear `scripts/train_xgboost_baseline.py`:
+- Mismo feature set que RF (Opción A — UNANIMIDAD Consejo)
+- `random_state=42` para reproducibilidad
+- Exportar `xgboost_ctu13.json` + `xgboost_ctu13.ubj`
+- Validar equivalencia JSON/ubj (mismo output)
+- Registrar: F1, Precision, Recall, FPR, latencia
+- Gate: Precision ≥ 0.99 + F1 ≥ 0.9985
+
+### PASO 5 — Firma del modelo (OBS-1 — BLOQUEANTE)
+Extender Makefile con `make sign-models`:
+- Firma `xgboost_ctu13.ubj` con keypair Ed25519 (mismo esquema ADR-025)
+- Genera `xgboost_ctu13.ubj.sig`
+- Verificación en `plugin_init` antes de `XGBoosterLoadModel`
+
+### PASO 6 — Contratos informales ADR-036 (OBS-5)
+Añadir en `xgboost_plugin.cpp`:
+```cpp
+// @requires: ctx != nullptr && ctx->payload != nullptr && ctx->payload_size == N*sizeof(float)
+// @ensures: return_value == 0 (OK) || std::terminate() (fail-closed)
+// @invariant: no side effects on MessageContext si falla
 ```
-Referenciando commits y ADRs del DAY 115-118.
-
-### PASO 5 — Merge a main
-```bash
-git checkout main
-git pull origin main
-git merge --no-ff feature/phase3-hardening -m "Merge feature/phase3-hardening
-
-PHASE 3 hardening completion — v0.4.0:
-- AppArmor enforce 6/6 componentes (0 denials)
-- TEST-PROVISION-1 8/8 + make test-all CI gate
-- INVARIANTE-SEED-001 + backup policy
-- Recovery Contract (OQ-6 ADR-024)
-- tools/apparmor-promote.sh rollback automático
-- Pubkey dev rotada post-reset documentada
-
-Closes: DEBT-VAGRANTFILE-001, DEBT-SEED-PERM-001, REC-2,
-TEST-INVARIANT-SEED, Backup policy, ADR-021 addendum,
-docs/Recovery Contract, DEBT-RAG-BUILD-001, apparmor-utils #8,
-apparmor-promote.sh, AppArmor enforce 6/6"
-
-git tag -a v0.4.0-phase3-hardening -m "PHASE 3 hardening complete"
-git push origin main --tags
-```
-
-### PASO 6 — Actualizar BACKLOG.md + README.md (merge completado)
-- Mover feature/phase3-hardening → COMPLETADO
-- Badge AppArmor → 6/6 enforce
-- Abrir `feature/adr026-xgboost` en roadmap
-
-### PASO 7 — Abrir feature/adr026-xgboost
-```bash
-git checkout main
-git checkout -b feature/adr026-xgboost
-git push origin feature/adr026-xgboost
-```
-Crear `docs/XGBOOST-VALIDATION.md` con checklist de métricas obligatorias (Precision ≥ 0.99, F1 ≥ 0.9985, gate médico, revisión Consejo).
 
 ---
 
 ## Contexto permanente
 
 ### ADR-025 keypair dev (post-reset DAY 117)
-MLD_PLUGIN_PUBKEY_HEX: `e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
+`MLD_PLUGIN_PUBKEY_HEX: e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
 
 ### seed_family post-reset DAY 117
-Seed compartido (6 componentes): 75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360
+Seed: `75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360`
 INVARIANTE-SEED-001: todos los seed.bin DEBEN ser idénticos.
 
-### Lección operacional crítica (DAY 117)
-`provision.sh --reset` rota la keypair Ed25519. Pubkey hardcoded en CMakeLists.
-**Siempre después de --reset:** `make pipeline-build` + `make sign-plugins` + `make test-all`
+### Lección operacional crítica
+`provision.sh --reset` rota keypair. Siempre post-reset:
+`make pipeline-build` → `make sign-plugins` → `make test-all`
 
-### Regla de oro del pipeline
+### Regla de oro
 6/6 RUNNING + make test-all VERDE
 
 ### Patrón robusto para scripts en VM
@@ -178,45 +178,37 @@ PYEOF
 vagrant upload /tmp/script.py /tmp/script.py
 vagrant ssh -c "sudo python3 /tmp/script.py"
 ```
-NUNCA sed -i en macOS. NUNCA Python inline con paréntesis en zsh.
+NUNCA `sed -i` sin `-e ''` en macOS. NUNCA Python inline con paréntesis en zsh.
+
+### feature/adr026-xgboost — estado DAY 118 cierre
+```
+plugins/xgboost/CMakeLists.txt          ✅ commit 9500300a
+plugins/xgboost/xgboost_plugin.cpp      ✅ skeleton fail-closed
+docs/XGBOOST-VALIDATION.md              ✅ gate médico
+docs/consejo/CONSEJO-DAY118-sintesis.md ✅ veredictos + segunda ronda
+Vagrantfile bloque XGBoost (327-348)    ✅ pip 3.2.0 (fallback apt → DAY 119)
+Feature set                              Opción A (mismo RF) — UNANIMIDAD
+Formato modelo                           JSON repo + .ubj producción — UNANIMIDAD
+plugin_invoke                            Opción B (ml-detector pre-procesa) — UNANIMIDAD
+std::terminate() v0.1                    Fail-closed — UNANIMIDAD (incl. Gemini 2ª ronda)
+DEBT-XGBOOST-SIGN-001                   ⏳ BLOQUEANTE — pendiente DAY 119
+TEST-INTEG-XGBOOST-1                    ⏳ BLOQUEANTE — pendiente DAY 119
+```
 
 ### DEBTs no bloqueantes (NO tocar en esta feature)
 - DEBT-CRYPTO-003a → feature/crypto-hardening
 - DEBT-OPS-001/002 → feature/ops-tooling
-- DEBT-TOOLS-001 → feature/adr026-xgboost
 - DEBT-SNIFFER-SEED → feature/crypto-hardening
-- DEBT-FD-001 → feature/adr026-xgboost
 - DEBT-INFRA-001 → feature/bare-metal
 - DEBT-CLI-001 → feature/adr032-hsm
-- docs/CRYPTO-INVARIANTS.md → feature/crypto-hardening
+- DEBT-XGBOOST-SOFTFAIL-001 → feature/phase5-resilience
 - ADR-033 TPM → post-PHASE 4
 
-### PHASE 3 estado
-
-systemd units                  ✅ DAY 115
-DEBT-SIGN-AUTO                 ✅ DAY 115
-DEBT-HELLO-001                 ✅ DAY 115
-TEST-PROVISION-1 (5/5)         ✅ DAY 115
-DEBT-ADR025-D11 --reset        ✅ DAY 116
-AppArmor complain (6/6)        ✅ DAY 116
-DEBT-VAGRANTFILE-001           ✅ DAY 117
-DEBT-SEED-PERM-001             ✅ DAY 117
-REC-2 noclobber                ✅ DAY 117
-TEST-INVARIANT-SEED            ✅ DAY 117
-TEST-PROVISION-1 (8/8)         ✅ DAY 117
-Backup policy .bak.*           ✅ DAY 117
-ADR-021 addendum               ✅ DAY 117
-Recovery Contract              ✅ DAY 117
-DEBT-RAG-BUILD-001             ✅ DAY 117
-apparmor-utils check #8        ✅ DAY 117
-apparmor-promote.sh            ✅ DAY 117
-AppArmor enforce (5/6)         ✅ DAY 117
-noclobber audit crítico        🔄 DAY 118
-AppArmor enforce sniffer       🔄 DAY 118
-CHANGELOG-v0.4.0.md            🔄 DAY 118
-MERGE A MAIN                   🔄 DAY 118
-────────────────────────────────────────────
-Tag: v0.4.0-phase3-hardening · post merge DAY 118
+### Paper arXiv
+arXiv:2604.04952 — Draft v15.
+Tabla RF vs XGBoost (latencia + F1 + Precision) irá en §4.
+Contribución científica: delta RF vs XGBoost en CTU-13 Neris.
 
 ---
 
+*"Via Appia Quality — un escudo, nunca una espada."*
