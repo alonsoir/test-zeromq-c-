@@ -78,6 +78,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 ---
 
 ## 🏗️ Architecture
+```
 ┌──────────────────────────────────────────────────────────────────┐
 │                       ML Defender Pipeline                       │
 ├──────────────────────────────────────────────────────────────────┤
@@ -117,6 +118,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  │                  │  plugin-loader PHASE 2e ✅ READONLY       │
 │  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
+```
 ---
 
 ## 🔐 Security Properties
