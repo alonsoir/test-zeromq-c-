@@ -306,6 +306,15 @@ crypto-transport-test:
 	@echo "🧪 Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
 
+# ADR-025: sincroniza MLD_PLUGIN_PUBKEY_HEX en CMakeLists.txt con el keypair activo en VM
+# Ejecutar SIEMPRE tras vagrant destroy+up o provision.sh --reset
+# Sin esto: TEST-INTEG-SIGN falla porque la pubkey compilada != keypair activo
+sync-pubkey:
+	@echo "═══ Sincronizando pubkey activa → plugin-loader/CMakeLists.txt ═══"
+	@ACTIVE_PUBKEY=$$(vagrant ssh -c "sudo python3 -c \"import subprocess; r=subprocess.run(['openssl','pkey','-in','/etc/ml-defender/plugins/plugin_signing.pk','-pubin','-outform','DER'],capture_output=True); print(r.stdout[-32:].hex())\"" 2>/dev/null | tr -d '\r\n') && 	python3 -c "import sys, re; pk='$$ACTIVE_PUBKEY'; f=open('plugin-loader/CMakeLists.txt','r'); c=f.read(); f.close(); new=re.sub(r'set\(MLD_PLUGIN_PUBKEY_HEX \"[0-9a-f]+\"\)', f'set(MLD_PLUGIN_PUBKEY_HEX \"{pk}\")', c); open('plugin-loader/CMakeLists.txt','w').write(new); print(f'✅ pubkey actualizada: {pk}')"
+	@echo "═══ Recompilando plugin-loader con nueva pubkey ═══"
+	@$(MAKE) plugin-loader-build
+
 plugin-loader-build:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -385,6 +394,16 @@ plugin-hello-build: plugin-loader-build
 	@echo ""
 	@echo "✅ libplugin_hello.so deployed to /usr/lib/ml-defender/plugins/"
 	@vagrant ssh -c "ls -lh /usr/lib/ml-defender/plugins/"
+
+plugin-test-message-build: plugin-loader-build
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔌 Building Test Message Plugin (ADR-025 integration)    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@vagrant ssh -c 'cd /vagrant/plugins/test-message && rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4'
+	@vagrant ssh -c "sudo mkdir -p /usr/lib/ml-defender/plugins"
+	@vagrant ssh -c "sudo cp /vagrant/plugins/test-message/build/libplugin_test_message.so /usr/lib/ml-defender/plugins/"
+	@echo "✅ libplugin_test_message.so deployed to /usr/lib/ml-defender/plugins/"
 
 plugin-hello-clean:
 	@echo "🧹 Cleaning hello plugin..."
