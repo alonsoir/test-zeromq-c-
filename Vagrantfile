@@ -327,7 +327,15 @@ LIBBPF_PROFILE
       # XGBoost 3.2.0 (C API + Python) - ADR-026 Track 1
       if [ ! -f /usr/local/lib/libxgboost.so ]; then
         echo "🔍 Installing XGBoost 3.2.0..."
-        pip3 install xgboost==3.2.0 --break-system-packages
+        pip3 install xgboost==3.2.0 --break-system-packages --timeout=300 || {
+          echo "⚠️  PyPI inaccesible — fallback apt (versión no garantizada)"
+          # TODO: verificar qué versión provee apt en Debian bookworm
+          # apt show python3-xgboost — pendiente DEBT-XGBOOST-APT-001
+          # Versión apt != 3.2.0 → resultados no reproducibles científicamente
+          apt-get install -y python3-xgboost || true
+          echo "❗ WARNING: xgboost $(python3 -c 'import xgboost; print(xgboost.__version__)' 2>/dev/null || echo 'not available')"
+          echo "❗ Para reproducibilidad científica, usar xgboost==3.2.0"
+        }
         # Headers C++ desde tag oficial
         mkdir -p /usr/local/include/xgboost
         curl -fsSL https://raw.githubusercontent.com/dmlc/xgboost/v3.2.0/include/xgboost/c_api.h \
@@ -335,13 +343,13 @@ LIBBPF_PROFILE
         curl -fsSL https://raw.githubusercontent.com/dmlc/xgboost/v3.2.0/include/xgboost/base.h \
           -o /usr/local/include/xgboost/base.h
         # Librería compartida al path estándar
-        XGBOOST_SO=$(find /home/vagrant/.local /root/.local -name 'libxgboost.so' 2>/dev/null | head -1)
+        XGBOOST_SO=$(python3 -c "import xgboost.core; print(xgboost.core.find_lib_path()[0])" 2>/dev/null)
         if [ -n "$XGBOOST_SO" ]; then
           cp "$XGBOOST_SO" /usr/local/lib/libxgboost.so
           ldconfig
           echo "✅ XGBoost installed: $(python3 -c 'import xgboost; print(xgboost.__version__)')"
         else
-          echo "❌ libxgboost.so not found after pip install"
+          echo "❌ libxgboost.so not found after pip + apt"
           exit 1
         fi
       else

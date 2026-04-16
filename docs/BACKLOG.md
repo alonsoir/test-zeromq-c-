@@ -5,6 +5,14 @@
 
 ## 📐 Criterio de compleción
 
+### DEBT-XGBOOST-APT-001 — Verificar versión apt python3-xgboost en Debian bookworm
+- **Feature destino:** feature/adr026-xgboost
+- **Bloqueante:** NO (fallback solo para air-gapped)
+- **Contexto:** el fallback apt del Vagrantfile instala python3-xgboost sin pin de versión.
+  Debian bookworm puede proveer una versión != 3.2.0, rompiendo reproducibilidad científica.
+- **Tarea:** `apt show python3-xgboost` en VM limpia → documentar versión en OFFLINE-DEPLOYMENT.md
+- **Test de cierre:** `vagrant provision` en red cortada → warning visible + versión documentada
+
 | Estado | Criterio |
 |---|---|
 | ✅ 100% | Implementado + probado en condiciones reales + resultado documentado |
