@@ -203,7 +203,7 @@ Vagrant.configure("2") do |config|
 
       # Core system packages
       apt-get update
-      apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file tmux
+      apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file tmux xxd
 
       # eBPF toolchain
       apt-get install -y clang llvm bpftool linux-headers-amd64
@@ -386,6 +386,18 @@ LIBBPF_PROFILE
         echo "✅ plugin_xgboost deployed"
       else
         echo "✅ plugin_xgboost already deployed"
+      fi
+
+      # plugin_test_message (tests de integración ADR-025) — build + deploy
+      if [ ! -f /usr/lib/ml-defender/plugins/libplugin_test_message.so ]; then
+        echo "🔌 Building plugin_test_message..."
+        cd /vagrant/plugins/test-message
+        rm -rf build && mkdir -p build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4
+        cp libplugin_test_message.so /usr/lib/ml-defender/plugins/
+        echo "✅ plugin_test_message deployed"
+      else
+        echo "✅ plugin_test_message already deployed"
       fi
 
       # etcd-cpp-api

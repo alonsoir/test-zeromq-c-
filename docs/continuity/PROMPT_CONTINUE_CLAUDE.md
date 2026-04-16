@@ -1,4 +1,4 @@
-# ML Defender (aRGus NDR) — DAY 119 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 120 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -7,168 +7,256 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **Bloqueante:** debe cerrarse en esta feature. No hay merge a main sin test verde.
 - **No bloqueante:** asignada a feature destino en BACKLOG. No toca esta feature.
 - **Toda deuda tiene test de cierre.** Implementado sin test = no cerrado.
+- **REGLA CRÍTICA:** El Vagrantfile y el Makefile son la única fuente de verdad. Nunca compilar o instalar manualmente en la VM sin actualizar ambos.
 
 ---
 
-## Estado al cierre de DAY 118
+## Estado al cierre de DAY 119
 
 ### Hitos completados
-- **PHASE 3 CERRADA** ✅ — `git merge --no-ff` + tag `v0.4.0-phase3-hardening` (da0296cd)
-- AppArmor 6/6 enforce (0 denials) ✅ · make test-all VERDE ✅
-- CHANGELOG-v0.4.0.md ✅ · README + BACKLOG actualizados ✅
-- **`feature/adr026-xgboost` abierta** ✅ — commit `9500300a`
-    - `plugins/xgboost/CMakeLists.txt` ✅
-    - `plugins/xgboost/xgboost_plugin.cpp` (skeleton fail-closed) ✅
-    - `docs/XGBOOST-VALIDATION.md` ✅
-    - Vagrantfile bloque XGBoost 3.2.0 (líneas 327-348) ✅
-    - `docs/consejo/CONSEJO-DAY118-sintesis.md` ✅
+- **Reproducibilidad `vagrant destroy` VALIDADA** ✅ — 10 problemas detectados y resueltos
+- **Vagrantfile consolidado** ✅ — libsodium 1.0.19 · tmux · xxd · plugin_xgboost · plugin_test_message · /usr/lib/ml-defender/plugins/
+- **Makefile consolidado** ✅ — pipeline-build con deps explícitas · install-systemd-units · set-build-profile · sync-pubkey · plugin-test-message-build
+- **plugin_xgboost API corregida** ✅ — `PluginResult plugin_init(const PluginConfig*)` · `plugin_process_message` · `plugin_shutdown` · contratos @requires/@ensures
+- **make sync-pubkey** ✅ — temporal, pendiente DEBT-PUBKEY-RUNTIME-001
+- **6/6 RUNNING + make test-all VERDE** ✅ — incluyendo TEST-INTEG-SIGN PASSED
+- **Consejo DAY 119 sintetizado** ✅ — BACKLOG.md + README.md actualizados
+- **Commits:** 8d964390 → 6055c54d · Branch: `feature/adr026-xgboost`
 
-### XGBoost en VM (instalación manual DAY 118 — pendiente verificar desde cero)
-- `/usr/local/lib/libxgboost.so` + `/usr/local/include/xgboost/` ✅ (manual)
-- Compilación C con `-lxgboost` OK ✅
-- **DAY 119 PASO 0: verificar que Vagrantfile reproduce esto desde cero**
+### Pubkey activa DAY 119 (post vagrant destroy)
+`MLD_PLUGIN_PUBKEY_HEX: 9ac7b8c5ce2d970f77a5fcfcc3b8463b66082db50636a9e81da3cdbb7b2b8019`
 
-### Consejo DAY 118 — Veredictos DEFINITIVOS (5/7 + segunda ronda Gemini)
-
-| Q | Veredicto | Unanimidad |
-|---|-----------|------------|
-| Q1 feature set | Opción A — mismo que RF | 5/5 ✅ |
-| Q2 formato modelo | JSON repo + .ubj producción + .ubj.sig | 5/5 ✅ |
-| Q3 plugin_invoke | Opción B — ml-detector pre-procesa float32[] | 5/5 ✅ |
-| Q4 Vagrantfile | pip 3.2.0 + fallback apt + docs offline | 4/5 ✅ |
-| OBS-4 std::terminate | Fail-closed v0.1 — Integridad > Disponibilidad | 5/5 ✅ |
-
-### Items bloqueantes nuevos (merge feature/adr026-xgboost → main)
-- **OBS-1 / DEBT-XGBOOST-SIGN-001**: firma Ed25519 del modelo (.ubj.sig)
-- **OBS-2 / TEST-INTEG-XGBOOST-1**: test en make test-all
-
-### Items no bloqueantes (backlog)
-- OBS-3: latencia desde Fase 3 (para paper §4)
-- OBS-5: contratos informales ADR-036 en código
-- OBS-6: cache modelo en plugin_init
-- DEBT-XGBOOST-SOFTFAIL-001 → feature/phase5-resilience
+### Seed activo DAY 119
+`75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360`
+INVARIANTE-SEED-001: todos los seed.bin DEBEN ser idénticos.
 
 ---
 
-## PASO 0 — ESPECIAL DAY 119: Vagrantfile desde cero (SIEMPRE PRIMERO)
+## PASO 0 — DAY 120: vagrant destroy OBLIGATORIO (validar idempotencia)
 
-**⚠️ DAY 119 arranca con vagrant destroy. No saltar este paso.**
+**⚠️ DAY 120 arranca con vagrant destroy. El Consejo recomienda ejecutar la secuencia DOS VECES para verificar idempotencia. Es el objetivo del día antes de avanzar con ADR-026.**
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
 git checkout feature/adr026-xgboost
 git pull origin feature/adr026-xgboost
 
-# Destruir y recrear VM desde cero
 vagrant destroy -f
 vagrant up
-# Esperar ~20-30 minutos — provisioning completo
+# Esperar ~20-30 minutos
+```
 
-# Verificar XGBoost instalado automáticamente
+### Verificaciones post-up
+```bash
 vagrant ssh -c "sudo ldconfig -p | grep xgboost"
-# Esperado: libxgboost.so (libc6,x86-64) => /usr/local/lib/libxgboost.so
+# Esperado: libxgboost.so => /usr/local/lib/libxgboost.so
 
 vagrant ssh -c "python3 -c 'import xgboost; print(xgboost.__version__)'"
 # Esperado: 3.2.0
 
-vagrant ssh -c "ls /usr/local/include/xgboost/"
-# Esperado: base.h  c_api.h
+vagrant ssh -c "pkg-config --modversion libsodium"
+# Esperado: 1.0.19
 
-# Test compilación C API
-vagrant ssh -c "echo '#include <xgboost/c_api.h>\n#include <stdio.h>\nint main(){printf(\"OK\\n\");return 0;}' > /tmp/t.c && gcc /tmp/t.c -lxgboost -o /tmp/t && /tmp/t"
-# Esperado: OK
+vagrant ssh -c "which tmux && xxd --version 2>&1 | head -1"
+# Esperado: /usr/bin/tmux · xxd ...
+
+vagrant ssh -c "ls /usr/lib/ml-defender/plugins/"
+# Esperado: libplugin_test_message.so libplugin_xgboost.so
 ```
 
-**Si PASO 0 falla:** diagnosticar bloque Vagrantfile (líneas 327-348) antes de continuar.
-
-### Luego: verificación pipeline estándar
-
+### Secuencia canónica completa (ejecutar en orden estricto)
 ```bash
-make pipeline-stop
+make sync-pubkey
+# Esperado: ✅ pubkey actualizada + plugin-loader recompilado
+
+make set-build-profile
+# Esperado: 6/6 build-active symlinks
+
+make install-systemd-units
+# Esperado: 6/6 units instalados
+
 make pipeline-build 2>&1 | tail -5
-vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh debug"
+# Esperado: ✅ Sniffer built (debug)
+
 make sign-plugins
+# Esperado: ✅ 2 plugin(s) firmados
+
 make test-provision-1
+# Esperado: ✅ TEST-PROVISION-1 PASSED 8/8
+
 make pipeline-start && make pipeline-status
-# Esperar: 6/6 RUNNING
+# Esperado: 6/6 RUNNING
+
 make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
-# Esperar: 6/6 PASSED
+# Esperado: 6/6 PASSED incluyendo TEST-INTEG-SIGN
+
+make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
+# Esperado: ✅ ALL TESTS COMPLETE
 ```
 
-**Solo si 6/6 RUNNING y 6/6 PASSED se continúa.**
+**Solo si primera ejecución verde → repetir secuencia sin vagrant destroy para verificar idempotencia.**
 
 ---
 
-## Orden DAY 119
+## PASO 1 — DEBT-PUBKEY-RUNTIME-001 (BLOQUEANTE DAY 120)
 
-### PASO 1 — Fallback apt en Vagrantfile (Q4 Consejo)
-Actualizar bloque XGBoost con fallback:
-```bash
-pip3 install xgboost==3.2.0 --break-system-packages || {
-    echo "⚠️  PyPI inaccesible — fallback apt (versión no garantizada)"
-    apt-get install -y python3-xgboost
-    echo "❗ WARNING: xgboost $(python3 -c 'import xgboost; print(xgboost.__version__)')"
-    echo "❗ Para reproducibilidad científica, usar xgboost==3.2.0"
-}
+**Objetivo:** eliminar `make sync-pubkey` moviendo la pubkey de CMakeLists.txt a fichero runtime en la VM.
+
+### Diseño (ChatGPT5 DAY 119)
+```cmake
+# plugin-loader/CMakeLists.txt — reemplazar pubkey hardcodeada por:
+file(READ "/etc/ml-defender/plugins/plugin_signing.pk" PUBKEY_PEM)
+# Luego extraer hex desde PEM via script o cmake custom command
 ```
-Crear `docs/OFFLINE-DEPLOYMENT.md` con instrucciones para entornos air-gapped.
 
-### PASO 2 — Compilar plugin_xgboost
-```bash
-make pipeline-build 2>&1 | grep -E "plugin_xgboost|error:|warning:"
-make sign-plugins
-make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
+### Implementación
+1. Crear script `tools/extract-pubkey-hex.sh` que lea `/etc/ml-defender/plugins/plugin_signing.pk` y devuelva hex
+2. Modificar `plugin-loader/CMakeLists.txt` para ejecutar script en tiempo de cmake y inyectar resultado
+3. Eliminar `make sync-pubkey` del Makefile (o dejarlo como deprecated con warning)
+4. Verificar que `vagrant destroy + vagrant up + make plugin-loader-build` funciona sin sync-pubkey
+
+**Test de cierre:** `vagrant destroy && vagrant up && make plugin-loader-build && make sign-plugins && make plugin-integ-test` → TEST-INTEG-SIGN PASSED sin ejecutar `make sync-pubkey`.
+
+---
+
+## PASO 2 — DEBT-BOOTSTRAP-001 (BLOQUEANTE DAY 120)
+
+**Objetivo:** `make bootstrap` que encadene los 9 pasos canónicos con checkpoints, verbose e idempotencia.
+
+### Diseño (Consejo unanimidad)
+```makefile
+.PHONY: bootstrap
+bootstrap:
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 aRGus NDR — Bootstrap from scratch                    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo "[1/9] make up..."
+	@$(MAKE) up
+	@echo "[2/9] make post-up-verify..."
+	@$(MAKE) post-up-verify
+	@echo "[3/9] make check-system-deps..."
+	@$(MAKE) check-system-deps
+	@echo "[4/9] make pipeline-build..."
+	@$(MAKE) pipeline-build
+	@echo "[5/9] make set-build-profile..."
+	@$(MAKE) set-build-profile
+	@echo "[6/9] make install-systemd-units..."
+	@$(MAKE) install-systemd-units
+	@echo "[7/9] make sign-plugins..."
+	@$(MAKE) sign-plugins
+	@echo "[8/9] make test-provision-1..."
+	@$(MAKE) test-provision-1
+	@echo "[9/9] make pipeline-start..."
+	@$(MAKE) pipeline-start
+	@$(MAKE) pipeline-status
+	@$(MAKE) plugin-integ-test
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ Bootstrap completado — 6/6 RUNNING                    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
 ```
-Esperado: `libplugin_xgboost.so` compilado sin errores + `libplugin_xgboost.so.sig` ✅
 
-### PASO 3 — Localizar feature set RF baseline
+**Nota:** una vez implementado DEBT-PUBKEY-RUNTIME-001, el paso [2/9] elimina sync-pubkey y pipeline-build gestiona la pubkey automáticamente vía CMake.
+
+**Test de cierre:** `vagrant destroy && vagrant up && make bootstrap` → 6/6 RUNNING + plugin-integ-test PASSED.
+
+---
+
+## PASO 3 — DEBT-INFRA-VERIFY-001/002 (BLOQUEANTE DAY 120)
+
+### make check-system-deps
+```makefile
+check-system-deps:
+	@echo "🔍 Verifying system dependencies..."
+	@vagrant ssh -c "command -v xxd >/dev/null || { echo '❌ xxd missing'; exit 1; }"
+	@vagrant ssh -c "command -v tmux >/dev/null || { echo '❌ tmux missing'; exit 1; }"
+	@vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null | grep -q '1.0.19' || { echo '❌ libsodium 1.0.19 missing'; exit 1; }"
+	@vagrant ssh -c "python3 -c 'import xgboost; assert xgboost.__version__ == \"3.2.0\"' || { echo '❌ xgboost 3.2.0 missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/local/lib/libxgboost.so || { echo '❌ libxgboost.so missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/local/lib/libcrypto_transport.so || { echo '❌ libcrypto_transport.so missing'; exit 1; }"
+	@echo "✅ All system dependencies present"
+```
+
+### make post-up-verify
+```makefile
+post-up-verify:
+	@echo "🔍 Verifying post-up environment..."
+	@$(MAKE) check-system-deps
+	@vagrant ssh -c "test -d /usr/lib/ml-defender/plugins || { echo '❌ plugins dir missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/lib/ml-defender/plugins/libplugin_xgboost.so || { echo '❌ plugin_xgboost missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/lib/ml-defender/plugins/libplugin_test_message.so || { echo '❌ plugin_test_message missing'; exit 1; }"
+	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' | wc -l | grep -q '6' || { echo '❌ seeds missing'; exit 1; }"
+	@echo "✅ Post-up environment verified"
+```
+
+**Test de cierre:** `make post-up-verify` verde tras `vagrant up` limpio.
+
+---
+
+## PASO 4 — Avanzar con ADR-026 (solo si PASOS 0-3 verdes)
+
+### PASO 4a — Localizar feature set RF baseline
 ```bash
 find /vagrant/ml-detector -name "*.h" -o -name "*.cpp" 2>/dev/null | \
   xargs grep -l -i "feature\|extract" 2>/dev/null
 ```
-Identificar: columnas exactas, orden, normalización.
-Documentar en `docs/xgboost/features.md` (Opción A — mismo que RF).
+Documentar en `docs/xgboost/features.md` (Opción A — mismo feature set que RF, unanimidad Consejo).
 
-### PASO 4 — Script entrenamiento XGBoost (Fase 2)
-Crear `scripts/train_xgboost_baseline.py`:
-- Mismo feature set que RF (Opción A — UNANIMIDAD Consejo)
-- `random_state=42` para reproducibilidad
+### PASO 4b — docs/xgboost/plugin-contract.md
+Crear documento con contrato mínimo `ctx->payload`:
+- `float32[]` contiguo en row-major
+- `payload_size % sizeof(float) == 0`
+- `num_features` = columnas modelo
+- Sin NaN ni Inf
+- Versión del esquema declarada
+
+### PASO 4c — scripts/train_xgboost_baseline.py
+- Mismo feature set que RF (Opción A)
+- `random_state=42`
 - Exportar `xgboost_ctu13.json` + `xgboost_ctu13.ubj`
-- Validar equivalencia JSON/ubj (mismo output)
-- Registrar: F1, Precision, Recall, FPR, latencia
 - Gate: Precision ≥ 0.99 + F1 ≥ 0.9985
 
-### PASO 5 — Firma del modelo (OBS-1 — BLOQUEANTE)
-Extender Makefile con `make sign-models`:
+### PASO 4d — make sign-models (OBS-1 BLOQUEANTE)
+Extender Makefile:
 - Firma `xgboost_ctu13.ubj` con keypair Ed25519 (mismo esquema ADR-025)
 - Genera `xgboost_ctu13.ubj.sig`
 - Verificación en `plugin_init` antes de `XGBoosterLoadModel`
 
-### PASO 6 — Contratos informales ADR-036 (OBS-5)
-Añadir en `xgboost_plugin.cpp`:
-```cpp
-// @requires: ctx != nullptr && ctx->payload != nullptr && ctx->payload_size == N*sizeof(float)
-// @ensures: return_value == 0 (OK) || std::terminate() (fail-closed)
-// @invariant: no side effects on MessageContext si falla
-```
+### PASO 4e — TEST-INTEG-XGBOOST-1 (OBS-2 BLOQUEANTE)
+Test unitario: modelo juguete + plugin_process_message con MessageContext sintético → salida ∈ [0,1] no NaN.
 
 ---
 
 ## Contexto permanente
 
-### ADR-025 keypair dev (post-reset DAY 117)
-`MLD_PLUGIN_PUBKEY_HEX: e51a91e91d72f74fe97e8a4eb883c9c6eb41dd2fc994feaf59d5ba2177720f3d`
+### ADR-025 keypair dev (post-reset DAY 119 vagrant destroy)
+`MLD_PLUGIN_PUBKEY_HEX: 9ac7b8c5ce2d970f77a5fcfcc3b8463b66082db50636a9e81da3cdbb7b2b8019`
 
-### seed_family post-reset DAY 117
-Seed: `75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360`
+### Seed activo
+`75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360`
 INVARIANTE-SEED-001: todos los seed.bin DEBEN ser idénticos.
 
-### Lección operacional crítica
-`provision.sh --reset` rota keypair. Siempre post-reset:
-`make pipeline-build` → `make sign-plugins` → `make test-all`
+### Lección operacional crítica DAY 119
+El Vagrantfile y el Makefile son la única fuente de verdad. Compilar o instalar manualmente en la VM sin actualizar estas fuentes = deuda técnica de infraestructura garantizada.
 
 ### Regla de oro
 6/6 RUNNING + make test-all VERDE
+
+### Secuencia canónica post vagrant destroy (DAY 119)
+```
+make sync-pubkey           ← temporal hasta DEBT-PUBKEY-RUNTIME-001
+make set-build-profile
+make install-systemd-units
+make pipeline-build
+make sign-plugins
+make test-provision-1
+make pipeline-start && make pipeline-status
+make plugin-integ-test
+```
+
+**Una vez DEBT-PUBKEY-RUNTIME-001 + DEBT-BOOTSTRAP-001 cerrados:**
+```
+make bootstrap
+```
 
 ### Patrón robusto para scripts en VM
 ```bash
@@ -180,19 +268,29 @@ vagrant ssh -c "sudo python3 /tmp/script.py"
 ```
 NUNCA `sed -i` sin `-e ''` en macOS. NUNCA Python inline con paréntesis en zsh.
 
-### feature/adr026-xgboost — estado DAY 118 cierre
+### feature/adr026-xgboost — estado DAY 119 cierre
 ```
-plugins/xgboost/CMakeLists.txt          ✅ commit 9500300a
-plugins/xgboost/xgboost_plugin.cpp      ✅ skeleton fail-closed
-docs/XGBOOST-VALIDATION.md              ✅ gate médico
-docs/consejo/CONSEJO-DAY118-sintesis.md ✅ veredictos + segunda ronda
-Vagrantfile bloque XGBoost (327-348)    ✅ pip 3.2.0 (fallback apt → DAY 119)
-Feature set                              Opción A (mismo RF) — UNANIMIDAD
-Formato modelo                           JSON repo + .ubj producción — UNANIMIDAD
-plugin_invoke                            Opción B (ml-detector pre-procesa) — UNANIMIDAD
-std::terminate() v0.1                    Fail-closed — UNANIMIDAD (incl. Gemini 2ª ronda)
-DEBT-XGBOOST-SIGN-001                   ⏳ BLOQUEANTE — pendiente DAY 119
-TEST-INTEG-XGBOOST-1                    ⏳ BLOQUEANTE — pendiente DAY 119
+plugins/xgboost/CMakeLists.txt              ✅ commit 9500300a
+plugins/xgboost/xgboost_plugin.cpp          ✅ API corregida DAY 119 · contratos OBS-5
+docs/XGBOOST-VALIDATION.md                  ✅ gate médico
+docs/consejo/CONSEJO-DAY119-preguntas.md    ✅ veredictos Consejo
+Vagrantfile libsodium 1.0.19                ✅ antes de ONNX
+Vagrantfile tmux + xxd                      ✅ paquetes base
+Vagrantfile plugin_xgboost + plugin_test    ✅ build + deploy
+Makefile pipeline-build deps explícitas     ✅
+Makefile install-systemd-units              ✅
+Makefile set-build-profile                  ✅
+Makefile sync-pubkey                        ✅ temporal
+Makefile plugin-test-message-build          ✅
+Feature set                                 Opción A (mismo RF) — UNANIMIDAD
+Formato modelo                              JSON repo + .ubj producción — UNANIMIDAD
+plugin_invoke                               Opción B (ml-detector pre-procesa) — UNANIMIDAD
+std::terminate() v0.1                       Fail-closed — UNANIMIDAD
+DEBT-PUBKEY-RUNTIME-001                     ⏳ BLOQUEANTE DAY 120
+DEBT-BOOTSTRAP-001                          ⏳ BLOQUEANTE DAY 120
+DEBT-INFRA-VERIFY-001/002                   ⏳ BLOQUEANTE DAY 120
+DEBT-XGBOOST-SIGN-001                       ⏳ BLOQUEANTE merge
+TEST-INTEG-XGBOOST-1                        ⏳ BLOQUEANTE merge
 ```
 
 ### DEBTs no bloqueantes (NO tocar en esta feature)
@@ -202,6 +300,7 @@ TEST-INTEG-XGBOOST-1                    ⏳ BLOQUEANTE — pendiente DAY 119
 - DEBT-INFRA-001 → feature/bare-metal
 - DEBT-CLI-001 → feature/adr032-hsm
 - DEBT-XGBOOST-SOFTFAIL-001 → feature/phase5-resilience
+- DEBT-XGBOOST-APT-001 → verificar versión apt bookworm (no bloqueante)
 - ADR-033 TPM → post-PHASE 4
 
 ### Paper arXiv

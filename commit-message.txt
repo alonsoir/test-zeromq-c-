@@ -1,15 +1,54 @@
-docs: ADR-032 APROBADO -- Plugin Distribution Chain HSM signing
+git add \
+  Vagrantfile \
+  Makefile \
+  plugins/xgboost/xgboost_plugin.cpp \
+  plugin-loader/CMakeLists.txt \
+  docs/BACKLOG.md \
+  README.md \
+  docs/consejo/CONSEJO-DAY119-preguntas.md
 
-- YubiKey OpenPGP (no PIV) + Ed25519 -- correccion tecnica Consejo
-- Formato .sig JSON embebido (opcion B unanime)
-- Multi-key support en loader desde dia 1
-- customer_id como control logico documentado
-- Revocacion: revocation.json firmado offline
-- ADR-033 propuesto: TPM measured boot (separado)
-- Soberania open-source documentada
+git commit -m "DAY 119 — Infrastructure reproducibility: vagrant destroy fully validated
 
-docs: DAY 114 cierre -- README + ADR-032 + prompt DAY 115 v2
+VAGRANTFILE:
+- libsodium 1.0.19 build-from-source (antes de ONNX/FAISS/XGBoost)
+- tmux + xxd añadidos a paquetes base (línea 206)
+- XGBoost: --timeout=300 + find_lib_path() robusto + fallback apt documentado
+- /usr/lib/ml-defender/plugins/ creado en provisioning
+- plugin_xgboost build + deploy idempotente
+- plugin_test_message build + deploy idempotente
+- DEBT-XGBOOST-APT-001 registrado (no bloqueante)
 
-- README: badges, milestones, security properties actualizados
-- ADR-032: Plugin Distribution Chain APROBADO (YubiKey OpenPGP)
-- Prompt DAY 115: PHASE 3 + roadmap post-PHASE 3 (ADR-024, stress, etcd refactor)
+MAKEFILE:
+- pipeline-build: dependencias explícitas crypto-transport + etcd-client + plugin-loader
+- install-systemd-units: wrapper para install-systemd-units.sh
+- set-build-profile: wrapper para set-build-profile.sh (PROFILE=debug|production)
+- sync-pubkey: lee pubkey activa VM → CMakeLists.txt → recompila plugin-loader (temporal)
+- plugin-test-message-build: build + deploy libplugin_test_message.so
+- REGLA documentada: usar siempre make <target>, nunca cmake/make directo en VM
+
+PLUGIN XGBOOST:
+- API corregida: PluginResult plugin_init(const PluginConfig*)
+- plugin_process_packet añadido (obligatorio, PLUGIN_SKIP)
+- plugin_invoke → plugin_process_message(MessageContext*)
+- plugin_destroy → plugin_shutdown()
+- OBS-5: contratos @requires/@ensures/@invariant añadidos
+
+PLUGIN LOADER:
+- MLD_PLUGIN_PUBKEY_HEX actualizada: 9ac7b8c5...8019 (post vagrant destroy DAY 119)
+- DEBT-PUBKEY-RUNTIME-001 registrado: mover a fichero runtime (BLOQUEANTE DAY 120)
+
+DOCS:
+- BACKLOG.md: P0 DAY 120 con 4 bloqueantes nuevos · secuencia canónica 9 pasos
+- README.md: Quick Start reescrito · regla crítica Makefile · roadmap DAY 120
+- CONSEJO-DAY119-preguntas.md: síntesis + veredictos + Q1-Q5
+
+LECCIÓN OPERACIONAL:
+El Vagrantfile y el Makefile son la única fuente de verdad.
+Compilar manualmente en la VM sin actualizar ambos = deuda técnica garantizada.
+
+RESULTADO:
+vagrant destroy && vagrant up → 6/6 RUNNING · make test-all VERDE
+6/6 plugin-integ-test PASSED incl. TEST-INTEG-SIGN
+
+Refs: ADR-025, ADR-026, DAY-119
+Pubkey activa: 9ac7b8c5ce2d970f77a5fcfcc3b8463b66082db50636a9e81da3cdbb7b2b8019"
