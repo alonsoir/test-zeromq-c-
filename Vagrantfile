@@ -273,6 +273,23 @@ LIBBPF_PROFILE
         rm cmake-3.25.0-linux-x86_64.sh
       fi
 
+      # libsodium 1.0.19 (requerido por crypto-transport HKDF-SHA256 — ADR-013)
+      # Debian bookworm provee 1.0.18 — crypto_kdf_hkdf_sha256_* requiere 1.0.19+
+      if [ "$(pkg-config --modversion libsodium 2>/dev/null)" != "1.0.19" ]; then
+        echo "🔐 Installing libsodium 1.0.19 from source..."
+        cd /tmp && rm -rf libsodium-stable libsodium-1.0.19.tar.gz
+        curl -fsSL https://github.com/jedisct1/libsodium/releases/download/1.0.19-RELEASE/libsodium-1.0.19.tar.gz \
+          -o libsodium-1.0.19.tar.gz
+        tar xzf libsodium-1.0.19.tar.gz
+        cd libsodium-stable
+        ./configure --prefix=/usr/local
+        make -j4
+        make install
+        ldconfig
+        echo "✅ libsodium $(pkg-config --modversion libsodium) installed"
+      else
+        echo "✅ libsodium 1.0.19 already installed"
+      fi
       # ONNX Runtime v1.17.1
       if [ ! -f /usr/local/lib/libonnxruntime.so ]; then
         echo "🧠 Installing ONNX Runtime v1.17.1..."
