@@ -739,6 +739,21 @@ pipeline-status:
 	@vagrant ssh -c "tmux has-session -t firewall 2>/dev/null && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 
+install-systemd-units:
+	@echo "═══ Instalando systemd units ML Defender ═══"
+	@vagrant ssh -c "sudo bash /vagrant/etcd-server/config/install-systemd-units.sh"
+
+set-build-profile:
+	@echo "═══ Activando perfil de build: $(PROFILE) ═══"
+	@vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh $(PROFILE)"
+
+# Secuencia completa post-build:
+# 1. pipeline-build  → compila todos los componentes y libs
+# 2. install-systemd-units → instala units en /etc/systemd/system/
+# 3. set-build-profile → activa symlinks build-active
+# 4. sign-plugins    → firma Ed25519 (ADR-025)
+# 5. test-provision-1 → CI gate PHASE 3
+# 6. pipeline-start  → arranca los 6 componentes
 pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build etcd-server rag-build rag-ingester-build ml-detector sniffer
 
 tools: proto etcd-client-build crypto-transport-build
