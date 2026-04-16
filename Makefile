@@ -739,7 +739,7 @@ pipeline-status:
 	@vagrant ssh -c "tmux has-session -t firewall 2>/dev/null && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 
-pipeline-build: etcd-server rag-build rag-ingester-build ml-detector sniffer
+pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build etcd-server rag-build rag-ingester-build ml-detector sniffer
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
