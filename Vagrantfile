@@ -203,7 +203,7 @@ Vagrant.configure("2") do |config|
 
       # Core system packages
       apt-get update
-      apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file
+      apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file tmux
 
       # eBPF toolchain
       apt-get install -y clang llvm bpftool linux-headers-amd64
