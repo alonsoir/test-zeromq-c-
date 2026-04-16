@@ -373,6 +373,21 @@ LIBBPF_PROFILE
         echo "✅ XGBoost already installed"
       fi
 
+      # Directorio de plugins ML Defender
+      mkdir -p /usr/lib/ml-defender/plugins
+
+      # plugin_xgboost (ADR-026 Track 1) — build + deploy
+      if [ ! -f /usr/lib/ml-defender/plugins/libplugin_xgboost.so ]; then
+        echo "🔌 Building plugin_xgboost..."
+        cd /vagrant/plugins/xgboost
+        rm -rf build && mkdir -p build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4
+        cp libplugin_xgboost.so /usr/lib/ml-defender/plugins/
+        echo "✅ plugin_xgboost deployed"
+      else
+        echo "✅ plugin_xgboost already deployed"
+      fi
+
       # etcd-cpp-api
       if [ ! -f /usr/local/lib/libetcd-cpp-api.so ] && [ ! -f /usr/local/lib/libetcd-cpp-api.a ]; then
         cd /tmp && rm -rf etcd-cpp-apiv3
