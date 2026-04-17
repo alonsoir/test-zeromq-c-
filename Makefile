@@ -415,6 +415,11 @@ sign-plugins:
 	@echo "Firmando plugins (ADR-025 D1)..."
 	@vagrant ssh -c 'sudo bash /vagrant/tools/provision.sh sign'
 
+sign-models:
+	@echo "══ Firma de modelos (ADR-026 OBS-1) ══"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level1/xgboost_cicids2017.ubj"
+	@echo "  ✅ 1 modelo(s) firmado(s) correctamente"
+
 plugin-integ-test:
 	@echo "TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_variants /vagrant/plugins/test-message/test_variants.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && MLD_ALLOW_DEV_MODE=1 ./test_variants && echo TEST-INTEG-4a PASSED || echo TEST-INTEG-4a FAILED'
