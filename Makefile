@@ -310,9 +310,9 @@ crypto-transport-test:
 # Ejecutar SIEMPRE tras vagrant destroy+up o provision.sh --reset
 # Sin esto: TEST-INTEG-SIGN falla porque la pubkey compilada != keypair activo
 sync-pubkey:
-	@echo "═══ Sincronizando pubkey activa → plugin-loader/CMakeLists.txt ═══"
-	@ACTIVE_PUBKEY=$$(vagrant ssh -c "sudo python3 -c \"import subprocess; r=subprocess.run(['openssl','pkey','-in','/etc/ml-defender/plugins/plugin_signing.pk','-pubin','-outform','DER'],capture_output=True); print(r.stdout[-32:].hex())\"" 2>/dev/null | tr -d '\r\n') && 	python3 -c "import sys, re; pk='$$ACTIVE_PUBKEY'; f=open('plugin-loader/CMakeLists.txt','r'); c=f.read(); f.close(); new=re.sub(r'set\(MLD_PLUGIN_PUBKEY_HEX \"[0-9a-f]+\"\)', f'set(MLD_PLUGIN_PUBKEY_HEX \"{pk}\")', c); open('plugin-loader/CMakeLists.txt','w').write(new); print(f'✅ pubkey actualizada: {pk}')"
-	@echo "═══ Recompilando plugin-loader con nueva pubkey ═══"
+	@echo "⚠️  DEPRECATED: sync-pubkey ya no es necesario (DEBT-PUBKEY-RUNTIME-001 CERRADO)"
+	@echo "    plugin-loader lee la pubkey desde /etc/ml-defender/plugins/plugin_signing.pk en cmake-time"
+	@echo "    Ejecuta directamente: make plugin-loader-build"
 	@$(MAKE) plugin-loader-build
 
 plugin-loader-build:
