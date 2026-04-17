@@ -227,6 +227,59 @@ help:
 # VM Management
 # ============================================================================
 
+# ============================================================================
+# DEBT-BOOTSTRAP-001 + DEBT-INFRA-VERIFY-001/002 — DAY 120
+# ============================================================================
+
+.PHONY: bootstrap check-system-deps post-up-verify
+
+bootstrap:
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 aRGus NDR — Bootstrap from scratch                    ║"
+	@echo "║  Ejecutar tras: git clone && make up                      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo "[1/8] Verificando entorno post-up..."
+	@$(MAKE) post-up-verify
+	@echo "[2/8] Verificando dependencias del sistema..."
+	@$(MAKE) check-system-deps
+	@echo "[3/8] Activando perfil de build..."
+	@$(MAKE) set-build-profile
+	@echo "[4/8] Instalando systemd units..."
+	@$(MAKE) install-systemd-units
+	@echo "[5/8] Compilando pipeline (incluye pubkey runtime + plugin-test-message)..."
+	@$(MAKE) pipeline-build
+	@echo "[6/8] Firmando plugins..."
+	@$(MAKE) sign-plugins
+	@echo "[7/8] Verificando provisioning..."
+	@$(MAKE) test-provision-1
+	@echo "[8/8] Arrancando pipeline..."
+	@$(MAKE) pipeline-start
+	@$(MAKE) pipeline-status
+	@$(MAKE) plugin-integ-test
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ Bootstrap completado — 6/6 RUNNING                    ║"
+	@echo "║  Siguiente: make test-all                                  ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+
+check-system-deps:
+	@echo "🔍 Verificando dependencias del sistema..."
+	@vagrant ssh -c "command -v xxd >/dev/null || { echo '❌ xxd missing'; exit 1; }"
+	@vagrant ssh -c "command -v tmux >/dev/null || { echo '❌ tmux missing'; exit 1; }"
+	@vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null | grep -q '1.0.19' || { echo '❌ libsodium 1.0.19 missing'; exit 1; }"
+	@vagrant ssh -c "bash /vagrant/tools/check-xgboost-version.sh" || { echo '❌ xgboost 3.2.0 missing'; exit 1; }
+	@vagrant ssh -c "test -f /usr/local/lib/libxgboost.so || { echo '❌ libxgboost.so missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/local/lib/libcrypto_transport.so || { echo '❌ libcrypto_transport.so missing'; exit 1; }"
+	@echo "✅ Todas las dependencias del sistema presentes"
+
+post-up-verify:
+	@echo "🔍 Verificando entorno post-up..."
+	@$(MAKE) check-system-deps
+	@vagrant ssh -c "test -d /usr/lib/ml-defender/plugins || { echo '❌ plugins dir missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/lib/ml-defender/plugins/libplugin_xgboost.so || { echo '❌ libplugin_xgboost.so missing'; exit 1; }"
+	@vagrant ssh -c "test -f /etc/ml-defender/plugins/plugin_signing.pk || { echo '❌ plugin_signing.pk missing'; exit 1; }"
+	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' | wc -l | tr -d ' ' | grep -q '^6$$' || { echo '❌ seeds missing (esperados 6)'; exit 1; }"
+	@echo "✅ Entorno post-up verificado"
+
 up:
 	@vagrant up defender client
 
