@@ -2,15 +2,13 @@
  * xgboost_plugin.cpp — ADR-026 Track 1
  *
  * Plugin de inferencia XGBoost para ml-detector.
- * Carga modelo pre-entrenado en CTU-13 Neris (.json XGBoost format).
+ * Carga modelo pre-entrenado en CIC-IDS-2017 (.ubj XGBoost format).
  * Implementa plugin_process_message(MessageContext&) — PLUGIN_MODE_NORMAL.
  *
- * Gate de merge (docs/XGBOOST-VALIDATION.md):
- *   Precision >= 0.99 | F1 >= 0.9985 | CTU-13 Neris | 4 runs mínimo
+ * Payload: float32[] contiguo, 23 features LEVEL1 (docs/xgboost/plugin-contract.md)
+ * Fail-closed: std::terminate() si modelo no carga o payload inválido.
  *
- * Fail-closed: std::terminate() si el modelo no carga (ADR-025 D8-pre).
- *
- * DAY 119 — Alonso Isidoro Román
+ * DAY 120 — Alonso Isidoro Román
  */
 
 #include <plugin_loader/plugin_api.h>
@@ -19,41 +17,34 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 #include <stdexcept>
 
 // ── Configuración ────────────────────────────────────────────────
 #ifndef MLD_XGBOOST_MODEL_PATH
-#define MLD_XGBOOST_MODEL_PATH "/etc/ml-defender/models/xgboost_ctu13.json"
+#define MLD_XGBOOST_MODEL_PATH "/etc/ml-defender/models/xgboost_cicids2017.ubj"
 #endif
+
+static constexpr int    NUM_FEATURES = 23;
+static constexpr size_t PAYLOAD_BYTES = NUM_FEATURES * sizeof(float);
 
 // ── Estado global del plugin ─────────────────────────────────────
 static BoosterHandle g_booster = nullptr;
 static bool          g_loaded  = false;
 
-// ── Helpers ──────────────────────────────────────────────────────
-static void check_xgb(int ret, const char* op) {
-    if (ret != 0) {
-        fprintf(stderr, "[plugin_xgboost] XGBoost error in %s: %s\n",
-                op, XGBGetLastError());
-        std::terminate();
-    }
-}
-
 // ── plugin_init ──────────────────────────────────────────────────
 // @requires: config != nullptr
 // @ensures: g_loaded == true || std::terminate()
-// @invariant: no side effects si falla
 extern "C" PluginResult plugin_init(const PluginConfig* config) {
-    (void)config;  // No se usa en v0.1 — modelo en ruta compilada
+    (void)config;
 
-    fprintf(stderr, "[plugin_xgboost] Loading model: %s\n",
-            MLD_XGBOOST_MODEL_PATH);
+    fprintf(stderr, "[plugin_xgboost] Loading model: %s\n", MLD_XGBOOST_MODEL_PATH);
 
     int ret = XGBoosterCreate(nullptr, 0, &g_booster);
     if (ret != 0) {
         fprintf(stderr, "[plugin_xgboost] FATAL: XGBoosterCreate failed: %s\n",
                 XGBGetLastError());
-        std::terminate();  // fail-closed
+        std::terminate();
     }
 
     ret = XGBoosterLoadModel(g_booster, MLD_XGBOOST_MODEL_PATH);
@@ -62,41 +53,94 @@ extern "C" PluginResult plugin_init(const PluginConfig* config) {
                 MLD_XGBOOST_MODEL_PATH, XGBGetLastError());
         XGBoosterFree(g_booster);
         g_booster = nullptr;
-        std::terminate();  // fail-closed — ADR-025 D8-pre
+        std::terminate();
     }
 
     g_loaded = true;
-    fprintf(stderr, "[plugin_xgboost] Model loaded OK (fail-closed active)\n");
+    fprintf(stderr, "[plugin_xgboost] Model loaded OK — fail-closed active\n");
     return PLUGIN_OK;
 }
 
 // ── plugin_process_packet ────────────────────────────────────────
-// Obligatorio por API — xgboost opera sobre MessageContext, no PacketContext
 extern "C" PluginResult plugin_process_packet(PacketContext* ctx) {
     (void)ctx;
-    return PLUGIN_SKIP;  // XGBoost no opera sobre PacketContext
+    return PLUGIN_SKIP;
 }
 
 // ── plugin_process_message ───────────────────────────────────────
-// @requires: ctx != nullptr && ctx->payload != nullptr
-// @ensures: return PLUGIN_OK || std::terminate() (fail-closed)
-// @invariant: no side effects on MessageContext si falla
+// @requires: ctx != nullptr
+// @requires: ctx->payload != nullptr
+// @requires: ctx->payload_size == NUM_FEATURES * sizeof(float)
+// @ensures: ctx->result ∈ [0.0, 1.0] || std::terminate()
 extern "C" PluginResult plugin_process_message(MessageContext* ctx) {
     if (!g_loaded || g_booster == nullptr) {
         fprintf(stderr, "[plugin_xgboost] FATAL: invoked without loaded model\n");
         std::terminate();
     }
 
+    // Validar ctx
     if (ctx == nullptr) {
         fprintf(stderr, "[plugin_xgboost] FATAL: null MessageContext\n");
-        std::terminate();  // ADR-023 FIX-C
+        std::terminate();
     }
 
-    // TODO (Fase 2 DAY 119+): extraer features del payload de ctx
-    // ml-detector pre-procesa float32[] — Opción B unanimidad Consejo DAY 118
-    // Fase 2 implementará el feature extraction completo desde MessageContext
+    // Validar payload — contratos ADR-023 FIX-C
+    if (ctx->payload == nullptr) {
+        fprintf(stderr, "[plugin_xgboost] FATAL: null payload (PLUGIN_MODE_NORMAL requires float32[])\n");
+        std::terminate();
+    }
 
-    fprintf(stderr, "[plugin_xgboost] invoke OK — model ready, inference pending (Fase 2)\n");
+    if (ctx->payload_len != PAYLOAD_BYTES) {
+        fprintf(stderr, "[plugin_xgboost] FATAL: payload_len=%zu expected=%zu\n",
+                ctx->payload_len, PAYLOAD_BYTES);
+        std::terminate();
+    }
+
+    // Validar NaN/Inf en features
+    const float* features = reinterpret_cast<const float*>(ctx->payload);
+    for (int i = 0; i < NUM_FEATURES; ++i) {
+        if (std::isnan(features[i]) || std::isinf(features[i])) {
+            fprintf(stderr, "[plugin_xgboost] FATAL: feature[%d] is NaN/Inf\n", i);
+            std::terminate();
+        }
+    }
+
+    // Crear DMatrix con 1 fila x 23 columnas
+    DMatrixHandle dmat = nullptr;
+    int ret = XGDMatrixCreateFromMat(features, 1, NUM_FEATURES,
+                                      std::numeric_limits<float>::quiet_NaN(),
+                                      &dmat);
+    if (ret != 0 || dmat == nullptr) {
+        fprintf(stderr, "[plugin_xgboost] FATAL: XGDMatrixCreateFromMat failed: %s\n",
+                XGBGetLastError());
+        std::terminate();
+    }
+
+    // Inferencia
+    bst_ulong out_len = 0;
+    const float* out_result = nullptr;
+    ret = XGBoosterPredict(g_booster, dmat, 0, 0, 0, &out_len, &out_result);
+    XGDMatrixFree(dmat);
+
+    if (ret != 0 || out_result == nullptr || out_len == 0) {
+        fprintf(stderr, "[plugin_xgboost] FATAL: XGBoosterPredict failed: %s\n",
+                XGBGetLastError());
+        std::terminate();
+    }
+
+    float score = out_result[0];
+
+    // Validar salida
+    if (std::isnan(score) || std::isinf(score)) {
+        fprintf(stderr, "[plugin_xgboost] FATAL: prediction is NaN/Inf\n");
+        std::terminate();
+    }
+
+    ctx->result_code = (score >= 0.5f) ? 1 : 0;  // 1=ATTACK, 0=BENIGN
+    // Store score in annotation for observability
+    snprintf(ctx->annotation, sizeof(ctx->annotation), "xgb_score=%.6f", score);
+
+    fprintf(stderr, "[plugin_xgboost] inference OK — score=%.6f\n", score);
     return PLUGIN_OK;
 }
 
@@ -110,12 +154,6 @@ extern "C" void plugin_shutdown() {
     fprintf(stderr, "[plugin_xgboost] shutdown OK\n");
 }
 
-// ── plugin_name ──────────────────────────────────────────────────
-extern "C" const char* plugin_name() {
-    return "plugin_xgboost";
-}
-
-// ── plugin_version ───────────────────────────────────────────────
-extern "C" const char* plugin_version() {
-    return "0.1.0-adr026-track1";
-}
+extern "C" int plugin_api_version() { return 1; }
+extern "C" const char* plugin_name()    { return "plugin_xgboost"; }
+extern "C" const char* plugin_version() { return "0.1.1-adr026-track1"; }

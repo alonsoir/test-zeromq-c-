@@ -67,10 +67,10 @@ target_compile_options(plugin_xgboost PRIVATE
     -Wall -Wextra -Wpedantic
 )
 
-# MLD_XGBOOST_MODEL_PATH: ruta al modelo .json en runtime
-# Default: /etc/ml-defender/models/xgboost_ctu13.json
+# MLD_XGBOOST_MODEL_PATH: ruta al modelo .ubj en runtime
+# Default: /etc/ml-defender/models/xgboost_cicids2017.ubj
 target_compile_definitions(plugin_xgboost PRIVATE
-    MLD_XGBOOST_MODEL_PATH="/etc/ml-defender/models/xgboost_ctu13.json"
+    MLD_XGBOOST_MODEL_PATH="/etc/ml-defender/models/xgboost_cicids2017.ubj"
 )
 
 message(STATUS "plugin_xgboost: will build libplugin_xgboost.so (PRODUCTION — ADR-026 Track 1)")

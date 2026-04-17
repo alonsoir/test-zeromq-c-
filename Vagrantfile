@@ -365,6 +365,9 @@ LIBBPF_PROFILE
           cp "$XGBOOST_SO" /usr/local/lib/libxgboost.so
           ldconfig
           echo "✅ XGBoost installed: $(python3 -c 'import xgboost; print(xgboost.__version__)')"
+          # libgomp bundled en xgboost wheel — symlink para dlopen desde plugins C++
+          ln -sf /usr/local/lib/python3.11/dist-packages/xgboost.libs/libgomp-e985bcbb.so.1.0.0 /usr/local/lib/libgomp-e985bcbb.so.1.0.0
+          ldconfig
         else
           echo "❌ libxgboost.so not found after pip + apt"
           exit 1

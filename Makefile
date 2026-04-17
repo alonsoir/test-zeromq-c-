@@ -415,6 +415,10 @@ sign-plugins:
 	@echo "Firmando plugins (ADR-025 D1)..."
 	@vagrant ssh -c 'sudo bash /vagrant/tools/provision.sh sign'
 
+test-integ-xgboost-1:
+	@echo "TEST-INTEG-XGBOOST-1: XGBoost plugin inference (ADR-026 OBS-2)..."
+	@vagrant ssh -c "cd /tmp && g++ -std=c++20 -o test_integ_xgboost_1 /vagrant/plugins/test-message/test_integ_xgboost_1.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_xgboost_1 && echo TEST-INTEG-XGBOOST-1 PASSED || echo TEST-INTEG-XGBOOST-1 FAILED"
+
 sign-models:
 	@echo "══ Firma de modelos (ADR-026 OBS-1) ══"
 	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level1/xgboost_cicids2017.ubj"
