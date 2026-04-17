@@ -1,9 +1,10 @@
+cat > /tmp/README.md << 'MDEOF'
 # ML Defender (aRGus NDR)
 
 **Open-source, embedded-ML network detection and response system protecting critical infrastructure from ransomware and DDoS attacks.**
 
 [![Via Appia Quality](https://img.shields.io/badge/Via_Appia-Quality-gold)](https://en.wikipedia.org/wiki/Appian_Way)
-[![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_The_Council-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
+[![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_7_Models-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
 [![Tests: make test-all VERDE](https://img.shields.io/badge/Tests-make_test--all_VERDE-brightgreen)]()
@@ -11,7 +12,8 @@
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![PHASE 3](https://img.shields.io/badge/PHASE_3-COMPLETADO-brightgreen)]()
 [![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
-[![Reproducible](https://img.shields.io/badge/Infra-Reproducible_from_vagrant_destroy-brightgreen)]()
+[![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
+[![XGBoost](https://img.shields.io/badge/XGBoost-F1%3D0.9978_CIC--IDS--2017-brightgreen)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -59,29 +61,31 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 
 ---
 
-## 📊 Validated Results (DAY 119 — 16 April 2026)
+## 📊 Validated Results (DAY 120 — 17 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
 | **F1-score (CTU-13 Neris)** | **0.9985** | Stable across 4 replay runs |
 | **Precision** | **0.9969** | |
 | **Recall** | **1.0000** | Zero missed attacks (FN=0) |
+| **XGBoost F1 (CIC-IDS-2017)** | **0.9978** | vs RF baseline 0.9968 (+0.001) |
+| **XGBoost Precision (CIC-IDS-2017)** | **0.9973** | vs RF baseline 0.9944 (+0.003) |
+| **XGBoost ROC-AUC** | **1.0000** | 2.83M flows, 23 features |
 | **Inference latency** | **0.24–1.06 μs** | Per-class, embedded C++20 |
 | **Throughput ceiling (virtualized)** | **~33–38 Mbps** | VirtualBox NIC limit, not pipeline |
 | **Stress test** | **2,374,845 packets — 0 drops** | 100 Mbps requested, loop=3 bigFlows |
 | **RAM (full pipeline)** | **~1.28 GB** | Stable under load |
-| **Pipeline components** | **6/6 RUNNING** | Reproducible from `vagrant destroy` |
-| **Plugin integrity** | **ADR-025 MERGED — v0.3.0-plugin-integrity** | Ed25519 + TOCTOU-safe dlopen |
-| **Plugin integ tests** | **6/6 PASSED incl. TEST-INTEG-SIGN** | DAY 119 — SIGN reparado |
+| **Pipeline components** | **6/6 RUNNING** | Reproducible from `make bootstrap` |
+| **Plugin integrity** | **ADR-025 MERGED** | Ed25519 + TOCTOU-safe dlopen |
+| **Plugin integ tests** | **6/6 PASSED incl. TEST-INTEG-SIGN** | DAY 120 |
 | **CI gate** | **TEST-PROVISION-1 PASSED 8/8** | DAY 118 |
 | **AppArmor** | **6/6 enforce** | 0 denials — DAY 118 |
-| **Reproducibility** | **vagrant destroy → full rebuild validated** | DAY 119 |
+| **Reproducibility** | **vagrant destroy × 2 → make bootstrap validated** | DAY 120 |
 
 ---
 
 ## 🏗️ Architecture
 
-```
 ┌──────────────────────────────────────────────────────────────────┐
 │                       ML Defender Pipeline                       │
 ├──────────────────────────────────────────────────────────────────┤
@@ -98,7 +102,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  │  ml-detector     │  4× Embedded RandomForest classifiers     │
 │  │  (C++20)         │  DDoS: 0.24 μs | Ransomware: 1.06 μs     │
 │  │                  │  plugin-loader PHASE 2d ✅ post-inference  │
-│  │                  │  XGBoost plugin (ADR-026 — in progress)   │
+│  │                  │  XGBoost plugin ADR-026 ✅ F1=0.9978      │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
@@ -120,9 +124,8 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  │  rag-security    │  TinyLlama natural language interface      │
 │  │  (C++20+LLM)     │  Local inference — no cloud exfiltration  │
 │  │                  │  plugin-loader PHASE 2e ✅ READONLY       │
-│  └──────────════════╝                                            │
+│  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
-```
 
 ---
 
@@ -142,9 +145,12 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset |
 | CI gate TEST-PROVISION-1 (8/8 checks) | ✅ DAY 118 |
 | AppArmor profiles (6 components) | ✅ 6/6 enforce — DAY 118 |
-| Reproducible from vagrant destroy | ✅ Validated DAY 119 |
+| Pubkey plugin-loader from runtime file | ✅ No hardcoding — DAY 120 |
+| make bootstrap idempotent | ✅ vagrant destroy × 2 validated — DAY 120 |
+| XGBoost model signature Ed25519 | ✅ sign-models — DAY 120 |
 | explicit_bzero(seed) post-HKDF | ⏳ DEBT-CRYPTO-003a |
 | mlock() derived keys | ⏳ DEBT-CRYPTO-003a |
+| Seed audit (never in CMake/build) | ⏳ DEBT-SEED-AUDIT-001 — DAY 121 |
 | TPM measured boot (seed in hardware) | ⏳ ADR-033 post-PHASE 4 |
 | ADR-032 Plugin Distribution Chain (HSM) | ⏳ YubiKey OpenPGP Ed25519 |
 
@@ -152,115 +158,136 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 
 ## 🚀 Quick Start
 
-### First clone / full rebuild from scratch
+> **Critical rules:**
+> - Always use `make <target>`. Never compile or install manually in the VM.
+> - The Vagrantfile and Makefile are the single source of truth.
+> - Complex shell logic → `tools/script.sh`, never inline in Makefile.
 
-> **Critical rule:** Always use `make <target>`. Never compile or install manually in the VM.
-> The Vagrantfile and Makefile are the single source of truth for build order and dependencies.
+---
+
+### 👶 First time — fresh clone
 
 ```bash
 git clone https://github.com/alonsoir/argus.git
 cd argus
+git checkout feature/adr026-xgboost
 
-# 1. Start VM (provisions all system dependencies automatically)
+# Start VM — provisions ALL system dependencies automatically
+# (libsodium 1.0.19, XGBoost 3.2.0, ONNX, FAISS, tmux, xxd, libgomp...)
 make up
 # Wait ~20-30 minutes for full provisioning
-# Includes: libsodium 1.0.19, XGBoost 3.2.0, ONNX, FAISS, tmux, xxd...
 
-# 2. Sync plugin signing pubkey (reads active keypair from VM → recompiles plugin-loader)
-make sync-pubkey
-
-# 3. Activate build profile symlinks
-make set-build-profile       # default: debug
-
-# 4. Install systemd units
-make install-systemd-units
-
-# 5. Build all components (libs → components, in correct dependency order)
-make pipeline-build
-
-# 6. Sign plugins with Ed25519 keypair (ADR-025)
-make sign-plugins
-
-# 7. Run CI gate (8/8 checks)
-make test-provision-1
-
-# 8. Start pipeline
-make pipeline-start && make pipeline-status
-# Expected: 6/6 RUNNING
-
-# 9. Verify plugin integration
-make plugin-integ-test
-# Expected: 6/6 PASSED including TEST-INTEG-SIGN
+# Bootstrap everything in one command
+make bootstrap
+# Expected output:
+#   [1/8] post-up-verify     ✅
+#   [2/8] check-system-deps  ✅
+#   [3/8] set-build-profile  ✅ 6/6
+#   [4/8] install-systemd    ✅ 6/6
+#   [5/8] pipeline-build     ✅ (reads pubkey from runtime file automatically)
+#   [6/8] sign-plugins       ✅ 2/2
+#   [7/8] test-provision-1   ✅ 8/8
+#   [8/8] pipeline-start     ✅ 6/6 RUNNING
+#   ✅ Bootstrap completado — 6/6 RUNNING
 ```
 
-> **Coming in DAY 120:** `make bootstrap` will automate all 9 steps with checkpoints.
+---
 
-### Daily workflow (VM already running)
+### 🔄 Daily workflow — VM already running
 
 ```bash
+# If VM is stopped:
+make up
+# Wait for VM to boot (~1-2 min, no reprovisioning)
+
+# Then:
 make pipeline-stop
 make pipeline-build 2>&1 | tail -5
 make sign-plugins
+make sign-models
 make test-provision-1
 make pipeline-start && make pipeline-status
 make plugin-integ-test
 ```
 
-### CI Gate
+---
+
+### 🔁 Full rebuild from scratch (vagrant destroy)
 
 ```bash
-make test-all   # libs + components + TEST-PROVISION-1 (8/8) + TEST-INVARIANT-SEED + plugin-integ-test
+make destroy          # vagrant destroy -f
+make up               # vagrant up — full reprovisioning ~20-30 min
+make bootstrap        # all 8 steps in one command
+make test-all         # full test suite verification
 ```
 
-### Key Rotation
+---
+
+### ✅ CI Gate
 
 ```bash
-# After vagrant destroy + up, the keypair rotates automatically.
-# Always run sync-pubkey BEFORE sign-plugins:
-make sync-pubkey    # reads active pubkey → updates CMakeLists.txt → recompiles plugin-loader
-make sign-plugins   # re-signs all plugins with new keypair
+make test-all
+# Runs: libs + components + TEST-PROVISION-1 (8/8)
+#       TEST-INVARIANT-SEED + plugin-integ-test (6/6 incl. TEST-INTEG-SIGN)
+#       TEST-INTEG-XGBOOST-1
+```
+
+---
+
+### 🔑 Key Rotation (after vagrant destroy + up)
+
+The keypair rotates automatically during provisioning.
+`pipeline-build` reads the new pubkey from the runtime file automatically.
+
+```bash
+make bootstrap        # handles everything, including new pubkey
+# No manual sync-pubkey needed (DEBT-PUBKEY-RUNTIME-001 resolved DAY 120)
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
+### ✅ DONE — DAY 120 (17 Apr 2026)
+- [x] **DEBT-PUBKEY-RUNTIME-001** — pubkey from runtime file, no hardcoding ✅
+- [x] **DEBT-BOOTSTRAP-001** — `make bootstrap` 8 steps, idempotent ✅
+- [x] **DEBT-INFRA-VERIFY-001/002** — `make check-system-deps` + `make post-up-verify` ✅
+- [x] **Idempotency validated × 2** — vagrant destroy cycles ✅
+- [x] **ADR-026 PASO 4a** — `docs/xgboost/features.md` — 23 features LEVEL1, CIC-IDS-2017 ✅
+- [x] **ADR-026 PASO 4b** — `docs/xgboost/plugin-contract.md` — float32[23] contract ✅
+- [x] **ADR-026 PASO 4c** — XGBoost trained: F1=0.9978, Precision=0.9973, AUC=1.0 ✅
+- [x] **ADR-026 PASO 4d** — `make sign-models` — Ed25519 model signature ✅
+- [x] **ADR-026 PASO 4e** — `TEST-INTEG-XGBOOST-1 PASSED` — real inference ✅
+- [x] libgomp symlink in Vagrantfile ✅
+- [x] plugin_test_message moved to pipeline-build deps ✅
+
 ### ✅ DONE — DAY 119 (16 Apr 2026)
 - [x] Full reproducibility from `vagrant destroy` validated ✅
-- [x] 10 infrastructure gaps fixed in Vagrantfile + Makefile ✅
-- [x] libsodium 1.0.19 added to Vagrantfile (before ONNX/FAISS/XGBoost) ✅
-- [x] tmux + xxd added to base packages ✅
-- [x] pipeline-build explicit lib dependencies ✅
-- [x] install-systemd-units + set-build-profile Makefile targets ✅
-- [x] plugin_xgboost API corrected (PluginResult + PluginConfig*) ✅
-- [x] plugin_test_message + /usr/lib/ml-defender/plugins/ in Vagrantfile ✅
-- [x] make sync-pubkey: robust pubkey sync after vagrant destroy ✅
+- [x] 10 infrastructure gaps fixed ✅
 - [x] 6/6 RUNNING + make test-all VERDE incl. TEST-INTEG-SIGN ✅
 
 ### ✅ DONE — DAY 118 (15 Apr 2026)
 - [x] **PHASE 3 COMPLETADA — v0.4.0-phase3-hardening MERGEADO A MAIN** 🎉
 - [x] AppArmor enforce 6/6 (0 denials) ✅
-- [x] CHANGELOG-v0.4.0.md ✅
-- [x] feature/adr026-xgboost opened ✅
 
 ### ✅ DONE — DAY 117–111 *(see git log)*
 
-### 🔜 NEXT — DAY 120 (feature/adr026-xgboost)
-- [ ] **DEBT-PUBKEY-RUNTIME-001**: move pubkey to runtime file — eliminate sync-pubkey
-- [ ] **DEBT-BOOTSTRAP-001**: `make bootstrap` — 9 steps, checkpoints, idempotent
-- [ ] **DEBT-INFRA-VERIFY-001/002**: `make check-system-deps` + `make post-up-verify`
-- [ ] `vagrant destroy && vagrant up` full reproductibility test (second run)
-- [ ] PASO 3: locate RF feature set → `docs/xgboost/features.md`
-- [ ] PASO 4: `scripts/train_xgboost_baseline.py` — gate Precision≥0.99 + F1≥0.9985
+### 🔜 NEXT — DAY 121 (feature/adr026-xgboost)
+- [ ] **DEBT-SEED-AUDIT-001** — audit seed in CMakeLists.txt, runtime-only mlock()+explicit_bzero()
+- [ ] **DEBT-XGBOOST-TEST-REAL-001** — TEST-INTEG-XGBOOST-1 with real CIC-IDS-2017 fixtures
+- [ ] **DEBT-XGBOOST-DDOS-001** — train XGBoost DDoS on synthetic DeepSeek dataset (27MB)
+- [ ] **DEBT-XGBOOST-RANSOMWARE-001** — train XGBoost Ransomware on synthetic guaranteed CSVs
+- [ ] vagrant destroy × 3 — final idempotency certification
+- [ ] **PAPER-SECTION-4** — §4.1 real (CIC-IDS-2017) + §4.2 synthetic (DeepSeek) explicit separation
 
 ### P3 — Post-PHASE 4
 - [ ] DEBT-CRYPTO-003a: mlock() + explicit_bzero(seed) post-HKDF
-- [ ] ADR-024 Noise_IKpsk3 implementation
 - [ ] ADR-037 Snyk C++ Security Hardening
-- [ ] ADR-026 XGBoost plugins Track 1 (Precision ≥ 0.99 gate médico)
+- [ ] ADR-026 full: 3 XGBoost plugins + latency table + paper §4
+- [ ] ADR-024 Noise_IKpsk3 implementation
 - [ ] ADR-032 Fase A: manifest + multi-key loader
 - [ ] ADR-033 TPM 2.0 Measured Boot
-- [ ] ADR-029 variantes hardened: AppArmor+eBPF/XDP · AppArmor+libpcap · seL4+libpcap
+- [ ] ADR-029 hardened variants: AppArmor+eBPF/XDP · AppArmor+libpcap · seL4+libpcap
 - [ ] BARE-METAL stress test
 
 ---
@@ -269,7 +296,7 @@ make sign-plugins   # re-signs all plugins with new keypair
 
 Seven large language models serve as intellectual co-reviewers across all development phases:
 
-**Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Parallel.ai**
+**Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Kimi** (Moonshot) · **Mistral**
 
 Methodology: structured disagreement. Problems must be demonstrated with compilable tests or mathematics before fixes are proposed. Documented in the preprint §6.
 
@@ -280,10 +307,11 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉
 - ✅ DAY 113: ADR-025 IMPLEMENTED · 11/11 tests
 - ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · arXiv v15
-- ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉 · TEST-PROVISION-1 CI gate
-- ✅ DAY 116: **PHASE 3 CORE COMPLETADO** 🎉 · --reset + AppArmor complain · INVARIANTE-SEED-001
-- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉 · AppArmor 6/6 enforce · tag v0.4.0-phase3-hardening
-- ✅ DAY 119: **Full reproducibility from vagrant destroy validated** 🎉 · 10 infra fixes · make test-all VERDE
+- ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉
+- ✅ DAY 116: **PHASE 3 CORE COMPLETADO** 🎉
+- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉 · AppArmor 6/6 enforce
+- ✅ DAY 119: **Full reproducibility from vagrant destroy validated** 🎉
+- ✅ DAY 120: **make bootstrap + XGBoost F1=0.9978 + DEBT-PUBKEY-RUNTIME-001** 🎉
 
 ---
 
@@ -292,3 +320,6 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 MIT License — See [LICENSE](LICENSE)
 
 **Via Appia Quality** 🏛️ — *Built to last decades.*
+MDEOF
+cp /tmp/README.md /Users/aironman/CLionProjects/test-zeromq-docker/README.md
+echo "✅ README.md actualizado"

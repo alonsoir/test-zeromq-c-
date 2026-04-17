@@ -1,4 +1,5 @@
-# ML Defender (aRGus NDR) — DAY 120 Continuity Prompt
+cat > /tmp/DAY121_prompt.md << 'MDEOF'
+# ML Defender (aRGus NDR) — DAY 121 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -8,306 +9,185 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **No bloqueante:** asignada a feature destino en BACKLOG. No toca esta feature.
 - **Toda deuda tiene test de cierre.** Implementado sin test = no cerrado.
 - **REGLA CRÍTICA:** El Vagrantfile y el Makefile son la única fuente de verdad. Nunca compilar o instalar manualmente en la VM sin actualizar ambos.
+- **REGLA SCRIPTS:** Lógica compleja con quoting anidado → `tools/script.sh`. Nunca inline en Makefile.
+- **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs de build. Solo runtime: mlock() + explicit_bzero(). SecureBuffer C++20.
 
 ---
 
-## Estado al cierre de DAY 119
+## Estado al cierre de DAY 120
 
 ### Hitos completados
-- **Reproducibilidad `vagrant destroy` VALIDADA** ✅ — 10 problemas detectados y resueltos
-- **Vagrantfile consolidado** ✅ — libsodium 1.0.19 · tmux · xxd · plugin_xgboost · plugin_test_message · /usr/lib/ml-defender/plugins/
-- **Makefile consolidado** ✅ — pipeline-build con deps explícitas · install-systemd-units · set-build-profile · sync-pubkey · plugin-test-message-build
-- **plugin_xgboost API corregida** ✅ — `PluginResult plugin_init(const PluginConfig*)` · `plugin_process_message` · `plugin_shutdown` · contratos @requires/@ensures
-- **make sync-pubkey** ✅ — temporal, pendiente DEBT-PUBKEY-RUNTIME-001
-- **6/6 RUNNING + make test-all VERDE** ✅ — incluyendo TEST-INTEG-SIGN PASSED
-- **Consejo DAY 119 sintetizado** ✅ — BACKLOG.md + README.md actualizados
-- **Commits:** 8d964390 → 6055c54d · Branch: `feature/adr026-xgboost`
+- **DEBT-PUBKEY-RUNTIME-001** ✅ — `tools/extract-pubkey-hex.sh` + `execute_process()`. Sin `make sync-pubkey`.
+- **DEBT-BOOTSTRAP-001** ✅ — `make bootstrap` 8 pasos canónicos, idempotente.
+- **DEBT-INFRA-VERIFY-001/002** ✅ — `make check-system-deps` + `make post-up-verify`.
+- **Idempotencia × 2** ✅ — vagrant destroy verde ambas iteraciones.
+- **ADR-026 PASO 4a** ✅ — `docs/xgboost/features.md` — 23 features LEVEL1, dataset CIC-IDS-2017.
+- **ADR-026 PASO 4b** ✅ — `docs/xgboost/plugin-contract.md` — contrato float32[23], schema v1.
+- **ADR-026 PASO 4c** ✅ — XGBoost entrenado: F1=0.9978, Precision=0.9973, ROC-AUC=1.0 (2.83M flows CIC-IDS-2017).
+- **ADR-026 PASO 4d** ✅ — `make sign-models` + `tools/sign-model.sh` — Ed25519 firma `.ubj`.
+- **ADR-026 PASO 4e** ✅ — `TEST-INTEG-XGBOOST-1 PASSED` — inferencia real, contratos técnicos OK.
+- **make test-all VERDE** ✅
+- **Consejo 7/7 incorporados** ✅ — Kimi y Mistral nuevos miembros.
+- **Commits:** hasta `0a2bdef3` · Branch: `feature/adr026-xgboost`
 
-### Pubkey activa DAY 119 (post vagrant destroy)
-`MLD_PLUGIN_PUBKEY_HEX: 9ac7b8c5ce2d970f77a5fcfcc3b8463b66082db50636a9e81da3cdbb7b2b8019`
+### Pubkey activa DAY 120
+`ec8c4bf0fdce51d556b99b5ca7a74aaad6f6683c6f6914784c732c4abbc8c6e1`
 
-### Seed activo DAY 119
-`75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360`
-INVARIANTE-SEED-001: todos los seed.bin DEBEN ser idénticos.
+### Datasets localizados DAY 120
+- **CIC-IDS-2017** (real): `ml-training/datasets/CIC-IDS-2017/MachineLearningCVE/` — 8 CSVs, 2.83M flows, 23 features
+- **DDoS sintético DeepSeek**: `ml-training/scripts/ddos_detection/ddos_detection_dataset.json` — 27MB, 10 features DDOS_FEATURES
+- **Ransomware sintético DeepSeek**: `ml-training/scripts/ransomware/data/network_guaranteed.csv` + `files_guaranteed.csv` + `processes_guaranteed.csv`
+
+### Nota crítica Consejo DAY 120
+TEST-INTEG-XGBOOST-1 scores actuales: BENIGN=0.000706, ATTACK=0.003414 — ambos out-of-distribution (features sintéticas extremas). El Consejo (7/7 unánime) rechaza esto como gate de merge. Necesita casos reales del CSV con score ATTACK>0.5 y BENIGN<0.1.
 
 ---
 
-## PASO 0 — DAY 120: vagrant destroy OBLIGATORIO (validar idempotencia)
-
-**⚠️ DAY 120 arranca con vagrant destroy. El Consejo recomienda ejecutar la secuencia DOS VECES para verificar idempotencia. Es el objetivo del día antes de avanzar con ADR-026.**
+## PASO 0 — DAY 121: vagrant destroy OBLIGATORIO (tercera validación idempotencia)
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
 git checkout feature/adr026-xgboost
 git pull origin feature/adr026-xgboost
 
-vagrant destroy -f
-vagrant up
-# Esperar ~20-30 minutos
-```
+vagrant destroy -f && vagrant up
+# ~20-30 minutos
 
-### Verificaciones post-up
-```bash
-vagrant ssh -c "sudo ldconfig -p | grep xgboost"
-# Esperado: libxgboost.so => /usr/local/lib/libxgboost.so
-
-vagrant ssh -c "python3 -c 'import xgboost; print(xgboost.__version__)'"
-# Esperado: 3.2.0
-
-vagrant ssh -c "pkg-config --modversion libsodium"
-# Esperado: 1.0.19
-
-vagrant ssh -c "which tmux && xxd --version 2>&1 | head -1"
-# Esperado: /usr/bin/tmux · xxd ...
-
-vagrant ssh -c "ls /usr/lib/ml-defender/plugins/"
-# Esperado: libplugin_test_message.so libplugin_xgboost.so
-```
-
-### Secuencia canónica completa (ejecutar en orden estricto)
-```bash
-make sync-pubkey
-# Esperado: ✅ pubkey actualizada + plugin-loader recompilado
-
-make set-build-profile
-# Esperado: 6/6 build-active symlinks
-
-make install-systemd-units
-# Esperado: 6/6 units instalados
-
-make pipeline-build 2>&1 | tail -5
-# Esperado: ✅ Sniffer built (debug)
-
-make sign-plugins
-# Esperado: ✅ 2 plugin(s) firmados
-
-make test-provision-1
-# Esperado: ✅ TEST-PROVISION-1 PASSED 8/8
-
-make pipeline-start && make pipeline-status
-# Esperado: 6/6 RUNNING
-
-make plugin-integ-test 2>&1 | grep -E "PASSED|FAILED"
-# Esperado: 6/6 PASSED incluyendo TEST-INTEG-SIGN
-
+# Tras provisioning:
+make bootstrap
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
-# Esperado: ✅ ALL TESTS COMPLETE
 ```
 
-**Solo si primera ejecución verde → repetir secuencia sin vagrant destroy para verificar idempotencia.**
+**Si verde → PASO 0 certificado definitivamente. Secuencia canónica = `make bootstrap`.**
 
 ---
 
-## PASO 1 — DEBT-PUBKEY-RUNTIME-001 (BLOQUEANTE DAY 120)
+## PASO 1 — DEBT-SEED-AUDIT-001 (BLOQUEANTE DAY 121)
 
-**Objetivo:** eliminar `make sync-pubkey` moviendo la pubkey de CMakeLists.txt a fichero runtime en la VM.
+**Objetivo:** Verificar que la seed ChaCha20 NO está hardcodeada en ningún CMakeLists.txt ni fuente C++.
 
-### Diseño (ChatGPT5 DAY 119)
-```cmake
-# plugin-loader/CMakeLists.txt — reemplazar pubkey hardcodeada por:
-file(READ "/etc/ml-defender/plugins/plugin_signing.pk" PUBKEY_PEM)
-# Luego extraer hex desde PEM via script o cmake custom command
-```
-
-### Implementación
-1. Crear script `tools/extract-pubkey-hex.sh` que lea `/etc/ml-defender/plugins/plugin_signing.pk` y devuelva hex
-2. Modificar `plugin-loader/CMakeLists.txt` para ejecutar script en tiempo de cmake y inyectar resultado
-3. Eliminar `make sync-pubkey` del Makefile (o dejarlo como deprecated con warning)
-4. Verificar que `vagrant destroy + vagrant up + make plugin-loader-build` funciona sin sync-pubkey
-
-**Test de cierre:** `vagrant destroy && vagrant up && make plugin-loader-build && make sign-plugins && make plugin-integ-test` → TEST-INTEG-SIGN PASSED sin ejecutar `make sync-pubkey`.
-
----
-
-## PASO 2 — DEBT-BOOTSTRAP-001 (BLOQUEANTE DAY 120)
-
-**Objetivo:** `make bootstrap` que encadene los 9 pasos canónicos con checkpoints, verbose e idempotencia.
-
-### Diseño (Consejo unanimidad)
-```makefile
-.PHONY: bootstrap
-bootstrap:
-	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  🚀 aRGus NDR — Bootstrap from scratch                    ║"
-	@echo "╚════════════════════════════════════════════════════════════╝"
-	@echo "[1/9] make up..."
-	@$(MAKE) up
-	@echo "[2/9] make post-up-verify..."
-	@$(MAKE) post-up-verify
-	@echo "[3/9] make check-system-deps..."
-	@$(MAKE) check-system-deps
-	@echo "[4/9] make pipeline-build..."
-	@$(MAKE) pipeline-build
-	@echo "[5/9] make set-build-profile..."
-	@$(MAKE) set-build-profile
-	@echo "[6/9] make install-systemd-units..."
-	@$(MAKE) install-systemd-units
-	@echo "[7/9] make sign-plugins..."
-	@$(MAKE) sign-plugins
-	@echo "[8/9] make test-provision-1..."
-	@$(MAKE) test-provision-1
-	@echo "[9/9] make pipeline-start..."
-	@$(MAKE) pipeline-start
-	@$(MAKE) pipeline-status
-	@$(MAKE) plugin-integ-test
-	@echo "╔════════════════════════════════════════════════════════════╗"
-	@echo "║  ✅ Bootstrap completado — 6/6 RUNNING                    ║"
-	@echo "╚════════════════════════════════════════════════════════════╝"
-```
-
-**Nota:** una vez implementado DEBT-PUBKEY-RUNTIME-001, el paso [2/9] elimina sync-pubkey y pipeline-build gestiona la pubkey automáticamente vía CMake.
-
-**Test de cierre:** `vagrant destroy && vagrant up && make bootstrap` → 6/6 RUNNING + plugin-integ-test PASSED.
-
----
-
-## PASO 3 — DEBT-INFRA-VERIFY-001/002 (BLOQUEANTE DAY 120)
-
-### make check-system-deps
-```makefile
-check-system-deps:
-	@echo "🔍 Verifying system dependencies..."
-	@vagrant ssh -c "command -v xxd >/dev/null || { echo '❌ xxd missing'; exit 1; }"
-	@vagrant ssh -c "command -v tmux >/dev/null || { echo '❌ tmux missing'; exit 1; }"
-	@vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null | grep -q '1.0.19' || { echo '❌ libsodium 1.0.19 missing'; exit 1; }"
-	@vagrant ssh -c "python3 -c 'import xgboost; assert xgboost.__version__ == \"3.2.0\"' || { echo '❌ xgboost 3.2.0 missing'; exit 1; }"
-	@vagrant ssh -c "test -f /usr/local/lib/libxgboost.so || { echo '❌ libxgboost.so missing'; exit 1; }"
-	@vagrant ssh -c "test -f /usr/local/lib/libcrypto_transport.so || { echo '❌ libcrypto_transport.so missing'; exit 1; }"
-	@echo "✅ All system dependencies present"
-```
-
-### make post-up-verify
-```makefile
-post-up-verify:
-	@echo "🔍 Verifying post-up environment..."
-	@$(MAKE) check-system-deps
-	@vagrant ssh -c "test -d /usr/lib/ml-defender/plugins || { echo '❌ plugins dir missing'; exit 1; }"
-	@vagrant ssh -c "test -f /usr/lib/ml-defender/plugins/libplugin_xgboost.so || { echo '❌ plugin_xgboost missing'; exit 1; }"
-	@vagrant ssh -c "test -f /usr/lib/ml-defender/plugins/libplugin_test_message.so || { echo '❌ plugin_test_message missing'; exit 1; }"
-	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' | wc -l | grep -q '6' || { echo '❌ seeds missing'; exit 1; }"
-	@echo "✅ Post-up environment verified"
-```
-
-**Test de cierre:** `make post-up-verify` verde tras `vagrant up` limpio.
-
----
-
-## PASO 4 — Avanzar con ADR-026 (solo si PASOS 0-3 verdes)
-
-### PASO 4a — Localizar feature set RF baseline
 ```bash
-find /vagrant/ml-detector -name "*.h" -o -name "*.cpp" 2>/dev/null | \
-  xargs grep -l -i "feature\|extract" 2>/dev/null
+grep -r "seed" /Users/aironman/CLionProjects/test-zeromq-docker/plugin-loader/CMakeLists.txt
+grep -r "seed" /Users/aironman/CLionProjects/test-zeromq-docker/crypto-transport/CMakeLists.txt
+grep -rn "[0-9a-f]\{32,64\}" /Users/aironman/CLionProjects/test-zeromq-docker/plugin-loader/CMakeLists.txt
 ```
-Documentar en `docs/xgboost/features.md` (Opción A — mismo feature set que RF, unanimidad Consejo).
 
-### PASO 4b — docs/xgboost/plugin-contract.md
-Crear documento con contrato mínimo `ctx->payload`:
-- `float32[]` contiguo en row-major
-- `payload_size % sizeof(float) == 0`
-- `num_features` = columnas modelo
-- Sin NaN ni Inf
-- Versión del esquema declarada
+**Si se encuentra seed hardcodeada:** eliminar del CMake. La seed se lee exclusivamente en runtime:
+```cpp
+// SecureBuffer C++20 — mlock + explicit_bzero en destructor
+class SecureBuffer : public std::vector<uint8_t> {
+public:
+    explicit SecureBuffer(size_t n) : std::vector<uint8_t>(n) { mlock(data(), size()); }
+    ~SecureBuffer() { explicit_bzero(data(), size()); munlock(data(), size()); }
+};
+// Uso: SecureBuffer seed(32); leer de /etc/ml-defender/<comp>/seed.bin
+```
 
-### PASO 4c — scripts/train_xgboost_baseline.py
-- Mismo feature set que RF (Opción A)
-- `random_state=42`
-- Exportar `xgboost_ctu13.json` + `xgboost_ctu13.ubj`
-- Gate: Precision ≥ 0.99 + F1 ≥ 0.9985
+**Test de cierre:** `grep -r "seed" CMakeLists.txt` → 0 resultados con hex literal.
 
-### PASO 4d — make sign-models (OBS-1 BLOQUEANTE)
-Extender Makefile:
-- Firma `xgboost_ctu13.ubj` con keypair Ed25519 (mismo esquema ADR-025)
-- Genera `xgboost_ctu13.ubj.sig`
-- Verificación en `plugin_init` antes de `XGBoosterLoadModel`
+---
 
-### PASO 4e — TEST-INTEG-XGBOOST-1 (OBS-2 BLOQUEANTE)
-Test unitario: modelo juguete + plugin_process_message con MessageContext sintético → salida ∈ [0,1] no NaN.
+## PASO 2 — DEBT-XGBOOST-TEST-REAL-001 (BLOQUEANTE MERGE)
+
+**Objetivo:** Añadir a TEST-INTEG-XGBOOST-1 casos reales de CIC-IDS-2017.
+
+**Estrategia:** Extraer 3 flows ATTACK + 3 flows BENIGN del CSV de test, convertir features a float32[23] en el orden exacto de `LEVEL1_FEATURE_NAMES`, incrustar como arrays estáticos en el test C++.
+
+```bash
+# Extraer muestras reales del CSV
+python3 << 'PYEOF'
+import pandas as pd
+import numpy as np
+
+FEATURES = [
+    " Packet Length Std", " Subflow Fwd Bytes", " Fwd Packet Length Max",
+    " Avg Fwd Segment Size", " ACK Flag Count", " Packet Length Variance",
+    " PSH Flag Count", "Bwd Packet Length Max", " act_data_pkt_fwd",
+    "Total Length of Fwd Packets", " Fwd Packet Length Std", "Fwd Packets/s",
+    " Subflow Bwd Bytes", " Destination Port", "Init_Win_bytes_forward",
+    "Subflow Fwd Packets", " Fwd IAT Min", " Packet Length Mean",
+    " Total Length of Bwd Packets", " Bwd Packet Length Mean",
+    " Bwd Packet Length Min", " Flow Duration", " Flow Packets/s"
+]
+
+df = pd.read_csv("ml-training/datasets/CIC-IDS-2017/MachineLearningCVE/Tuesday-WorkingHours.pcap_ISCX.csv", low_memory=False)
+df[FEATURES] = df[FEATURES].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
+benign = df[df[" Label"].str.strip() == "BENIGN"][FEATURES].head(3)
+attack = df[df[" Label"].str.strip() != "BENIGN"][FEATURES].head(3)
+
+for i, row in benign.iterrows():
+    vals = ", ".join(f"{v:.6f}f" for v in row.values)
+    print(f"// BENIGN sample\n{{{vals}}},")
+
+for i, row in attack.iterrows():
+    vals = ", ".join(f"{v:.6f}f" for v in row.values)
+    print(f"// ATTACK sample\n{{{vals}}},")
+PYEOF
+```
+
+**Test de cierre:** `make test-integ-xgboost-1` con scores ATTACK>0.5 + BENIGN<0.1 + gate explícito.
+
+---
+
+## PASO 3 — DEBT-XGBOOST-DDOS-001
+
+**Dataset:** `ml-training/scripts/ddos_detection/ddos_detection_dataset.json` (27MB)
+**Features:** 10 features `DDOS_FEATURES` (ver `DDOSFeatures.py`)
+**Script a crear:** `ml-training/scripts/ddos_detection/train_xgboost_ddos.py`
+**Patrón:** mismo que `train_xgboost_baseline.py` adaptado al JSON format + normalización MinMaxScaler
+**Gate:** F1 + Precision superiores al RF `ddos_detection_model.pkl`
+**Exports:** `xgboost_ddos.json` + `xgboost_ddos.ubj`
+
+---
+
+## PASO 4 — DEBT-XGBOOST-RANSOMWARE-001
+
+**Dataset:** `ml-training/scripts/ransomware/data/network_guaranteed.csv` + `files_guaranteed.csv` + `processes_guaranteed.csv`
+**Script a crear:** `ml-training/scripts/ransomware/train_xgboost_ransomware.py`
+**Patrón:** mismo que `train_simple_effective.py` sustituyendo RF por XGBoost
+**Gate:** F1 + Precision superiores al RF `simple_effective_model.pkl`
+**Exports:** `xgboost_ransomware.json` + `xgboost_ransomware.ubj`
+
+---
+
+## PASO 5 — Extender make sign-models + tabla comparativa paper
+
+- Extender `make sign-models` para firmar los 3 modelos
+- `docs/xgboost/comparison-table.md`: latencia (μs), F1, Precision, ROC-AUC para RF vs XGBoost en los 3 detectores
+- Separar §4 del paper: §4.1 CIC-IDS-2017 real + §4.2 DeepSeek sintético con limitaciones explícitas
 
 ---
 
 ## Contexto permanente
 
-### ADR-025 keypair dev (post-reset DAY 119 vagrant destroy)
-`MLD_PLUGIN_PUBKEY_HEX: 9ac7b8c5ce2d970f77a5fcfcc3b8463b66082db50636a9e81da3cdbb7b2b8019`
+### Secuencia canónica DAY 120+
+```bash
+make up           # vagrant up
+make bootstrap    # 8 pasos, todo automático
+make test-all     # verificación completa
+```
 
-### Seed activo
-`75deaca96768b5d973a4339faf2325c058969bf93c00c0d21eef703a2ab91360`
-INVARIANTE-SEED-001: todos los seed.bin DEBEN ser idénticos.
+### Datasets origen (integridad científica)
+- **level1_attack_detector** (RF + XGBoost): CIC-IDS-2017 REAL
+- **ransomware_detector**: DeepSeek sintético — `data/*_guaranteed.csv`
+- **ddos_detector**: DeepSeek sintético — `ddos_detection_dataset.json`
+- **Paper §4**: SEPARAR explícitamente §4.1 real + §4.2 sintético con limitaciones
 
-### Lección operacional crítica DAY 119
-El Vagrantfile y el Makefile son la única fuente de verdad. Compilar o instalar manualmente en la VM sin actualizar estas fuentes = deuda técnica de infraestructura garantizada.
+### Consejo DAY 120 — decisiones clave
+- TEST-INTEG-XGBOOST-1 con scores reales BLOQUEANTE MERGE (7/7 unánime)
+- Seed: NUNCA en CMake. Solo runtime mlock()+explicit_bzero()
+- In-situ+BitTorrent: investigación Q3 2026, gates G1-G5 obligatorios
+- Paper §4: separar real vs sintético o riesgo de rechazo
+
+### NO mergear a main hasta
+1. DEBT-XGBOOST-TEST-REAL-001 verde
+2. DEBT-SEED-AUDIT-001 verde
 
 ### Regla de oro
 6/6 RUNNING + make test-all VERDE
 
-### Secuencia canónica post vagrant destroy (DAY 119)
-```
-make sync-pubkey           ← temporal hasta DEBT-PUBKEY-RUNTIME-001
-make set-build-profile
-make install-systemd-units
-make pipeline-build
-make sign-plugins
-make test-provision-1
-make pipeline-start && make pipeline-status
-make plugin-integ-test
-```
-
-**Una vez DEBT-PUBKEY-RUNTIME-001 + DEBT-BOOTSTRAP-001 cerrados:**
-```
-make bootstrap
-```
-
-### Patrón robusto para scripts en VM
-```bash
-cat > /tmp/script.py << 'PYEOF'
-...
-PYEOF
-vagrant upload /tmp/script.py /tmp/script.py
-vagrant ssh -c "sudo python3 /tmp/script.py"
-```
-NUNCA `sed -i` sin `-e ''` en macOS. NUNCA Python inline con paréntesis en zsh.
-
-### feature/adr026-xgboost — estado DAY 119 cierre
-```
-plugins/xgboost/CMakeLists.txt              ✅ commit 9500300a
-plugins/xgboost/xgboost_plugin.cpp          ✅ API corregida DAY 119 · contratos OBS-5
-docs/XGBOOST-VALIDATION.md                  ✅ gate médico
-docs/consejo/CONSEJO-DAY119-preguntas.md    ✅ veredictos Consejo
-Vagrantfile libsodium 1.0.19                ✅ antes de ONNX
-Vagrantfile tmux + xxd                      ✅ paquetes base
-Vagrantfile plugin_xgboost + plugin_test    ✅ build + deploy
-Makefile pipeline-build deps explícitas     ✅
-Makefile install-systemd-units              ✅
-Makefile set-build-profile                  ✅
-Makefile sync-pubkey                        ✅ temporal
-Makefile plugin-test-message-build          ✅
-Feature set                                 Opción A (mismo RF) — UNANIMIDAD
-Formato modelo                              JSON repo + .ubj producción — UNANIMIDAD
-plugin_invoke                               Opción B (ml-detector pre-procesa) — UNANIMIDAD
-std::terminate() v0.1                       Fail-closed — UNANIMIDAD
-DEBT-PUBKEY-RUNTIME-001                     ⏳ BLOQUEANTE DAY 120
-DEBT-BOOTSTRAP-001                          ⏳ BLOQUEANTE DAY 120
-DEBT-INFRA-VERIFY-001/002                   ⏳ BLOQUEANTE DAY 120
-DEBT-XGBOOST-SIGN-001                       ⏳ BLOQUEANTE merge
-TEST-INTEG-XGBOOST-1                        ⏳ BLOQUEANTE merge
-```
-
-### DEBTs no bloqueantes (NO tocar en esta feature)
-- DEBT-CRYPTO-003a → feature/crypto-hardening
-- DEBT-OPS-001/002 → feature/ops-tooling
-- DEBT-SNIFFER-SEED → feature/crypto-hardening
-- DEBT-INFRA-001 → feature/bare-metal
-- DEBT-CLI-001 → feature/adr032-hsm
-- DEBT-XGBOOST-SOFTFAIL-001 → feature/phase5-resilience
-- DEBT-XGBOOST-APT-001 → verificar versión apt bookworm (no bloqueante)
-- ADR-033 TPM → post-PHASE 4
-
-### Paper arXiv
-arXiv:2604.04952 — Draft v15.
-Tabla RF vs XGBoost (latencia + F1 + Precision) irá en §4.
-Contribución científica: delta RF vs XGBoost en CTU-13 Neris.
-
----
-
 *"Via Appia Quality — un escudo, nunca una espada."*
+MDEOF
+cp /tmp/DAY121_prompt.md /Users/aironman/CLionProjects/test-zeromq-docker/docs/DAY121_prompt.md
+echo "✅ Prompt DAY 121 creado"
