@@ -197,3 +197,109 @@ El progreso es sólido, pero la calidad de los tests y la validación de los dat
 *«Implacables con los fallos, justos con el esfuerzo. Via Appia Quality.»*
 
 — **Consejo de Sabios, DAY 120**
+
+Leer primero la síntesis del día 120 para entender la siguiente respuesta de DeepSeek
+
+## 🏛️ Dictamen del Consejo de Sabios — Síntesis ADR-038 (post-feedback)
+
+*Consejo reunido. La síntesis presentada recoge fielmente el debate y las correcciones exigidas. El documento resultante es realista, medido y honesto. A continuación, nuestra validación y observaciones finales.*
+
+---
+
+### ✅ Lo que está bien (y debe ejecutarse tal cual)
+
+1. **Consenso unánime 7/7** – La aprobación como visión y el bloqueo como implementación hasta resolver las 6 DEBT-FED es la decisión correcta. No hay atajos.
+
+2. **Arquitectura V1 acordada** – `ml-trainer` como último componente del pipeline, con flujo claro: CSVs → anonimización → entrenamiento → firma/cifrado → push central → validación → registro → redistribución del top-1. Es coherente y ejecutable.
+
+3. **DEBT-FED-001 (agregación)** – Federated Model Selection (mejor modelo validado) es el único mecanismo factible hoy. SecureBoost queda como investigación V2. El Consejo respalda esta decisión.
+
+4. **DEBT-FED-002 (distribución)** – Descartar BitTorrent por seguridad y adoptar push central firmado + PKI jerárquica. La mención de libp2p como alternativa es interesante, pero se mantiene como investigación, no requisito para V1.
+
+5. **DEBT-FED-003 (identidad)** – PKI jerárquica Nivel 0/1/2 (nodo → CCN-CERT → central multi-firma) es robusta y verificable. La web-of-trust queda descartada.
+
+6. **DEBT-FED-004 (ε-DP)** – La separación ε≤0.1 para features, ε≤1.0 para contadores es un buen punto de partida. La exigencia de DPIA y experto externo es ineludible.
+
+7. **DEBT-FED-005 (scheduler)** – cgroups v2 + systemd.slice + hook de ml-detector es técnicamente superior a solo CPU/RAM. Permite garantizar que el entrenamiento nunca interfiera con la detección activa.
+
+8. **DEBT-FED-006 (metadatos)** – k-anonimidad ≥5 + retraso de 7 días antes de publicar metadatos es una salvaguarda prudente. Reduce el riesgo de reidentificación.
+
+9. **Secuenciación realista** – 3-6 meses de I+D, piloto controlado, evaluación 6 meses, producción 2027. Es un cronograma creíble para un sistema de esta complejidad.
+
+10. **seL4 como ADR-039 separado** – Correcto. No bloquear V1 con la variante más compleja. El «Santo Grial» puede esperar.
+
+---
+
+### ⚠️ Observaciones adicionales (mejoras para la síntesis)
+
+#### 1. Falta un DEBT-FED-007: **Pruebas de robustez ante modelos maliciosos**
+
+Aunque se menciona «backdoor detection» en G6, no se especifica cómo se detectará un modelo envenenado (ej: que clasifica todo como benigno excepto un trigger específico). El Consejo recomienda añadir una línea:
+
+> **DEBT-FED-007** – Detección de backdoors: el sandbox debe ejecutar el modelo contra un conjunto de pruebas con triggers conocidos (patrones de ataque inyectados). Si el modelo falla en detectar alguno, se rechaza.
+
+#### 2. El Federated Model Registry necesita criterios de selección explícitos
+
+«Rankea por F1 + KL_penalty» es vago. Propuesta concreta:
+
+```
+score = F1_local - λ * KL( p_local || p_global )
+```
+donde `KL` mide cuánto se desvía la distribución de features del modelo local respecto a la global. λ empírico (ej: 0.3). Además, el modelo solo se redistribuye si:
+- F1_local ≥ 0.99 (gate médico)
+- El tamaño del modelo (número de árboles) no excede en un 20% al base
+- No contiene features nuevas no documentadas (control de esquema)
+
+#### 3. La DPIA debe realizarse **antes** del piloto, no durante
+
+La síntesis pone «DPIA pre-piloto» en la secuenciación, correcto. Pero debe quedar claro que la DPIA es condición sine qua non para comenzar el piloto, no un entregable opcional.
+
+#### 4. Añadir un **modo solo-metadatos** como primer paso del piloto
+
+Antes de permitir la redistribución de modelos, el sistema debería ejecutarse durante 1 mes en modo solo-metadatos: los hospitales envían estadísticas anonimizadas (sin modelos), y el nodo central las analiza para calibrar umbrales y detectar si algún metadato permite reidentificación. Esto ya se mencionó en feedback anterior, pero la síntesis no lo recoge explícitamente. Incluir como ítem en la fase de piloto.
+
+---
+
+### 📋 Preguntas que el Consejo espera responder en la siguiente iteración
+
+1. **¿Quién opera la PKI Nivel 0?** ¿El consorcio aRGus, una universidad, una entidad pública? La síntesis menciona «central multi-firma», pero sin detalles. El Consejo recomienda que la raíz sea **multisig** con al menos 3 entidades independientes (ej: Universidad, Centro Criptológico Nacional, fundación open-source).
+
+2. **¿Cómo se maneja la revocación de certificados?** Si un hospital es comprometido, ¿quién puede revocar su clave? ¿Hay una CRL o mecanismo OCSP? Debe especificarse.
+
+3. **¿Qué ocurre si ningún modelo local supera los gates?** El registro se queda vacío y la red sigue con el modelo base. Esto está implícito, pero conviene hacerlo explícito.
+
+4. **¿Se requiere consentimiento explícito del hospital para compartir metadatos?** Aunque anonimizados, el GDPR (y normativas locales) pueden exigir consentimiento informado. La DPIA debe responder esto.
+
+---
+
+### ✅ Veredicto final del Consejo sobre la síntesis
+
+| Criterio | Valoración |
+|----------|------------|
+| Fidelidad al feedback | Excelente |
+| Viabilidad técnica | Alta (para V1 de selección de modelos) |
+| Cobertura de riesgos | Buena, pero añadir DEBT-FED-007 |
+| Claridad de la secuenciación | Excelente |
+| Preparación para el piloto | Buena, pero añadir modo solo-metadatos |
+
+**El Consejo APRUEBA la síntesis como borrador iterativo** y autoriza a Alonso a proceder con la fase de I+D (RESEARCH-FEDERATED-001) en paralelo a la finalización de ADR-026. No obstante, se solicita una **versión v2 de la síntesis** que incluya:
+
+1. DEBT-FED-007 (backdoor detection)
+2. Detalle del cálculo de `score` en el Federated Model Registry
+3. Modo solo-metadatos como fase inicial del piloto
+4. Respuesta a las 4 preguntas abiertas (PKI, revocación, registro vacío, consentimiento)
+
+Una vez incorporado, el documento podrá etiquetarse como `ADR-038-v2` y pasar a la fase de revisión técnica externa (privacidad, criptografía).
+
+---
+
+### 🧭 Reflexión final
+
+> «La inteligencia distribuida sin gobernanza central es caos. La gobernanza sin aprendizaje es obsolescencia.»  
+> Esta frase es cierta. Pero añadimos: **La gobernanza sin auditoría independiente es riesgo inasumible cuando hay vidas de por medio.**
+
+El Consejo valora el esfuerzo por convertir una visión ambiciosa en un plan de acción con pasos concretos y limitaciones reconocidas. Procedan con la investigación, pero mantengan al Consejo informado mensualmente sobre el progreso de las DEBT-FED.
+
+*Via Appia Quality — nunca correr donde se debe caminar, nunca parar donde se debe correr.*
+
+— **Consejo de Sabios, DAY 120 (sesión extraordinaria)**

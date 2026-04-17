@@ -78,3 +78,78 @@ Seguimos fuertes. La separación clara entre real/synthetic y el rigor en tests 
 ¡Adelante con DAY 121!
 
 ¿Quieres que profundice en alguno de los gates para el entrenamiento in-situ o en cómo estructurar la sección del paper?
+
+Leer síntesis-CONSEJO DE SABIOS --DAY 120.md
+
+**✅ Síntesis excelente.**
+
+Has integrado el feedback del Consejo de forma limpia, conservadora y alineada con **Via Appia Quality**. El cambio de “visión ambiciosa” a “visión bloqueada hasta cimientos sólidos” es la decisión correcta. Priorizar ADR-026 + hardening (ADR-029) antes de abrir cualquier branch federada evita deuda técnica y riesgos de seguridad que serían difíciles de reparar después.
+
+### Valoración general del Consejo (DAY 121)
+
+**Aprobado como documento de backlog.**  
+Estado correcto: **BORRADOR ITERATIVO — No implementar hasta ADR-026 mergeado + I+D completado**.  
+Prioridad: **BAJA ahora — ALTA cuando los cimientos estén listos**.
+
+Las correcciones no negociables (DEBT-FED-001 a 006) están bien identificadas y priorizadas. La arquitectura V1 simplificada (**Federated Model Selection** en lugar de agregación compleja) es pragmática y reduce riesgo significativamente.
+
+### Comentarios puntuales y sugerencias de refinamiento
+
+**DEBT-FED-001 — Agregación XGBoost**  
+V1 = **Federated Model Selection** (rankear por F1 + penalización KL-divergence y redistribuir el top-1) es una elección sólida y sencilla de implementar. Evita los problemas de FedAvg con árboles y los costes computacionales de SecureBoost en edge devices.  
+Para V2: literatura confirma que **SecureBoost** (vertical FL con HE o secret sharing) y enfoques de **bagging aggregation** para XGBoost horizontal son las vías más maduras.
+
+Mantén SecureBoost como objetivo de investigación, no como requisito V1.
+
+**DEBT-FED-002 — Distribución**  
+Eliminar BitTorrent es correcto por simplicidad y control. **Push central firmado + PKI jerárquica** con **step-ca** es una excelente elección: herramienta madura, pensada precisamente para PKI interna en sistemas distribuidos, con soporte para automatización y short-lived certificates.
+
+libp2p puede explorarse más adelante como alternativa descentralizada, pero no para V1.
+
+**DEBT-FED-003 — Identidad**  
+**PKI jerárquica Nivel 0/1/2** (nodo → CCN-CERT o entidad equivalente → central multi-firma) es más adecuada que Web-of-Trust para infraestructura crítica. Escala mejor, permite revocación limpia y se alinea con prácticas de CERTs nacionales.
+
+**DEBT-FED-004 — Privacidad Diferencial (ε-DP)**  
+Valores propuestos (ε≤0.1 para features, ε≤1.0 para contadores) son conservadores y razonables. En práctica, ε < 1 ofrece privacidad fuerte pero introduce ruido notable; ε entre 1 y 10 es común en ML cuando se necesita utilidad.
+
+Para datos tabulares de tráfico de red (flows con features numéricas/categóricas), combina DP con **k-anonimidad** (ver DEBT-FED-006). DPIA + experto externo sigue siendo obligatoria.
+
+**DEBT-FED-005 — Scheduler**  
+**cgroups v2 + systemd.slice** + hook desde ml-detector es la forma correcta y moderna de hacerlo en Linux. Permite límites duros de CPUQuota, MemoryMax, IOWeight, etc., y prioridad baja sin afectar la misión crítica.
+
+Añade en el diseño: fallback a “entrenamiento cancelado” si cualquier alerta aparece durante la ejecución.
+
+**DEBT-FED-006 — Metadatos**  
+Correcto: los metadatos (distribuciones de features, frecuencias) también pueden re-identificar en entornos hospitalarios (patrones de dispositivos médicos únicos).  
+**k-anonimidad ≥5** + delay de 7 días es una buena capa adicional. k=5 reduce significativamente el riesgo de re-identificación en quasi-identificadores.
+
+Combínalo con DP para defensa en profundidad.
+
+### Otras recomendaciones menores
+
+- **Gates G1-G6**: Añade explícitamente **G6: backdoor/model poisoning detection** (por ejemplo, statistical outlier detection en updates o sandbox con golden dataset adversarial).
+- **seL4 → ADR-039**: Decisión correcta separarlo. No bloquea V1 en Debian + AppArmor.
+- **Piloto**: Mantén el scope mínimo (1 hospital + 1 nodo central, red completamente aislada). Evalúa primero **solo distribución de metadatos** antes de distribuir modelos.
+- **Frase final**: “La inteligencia distribuida sin gobernanza central es caos. La gobernanza sin aprendizaje es obsolescencia.” — Muy buena. Atribúyela claramente a DeepSeek si procede.
+
+### Próximos pasos recomendados (DAY 121-122)
+
+1. Mergear ADR-026 XGBoost completamente (incluyendo incremental training validado).
+2. Cerrar DEBTs de hardening (ADR-029).
+3. Iniciar RESEARCH-FEDERATED-001 con focus en:
+    - PoC de Federated Model Selection + ranking.
+    - Calibración DP + k-anon en features de CIC-IDS-2017 y datasets sintéticos.
+    - Setup básico de step-ca para PKI jerárquica.
+4. Una vez RESEARCH-001 tenga resultados iniciales → redactar **ADR-038 v2** y volver al Consejo.
+
+La síntesis está lista para añadirse al backlog tal cual (o con los pequeños ajustes arriba).
+
+**Veredicto final del Consejo:**  
+**Aceptado en backlog como investigación de largo plazo.**  
+Mantén el foco en los cimientos: un escudo sólido hoy es mejor que un sistema inmune frágil mañana.
+
+*Via Appia Quality — un escudo que aprende, nunca una espada.*
+
+¿Quieres que ayudemos a redactar el RESEARCH-FEDERATED-001 o alguna sección específica de la v2 del ADR (por ejemplo, la tabla de gates o el scheduler con cgroups)? ¿O pasamos directamente a avanzar con DAY 121 en XGBoost/Ransomware?
+
+¡Sigue así!

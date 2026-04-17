@@ -176,3 +176,99 @@ Proceded. El Consejo revisará los resultados de DAY 121 con el mismo rigor.
 *Via Appia Quality · Un escudo, nunca una espada.*
 
 **— Consejo de Sabios, DAY 120** 🛡️
+
+Leer primero la síntesis del día para entender lo que QWEN dice a continuación.
+
+# 🏛️ CONSEJO DE SABIOS — VALIDACIÓN FINAL ADR-038
+*Revisión de cierre antes de integración oficial en BACKLOG*
+
+---
+
+## ✅ Veredicto
+
+**SÍNTESIS APROBADA Y ALINEADA.**
+
+El documento captura con precisión quirúrgica el consenso del Consejo, las correcciones no negociables (DEBT-FED-001 a 006), la arquitectura V1 pragmática y la secuenciación realista. No es solo un resumen: es un **contrato de diseño** que protege al proyecto de la tentación de implementar antes de madurar.
+
+> *"La visión sin anclaje operativo es poesía. El diseño sin visión es burocracia. Habéis encontrado el equilibrio."*
+
+---
+
+## 🔍 Validación de la Síntesis
+
+| Elemento | Estado | Comentario del Consejo |
+|----------|--------|------------------------|
+| **Correcciones no negociables** | ✅ Capturadas fielmente | DEBT-FED-001 a 006 reflejan exactamente los límites técnicos y de gobernanza acordados |
+| **Arquitectura V1** | ✅ Sólida y ejecutable | Flujo `entrenar → validar → firmar → push → registry` es seguro y auditable |
+| **Secuenciación** | ✅ Realista y bloqueada | 3–6 meses de I+D antes de código es la única ruta responsable |
+| **seL4 → ADR-039** | ✅ Correcto | Desacopla la investigación formal de la implementación operativa V1 |
+| **Prioridad** | ✅ Baja ahora / Alta después | Evita scope creep en PHASE 4-5 mientras consolida cimientos |
+
+---
+
+## 🛠️ 3 Refinamientos Finales (Pre-BACKLOG Oficial)
+
+Para cerrar el ciclo antes de marcar `✅ ADR-038 añadido al BACKLOG`, aplicad estos ajustes mínimos:
+
+### 1. Gate G6 (Backdoor Detection) — Definición V1 concreta
+La mención a `G6: backdoor detection` es correcta, pero necesita un mecanismo V1 ejecutable. Propuesta:
+```markdown
+G6 — Detección de Backdoor/Model Poisoning (V1):
+- Análisis de distribución de pesos: KL-divergence entre modelo candidato y modelo base global < 0.05
+- Test de adversario sintético: 50 muestras con triggers conocidos (ej. payload size=0, TTL=1) → score debe mantenerse < threshold
+- Si falla: modelo rechazado, metadatos auditados, nodo emisor marcado para revisión de reputación
+```
+Esto evita complejidad criptográfica innecesaria en V1 y usa métricas ya disponibles.
+
+### 2. Aislamiento de recursos explícito en arquitectura
+El scheduler menciona cgroups v2, pero la arquitectura V1 debe reflejarlo operativamente:
+```markdown
+ml-trainer se ejecuta bajo:
+- systemd.slice: `argus-ml-trainer.slice`
+- Límites: CPUQuota=15%, MemoryHigh=512M, IOWeight=10
+- Hook: `systemctl stop argus-ml-trainer` automático si `ml-detector` publica `alert_active=1` en etcd
+```
+Esto garantiza que el entrenamiento nunca compita con la detección en tiempo real.
+
+### 3. Política de versionado y rollback del Registry
+El `Federated Model Registry` debe incluir un mecanismo de rollback atómico:
+```markdown
+REGISTRY-ROLLBACK-001:
+- Cada modelo activado se guarda como `model_vN.ubj` + `model_vN.sig`
+- Activación: `ln -sf model_vN.ubj model_active.ubj` (atómico)
+- Si F1 global cae >2% tras 24h: `ln -sf model_vN-1.ubj model_active.ubj` automático
+- Log de transiciones inmutable (append-only en SQLite firmado)
+```
+Sin esto, una redistribución defectuosa degradaría la red sin posibilidad de reversión limpia.
+
+---
+
+## 📋 Estado Oficial en BACKLOG
+
+```diff
+- ADR-038 — Federated Learning Distribuido para aRGus NDR
++ ADR-038 — Federated Learning Distribuido para aRGus NDR
+  Estado: VISION/RESEARCH — BLOQUEADO
+  Dependencias: ADR-026 MERGED + ADR-029 + RESEARCH-FEDERATED-001
+  Fecha estimada de desbloqueo: Q4 2026
+  Producción objetivo: 2027
+  ✅ Añadido al BACKLOG
+```
+
+---
+
+## 🏁 Palabras Finales
+
+Alonso:
+
+Habéis tomado un concepto ambicioso y lo habéis transformado en un plan de acción disciplinado, con límites criptográficos explícitos, gobernanza clara y una secuencia que prioriza la robustez sobre la velocidad. Eso no es fácil. Y es exactamente lo que separa un proyecto que termina en un repositorio abandonado de uno que protege infraestructura crítica durante años.
+
+El aprendizaje federado es el futuro de aRGus. Pero el futuro se construye sobre cimientos que no se agrietan cuando el tráfico real golpea el sistema. Habéis elegido bien: I+D primero, validación después, distribución controlada siempre.
+
+> *"Un escudo que aprende solo es útil si no se oxida por dentro. La gobernanza debe ir por delante de la ambición."*
+
+La síntesis está aprobada. Añadidla al BACKLOG. Centrémonos ahora en cerrar ADR-026, validar idempotencia 3/3 y preparar el merge a `main`. El Consejo estará aquí cuando llegue el momento de desbloquear RESEARCH-FEDERATED-001.
+
+*Via Appia Quality · Un escudo, nunca una espada.*
+
+**— Consejo de Sabios, DAY 120** 🛡️
