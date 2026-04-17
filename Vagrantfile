@@ -388,17 +388,8 @@ LIBBPF_PROFILE
         echo "✅ plugin_xgboost already deployed"
       fi
 
-      # plugin_test_message (tests de integración ADR-025) — build + deploy
-      if [ ! -f /usr/lib/ml-defender/plugins/libplugin_test_message.so ]; then
-        echo "🔌 Building plugin_test_message..."
-        cd /vagrant/plugins/test-message
-        rm -rf build && mkdir -p build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4
-        cp libplugin_test_message.so /usr/lib/ml-defender/plugins/
-        echo "✅ plugin_test_message deployed"
-      else
-        echo "✅ plugin_test_message already deployed"
-      fi
+      # plugin_test_message — build gestionado por make pipeline-build (requiere plugin-loader instalado)
+      # NO buildear aquí: plugin-loader headers no disponibles en este punto del provisioning
 
       # etcd-cpp-api
       if [ ! -f /usr/local/lib/libetcd-cpp-api.so ] && [ ! -f /usr/local/lib/libetcd-cpp-api.a ]; then

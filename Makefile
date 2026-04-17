@@ -773,7 +773,7 @@ set-build-profile:
 # 4. sign-plugins    → firma Ed25519 (ADR-025)
 # 5. test-provision-1 → CI gate PHASE 3
 # 6. pipeline-start  → arranca los 6 componentes
-pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build etcd-server rag-build rag-ingester-build ml-detector sniffer
+pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
