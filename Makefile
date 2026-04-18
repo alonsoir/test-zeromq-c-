@@ -431,7 +431,9 @@ test-integ-xgboost-1:
 sign-models:
 	@echo "══ Firma de modelos (ADR-026 OBS-1) ══"
 	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level1/xgboost_cicids2017.ubj"
-	@echo "  ✅ 1 modelo(s) firmado(s) correctamente"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level2/ddos/xgboost_ddos.ubj"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level3/ransomware_xgboost_v2/xgboost_ransomware.ubj"
+	@echo "  ✅ 3 modelo(s) firmado(s) correctamente"
 
 plugin-integ-test:
 	@echo "TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
