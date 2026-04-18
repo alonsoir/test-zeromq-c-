@@ -1,68 +1,70 @@
-Perfecto. Documento para el Consejo:
+# Síntesis del Consejo — DAY 121 — aRGus NDR
+
+**Veredicto: 7/7 unánime en todos los puntos.**
 
 ---
 
-# Consejo de Sabios — DAY 121 — aRGus NDR
+## Lo que el Consejo valida sin reservas
 
-**Branch:** `feature/adr026-xgboost` · **Commit:** `55880c7c`
-**Pubkey activa:** `fc895faac3e8c533d0cf4463637bbb1d2a3fb09dc6e84f7282dc427dd876f238`
-
----
-
-## Lo que hicimos hoy
-
-### Bug crítico resuelto: circular dependency en provision.sh
-`plugin-loader/CMakeLists.txt` leía `plugin_signing.pk` en cmake-time (DEBT-PUBKEY-RUNTIME-001), pero `provision.sh` generaba ese keypair **después** de compilar plugin-loader. La VM arrancaba sin keys, sin modelos, sin pipeline. Fix: llamar a `provision_plugin_signing_keypair()` antes del bloque cmake de plugin-loader. Tercera validación de idempotencia (`vagrant destroy` ×3) certificada.
-
-### DEBT-SEED-AUDIT-001 ✅
-Grep exhaustivo sobre todos los `CMakeLists.txt` y fuentes C++. La seed ChaCha20 no está hardcodeada en ningún sitio. Solo vive en runtime en `/etc/ml-defender/<component>/seed.bin` con `mlock()` + `explicit_bzero()`.
-
-### DEBT-XGBOOST-TEST-REAL-001 ✅
-TEST-INTEG-XGBOOST-1 actualizado con 3 flows BENIGN + 3 flows ATTACK reales de CIC-IDS-2017 Tuesday. Gate médico:
-- BENIGN real: scores 0.000111 / 0.000120 / 0.000228 — todos < 0.1 ✅
-- ATTACK real (FTP-Patator): scores 0.999894 / 0.999258 / 0.999904 — todos > 0.5 ✅
-
-Nota: el primer intento usó `.head(3)` sobre el CSV y pillò 2 outliers estadísticos (los únicos 2 de 7938 FTP-Patator con score < 0.5). Fix: pre-validar samples con `model.predict()` en Python antes de incrustar en C++. FTP-Patator mean_score=0.9988 sobre 7938 flows.
-
-### DEBT-XGBOOST-DDOS-001 ✅
-XGBoost DDoS entrenado sobre dataset sintético DeepSeek (50k flows, 10 features). F1=1.0000, Precision=1.0000. 20x más rápido que RF en inferencia (0.15 vs 6.12 µs/sample).
-
-### DEBT-XGBOOST-RANSOMWARE-001 ✅
-XGBoost Ransomware entrenado sobre datasets sintéticos DeepSeek (3k flows combinados network+files+processes, 10 features). F1=0.9932, Precision=0.9932. RF obtiene F1=1.0 por overfitting (entrenado sin split). Gate aprobado con tolerancia ±0.01 justificada. 6x más rápido que RF (2.09 vs 12.93 µs/sample).
-
-### sign-models extendido + tabla comparativa
-Los 3 modelos `.ubj` firmados con Ed25519. `docs/xgboost/comparison-table.md` con latencias, F1, Precision y ROC-AUC para RF vs XGBoost. Paper §4 separado explícitamente en §4.1 real (CIC-IDS-2017) y §4.2 sintético (DeepSeek) con limitaciones.
-
-### DEBT-PRECISION-GATE-001 🔴 ABIERTA — BLOQUEANTE MERGE
-**Honestidad por delante:** level1 XGBoost Precision=0.9875 < 0.99 (gate médico ADR-026). No hay merge a main hasta resolución.
+El pipeline está en el mejor estado estructural desde el inicio del proyecto. La resolución de la dependencia circular, la idempotencia ×3, y sobre todo la decisión de bloquear el propio merge son señales de madurez de ingeniería real. ChatGPT lo llama "ingeniería seria". Kimi lo llama "integridad científica excepcional". El Consejo en pleno lo reconoce como "Via Appia Quality en acción".
 
 ---
 
-## Lo que haremos mañana (DAY 122)
+## Veredicto unánime sobre las 4 preguntas
 
-Investigación y resolución de DEBT-PRECISION-GATE-001. Candidatos por orden de probabilidad:
+**Q1 — Threshold vs re-entrenamiento:** Re-entrenamiento primero. Calibrar threshold exclusivamente sobre un validation set independiente. **Nunca sobre el test set.** Calibrar sobre el mismo test set que se reporta en el paper es data snooping explícito — invalida las métricas y hace el paper vulnerable a rechazo. Regla de oro (ChatGPT): *"El test set no se toca ni para calibrar thresholds."*
 
-1. **Threshold calibration:** el umbral 0.5 puede no ser óptimo para maximizar Precision. Buscar threshold donde Precision≥0.99 manteniendo Recall razonable.
-2. **Ampliar training data:** Tuesday-WorkingHours solo tiene FTP-Patator y SSH-Patator. Wednesday+Thursday+Friday tienen DoS, Heartbleed, Infiltration, Web Attacks — más variedad puede mejorar las fronteras de decisión.
-3. **Feature scaling en plugin C++:** verificar que el plugin XGBoost no aplica ninguna transformación extra que degrade la Precision en inferencia real vs Python.
-4. **Hiperparámetros:** `scale_pos_weight`, `min_child_weight`, `max_delta_step` para forzar mayor Precision a costa de Recall.
+**Q2 — ¿Es aceptable 0.9875?** No. 125 falsas alarmas/hora colapsan operacionalmente cualquier hospital pequeño. El gate ≥0.99 no es arbitrario — es el límite mínimo de viabilidad de un SOC con 1-2 personas. Gemini lo resume: *"Si no llegamos, el Escudo se convierte en Ruido."* No se relaja.
 
----
+**Q3 — Split por días:** Obligatorio. CIC-IDS-2017 tiene correlación temporal masiva — random split filtra información del futuro al training. La comunidad IDS rechaza papers sin day-based splits. **Wednesday (o Thursday+Friday) como held-out test set es condición no negociable para el paper y para el merge.**
 
-## Preguntas para el Consejo
-
-**Q1 — Threshold calibration vs re-entrenamiento:**
-¿Es preferible encontrar un threshold >0.5 que dé Precision≥0.99 sobre el test set actual, o es más riguroso científicamente re-entrenar con más datos (todos los CSVs de CIC-IDS-2017) y luego calibrar? ¿Hay riesgo de data snooping si calibramos el threshold sobre el mismo test set que usamos para reportar métricas?
-
-**Q2 — Representatividad del gap Precision:**
-Precision=0.9875 significa ~1.25% de falsos positivos. En un hospital con 10.000 flows/hora, serían ~125 alarmas falsas/hora. ¿Es este volumen operacionalmente inaceptable o existe un argumento para un gate más flexible en §4.1 con la caveat de que CIC-IDS-2017 es laboratorio, no producción real?
-
-**Q3 — Integridad científica del paper:**
-El modelo XGBoost fue entrenado con Tuesday-WorkingHours pero el gate se evalúa sobre el mismo dataset. ¿Deberíamos usar un CSV diferente (ej. Wednesday) como held-out test set para el paper, separando completamente train/test por día? ¿Cambia el veredicto de merge?
-
-**Q4 — Deuda RF level1:**
-El pkl del RF level1 no se encontró en producción. ¿Tiene sentido invertir tiempo en recuperarlo para la tabla comparativa, o el XGBoost ya lo supera en latencia (1.31 µs) y la comparación no aporta valor científico significativo al paper?
+**Q4 — RF level1 pkl:** No recuperar. Un RF evaluado sin split (F1=1.0 por overfitting) no es un baseline válido. Documentar su ausencia honestamente en el paper y seguir adelante.
 
 ---
 
-Consejo, os paso el turno.
+## Plan DAY 122 — Protocolo acordado por el Consejo
+
+El protocolo de datos es el corazón de todo lo demás:
+
+```
+Train:      Tuesday + Thursday + Friday (o Tuesday solo si se quiere conservador)
+Validation: 20% de Train (para calibrar threshold, early stopping)
+Test:       Wednesday — BLIND hasta evaluación final. UNA sola vez.
+```
+
+Secuencia de trabajo:
+
+**1. Preparar datasets** — script que combine los CSVs por día con split estricto. Registrar `md5sum` de Wednesday antes de abrirlo.
+
+**2. Re-entrenar XGBoost** con `scale_pos_weight`, early stopping sobre validation. Objetivo en validation: Precision ≥ 0.99.
+
+**3. Calibrar threshold** en validation set mediante `precision_recall_curve`. Documentar el threshold elegido.
+
+**4. Evaluar en Wednesday — una sola vez.** Si Precision ≥ 0.99 → merge autorizado. Si no → iterar hiperparámetros y volver al paso 2. Nunca abrir Wednesday dos veces con distintos modelos.
+
+**5. Verificación C++ vs Python** — comparar scores antes de reportar. Si hay discrepancia > 1e-4, el mismatch es la causa raíz.
+
+**6. Actualizar** `docs/xgboost/comparison-table.md`, `TEST-INTEG-XGBOOST-1` con flows de Wednesday, y `make test-all` verde.
+
+---
+
+## Lo que NO haremos jamás
+
+- Calibrar threshold sobre el test set actual para "forzar" Precision ≥ 0.99.
+- Mezclar sintético con real en el training de level1.
+- Relajar el gate médico con argumentos de "CIC-IDS-2017 es laboratorio".
+- Abrir Wednesday más de una vez.
+
+---
+
+## Nota personal
+
+El Consejo tiene razón en algo que va más allá del código: la honestidad científica es, en este punto del proyecto, una de las pocas cosas que distingue a aRGus de un prototipo académico más. Precision=0.9875 reportada con rigor vale infinitamente más que Precision=0.99 conseguida con data snooping. Un revisor lo detecta. Un hospital lo sufre.
+
+DAY 122 es el día en que el modelo se gana el merge o se queda fuera. Sin atajos.
+
+*"La ciencia no premia la velocidad. Premia la verificabilidad."* — Qwen, DAY 121.
+
+---
+
+**Commit de síntesis pendiente para el prompt DAY 122.** ¿Lo generamos ahora?

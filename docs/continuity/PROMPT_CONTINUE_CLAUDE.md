@@ -1,5 +1,10 @@
-cat > /tmp/DAY121_prompt.md << 'MDEOF'
-# ML Defender (aRGus NDR) — DAY 121 Continuity Prompt
+Los tres en orden.
+
+**Prompt DAY 122:**
+
+```bash
+cat > /Users/aironman/CLionProjects/test-zeromq-docker/docs/DAY122_prompt.md << 'MDEOF'
+# ML Defender (aRGus NDR) — DAY 122 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -8,186 +13,154 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **Bloqueante:** debe cerrarse en esta feature. No hay merge a main sin test verde.
 - **No bloqueante:** asignada a feature destino en BACKLOG. No toca esta feature.
 - **Toda deuda tiene test de cierre.** Implementado sin test = no cerrado.
-- **REGLA CRÍTICA:** El Vagrantfile y el Makefile son la única fuente de verdad. Nunca compilar o instalar manualmente en la VM sin actualizar ambos.
-- **REGLA SCRIPTS:** Lógica compleja con quoting anidado → `tools/script.sh`. Nunca inline en Makefile.
-- **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs de build. Solo runtime: mlock() + explicit_bzero(). SecureBuffer C++20.
+- **REGLA CRÍTICA:** El Vagrantfile y el Makefile son la única fuente de verdad.
+- **REGLA SCRIPTS:** Lógica compleja → `tools/script.sh`. Nunca inline en Makefile.
+- **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
 
 ---
 
-## Estado al cierre de DAY 120
+## Estado al cierre de DAY 121
 
-### Hitos completados
-- **DEBT-PUBKEY-RUNTIME-001** ✅ — `tools/extract-pubkey-hex.sh` + `execute_process()`. Sin `make sync-pubkey`.
-- **DEBT-BOOTSTRAP-001** ✅ — `make bootstrap` 8 pasos canónicos, idempotente.
-- **DEBT-INFRA-VERIFY-001/002** ✅ — `make check-system-deps` + `make post-up-verify`.
-- **Idempotencia × 2** ✅ — vagrant destroy verde ambas iteraciones.
-- **ADR-026 PASO 4a** ✅ — `docs/xgboost/features.md` — 23 features LEVEL1, dataset CIC-IDS-2017.
-- **ADR-026 PASO 4b** ✅ — `docs/xgboost/plugin-contract.md` — contrato float32[23], schema v1.
-- **ADR-026 PASO 4c** ✅ — XGBoost entrenado: F1=0.9978, Precision=0.9973, ROC-AUC=1.0 (2.83M flows CIC-IDS-2017).
-- **ADR-026 PASO 4d** ✅ — `make sign-models` + `tools/sign-model.sh` — Ed25519 firma `.ubj`.
-- **ADR-026 PASO 4e** ✅ — `TEST-INTEG-XGBOOST-1 PASSED` — inferencia real, contratos técnicos OK.
+### Hitos completados DAY 121
+- **fix(provision)** ✅ — circular dependency plugin_signing.pk → plugin-loader cmake. Idempotencia × 3 certificada.
+- **DEBT-SEED-AUDIT-001** ✅ — seed ChaCha20 no está en ningún CMakeLists.txt ni fuente C++.
+- **DEBT-XGBOOST-TEST-REAL-001** ✅ — TEST-INTEG-XGBOOST-1 con flows reales FTP-Patator. BENIGN: 0.000111/0.000120/0.000228. ATTACK: 0.999894/0.999258/0.999904.
+- **DEBT-XGBOOST-DDOS-001** ✅ — XGBoost DDoS F1=1.0 (sintético DeepSeek 50k). 20× más rápido que RF.
+- **DEBT-XGBOOST-RANSOMWARE-001** ✅ — XGBoost Ransomware F1=0.9932 (sintético 3k). 6× más rápido que RF.
+- **DEBT-SIGN-MODELS-EXTEND-001** ✅ — make sign-models firma 3 modelos Ed25519.
+- **docs/xgboost/comparison-table.md** ✅ — tabla RF vs XGBoost × 3 detectores con latencias.
+- **PAPER-SECTION-4** ✅ — §4.1 CIC-IDS-2017 real + §4.2 DeepSeek sintético con limitaciones.
+- **deploy-models en make bootstrap paso 6/8** ✅ — idempotente.
 - **make test-all VERDE** ✅
-- **Consejo 7/7 incorporados** ✅ — Kimi y Mistral nuevos miembros.
-- **Commits:** hasta `0a2bdef3` · Branch: `feature/adr026-xgboost`
+- **Commits:** hasta `55880c7c` · Branch: `feature/adr026-xgboost`
 
-### Pubkey activa DAY 120
-`ec8c4bf0fdce51d556b99b5ca7a74aaad6f6683c6f6914784c732c4abbc8c6e1`
+### Pubkey activa DAY 121
+`fc895faac3e8c533d0cf4463637bbb1d2a3fb09dc6e84f7282dc427dd876f238`
 
-### Datasets localizados DAY 120
-- **CIC-IDS-2017** (real): `ml-training/datasets/CIC-IDS-2017/MachineLearningCVE/` — 8 CSVs, 2.83M flows, 23 features
-- **DDoS sintético DeepSeek**: `ml-training/scripts/ddos_detection/ddos_detection_dataset.json` — 27MB, 10 features DDOS_FEATURES
-- **Ransomware sintético DeepSeek**: `ml-training/scripts/ransomware/data/network_guaranteed.csv` + `files_guaranteed.csv` + `processes_guaranteed.csv`
-
-### Nota crítica Consejo DAY 120
-TEST-INTEG-XGBOOST-1 scores actuales: BENIGN=0.000706, ATTACK=0.003414 — ambos out-of-distribution (features sintéticas extremas). El Consejo (7/7 unánime) rechaza esto como gate de merge. Necesita casos reales del CSV con score ATTACK>0.5 y BENIGN<0.1.
+### BLOQUEANTE ÚNICO DAY 122
+**DEBT-PRECISION-GATE-001** 🔴 — XGBoost level1 Precision=0.9875 < 0.99 (gate médico ADR-026).
 
 ---
 
-## PASO 0 — DAY 121: vagrant destroy OBLIGATORIO (tercera validación idempotencia)
+## PASO 0 — DAY 122: vagrant destroy OBLIGATORIO
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
 git checkout feature/adr026-xgboost
 git pull origin feature/adr026-xgboost
-
 vagrant destroy -f && vagrant up
-# ~20-30 minutos
-
-# Tras provisioning:
 make bootstrap
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
 ```
 
-**Si verde → PASO 0 certificado definitivamente. Secuencia canónica = `make bootstrap`.**
-
 ---
 
-## PASO 1 — DEBT-SEED-AUDIT-001 (BLOQUEANTE DAY 121)
+## PASO 1 — DEBT-PRECISION-GATE-001 (BLOQUEANTE MERGE)
 
-**Objetivo:** Verificar que la seed ChaCha20 NO está hardcodeada en ningún CMakeLists.txt ni fuente C++.
+### Protocolo Consejo 7/7 unánime
 
-```bash
-grep -r "seed" /Users/aironman/CLionProjects/test-zeromq-docker/plugin-loader/CMakeLists.txt
-grep -r "seed" /Users/aironman/CLionProjects/test-zeromq-docker/crypto-transport/CMakeLists.txt
-grep -rn "[0-9a-f]\{32,64\}" /Users/aironman/CLionProjects/test-zeromq-docker/plugin-loader/CMakeLists.txt
+**Regla de oro:** El test set Wednesday es BLIND. Se abre UNA SOLA VEZ para el reporte final.
+**NUNCA** calibrar threshold sobre el test set (data snooping → paper inválido).
+
+### Split temporal obligatorio
+```
+Train:      Tuesday + Thursday + Friday (CSVs CIC-IDS-2017)
+Validation: 20% del train (stratificado) — para calibrar threshold y early stopping
+Test:       Wednesday-WorkingHours.pcap_ISCX.csv — BLIND hasta evaluación final
 ```
 
-**Si se encuentra seed hardcodeada:** eliminar del CMake. La seed se lee exclusivamente en runtime:
-```cpp
-// SecureBuffer C++20 — mlock + explicit_bzero en destructor
-class SecureBuffer : public std::vector<uint8_t> {
-public:
-    explicit SecureBuffer(size_t n) : std::vector<uint8_t>(n) { mlock(data(), size()); }
-    ~SecureBuffer() { explicit_bzero(data(), size()); munlock(data(), size()); }
-};
-// Uso: SecureBuffer seed(32); leer de /etc/ml-defender/<comp>/seed.bin
-```
+### Secuencia de trabajo
 
-**Test de cierre:** `grep -r "seed" CMakeLists.txt` → 0 resultados con hex literal.
-
----
-
-## PASO 2 — DEBT-XGBOOST-TEST-REAL-001 (BLOQUEANTE MERGE)
-
-**Objetivo:** Añadir a TEST-INTEG-XGBOOST-1 casos reales de CIC-IDS-2017.
-
-**Estrategia:** Extraer 3 flows ATTACK + 3 flows BENIGN del CSV de test, convertir features a float32[23] en el orden exacto de `LEVEL1_FEATURE_NAMES`, incrustar como arrays estáticos en el test C++.
-
+**1. Preparar datasets**
 ```bash
-# Extraer muestras reales del CSV
 python3 << 'PYEOF'
 import pandas as pd
 import numpy as np
+import hashlib
 
-FEATURES = [
-    " Packet Length Std", " Subflow Fwd Bytes", " Fwd Packet Length Max",
-    " Avg Fwd Segment Size", " ACK Flag Count", " Packet Length Variance",
-    " PSH Flag Count", "Bwd Packet Length Max", " act_data_pkt_fwd",
-    "Total Length of Fwd Packets", " Fwd Packet Length Std", "Fwd Packets/s",
-    " Subflow Bwd Bytes", " Destination Port", "Init_Win_bytes_forward",
-    "Subflow Fwd Packets", " Fwd IAT Min", " Packet Length Mean",
-    " Total Length of Bwd Packets", " Bwd Packet Length Mean",
-    " Bwd Packet Length Min", " Flow Duration", " Flow Packets/s"
-]
-
-df = pd.read_csv("ml-training/datasets/CIC-IDS-2017/MachineLearningCVE/Tuesday-WorkingHours.pcap_ISCX.csv", low_memory=False)
-df[FEATURES] = df[FEATURES].replace([np.inf, -np.inf], np.nan).fillna(0.0)
-
-benign = df[df[" Label"].str.strip() == "BENIGN"][FEATURES].head(3)
-attack = df[df[" Label"].str.strip() != "BENIGN"][FEATURES].head(3)
-
-for i, row in benign.iterrows():
-    vals = ", ".join(f"{v:.6f}f" for v in row.values)
-    print(f"// BENIGN sample\n{{{vals}}},")
-
-for i, row in attack.iterrows():
-    vals = ", ".join(f"{v:.6f}f" for v in row.values)
-    print(f"// ATTACK sample\n{{{vals}}},")
+BASE = "ml-training/datasets/CIC-IDS-2017/MachineLearningCVE"
+files = {
+    "Tuesday":   f"{BASE}/Tuesday-WorkingHours.pcap_ISCX.csv",
+    "Wednesday": f"{BASE}/Wednesday-workingHours.pcap_ISCX.csv",
+    "Thursday":  f"{BASE}/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+    "Friday":    f"{BASE}/Friday-WorkingHours-Morning.pcap_ISCX.csv",
+}
+# Registrar md5 de Wednesday ANTES de abrirlo para entrenamiento
+with open(files["Wednesday"], "rb") as f:
+    md5 = hashlib.md5(f.read()).hexdigest()
+print(f"Wednesday md5 (BLIND seal): {md5}")
+for day, path in files.items():
+    df = pd.read_csv(path, low_memory=False)
+    print(f"{day}: {len(df)} rows, attacks={sum(df[' Label'].str.strip()!='BENIGN')}")
 PYEOF
 ```
 
-**Test de cierre:** `make test-integ-xgboost-1` con scores ATTACK>0.5 + BENIGN<0.1 + gate explícito.
+**2. Script de re-entrenamiento**
+Crear `ml-training/scripts/train_xgboost_level1_v2.py` con:
+- Features: LEVEL1_FEATURE_NAMES (23 features de `docs/xgboost/features.md`)
+- Train: Tuesday + Thursday + Friday
+- Validation: 20% del train (para early stopping + calibración threshold)
+- `scale_pos_weight` = n_benign / n_attack
+- `precision_recall_curve` sobre validation para encontrar threshold con Precision ≥ 0.99
+- Threshold documentado y exportado junto al modelo
 
----
+**3. Evaluación final en Wednesday (UNA SOLA VEZ)**
+- Cargar modelo + threshold calibrado
+- Evaluar sobre Wednesday completo
+- Si Precision ≥ 0.99 → MERGE AUTORIZADO
+- Si no → iterar hiperparámetros sin tocar Wednesday
 
-## PASO 3 — DEBT-XGBOOST-DDOS-001
+**4. Exportar modelo**
+- `xgboost_cicids2017_v2.json` + `xgboost_cicids2017_v2.ubj`
+- `make sign-models` actualizado
+- `TEST-INTEG-XGBOOST-1` actualizado con flows de Wednesday
 
-**Dataset:** `ml-training/scripts/ddos_detection/ddos_detection_dataset.json` (27MB)
-**Features:** 10 features `DDOS_FEATURES` (ver `DDOSFeatures.py`)
-**Script a crear:** `ml-training/scripts/ddos_detection/train_xgboost_ddos.py`
-**Patrón:** mismo que `train_xgboost_baseline.py` adaptado al JSON format + normalización MinMaxScaler
-**Gate:** F1 + Precision superiores al RF `ddos_detection_model.pkl`
-**Exports:** `xgboost_ddos.json` + `xgboost_ddos.ubj`
-
----
-
-## PASO 4 — DEBT-XGBOOST-RANSOMWARE-001
-
-**Dataset:** `ml-training/scripts/ransomware/data/network_guaranteed.csv` + `files_guaranteed.csv` + `processes_guaranteed.csv`
-**Script a crear:** `ml-training/scripts/ransomware/train_xgboost_ransomware.py`
-**Patrón:** mismo que `train_simple_effective.py` sustituyendo RF por XGBoost
-**Gate:** F1 + Precision superiores al RF `simple_effective_model.pkl`
-**Exports:** `xgboost_ransomware.json` + `xgboost_ransomware.ubj`
-
----
-
-## PASO 5 — Extender make sign-models + tabla comparativa paper
-
-- Extender `make sign-models` para firmar los 3 modelos
-- `docs/xgboost/comparison-table.md`: latencia (μs), F1, Precision, ROC-AUC para RF vs XGBoost en los 3 detectores
-- Separar §4 del paper: §4.1 CIC-IDS-2017 real + §4.2 DeepSeek sintético con limitaciones explícitas
+### Gate de cierre
+```
+Precision ≥ 0.99 en Wednesday held-out
+Recall ≥ 0.95 en Wednesday held-out
+Latencia < 2 µs/sample
+make test-all VERDE
+```
 
 ---
 
 ## Contexto permanente
 
-### Secuencia canónica DAY 120+
+### Secuencia canónica DAY 121+
 ```bash
 make up           # vagrant up
 make bootstrap    # 8 pasos, todo automático
 make test-all     # verificación completa
 ```
 
-### Datasets origen (integridad científica)
-- **level1_attack_detector** (RF + XGBoost): CIC-IDS-2017 REAL
-- **ransomware_detector**: DeepSeek sintético — `data/*_guaranteed.csv`
-- **ddos_detector**: DeepSeek sintético — `ddos_detection_dataset.json`
-- **Paper §4**: SEPARAR explícitamente §4.1 real + §4.2 sintético con limitaciones
+### Datasets CIC-IDS-2017 disponibles
+```
+ml-training/datasets/CIC-IDS-2017/MachineLearningCVE/
+  Monday-WorkingHours.pcap_ISCX.csv       (solo BENIGN)
+  Tuesday-WorkingHours.pcap_ISCX.csv      (FTP-Patator, SSH-Patator) ← train
+  Wednesday-workingHours.pcap_ISCX.csv    (DoS, Heartbleed) ← TEST BLIND
+  Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv ← train
+  Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv ← train
+  Friday-WorkingHours-Morning.pcap_ISCX.csv ← train
+  Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv ← train
+  Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv ← train
+```
 
-### Consejo DAY 120 — decisiones clave
-- TEST-INTEG-XGBOOST-1 con scores reales BLOQUEANTE MERGE (7/7 unánime)
-- Seed: NUNCA en CMake. Solo runtime mlock()+explicit_bzero()
-- In-situ+BitTorrent: investigación Q3 2026, gates G1-G5 obligatorios
-- Paper §4: separar real vs sintético o riesgo de rechazo
+### Consejo DAY 121 — decisiones clave (7/7 unánime)
+- Wednesday como held-out test set OBLIGATORIO — data snooping invalida el paper
+- Threshold calibración SOLO en validation set, nunca en test
+- RF level1 pkl no recuperar — RF sin split = overfitting, no es baseline válido
+- 125 falsas alarmas/hora = alert fatigue clínico = sistema inutilizable
+- Gate ≥0.99 inamovible — "La seguridad de los hospitales no admite atajos estadísticos"
 
 ### NO mergear a main hasta
-1. DEBT-XGBOOST-TEST-REAL-001 verde
-2. DEBT-SEED-AUDIT-001 verde
+1. **DEBT-PRECISION-GATE-001** verde — Precision ≥ 0.99 en Wednesday held-out
 
 ### Regla de oro
-6/6 RUNNING + make test-all VERDE
+6/6 RUNNING + make test-all VERDE + Precision ≥ 0.99 en Wednesday
 
 *"Via Appia Quality — un escudo, nunca una espada."*
 MDEOF
-cp /tmp/DAY121_prompt.md /Users/aironman/CLionProjects/test-zeromq-docker/docs/DAY121_prompt.md
-echo "✅ Prompt DAY 121 creado"
+echo "✅ Prompt DAY 122 creado"
+```

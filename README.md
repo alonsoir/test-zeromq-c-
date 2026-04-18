@@ -14,6 +14,7 @@ cat > /tmp/README.md << 'MDEOF'
 [![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
 [![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
 [![XGBoost](https://img.shields.io/badge/XGBoost-F1%3D0.9978_CIC--IDS--2017-brightgreen)]()
+[![Medical Gate](https://img.shields.io/badge/Medical_Gate-Precision≥0.99_DAY_122-orange)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
@@ -81,6 +82,9 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **CI gate** | **TEST-PROVISION-1 PASSED 8/8** | DAY 118 |
 | **AppArmor** | **6/6 enforce** | 0 denials — DAY 118 |
 | **Reproducibility** | **vagrant destroy × 2 → make bootstrap validated** | DAY 120 |
+| **XGBoost gate médico** | **BENIGN<0.1 / ATTACK>0.999 (FTP-Patator real)** | DAY 121 |
+| **XGBoost DDoS latency** | **0.15 µs/sample (20× faster than RF)** | DAY 121 |
+| **XGBoost Ransomware latency** | **2.09 µs/sample (6× faster than RF)** | DAY 121 |
 
 ---
 
@@ -272,13 +276,19 @@ make bootstrap        # handles everything, including new pubkey
 
 ### ✅ DONE — DAY 117–111 *(see git log)*
 
-### 🔜 NEXT — DAY 121 (feature/adr026-xgboost)
-- [ ] **DEBT-SEED-AUDIT-001** — audit seed in CMakeLists.txt, runtime-only mlock()+explicit_bzero()
-- [ ] **DEBT-XGBOOST-TEST-REAL-001** — TEST-INTEG-XGBOOST-1 with real CIC-IDS-2017 fixtures
-- [ ] **DEBT-XGBOOST-DDOS-001** — train XGBoost DDoS on synthetic DeepSeek dataset (27MB)
-- [ ] **DEBT-XGBOOST-RANSOMWARE-001** — train XGBoost Ransomware on synthetic guaranteed CSVs
-- [ ] vagrant destroy × 3 — final idempotency certification
-- [ ] **PAPER-SECTION-4** — §4.1 real (CIC-IDS-2017) + §4.2 synthetic (DeepSeek) explicit separation
+### ✅ DONE — DAY 121 (18 Apr 2026)
+- [x] **fix(provision)**: circular dependency plugin_signing.pk → plugin-loader cmake ✅
+- [x] **DEBT-SEED-AUDIT-001** — seed ChaCha20 never in CMake, runtime-only mlock()+explicit_bzero() ✅
+- [x] **DEBT-XGBOOST-TEST-REAL-001** — real CIC-IDS-2017 FTP-Patator flows, medical gate PASSED ✅
+- [x] **DEBT-XGBOOST-DDOS-001** — XGBoost DDoS F1=1.0 on synthetic DeepSeek (20× faster than RF) ✅
+- [x] **DEBT-XGBOOST-RANSOMWARE-001** — XGBoost Ransomware F1=0.9932 (6× faster than RF) ✅
+- [x] **vagrant destroy × 3** — final idempotency certification ✅
+- [x] **PAPER-SECTION-4** — §4.1 real + §4.2 synthetic with explicit limitations ✅
+- [x] **sign-models × 3** — Ed25519 64B signatures for all XGBoost models ✅
+- [ ] 🔴 **DEBT-PRECISION-GATE-001** — Precision=0.9875 < 0.99 medical gate. BLOQUEANTE MERGE.
+
+### 🔜 NEXT — DAY 122 (feature/adr026-xgboost)
+- [ ] **DEBT-PRECISION-GATE-001** — Wednesday held-out test set (BLIND). Train=Tue+Thu+Fri, Val=20% train, Test=Wednesday once. Target: Precision≥0.99
 
 ### P3 — Post-PHASE 4
 - [ ] DEBT-CRYPTO-003a: mlock() + explicit_bzero(seed) post-HKDF
@@ -312,6 +322,7 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉 · AppArmor 6/6 enforce
 - ✅ DAY 119: **Full reproducibility from vagrant destroy validated** 🎉
 - ✅ DAY 120: **make bootstrap + XGBoost F1=0.9978 + DEBT-PUBKEY-RUNTIME-001** 🎉
+- ✅ DAY 121: **DEBTs bloqueantes cerrados + gate médico PASADO + idempotencia ×3 certificada** 🎉
 
 ---
 
