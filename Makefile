@@ -248,7 +248,9 @@ bootstrap:
 	@$(MAKE) install-systemd-units
 	@echo "[5/8] Compilando pipeline (incluye pubkey runtime + plugin-test-message)..."
 	@$(MAKE) pipeline-build
-	@echo "[6/8] Firmando plugins..."
+	@echo "[6/8] Desplegando modelos ML..."
+	@$(MAKE) deploy-models
+	@echo "[6b/8] Firmando plugins..."
 	@$(MAKE) sign-plugins
 	@echo "[7/8] Verificando provisioning..."
 	@$(MAKE) test-provision-1
@@ -410,6 +412,13 @@ plugin-loader-test:
 test-sign:
 	@echo "TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_sign /vagrant/plugins/test-message/test_integ_sign.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_sign && echo TEST-INTEG-SIGN PASSED || echo TEST-INTEG-SIGN FAILED'
+
+deploy-models:
+	@vagrant ssh -c "sudo mkdir -p /etc/ml-defender/models && \
+	  sudo cp /vagrant/ml-detector/models/production/level1/xgboost_cicids2017.ubj \
+	          /etc/ml-defender/models/xgboost_cicids2017.ubj && \
+	  sudo chmod 644 /etc/ml-defender/models/xgboost_cicids2017.ubj"
+	@echo "✅ Modelos ML desplegados en /etc/ml-defender/models/"
 
 sign-plugins:
 	@echo "Firmando plugins (ADR-025 D1)..."
