@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v15 — DAY 114 — April 2026
+% Draft v16 — DAY 122 — April 2026
 % % Author: Alonso Isidoro Román
 % Target: cs.CR
 % ============================================================
@@ -79,7 +79,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v15 --- April 2026}
+\date{Draft v16 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -142,7 +142,26 @@ in Resource-Constrained Organizations}}
         the \emph{Consejo de Sabios} (Council of Wise Men), a multi-LLM peer review methodology ---
         documented in Section~\ref{sec:consejo}. \emph{Test-Driven Hardening} (TDH) is proposed
         as a methodology for building security-critical distributed systems, emerging directly from
-        this collaboration. ML Defender is released under the MIT license.
+        this collaboration.
+
+        In a subsequent development phase (DAY 122), we integrated XGBoost~3.2.0 as a hot-swappable
+        plugin classifier (ADR-026, Ed25519-signed) and conducted a rigorous temporal holdout
+        evaluation on CIC-IDS-2017, using Tuesday, Thursday, and Friday as training data and
+        Wednesday as a sealed blind test set. The in-distribution model achieves
+        Precision$=0.9945$ and Recall$=0.9818$ on the validation split. However, evaluation
+        on the Wednesday holdout reveals a structural covariate shift: attack types present
+        exclusively in Wednesday (DoS Hulk, GoldenEye, Slowloris) are absent from all training
+        days, making generalization mathematically impossible regardless of threshold. We document
+        this as a property of the dataset's design --- not of the algorithm --- and demonstrate
+        empirically that no threshold simultaneously satisfies Precision$\geq0.99$ and
+        Recall$\geq0.95$ on the out-of-distribution split. This finding corroborates and
+        quantifies the thesis of Sommer and Paxson~\cite{sommer2010}: static models trained on
+        academic benchmarks are structurally insufficient for production NDR.
+        The architectural response --- an Adversarial Capture-Retrain Loop in which a generative
+        red team agent produces attack traffic, the pipeline captures it, and the classifier is
+        retrained on real flows --- is introduced as future work~(\S\ref{sec:future:acrl}).
+
+        ML Defender is released under the MIT license.
     \end{abstract}
 
     \tableofcontents
@@ -228,7 +247,11 @@ in Resource-Constrained Organizations}}
     ensemble of autoencoders for unsupervised anomaly detection operating on flow statistics. The
     CTU-13 dataset~\cite{garcia2014}, which ML Defender uses for evaluation, has become a
     standard benchmark for botnet traffic detection. Despite this body of work, a persistent gap
-    exists between academic prototype and production system.
+    exists between academic prototype and production system. Sommer and Paxson~\cite{sommer2010}
+    identified fundamental reasons for this gap: the closed-world assumption of academic datasets,
+    high base-rate asymmetry, and the absence of diversity in training distributions. ML Defender's
+    DAY~122 evaluation provides new empirical evidence for this thesis
+    (\S\ref{sec:eval:xgboost:ood}).
 
     \paragraph{Flow-based ML NIDS.}
     ML Defender operates exclusively at the flow level, extracting 28 behavioral features per
@@ -1233,6 +1256,115 @@ const std::string ctx_rx = "ml-defender:" + component_name
     logic. Zero packet drops, zero deserialization errors across all 2,374,845 packets. Total
     pipeline RAM stable at ${\sim}$1.28~GB (${\pm}18$~MB drift) throughout the 8-minute test.
 
+    \subsection{XGBoost Level-1 Classifier: In-Distribution Performance}
+    \label{sec:eval:xgboost:id}
+
+    As part of PHASE~4 (ADR-026), a gradient-boosted classifier (XGBoost~3.2.0) was integrated
+    as a hot-swappable plugin, replacing the Random Forest level-1 detector while preserving the
+    Ed25519 signing chain and fail-closed \texttt{std::terminate()} contract of ADR-025.
+
+    \paragraph{Experimental protocol.}
+    CIC-IDS-2017~\cite{sharafaldin2018} was partitioned by day to enforce temporal isolation:
+    Tuesday, Thursday (morning and afternoon), and Friday (morning, DDoS, PortScan) constitute
+    the training corpus; 20\% of the training data was held out as a stratified validation set
+    for threshold calibration and early stopping; Wednesday was sealed as a blind test set
+    (MD5: \texttt{bf0dd7e9...}) and opened exactly once for final reporting.
+    The threshold was calibrated exclusively on the validation set; no information
+    from Wednesday influenced any modelling decision.
+
+    \paragraph{Training details.}
+    23 flow-level features; \texttt{scale\_pos\_weight}$=4.273$ (1,303,148~benign /
+    304,974~attack); \texttt{max\_depth}$=6$, \texttt{eta}$=0.05$,
+    \texttt{subsample}$=0.8$; early stopping at round~724 of~1,000;
+    val-AUCPR$=0.99846$.
+
+    \begin{table}[h]
+        \centering
+        \caption{XGBoost level-1 performance on the validation set (in-distribution).}
+        \label{tab:xgboost_id}
+        \begin{tabular}{ll}
+            \toprule
+            \textbf{Metric} & \textbf{Value} \\
+            \midrule
+            Precision (validation)  & \textbf{0.9945} \\
+            Recall (validation)     & \textbf{0.9818} \\
+            F1 (validation)         & 0.9881 \\
+            Calibrated threshold    & 0.8211 \\
+            Inference latency       & 1.986~$\mu$s/sample \\
+            Best iteration          & 724 / 1,000 \\
+            Val-AUCPR               & 0.99846 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    Both the Precision$\geq0.99$ and Recall$\geq0.95$ medical gates (ADR-026) are satisfied
+    on the in-distribution validation split. Inference latency of 1.986~$\mu$s/sample
+    satisfies the $<2\;\mu$s gate. The model is exported in \texttt{.json} and \texttt{.ubj}
+    formats and signed with Ed25519 via \texttt{tools/sign-model.sh}.
+
+    \subsection{XGBoost Level-1: Wednesday Out-of-Distribution Evaluation}
+    \label{sec:eval:xgboost:ood}
+
+    \paragraph{Result.}
+    On the Wednesday blind held-out set ($n=692{,}703$ flows; 252,672~attacks), the model
+    achieves Precision$=0.987$ and Recall$=0.024$ (F1$=0.047$). No threshold satisfies
+    both Precision$\geq0.99$ and Recall$\geq0.95$ simultaneously
+    (Table~\ref{tab:xgboost_ood}).
+
+    \begin{table}[h]
+        \centering
+        \caption{Wednesday held-out threshold sweep (OOD). No operating point exists
+        satisfying both medical gates simultaneously.}
+        \label{tab:xgboost_ood}
+        \begin{tabular}{llll}
+            \toprule
+            \textbf{Threshold} & \textbf{Precision} & \textbf{Recall} & \textbf{FP/hour} \\
+            \midrule
+            0.01 & 0.798 & 0.559 & 4,478 \\
+            0.10 & 0.776 & 0.202 & 1,841 \\
+            0.50 & 0.951 & 0.055 & 88    \\
+            0.82 (calibrated) & 0.987 & 0.024 & 12 \\
+            0.90 & 0.985 & 0.017 & 8     \\
+            \midrule
+            \multicolumn{4}{l}{\emph{No threshold achieves Prec.$\geq$0.99 $\cap$ Rec.$\geq$0.95.}} \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \paragraph{Diagnosis: structural covariate shift by dataset design.}
+    Wednesday contains exclusively application-layer DoS attacks: DoS~Hulk
+    ($n=231{,}073$; 91.5\% of Wednesday attacks), DoS~GoldenEye ($n=10{,}293$),
+    DoS~Slowloris ($n=5{,}796$), DoS~Slowhttptest ($n=5{,}499$), and Heartbleed ($n=11$).
+    None of these attack types appear in any training CSV. CIC-IDS-2017 was designed with
+    attack types segregated by day without cross-day repetition~\cite{sharafaldin2018};
+    this design makes out-of-distribution generalization \emph{structurally impossible}
+    for any supervised classifier trained on the remaining days, regardless of algorithm
+    or hyperparameter choices.
+
+    DoS~Hulk imitates high-volume HTTP traffic: its flow-level features overlap substantially
+    with benign high-throughput flows. The model assigns a median probability of 0.0165 to
+    Hulk flows --- indistinguishable from benign traffic under any operationally viable
+    threshold.
+
+    \paragraph{Impossibility result.}
+    The threshold sweep in Table~\ref{tab:xgboost_ood} constitutes an empirical impossibility
+    result: the Precision-Recall curve never enters the region
+    Precision$\geq0.99$ $\cap$ Recall$\geq0.95$ for Wednesday data.
+    This is not a failure of XGBoost; it is a direct, quantified consequence of the
+    closed-world structure of the training corpus --- exactly the failure mode identified
+    by Sommer and Paxson~\cite{sommer2010} for production ML-based NIDS.
+
+    \paragraph{Architectural implication.}
+    This result does not invalidate the in-distribution performance in
+    \S\ref{sec:eval:xgboost:id}. It establishes that static classifiers trained on
+    academic benchmarks cannot be assumed to generalize to attack types absent from
+    training. The aRGus architecture was designed for this reality: the XGBoost plugin
+    is Ed25519-signed and hot-swappable (ADR-026). The loop enabling retraining from
+    real adversarial traffic captured in the deployment environment is introduced as
+    \S\ref{sec:future:acrl}. The Wednesday evaluation report
+    (\texttt{wednesday\_eval\_report.json}, MD5-sealed) is included in the repository
+    as a permanent scientific artifact.
+
 % ============================================================
     \section{Performance Model and Throughput Analysis}
 % ============================================================
@@ -1347,6 +1479,24 @@ const std::string ctx_rx = "ml-defender:" + component_name
     kernel persistence. Network detection remains a valid and necessary defensive layer
     even under this constraint. Hardened variants (ADR-030, ADR-031) address this in
     future work (\S\ref{sec:future:hardened}).
+
+    \textbf{10.13 Structural Bias in Academic Datasets for Production NDR.}
+    The CIC-IDS-2017 temporal holdout evaluation (\S\ref{sec:eval:xgboost:ood}) demonstrates
+    that academic benchmark datasets are structurally insufficient as the sole training source
+    for production NDR classifiers. The day-specific attack segregation in CIC-IDS-2017 --- and
+    similar design choices in NSL-KDD, UNSW-NB15, and related corpora --- creates a
+    closed-world training distribution that does not reflect the open-world diversity of
+    real network environments. This limitation is not specific to XGBoost, Random Forest,
+    or any particular algorithm: it is a property of the data regime, as established by
+    Sommer and Paxson~\cite{sommer2010} and quantified here with a complete threshold sweep.
+    Synthetic data generated by language models (used for DDoS and ransomware classifiers
+    in earlier phases) shares a related limitation: the generating model has not observed
+    sufficient real adversarial traffic to reproduce the full statistical diversity of
+    production attack flows.
+    The only reliable path to production-grade classifiers for critical infrastructure
+    NDR is training on traffic captured in the actual deployment environment, under
+    controlled adversarial conditions. This motivates the Adversarial Capture-Retrain Loop
+    (\S\ref{sec:future:acrl}).
 
 % ============================================================
     \section{Future Work}
@@ -1510,6 +1660,37 @@ const std::string ctx_rx = "ml-defender:" + component_name
     Both variants will be validated in Vagrant first, then on bare-metal. Results
     will be published with measured honesty; ADR-031 will not be merged into
     \texttt{main} regardless of outcome.
+    \textbf{11.18 Adversarial Capture-Retrain Loop (ACRL).}
+    \label{sec:future:acrl}
+    The out-of-distribution finding documented in \S\ref{sec:eval:xgboost:ood} motivates
+    a production retraining methodology that does not depend on academic benchmark datasets.
+    The proposed \emph{Adversarial Capture-Retrain Loop} (ACRL) operates as a closed cycle:
+    (1)~a red team agent (initially MITRE Caldera~\cite{caldera2024} for deterministic
+    ATT\&CK-mapped emulation; later a generative adversarial agent for adaptive evasion
+    variants) executes attack techniques against an isolated network segment;
+    (2)~the aRGus pipeline captures all resulting traffic via eBPF/XDP, producing
+    ground-truth-labelled flows;
+    (3)~the XGBoost plugin is retrained on the captured flows and re-evaluated against
+    a held-out portion of the same session;
+    (4)~the retrained model is signed (Ed25519, ADR-025) and hot-swapped without pipeline
+    restart (ADR-026).
+
+    The loop addresses the closed-world limitation identified in \S\ref{sec:limitations}
+    (\textbf{10.13}): each retraining cycle expands the training distribution toward the
+    real attack surface of the deployment environment. The architectural prerequisite ---
+    hot-swappable signed plugins --- is already implemented and validated.
+
+    Minimum scientific validity requirements for the ACRL data source: (i)~deterministic
+    seed and versioned scenario for reproducibility; (ii)~ground-truth labels at flow
+    granularity, derived from red team execution logs; (iii)~ATT\&CK tactic coverage
+    across at minimum three families (volumetric, protocol-layer, application-layer);
+    (iv)~network-valid traffic (correct TCP/IP headers, stateful handshakes);
+    (v)~isolated sandbox with no production traffic contamination.
+    The term \emph{Adversarial Capture-Retrain Loop} is introduced here as a named
+    architectural pattern; related concepts include \emph{adversarial data flywheel}
+    and \emph{red team loop}~\cite{sommer2010}. Implementation is tracked as
+    DEBT-PENTESTER-LOOP-001 in the project backlog.
+
 % ============================================================
     \section{Conclusion}
 % ============================================================
@@ -1538,6 +1719,16 @@ const std::string ctx_rx = "ml-defender:" + component_name
     and effective detection within that scope. The limitations in Section~\ref{sec:limitations}
     are the honest documentation of a system that does what it claims to do within the boundaries
     where it has been tested.
+
+    A subsequent evaluation (DAY~122) integrated XGBoost~3.2.0 as a hot-swappable plugin and
+    conducted a rigorous temporal holdout study on CIC-IDS-2017. The in-distribution results
+    (Precision$=0.9945$, Recall$=0.9818$) confirm that the plugin architecture performs as
+    designed. The out-of-distribution finding --- that no threshold satisfies both medical gates
+    on Wednesday data, because application-layer DoS attacks are structurally absent from the
+    training days --- is reported not as a failure but as a contribution: a quantified,
+    empirically grounded argument for why production NDR classifiers must be trained on traffic
+    from their actual deployment environment. The Adversarial Capture-Retrain Loop
+    (\S\ref{sec:future:acrl}) is the architectural response.
 
     ML Defender was built because a friend lost his business to ransomware, and because a
     hospital in Barcelona was paralyzed by an attack on the same day its author was leaving a

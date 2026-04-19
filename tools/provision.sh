@@ -1017,6 +1017,13 @@ install_shared_libs() {
         log_item "crypto-transport instalada en /usr/local"
     fi
 
+    # ── plugin_signing.pk debe existir ANTES de compilar plugin-loader ──────
+    # plugin-loader/CMakeLists.txt lee la pubkey en cmake-time (DEBT-PUBKEY-RUNTIME-001)
+    if [[ ! -f /etc/ml-defender/plugins/plugin_signing.pk ]]; then
+        log_item "Generando plugin signing keypair (requerido por plugin-loader cmake)..."
+        provision_plugin_signing_keypair
+    fi
+
     # ── plugin-loader ─────────────────────────────────────────────────────────
     if [[ -f /usr/local/lib/libplugin_loader.so ]]; then
         log_info "plugin-loader ya instalada — saltando"

@@ -1,0 +1,48 @@
+{
+  "model_name": "xgboost_cicids2017",
+  "adr": "ADR-026",
+  "dataset": "CIC-IDS-2017",
+  "n_features": 23,
+  "feature_names": [
+    " Packet Length Std",
+    " Subflow Fwd Bytes",
+    " Fwd Packet Length Max",
+    " Avg Fwd Segment Size",
+    " ACK Flag Count",
+    " Packet Length Variance",
+    " PSH Flag Count",
+    "Bwd Packet Length Max",
+    " act_data_pkt_fwd",
+    "Total Length of Fwd Packets",
+    " Fwd Packet Length Std",
+    "Fwd Packets/s",
+    " Subflow Bwd Bytes",
+    " Destination Port",
+    "Init_Win_bytes_forward",
+    "Subflow Fwd Packets",
+    " Fwd IAT Min",
+    " Packet Length Mean",
+    " Total Length of Bwd Packets",
+    " Bwd Packet Length Mean",
+    " Bwd Packet Length Min",
+    " Flow Duration",
+    " Flow Packets/s"
+  ],
+  "classes": [
+    "BENIGN",
+    "ATTACK"
+  ],
+  "random_state": 42,
+  "metrics": {
+    "f1": 0.9977819897568254,
+    "precision": 0.9972681021819354,
+    "recall": 0.9982964072124739,
+    "auc": 0.9999643958775414
+  },
+  "gates": {
+    "f1": 0.997,
+    "precision": 0.99
+  },
+  "gates_passed": true,
+  "plugin_contract": "docs/xgboost/plugin-contract.md"
+}

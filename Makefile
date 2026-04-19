@@ -227,6 +227,61 @@ help:
 # VM Management
 # ============================================================================
 
+# ============================================================================
+# DEBT-BOOTSTRAP-001 + DEBT-INFRA-VERIFY-001/002 — DAY 120
+# ============================================================================
+
+.PHONY: bootstrap check-system-deps post-up-verify
+
+bootstrap:
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🚀 aRGus NDR — Bootstrap from scratch                    ║"
+	@echo "║  Ejecutar tras: git clone && make up                      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo "[1/8] Verificando entorno post-up..."
+	@$(MAKE) post-up-verify
+	@echo "[2/8] Verificando dependencias del sistema..."
+	@$(MAKE) check-system-deps
+	@echo "[3/8] Activando perfil de build..."
+	@$(MAKE) set-build-profile
+	@echo "[4/8] Instalando systemd units..."
+	@$(MAKE) install-systemd-units
+	@echo "[5/8] Compilando pipeline (incluye pubkey runtime + plugin-test-message)..."
+	@$(MAKE) pipeline-build
+	@echo "[6/8] Desplegando modelos ML..."
+	@$(MAKE) deploy-models
+	@echo "[6b/8] Firmando plugins..."
+	@$(MAKE) sign-plugins
+	@echo "[7/8] Verificando provisioning..."
+	@$(MAKE) test-provision-1
+	@echo "[8/8] Arrancando pipeline..."
+	@$(MAKE) pipeline-start
+	@$(MAKE) pipeline-status
+	@$(MAKE) plugin-integ-test
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  ✅ Bootstrap completado — 6/6 RUNNING                    ║"
+	@echo "║  Siguiente: make test-all                                  ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+
+check-system-deps:
+	@echo "🔍 Verificando dependencias del sistema..."
+	@vagrant ssh -c "command -v xxd >/dev/null || { echo '❌ xxd missing'; exit 1; }"
+	@vagrant ssh -c "command -v tmux >/dev/null || { echo '❌ tmux missing'; exit 1; }"
+	@vagrant ssh -c "pkg-config --modversion libsodium 2>/dev/null | grep -q '1.0.19' || { echo '❌ libsodium 1.0.19 missing'; exit 1; }"
+	@vagrant ssh -c "bash /vagrant/tools/check-xgboost-version.sh" || { echo '❌ xgboost 3.2.0 missing'; exit 1; }
+	@vagrant ssh -c "test -f /usr/local/lib/libxgboost.so || { echo '❌ libxgboost.so missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/local/lib/libcrypto_transport.so || { echo '❌ libcrypto_transport.so missing'; exit 1; }"
+	@echo "✅ Todas las dependencias del sistema presentes"
+
+post-up-verify:
+	@echo "🔍 Verificando entorno post-up..."
+	@$(MAKE) check-system-deps
+	@vagrant ssh -c "test -d /usr/lib/ml-defender/plugins || { echo '❌ plugins dir missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/lib/ml-defender/plugins/libplugin_xgboost.so || { echo '❌ libplugin_xgboost.so missing'; exit 1; }"
+	@vagrant ssh -c "test -f /etc/ml-defender/plugins/plugin_signing.pk || { echo '❌ plugin_signing.pk missing'; exit 1; }"
+	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' | wc -l | tr -d ' ' | grep -q '^6$$' || { echo '❌ seeds missing (esperados 6)'; exit 1; }"
+	@echo "✅ Entorno post-up verificado"
+
 up:
 	@vagrant up defender client
 
@@ -306,6 +361,15 @@ crypto-transport-test:
 	@echo "🧪 Testing crypto-transport..."
 	@vagrant ssh -c "cd /vagrant/crypto-transport/build && ctest --output-on-failure"
 
+# ADR-025: sincroniza MLD_PLUGIN_PUBKEY_HEX en CMakeLists.txt con el keypair activo en VM
+# Ejecutar SIEMPRE tras vagrant destroy+up o provision.sh --reset
+# Sin esto: TEST-INTEG-SIGN falla porque la pubkey compilada != keypair activo
+sync-pubkey:
+	@echo "⚠️  DEPRECATED: sync-pubkey ya no es necesario (DEBT-PUBKEY-RUNTIME-001 CERRADO)"
+	@echo "    plugin-loader lee la pubkey desde /etc/ml-defender/plugins/plugin_signing.pk en cmake-time"
+	@echo "    Ejecuta directamente: make plugin-loader-build"
+	@$(MAKE) plugin-loader-build
+
 plugin-loader-build:
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -349,9 +413,28 @@ test-sign:
 	@echo "TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)..."
 	@vagrant ssh -c 'cd /tmp && g++ -std=c++20 -o test_integ_sign /vagrant/plugins/test-message/test_integ_sign.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_sign && echo TEST-INTEG-SIGN PASSED || echo TEST-INTEG-SIGN FAILED'
 
+deploy-models:
+	@vagrant ssh -c "sudo mkdir -p /etc/ml-defender/models && \
+	  sudo cp /vagrant/ml-detector/models/production/level1/xgboost_cicids2017.ubj \
+	          /etc/ml-defender/models/xgboost_cicids2017.ubj && \
+	  sudo chmod 644 /etc/ml-defender/models/xgboost_cicids2017.ubj"
+	@echo "✅ Modelos ML desplegados en /etc/ml-defender/models/"
+
 sign-plugins:
 	@echo "Firmando plugins (ADR-025 D1)..."
 	@vagrant ssh -c 'sudo bash /vagrant/tools/provision.sh sign'
+
+test-integ-xgboost-1:
+	@echo "TEST-INTEG-XGBOOST-1: XGBoost plugin inference (ADR-026 OBS-2)..."
+	@vagrant ssh -c "cd /tmp && g++ -std=c++20 -o test_integ_xgboost_1 /vagrant/plugins/test-message/test_integ_xgboost_1.cpp -I/usr/local/include -L/usr/local/lib -lplugin_loader -Wl,-rpath,/usr/local/lib && sudo ./test_integ_xgboost_1 && echo TEST-INTEG-XGBOOST-1 PASSED || echo TEST-INTEG-XGBOOST-1 FAILED"
+
+sign-models:
+	@echo "══ Firma de modelos (ADR-026 OBS-1) ══"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level1/xgboost_cicids2017.ubj"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level2/ddos/xgboost_ddos.ubj"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level3/ransomware_xgboost_v2/xgboost_ransomware.ubj"
+	@vagrant ssh -c "sudo bash /vagrant/tools/sign-model.sh /vagrant/ml-detector/models/production/level1/xgboost_cicids2017_v2.ubj"
+	@echo "  ✅ 4 modelo(s) firmado(s) correctamente"
 
 plugin-integ-test:
 	@echo "TEST-INTEG-4a-PLUGIN: variantes A/B/C..."
@@ -385,6 +468,16 @@ plugin-hello-build: plugin-loader-build
 	@echo ""
 	@echo "✅ libplugin_hello.so deployed to /usr/lib/ml-defender/plugins/"
 	@vagrant ssh -c "ls -lh /usr/lib/ml-defender/plugins/"
+
+plugin-test-message-build: plugin-loader-build
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔌 Building Test Message Plugin (ADR-025 integration)    ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@vagrant ssh -c 'cd /vagrant/plugins/test-message && rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4'
+	@vagrant ssh -c "sudo mkdir -p /usr/lib/ml-defender/plugins"
+	@vagrant ssh -c "sudo cp /vagrant/plugins/test-message/build/libplugin_test_message.so /usr/lib/ml-defender/plugins/"
+	@echo "✅ libplugin_test_message.so deployed to /usr/lib/ml-defender/plugins/"
 
 plugin-hello-clean:
 	@echo "🧹 Cleaning hello plugin..."
@@ -739,7 +832,22 @@ pipeline-status:
 	@vagrant ssh -c "tmux has-session -t firewall 2>/dev/null && echo '  ✅ firewall:      RUNNING' || echo '  ❌ firewall:      STOPPED'"
 	@echo "╚════════════════════════════════════════════════════════════╝"
 
-pipeline-build: etcd-server rag-build rag-ingester-build ml-detector sniffer
+install-systemd-units:
+	@echo "═══ Instalando systemd units ML Defender ═══"
+	@vagrant ssh -c "sudo bash /vagrant/etcd-server/config/install-systemd-units.sh"
+
+set-build-profile:
+	@echo "═══ Activando perfil de build: $(PROFILE) ═══"
+	@vagrant ssh -c "sudo bash /vagrant/etcd-server/config/set-build-profile.sh $(PROFILE)"
+
+# Secuencia completa post-build:
+# 1. pipeline-build  → compila todos los componentes y libs
+# 2. install-systemd-units → instala units en /etc/systemd/system/
+# 3. set-build-profile → activa symlinks build-active
+# 4. sign-plugins    → firma Ed25519 (ADR-025)
+# 5. test-provision-1 → CI gate PHASE 3
+# 6. pipeline-start  → arranca los 6 componentes
+pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""

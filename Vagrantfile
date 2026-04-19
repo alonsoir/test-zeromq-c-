@@ -203,7 +203,7 @@ Vagrant.configure("2") do |config|
 
       # Core system packages
       apt-get update
-      apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file
+      apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file tmux xxd
 
       # eBPF toolchain
       apt-get install -y clang llvm bpftool linux-headers-amd64
@@ -273,6 +273,23 @@ LIBBPF_PROFILE
         rm cmake-3.25.0-linux-x86_64.sh
       fi
 
+      # libsodium 1.0.19 (requerido por crypto-transport HKDF-SHA256 — ADR-013)
+      # Debian bookworm provee 1.0.18 — crypto_kdf_hkdf_sha256_* requiere 1.0.19+
+      if [ "$(pkg-config --modversion libsodium 2>/dev/null)" != "1.0.19" ]; then
+        echo "🔐 Installing libsodium 1.0.19 from source..."
+        cd /tmp && rm -rf libsodium-stable libsodium-1.0.19.tar.gz
+        curl -fsSL https://github.com/jedisct1/libsodium/releases/download/1.0.19-RELEASE/libsodium-1.0.19.tar.gz \
+          -o libsodium-1.0.19.tar.gz
+        tar xzf libsodium-1.0.19.tar.gz
+        cd libsodium-stable
+        ./configure --prefix=/usr/local
+        make -j4
+        make install
+        ldconfig
+        echo "✅ libsodium $(pkg-config --modversion libsodium) installed"
+      else
+        echo "✅ libsodium 1.0.19 already installed"
+      fi
       # ONNX Runtime v1.17.1
       if [ ! -f /usr/local/lib/libonnxruntime.so ]; then
         echo "🧠 Installing ONNX Runtime v1.17.1..."
@@ -324,6 +341,58 @@ LIBBPF_PROFILE
       else
         echo "✅ FAISS already installed"
       fi
+      # XGBoost 3.2.0 (C API + Python) - ADR-026 Track 1
+      if [ ! -f /usr/local/lib/libxgboost.so ]; then
+        echo "🔍 Installing XGBoost 3.2.0..."
+        pip3 install xgboost==3.2.0 --break-system-packages --timeout=300 || {
+          echo "⚠️  PyPI inaccesible — fallback apt (versión no garantizada)"
+          # TODO: verificar qué versión provee apt en Debian bookworm
+          # apt show python3-xgboost — pendiente DEBT-XGBOOST-APT-001
+          # Versión apt != 3.2.0 → resultados no reproducibles científicamente
+          apt-get install -y python3-xgboost || true
+          echo "❗ WARNING: xgboost $(python3 -c 'import xgboost; print(xgboost.__version__)' 2>/dev/null || echo 'not available')"
+          echo "❗ Para reproducibilidad científica, usar xgboost==3.2.0"
+        }
+        # Headers C++ desde tag oficial
+        mkdir -p /usr/local/include/xgboost
+        curl -fsSL https://raw.githubusercontent.com/dmlc/xgboost/v3.2.0/include/xgboost/c_api.h \
+          -o /usr/local/include/xgboost/c_api.h
+        curl -fsSL https://raw.githubusercontent.com/dmlc/xgboost/v3.2.0/include/xgboost/base.h \
+          -o /usr/local/include/xgboost/base.h
+        # Librería compartida al path estándar
+        XGBOOST_SO=$(python3 -c "import xgboost.core; print(xgboost.core.find_lib_path()[0])" 2>/dev/null)
+        if [ -n "$XGBOOST_SO" ]; then
+          cp "$XGBOOST_SO" /usr/local/lib/libxgboost.so
+          ldconfig
+          echo "✅ XGBoost installed: $(python3 -c 'import xgboost; print(xgboost.__version__)')"
+          # libgomp bundled en xgboost wheel — symlink para dlopen desde plugins C++
+          ln -sf /usr/local/lib/python3.11/dist-packages/xgboost.libs/libgomp-e985bcbb.so.1.0.0 /usr/local/lib/libgomp-e985bcbb.so.1.0.0
+          ldconfig
+        else
+          echo "❌ libxgboost.so not found after pip + apt"
+          exit 1
+        fi
+      else
+        echo "✅ XGBoost already installed"
+      fi
+
+      # Directorio de plugins ML Defender
+      mkdir -p /usr/lib/ml-defender/plugins
+
+      # plugin_xgboost (ADR-026 Track 1) — build + deploy
+      if [ ! -f /usr/lib/ml-defender/plugins/libplugin_xgboost.so ]; then
+        echo "🔌 Building plugin_xgboost..."
+        cd /vagrant/plugins/xgboost
+        rm -rf build && mkdir -p build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4
+        cp libplugin_xgboost.so /usr/lib/ml-defender/plugins/
+        echo "✅ plugin_xgboost deployed"
+      else
+        echo "✅ plugin_xgboost already deployed"
+      fi
+
+      # plugin_test_message — build gestionado por make pipeline-build (requiere plugin-loader instalado)
+      # NO buildear aquí: plugin-loader headers no disponibles en este punto del provisioning
 
       # etcd-cpp-api
       if [ ! -f /usr/local/lib/libetcd-cpp-api.so ] && [ ! -f /usr/local/lib/libetcd-cpp-api.a ]; then
