@@ -1,0 +1,16 @@
+{
+  "test_set": "Wednesday-workingHours.pcap_ISCX.csv",
+  "wednesday_md5": "bf0dd7e9d991987df4e13ea58a1b409c",
+  "threshold": 0.8211185336112976,
+  "precision": 0.9870340356564019,
+  "recall": 0.024102393617021278,
+  "f1": 0.04705573284088363,
+  "latency_us": 1.9859937000092032,
+  "tp": 6090,
+  "fp": 80,
+  "fn": 246582,
+  "tn": 439951,
+  "gate_precision": false,
+  "gate_recall": false,
+  "gate_latency": true
+}
