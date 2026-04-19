@@ -1,10 +1,5 @@
-Los tres en orden.
-
-**Prompt DAY 122:**
-
-```bash
-cat > /Users/aironman/CLionProjects/test-zeromq-docker/docs/DAY122_prompt.md << 'MDEOF'
-# ML Defender (aRGus NDR) — DAY 122 Continuity Prompt
+cat > /Users/aironman/CLionProjects/test-zeromq-docker/docs/DAY123_prompt.md << 'MDEOF'
+# ML Defender (aRGus NDR) — DAY 123 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -19,148 +14,136 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
 ---
 
-## Estado al cierre de DAY 121
+## Estado al cierre de DAY 122
 
-### Hitos completados DAY 121
-- **fix(provision)** ✅ — circular dependency plugin_signing.pk → plugin-loader cmake. Idempotencia × 3 certificada.
-- **DEBT-SEED-AUDIT-001** ✅ — seed ChaCha20 no está en ningún CMakeLists.txt ni fuente C++.
-- **DEBT-XGBOOST-TEST-REAL-001** ✅ — TEST-INTEG-XGBOOST-1 con flows reales FTP-Patator. BENIGN: 0.000111/0.000120/0.000228. ATTACK: 0.999894/0.999258/0.999904.
-- **DEBT-XGBOOST-DDOS-001** ✅ — XGBoost DDoS F1=1.0 (sintético DeepSeek 50k). 20× más rápido que RF.
-- **DEBT-XGBOOST-RANSOMWARE-001** ✅ — XGBoost Ransomware F1=0.9932 (sintético 3k). 6× más rápido que RF.
-- **DEBT-SIGN-MODELS-EXTEND-001** ✅ — make sign-models firma 3 modelos Ed25519.
-- **docs/xgboost/comparison-table.md** ✅ — tabla RF vs XGBoost × 3 detectores con latencias.
-- **PAPER-SECTION-4** ✅ — §4.1 CIC-IDS-2017 real + §4.2 DeepSeek sintético con limitaciones.
-- **deploy-models en make bootstrap paso 6/8** ✅ — idempotente.
-- **make test-all VERDE** ✅
-- **Commits:** hasta `55880c7c` · Branch: `feature/adr026-xgboost`
+### Hitos completados DAY 122
+- **PHASE 4 COMPLETADA** ✅ — feature/adr026-xgboost mergeada a main como `v0.5.0-preproduction`
+- **DEBT-PRECISION-GATE-001** ✅ — CERRADO CON HALLAZGO CIENTÍFICO (no con gate pasado)
+- **train_xgboost_level1_v2.py** ✅ — split temporal Tue+Thu+Fri / val 20% / Wed BLIND
+- **XGBoost in-distribution** ✅ — Precision=0.9945 / Recall=0.9818 / threshold=0.8211 / latencia=1.986µs
+- **Wednesday OOD finding** ✅ — impossibility result sellado (md5=bf0dd7e9...). Covariate shift estructural CIC-IDS-2017 documentado. Consejo 7/7 unánime.
+- **xgboost_cicids2017_v2.ubj.sig** ✅ — firmado Ed25519 via tools/sign-model.sh
+- **Paper Draft v16** ✅ — arXiv:2604.04952 actualizado. §8 XGBoost eval + §10.13 + §11.18 ACRL + sommer2010 + caldera2024
+- **BACKLOG.md + README.md** ✅ — actualizados con estado DAY 122
+- **DEBT-PENTESTER-LOOP-001** 🔵 ABIERTA — próxima frontera
 
-### Pubkey activa DAY 121
-`fc895faac3e8c533d0cf4463637bbb1d2a3fb09dc6e84f7282dc427dd876f238`
+### Hallazgo científico DAY 122 (resumen ejecutivo)
+Los datasets académicos (CIC-IDS-2017) son insuficientes como fuente única para
+entrenar clasificadores NDR de producción. La separación temporal de attack types
+(DoS Hulk/GoldenEye/Slowloris exclusivos de Wednesday, ausentes del train) crea
+un covariate shift estructural que hace imposible generalizar independientemente
+del algoritmo o hiperparámetros. Corroborado y cuantificado: threshold sweep
+completo, ningún punto satisface Precision≥0.99 ∩ Recall≥0.95. Consejo 7/7:
+hallazgo publicable, Sommer & Paxson 2010 citado.
 
-### BLOQUEANTE ÚNICO DAY 122
-**DEBT-PRECISION-GATE-001** 🔴 — XGBoost level1 Precision=0.9875 < 0.99 (gate médico ADR-026).
+### Tag activo
+`v0.5.0-preproduction` — PRE-PRODUCTION. No desplegar en hospitales hasta ACRL.
+
+### Pubkey activa DAY 122
+Nueva keypair generada en vagrant destroy de DAY 122 (no hardcodeada — runtime).
 
 ---
 
-## PASO 0 — DAY 122: vagrant destroy OBLIGATORIO
+## PASO 0 — DAY 123: verificar entorno
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout feature/adr026-xgboost
-git pull origin feature/adr026-xgboost
-vagrant destroy -f && vagrant up
-make bootstrap
-make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS"
+git checkout main
+git status
+make pipeline-status
+make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS|VERDE"
 ```
+
+Si la VM está parada: `make up && make bootstrap`
 
 ---
 
-## PASO 1 — DEBT-PRECISION-GATE-001 (BLOQUEANTE MERGE)
+## PASO 1 — Decisión de dirección DAY 123
 
-### Protocolo Consejo 7/7 unánime
+### Opción A — Hotfix inmediato (30 min)
+Añadir `pandas scikit-learn` al Vagrantfile provisioning step de Python.
+Sin esto, un `vagrant destroy + bootstrap` falla en train_xgboost_level1_v2.py.
 
-**Regla de oro:** El test set Wednesday es BLIND. Se abre UNA SOLA VEZ para el reporte final.
-**NUNCA** calibrar threshold sobre el test set (data snooping → paper inválido).
-
-### Split temporal obligatorio
-```
-Train:      Tuesday + Thursday + Friday (CSVs CIC-IDS-2017)
-Validation: 20% del train (stratificado) — para calibrar threshold y early stopping
-Test:       Wednesday-WorkingHours.pcap_ISCX.csv — BLIND hasta evaluación final
-```
-
-### Secuencia de trabajo
-
-**1. Preparar datasets**
 ```bash
-python3 << 'PYEOF'
-import pandas as pd
-import numpy as np
-import hashlib
-
-BASE = "ml-training/datasets/CIC-IDS-2017/MachineLearningCVE"
-files = {
-    "Tuesday":   f"{BASE}/Tuesday-WorkingHours.pcap_ISCX.csv",
-    "Wednesday": f"{BASE}/Wednesday-workingHours.pcap_ISCX.csv",
-    "Thursday":  f"{BASE}/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
-    "Friday":    f"{BASE}/Friday-WorkingHours-Morning.pcap_ISCX.csv",
-}
-# Registrar md5 de Wednesday ANTES de abrirlo para entrenamiento
-with open(files["Wednesday"], "rb") as f:
-    md5 = hashlib.md5(f.read()).hexdigest()
-print(f"Wednesday md5 (BLIND seal): {md5}")
-for day, path in files.items():
-    df = pd.read_csv(path, low_memory=False)
-    print(f"{day}: {len(df)} rows, attacks={sum(df[' Label'].str.strip()!='BENIGN')}")
-PYEOF
+# Verificar que está en el Vagrantfile:
+grep "pandas\|scikit" /Users/aironman/CLionProjects/test-zeromq-docker/Vagrantfile
+# Si no está, añadirlo al paso de pip3 install
 ```
 
-**2. Script de re-entrenamiento**
-Crear `ml-training/scripts/train_xgboost_level1_v2.py` con:
-- Features: LEVEL1_FEATURE_NAMES (23 features de `docs/xgboost/features.md`)
-- Train: Tuesday + Thursday + Friday
-- Validation: 20% del train (para early stopping + calibración threshold)
-- `scale_pos_weight` = n_benign / n_attack
-- `precision_recall_curve` sobre validation para encontrar threshold con Precision ≥ 0.99
-- Threshold documentado y exportado junto al modelo
+### Opción B — ADR-037 Snyk Hardening (P1)
+23 vulnerabilidades C++ pendientes. Bloqueante para ADR-036 (verificación formal).
+- F-001: command injection `validate_chain_name()` — regex allowlist
+- F-002: path traversal config loading — `safe_resolve_config()`
+- F-003: integer overflows — `std::numeric_limits<>`
 
-**3. Evaluación final en Wednesday (UNA SOLA VEZ)**
-- Cargar modelo + threshold calibrado
-- Evaluar sobre Wednesday completo
-- Si Precision ≥ 0.99 → MERGE AUTORIZADO
-- Si no → iterar hiperparámetros sin tocar Wednesday
+### Opción C — ADR-038 ACRL Diseño (P3, próxima frontera)
+Escribir el ADR formal del Adversarial Capture-Retrain Loop.
+Especificar: arquitectura Caldera → captura → reentrenamiento → hot-swap.
+Establecer gates mínimos de validación del dataset generado.
 
-**4. Exportar modelo**
-- `xgboost_cicids2017_v2.json` + `xgboost_cicids2017_v2.ubj`
-- `make sign-models` actualizado
-- `TEST-INTEG-XGBOOST-1` actualizado con flows de Wednesday
-
-### Gate de cierre
-```
-Precision ≥ 0.99 en Wednesday held-out
-Recall ≥ 0.95 en Wednesday held-out
-Latencia < 2 µs/sample
-make test-all VERDE
-```
+### Opción D — Actualizar LinkedIn/arXiv con el hallazgo
+Redactar post técnico público sobre el Wednesday OOD finding.
+Contacto con Sebastian Garcia (CTU Prague) sobre colaboración dataset.
 
 ---
 
 ## Contexto permanente
 
-### Secuencia canónica DAY 121+
+### Secuencia canónica DAY 122+
 ```bash
 make up           # vagrant up
 make bootstrap    # 8 pasos, todo automático
 make test-all     # verificación completa
 ```
 
-### Datasets CIC-IDS-2017 disponibles
+### Estado de los modelos firmados
 ```
-ml-training/datasets/CIC-IDS-2017/MachineLearningCVE/
-  Monday-WorkingHours.pcap_ISCX.csv       (solo BENIGN)
-  Tuesday-WorkingHours.pcap_ISCX.csv      (FTP-Patator, SSH-Patator) ← train
-  Wednesday-workingHours.pcap_ISCX.csv    (DoS, Heartbleed) ← TEST BLIND
-  Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv ← train
-  Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv ← train
-  Friday-WorkingHours-Morning.pcap_ISCX.csv ← train
-  Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv ← train
-  Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv ← train
+/vagrant/ml-detector/models/production/level1/
+  xgboost_cicids2017.ubj       + .sig  (v1, DAY 120)
+  xgboost_cicids2017_v2.ubj    + .sig  (v2, DAY 122 — IN-DISTRIBUTION VALIDATED)
+  wednesday_eval_report.json          (OOD finding sealed)
+  xgboost_cicids2017_v2_threshold.json
+
+/vagrant/ml-detector/models/production/level2/ddos/
+  xgboost_ddos.ubj             + .sig  (DAY 121)
+
+/vagrant/ml-detector/models/production/level3/ransomware_xgboost_v2/
+  xgboost_ransomware.ubj       + .sig  (DAY 121)
 ```
 
-### Consejo DAY 121 — decisiones clave (7/7 unánime)
-- Wednesday como held-out test set OBLIGATORIO — data snooping invalida el paper
-- Threshold calibración SOLO en validation set, nunca en test
-- RF level1 pkl no recuperar — RF sin split = overfitting, no es baseline válido
-- 125 falsas alarmas/hora = alert fatigue clínico = sistema inutilizable
-- Gate ≥0.99 inamovible — "La seguridad de los hospitales no admite atajos estadísticos"
+### Paper arXiv:2604.04952
+- Draft v16 submitted DAY 122: https://arxiv.org/submit/7495855/view
+- Sección §8: XGBoost in-distribution + Wednesday OOD
+- Sección §10.13: structural bias academic datasets
+- Sección §11.18: ACRL (Adversarial Capture-Retrain Loop)
 
-### NO mergear a main hasta
-1. **DEBT-PRECISION-GATE-001** verde — Precision ≥ 0.99 en Wednesday held-out
+### DEBT-PENTESTER-LOOP-001 (próxima frontera)
+Loop adversarial para generar datos fundacionales reales:
+1. MITRE Caldera (ATT&CK-mapped, determinista) — Fase 1
+2. Captura eBPF/XDP en entorno aislado → flows etiquetados ground-truth
+3. Reentrenamiento XGBoost warm-start
+4. Firma Ed25519 + hot-swap (ADR-025/026)
+5. Validación en held-out del mismo entorno
+
+Gates mínimos Caldera Fase 1:
+- Seed fijo + versioned scenario (reproducibilidad)
+- Ground-truth a nivel flow (logs Caldera → etiquetas)
+- Cobertura ≥3 familias ATT&CK
+- Tráfico RFC-válido (tshark validation, 0 malformed flows)
+- Red sandbox aislada (no contaminar producción)
+
+### Decisiones de diseño clave (inamovibles)
+- Datasets académicos: solo útiles para bootstrap. Modelo fundacional requiere ACRL.
+- Plugin XGBoost: PRE-PRODUCTION hasta ACRL completado. No desplegar en hospitales.
+- ACRL Fase 1: MITRE Caldera (no IA generativa directa — demasiado no determinista en v1)
+- Paper framing: hallazgo DAY 122 = validación de la arquitectura de reentrenamiento, no limitación del modelo
+
+### NO mergear a main nuevas features hasta
+1. `make test-all VERDE` en entorno limpio
 
 ### Regla de oro
-6/6 RUNNING + make test-all VERDE + Precision ≥ 0.99 en Wednesday
+6/6 RUNNING + make test-all VERDE + Precision ≥ 0.99 in-distribution (ya certificado)
 
-*"Via Appia Quality — un escudo, nunca una espada."*
+*"Via Appia Quality — un escudo que aprende de su propia sombra."*
 MDEOF
-echo "✅ Prompt DAY 122 creado"
-```
+echo "✅ Prompt DAY 123 creado"

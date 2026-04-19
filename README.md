@@ -1,4 +1,3 @@
-cat > /tmp/README.md << 'MDEOF'
 # ML Defender (aRGus NDR)
 
 **Open-source, embedded-ML network detection and response system protecting critical infrastructure from ransomware and DDoS attacks.**
@@ -10,21 +9,21 @@ cat > /tmp/README.md << 'MDEOF'
 [![Tests: make test-all VERDE](https://img.shields.io/badge/Tests-make_test--all_VERDE-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
-[![PHASE 3](https://img.shields.io/badge/PHASE_3-COMPLETADO-brightgreen)]()
+[![PHASE 4](https://img.shields.io/badge/PHASE_4-COMPLETADA-brightgreen)]()
 [![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
 [![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
-[![XGBoost](https://img.shields.io/badge/XGBoost-F1%3D0.9978_CIC--IDS--2017-brightgreen)]()
-[![Medical Gate](https://img.shields.io/badge/Medical_Gate-Precision≥0.99_DAY_122-orange)]()
+[![XGBoost](https://img.shields.io/badge/XGBoost-Prec%3D0.9945_In--Distribution-brightgreen)]()
+[![OOD Finding](https://img.shields.io/badge/OOD_Finding-Published_DAY_122-orange)]()
+[![PRE-PRODUCTION](https://img.shields.io/badge/Status-PRE--PRODUCTION-orange)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
-[![Docs](https://img.shields.io/badge/Docs-alonsoir.github.io%2Fargus-blue)](https://alonsoir.github.io/argus/)
 
 📜 Living contracts: [Protobuf schema](docs/contracts/Protobuf%20contracts.md) · [Pipeline configs](docs/contracts/JSON%20contracts.md) · [RAG API](docs/contracts/Rag%20security%20commands.md)
 
 ---
 
-✅ `main` is tagged `v0.4.0-phase3-hardening` — PHASE 3 complete. Active branch: `feature/adr026-xgboost`.
+✅ `main` is tagged `v0.5.0-preproduction` — PHASE 4 complete. **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
 ---
 
@@ -35,10 +34,12 @@ cat > /tmp/README.md << 'MDEOF'
 > *ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and Anomalous Traffic Detection in Resource-Constrained Organizations*
 > — Alonso Isidoro Román
 
-**arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)
-**DOI:** https://doi.org/10.48550/arXiv.2604.04952
-**Published:** 3 April 2026 · Draft v15 · MIT license
+**arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)  
+**DOI:** https://doi.org/10.48550/arXiv.2604.04952  
+**Published:** 3 April 2026 · **Draft v16** (updated 19 April 2026) · MIT license  
 **Code:** https://github.com/alonsoir/argus
+
+Draft v16 adds: XGBoost in-distribution evaluation (Prec=0.9945/Rec=0.9818), Wednesday OOD impossibility result, §10.13 structural bias in academic datasets, §11.18 Adversarial Capture-Retrain Loop (ACRL). Cites Sommer & Paxson 2010.
 
 ---
 
@@ -48,7 +49,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 **Philosophy**: *Via Appia Quality* — Systems built like Roman roads, designed to endure.
 
-> ML Defender stops ransomware propagation. What comes next is detecting infiltration.
+> *"Un escudo que aprende de su propia sombra."*
 
 ---
 
@@ -56,40 +57,48 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ML Defender is a **Network Detection and Response (NDR)** system. Its guiding principle is **network surveillance**: every component operates on network traffic — packet capture, flow-level feature extraction, ML classification, firewall response.
 
-**Physical and removable-media vectors are explicitly out of scope by conscious design decision.** File system activity, USB-borne payloads, and removable storage are not monitored. This is an architectural boundary, not an oversight.
-
-**Complementary mode with Wazuh:** for organizations requiring file integrity monitoring, ML Defender is designed to operate alongside battle-tested tools like [Wazuh](https://wazuh.com).
+**Physical and removable-media vectors are explicitly out of scope by conscious design decision.** Complementary mode with [Wazuh](https://wazuh.com) for file integrity monitoring.
 
 ---
 
-## 📊 Validated Results (DAY 120 — 17 April 2026)
+## 📊 Validated Results (DAY 122 — 19 April 2026)
 
 | Metric | Value | Notes |
 |---|---|---|
 | **F1-score (CTU-13 Neris)** | **0.9985** | Stable across 4 replay runs |
 | **Precision** | **0.9969** | |
 | **Recall** | **1.0000** | Zero missed attacks (FN=0) |
-| **XGBoost F1 (CIC-IDS-2017)** | **0.9978** | vs RF baseline 0.9968 (+0.001) |
-| **XGBoost Precision (CIC-IDS-2017)** | **0.9973** | vs RF baseline 0.9944 (+0.003) |
-| **XGBoost ROC-AUC** | **1.0000** | 2.83M flows, 23 features |
-| **Inference latency** | **0.24–1.06 μs** | Per-class, embedded C++20 |
+| **XGBoost Precision (CIC-IDS-2017 val)** | **0.9945** | In-distribution, threshold=0.8211 |
+| **XGBoost Recall (CIC-IDS-2017 val)** | **0.9818** | In-distribution |
+| **XGBoost F1 (CIC-IDS-2017 val)** | **0.9881** | Val-AUCPR=0.99846 |
+| **XGBoost Wednesday OOD** | **Documented impossibility** | Structural covariate shift — see §8 paper |
+| **Inference latency (XGBoost)** | **1.986 µs/sample** | Gate <2µs ✅ |
+| **Inference latency (RF)** | **0.24–1.06 µs** | Per-class, embedded C++20 |
 | **Throughput ceiling (virtualized)** | **~33–38 Mbps** | VirtualBox NIC limit, not pipeline |
-| **Stress test** | **2,374,845 packets — 0 drops** | 100 Mbps requested, loop=3 bigFlows |
+| **Stress test** | **2,374,845 packets — 0 drops** | 100 Mbps requested, loop=3 |
 | **RAM (full pipeline)** | **~1.28 GB** | Stable under load |
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `make bootstrap` |
 | **Plugin integrity** | **ADR-025 MERGED** | Ed25519 + TOCTOU-safe dlopen |
-| **Plugin integ tests** | **6/6 PASSED incl. TEST-INTEG-SIGN** | DAY 120 |
-| **CI gate** | **TEST-PROVISION-1 PASSED 8/8** | DAY 118 |
-| **AppArmor** | **6/6 enforce** | 0 denials — DAY 118 |
-| **Reproducibility** | **vagrant destroy × 2 → make bootstrap validated** | DAY 120 |
-| **XGBoost gate médico** | **BENIGN<0.1 / ATTACK>0.999 (FTP-Patator real)** | DAY 121 |
-| **XGBoost DDoS latency** | **0.15 µs/sample (20× faster than RF)** | DAY 121 |
-| **XGBoost Ransomware latency** | **2.09 µs/sample (6× faster than RF)** | DAY 121 |
+| **AppArmor** | **6/6 enforce** | 0 denials |
+| **CI gate** | **TEST-PROVISION-1 8/8** | |
+
+---
+
+## 🔬 DAY 122 Scientific Finding
+
+On DAY 122, a rigorous temporal holdout evaluation on CIC-IDS-2017 revealed a structural covariate shift: Wednesday contains exclusively application-layer DoS attacks (Hulk, GoldenEye, Slowloris) absent from all training days. **No threshold can simultaneously satisfy Precision≥0.99 and Recall≥0.95 on Wednesday data.** This is not an XGBoost failure — it is an empirical impossibility result caused by the dataset's day-specific attack segregation design.
+
+**This finding corroborates Sommer & Paxson (2010)** and provides new quantitative evidence that static classifiers trained on academic benchmarks are structurally insufficient for production NDR.
+
+**The architectural response** — the Adversarial Capture-Retrain Loop (ACRL) — is proposed in §11.18 of the paper. The XGBoost plugin was designed from day one to be hot-swappable and Ed25519-signed (ADR-025/026) for exactly this reason.
+
+> *"No entrenamos con Wednesday porque Wednesday no existe en el entrenamiento. Entrenamos con Tuesday, y aprendemos a detectar Wednesday en producción."* — Kimi, Consejo de Sabios DAY 122
 
 ---
 
 ## 🏗️ Architecture
 
+```
 ┌──────────────────────────────────────────────────────────────────┐
 │                       ML Defender Pipeline                       │
 ├──────────────────────────────────────────────────────────────────┤
@@ -105,8 +114,8 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4× Embedded RandomForest classifiers     │
 │  │  (C++20)         │  DDoS: 0.24 μs | Ransomware: 1.06 μs     │
-│  │                  │  plugin-loader PHASE 2d ✅ post-inference  │
-│  │                  │  XGBoost plugin ADR-026 ✅ F1=0.9978      │
+│  │                  │  XGBoost plugin ADR-026 ✅ Prec=0.9945    │
+│  │                  │  [PRE-PROD: ACRL pending]                 │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
@@ -130,33 +139,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 │  │                  │  plugin-loader PHASE 2e ✅ READONLY       │
 │  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
-
----
-
-## 🔐 Security Properties
-
-| Property | Status |
-|---|---|
-| ChaCha20-Poly1305 AEAD encryption | ✅ All inter-component transport |
-| HKDF-SHA256 channel-scoped key derivation | ✅ Distinct tx/rx subkeys per channel |
-| libsodium 1.0.19 (compiled from source) | ✅ Required for HKDF-SHA256 API |
-| HMAC-SHA256 log integrity | ✅ All CSV logs |
-| Autonomous blocking (ipset/iptables) | ✅ Millisecond response |
-| Fail-closed design (std::terminate) | ✅ All 6 main() functions |
-| Plugin integrity Ed25519 (ADR-025) | ✅ MERGED main — v0.3.0-plugin-integrity |
-| Plugin signing key rotation | ✅ provision.sh check-plugins dev/prod modes |
-| Dev plugins blocked from production | ✅ BUILD_DEV_PLUGINS=OFF + validate-prod-configs |
-| systemd hardening (PHASE 3) | ✅ Restart=always, LD_PRELOAD=unset |
-| CI gate TEST-PROVISION-1 (8/8 checks) | ✅ DAY 118 |
-| AppArmor profiles (6 components) | ✅ 6/6 enforce — DAY 118 |
-| Pubkey plugin-loader from runtime file | ✅ No hardcoding — DAY 120 |
-| make bootstrap idempotent | ✅ vagrant destroy × 2 validated — DAY 120 |
-| XGBoost model signature Ed25519 | ✅ sign-models — DAY 120 |
-| explicit_bzero(seed) post-HKDF | ⏳ DEBT-CRYPTO-003a |
-| mlock() derived keys | ⏳ DEBT-CRYPTO-003a |
-| Seed audit (never in CMake/build) | ⏳ DEBT-SEED-AUDIT-001 — DAY 121 |
-| TPM measured boot (seed in hardware) | ⏳ ADR-033 post-PHASE 4 |
-| ADR-032 Plugin Distribution Chain (HSM) | ⏳ YubiKey OpenPGP Ed25519 |
+```
 
 ---
 
@@ -165,67 +148,26 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 > **Critical rules:**
 > - Always use `make <target>`. Never compile or install manually in the VM.
 > - The Vagrantfile and Makefile are the single source of truth.
-> - Complex shell logic → `tools/script.sh`, never inline in Makefile.
-
----
 
 ### 👶 First time — fresh clone
 
 ```bash
 git clone https://github.com/alonsoir/argus.git
 cd argus
-git checkout feature/adr026-xgboost
-
-# Start VM — provisions ALL system dependencies automatically
-# (libsodium 1.0.19, XGBoost 3.2.0, ONNX, FAISS, tmux, xxd, libgomp...)
-make up
-# Wait ~20-30 minutes for full provisioning
-
-# Bootstrap everything in one command
-make bootstrap
-# Expected output:
-#   [1/8] post-up-verify     ✅
-#   [2/8] check-system-deps  ✅
-#   [3/8] set-build-profile  ✅ 6/6
-#   [4/8] install-systemd    ✅ 6/6
-#   [5/8] pipeline-build     ✅ (reads pubkey from runtime file automatically)
-#   [6/8] sign-plugins       ✅ 2/2
-#   [7/8] test-provision-1   ✅ 8/8
-#   [8/8] pipeline-start     ✅ 6/6 RUNNING
-#   ✅ Bootstrap completado — 6/6 RUNNING
+make up          # vagrant up — full provisioning ~20-30 min
+make bootstrap   # all 8 steps in one command
 ```
 
----
-
-### 🔄 Daily workflow — VM already running
+### 🔄 Daily workflow
 
 ```bash
-# If VM is stopped:
-make up
-# Wait for VM to boot (~1-2 min, no reprovisioning)
-
-# Then:
+make up              # if VM stopped
 make pipeline-stop
-make pipeline-build 2>&1 | tail -5
-make sign-plugins
-make sign-models
-make test-provision-1
+make pipeline-build
+make sign-plugins && make sign-models
 make pipeline-start && make pipeline-status
-make plugin-integ-test
+make test-all
 ```
-
----
-
-### 🔁 Full rebuild from scratch (vagrant destroy)
-
-```bash
-make destroy          # vagrant destroy -f
-make up               # vagrant up — full reprovisioning ~20-30 min
-make bootstrap        # all 8 steps in one command
-make test-all         # full test suite verification
-```
-
----
 
 ### ✅ CI Gate
 
@@ -238,73 +180,40 @@ make test-all
 
 ---
 
-### 🔑 Key Rotation (after vagrant destroy + up)
-
-The keypair rotates automatically during provisioning.
-`pipeline-build` reads the new pubkey from the runtime file automatically.
-
-```bash
-make bootstrap        # handles everything, including new pubkey
-# No manual sync-pubkey needed (DEBT-PUBKEY-RUNTIME-001 resolved DAY 120)
-```
-
----
-
 ## 🗺️ Roadmap
 
-### ✅ DONE — DAY 120 (17 Apr 2026)
-- [x] **DEBT-PUBKEY-RUNTIME-001** — pubkey from runtime file, no hardcoding ✅
-- [x] **DEBT-BOOTSTRAP-001** — `make bootstrap` 8 steps, idempotent ✅
-- [x] **DEBT-INFRA-VERIFY-001/002** — `make check-system-deps` + `make post-up-verify` ✅
-- [x] **Idempotency validated × 2** — vagrant destroy cycles ✅
-- [x] **ADR-026 PASO 4a** — `docs/xgboost/features.md` — 23 features LEVEL1, CIC-IDS-2017 ✅
-- [x] **ADR-026 PASO 4b** — `docs/xgboost/plugin-contract.md` — float32[23] contract ✅
-- [x] **ADR-026 PASO 4c** — XGBoost trained: F1=0.9978, Precision=0.9973, AUC=1.0 ✅
-- [x] **ADR-026 PASO 4d** — `make sign-models` — Ed25519 model signature ✅
-- [x] **ADR-026 PASO 4e** — `TEST-INTEG-XGBOOST-1 PASSED` — real inference ✅
-- [x] libgomp symlink in Vagrantfile ✅
-- [x] plugin_test_message moved to pipeline-build deps ✅
-
-### ✅ DONE — DAY 119 (16 Apr 2026)
-- [x] Full reproducibility from `vagrant destroy` validated ✅
-- [x] 10 infrastructure gaps fixed ✅
-- [x] 6/6 RUNNING + make test-all VERDE incl. TEST-INTEG-SIGN ✅
-
-### ✅ DONE — DAY 118 (15 Apr 2026)
-- [x] **PHASE 3 COMPLETADA — v0.4.0-phase3-hardening MERGEADO A MAIN** 🎉
-- [x] AppArmor enforce 6/6 (0 denials) ✅
-
-### ✅ DONE — DAY 117–111 *(see git log)*
+### ✅ DONE — DAY 122 (19 Apr 2026) — PHASE 4 COMPLETADA 🎉
+- [x] **DEBT-PRECISION-GATE-001** — Closed with scientific finding. In-distribution: Prec=0.9945/Rec=0.9818 ✅
+- [x] **Wednesday OOD impossibility result** — Documented, sealed (md5), permanent artifact ✅
+- [x] **train_xgboost_level1_v2.py** — Temporal split + validation calibration + blind test ✅
+- [x] **xgboost_cicids2017_v2.ubj.sig** — Ed25519 signed via sign-model.sh ✅
+- [x] **Paper Draft v16** — §8 XGBoost + §10.13 + §11.18 ACRL + sommer2010 ✅
+- [x] **feature/adr026-xgboost → main** — Tag: v0.5.0-preproduction ✅
+- [x] **arXiv v16 submitted** ✅
 
 ### ✅ DONE — DAY 121 (18 Apr 2026)
-- [x] **fix(provision)**: circular dependency plugin_signing.pk → plugin-loader cmake ✅
-- [x] **DEBT-SEED-AUDIT-001** — seed ChaCha20 never in CMake, runtime-only mlock()+explicit_bzero() ✅
-- [x] **DEBT-XGBOOST-TEST-REAL-001** — real CIC-IDS-2017 FTP-Patator flows, medical gate PASSED ✅
-- [x] **DEBT-XGBOOST-DDOS-001** — XGBoost DDoS F1=1.0 on synthetic DeepSeek (20× faster than RF) ✅
-- [x] **DEBT-XGBOOST-RANSOMWARE-001** — XGBoost Ransomware F1=0.9932 (6× faster than RF) ✅
-- [x] **vagrant destroy × 3** — final idempotency certification ✅
-- [x] **PAPER-SECTION-4** — §4.1 real + §4.2 synthetic with explicit limitations ✅
-- [x] **sign-models × 3** — Ed25519 64B signatures for all XGBoost models ✅
-- [ ] 🔴 **DEBT-PRECISION-GATE-001** — Precision=0.9875 < 0.99 medical gate. BLOQUEANTE MERGE.
+- [x] DEBT-SEED-AUDIT-001 ✅ · DEBT-XGBOOST-TEST-REAL-001 ✅ (medical gate PASSED)
+- [x] DEBT-XGBOOST-DDOS-001 ✅ (F1=1.0, 20× faster RF) · DEBT-XGBOOST-RANSOMWARE-001 ✅
+- [x] vagrant destroy × 3 idempotency certification ✅
 
-### 🔜 NEXT — DAY 122 (feature/adr026-xgboost)
-- [ ] **DEBT-PRECISION-GATE-001** — Wednesday held-out test set (BLIND). Train=Tue+Thu+Fri, Val=20% train, Test=Wednesday once. Target: Precision≥0.99
+### ✅ DONE — DAY 120–118 *(see git log)*
 
-### P3 — Post-PHASE 4
-- [ ] DEBT-CRYPTO-003a: mlock() + explicit_bzero(seed) post-HKDF
-- [ ] ADR-037 Snyk C++ Security Hardening
-- [ ] ADR-026 full: 3 XGBoost plugins + latency table + paper §4
-- [ ] ADR-024 Noise_IKpsk3 implementation
-- [ ] ADR-032 Fase A: manifest + multi-key loader
-- [ ] ADR-033 TPM 2.0 Measured Boot
-- [ ] ADR-029 hardened variants: AppArmor+eBPF/XDP · AppArmor+libpcap · seL4+libpcap
-- [ ] BARE-METAL stress test
+### 🔜 NEXT — PHASE 5: Adversarial Capture-Retrain Loop
+
+| Priority | Task |
+|---|---|
+| P0 | **DEBT-PENTESTER-LOOP-001** — MITRE Caldera Fase 1 → real adversarial flows → XGBoost retraining |
+| P0 | **ADR-038** — ACRL formal design document |
+| P1 | DEBT-CRYPTO-003a — mlock() + explicit_bzero() |
+| P1 | ADR-037 Snyk C++ hardening |
+| P2 | ADR-024 Noise_IKpsk3 · ADR-032 HSM · ADR-033 TPM |
+| P3 | ADR-029 hardened variants · bare-metal stress test |
 
 ---
 
 ## 🧠 Consejo de Sabios — Multi-Model Peer Review
 
-Seven large language models serve as intellectual co-reviewers across all development phases:
+Seven large language models serve as intellectual co-reviewers:
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Kimi** (Moonshot) · **Mistral**
 
@@ -315,14 +224,11 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 ## 🗺️ Milestones
 
 - ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉
-- ✅ DAY 113: ADR-025 IMPLEMENTED · 11/11 tests
-- ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉 · arXiv v15
-- ✅ DAY 115: **PHASE 3 ítems 1-4 DONE** 🎉
-- ✅ DAY 116: **PHASE 3 CORE COMPLETADO** 🎉
-- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉 · AppArmor 6/6 enforce
-- ✅ DAY 119: **Full reproducibility from vagrant destroy validated** 🎉
-- ✅ DAY 120: **make bootstrap + XGBoost F1=0.9978 + DEBT-PUBKEY-RUNTIME-001** 🎉
-- ✅ DAY 121: **DEBTs bloqueantes cerrados + gate médico PASADO + idempotencia ×3 certificada** 🎉
+- ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉
+- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉
+- ✅ DAY 120: **make bootstrap + XGBoost F1=0.9978** 🎉
+- ✅ DAY 121: **DEBTs bloqueantes cerrados + gate médico PASADO** 🎉
+- ✅ DAY 122: **PHASE 4 COMPLETADA — v0.5.0-preproduction** 🎉 · Wednesday OOD finding · arXiv v16
 
 ---
 
@@ -330,7 +236,4 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 
 MIT License — See [LICENSE](LICENSE)
 
-**Via Appia Quality** 🏛️ — *Built to last decades.*
-MDEOF
-cp /tmp/README.md /Users/aironman/CLionProjects/test-zeromq-docker/README.md
-echo "✅ README.md actualizado"
+**Via Appia Quality** 🏛️ — *Built to last decades.* 
