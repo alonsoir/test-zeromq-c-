@@ -376,6 +376,11 @@ LIBBPF_PROFILE
         echo "✅ XGBoost already installed"
       fi
 
+      # Dependencias Python para entrenamiento ML (ADR-026, train_xgboost_level1_v2.py)
+      pip3 install pandas scikit-learn --break-system-packages --timeout=300 || {
+        echo "⚠️  pandas/scikit-learn pip failed — intentando apt fallback"
+        apt-get install -y python3-pandas python3-sklearn || true
+      }
       # Directorio de plugins ML Defender
       mkdir -p /usr/lib/ml-defender/plugins
 
