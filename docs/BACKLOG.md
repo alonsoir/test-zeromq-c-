@@ -25,6 +25,30 @@
 - **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
 
 ---
+## CERRADO DAY 123
+### DEBT-PANDAS-001 — pandas scikit-learn en Vagrantfile
+- **Status:** ✅ CERRADO DAY 123 (commit e88e4bf8)
+- **Fix:** pip3 install pandas scikit-learn añadido al Vagrantfile
+  post-bloque xgboost, incondicional, con fallback apt.
+- **Test de cierre:** vagrant destroy + bootstrap sin fallos en
+  train_xgboost_level1_v2.py
+
+## ABIERTO — ADR-037
+
+### ADR-037 — Static Analysis Security Hardening (safe_path)
+- **Status:** 🔵 APROBADO por Consejo 7/7 — pendiente implementación
+- **Branch:** feature/adr037-snyk-hardening (por crear)
+- **Bloqueante para:** ADR-036 (Formal Verification Baseline)
+- **Scope:**
+  - contrib/safe-path/ header-only (safe_path::resolve, resolve_writable, resolve_seed)
+  - 5 findings producción cerrados
+  - F17 integer overflow cerrado
+  - 9 findings contrib/tools cerrados
+  - 2 FP inotify documentados
+- **Gate de cierre:** segunda pasada Snyk con 0 findings producción
+  + make test-all VERDE
+- **Tag destino:** v0.5.1-hardened
+- **Estimación:** DAY 124
 
 ## ✅ COMPLETADO
 

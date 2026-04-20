@@ -25,6 +25,35 @@
 
 ✅ `main` is tagged `v0.5.0-preproduction` — PHASE 4 complete. **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
+## Estado actual — DAY 123 (2026-04-20)
+
+**Tag activo:** `v0.5.0-preproduction`
+
+### Pipeline
+- 6/6 componentes RUNNING
+- make test-all: ALL TESTS PASSED
+
+### Hitos recientes
+- **DAY 122:** PHASE 4 completada. XGBoost in-distribution validado
+  (Precision=0.9945, Recall=0.9818). Wednesday OOD finding sellado.
+  Paper Draft v16 (arXiv:2604.04952).
+- **DAY 123:** ADR-037 aprobado por Consejo 7/7. safe_path utility
+  diseñada (header-only, C++20, cero dependencias externas).
+  DEBT-PANDAS-001 cerrado.
+
+### En progreso
+- **ADR-037** — Static Analysis Security Hardening (DAY 124)
+  Branch: feature/adr037-snyk-hardening
+
+### Próxima frontera
+- **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture →
+  XGBoost retrain → Ed25519 sign → hot-swap
+
+### ⚠️ NO desplegar en producción hasta
+- ADR-037 CERRADO (safe_path hardening)
+- ADR-036 CERRADO (Formal Verification Baseline)
+- DEBT-PENTESTER-LOOP-001 completado (datos reales ACRL)
+
 ---
 
 ## 📄 Preprint
