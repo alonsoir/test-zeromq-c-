@@ -144,6 +144,8 @@ ml-training/scripts/*$py.class
 
 # Test executables
 **/test_*
+!libs/seed-client/tests/test_seed_client.cpp
+!libs/seed-client/tests/test_perms_seed.cpp
 **/*_test
 **/*_tests
 
