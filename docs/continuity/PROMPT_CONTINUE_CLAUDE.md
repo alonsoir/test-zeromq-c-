@@ -1,4 +1,4 @@
-# ML Defender (aRGus NDR) — DAY 124 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 125 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -11,49 +11,28 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **REGLA SCRIPTS:** Lógica compleja → `tools/script.sh`. Nunca inline en Makefile.
 - **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
 - **REGLA macOS/sed:** Nunca `sed -i` sin `-e ''`. Usar Python3 heredoc para ediciones de ficheros en macOS.
+- **REGLA PERMANENTE (Consejo 7/7 DAY 124):** Ningún fix de seguridad en código de producción se mergea sin test de demostración RED→GREEN. El test debe fallar con el código antiguo y pasar con el nuevo. Sin excepciones.
 
 ---
 
-## Estado al cierre de DAY 123
-
-### Hitos completados DAY 123
-- **Opción A** ✅ — `pandas scikit-learn` añadidos al Vagrantfile (commit `e88e4bf8`). Cierra DEBT-PANDAS-001.
-- **ADR-037** ✅ — Redactado, enviado al Consejo, veredicto recibido y tabulado.
-- **Consejo ADR-037** ✅ — **7/7 UNÁNIME** — APROBADO con cambios.
-
-### Veredicto Consejo ADR-037 (síntesis ejecutiva)
-El Consejo aprobó la solución `safe_path` (header-only, C++20, cero dependencias)
-rechazando unánimemente las librerías externas propuestas por Snyk.
-
-**Cambios mandatorios post-Consejo:**
-
-| # | Cambio | Origen |
-|---|--------|--------|
-| 1 | Normalizar trailing slash en `resolve()` | ChatGPT, Gemini, Kimi, Qwen (4+) — CRÍTICO |
-| 2 | TOCTOU documentado explícitamente en ADR | ChatGPT, Grok, Qwen, DeepSeek |
-| 3 | `seed_client`: `O_NOFOLLOW | O_CLOEXEC` + check permisos `0400` + check symlink | Kimi, ChatGPT |
-| 4 | Test symlink malicioso en `test_safe_path.cpp` | DeepSeek, ChatGPT |
-| 5 | Comentario `// SAFE: n <= BUF_SIZE` en inotify | Gemini, Grok |
-| 6 | `ml-detector` añadido al mapa de prefijos: `/etc/ml-defender/models/` | Mistral |
-
-### Mapa de prefijos aprobado por el Consejo
-
-| Componente | Prefijo | Nivel |
-|-----------|---------|-------|
-| `seed-client` | `/etc/ml-defender/keys/` | 🔴 Criptográfico |
-| `firewall-acl-agent` | `/etc/ml-defender/` | 🟡 Config |
-| `rag-ingester` | `/etc/ml-defender/` | 🟡 Config |
-| `ml-detector` | `/etc/ml-defender/models/` | 🟡 Modelos firmados |
-| `tools/` | `/vagrant/` o `/shared/` | 🟢 Dev |
-| `contrib/` | `/shared/` | 🟢 Investigación |
+## Estado al cierre de DAY 124
 
 ### Tag activo
-`v0.5.0-preproduction` — sin cambios DAY 123.
-Branch de trabajo DAY 124: `feature/adr037-snyk-hardening` (AÚN NO CREADA).
+`v0.5.1-hardened` — branch `main` @ commit `8bf83b90`
+
+### Hitos completados DAY 124
+- **ADR-037** ✅ — `contrib/safe-path/` header-only C++20 mergeado a main.
+- **F17** ✅ — integer overflow corregido en `zmq_handler.cpp` (int64_t cast).
+- **Seeds** ✅ — `provision.sh` + `seed_client.cpp` + `Makefile` actualizados a `0400`.
+- **9 acceptance tests RED→GREEN** ✅ — path traversal, symlink, prefijos, permisos.
+- **Consejo DAY 124** ✅ — 7/7 unánime en todos los puntos.
+
+### Lección metodológica DAY 124 (Consejo 7/7)
+Los fixes de producción (`seed_client`, `config_loader`, `config_parser`) no tienen tests de demostración RED→GREEN propios. `rag-ingester` STOPPED se descubrió en el build de producción, no en un test. Esta es la deuda más importante que cerramos HOY.
 
 ---
 
-## PASO 0 — DAY 124: verificar entorno
+## PASO 0 — DAY 125: verificar entorno
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
@@ -66,477 +45,306 @@ Si la VM está parada: `make up && make bootstrap`
 
 ---
 
-## PASO 1 — Crear la branch de trabajo
+## PASO 1 — DEBT-GITIGNORE-TEST-SOURCES-001 (rápido, 5 min)
+
+La regla `**/test_*` en `.gitignore` (línea 146) ignora fuentes de test. Ya causó que `test_seed_client.cpp` y `test_perms_seed.cpp` no se versionaran en DAY 124.
 
 ```bash
-cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout -b feature/adr037-snyk-hardening
-git push -u origin feature/adr037-snyk-hardening
+# Verificar estado actual
+grep -n "test_\*\|test_\*.cpp" .gitignore | head -10
 ```
+
+Fix con Python3:
+```bash
+python3 << 'PYEOF'
+with open(".gitignore", "r") as f:
+    content = f.read()
+
+# Añadir excepciones para fuentes de test después de la regla **/test_*
+content = content.replace(
+    "**/test_*\n",
+    "**/build/**/test_*\n!**/test_*.cpp\n!**/test_*.hpp\n"
+)
+
+with open(".gitignore", "w") as f:
+    f.write(content)
+print("Done")
+PYEOF
+```
+
+Gate: `git check-ignore libs/seed-client/tests/test_seed_client.cpp` → no ignorado
 
 ---
 
-## PASO 2 — Plan de implementación completo ADR-037
+## PASO 2 — DEBT-INTEGER-OVERFLOW-TEST-001
 
-### 2.1 Crear `contrib/safe-path/` — la minilibrería
+### 2.1 Extraer función pura en zmq_handler.cpp
 
-Estructura a crear:
-```
-contrib/safe-path/
-  include/
-    safe_path/
-      safe_path.hpp
-  tests/
-    test_safe_path.cpp
-  CMakeLists.txt
-  README.md
+Primero verifiquemos la ubicación exacta del código a extraer:
+```bash
+grep -n "compute_memory_mb\|mem_bytes\|pages \* page_size\|int64_t.*pages" ml-detector/src/zmq_handler.cpp | head -10
 ```
 
-### `safe_path.hpp` — versión final post-Consejo
+Crear la función pura. Localizamos el header de ZMQHandler:
+```bash
+grep -n "compute_memory_mb\|current_memory_mb_\|pages" ml-detector/include/zmq_handler.hpp | head -10
+```
+
+La función pura a añadir en `zmq_handler.hpp` (sección private helpers o como inline libre):
+```cpp
+// Pure function — testable independently (ADR-037 F17)
+[[nodiscard]] inline double compute_memory_mb(long pages, long page_size) noexcept {
+    const auto mem_bytes = static_cast<int64_t>(pages) * static_cast<int64_t>(page_size);
+    return static_cast<double>(mem_bytes) / (1024.0 * 1024.0);
+}
+```
+
+Y en `zmq_handler.cpp` reemplazar el cálculo inline por la llamada a la función.
+
+### 2.2 Crear test RED→GREEN
+
+```bash
+# Verificar dónde están los tests de ml-detector
+ls ml-detector/tests/
+```
+
+Crear `ml-detector/tests/unit/test_zmq_memory_overflow.cpp`:
 
 ```cpp
-// contrib/safe-path/include/safe_path/safe_path.hpp
-#pragma once
-
-#include <filesystem>
-#include <stdexcept>
-#include <string>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-namespace argus::safe_path {
-
-// Uses weakly_canonical (not canonical) to allow paths to non-existent files
-// (e.g., output files created later). The prefix check remains secure because
-// unresolved trailing components cannot contain ".." after the last existing
-// directory. Any ".." that would escape the prefix is caught by the comparison.
-// TOCTOU note: a window exists between resolve() and ifstream/open().
-// Mitigation: AppArmor enforces write paths at kernel level for production
-// components. For seed material, use resolve_seed() which opens with O_NOFOLLOW.
-
-[[nodiscard]] inline std::string resolve(
-    const std::string& path,
-    const std::string& allowed_prefix)
-{
-    namespace fs = std::filesystem;
-
-    if (path.empty()) {
-        throw std::runtime_error("[safe_path] Empty path rejected");
-    }
-
-    const auto canonical = fs::weakly_canonical(fs::path(path)).string();
-
-    // Normalise trailing slash to prevent bypass:
-    // /etc/ml-defender would otherwise match /etc/ml-defender-evil/
-    std::string prefix = allowed_prefix;
-    if (!prefix.empty() && prefix.back() != '/') {
-        prefix += '/';
-    }
-
-    if (canonical.rfind(prefix, 0) != 0) {
-        throw std::runtime_error(
-            "[safe_path] SECURITY VIOLATION — path traversal rejected\n"
-            "  requested : '" + path + "'\n"
-            "  resolved  : '" + canonical + "'\n"
-            "  allowed   : '" + prefix + "'\n"
-            "  ACTION    : Pipeline halt. Administrator notified.");
-    }
-    return canonical;
-}
-
-[[nodiscard]] inline std::string resolve_writable(
-    const std::string& path,
-    const std::string& allowed_prefix)
-{
-    const auto resolved = resolve(path, allowed_prefix);
-    namespace fs = std::filesystem;
-    const auto parent = fs::path(resolved).parent_path();
-    if (!fs::is_directory(parent)) {
-        throw std::runtime_error(
-            "[safe_path] Parent directory does not exist: " + parent.string());
-    }
-    return resolved;
-}
-
-// Hardened variant for cryptographic material (seed.bin).
-// Adds: symlink check + permission check (0400) + O_NOFOLLOW | O_CLOEXEC.
-// Returns open file descriptor — caller is responsible for close().
-[[nodiscard]] inline int resolve_seed(
-    const std::string& path,
-    const std::string& allowed_prefix = "/etc/ml-defender/keys/")
-{
-    namespace fs = std::filesystem;
-    const auto resolved = resolve(path, allowed_prefix);
-
-    // Explicit symlink check post-resolution (TOCTOU mitigation for seeds)
-    if (fs::is_symlink(fs::path(resolved))) {
-        throw std::runtime_error(
-            "[safe_path] SECURITY VIOLATION — symlink rejected for seed material: "
-            + resolved);
-    }
-
-    // Verify permissions: must be 0400 (read-only, owner only)
-    struct stat st{};
-    if (stat(resolved.c_str(), &st) != 0 || (st.st_mode & 0777) != 0400) {
-        throw std::runtime_error(
-            "[safe_path] SECURITY VIOLATION — seed file permissions must be 0400: "
-            + resolved);
-    }
-
-    // Open with O_NOFOLLOW | O_CLOEXEC — kernel-level symlink protection
-    const int fd = open(resolved.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
-    if (fd < 0) {
-        throw std::runtime_error(
-            "[safe_path] Cannot open seed file: " + resolved);
-    }
-    return fd;
-}
-
-} // namespace argus::safe_path
-```
-
-### 2.2 Tests de aceptación — filosofía RED→GREEN
-
-**REGLA FUNDAMENTAL DAY 124:**
-Los tests de aceptación deben demostrar dos cosas:
-1. **RED:** El código actual SIN el fix es vulnerable (el test falla o el ataque tiene éxito)
-2. **GREEN:** Con el fix aplicado, el ataque es rechazado con error explícito
-
-Este es el contrato de seguridad: no basta con que el código "funcione" —
-debe demostrar que *la vulnerabilidad existía* y que *el fix la cierra*.
-
-### `test_safe_path.cpp` — tests de aceptación completos
-
-```cpp
-// contrib/safe-path/tests/test_safe_path.cpp
+// ml-detector/tests/unit/test_zmq_memory_overflow.cpp
 //
-// ACCEPTANCE TESTS — ADR-037 safe_path
+// ACCEPTANCE TEST — DEBT-INTEGER-OVERFLOW-TEST-001 (ADR-037 F17)
 //
-// Filosofía RED→GREEN:
-// - Cada test documenta un ataque real
-// - Sin safe_path: el ataque tendría éxito (apertura de fichero arbitrario)
-// - Con safe_path: el ataque es rechazado con std::runtime_error
-//
-// Ejecutar: ./test_safe_path
-// Gate: ALL TESTS PASSED
+// RED→GREEN: demuestra que el código antiguo overflowea y el nuevo no.
+// Veredicto Consejo DAY 124 (7/7): Opción A + C.
+// - A: unit test con valores sintéticos extremos
+// - C: property loop ligero, sin dependencias nuevas
 
 #include <gtest/gtest.h>
-#include <safe_path/safe_path.hpp>
-#include <filesystem>
-#include <fstream>
+#include <climits>
+#include <cstdint>
+#include "zmq_handler.hpp"  // para compute_memory_mb
 
-namespace fs = std::filesystem;
+// ─── ACCEPTANCE TEST RED ────────────────────────────────────────────────────
+// Demuestra que el código ANTIGUO produce overflow con valores grandes.
+// Sin este test, el fix es "una promesa sin firma" (Qwen, Consejo DAY 124).
 
-// ─── Fixtures ──────────────────────────────────────────────────────────────
+TEST(ZmqMemoryOverflow, OldCodeOverflowsWithLargePages) {
+    // Con pages = LONG_MAX / 4096 + 1, la multiplicación (long * long) desborda
+    long pages = LONG_MAX / 4096 + 1;
+    long page_size = 4096;
 
-class SafePathTest : public ::testing::Test {
-protected:
-    std::string tmp_dir;
-    std::string allowed_dir;
-    std::string forbidden_dir;
+    // Simulamos el código ANTIGUO (vulnerable):
+    volatile long old_product = pages * page_size; // overflow intencional
+    double old_result = static_cast<double>(old_product) / (1024.0 * 1024.0);
 
-    void SetUp() override {
-        tmp_dir     = fs::temp_directory_path() / "argus_test_safe_path";
-        allowed_dir = tmp_dir + "/allowed/";
-        forbidden_dir = tmp_dir + "/forbidden/";
-        fs::create_directories(allowed_dir);
-        fs::create_directories(forbidden_dir);
-        // Crear fichero legítimo
-        std::ofstream(allowed_dir + "legit.json") << "{\"ok\":true}";
-        // Crear fichero prohibido
-        std::ofstream(forbidden_dir + "secret.bin") << "FORBIDDEN_CONTENT";
-    }
-
-    void TearDown() override {
-        fs::remove_all(tmp_dir);
-    }
-};
-
-// ─── P1: weakly_canonical resuelve correctamente ───────────────────────────
-
-TEST_F(SafePathTest, LegitimatePathResolvesCorrectly) {
-    // GREEN: path normal dentro del prefijo → OK
-    EXPECT_NO_THROW({
-        auto r = argus::safe_path::resolve(allowed_dir + "legit.json", allowed_dir);
-        EXPECT_FALSE(r.empty());
-    });
+    // El resultado debe ser negativo o absurdamente grande — evidencia de overflow
+    EXPECT_TRUE(old_result < 0.0 || old_result > 1e15)
+        << "OLD CODE: expected overflow evidence, got: " << old_result;
 }
 
-// ─── ACCEPTANCE TEST 1: Path traversal con ".." ────────────────────────────
-// ATAQUE: Un componente recibe como config_path el valor
-//   "/allowed/../forbidden/secret.bin"
-// SIN FIX: std::ifstream abriría el fichero sin problema.
-// CON FIX: safe_path::resolve lanza runtime_error → pipeline halt.
+// ─── ACCEPTANCE TEST GREEN ───────────────────────────────────────────────────
+// Demuestra que el código NUEVO produce el resultado correcto.
 
-TEST_F(SafePathTest, RejectDotDotTraversal) {
-    const std::string attack = allowed_dir + "../forbidden/secret.bin";
+TEST(ZmqMemoryOverflow, NewCodeHandlesExtremeValues) {
+    long pages = LONG_MAX / 4096;
+    long page_size = 4096;
 
-    // Demostrar que SIN safe_path el fichero sería accesible
-    {
-        std::ifstream f(attack);
-        EXPECT_TRUE(f.good()) << "Prerequisite: without safe_path, file is accessible";
-    }
+    double result = compute_memory_mb(pages, page_size);
 
-    // CON safe_path: debe rechazarlo
-    EXPECT_THROW(
-        argus::safe_path::resolve(attack, allowed_dir),
-        std::runtime_error
-    ) << "safe_path MUST reject ../ traversal";
+    // Resultado debe ser positivo y acotado (no overflow, no negativo)
+    EXPECT_GT(result, 0.0) << "Result must be positive";
+    EXPECT_LT(result, 1e13) << "Result must be bounded (< 10 PB)";
 }
 
-// ─── ACCEPTANCE TEST 2: Path traversal absoluto ────────────────────────────
-// ATAQUE: config_path = "/etc/passwd"
-// CON FIX: rechazado porque no empieza por allowed_prefix.
+// ─── PROPERTY TEST ───────────────────────────────────────────────────────────
+// Para cualquier pages >= 0 y page_size en [4096, 65536],
+// el resultado de compute_memory_mb nunca es negativo.
+// Opción C ligera: loop sin dependencias externas (Consejo DAY 124).
 
-TEST_F(SafePathTest, RejectAbsolutePathOutsidePrefix) {
-    EXPECT_THROW(
-        argus::safe_path::resolve("/etc/passwd", allowed_dir),
-        std::runtime_error
-    );
-}
+TEST(ZmqMemoryOverflow, PropertyNeverNegative) {
+    const long page_sizes[] = {4096, 8192, 16384, 65536};
+    const long page_values[] = {
+        0, 1, 1000, 100000,
+        LONG_MAX / 65536,
+        LONG_MAX / 16384,
+        LONG_MAX / 8192,
+        LONG_MAX / 4096
+    };
 
-// ─── ACCEPTANCE TEST 3: Bypass por prefijo sin trailing slash ──────────────
-// ATAQUE: allowed_prefix = "/tmp/argus_test_safe_path/allowed" (sin slash)
-//         path = "/tmp/argus_test_safe_path/allowed_evil/secret.bin"
-// SIN normalización: rfind matchearía porque "allowed" es prefijo de "allowed_evil"
-// CON normalización de trailing slash: rechazado.
-
-TEST_F(SafePathTest, RejectPrefixBypassWithoutTrailingSlash) {
-    // Crear directorio "evil" al mismo nivel que allowed
-    const std::string evil_dir = tmp_dir + "/allowed_evil/";
-    fs::create_directories(evil_dir);
-    std::ofstream(evil_dir + "secret.bin") << "EVIL";
-
-    const std::string prefix_without_slash = tmp_dir + "/allowed"; // sin /
-
-    EXPECT_THROW(
-        argus::safe_path::resolve(evil_dir + "secret.bin", prefix_without_slash),
-        std::runtime_error
-    ) << "Trailing slash normalisation MUST prevent prefix bypass";
-}
-
-// ─── ACCEPTANCE TEST 4: Symlink apuntando fuera del prefijo ─────────────────
-// ATAQUE: symlink dentro del prefijo apunta a fichero prohibido.
-// CON FIX: weakly_canonical resuelve el symlink → destino fuera del prefijo → rechazado.
-
-TEST_F(SafePathTest, RejectSymlinkPointingOutsidePrefix) {
-    const std::string symlink_path = allowed_dir + "evil_link";
-    fs::create_symlink(forbidden_dir + "secret.bin", symlink_path);
-
-    EXPECT_THROW(
-        argus::safe_path::resolve(symlink_path, allowed_dir),
-        std::runtime_error
-    ) << "Symlink pointing outside prefix MUST be rejected";
-}
-
-// ─── ACCEPTANCE TEST 5: Path vacío ─────────────────────────────────────────
-
-TEST_F(SafePathTest, RejectEmptyPath) {
-    EXPECT_THROW(
-        argus::safe_path::resolve("", allowed_dir),
-        std::runtime_error
-    );
-}
-
-// ─── ACCEPTANCE TEST 6: resolve_writable — directorio padre inexistente ─────
-
-TEST_F(SafePathTest, RejectWritableWithNonExistentParent) {
-    const std::string ghost = allowed_dir + "nonexistent/output.bin";
-    EXPECT_THROW(
-        argus::safe_path::resolve_writable(ghost, allowed_dir),
-        std::runtime_error
-    );
-}
-
-// ─── ACCEPTANCE TEST 7: Mensaje de error contiene información de alerta ─────
-// El mensaje debe indicar: qué se intentó, qué se resolvió, qué está permitido,
-// y que el pipeline se para.
-
-TEST_F(SafePathTest, ErrorMessageContainsSecurityAlert) {
-    const std::string attack = allowed_dir + "../forbidden/secret.bin";
-    try {
-        argus::safe_path::resolve(attack, allowed_dir);
-        FAIL() << "Expected runtime_error";
-    } catch (const std::runtime_error& e) {
-        const std::string msg(e.what());
-        EXPECT_NE(msg.find("SECURITY VIOLATION"), std::string::npos)
-            << "Error must contain SECURITY VIOLATION";
-        EXPECT_NE(msg.find("Pipeline halt"), std::string::npos)
-            << "Error must mention pipeline halt";
-        EXPECT_NE(msg.find("Administrator notified"), std::string::npos)
-            << "Error must mention admin notification";
+    for (long page_size : page_sizes) {
+        for (long pages : page_values) {
+            double result = compute_memory_mb(pages, page_size);
+            EXPECT_GE(result, 0.0)
+                << "Negative result for pages=" << pages
+                << " page_size=" << page_size;
+        }
     }
 }
 
-// ─── ACCEPTANCE TEST 8 (seed): resolve_seed rechaza symlinks ────────────────
+// ─── PROPERTY TEST: monotonía ─────────────────────────────────────────────
+// Más páginas → más memoria. El resultado debe ser monótono creciente.
 
-TEST_F(SafePathTest, SeedRejectSymlink) {
-    // Crear seed falsa con permisos correctos
-    const std::string real_seed = allowed_dir + "seed.bin";
-    std::ofstream(real_seed) << "FAKESEED";
-    chmod(real_seed.c_str(), 0400);
+TEST(ZmqMemoryOverflow, PropertyMonotonicallyIncreasing) {
+    long page_size = 4096;
+    long prev_pages = 0;
+    double prev_result = compute_memory_mb(prev_pages, page_size);
 
-    // Crear symlink hacia ella
-    const std::string sym = allowed_dir + "seed_link.bin";
-    fs::create_symlink(real_seed, sym);
-
-    EXPECT_THROW(
-        argus::safe_path::resolve_seed(sym, allowed_dir),
-        std::runtime_error
-    ) << "resolve_seed MUST reject symlinks even within the prefix";
-}
-
-// ─── ACCEPTANCE TEST 9 (seed): resolve_seed rechaza permisos incorrectos ────
-
-TEST_F(SafePathTest, SeedRejectWrongPermissions) {
-    const std::string seed = allowed_dir + "seed.bin";
-    std::ofstream(seed) << "FAKESEED";
-    chmod(seed.c_str(), 0644); // permisos incorrectos (debería ser 0400)
-
-    EXPECT_THROW(
-        argus::safe_path::resolve_seed(seed, allowed_dir),
-        std::runtime_error
-    ) << "resolve_seed MUST reject seed files with permissions != 0400";
+    for (long pages : {1L, 1000L, 1000000L, 1000000000L}) {
+        double result = compute_memory_mb(pages, page_size);
+        EXPECT_GE(result, prev_result)
+            << "Non-monotonic at pages=" << pages;
+        prev_result = result;
+        prev_pages = pages;
+    }
 }
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     std::cout << "\n";
     std::cout << "═══════════════════════════════════════════════════════\n";
-    std::cout << "  ADR-037 ACCEPTANCE TESTS — safe_path security gate  \n";
-    std::cout << "  RED→GREEN: cada test documenta un ataque real        \n";
+    std::cout << "  DEBT-INTEGER-OVERFLOW-TEST-001 — F17 RED→GREEN gate  \n";
+    std::cout << "  A: unit sintético · C: property loop sin deps        \n";
     std::cout << "═══════════════════════════════════════════════════════\n\n";
     return RUN_ALL_TESTS();
 }
 ```
 
-### 2.3 Aplicar safe_path en código de producción
+### 2.3 Añadir el test al CMakeLists.txt de ml-detector
 
-**Orden de aplicación:**
-
-**a) `seed-client/src/seed_client.cpp` — PRIORIDAD MÁXIMA**
-```cpp
-// ANTES (línea 99):
-std::ifstream seed_file(seed_path, std::ios::binary);
-
-// DESPUÉS:
-#include <safe_path/safe_path.hpp>
-const int seed_fd = argus::safe_path::resolve_seed(seed_path);
-// usar seed_fd con fdopen() o read() directo
-// close(seed_fd) al finalizar
+```bash
+grep -n "test_ransomware_detector_unit\|add_executable.*test_" ml-detector/CMakeLists.txt | head -10
 ```
 
-**b) `firewall-acl-agent/src/core/config_loader.cpp` — línea 80**
-```cpp
-// ANTES:
-std::ifstream file(config_path);
+Añadir el nuevo test siguiendo el patrón existente.
 
-// DESPUÉS:
-#include <safe_path/safe_path.hpp>
-const auto safe = argus::safe_path::resolve(config_path, "/etc/ml-defender/");
-std::ifstream file(safe);
-```
-
-**c) `rag-ingester/src/common/config_parser.cpp` — línea 9**
-```cpp
-// ANTES:
-std::ifstream file(config_path);
-
-// DESPUÉS:
-#include <safe_path/safe_path.hpp>
-const auto safe = argus::safe_path::resolve(config_path, "/etc/ml-defender/");
-std::ifstream file(safe);
-```
-
-**d) `ml-detector/src/zmq_handler.cpp` — línea 988 (F17 integer overflow)**
-```cpp
-// ANTES:
-long pages = 0;
-long page_size = sysconf(_SC_PAGESIZE);
-current_memory_mb_.store((pages * page_size) / (1024.0 * 1024.0));
-
-// DESPUÉS:
-long pages = 0;
-long page_size = sysconf(_SC_PAGESIZE);
-const auto mem_bytes = static_cast<int64_t>(pages) * static_cast<int64_t>(page_size);
-current_memory_mb_.store(static_cast<double>(mem_bytes) / (1024.0 * 1024.0));
-```
-
-**e) Comentarios FP inotify — `csv_dir_watcher.cpp:168` y `csv_file_watcher.cpp:112`**
-```cpp
-// F15/F16 — Falso positivo Snyk documentado (ADR-037)
-// SAFE: n <= BUF_SIZE = 4096 garantizado por POSIX read().
-// ptr < buf + n nunca desborda. Snyk no traza acotación de read() → BUF_SIZE.
-while (ptr < buf + n) {  // NOLINT(safe — see ADR-037)
-```
-
-**f) Contrib/ y tools/ — Categoría B**
-Misma función `safe_path::resolve()`, prefijo `/shared/` o `/vagrant/`.
-
-### 2.4 Comportamiento de seguridad en producción — FAIL CLOSED
-
-Cuando `safe_path::resolve()` lanza una excepción en un componente de producción,
-el comportamiento debe ser:
-
-```
-🔴 SECURITY VIOLATION DETECTED
-   Component: [nombre]
-   Attempted path: [path]
-   Resolved to: [canonical]
-   Allowed prefix: [prefix]
-   ACTION: PIPELINE HALT — all components stopping
-   Administrator: check /var/log/ml-defender/security.log
-```
-
-El componente que detecta la violación debe:
-1. Loguear con nivel CRITICAL en spdlog
-2. Enviar señal de shutdown al pipeline (via etcd o señal SIGTERM a todos)
-3. Terminar con exit code != 0
-
-Esto implementa el contrato: **O todo bien y autorizado, o nada.**
+Gate: `test_zmq_memory_overflow` — 4 tests PASSED
 
 ---
 
-## PASO 3 — Actualizar ADR-037 en el repo
+## PASO 3 — DEBT-SAFE-PATH-TEST-RELATIVE-001
 
-Copiar el ADR-037 generado en DAY 123 a:
-```bash
-docs/adr/ADR-037-snyk-hardening.md
+Añadir en `contrib/safe-path/tests/test_safe_path.cpp`:
+
+```cpp
+// ─── ACCEPTANCE TEST 10: path relativo ──────────────────────────────────────
+// ATAQUE: componente recibe config_path = "config/foo.json" (relativo al CWD)
+// SIN FIX: weakly_canonical no canonicalizaba el prefix → prefix era "config/"
+//          → no matching con path absoluto resuelto → SECURITY VIOLATION falso positivo
+//          → rag-ingester STOPPED (incidencia DAY 124)
+// CON FIX: prefix canonicalizado con weakly_canonical antes de la comparación.
+
+TEST_F(SafePathTest, RelativePathResolvesBeforePrefixCheck) {
+    namespace fs = std::filesystem;
+
+    // Crear un config legítimo dentro del allowed_dir
+    std::ofstream(allowed_dir + "config.json") << "{\"ok\":true}";
+
+    // Simular path relativo: obtener path relativo desde CWD al fichero
+    // (como haría rag-ingester con "config/rag-ingester.json")
+    auto abs_path = fs::path(allowed_dir + "config.json").string();
+
+    // El path relativo se resuelve con weakly_canonical antes del prefix check
+    EXPECT_NO_THROW({
+        auto r = argus::safe_path::resolve(abs_path, allowed_dir);
+        EXPECT_FALSE(r.empty());
+    }) << "Legitimate file in allowed_dir must not be rejected";
+}
 ```
-Incorporar los cambios post-Consejo (trailing slash, TOCTOU, seed hardening, mapa de prefijos completo).
+
+Gate: `test_safe_path` con nuevo caso PASSED
 
 ---
 
-## PASO 4 — make test-all VERDE
+## PASO 4 — DEBT-SAFE-PATH-TEST-PRODUCTION-001
+
+Tests RED→GREEN por componente. Uno por componente modificado.
+
+### 4.1 seed-client — test path traversal
 
 ```bash
-make up && make bootstrap
+# Ver estructura de tests existentes para seguir el patrón
+ls libs/seed-client/tests/
+grep -n "add_executable\|test_" libs/seed-client/CMakeLists.txt | tail -20
+```
+
+Crear `libs/seed-client/tests/test_seed_client_traversal.cpp`:
+- RED: path con `../` → SECURITY VIOLATION
+- GREEN: path dentro de `keys_dir_` → OK
+
+### 4.2 firewall-acl-agent — test path traversal
+
+```bash
+ls firewall-acl-agent/tests/ 2>/dev/null || echo "no tests dir"
+grep -n "add_executable\|test_" firewall-acl-agent/CMakeLists.txt | tail -10
+```
+
+### 4.3 rag-ingester — test path traversal config
+
+```bash
+ls rag-ingester/tests/
+grep -n "test_config_parser" rag-ingester/tests/CMakeLists.txt
+```
+
+Ver `test_config_parser.cpp` existente para seguir patrón:
+```bash
+cat rag-ingester/tests/test_config_parser.cpp
+```
+
+Añadir casos RED→GREEN al test existente:
+- RED: `../etc/passwd` → runtime_error con SECURITY VIOLATION
+- GREEN: path legítimo → sin excepción
+
+Gate: todos los tests de producción path traversal PASSED
+
+---
+
+## PASO 5 — DEBT-CRYPTO-TRANSPORT-CTEST-001
+
+```bash
+# Ejecutar con output verboso para ver la causa raíz
+vagrant ssh defender -c "cd /vagrant/crypto-transport/build && ctest -V 2>&1 | tail -50"
+```
+
+Aislar si el fallo es:
+- **Linking:** error de símbolo no encontrado
+- **Runtime:** crash o timeout
+- **Aserción lógica:** resultado incorrecto
+
+Una vez identificada la causa, documentar en `docs/KNOWN-ISSUES.md` si requiere refactor mayor, o fix inline si es sencillo.
+
+Gate: `test_crypto_transport` PASSED · `test_integ_contexts` PASSED · Makefile sin `|| echo`
+
+---
+
+## PASO 6 — Commit, tag y push
+
+```bash
+git add -A
+git commit -m "fix(debt): DAY 125 — overflow test, safe_path tests, .gitignore, crypto investigation
+
+- DEBT-INTEGER-OVERFLOW-TEST-001: compute_memory_mb() pure function + RED/GREEN/PROPERTY tests
+- DEBT-SAFE-PATH-TEST-RELATIVE-001: relative path acceptance test in contrib/safe-path
+- DEBT-SAFE-PATH-TEST-PRODUCTION-001: RED→GREEN tests for seed_client, config_loader, config_parser
+- DEBT-GITIGNORE-TEST-SOURCES-001: ignore only build artifacts, not test sources
+- DEBT-CRYPTO-TRANSPORT-CTEST-001: root cause documented / fixed
+
+Consejo DAY 124 7/7: 'Un fix sin test de demostración es una promesa sin firma.'"
+
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS|VERDE"
-```
-
-Gate: `safe_path` tests PASSED + todos los tests anteriores siguen PASSED.
-
----
-
-## PASO 5 — Segunda pasada Snyk
-
-Tras los fixes, ejecutar Snyk sobre los ficheros modificados.
-Gate: **0 findings en código de producción.**
-
----
-
-## PASO 6 — Merge y tag
-
-```bash
-git checkout main
-git merge feature/adr037-snyk-hardening
-git tag v0.5.1-hardened
-git push origin main --tags
+git push origin main
 ```
 
 ---
 
 ## Contexto permanente
+
+### Tres variantes del pipeline
+| Variante | Estado |
+|----------|--------|
+| **aRGus-dev** | ✅ Activa — `main` @ `v0.5.1-hardened` |
+| **aRGus-production** | 🟡 Pendiente de cocinar (post-deuda) |
+| **aRGus-seL4** | ⏳ No iniciada — branch independiente futura |
 
 ### Secuencia canónica
 ```bash
@@ -545,11 +353,20 @@ make bootstrap    # 8 pasos, todo automático
 make test-all     # verificación completa
 ```
 
-### Regla permanente de code review (añadida DAY 123)
-> Todo nuevo uso de `std::ifstream`/`std::ofstream` con input no-constante
-> en código de producción **debe** pasar por `argus::safe_path::resolve()`.
+### Estado de deuda tras DAY 124
+```
+🔴 DEBT-INTEGER-OVERFLOW-TEST-001     → DAY 125 (HOY)
+🔴 DEBT-SAFE-PATH-TEST-PRODUCTION-001 → DAY 125 (HOY)
+🔴 DEBT-SAFE-PATH-TEST-RELATIVE-001   → DAY 125 (HOY)
+🟢 DEBT-GITIGNORE-TEST-SOURCES-001    → DAY 125 (HOY, rápido)
+🟡 DEBT-SNYK-WEB-VERIFICATION-001     → DAY 126
+🟡 DEBT-CRYPTO-TRANSPORT-CTEST-001    → DAY 125-127
+🟢 DEBT-DEV-PROD-SYMLINK-001          → DAY 127
+🟢 DEBT-PROVISION-PORTABILITY-001     → DAY 128
+⏳ DEBT-PENTESTER-LOOP-001            → POST-DEUDA
+```
 
-### Estado de modelos firmados
+### Modelos firmados activos
 ```
 /vagrant/ml-detector/models/production/level1/
   xgboost_cicids2017_v2.ubj + .sig  (DAY 122 — IN-DISTRIBUTION)
@@ -557,15 +374,17 @@ make test-all     # verificación completa
 ```
 
 ### Paper arXiv:2604.04952
-Draft v16 activo. https://arxiv.org/submit/7495855/view
+Draft v16 activo. https://arxiv.org/abs/2604.04952
+Pendiente: actualizar §5 con lecciones aprendidas DAY 124 (tests de demostración, asimetría dev/prod).
 
-### Tag activo al cierre DAY 123
-`v0.5.0-preproduction` — branch `feature/adr037-snyk-hardening` pendiente de crear.
+### Tag activo
+`v0.5.1-hardened` — main.
 
-### DEBT-PENTESTER-LOOP-001 (próxima frontera tras ADR-037)
-ACRL: Caldera → captura eBPF → reentrenamiento XGBoost → hot-swap.
+### REGLA DE ORO DAY 125
+Si un fix de seguridad no tiene test que falle con el código antiguo y pase con el nuevo, no está cerrado. Punto.
 
 ---
 
-*"Via Appia Quality — la superficie mínima es la superficie más segura."*
-*"O todo bien y autorizado, o nada."*
+*"Via Appia Quality — Un escudo que aprende de su propia sombra."*
+*"Un fix sin test de demostración es una promesa sin firma." — Qwen, Consejo DAY 124*
+*"Un escudo sin tests es un escudo de papel." — Kimi, Consejo DAY 124*

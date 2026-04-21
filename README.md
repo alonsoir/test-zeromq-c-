@@ -8,11 +8,13 @@
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
 [![Tests: make test-all VERDE](https://img.shields.io/badge/Tests-make_test--all_VERDE-brightgreen)]()
 [![Pipeline: 6/6](https://img.shields.io/badge/Pipeline-6%2F6_RUNNING-brightgreen)]()
-[![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519_MERGED-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
+[![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
+[![safe_path](https://img.shields.io/badge/safe__path-ADR--037_header--only-brightgreen)](contrib/safe-path/)
 [![PHASE 4](https://img.shields.io/badge/PHASE_4-COMPLETADA-brightgreen)]()
 [![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
 [![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
 [![XGBoost](https://img.shields.io/badge/XGBoost-Prec%3D0.9945_In--Distribution-brightgreen)]()
+[![Hardened](https://img.shields.io/badge/Security-v0.5.1--hardened-brightgreen)]()
 [![OOD Finding](https://img.shields.io/badge/OOD_Finding-Published_DAY_122-orange)]()
 [![PRE-PRODUCTION](https://img.shields.io/badge/Status-PRE--PRODUCTION-orange)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
@@ -23,36 +25,62 @@
 
 ---
 
-✅ `main` is tagged `v0.5.0-preproduction` — PHASE 4 complete. **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
+✅ `main` is tagged `v0.5.1-hardened` — PHASE 4 complete + ADR-037 Snyk hardening merged.
+**PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete and technical debt DAY 124 is closed.**
 
-## Estado actual — DAY 123 (2026-04-20)
+---
 
-**Tag activo:** `v0.5.0-preproduction`
+## Estado actual — DAY 124 (2026-04-21)
+
+**Tag activo:** `v0.5.1-hardened`
 
 ### Pipeline
 - 6/6 componentes RUNNING
 - make test-all: ALL TESTS PASSED
+- TEST-PROVISION-1: 8/8 OK
 
 ### Hitos recientes
+- **DAY 124:** ADR-037 COMPLETADO. `contrib/safe-path/` header-only C++20 mergeado.
+  Seeds a `0400`. F17 integer overflow corregido. 9 acceptance tests RED→GREEN.
+  Tag: `v0.5.1-hardened`. Deuda técnica residual documentada — cierre DAY 125-128.
 - **DAY 122:** PHASE 4 completada. XGBoost in-distribution validado
   (Precision=0.9945, Recall=0.9818). Wednesday OOD finding sellado.
   Paper Draft v16 (arXiv:2604.04952).
-- **DAY 123:** ADR-037 aprobado por Consejo 7/7. safe_path utility
-  diseñada (header-only, C++20, cero dependencias externas).
-  DEBT-PANDAS-001 cerrado.
 
-### En progreso
-- **ADR-037** — Static Analysis Security Hardening (DAY 124)
-  Branch: feature/adr037-snyk-hardening
+### Deuda técnica abierta (DAY 124)
+Ver [docs/BACKLOG.md](docs/BACKLOG.md) para detalle completo.
 
-### Próxima frontera
-- **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture →
-  XGBoost retrain → Ed25519 sign → hot-swap
+| Deuda | Prioridad | Target |
+|-------|-----------|--------|
+| DEBT-INTEGER-OVERFLOW-TEST-001 | 🔴 Bloqueante | DAY 125 |
+| DEBT-SAFE-PATH-TEST-PRODUCTION-001 | 🔴 Bloqueante | DAY 125 |
+| DEBT-SAFE-PATH-TEST-RELATIVE-001 | 🔴 Bloqueante | DAY 125 |
+| DEBT-SNYK-WEB-VERIFICATION-001 | 🟡 Bloqueante | DAY 126 |
+| DEBT-CRYPTO-TRANSPORT-CTEST-001 | 🟡 Bloqueante | DAY 126-127 |
+| DEBT-DEV-PROD-SYMLINK-001 | 🟢 No bloqueante | DAY 127 |
+| DEBT-PROVISION-PORTABILITY-001 | 🟢 No bloqueante | DAY 128 |
+
+### Próxima frontera (post-deuda)
+- **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
 
 ### ⚠️ NO desplegar en producción hasta
-- ADR-037 CERRADO (safe_path hardening)
-- ADR-036 CERRADO (Formal Verification Baseline)
+- Deuda técnica DAY 124 cerrada (tests de demostración)
 - DEBT-PENTESTER-LOOP-001 completado (datos reales ACRL)
+- ADR-036 (Formal Verification Baseline)
+
+---
+
+## 🏗️ Tres variantes del pipeline
+
+El proyecto ha madurado hasta tener tres variantes claramente diferenciadas:
+
+| Variante | Estado | Descripción |
+|----------|--------|-------------|
+| **aRGus-dev** | ✅ Activa (`main`) | x86-debug, imagen Vagrant completa, build-debug. Para investigación y desarrollo diario. |
+| **aRGus-production** | 🟡 Pendiente | x86-apparmor + arm64-apparmor. Imágenes Debian optimizadas. Una imagen por arquitectura, cada una con su Vagrantfile. Para hospitales, escuelas, municipios. |
+| **aRGus-seL4** | ⏳ Diseño futuro | Apéndice científico. Kernel seL4, libpcap (no eBPF/XDP), sniffer monohilo reescrito. Branch independiente. Contribución científica publicable. |
+
+**Principio:** Las variantes de producción se cocinan cuando `main` esté completamente blindado. La rama seL4 es un apéndice científico que no se mergeará a main salvo sorpresa técnica.
 
 ---
 
@@ -63,12 +91,10 @@
 > *ML Defender (aRGus NDR): An Open-Source Embedded ML NIDS for Botnet and Anomalous Traffic Detection in Resource-Constrained Organizations*
 > — Alonso Isidoro Román
 
-**arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)  
-**DOI:** https://doi.org/10.48550/arXiv.2604.04952  
-**Published:** 3 April 2026 · **Draft v16** (updated 19 April 2026) · MIT license  
+**arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)
+**DOI:** https://doi.org/10.48550/arXiv.2604.04952
+**Published:** 3 April 2026 · **Draft v16** (updated 19 April 2026) · MIT license
 **Code:** https://github.com/alonsoir/argus
-
-Draft v16 adds: XGBoost in-distribution evaluation (Prec=0.9945/Rec=0.9818), Wednesday OOD impossibility result, §10.13 structural bias in academic datasets, §11.18 Adversarial Capture-Retrain Loop (ACRL). Cites Sommer & Paxson 2010.
 
 ---
 
@@ -109,6 +135,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Pipeline components** | **6/6 RUNNING** | Reproducible from `make bootstrap` |
 | **Plugin integrity** | **ADR-025 MERGED** | Ed25519 + TOCTOU-safe dlopen |
 | **AppArmor** | **6/6 enforce** | 0 denials |
+| **Path traversal prevention** | **ADR-037 MERGED** | `safe_path` header-only, 9 RED→GREEN tests |
 | **CI gate** | **TEST-PROVISION-1 8/8** | |
 
 ---
@@ -119,9 +146,26 @@ On DAY 122, a rigorous temporal holdout evaluation on CIC-IDS-2017 revealed a st
 
 **This finding corroborates Sommer & Paxson (2010)** and provides new quantitative evidence that static classifiers trained on academic benchmarks are structurally insufficient for production NDR.
 
-**The architectural response** — the Adversarial Capture-Retrain Loop (ACRL) — is proposed in §11.18 of the paper. The XGBoost plugin was designed from day one to be hot-swappable and Ed25519-signed (ADR-025/026) for exactly this reason.
+**The architectural response** — the Adversarial Capture-Retrain Loop (ACRL) — is proposed in §11.18 of the paper.
 
-> *"No entrenamos con Wednesday porque Wednesday no existe en el entrenamiento. Entrenamos con Tuesday, y aprendemos a detectar Wednesday en producción."* — Kimi, Consejo de Sabios DAY 122
+---
+
+## 🔒 DAY 124 Security Hardening (ADR-037)
+
+`contrib/safe-path/` is a new zero-dependency C++20 header-only library that prevents path traversal attacks across all production components:
+
+```cpp
+// General config files
+const auto safe = argus::safe_path::resolve(config_path, "/etc/ml-defender/");
+
+// Cryptographic seed material (O_NOFOLLOW + 0400 check + symlink rejection)
+const int fd = argus::safe_path::resolve_seed(seed_path, keys_dir_);
+```
+
+9 acceptance tests document real attacks (RED→GREEN methodology):
+`../` traversal · prefix bypass without trailing slash · symlink outside prefix · wrong permissions · absolute path outside prefix · empty path.
+
+**Lesson learned:** fixes in production code require their own RED→GREEN demonstration tests, not just library-level tests. The `rag-ingester` STOPPED incident was discovered in the build, not in a test — a methodological gap now addressed in the technical debt backlog.
 
 ---
 
@@ -137,35 +181,31 @@ On DAY 122, a rigorous temporal holdout evaluation on CIC-IDS-2017 revealed a st
 │  │  sniffer (C++20) │  eBPF/XDP zero-copy packet capture        │
 │  │                  │  ShardedFlowManager (16 shards)           │
 │  │                  │  Fast Detector (rule-based heuristics)    │
-│  │                  │  plugin-loader PHASE 2c ✅ NORMAL         │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (ChaCha20-Poly1305 encrypted)                  │
 │  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4× Embedded RandomForest classifiers     │
-│  │  (C++20)         │  DDoS: 0.24 μs | Ransomware: 1.06 μs     │
-│  │                  │  XGBoost plugin ADR-026 ✅ Prec=0.9945    │
+│  │  (C++20)         │  XGBoost plugin ADR-026 ✅ Prec=0.9945    │
 │  │                  │  [PRE-PROD: ACRL pending]                 │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
-│  │  etcd-server     │  Component registration + JSON config     │
-│  │  (C++20)         │  HMAC key management + seed distribution  │
+│  │  etcd-server     │  Component registration + seed distrib.   │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │ firewall-acl     │  Autonomous blocking via ipset/iptables   │
-│  │ agent (C++20)    │  plugin-loader PHASE 2a ✅ NORMAL         │
+│  │ agent (C++20)    │  safe_path::resolve() ADR-037 ✅          │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag-ingester    │  FAISS + SQLite event ingestion           │
-│  │  (C++20)         │  plugin-loader PHASE 2b ✅ READONLY       │
+│  │  (C++20)         │  safe_path::resolve() ADR-037 ✅          │
 │  └──────────────────┘                                            │
 │         ↓                                                        │
 │  ┌──────────────────┐                                            │
 │  │  rag-security    │  TinyLlama natural language interface      │
 │  │  (C++20+LLM)     │  Local inference — no cloud exfiltration  │
-│  │                  │  plugin-loader PHASE 2e ✅ READONLY       │
 │  └──────────────────┘                                            │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -190,7 +230,7 @@ make bootstrap   # all 8 steps in one command
 ### 🔄 Daily workflow
 
 ```bash
-make up              # if VM stopped
+make up
 make pipeline-stop
 make pipeline-build
 make sign-plugins && make sign-models
@@ -204,39 +244,44 @@ make test-all
 make test-all
 # Runs: libs + components + TEST-PROVISION-1 (8/8)
 #       TEST-INVARIANT-SEED + plugin-integ-test (6/6 incl. TEST-INTEG-SIGN)
-#       TEST-INTEG-XGBOOST-1
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
+### ✅ DONE — DAY 124 (21 Apr 2026) — ADR-037 HARDENING 🎉
+- [x] **ADR-037** — `contrib/safe-path/` header-only C++20 · 9 RED→GREEN tests ✅
+- [x] **F17** — integer overflow fix (int64_t cast) ✅
+- [x] **Seeds 0400** — provision.sh + seed_client + Makefile ✅
+- [x] **feature/adr037-snyk-hardening → main** — Tag: `v0.5.1-hardened` ✅
+
 ### ✅ DONE — DAY 122 (19 Apr 2026) — PHASE 4 COMPLETADA 🎉
-- [x] **DEBT-PRECISION-GATE-001** — Closed with scientific finding. In-distribution: Prec=0.9945/Rec=0.9818 ✅
-- [x] **Wednesday OOD impossibility result** — Documented, sealed (md5), permanent artifact ✅
-- [x] **train_xgboost_level1_v2.py** — Temporal split + validation calibration + blind test ✅
-- [x] **xgboost_cicids2017_v2.ubj.sig** — Ed25519 signed via sign-model.sh ✅
-- [x] **Paper Draft v16** — §8 XGBoost + §10.13 + §11.18 ACRL + sommer2010 ✅
-- [x] **feature/adr026-xgboost → main** — Tag: v0.5.0-preproduction ✅
-- [x] **arXiv v16 submitted** ✅
+- [x] **DEBT-PRECISION-GATE-001** — Prec=0.9945/Rec=0.9818 in-distribution ✅
+- [x] **Wednesday OOD impossibility result** — Documented, sealed ✅
+- [x] **Paper Draft v16** — arXiv:2604.04952 ✅
 
-### ✅ DONE — DAY 121 (18 Apr 2026)
-- [x] DEBT-SEED-AUDIT-001 ✅ · DEBT-XGBOOST-TEST-REAL-001 ✅ (medical gate PASSED)
-- [x] DEBT-XGBOOST-DDOS-001 ✅ (F1=1.0, 20× faster RF) · DEBT-XGBOOST-RANSOMWARE-001 ✅
-- [x] vagrant destroy × 3 idempotency certification ✅
+### 🔜 NEXT — DAY 125-128: Debt closure
 
-### ✅ DONE — DAY 120–118 *(see git log)*
+| Priority | Task | Target |
+|---|---|---|
+| 🔴 P0 | DEBT-INTEGER-OVERFLOW-TEST-001 | DAY 125 |
+| 🔴 P0 | DEBT-SAFE-PATH-TEST-PRODUCTION-001 | DAY 125 |
+| 🔴 P0 | DEBT-SAFE-PATH-TEST-RELATIVE-001 | DAY 125 |
+| 🟡 P1 | DEBT-SNYK-WEB-VERIFICATION-001 | DAY 126 |
+| 🟡 P1 | DEBT-CRYPTO-TRANSPORT-CTEST-001 | DAY 126-127 |
+| 🟢 P2 | DEBT-DEV-PROD-SYMLINK-001 | DAY 127 |
+| 🟢 P2 | DEBT-PROVISION-PORTABILITY-001 | DAY 128 |
 
-### 🔜 NEXT — PHASE 5: Adversarial Capture-Retrain Loop
+### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
 | Priority | Task |
 |---|---|
-| P0 | **DEBT-PENTESTER-LOOP-001** — MITRE Caldera Fase 1 → real adversarial flows → XGBoost retraining |
-| P0 | **ADR-038** — ACRL formal design document |
-| P1 | DEBT-CRYPTO-003a — mlock() + explicit_bzero() |
-| P1 | ADR-037 Snyk C++ hardening |
-| P2 | ADR-024 Noise_IKpsk3 · ADR-032 HSM · ADR-033 TPM |
-| P3 | ADR-029 hardened variants · bare-metal stress test |
+| P0 | **DEBT-PENTESTER-LOOP-001** — MITRE Caldera → real adversarial flows → XGBoost retraining |
+| P0 | **ADR-038** — ACRL formal design |
+| P1 | aRGus-production images (x86 + ARM64 apparmor) |
+| P2 | aRGus-seL4 research branch |
+| P3 | FEAT-CLOUD-RETRAIN-001 — enterprise federated retraining |
 
 ---
 
@@ -253,11 +298,11 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 ## 🗺️ Milestones
 
 - ✅ DAY 111: **arXiv:2604.04952 PUBLICADO** 🎉
-- ✅ DAY 114: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉
-- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0 MERGEADO** 🎉
+- ✅ DAY 113: **ADR-025 MERGED — v0.3.0-plugin-integrity** 🎉
+- ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0** 🎉
 - ✅ DAY 120: **make bootstrap + XGBoost F1=0.9978** 🎉
-- ✅ DAY 121: **DEBTs bloqueantes cerrados + gate médico PASADO** 🎉
-- ✅ DAY 122: **PHASE 4 COMPLETADA — v0.5.0-preproduction** 🎉 · Wednesday OOD finding · arXiv v16
+- ✅ DAY 122: **PHASE 4 COMPLETADA — v0.5.0-preproduction** 🎉
+- ✅ DAY 124: **ADR-037 MERGED — v0.5.1-hardened** 🎉
 
 ---
 
@@ -265,4 +310,4 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 
 MIT License — See [LICENSE](LICENSE)
 
-**Via Appia Quality** 🏛️ — *Built to last decades.* 
+**Via Appia Quality** 🏛️ — *Built to last decades.*
