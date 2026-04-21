@@ -17,7 +17,9 @@ add_executable(test_config_parser
         ../src/common/config_parser.cpp
 )
 target_include_directories(test_config_parser
-        PRIVATE ${CMAKE_SOURCE_DIR}/include
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/../contrib/safe-path/include
 )
 target_link_libraries(test_config_parser
         PRIVATE
