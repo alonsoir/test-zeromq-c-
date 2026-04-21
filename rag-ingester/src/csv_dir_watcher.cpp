@@ -165,6 +165,9 @@ void CsvDirWatcher::run() {
         }
 
         const char* ptr = buf;
+        // F15 — Falso positivo Snyk documentado (ADR-037)
+        // SAFE: n <= BUF_SIZE = 4096 garantizado por POSIX read().
+        // ptr < buf + n nunca desborda. Snyk no traza acotacion de read() -> BUF_SIZE.
         while (ptr < buf + n) {
             const auto* ev = reinterpret_cast<const struct inotify_event*>(ptr);
             ptr += sizeof(struct inotify_event) + ev->len;

@@ -310,7 +310,7 @@ generate_seed() {
 
     # 32 bytes de /dev/urandom — fuente de entropía del SO
     openssl rand -out "$seed_file" ${SEED_BYTES}
-    chmod 640 "$seed_file"
+    chmod 0400 "$seed_file"
     chown root:vagrant "$seed_file"
 
     # Verificación de integridad: el seed debe tener exactamente SEED_BYTES
@@ -325,7 +325,7 @@ generate_seed() {
     # Guardar también en hex para debugging (chmod 600)
     # Solo en PHASE 1 — en PHASE 2 el hex también irá cifrado
     openssl rand -hex ${SEED_BYTES} > "${dir}/seed.hex"
-    chmod 640 "${dir}/seed.hex"
+    chmod 0400 "${dir}/seed.hex"
     chown root:vagrant "${dir}/seed.hex"
 
     log_item "Seed ChaCha20 (${SEED_BYTES}B) generado para ${component}"
@@ -541,7 +541,7 @@ reset_all_keys() {
 
         # Sobreescribir seed con el seed_family compartido
         cp "$shared_seed_tmp" "${dir}/seed.bin"
-        chmod 640 "${dir}/seed.bin"
+        chmod 0400 "${dir}/seed.bin"
         chown root:vagrant "${dir}/seed.bin"
         log_item "seed_family aplicado a ${component}"
     done
@@ -1130,7 +1130,7 @@ provision_full() {
     for component in sniffer ml-detector firewall-acl-agent rag-ingester rag-security; do
         local dst="${KEYS_ROOT}/${component}/seed.bin"
         cp "$master_seed" "$dst"
-        chmod 640 "$dst"
+        chmod 0400 "$dst"
         chown root:vagrant "$dst"
         log_item "Seed sincronizado → ${component}"
     done

@@ -1,12 +1,15 @@
 #include "common/config_parser.hpp"
 #include <fstream>
+#include <safe_path/safe_path.hpp>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
 namespace rag_ingester {
 
 Config ConfigParser::load(const std::string& config_path) {
-    std::ifstream file(config_path);
+    const auto safe_config_path =
+        argus::safe_path::resolve(config_path, "/etc/ml-defender/");
+    std::ifstream file(safe_config_path);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open config file: " + config_path);
     }

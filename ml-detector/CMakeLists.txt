@@ -284,6 +284,7 @@ set(HEADERS
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
+        ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/safe-path/include
         /vagrant/common/include # Se incluye reason_codes.hpp
 )
 
@@ -354,6 +355,7 @@ add_executable(ml-detector ${SOURCES} ${HEADERS})
 target_include_directories(ml-detector PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_BINARY_DIR}/proto  # Archivos protobuf unificados
+        ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/safe-path/include
 )
 
 find_package(OpenSSL REQUIRED)

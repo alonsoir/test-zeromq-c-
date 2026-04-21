@@ -244,6 +244,7 @@ target_include_directories(firewall_core
         ${JSONCPP_INCLUDE_DIRS}
         ${SEED_CLIENT_INCLUDE_DIR}
         ${LZ4_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/safe-path/include
 )
 
 #===----------------------------------------------------------------------===//

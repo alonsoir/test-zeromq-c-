@@ -1,4 +1,5 @@
 #include "seed_client/seed_client.hpp"
+#include <safe_path/safe_path.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -92,8 +93,11 @@ void SeedClient::load() {
     // 3. Construir path al seed.bin
     const std::string seed_path = keys_dir_ + "seed.bin";
 
-    // 4. Verificar permisos (advertencia, no error)
-    check_seed_permissions(seed_path);
+    // 4+5. Validar path, permisos 0400, O_NOFOLLOW|O_CLOEXEC (ADR-037)
+    {
+        const int seed_fd = argus::safe_path::resolve_seed(seed_path);
+        ::close(seed_fd); // validación completada — ifstream abre por path
+    }
 
     // 5. Abrir seed.bin en modo binario
     std::ifstream seed_file(seed_path, std::ios::binary);

@@ -5,6 +5,7 @@
 
 #include "firewall/config_loader.hpp"
 #include <fstream>
+#include <safe_path/safe_path.hpp>
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
@@ -77,7 +78,9 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path)
     std::cout << "[CONFIG] Loading configuration from: " << config_path << std::endl;
     
     // Open JSON file
-    std::ifstream file(config_path);
+    const auto safe_config_path =
+        argus::safe_path::resolve(config_path, "/etc/ml-defender/");
+    std::ifstream file(safe_config_path);
     if (!file.is_open()) {
         throw std::runtime_error(
             "❌ CANNOT OPEN CONFIG FILE: " + config_path + "\n"

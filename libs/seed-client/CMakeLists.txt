@@ -17,6 +17,7 @@ target_include_directories(seed_client
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../contrib/safe-path/include>
 )
 
 target_link_libraries(seed_client

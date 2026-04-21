@@ -190,7 +190,10 @@ target_compile_options(csv_event_loader PRIVATE -Wall -Wextra -Wpedantic)
 
 # CsvDirWatcher library — inotify on directory for daily-rotating CSV files
 add_library(csv_dir_watcher STATIC src/csv_dir_watcher.cpp)
-target_include_directories(csv_dir_watcher PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(csv_dir_watcher PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/safe-path/include
+)
 target_link_libraries(csv_dir_watcher PRIVATE Threads::Threads)
 target_compile_options(csv_dir_watcher PRIVATE -Wall -Wextra -Wpedantic)
 
@@ -231,6 +234,9 @@ set(SOURCES
 
 add_executable(rag-ingester ${SOURCES})
 target_compile_options(rag-ingester PRIVATE -Wall -Wextra -Wpedantic)
+target_include_directories(rag-ingester PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/safe-path/include
+) # ADR-037 safe_path
 
 target_link_libraries(rag-ingester
         PRIVATE
