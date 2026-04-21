@@ -95,7 +95,7 @@ void SeedClient::load() {
 
     // 4+5. Validar path, permisos 0400, O_NOFOLLOW|O_CLOEXEC (ADR-037)
     {
-        const int seed_fd = argus::safe_path::resolve_seed(seed_path, "/etc/ml-defender/");
+        const int seed_fd = argus::safe_path::resolve_seed(seed_path, keys_dir_);
         ::close(seed_fd); // validación completada — ifstream abre por path
     }
 
