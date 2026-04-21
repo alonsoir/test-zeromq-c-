@@ -211,3 +211,5 @@ stress_*.log
 stress_live.log
 */build-active
 shared/indices/
+trivy_*.txt
+warnings.txt
