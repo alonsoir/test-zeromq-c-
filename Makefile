@@ -763,8 +763,8 @@ test-provision-1:
 	@echo "── Check 6/8: Permisos ficheros sensibles ──"
 	@vagrant ssh -c "sudo find /etc/ml-defender -type f \( -name '*.sk' \) -perm /022 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
 		(echo "❌ CHECK 6 FAILED: .sk con permisos world/group-writable" && exit 1) || true
-	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' ! -perm 640 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
-		(echo "❌ CHECK 6 FAILED: seed.bin con permisos incorrectos (esperado: 640)" && exit 1) || true
+	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' ! -perm 400 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
+		(echo "❌ CHECK 6 FAILED: seed.bin con permisos incorrectos (esperado: 0400)" && exit 1) || true
 	@echo "✅ Check 6/8 OK"
 	@echo ""
 	@echo "── Check 7/8: Consistencia JSONs con plugins reales ──"
