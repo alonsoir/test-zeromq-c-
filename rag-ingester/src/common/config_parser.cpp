@@ -7,8 +7,11 @@
 namespace rag_ingester {
 
 Config ConfigParser::load(const std::string& config_path) {
+    // Prefijo = directorio padre del config — funciona en dev (/vagrant/) y prod (/etc/ml-defender/)
+    namespace fs = std::filesystem;
+    const std::string config_prefix = fs::path(config_path).parent_path().string();
     const auto safe_config_path =
-        argus::safe_path::resolve(config_path, "/etc/ml-defender/");
+        argus::safe_path::resolve(config_path, config_prefix.empty() ? "/etc/ml-defender/" : config_prefix);
     std::ifstream file(safe_config_path);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open config file: " + config_path);
