@@ -333,3 +333,14 @@ FEAT-CLOUD-RETRAIN-001:                 ░░░░░░░░░░░░░�
 SafePathTest.SeedRejectSymlink falla - safe_path.hpp necesita lstat/O_NOFOLLOW en resolve_seed.
 **Test de cierre:** SafePathTest.SeedRejectSymlink debe pasar GREEN.
 **Feature destino:** fix/safe-path-seed-symlink
+
+## DEBT-CONFIG-PARSER-FIXED-PREFIX-001
+**Estado:** 🟡 No bloqueante
+**Descubierto:** DAY 125
+**Descripcion:** config_parser deriva el prefix de safe_path del parent del
+propio config_path de entrada. Esto impide que safe_path rechace traversal
+relativo porque el prefix siempre coincide con el directorio del atacante.
+La proteccion real requiere un prefix fijo y de confianza (e.g. /etc/ml-defender/).
+**Fix:** ConfigParser::load debe aceptar un segundo parametro allowed_prefix
+con valor por defecto /etc/ml-defender/ — no derivado del input.
+**Feature destino:** fix/config-parser-fixed-prefix
