@@ -326,3 +326,10 @@ FEAT-CLOUD-RETRAIN-001:                 ░░░░░░░░░░░░░�
 
 *DAY 124 — 21 Abril 2026 · main @ 8bf83b90 · Tag: v0.5.1-hardened*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
+## DEBT-SAFE-PATH-SEED-SYMLINK-001
+**Estado:** 🔴 Bloqueante
+**Descubierto:** DAY 125 - pre-existente, confirmado con git stash
+**Descripcion:** resolve_seed() no rechaza symlinks dentro del prefix.
+SafePathTest.SeedRejectSymlink falla - safe_path.hpp necesita lstat/O_NOFOLLOW en resolve_seed.
+**Test de cierre:** SafePathTest.SeedRejectSymlink debe pasar GREEN.
+**Feature destino:** fix/safe-path-seed-symlink

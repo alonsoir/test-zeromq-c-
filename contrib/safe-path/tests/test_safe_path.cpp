@@ -122,6 +122,35 @@ TEST_F(SafePathTest, SeedRejectWrongPermissions) {
     ) << "resolve_seed MUST reject seed files with permissions != 0400";
 }
 
+// ─── ACCEPTANCE TEST 10: path relativo ──────────────────────────────────────
+// ATAQUE: componente recibe config_path = "config/foo.json" (relativo al CWD)
+// SIN FIX: weakly_canonical no canonicalizaba el prefix antes de la comparacion
+//          → prefix era "config/" → no matching con path absoluto resuelto
+//          → SECURITY VIOLATION falso positivo → rag-ingester STOPPED (DAY 124)
+// CON FIX: prefix canonicalizado con weakly_canonical antes de la comparacion.
+TEST_F(SafePathTest, RelativePathResolvesBeforePrefixCheck) {
+    // Crear un config legitimo dentro del allowed_dir
+    std::ofstream(allowed_dir + "config.json") << "{\"ok\":true}";
+
+    // Construir path relativo desde CWD al fichero dentro de allowed_dir
+    const fs::path abs_path = fs::path(allowed_dir + "config.json");
+    const fs::path cwd = fs::current_path();
+    std::string rel_path;
+    try {
+        rel_path = fs::relative(abs_path, cwd).string();
+    } catch (...) {
+        // Si no es posible construir un path relativo (e.g. distinto volumen),
+        // usamos el path absoluto directamente — el test sigue siendo valido.
+        rel_path = abs_path.string();
+    }
+
+    // El path relativo debe resolverse correctamente — no SECURITY VIOLATION
+    EXPECT_NO_THROW({
+        auto r = argus::safe_path::resolve(rel_path, allowed_dir);
+        EXPECT_FALSE(r.empty());
+    }) << "Fichero legitimo en allowed_dir no debe ser rechazado por path relativo";
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     std::cout << "\n";
