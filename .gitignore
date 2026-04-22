@@ -215,3 +215,17 @@ stress_live.log
 shared/indices/
 trivy_*.txt
 warnings.txt
+
+# Binarios de test sueltos (no pertenecen al build system)
+etcd-client/tests/test_put_config_integration
+firewall-acl-agent/test_simple
+rag/models/test_real_embedders
+
+# Archivos pcap (datos de red, potencialmente sensibles)
+**/*.pcap
+
+# Tests obsoletos archivados (historia, no compilables)
+sniffer/tests/obsolete_archive/
+
+# Binario legacy
+tools/legacy/test_reducer
