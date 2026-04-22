@@ -85,8 +85,15 @@ if(GTest_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/unit/test_model_loader.cp
     )
 endif()
 
+# ── test_zmq_memory_overflow — DEBT-INTEGER-OVERFLOW-TEST-001 (ADR-037 F17) ──
+if(GTest_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/unit/test_zmq_memory_overflow.cpp")
+    ml_gtest(test_zmq_memory_overflow unit/test_zmq_memory_overflow.cpp)
+    # No extra libs needed — memory_utils.hpp is header-only, zero deps
+    message(STATUS "✅ test_zmq_memory_overflow registered (DEBT-INTEGER-OVERFLOW-TEST-001)")
+endif()
 # ── test_ransomware_detector — uses ransomware_detector library target ────────
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/unit/test_ransomware_detector.cpp")
+
     add_executable(test_ransomware_detector_unit
             unit/test_ransomware_detector.cpp
     )
