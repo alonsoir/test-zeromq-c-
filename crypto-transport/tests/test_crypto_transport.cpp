@@ -29,7 +29,8 @@ struct TestSeedEnv {
         sf.write(reinterpret_cast<const char*>(seed.data()), 32);
         sf.close();
         std::filesystem::permissions(seed_path,
-            std::filesystem::perms::owner_read | std::filesystem::perms::owner_write);
+            std::filesystem::perms::owner_read,
+            std::filesystem::perm_options::replace);
 
         json_path = dir / (id + ".json");
         std::ofstream jf(json_path);
