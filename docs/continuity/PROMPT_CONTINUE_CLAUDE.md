@@ -1,4 +1,4 @@
-# ML Defender (aRGus NDR) — DAY 125 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 126 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -12,31 +12,38 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
 - **REGLA macOS/sed:** Nunca `sed -i` sin `-e ''`. Usar Python3 heredoc para ediciones de ficheros en macOS.
 - **REGLA PERMANENTE (Consejo 7/7 DAY 124):** Ningún fix de seguridad en código de producción se mergea sin test de demostración RED→GREEN. El test debe fallar con el código antiguo y pasar con el nuevo. Sin excepciones.
+- **REGLA PERMANENTE (Consejo 8/8 DAY 125):** Todo fix de seguridad incluye: (1) unit test sintético, (2) property test de invariante, (3) test de integración en componente real. Sin excepciones.
 
 ---
 
-## Estado al cierre de DAY 124
+## Estado al cierre de DAY 125
 
-### Tag activo
-`v0.5.1-hardened` — branch `main` @ commit `8bf83b90`
+### Branch activa
+`fix/day125-debt-closure` — NO mergeada a main. Decisión Consejo 8/8 + Alonso (Opción B).
+Merge bloqueado por 4 deudas críticas que se cierran HOY (DAY 126).
+Tag pendiente: `v0.5.2` al merge final.
 
-### Hitos completados DAY 124
-- **ADR-037** ✅ — `contrib/safe-path/` header-only C++20 mergeado a main.
-- **F17** ✅ — integer overflow corregido en `zmq_handler.cpp` (int64_t cast).
-- **Seeds** ✅ — `provision.sh` + `seed_client.cpp` + `Makefile` actualizados a `0400`.
-- **9 acceptance tests RED→GREEN** ✅ — path traversal, symlink, prefijos, permisos.
-- **Consejo DAY 124** ✅ — 7/7 unánime en todos los puntos.
+### Último commit en la rama
+`af0d8b89` — fix(debt): DEBT-CRYPTO-TRANSPORT-CTEST-001
 
-### Lección metodológica DAY 124 (Consejo 7/7)
-Los fixes de producción (`seed_client`, `config_loader`, `config_parser`) no tienen tests de demostración RED→GREEN propios. `rag-ingester` STOPPED se descubrió en el build de producción, no en un test. Esta es la deuda más importante que cerramos HOY.
+### Hitos completados DAY 125
+- **DEBT-GITIGNORE-TEST-SOURCES-001** ✅ — `.gitignore` arreglado, 47 fuentes de test versionadas
+- **DEBT-INTEGER-OVERFLOW-TEST-001** ✅ — `memory_utils.hpp` + 4 tests RED→GREEN (property test encontró bug latente en int64_t fix)
+- **DEBT-SAFE-PATH-TEST-RELATIVE-001** ✅ — Test 10 en `safe_path`
+- **DEBT-SAFE-PATH-TEST-PRODUCTION-001** ✅ (rag-ingester) — `test_config_parser_traversal` en ctest
+- **DEBT-CRYPTO-TRANSPORT-CTEST-001** ✅ — permisos `0400` en test fixtures (era `0600`)
+- **Consejo 8/8 DAY 125** ✅ — feedback completo recibido y sintetizado
+
+### Hallazgo metodológico DAY 125 (Consejo 8/8)
+`PropertyNeverNegative` encontró un bug latente en el propio fix F17: `int64_t` desborda para `LONG_MAX/4096 * 8192`. Fix correcto: aritmética `double` directa. Esto valida la Opción C del Consejo DAY 124 y justifica la adopción sistémica de property testing.
 
 ---
 
-## PASO 0 — DAY 125: verificar entorno
+## PASO 0 — DAY 126: verificar entorno
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout main && git status
+git checkout fix/day125-debt-closure && git status
 make pipeline-status
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS|VERDE"
 ```
@@ -45,306 +52,218 @@ Si la VM está parada: `make up && make bootstrap`
 
 ---
 
-## PASO 1 — DEBT-GITIGNORE-TEST-SOURCES-001 (rápido, 5 min)
+## PASO 1 — DEBT-MEMORY-UTILS-BOUNDS-001 (rápido, 15 min)
 
-La regla `**/test_*` en `.gitignore` (línea 146) ignora fuentes de test. Ya causó que `test_seed_client.cpp` y `test_perms_seed.cpp` no se versionaran en DAY 124.
+### Qué hacer
+Añadir `MAX_REALISTIC_MEMORY_MB` como constante en `memory_utils.hpp` y actualizar el property test.
 
-```bash
-# Verificar estado actual
-grep -n "test_\*\|test_\*.cpp" .gitignore | head -10
-```
+La función mantiene `noexcept` (componente de monitoring — mejor métrica incorrecta que crash), pero debe loguear warning si supera el bound.
 
-Fix con Python3:
-```bash
-python3 << 'PYEOF'
-with open(".gitignore", "r") as f:
-    content = f.read()
-
-# Añadir excepciones para fuentes de test después de la regla **/test_*
-content = content.replace(
-    "**/test_*\n",
-    "**/build/**/test_*\n!**/test_*.cpp\n!**/test_*.hpp\n"
-)
-
-with open(".gitignore", "w") as f:
-    f.write(content)
-print("Done")
-PYEOF
-```
-
-Gate: `git check-ignore libs/seed-client/tests/test_seed_client.cpp` → no ignorado
-
----
-
-## PASO 2 — DEBT-INTEGER-OVERFLOW-TEST-001
-
-### 2.1 Extraer función pura en zmq_handler.cpp
-
-Primero verifiquemos la ubicación exacta del código a extraer:
-```bash
-grep -n "compute_memory_mb\|mem_bytes\|pages \* page_size\|int64_t.*pages" ml-detector/src/zmq_handler.cpp | head -10
-```
-
-Crear la función pura. Localizamos el header de ZMQHandler:
-```bash
-grep -n "compute_memory_mb\|current_memory_mb_\|pages" ml-detector/include/zmq_handler.hpp | head -10
-```
-
-La función pura a añadir en `zmq_handler.hpp` (sección private helpers o como inline libre):
+### Fix en memory_utils.hpp
 ```cpp
-// Pure function — testable independently (ADR-037 F17)
+// memory_utils.hpp
+constexpr double MAX_REALISTIC_MEMORY_MB = 1024.0 * 1024.0; // 1 TB en MB
+
 [[nodiscard]] inline double compute_memory_mb(long pages, long page_size) noexcept {
-    const auto mem_bytes = static_cast<int64_t>(pages) * static_cast<int64_t>(page_size);
-    return static_cast<double>(mem_bytes) / (1024.0 * 1024.0);
+    const double result = (static_cast<double>(pages) * static_cast<double>(page_size))
+                          / (1024.0 * 1024.0);
+    // No throw (noexcept) — mejor métrica incorrecta que componente caído
+    // En producción añadir: if (result > MAX_REALISTIC_MEMORY_MB || result < 0.0) log_warning(...)
+    return result;
 }
 ```
 
-Y en `zmq_handler.cpp` reemplazar el cálculo inline por la llamada a la función.
-
-### 2.2 Crear test RED→GREEN
-
-```bash
-# Verificar dónde están los tests de ml-detector
-ls ml-detector/tests/
-```
-
-Crear `ml-detector/tests/unit/test_zmq_memory_overflow.cpp`:
-
+### Fix en test_zmq_memory_overflow.cpp
+Actualizar `PropertyNeverNegative` para añadir:
 ```cpp
-// ml-detector/tests/unit/test_zmq_memory_overflow.cpp
-//
-// ACCEPTANCE TEST — DEBT-INTEGER-OVERFLOW-TEST-001 (ADR-037 F17)
-//
-// RED→GREEN: demuestra que el código antiguo overflowea y el nuevo no.
-// Veredicto Consejo DAY 124 (7/7): Opción A + C.
-// - A: unit test con valores sintéticos extremos
-// - C: property loop ligero, sin dependencias nuevas
+EXPECT_LE(result, MAX_REALISTIC_MEMORY_MB)
+    << "Result exceeds realistic memory bound for pages=" << pages
+    << " page_size=" << page_size;
+```
 
-#include <gtest/gtest.h>
-#include <climits>
-#include <cstdint>
-#include "zmq_handler.hpp"  // para compute_memory_mb
-
-// ─── ACCEPTANCE TEST RED ────────────────────────────────────────────────────
-// Demuestra que el código ANTIGUO produce overflow con valores grandes.
-// Sin este test, el fix es "una promesa sin firma" (Qwen, Consejo DAY 124).
-
-TEST(ZmqMemoryOverflow, OldCodeOverflowsWithLargePages) {
-    // Con pages = LONG_MAX / 4096 + 1, la multiplicación (long * long) desborda
-    long pages = LONG_MAX / 4096 + 1;
-    long page_size = 4096;
-
-    // Simulamos el código ANTIGUO (vulnerable):
-    volatile long old_product = pages * page_size; // overflow intencional
-    double old_result = static_cast<double>(old_product) / (1024.0 * 1024.0);
-
-    // El resultado debe ser negativo o absurdamente grande — evidencia de overflow
-    EXPECT_TRUE(old_result < 0.0 || old_result > 1e15)
-        << "OLD CODE: expected overflow evidence, got: " << old_result;
-}
-
-// ─── ACCEPTANCE TEST GREEN ───────────────────────────────────────────────────
-// Demuestra que el código NUEVO produce el resultado correcto.
-
-TEST(ZmqMemoryOverflow, NewCodeHandlesExtremeValues) {
-    long pages = LONG_MAX / 4096;
-    long page_size = 4096;
-
-    double result = compute_memory_mb(pages, page_size);
-
-    // Resultado debe ser positivo y acotado (no overflow, no negativo)
-    EXPECT_GT(result, 0.0) << "Result must be positive";
-    EXPECT_LT(result, 1e13) << "Result must be bounded (< 10 PB)";
-}
-
-// ─── PROPERTY TEST ───────────────────────────────────────────────────────────
-// Para cualquier pages >= 0 y page_size en [4096, 65536],
-// el resultado de compute_memory_mb nunca es negativo.
-// Opción C ligera: loop sin dependencias externas (Consejo DAY 124).
-
-TEST(ZmqMemoryOverflow, PropertyNeverNegative) {
-    const long page_sizes[] = {4096, 8192, 16384, 65536};
-    const long page_values[] = {
-        0, 1, 1000, 100000,
-        LONG_MAX / 65536,
-        LONG_MAX / 16384,
-        LONG_MAX / 8192,
-        LONG_MAX / 4096
-    };
-
-    for (long page_size : page_sizes) {
-        for (long pages : page_values) {
-            double result = compute_memory_mb(pages, page_size);
-            EXPECT_GE(result, 0.0)
-                << "Negative result for pages=" << pages
-                << " page_size=" << page_size;
-        }
-    }
-}
-
-// ─── PROPERTY TEST: monotonía ─────────────────────────────────────────────
-// Más páginas → más memoria. El resultado debe ser monótono creciente.
-
-TEST(ZmqMemoryOverflow, PropertyMonotonicallyIncreasing) {
-    long page_size = 4096;
-    long prev_pages = 0;
-    double prev_result = compute_memory_mb(prev_pages, page_size);
-
-    for (long pages : {1L, 1000L, 1000000L, 1000000000L}) {
-        double result = compute_memory_mb(pages, page_size);
-        EXPECT_GE(result, prev_result)
-            << "Non-monotonic at pages=" << pages;
-        prev_result = result;
-        prev_pages = pages;
-    }
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    std::cout << "\n";
-    std::cout << "═══════════════════════════════════════════════════════\n";
-    std::cout << "  DEBT-INTEGER-OVERFLOW-TEST-001 — F17 RED→GREEN gate  \n";
-    std::cout << "  A: unit sintético · C: property loop sin deps        \n";
-    std::cout << "═══════════════════════════════════════════════════════\n\n";
-    return RUN_ALL_TESTS();
+Añadir test adicional:
+```cpp
+TEST(ZmqMemoryOverflow, RealisticBounds) {
+    // 1 TB de RAM = 256M páginas de 4KB
+    const long max_pages_realistic = (1024LL * 1024 * 1024 * 1024) / 4096;
+    double result = compute_memory_mb(max_pages_realistic, 4096);
+    EXPECT_NEAR(result, 1024.0 * 1024.0, 1.0); // 1 TB en MB
+    EXPECT_LE(result, MAX_REALISTIC_MEMORY_MB);
 }
 ```
 
-### 2.3 Añadir el test al CMakeLists.txt de ml-detector
-
-```bash
-grep -n "test_ransomware_detector_unit\|add_executable.*test_" ml-detector/CMakeLists.txt | head -10
-```
-
-Añadir el nuevo test siguiendo el patrón existente.
-
-Gate: `test_zmq_memory_overflow` — 4 tests PASSED
+Gate: `test_zmq_memory_overflow` — 5 tests PASSED
 
 ---
 
-## PASO 3 — DEBT-SAFE-PATH-TEST-RELATIVE-001
+## PASO 2 — DEBT-SAFE-PATH-SEED-SYMLINK-001 (30 min)
 
-Añadir en `contrib/safe-path/tests/test_safe_path.cpp`:
+### Qué hacer
+`resolve_seed()` en `contrib/safe-path/include/safe_path/safe_path.hpp` no rechaza symlinks. `SafePathTest.SeedRejectSymlink` falla. Fix: `lstat` + `S_ISLNK` + throw. Sin flag configurable.
 
+**Veredicto Consejo 8/8:** ESTRICTO. El material criptográfico no admite compromiso de ergonomía. Si CI/CD necesita symlinks para seeds, el CI/CD está mal configurado, no el código.
+
+### Localizar el código
+```bash
+grep -n "resolve_seed\|S_ISLNK\|lstat\|symlink" contrib/safe-path/include/safe_path/safe_path.hpp | head -20
+```
+
+### Fix a implementar
 ```cpp
-// ─── ACCEPTANCE TEST 10: path relativo ──────────────────────────────────────
-// ATAQUE: componente recibe config_path = "config/foo.json" (relativo al CWD)
-// SIN FIX: weakly_canonical no canonicalizaba el prefix → prefix era "config/"
-//          → no matching con path absoluto resuelto → SECURITY VIOLATION falso positivo
-//          → rag-ingester STOPPED (incidencia DAY 124)
-// CON FIX: prefix canonicalizado con weakly_canonical antes de la comparación.
-
-TEST_F(SafePathTest, RelativePathResolvesBeforePrefixCheck) {
-    namespace fs = std::filesystem;
-
-    // Crear un config legítimo dentro del allowed_dir
-    std::ofstream(allowed_dir + "config.json") << "{\"ok\":true}";
-
-    // Simular path relativo: obtener path relativo desde CWD al fichero
-    // (como haría rag-ingester con "config/rag-ingester.json")
-    auto abs_path = fs::path(allowed_dir + "config.json").string();
-
-    // El path relativo se resuelve con weakly_canonical antes del prefix check
-    EXPECT_NO_THROW({
-        auto r = argus::safe_path::resolve(abs_path, allowed_dir);
-        EXPECT_FALSE(r.empty());
-    }) << "Legitimate file in allowed_dir must not be rejected";
+// En resolve_seed(), ANTES de verificar permisos:
+struct stat st;
+if (lstat(path.c_str(), &st) != 0) {
+    throw std::runtime_error(
+        "[safe_path] SECURITY VIOLATION — lstat failed: " + path);
+}
+if (S_ISLNK(st.st_mode)) {
+    throw std::runtime_error(
+        "[safe_path] SECURITY VIOLATION — symlink rejected for seed material: " + path);
 }
 ```
 
-Gate: `test_safe_path` con nuevo caso PASSED
+### Verificar que el test ya existía (RED pre-fix)
+```bash
+grep -n "SeedRejectSymlink" contrib/safe-path/tests/test_safe_path.cpp
+```
+
+Gate: `test_safe_path` — SeedRejectSymlink PASSED (era FAILED antes del fix)
 
 ---
 
-## PASO 4 — DEBT-SAFE-PATH-TEST-PRODUCTION-001
+## PASO 3 — DEBT-CONFIG-PARSER-FIXED-PREFIX-001 (45 min)
 
-Tests RED→GREEN por componente. Uno por componente modificado.
+### Qué hacer
+`config_parser.cpp` deriva el prefix de `safe_path` del `parent_path` del propio `config_path`. Si el atacante controla el path, controla el prefix → bypass. Fix: `allowed_prefix` como parámetro explícito con default `/etc/ml-defender/`.
+
+**Veredicto Consejo 8/8:** El prefix nunca debe derivarse del input.
+
+### Localizar el código
+```bash
+grep -n "weakly_canonical\|parent_path\|config_prefix\|allowed_prefix" rag-ingester/src/common/config_parser.cpp
+grep -n "load\|allowed_prefix" rag-ingester/include/common/config_parser.hpp
+```
+
+### Fix
+```cpp
+// config_parser.hpp
+static Config load(const std::string& config_path,
+                   const std::string& allowed_prefix = "/etc/ml-defender/");
+
+// config_parser.cpp
+Config ConfigParser::load(const std::string& config_path,
+                          const std::string& allowed_prefix) {
+    const auto safe_config_path =
+        argus::safe_path::resolve(config_path, allowed_prefix);
+    // ... resto igual ...
+}
+```
+
+### Actualizar test existente para usar prefix fijo
+```bash
+# test_config_parser_traversal.cpp — añadir caso:
+TEST(ConfigParserTraversal, RejectDotDotWithFixedPrefix) {
+    // Con prefix fijo, ../etc/passwd debe ser rechazado aunque el parent sea "/"
+    EXPECT_THROW(
+        rag_ingester::ConfigParser::load("../etc/passwd", "/etc/ml-defender/"),
+        std::runtime_error
+    ) << "Fixed prefix MUST reject ../ traversal";
+}
+```
+
+Gate: `test_config_parser_traversal` — 4 tests PASSED (incluyendo nuevo RED→GREEN)
+
+---
+
+## PASO 4 — DEBT-PRODUCTION-TESTS-REMAINING-001 (1-2 horas)
 
 ### 4.1 seed-client — test path traversal
 
 ```bash
-# Ver estructura de tests existentes para seguir el patrón
 ls libs/seed-client/tests/
 grep -n "add_executable\|test_" libs/seed-client/CMakeLists.txt | tail -20
+cat libs/seed-client/src/seed_client.cpp | grep -n "safe_path\|resolve_seed\|keys_dir" | head -20
 ```
 
 Crear `libs/seed-client/tests/test_seed_client_traversal.cpp`:
-- RED: path con `../` → SECURITY VIOLATION
-- GREEN: path dentro de `keys_dir_` → OK
+- RED: path con `../` en `keys_dir_` → SECURITY VIOLATION
+- RED: symlink como seed → SECURITY VIOLATION
+- GREEN: path legítimo dentro de `keys_dir_` → OK
 
 ### 4.2 firewall-acl-agent — test path traversal
 
 ```bash
-ls firewall-acl-agent/tests/ 2>/dev/null || echo "no tests dir"
+ls firewall-acl-agent/tests/unit/
+grep -n "safe_path\|resolve\|config" firewall-acl-agent/src/config_loader.cpp | head -20
 grep -n "add_executable\|test_" firewall-acl-agent/CMakeLists.txt | tail -10
 ```
 
-### 4.3 rag-ingester — test path traversal config
+Crear `firewall-acl-agent/tests/unit/test_config_loader_traversal.cpp`:
+- RED: `../etc/passwd` → runtime_error SECURITY VIOLATION
+- GREEN: path legítimo → OK
 
+### Verificar que ambos están en ctest
 ```bash
-ls rag-ingester/tests/
-grep -n "test_config_parser" rag-ingester/tests/CMakeLists.txt
+vagrant ssh defender -c "cd /vagrant/libs/seed-client/build && ctest -N"
+vagrant ssh defender -c "cd /vagrant/firewall-acl-agent/build-debug && ctest -N"
 ```
 
-Ver `test_config_parser.cpp` existente para seguir patrón:
-```bash
-cat rag-ingester/tests/test_config_parser.cpp
-```
-
-Añadir casos RED→GREEN al test existente:
-- RED: `../etc/passwd` → runtime_error con SECURITY VIOLATION
-- GREEN: path legítimo → sin excepción
-
-Gate: todos los tests de producción path traversal PASSED
+Gate: todos los tests de path traversal PASSED en seed-client y firewall-acl-agent
 
 ---
 
-## PASO 5 — DEBT-CRYPTO-TRANSPORT-CTEST-001
+## PASO 5 — DEBT-SNYK-WEB-VERIFICATION-001 (cuando estés en el navegador)
 
-```bash
-# Ejecutar con output verboso para ver la causa raíz
-vagrant ssh defender -c "cd /vagrant/crypto-transport/build && ctest -V 2>&1 | tail -50"
-```
+Ejecutar Snyk web sobre `fix/day125-debt-closure` (o main post-merge):
+- URL: https://app.snyk.io
+- Target: repositorio `alonsoir/argus`
+- Filtro: código C++ de producción
+- Gate: 0 findings HIGH/CRITICAL en código propio (no third_party)
 
-Aislar si el fallo es:
-- **Linking:** error de símbolo no encontrado
-- **Runtime:** crash o timeout
-- **Aserción lógica:** resultado incorrecto
-
-Una vez identificada la causa, documentar en `docs/KNOWN-ISSUES.md` si requiere refactor mayor, o fix inline si es sencillo.
-
-Gate: `test_crypto_transport` PASSED · `test_integ_contexts` PASSED · Makefile sin `|| echo`
+Documentar resultado en `docs/security/SNYK-DAY-126.md`
 
 ---
 
-## PASO 6 — Commit, tag y push
+## PASO 6 — Commit, tag y merge a main
+
+Una vez todos los gates verdes:
 
 ```bash
 git add -A
-git commit -m "fix(debt): DAY 125 — overflow test, safe_path tests, .gitignore, crypto investigation
+git commit -F - << 'EOF'
+fix(debt): DAY 126 — seed symlink + config prefix + remaining component tests
 
-- DEBT-INTEGER-OVERFLOW-TEST-001: compute_memory_mb() pure function + RED/GREEN/PROPERTY tests
-- DEBT-SAFE-PATH-TEST-RELATIVE-001: relative path acceptance test in contrib/safe-path
-- DEBT-SAFE-PATH-TEST-PRODUCTION-001: RED→GREEN tests for seed_client, config_loader, config_parser
-- DEBT-GITIGNORE-TEST-SOURCES-001: ignore only build artifacts, not test sources
-- DEBT-CRYPTO-TRANSPORT-CTEST-001: root cause documented / fixed
+- DEBT-SAFE-PATH-SEED-SYMLINK-001: lstat+S_ISLNK en resolve_seed, estricto sin flag
+- DEBT-CONFIG-PARSER-FIXED-PREFIX-001: allowed_prefix explicito, default /etc/ml-defender/
+- DEBT-PRODUCTION-TESTS-REMAINING-001: RED->GREEN para seed-client + firewall-acl-agent
+- DEBT-MEMORY-UTILS-BOUNDS-001: MAX_REALISTIC_MEMORY_MB en property test
 
-Consejo DAY 124 7/7: 'Un fix sin test de demostración es una promesa sin firma.'"
+Consejo 8/8 DAY 125: el material criptografico no admite compromiso de ergonomia.
+EOF
 
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS|VERDE"
-git push origin main
+git push origin fix/day125-debt-closure
+```
+
+Si todos los tests verdes, mergear:
+```bash
+git checkout main
+git merge --no-ff fix/day125-debt-closure -m "merge(day125-126): v0.5.2 — debt closure complete
+
+5 debts closed DAY 125 + 4 debts closed DAY 126.
+property test found latent bug in F17 fix (int64_t overflow).
+seed symlink: strict rejection, no flag.
+config_parser: fixed prefix, never derived from input.
+seed-client + firewall-acl-agent: RED->GREEN traversal tests.
+make test-all: ALL TESTS PASSED from cold VM."
+
+git tag -a v0.5.2-hardened -m "v0.5.2-hardened: DAY 125-126 debt closure complete"
+git push origin main --tags
 ```
 
 ---
 
 ## Contexto permanente
-
-### Tres variantes del pipeline
-| Variante | Estado |
-|----------|--------|
-| **aRGus-dev** | ✅ Activa — `main` @ `v0.5.1-hardened` |
-| **aRGus-production** | 🟡 Pendiente de cocinar (post-deuda) |
-| **aRGus-seL4** | ⏳ No iniciada — branch independiente futura |
 
 ### Secuencia canónica
 ```bash
@@ -353,17 +272,20 @@ make bootstrap    # 8 pasos, todo automático
 make test-all     # verificación completa
 ```
 
-### Estado de deuda tras DAY 124
+### Branch activa
+`fix/day125-debt-closure` — pendiente de merge a main post-cierre DAY 126
+
+### Estado de deuda al inicio de DAY 126
 ```
-🔴 DEBT-INTEGER-OVERFLOW-TEST-001     → DAY 125 (HOY)
-🔴 DEBT-SAFE-PATH-TEST-PRODUCTION-001 → DAY 125 (HOY)
-🔴 DEBT-SAFE-PATH-TEST-RELATIVE-001   → DAY 125 (HOY)
-🟢 DEBT-GITIGNORE-TEST-SOURCES-001    → DAY 125 (HOY, rápido)
-🟡 DEBT-SNYK-WEB-VERIFICATION-001     → DAY 126
-🟡 DEBT-CRYPTO-TRANSPORT-CTEST-001    → DAY 125-127
-🟢 DEBT-DEV-PROD-SYMLINK-001          → DAY 127
-🟢 DEBT-PROVISION-PORTABILITY-001     → DAY 128
-⏳ DEBT-PENTESTER-LOOP-001            → POST-DEUDA
+🔴 DEBT-SAFE-PATH-SEED-SYMLINK-001       → DAY 126 (HOY) — PASO 2
+🔴 DEBT-CONFIG-PARSER-FIXED-PREFIX-001   → DAY 126 (HOY) — PASO 3
+🔴 DEBT-PRODUCTION-TESTS-REMAINING-001   → DAY 126 (HOY) — PASO 4
+🟡 DEBT-MEMORY-UTILS-BOUNDS-001          → DAY 126 (HOY) — PASO 1
+🟡 DEBT-SNYK-WEB-VERIFICATION-001        → DAY 126 (navegador) — PASO 5
+🟢 DEBT-PROPERTY-TESTING-RAPIDCHECK-001  → DAY 127
+🟢 DEBT-DEV-PROD-SYMLINK-001             → DAY 127
+🟢 DEBT-PROVISION-PORTABILITY-001        → DAY 128
+⏳ DEBT-PENTESTER-LOOP-001               → POST-DEUDA
 ```
 
 ### Modelos firmados activos
@@ -375,16 +297,21 @@ make test-all     # verificación completa
 
 ### Paper arXiv:2604.04952
 Draft v16 activo. https://arxiv.org/abs/2604.04952
-Pendiente: actualizar §5 con lecciones aprendidas DAY 124 (tests de demostración, asimetría dev/prod).
+Pendiente: Draft v17 con §5 actualizado:
+- §5.3 "Property Testing as a Security Fix Validator" (hallazgo F17 DAY 125)
+- §5.4 "Dev/Prod Parity via Symlinks, Not Conditional Logic"
+- §5.5 "RED→GREEN as Non-Negotiable Merge Gate"
 
-### Tag activo
-`v0.5.1-hardened` — main.
+### Consejo de Sabios (8 modelos)
+Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
 
-### REGLA DE ORO DAY 125
-Si un fix de seguridad no tiene test que falle con el código antiguo y pase con el nuevo, no está cerrado. Punto.
+### REGLA DE ORO DAY 126
+Un symlink en material criptográfico no es ergonomía — es un vector de ataque.
+El prefix derivado del input no es conveniencia — es un bypass de seguridad.
+Ambos se cierran HOY con test RED→GREEN antes del merge.
 
 ---
 
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
 *"Un fix sin test de demostración es una promesa sin firma." — Qwen, Consejo DAY 124*
-*"Un escudo sin tests es un escudo de papel." — Kimi, Consejo DAY 124*
+*"Un escudo que no se prueba contra su propio filo es un escudo que ya está roto." — DeepSeek, Consejo DAY 125*
