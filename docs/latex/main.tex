@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v16 — DAY 122 — April 2026
+% Draft v17 — DAY 127 — April 2026
 % % Author: Alonso Isidoro Román
 % Target: cs.CR
 % ============================================================
@@ -79,7 +79,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v16 --- April 2026}
+\date{Draft v17 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -793,9 +793,12 @@ in Resource-Constrained Organizations}}
 
     \subsection{The Methodology}
 
-    Seven large language models served as co-reviewers across all development phases:
+    Eight large language models served as co-reviewers across all development phases:
     \textbf{Claude} (Anthropic), \textbf{Grok} (xAI), \textbf{ChatGPT} (OpenAI),
-    \textbf{DeepSeek}, \textbf{Qwen} (Alibaba), \textbf{Gemini} (Google), \textbf{Parallel.ai}.
+    \textbf{DeepSeek}, \textbf{Qwen} (Alibaba), \textbf{Gemini} (Google),
+    \textbf{Kimi} (Moonshot AI), and \textbf{Mistral} (Mistral AI).
+    The Council expanded from seven to eight models during development (DAY~120),
+    adding diverse perspectives on architectural security and formal methods.
 
     These models were engaged as intellectual peers --- presented with architectural proposals,
     asked to identify failure modes, invited to challenge assumptions. The methodology operates
@@ -939,6 +942,259 @@ const std::string ctx_rx = "ml-defender:" + component_name
     Its detection required no external audit: the TDH test suite caught it during
     routine regression testing on the \texttt{feature/bare-metal-arxiv} branch
     (now superseded by \texttt{feature/plugin-crypto}).
+
+
+    \subsection{Property Testing as a Security Fix Validator: The F17 Case Study}
+    \label{subsec:property-testing-validator}
+
+    A recurring failure mode in security hardening is the \emph{fix-contains-a-bug} antipattern:
+    a security fix is implemented, a unit test is written to confirm the fix, and both pass ---
+    while a subtler defect in the fix itself goes undetected. This section documents a concrete
+    instance discovered during DAY~125 of ML Defender's development and proposes property testing
+    as a systematic countermeasure.
+
+    \paragraph{The defect.}
+    During Snyk static analysis (ADR-037), an integer overflow was identified in the memory
+    metrics computation within \texttt{zmq\_handler.cpp}. The original code performed integer
+    arithmetic that could wrap silently on values exceeding \texttt{INT\_MAX}. A fix was
+    applied using \texttt{int64\_t} arithmetic:
+
+    \begin{lstlisting}[language=C++, caption={First fix attempt --- int64\_t cast},
+        basicstyle=\ttfamily\small, breaklines=true]
+// F17 -- first fix: cast to int64_t before multiplication
+[[nodiscard]] inline double compute_memory_mb(long pages, long page_size) noexcept {
+    return static_cast<double>(
+        static_cast<int64_t>(pages) * static_cast<int64_t>(page_size)
+    ) / (1024.0 * 1024.0);
+}
+    \end{lstlisting}
+
+    A synthetic unit test confirmed that this fix handled the previously overflowing value
+    correctly. The fix was considered closed.
+
+    \paragraph{Property test reveals the residual defect.}
+    A subsequent property test --- \texttt{PropertyNeverNegative} --- exercised the invariant
+    ``\texttt{compute\_memory\_mb} returns a non-negative value for all non-negative inputs''
+    across a broader set of extreme values:
+
+    \begin{lstlisting}[language=C++, caption={Property test that detected the residual overflow},
+        basicstyle=\ttfamily\small, breaklines=true]
+TEST(ZmqMemoryOverflow, PropertyNeverNegative) {
+    const long page_sizes[] = {4096, 8192, 16384, 65536};
+    const long page_values[] = {
+        0, 1, 1000, LONG_MAX/65536, LONG_MAX/16384,
+        LONG_MAX/8192, LONG_MAX/4096
+    };
+    for (long ps : page_sizes)
+        for (long p : page_values) {
+            double result = compute_memory_mb(p, ps);
+            EXPECT_GE(result, 0.0);
+        }
+}
+    \end{lstlisting}
+
+    The test failed: for \texttt{LONG\_MAX/4096 $\times$ 8192}, the \texttt{int64\_t}
+    product itself overflows --- because \texttt{LONG\_MAX/4096 $\times$ 8192 > INT64\_MAX}.
+    The unit test had exercised one specific previously-failing value; the property test
+    exercised the mathematical invariant across the full input space and exposed a residual
+    case where the fix was insufficient.
+
+    \paragraph{The correct fix.}
+    The root cause is that no integer type of fixed width can represent the product of two
+    \texttt{long} values at their extremes without overflow. The correct solution is to
+    cast directly to \texttt{double} before multiplication:
+
+    \begin{lstlisting}[language=C++, caption={Correct fix --- double arithmetic avoids overflow},
+        basicstyle=\ttfamily\small, breaklines=true]
+[[nodiscard]] inline double compute_memory_mb(long pages, long page_size) noexcept {
+    // double has 53-bit mantissa -- sufficient for any realistic memory value.
+    // int64_t is insufficient: LONG_MAX/4096 * 8192 overflows int64_t.
+    return (static_cast<double>(pages) * static_cast<double>(page_size))
+           / (1024.0 * 1024.0);
+}
+    \end{lstlisting}
+
+    \paragraph{Transferable lessons.}
+    This case study yields three observations directly applicable to security-critical C++ systems:
+
+    \begin{enumerate}
+        \item \textbf{Unit tests establish point coverage; property tests establish invariant coverage.}
+        The unit test confirmed that one specific overflow was eliminated. The property test
+        confirmed --- or in this case, \emph{refuted} --- the mathematical invariant that
+        no overflow can produce a negative result. These are different claims.
+
+        \item \textbf{A property test is the minimal evidence that a fix is correct.}
+        For arithmetic operations with security implications (memory metrics, size calculations,
+        index arithmetic), the TDH methodology now mandates a property test for every fix.
+        The test must be written before the fix is merged and must fail with the defective
+        code~\cite{quickcheck2000}.
+
+        \item \textbf{The testing hierarchy has a natural order.}
+        The Council of Wise Men (DAY~127) validated the following ordering for security-critical
+        surfaces: (1)~unit tests for known regression cases; (2)~property tests for mathematical
+        invariants; (3)~fuzzing~\cite{libfuzzer2016} for parser and deserialization surfaces;
+        (4)~mutation testing for test suite quality validation. Each layer catches a class of
+        defects invisible to the previous one.
+    \end{enumerate}
+
+    \subsection{Path Traversal Prevention: Lessons from \texttt{safe\_path}}
+    \label{subsec:safe-path-lessons}
+
+    The development of \texttt{contrib/safe-path/} --- a zero-dependency C++20 header-only
+    path validation library (ADR-037, DAY~124) --- produced two findings with implications
+    beyond this project.
+
+    \subsubsection{The Symlink Resolution Trap: \texttt{lstat()} vs.\ \texttt{fs::is\_symlink()}}
+    \label{subsubsec:symlink-trap}
+
+    The canonical defense against symlink-based path traversal attacks~\cite{cwe59} in C++
+    programs using \texttt{std::filesystem} is to call \texttt{fs::is\_symlink()} on the
+    resolved path. This approach is \emph{systematically incorrect} when combined with
+    \texttt{weakly\_canonical()}.
+
+    \paragraph{The defect.}
+    The following code appears correct but provides no protection:
+
+    \begin{lstlisting}[language=C++, caption={Ineffective symlink check --- canonical resolution arrives first},
+        basicstyle=\ttfamily\small, breaklines=true]
+// WRONG: weakly_canonical() already followed the symlink.
+// By the time is_symlink() runs, there is no symlink to detect.
+const auto resolved = fs::weakly_canonical(fs::path(path));
+if (fs::is_symlink(resolved)) {  // always false -- resolved is never a symlink
+    throw std::runtime_error("symlink rejected");
+}
+    \end{lstlisting}
+
+    \texttt{weakly\_canonical()} resolves symlinks as part of path normalization. The
+    \texttt{is\_symlink()} check that follows operates on the \emph{resolved} path,
+    which by construction is never a symlink. The check passes unconditionally, providing
+    no protection against TOCTOU attacks~\cite{cwe367} or symlink injection.
+
+    \paragraph{The correct approach.}
+    The only correct defense for cryptographic material or other security-sensitive files
+    is \texttt{lstat()} applied to the \emph{original, unresolved} path, before any
+    call to \texttt{weakly\_canonical()}:
+
+    \begin{lstlisting}[language=C++, caption={Correct symlink rejection via lstat() pre-resolution},
+        basicstyle=\ttfamily\small, breaklines=true]
+// CORRECT: lstat() on the original path, before any resolution.
+struct stat lst{};
+if (lstat(path.c_str(), &lst) != 0)
+    throw std::runtime_error("[safe_path] lstat failed: " + path);
+if (S_ISLNK(lst.st_mode))
+    throw std::runtime_error("[safe_path] symlink rejected: " + path);
+// Only now proceed with weakly_canonical() resolution.
+const auto resolved = fs::weakly_canonical(fs::path(path));
+    \end{lstlisting}
+
+    This defect was identified during DAY~126 when a test designed to verify symlink rejection
+    passed with the original code despite the symlink being present. Code review had not flagged
+    the issue; the test suite, exercising the specific security property, exposed it immediately.
+    This is a concrete instance of the RED$\to$GREEN gate principle: without a test asserting
+    failure, the defect was invisible.
+
+    \paragraph{Why this matters.}
+    This class of defect is not specific to ML Defender. Any C++17/20 codebase that combines
+    \texttt{std::filesystem::weakly\_canonical()} with \texttt{fs::is\_symlink()} for security
+    enforcement is vulnerable to the same pattern. The fix requires awareness that
+    \texttt{weakly\_canonical()} is not a security primitive --- it is a normalization
+    convenience that silently consumes the evidence needed for symlink detection.
+
+    \subsubsection{\texttt{lexically\_normal()} vs.\ \texttt{weakly\_canonical()} for Prefix Verification}
+    \label{subsubsec:lexical-vs-canonical}
+
+    A second lesson from \texttt{safe\_path} concerns the choice of normalization primitive
+    for path prefix verification when legitimate symlinks are present.
+
+    \paragraph{The tension.}
+    In a production deployment, ML Defender stores configuration files at
+    \texttt{/etc/ml-defender/component/config.json}. In the development environment,
+    these paths are symlinks pointing to the Vagrant shared directory
+    (\texttt{/vagrant/component/config/}). A strict prefix check using
+    \texttt{weakly\_canonical()} fails in development because canonical resolution
+    follows the symlink and the resolved path falls outside
+    \texttt{/etc/ml-defender/}.
+
+    The naive solution --- conditional logic based on environment detection --- introduces
+    divergence between development and production code paths, a known source of
+    security regressions~\cite{cwe22}.
+
+    \paragraph{The solution: lexical normalization for the prefix check.}
+    Configuration files are not cryptographic material. Their security requirement is
+    that the \emph{name} of the path lies within the trusted prefix, not that the
+    \emph{destination} does. \texttt{std::filesystem::path::lexically\_normal()} performs
+    purely textual normalization (eliminating \texttt{../}, \texttt{./}, double slashes)
+    without touching the filesystem:
+
+    \begin{lstlisting}[language=C++, caption={resolve\_config() --- lexical prefix verification with symlink support},
+        basicstyle=\ttfamily\small, breaklines=true]
+[[nodiscard]] inline std::string resolve_config(
+    const std::string& path,
+    const std::string& allowed_prefix = "/etc/ml-defender/")
+{
+    // Lexical normalization: no filesystem access, no symlink resolution.
+    // Verifies that the NAME of the path is within the trusted prefix.
+    const std::string lexical =
+        fs::path(path).lexically_normal().string();
+    if (lexical.rfind(prefix, 0) != 0)
+        throw std::runtime_error(
+            "[safe_path] SECURITY VIOLATION -- path outside allowed prefix");
+    // Prefix check passed. Now resolve for the actual file open.
+    return fs::weakly_canonical(fs::path(path)).string();
+}
+    \end{lstlisting}
+
+    The result is a three-primitive taxonomy in which the security semantics are explicit
+    and non-overlapping:
+
+    \begin{itemize}
+        \item \texttt{resolve()} --- general paths, prefix verified post-canonical resolution.
+        \item \texttt{resolve\_seed()} --- cryptographic material, \texttt{lstat()} pre-resolution,
+        symlinks strictly rejected, permissions enforced (\texttt{0400}).
+        \item \texttt{resolve\_config()} --- configuration files with legitimate symlinks,
+        \texttt{lexically\_normal()} pre-resolution, symlinks followed after prefix check.
+    \end{itemize}
+
+    To our knowledge, this distinction between lexical and canonical verification for
+    different path security classes is not explicitly documented in the C++17/20 standard
+    library documentation or in commonly referenced C++ security guidelines.
+
+    \subsection{Dev/Prod Parity via Symlinks, Not Conditional Logic}
+    \label{subsec:dev-prod-parity}
+
+    A structural principle that emerged from the \texttt{safe\_path} development is the
+    replacement of environment-conditional code with filesystem symlinks as the mechanism
+    for dev/prod parity.
+
+    \paragraph{The antipattern.}
+    A common practice in system software is to introduce conditional logic that selects
+    file paths based on a detected environment:
+
+    \begin{lstlisting}[language=C++, caption={Antipattern: conditional path logic creates divergent code paths},
+        basicstyle=\ttfamily\small, breaklines=true]
+// ANTIPATTERN: two code paths, one tested, one not.
+const std::string config_prefix =
+    fs::weakly_canonical(fs::path(config_path).parent_path()).string();
+    \end{lstlisting}
+
+    In this pattern, the effective prefix is derived from the input path. If an attacker
+    controls \texttt{config\_path}, they control \texttt{config\_prefix}, bypassing the
+    path traversal protection entirely. This was the defect addressed in
+    \texttt{DEBT-CONFIG-PARSER-FIXED-PREFIX-001} (DAY~126).
+
+    \paragraph{The correct pattern.}
+    The \texttt{allowed\_prefix} must be a compile-time or deployment-time constant, never
+    derived from user-controlled input. Dev/prod parity is then achieved not by conditional
+    logic but by the deployment infrastructure: in development, \texttt{provision.sh}
+    creates symlinks from \texttt{/etc/ml-defender/} to the Vagrant shared directory.
+    Production deployments use real files at the same paths. The application code sees
+    the same prefix in both environments; the difference is entirely in the filesystem
+    layout managed by the deployment tool.
+
+    This pattern has two security properties: (1)~the prefix check is unconditional and
+    cannot be bypassed by manipulating the input path; (2)~the development environment
+    exercises exactly the same code path as production, eliminating a class of security
+    regressions that manifest only in production deployments.
 
     \subsection{Attribution}
 
@@ -1804,9 +2060,10 @@ vagrant ssh client -c "sudo tcpreplay -i eth1 --mbps=100 --loop=3 \
     This work was carried out independently, without institutional funding, without a research
     group, and without affiliation to any university or laboratory.
 
-    The author engaged seven large language models --- Claude (Anthropic), Grok (xAI), ChatGPT
-    (OpenAI), DeepSeek, Qwen (Alibaba), Gemini (Google), and Parallel.ai --- as structured
-    intellectual collaborators across 88 days of continuous development. Their contributions to
+    The author engaged eight large language models --- Claude (Anthropic), Grok (xAI), ChatGPT
+    (OpenAI), DeepSeek, Qwen (Alibaba), Gemini (Google), Kimi (Moonshot AI), and Mistral
+    (Mistral AI) --- as structured intellectual collaborators across 127 days of continuous
+    development. Their contributions to
     architectural decisions, failure mode identification, debugging, test scenarios, and paper
     review are documented in the project's commit history and ADRs. The \emph{Test Driven
     Hardening} methodology documented in Section~\ref{sec:consejo} emerged directly from this
