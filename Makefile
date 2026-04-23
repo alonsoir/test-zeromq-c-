@@ -599,7 +599,7 @@ rag-ingester-start:
 	@echo "🧹 Limpiando SQLite lock anterior (si existe)..."
 	@vagrant ssh -c "rm -f /vagrant/shared/indices/metadata.db-wal /vagrant/shared/indices/metadata.db-shm || true"
 	@echo "Ejecución desde la raíz del componente para resolver paths relativos del config..."
-	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
+	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester /etc/ml-defender/rag-ingester/rag-ingester.json >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
 	@sleep 2
 
 rag-ingester: proto etcd-client-build crypto-transport-build plugin-loader-build
@@ -626,7 +626,7 @@ rag-ingester: proto etcd-client-build crypto-transport-build plugin-loader-build
 
 FIREWALL_DIR := /vagrant/firewall-acl-agent
 FIREWALL_BIN := ./firewall-acl-agent
-FIREWALL_CFG := ../config/firewall.json
+FIREWALL_CFG := /etc/ml-defender/firewall-acl-agent/firewall.json
 
 firewall-start:
 	@echo "🚀 Starting Firewall ACL (SUDO + TMUX)..."
