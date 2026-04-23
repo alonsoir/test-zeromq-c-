@@ -29,3 +29,14 @@ if(SAFE_PATH_BUILD_TESTS)
     include(GoogleTest)
     gtest_discover_tests(test_safe_path)
 endif()
+
+# ─── test_safe_path_config — DEBT-DEV-PROD-SYMLINK-001 ──────────────────────
+if(GTest_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_safe_path_config.cpp")
+    add_executable(test_safe_path_config tests/test_safe_path_config.cpp)
+    target_link_libraries(test_safe_path_config
+        PRIVATE safe_path GTest::gtest GTest::gtest_main)
+    target_include_directories(test_safe_path_config PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    add_test(NAME test_safe_path_config COMMAND test_safe_path_config)
+    message(STATUS "✅ test_safe_path_config registered (DEBT-DEV-PROD-SYMLINK-001)")
+endif()

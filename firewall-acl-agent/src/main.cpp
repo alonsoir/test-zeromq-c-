@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
         std::abort();
     });
     // Parse command line arguments
-    std::string config_path = "/vagrant/config/firewall.json";  // ✅ Absolute path default
+    std::string config_path = "/etc/ml-defender/firewall-acl-agent/firewall.json";  // ✅ Prod path — symlink → /vagrant/ en dev
     bool test_config = false;
     bool verbose = false;
     bool quiet = false;

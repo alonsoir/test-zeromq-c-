@@ -87,4 +87,53 @@ namespace argus::safe_path {
     return fd;
 }
 
+
+// resolve_config() — para ficheros de configuración que pueden ser symlinks.
+// Caso de uso: dev/prod parity via symlinks en /etc/ml-defender/ → /vagrant/
+//
+// DIFERENCIA con resolve():
+//   resolve()        verifica el prefix DESPUÉS de weakly_canonical (sigue symlinks)
+//   resolve_config() verifica el prefix ANTES — sobre el path lexical normalizado.
+//   El symlink en /etc/ml-defender/ está bajo control de provision.sh (root).
+//   Lo que importa es que el NOMBRE del symlink esté dentro del prefix confiable,
+//   no adónde apunta.
+//
+// DIFERENCIA con resolve_seed():
+//   resolve_seed()   rechaza symlinks explícitamente (material criptográfico).
+//   resolve_config() permite symlinks (configs son datos de configuración, no secretos).
+//
+// (Consejo 8/8 DAY 125 — DEBT-DEV-PROD-SYMLINK-001)
+[[nodiscard]] inline std::string resolve_config(
+    const std::string& path,
+    const std::string& allowed_prefix = "/etc/ml-defender/")
+{
+    namespace fs = std::filesystem;
+
+    if (path.empty()) {
+        throw std::runtime_error("[safe_path] Empty path rejected");
+    }
+
+    // Normalización léxica — NO sigue symlinks.
+    // Elimina ../, ./, dobles slashes, etc. de forma puramente textual.
+    // Esto verifica que el NOMBRE del path (o symlink) está dentro del prefix.
+    const std::string lexical = fs::path(path).lexically_normal().string();
+
+    std::string prefix = allowed_prefix;
+    if (!prefix.empty() && prefix.back() != '/') {
+        prefix += '/';
+    }
+
+    if (lexical.rfind(prefix, 0) != 0) {
+        throw std::runtime_error(
+            "[safe_path] SECURITY VIOLATION — config path outside allowed prefix\n"
+            "  requested : '" + path + "'\n"
+            "  normalized: '" + lexical + "'\n"
+            "  allowed   : '" + prefix + "'\n"
+            "  ACTION    : Pipeline halt. Administrator notified.");
+    }
+
+    // Devuelve el path resuelto (siguiendo symlinks) para abrir el fichero real.
+    // El prefix check ya pasó sobre el path lexical — el symlink está en zona confiable.
+    return fs::weakly_canonical(fs::path(path)).string();
+}
 } // namespace argus::safe_path

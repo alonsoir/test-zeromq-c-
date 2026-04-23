@@ -79,11 +79,12 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path,
     std::cout << "[CONFIG] Loading configuration from: " << config_path << std::endl;
 
     // allowed_prefix es SIEMPRE fijo — nunca derivado del input.
-    // Derivar el prefix del parent_path permite que un atacante controle el prefix.
-    // (Consejo 8/8 DAY 125 — DEBT-CONFIG-PARSER-FIXED-PREFIX-001)
+    // Usamos resolve_config() que permite symlinks en el prefix confiable:
+    // /etc/ml-defender/*.json → /vagrant/*.json en dev (paridad dev/prod).
+    // (DEBT-DEV-PROD-SYMLINK-001 DAY 127)
     namespace fs = std::filesystem;
     const auto safe_config_path =
-        argus::safe_path::resolve(config_path, allowed_prefix);
+        argus::safe_path::resolve_config(config_path, allowed_prefix);
     std::ifstream file(safe_config_path);
     if (!file.is_open()) {
         throw std::runtime_error(

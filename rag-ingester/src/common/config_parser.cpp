@@ -9,12 +9,12 @@ namespace rag_ingester {
 Config ConfigParser::load(const std::string& config_path,
                           const std::string& allowed_prefix) {
     // allowed_prefix es SIEMPRE fijo — nunca derivado del input.
-    // Derivar el prefix del parent_path del config_path permite que un atacante
-    // que controla config_path controle también el prefix → bypass de safe_path.
-    // (Consejo 8/8 DAY 125 — DEBT-CONFIG-PARSER-FIXED-PREFIX-001)
+    // Usamos resolve_config() que permite symlinks en el prefix confiable:
+    // /etc/ml-defender/*.json → /vagrant/*.json en dev (paridad dev/prod).
+    // (DEBT-DEV-PROD-SYMLINK-001 DAY 127)
     namespace fs = std::filesystem;
     const auto safe_config_path =
-        argus::safe_path::resolve(config_path, allowed_prefix);
+        argus::safe_path::resolve_config(config_path, allowed_prefix);
     std::ifstream file(safe_config_path);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open config file: " + config_path);
