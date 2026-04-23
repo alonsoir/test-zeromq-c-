@@ -1,0 +1,15 @@
+{
+  "component": "firewall-acl-agent-test",
+  "plugins": {
+    "directory": "/usr/lib/ml-defender/plugins",
+    "budget_us": 500,
+    "enabled": [
+      {
+        "name": "test-message",
+        "path": "/usr/lib/ml-defender/plugins/libplugin_test_message.so",
+        "active": true,
+        "comment": "TEST-INTEG-4a-PLUGIN \u2014 variantes A/B/C"
+      }
+    ]
+  }
+}

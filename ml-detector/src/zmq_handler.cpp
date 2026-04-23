@@ -985,10 +985,7 @@ void ZMQHandler::memory_monitor_loop() {
             long pages = 0;
             if (fscanf(file, "%*d %ld", &pages) == 1) {
                 long page_size = sysconf(_SC_PAGESIZE);
-                const auto mem_bytes =
-                    static_cast<int64_t>(pages) * static_cast<int64_t>(page_size);
-                current_memory_mb_.store(
-                    static_cast<double>(mem_bytes) / (1024.0 * 1024.0)); // F17 ADR-037
+                current_memory_mb_.store(compute_memory_mb(pages, page_size)); // F17 ADR-037
             }
             fclose(file);
         }

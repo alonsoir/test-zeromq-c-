@@ -1,4 +1,5 @@
 #pragma once
+#include "memory_utils.hpp"
 
 #include <zmq.hpp>
 #include <memory>
@@ -135,5 +136,4 @@ private:
 
     std::string hmac_key_hex_;  // Day 63: stored for CsvEventWriter init
 };
-
 } // namespace ml_detector

@@ -1,3 +1,5 @@
+find_package(GTest QUIET)
+
 # tests/CMakeLists.txt
 # RAG Ingester - Test Suite
 # Day 36: config_parser + FileWatcher tests
@@ -31,6 +33,27 @@ add_test(NAME test_config_parser COMMAND test_config_parser)
 # ============================================================================
 # Test: FileWatcher (Day 36) — inotify IN_CLOSE_WRITE for *.pb files
 # ============================================================================
+# ── test_config_parser_traversal — DEBT-SAFE-PATH-TEST-PRODUCTION-001 ────────
+if(GTest_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test_config_parser_traversal.cpp")
+    add_executable(test_config_parser_traversal
+            test_config_parser_traversal.cpp
+            ../src/common/config_parser.cpp
+    )
+    target_include_directories(test_config_parser_traversal
+            PRIVATE
+            ${CMAKE_SOURCE_DIR}/include
+            ${CMAKE_SOURCE_DIR}/../contrib/safe-path/include
+    )
+    target_link_libraries(test_config_parser_traversal
+            PRIVATE
+            GTest::gtest
+            spdlog::spdlog
+            nlohmann_json::nlohmann_json
+    )
+    add_test(NAME test_config_parser_traversal COMMAND test_config_parser_traversal)
+    message(STATUS "✅ test_config_parser_traversal registered (DEBT-SAFE-PATH-TEST-PRODUCTION-001)")
+endif()
+
 add_executable(test_file_watcher
         test_file_watcher.cpp
 )

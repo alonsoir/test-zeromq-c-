@@ -179,7 +179,8 @@ struct FirewallAgentConfig {
 class ConfigLoader {
 public:
     // Load configuration from JSON file
-    static FirewallAgentConfig load_from_file(const std::string& config_path);
+    static FirewallAgentConfig load_from_file(const std::string& config_path,
+                                                const std::string& allowed_prefix = "/etc/ml-defender/");
     
     // Validation
     static void validate_config(const FirewallAgentConfig& config);

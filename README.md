@@ -3,7 +3,7 @@
 **Open-source, embedded-ML network detection and response system protecting critical infrastructure from ransomware and DDoS attacks.**
 
 [![Via Appia Quality](https://img.shields.io/badge/Via_Appia-Quality-gold)](https://en.wikipedia.org/wiki/Appian_Way)
-[![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_7_Models-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
+[![Council of Wise Ones](https://img.shields.io/badge/Architecture-Reviewed_by_8_Models-blueviolet)](#-consejo-de-sabios--multi-model-peer-review)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![F1=0.9985 Validated](https://img.shields.io/badge/Status-F1%3D0.9985_Validated-brightgreen)]()
 [![Tests: make test-all VERDE](https://img.shields.io/badge/Tests-make_test--all_VERDE-brightgreen)]()
@@ -26,45 +26,44 @@
 ---
 
 ✅ `main` is tagged `v0.5.1-hardened` — PHASE 4 complete + ADR-037 Snyk hardening merged.
-**PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete and technical debt DAY 124 is closed.**
+**PRE-PRODUCTION: do not deploy in hospitals until debt closure (DAY 126-128) and ACRL (DEBT-PENTESTER-LOOP-001) are complete.**
 
 ---
 
-## Estado actual — DAY 124 (2026-04-21)
+## Estado actual — DAY 125 (2026-04-22)
 
-**Tag activo:** `v0.5.1-hardened`
+**Tag activo:** `v0.5.1-hardened` | **Branch activa:** `fix/day125-debt-closure` (pending merge → v0.5.2)
 
 ### Pipeline
 - 6/6 componentes RUNNING
-- make test-all: ALL TESTS PASSED
+- `make test-all`: ALL TESTS PASSED (desde VM fría: `vagrant halt → make up → make bootstrap → make test-all`)
 - TEST-PROVISION-1: 8/8 OK
 
-### Hitos recientes
-- **DAY 124:** ADR-037 COMPLETADO. `contrib/safe-path/` header-only C++20 mergeado.
-  Seeds a `0400`. F17 integer overflow corregido. 9 acceptance tests RED→GREEN.
-  Tag: `v0.5.1-hardened`. Deuda técnica residual documentada — cierre DAY 125-128.
-- **DAY 122:** PHASE 4 completada. XGBoost in-distribution validado
-  (Precision=0.9945, Recall=0.9818). Wednesday OOD finding sellado.
-  Paper Draft v16 (arXiv:2604.04952).
+### Hitos DAY 125
+- **5 deudas cerradas:** GITIGNORE + INTEGER-OVERFLOW + SAFE-PATH-RELATIVE + SAFE-PATH-PRODUCTION(rag-ingester) + CRYPTO-TRANSPORT-CTEST
+- **47 fuentes de test versionadas** (descubiertas por fix de `.gitignore`)
+- **Hallazgo metodológico clave:** property test `PropertyNeverNegative` encontró bug latente en fix F17 que unit test no cubría (`int64_t` overflow → fix correcto: aritmética `double` directa)
+- **3 nuevas deudas bloqueantes identificadas** por Consejo 8/8 → cierre DAY 126 antes de merge a main
 
-### Deuda técnica abierta (DAY 124)
+### Deuda técnica abierta
 Ver [docs/BACKLOG.md](docs/BACKLOG.md) para detalle completo.
 
-| Deuda | Prioridad | Target |
-|-------|-----------|--------|
-| DEBT-INTEGER-OVERFLOW-TEST-001 | 🔴 Bloqueante | DAY 125 |
-| DEBT-SAFE-PATH-TEST-PRODUCTION-001 | 🔴 Bloqueante | DAY 125 |
-| DEBT-SAFE-PATH-TEST-RELATIVE-001 | 🔴 Bloqueante | DAY 125 |
-| DEBT-SNYK-WEB-VERIFICATION-001 | 🟡 Bloqueante | DAY 126 |
-| DEBT-CRYPTO-TRANSPORT-CTEST-001 | 🟡 Bloqueante | DAY 126-127 |
-| DEBT-DEV-PROD-SYMLINK-001 | 🟢 No bloqueante | DAY 127 |
-| DEBT-PROVISION-PORTABILITY-001 | 🟢 No bloqueante | DAY 128 |
+| Deuda | Prioridad | Target | Bloquea |
+|-------|-----------|--------|---------|
+| DEBT-SAFE-PATH-SEED-SYMLINK-001 | 🔴 Crítica | DAY 126 | merge a main |
+| DEBT-CONFIG-PARSER-FIXED-PREFIX-001 | 🔴 Alta | DAY 126 | merge a main |
+| DEBT-PRODUCTION-TESTS-REMAINING-001 | 🔴 Alta | DAY 126 | ADR-038 |
+| DEBT-MEMORY-UTILS-BOUNDS-001 | 🟡 Media | DAY 126 | merge a main |
+| DEBT-SNYK-WEB-VERIFICATION-001 | 🟡 Media | DAY 126 | científico |
+| DEBT-PROPERTY-TESTING-RAPIDCHECK-001 | 🟢 Media | DAY 127 | — |
+| DEBT-DEV-PROD-SYMLINK-001 | 🟢 Media | DAY 127 | — |
+| DEBT-PROVISION-PORTABILITY-001 | 🟢 Media | DAY 128 | — |
 
 ### Próxima frontera (post-deuda)
 - **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
 
 ### ⚠️ NO desplegar en producción hasta
-- Deuda técnica DAY 124 cerrada (tests de demostración)
+- Deuda técnica DAY 124-126 cerrada completamente
 - DEBT-PENTESTER-LOOP-001 completado (datos reales ACRL)
 - ADR-036 (Formal Verification Baseline)
 
@@ -72,15 +71,11 @@ Ver [docs/BACKLOG.md](docs/BACKLOG.md) para detalle completo.
 
 ## 🏗️ Tres variantes del pipeline
 
-El proyecto ha madurado hasta tener tres variantes claramente diferenciadas:
-
 | Variante | Estado | Descripción |
 |----------|--------|-------------|
 | **aRGus-dev** | ✅ Activa (`main`) | x86-debug, imagen Vagrant completa, build-debug. Para investigación y desarrollo diario. |
-| **aRGus-production** | 🟡 Pendiente | x86-apparmor + arm64-apparmor. Imágenes Debian optimizadas. Una imagen por arquitectura, cada una con su Vagrantfile. Para hospitales, escuelas, municipios. |
-| **aRGus-seL4** | ⏳ Diseño futuro | Apéndice científico. Kernel seL4, libpcap (no eBPF/XDP), sniffer monohilo reescrito. Branch independiente. Contribución científica publicable. |
-
-**Principio:** Las variantes de producción se cocinan cuando `main` esté completamente blindado. La rama seL4 es un apéndice científico que no se mergeará a main salvo sorpresa técnica.
+| **aRGus-production** | 🟡 Pendiente | x86-apparmor + arm64-apparmor. Imágenes Debian optimizadas. Para hospitales, escuelas, municipios. |
+| **aRGus-seL4** | ⏳ Diseño futuro | Apéndice científico. Kernel seL4, libpcap (no eBPF/XDP), sniffer monohilo. Branch independiente. |
 
 ---
 
@@ -110,7 +105,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 
 ## 🛡️ Threat Model Scope
 
-ML Defender is a **Network Detection and Response (NDR)** system. Its guiding principle is **network surveillance**: every component operates on network traffic — packet capture, flow-level feature extraction, ML classification, firewall response.
+ML Defender is a **Network Detection and Response (NDR)** system. Its guiding principle is **network surveillance**: every component operates on network traffic.
 
 **Physical and removable-media vectors are explicitly out of scope by conscious design decision.** Complementary mode with [Wazuh](https://wazuh.com) for file integrity monitoring.
 
@@ -150,9 +145,11 @@ On DAY 122, a rigorous temporal holdout evaluation on CIC-IDS-2017 revealed a st
 
 ---
 
-## 🔒 DAY 124 Security Hardening (ADR-037)
+## 🔒 DAY 124-125 Security Hardening
 
-`contrib/safe-path/` is a new zero-dependency C++20 header-only library that prevents path traversal attacks across all production components:
+### ADR-037 — safe_path (DAY 124)
+
+`contrib/safe-path/` is a zero-dependency C++20 header-only library that prevents path traversal attacks across all production components:
 
 ```cpp
 // General config files
@@ -162,10 +159,20 @@ const auto safe = argus::safe_path::resolve(config_path, "/etc/ml-defender/");
 const int fd = argus::safe_path::resolve_seed(seed_path, keys_dir_);
 ```
 
-9 acceptance tests document real attacks (RED→GREEN methodology):
-`../` traversal · prefix bypass without trailing slash · symlink outside prefix · wrong permissions · absolute path outside prefix · empty path.
+### Test-Driven Hardening — Property Testing (DAY 125)
 
-**Lesson learned:** fixes in production code require their own RED→GREEN demonstration tests, not just library-level tests. The `rag-ingester` STOPPED incident was discovered in the build, not in a test — a methodological gap now addressed in the technical debt backlog.
+DAY 125 validated a key TDH principle: property tests catch bugs that synthetic unit tests miss.
+
+```cpp
+// memory_utils.hpp — extracted from zmq_handler for independent testability
+[[nodiscard]] inline double compute_memory_mb(long pages, long page_size) noexcept {
+    return (static_cast<double>(pages) * static_cast<double>(page_size)) / (1024.0 * 1024.0);
+}
+// Note: double arithmetic chosen over int64_t — LONG_MAX/4096 * 8192 overflows int64_t
+// Property test PropertyNeverNegative caught this latent bug in the int64_t version.
+```
+
+**Permanent rule (Council 8/8 · DAY 125):** Every security fix must include: (1) synthetic unit test, (2) property test for invariants, (3) integration test in the real component.
 
 ---
 
@@ -180,13 +187,11 @@ const int fd = argus::safe_path::resolve_seed(seed_path, keys_dir_);
 │  ┌──────────────────┐                                            │
 │  │  sniffer (C++20) │  eBPF/XDP zero-copy packet capture        │
 │  │                  │  ShardedFlowManager (16 shards)           │
-│  │                  │  Fast Detector (rule-based heuristics)    │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (ChaCha20-Poly1305 encrypted)                  │
 │  ┌──────────────────┐                                            │
 │  │  ml-detector     │  4× Embedded RandomForest classifiers     │
 │  │  (C++20)         │  XGBoost plugin ADR-026 ✅ Prec=0.9945    │
-│  │                  │  [PRE-PROD: ACRL pending]                 │
 │  └──────────────────┘                                            │
 │         ↓  ZeroMQ (encrypted)                                    │
 │  ┌──────────────────┐                                            │
@@ -250,28 +255,34 @@ make test-all
 
 ## 🗺️ Roadmap
 
+### ✅ DONE — DAY 125 (22 Apr 2026) — DEBT CLOSURE (partial) 🎉
+- [x] **DEBT-GITIGNORE-TEST-SOURCES-001** ✅ — 47 fuentes de test versionadas
+- [x] **DEBT-INTEGER-OVERFLOW-TEST-001** ✅ — `memory_utils.hpp` + 4 property tests RED→GREEN
+- [x] **DEBT-SAFE-PATH-TEST-RELATIVE-001** ✅ — Test 10 en `safe_path`
+- [x] **DEBT-SAFE-PATH-TEST-PRODUCTION-001** ✅ (rag-ingester) — `test_config_parser_traversal`
+- [x] **DEBT-CRYPTO-TRANSPORT-CTEST-001** ✅ — permisos `0400` en test fixtures
+
 ### ✅ DONE — DAY 124 (21 Apr 2026) — ADR-037 HARDENING 🎉
 - [x] **ADR-037** — `contrib/safe-path/` header-only C++20 · 9 RED→GREEN tests ✅
-- [x] **F17** — integer overflow fix (int64_t cast) ✅
-- [x] **Seeds 0400** — provision.sh + seed_client + Makefile ✅
-- [x] **feature/adr037-snyk-hardening → main** — Tag: `v0.5.1-hardened` ✅
+- [x] **Tag: `v0.5.1-hardened`** ✅
 
-### ✅ DONE — DAY 122 (19 Apr 2026) — PHASE 4 COMPLETADA 🎉
-- [x] **DEBT-PRECISION-GATE-001** — Prec=0.9945/Rec=0.9818 in-distribution ✅
-- [x] **Wednesday OOD impossibility result** — Documented, sealed ✅
-- [x] **Paper Draft v16** — arXiv:2604.04952 ✅
+### 🔜 NEXT — DAY 126: Debt closure (bloqueante para merge → v0.5.2)
 
-### 🔜 NEXT — DAY 125-128: Debt closure
-
-| Priority | Task | Target |
+| Priority | Task | Why |
 |---|---|---|
-| 🔴 P0 | DEBT-INTEGER-OVERFLOW-TEST-001 | DAY 125 |
-| 🔴 P0 | DEBT-SAFE-PATH-TEST-PRODUCTION-001 | DAY 125 |
-| 🔴 P0 | DEBT-SAFE-PATH-TEST-RELATIVE-001 | DAY 125 |
-| 🟡 P1 | DEBT-SNYK-WEB-VERIFICATION-001 | DAY 126 |
-| 🟡 P1 | DEBT-CRYPTO-TRANSPORT-CTEST-001 | DAY 126-127 |
-| 🟢 P2 | DEBT-DEV-PROD-SYMLINK-001 | DAY 127 |
-| 🟢 P2 | DEBT-PROVISION-PORTABILITY-001 | DAY 128 |
+| 🔴 P0 | DEBT-SAFE-PATH-SEED-SYMLINK-001 | Symlinks en seeds = TOCTOU attack vector |
+| 🔴 P0 | DEBT-CONFIG-PARSER-FIXED-PREFIX-001 | Prefix derivado del input = bypass |
+| 🔴 P0 | DEBT-PRODUCTION-TESTS-REMAINING-001 | seed-client + firewall-acl-agent |
+| 🟡 P1 | DEBT-MEMORY-UTILS-BOUNDS-001 | Guard realista en compute_memory_mb |
+| 🟡 P1 | DEBT-SNYK-WEB-VERIFICATION-001 | Cierre científico ADR-037 |
+
+### 🔜 DAY 127-128: Cleanup + Property Testing
+
+| Priority | Task |
+|---|---|
+| 🟢 P2 | DEBT-PROPERTY-TESTING-RAPIDCHECK-001 — rapidcheck submodule |
+| 🟢 P2 | DEBT-DEV-PROD-SYMLINK-001 — symlinks en Vagrantfile |
+| 🟢 P2 | DEBT-PROVISION-PORTABILITY-001 — ARGUS_SERVICE_USER |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
@@ -281,13 +292,12 @@ make test-all
 | P0 | **ADR-038** — ACRL formal design |
 | P1 | aRGus-production images (x86 + ARM64 apparmor) |
 | P2 | aRGus-seL4 research branch |
-| P3 | FEAT-CLOUD-RETRAIN-001 — enterprise federated retraining |
 
 ---
 
 ## 🧠 Consejo de Sabios — Multi-Model Peer Review
 
-Seven large language models serve as intellectual co-reviewers:
+Eight large language models serve as intellectual co-reviewers:
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Kimi** (Moonshot) · **Mistral**
 
@@ -303,6 +313,8 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 120: **make bootstrap + XGBoost F1=0.9978** 🎉
 - ✅ DAY 122: **PHASE 4 COMPLETADA — v0.5.0-preproduction** 🎉
 - ✅ DAY 124: **ADR-037 MERGED — v0.5.1-hardened** 🎉
+- ✅ DAY 125: **5 debts closed · property testing validates TDH · 47 test sources recovered** 🎉
+- 🔜 DAY 126: **v0.5.2 target — seed symlink + config prefix + remaining component tests**
 
 ---
 

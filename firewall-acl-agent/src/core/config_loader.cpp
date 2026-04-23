@@ -74,15 +74,16 @@ std::vector<std::string> ConfigLoader::parse_string_array(const Json::Value& arr
 // Main Load Function
 //===----------------------------------------------------------------------===//
 
-FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path) {
+FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path,
+                                                    const std::string& allowed_prefix) {
     std::cout << "[CONFIG] Loading configuration from: " << config_path << std::endl;
-    
-    // Open JSON file
+
+    // allowed_prefix es SIEMPRE fijo — nunca derivado del input.
+    // Derivar el prefix del parent_path permite que un atacante controle el prefix.
+    // (Consejo 8/8 DAY 125 — DEBT-CONFIG-PARSER-FIXED-PREFIX-001)
     namespace fs = std::filesystem;
-    const std::string config_prefix =
-        fs::weakly_canonical(fs::path(config_path).parent_path()).string();
     const auto safe_config_path =
-        argus::safe_path::resolve(config_path, config_prefix.empty() ? "/etc/ml-defender/" : config_prefix);
+        argus::safe_path::resolve(config_path, allowed_prefix);
     std::ifstream file(safe_config_path);
     if (!file.is_open()) {
         throw std::runtime_error(
