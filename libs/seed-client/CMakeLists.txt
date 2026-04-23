@@ -86,3 +86,20 @@ add_test(NAME perms_seed_tests
         COMMAND test_perms_seed
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+# ─── TEST-SEED-CLIENT-TRAVERSAL (DEBT-PRODUCTION-TESTS-REMAINING-001) ─────────
+add_executable(test_seed_client_traversal
+        tests/test_seed_client_traversal.cpp
+)
+target_link_libraries(test_seed_client_traversal
+        PRIVATE seed_client
+        PRIVATE nlohmann_json::nlohmann_json
+)
+target_include_directories(test_seed_client_traversal PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../contrib/safe-path/include
+)
+add_test(NAME seed_client_traversal_tests
+        COMMAND test_seed_client_traversal
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)

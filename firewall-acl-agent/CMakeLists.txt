@@ -328,6 +328,7 @@ if(BUILD_TESTS)
     set(TEST_SOURCES
             tests/unit/test_ipset_wrapper.cpp
             tests/unit/test_logger.cpp
+            tests/unit/test_config_loader_traversal.cpp
     )
 
     add_executable(firewall_tests

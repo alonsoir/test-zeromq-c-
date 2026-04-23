@@ -55,13 +55,22 @@ namespace argus::safe_path {
     const std::string& allowed_prefix = "/etc/ml-defender/keys/")
 {
     namespace fs = std::filesystem;
-    const auto resolved = resolve(path, allowed_prefix);
 
-    if (fs::is_symlink(fs::path(resolved))) {
+    // lstat sobre el path ORIGINAL — antes de resolve() que llama weakly_canonical()
+    // y resuelve el symlink. fs::is_symlink(resolved) llega tarde: el symlink ya fue
+    // resuelto. lstat() + S_ISLNK es la única forma correcta. (Consejo 8/8 DAY 125)
+    struct stat lst{};
+    if (lstat(path.c_str(), &lst) != 0) {
+        throw std::runtime_error(
+            "[safe_path] SECURITY VIOLATION — lstat failed: " + path);
+    }
+    if (S_ISLNK(lst.st_mode)) {
         throw std::runtime_error(
             "[safe_path] SECURITY VIOLATION — symlink rejected for seed material: "
-            + resolved);
+            + path);
     }
+
+    const auto resolved = resolve(path, allowed_prefix);
 
     struct stat st{};
     if (stat(resolved.c_str(), &st) != 0 || (st.st_mode & 0777) != 0400) {

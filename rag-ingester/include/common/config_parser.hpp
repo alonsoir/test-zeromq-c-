@@ -76,7 +76,8 @@ struct Config {
 };
 class ConfigParser {
 public:
-    static Config load(const std::string& config_path);
+    static Config load(const std::string& config_path,
+                        const std::string& allowed_prefix = "/etc/ml-defender/");
     static void validate(const Config& config);
 
 private:

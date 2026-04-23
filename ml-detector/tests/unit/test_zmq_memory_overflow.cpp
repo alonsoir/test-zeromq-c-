@@ -56,6 +56,9 @@ TEST(ZmqMemoryOverflow, PropertyNeverNegative) {
             EXPECT_GE(result, 0.0)
                 << "Negative result for pages=" << pages
                 << " page_size=" << page_size;
+            // EXPECT_LE(MAX_REALISTIC_MEMORY_MB) no aplica aquí:
+            // este loop usa valores extremos (stress de overflow), no valores realistas.
+            // El bound realista lo verifica RealisticBounds.
         }
     }
 }
@@ -72,6 +75,17 @@ TEST(ZmqMemoryOverflow, PropertyMonotonicallyIncreasing) {
             << "Non-monotonic at pages=" << pages;
         prev_result = result;
     }
+}
+
+
+// ─── BOUNDS: 1 TB realista ───────────────────────────────────────────────────
+
+TEST(ZmqMemoryOverflow, RealisticBounds) {
+    // 1 TB de RAM = 256M páginas de 4KB
+    const long max_pages_realistic = (1024LL * 1024 * 1024 * 1024) / 4096;
+    double result = compute_memory_mb(max_pages_realistic, 4096);
+    EXPECT_NEAR(result, 1024.0 * 1024.0, 1.0); // 1 TB en MB
+    EXPECT_LE(result, MAX_REALISTIC_MEMORY_MB);
 }
 
 int main(int argc, char** argv) {

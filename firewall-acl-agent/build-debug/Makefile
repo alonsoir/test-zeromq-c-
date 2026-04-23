@@ -426,6 +426,30 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall-acl-agent.dir/build.make CMakeFiles/firewall-acl-agent.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+tests/unit/test_config_loader_traversal.o: tests/unit/test_config_loader_traversal.cpp.o
+.PHONY : tests/unit/test_config_loader_traversal.o
+
+# target to build an object file
+tests/unit/test_config_loader_traversal.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_config_loader_traversal.cpp.o
+.PHONY : tests/unit/test_config_loader_traversal.cpp.o
+
+tests/unit/test_config_loader_traversal.i: tests/unit/test_config_loader_traversal.cpp.i
+.PHONY : tests/unit/test_config_loader_traversal.i
+
+# target to preprocess a source file
+tests/unit/test_config_loader_traversal.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_config_loader_traversal.cpp.i
+.PHONY : tests/unit/test_config_loader_traversal.cpp.i
+
+tests/unit/test_config_loader_traversal.s: tests/unit/test_config_loader_traversal.cpp.s
+.PHONY : tests/unit/test_config_loader_traversal.s
+
+# target to generate assembly for a file
+tests/unit/test_config_loader_traversal.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_config_loader_traversal.cpp.s
+.PHONY : tests/unit/test_config_loader_traversal.cpp.s
+
 tests/unit/test_ipset_wrapper.o: tests/unit/test_ipset_wrapper.cpp.o
 .PHONY : tests/unit/test_ipset_wrapper.o
 
@@ -517,6 +541,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... tests/unit/test_config_loader_traversal.o"
+	@echo "... tests/unit/test_config_loader_traversal.i"
+	@echo "... tests/unit/test_config_loader_traversal.s"
 	@echo "... tests/unit/test_ipset_wrapper.o"
 	@echo "... tests/unit/test_ipset_wrapper.i"
 	@echo "... tests/unit/test_ipset_wrapper.s"
