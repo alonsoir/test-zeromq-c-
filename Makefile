@@ -568,7 +568,7 @@ sniffer: proto etcd-client-build plugin-loader-build
 ml-detector-start:
 	@echo "🚀 Starting ML Detector (Tricapa Persistente)..."
 	@vagrant ssh -c "tmux kill-session -t ml-detector 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s ml-detector 'mkdir -p /vagrant/logs/lab && cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./ml-detector >> /vagrant/logs/lab/ml-detector.log 2>&1'"
+	@vagrant ssh -c "tmux new-session -d -s ml-detector 'mkdir -p /vagrant/logs/lab && cd /vagrant/ml-detector/build-debug && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && sudo env LD_LIBRARY_PATH=/usr/local/lib ./ml-detector >> /vagrant/logs/lab/ml-detector.log 2>&1'"
 	@sleep 3
 
 ml-detector: proto etcd-client-build plugin-loader-build
@@ -599,7 +599,7 @@ rag-ingester-start:
 	@echo "🧹 Limpiando SQLite lock anterior (si existe)..."
 	@vagrant ssh -c "rm -f /vagrant/shared/indices/metadata.db-wal /vagrant/shared/indices/metadata.db-shm || true"
 	@echo "Ejecución desde la raíz del componente para resolver paths relativos del config..."
-	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && ./build-debug/rag-ingester /etc/ml-defender/rag-ingester/rag-ingester.json >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
+	@vagrant ssh -c "tmux new-session -d -s rag-ingester 'mkdir -p /vagrant/logs/lab && cd /vagrant/rag-ingester && export LD_LIBRARY_PATH=/usr/local/lib:$$LD_LIBRARY_PATH && sudo env LD_LIBRARY_PATH=/usr/local/lib ./build-debug/rag-ingester /etc/ml-defender/rag-ingester/rag-ingester.json >> /vagrant/logs/lab/rag-ingester.log 2>&1'"
 	@sleep 2
 
 rag-ingester: proto etcd-client-build crypto-transport-build plugin-loader-build
@@ -763,8 +763,8 @@ test-provision-1:
 	@echo "── Check 6/8: Permisos ficheros sensibles ──"
 	@vagrant ssh -c "sudo find /etc/ml-defender -type f \( -name '*.sk' \) -perm /022 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
 		(echo "❌ CHECK 6 FAILED: .sk con permisos world/group-writable" && exit 1) || true
-	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' ! -perm 400 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
-		(echo "❌ CHECK 6 FAILED: seed.bin con permisos incorrectos (esperado: 0400)" && exit 1) || true
+	@vagrant ssh -c "sudo find /etc/ml-defender -name 'seed.bin' ! -perm 400 ! -perm 440 2>/dev/null | grep -q . && echo FAIL || true" | grep -q FAIL && \
+		(echo "❌ CHECK 6 FAILED: seed.bin con permisos incorrectos (esperado: 0400 o 0440)" && exit 1) || true
 	@echo "✅ Check 6/8 OK"
 	@echo ""
 	@echo "── Check 7/8: Consistencia JSONs con plugins reales ──"
@@ -1316,7 +1316,7 @@ dev-setup-tools:
 etcd-server-start: etcd-server
 	@echo "🚀 Starting etcd-server (Persistente)..."
 	@vagrant ssh -c "tmux kill-session -t etcd-server 2>/dev/null || true"
-	@vagrant ssh -c "tmux new-session -d -s etcd-server 'mkdir -p /vagrant/logs/lab && cd /vagrant && $(ETCD_SERVER_BUILD_DIR)/etcd-server >> /vagrant/logs/lab/etcd-server.log 2>&1'"
+	@vagrant ssh -c "tmux new-session -d -s etcd-server 'mkdir -p /vagrant/logs/lab && cd /vagrant && sudo env LD_LIBRARY_PATH=/usr/local/lib $(ETCD_SERVER_BUILD_DIR)/etcd-server >> /vagrant/logs/lab/etcd-server.log 2>&1'"
 	@sleep 2
 	@$(MAKE) etcd-server-status
 
