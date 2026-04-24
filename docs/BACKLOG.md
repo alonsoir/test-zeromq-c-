@@ -255,6 +255,12 @@ DEBT-SNYK-WEB-VERIFICATION-001:         ░░░░░░░░░░░░░�
 DEBT-PROPERTY-TESTING-PATTERN-001:      ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 128
 DEBT-SAFE-PATH-TAXONOMY-DOC-001:        ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 128
 DEBT-PROVISION-PORTABILITY-001:         ░░░░░░░░░░░░░░░░░░░░   0% 🟢 DAY 128
+
+DEBT-HMAC-REGRESSION-001:             ░░░░░░░░░░░░░░░░░░░░   0% 🔴 REGRESIÓN — DAY 128
+  Síntoma:  EtcdClientHmacTest 9/9 FAILING. BACKLOG.md marcaba 100%.
+  Causa:    Regresión introducida entre DAY 127 y DAY 128 (pendiente bisect).
+  Gate:     RED→GREEN obligatorio (REGLA PERMANENTE DAY 124).
+  Feature:  fix/debt-hmac-regression-001
 DEBT-SAFE-PATH-RESOLVE-MODEL-001:       ░░░░░░░░░░░░░░░░░░░░   0% ⏳ feature/adr038-acrl
 DEBT-FUZZING-LIBFUZZER-001:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-property-testing
 DEBT-CRYPTO-003a (mlock+bzero):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳
