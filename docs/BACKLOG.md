@@ -256,6 +256,15 @@ DEBT-PROPERTY-TESTING-PATTERN-001:      ░░░░░░░░░░░░░�
 DEBT-SAFE-PATH-TAXONOMY-DOC-001:        ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 128
 DEBT-PROVISION-PORTABILITY-001:         ░░░░░░░░░░░░░░░░░░░░   0% 🟢 DAY 128
 
+
+DEBT-IPTABLES-INJECTION-001:          ░░░░░░░░░░░░░░░░░░░░   0% 🔴 HIGH — próximo sprint
+  CWE-78: execute_command() en iptables_wrapper.cpp:625 — command injection.
+  Fix bloqueante RED→GREEN. Identificado Snyk DAY 128.
+
+DEBT-FIREWALL-CONFIG-PATH-001:        ░░░░░░░░░░░░░░░░░░░░   0% 🔍 VERIFICAR
+  CWE-23: ConfigLoader::load_from_file() en firewall-acl-agent/main.cpp:273.
+  Verificar si pasa por resolve_config(). Probable falso positivo.
+
 DEBT-ETCDCLIENT-LEGACY-SEED-001:      ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-P2P-CLEANUP
   Síntoma:  EtcdClientHmacTest 9/9 FAILING — EtcdClient lee seed via resolve_seed().
   Causa:    Código legado pre-P2P (ADR-026/027). No es regresión — es cleanup pendiente.
