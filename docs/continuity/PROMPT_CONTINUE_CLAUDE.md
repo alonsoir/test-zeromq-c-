@@ -1,4 +1,4 @@
-# ML Defender (aRGus NDR) — DAY 128 Continuity Prompt
+# ML Defender (aRGus NDR) — DAY 129 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -14,39 +14,41 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **REGLA PERMANENTE (Consejo 7/7 DAY 124):** Ningún fix de seguridad en código de producción se mergea sin test de demostración RED→GREEN. El test debe fallar con el código antiguo y pasar con el nuevo. Sin excepciones.
 - **REGLA PERMANENTE (Consejo 8/8 DAY 125):** Todo fix de seguridad incluye: (1) unit test sintético, (2) property test de invariante, (3) test de integración en componente real. Sin excepciones.
 - **REGLA PERMANENTE (Consejo 8/8 DAY 127):** Toda nueva superficie de ficheros se clasifica con PathPolicy antes de implementar. Documentar en docs/SECURITY-PATH-PRIMITIVES.md.
+- **REGLA PERMANENTE (Consejo 8/8 DAY 128):** IPTablesWrapper y cualquier ejecución de comandos del sistema usa execve() directo sin shell. Nunca system() ni popen() con strings concatenados.
 
 ---
 
-## Estado al cierre de DAY 127
+## Estado al cierre de DAY 128
 
 ### Branch activa
 `main` — limpio. Tag activo: `v0.5.2-hardened`.
 
-### Último merge
-DAY 127 — `fix/day127-dev-prod-symlink` mergeado a main.
-Commit: `resolve_config()` + Makefile paths absolutos via `/etc/ml-defender/`.
+### Último commit
+DAY 128 — `858895c` — docs/security/SNYK-DAY-128.md + deudas nuevas.
 
-### Hitos completados DAY 125-127
-- **DAY 125:** 5 deudas cerradas. Hallazgo: property test encontró bug latente en fix F17.
-- **DAY 126:** 4 deudas críticas cerradas. `lstat()` pre-`resolve()`. Prefix fijo. RED→GREEN traversal tests seed-client + firewall. Tag `v0.5.2-hardened`.
-- **DAY 127:** `DEBT-DEV-PROD-SYMLINK-001` ✅ — `resolve_config()` nueva primitiva safe_path. `lexically_normal()` para verificar prefix ANTES de seguir symlinks. Paridad dev/prod via `/etc/ml-defender/*.json → /vagrant/`. 6/6 RUNNING. Consejo 8/8 feedback recibido.
+### Hitos completados DAY 128
+- **VM nueva desde cero** — vagrant destroy + up + bootstrap. Pipeline 6/6 RUNNING.
+- **DEBT-SAFE-PATH-TAXONOMY-DOC-001** ✅ — `docs/SECURITY-PATH-PRIMITIVES.md`
+- **DEBT-PROPERTY-TESTING-PATTERN-001** ✅ — `docs/testing/PROPERTY-TESTING.md` + 5 property tests GREEN
+- **DEBT-PROVISION-PORTABILITY-001** ✅ — `ARGUS_SERVICE_USER` + sudo para seeds
+- **DEBT-SNYK-WEB-VERIFICATION-001** ✅ — 18 findings triados
+- **Consejo 8/8** — 5 decisiones vinculantes documentadas en `docs/CONSEJO-DAY-128-acta.md`
 
-### Hallazgos técnicos clave DAY 125-127
-1. **`fs::is_symlink(resolved)` es inútil post-`weakly_canonical()`** — `lstat()` sobre el path original es la única defensa correcta para material criptográfico.
-2. **`lexically_normal()` vs `weakly_canonical()`** — dos herramientas para dos casos de seguridad distintos. Para configs con symlinks legítimos, verificar prefix ANTES de resolver.
-3. **Property test encontró bug en el propio fix** — `int64_t` overflow en fix F17. Validación empírica de la adopción sistémica de property testing.
+### Hallazgos técnicos clave DAY 128
+1. **`resolve_seed()` enforza exactamente `0400` con `std::terminate()`** — relajar a `0440` viola la invariante. La solución correcta es `sudo`, no relajar permisos.
+2. **`resolve_seed()` lanza excepción, no retorna -1** — la firma `int` es engañosa. Tests usan `EXPECT_THROW<std::exception>`.
+3. **EtcdClientHmacTest 9/9** — no es regresión. Es código legado pre-P2P (ADR-026/027). Cleanup antes de ADR-024 (decisión Consejo 5/3).
 
-### Taxonomía safe_path (Consejo 8/8 DAY 127 — PERMANENTE)
-```
-resolve()        → validación general (weakly_canonical post-resolución)
-resolve_seed()   → material criptográfico (lstat pre-resolución, sin symlinks, 0400)
-resolve_config() → configs con symlinks legítimos (lexically_normal pre-resolución)
-resolve_model()  → [BACKLOG ADR-038] modelos firmados Ed25519
-```
+### Decisiones vinculantes Consejo DAY 128
+- **D1 (8/8):** `0400 root:root` invariante. `sudo` aceptable. Evolución: `CAP_DAC_READ_SEARCH` en v0.6+.
+- **D2 (8/8):** DEBT-IPTABLES-INJECTION-001 → `execve()` sin shell. BLOQUEANTE DAY 129.
+- **D3 (8/8):** Property testing prioridades: `compute_memory_mb` > HKDF > ZeroMQ parsers > protobuf.
+- **D4 (5/3):** Limpiar EtcdClient ANTES de ADR-024.
+- **D5 (8/8):** Demo FEDER = NDR standalone + 2 nodos simulados. Go/no-go: 1 agosto 2026.
 
 ---
 
-## PASO 0 — DAY 128: verificar entorno
+## PASO 0 — DAY 129: verificar entorno
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
@@ -55,77 +57,142 @@ make pipeline-status
 make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS|VERDE|COMPLETE"
 ```
 
-Si la VM está parada: `make up && make bootstrap`
+Si la VM está parada: `make pipeline-start && sleep 20 && make pipeline-status`
 
 ---
 
-## PASO 1 — DEBT-SAFE-PATH-TAXONOMY-DOC-001 (30 min)
+## PASO 1 — DEBT-IPTABLES-INJECTION-001 🔴 BLOQUEANTE (90 min)
+
+### Contexto
+`IPTablesWrapper::cleanup_rules()` en `firewall-acl-agent/src/core/iptables_wrapper.cpp:625`
+llama a `execute_command(cmd)` donde `cmd` es un string concatenado. CWE-78.
+Consejo 8/8 unánime: `execve()` directo sin shell.
 
 ### Qué hacer
-Crear `docs/SECURITY-PATH-PRIMITIVES.md` con:
-- Tabla de las 4 primitivas (3 activas + 1 futura)
-- Diagrama de decisión textual: "¿Material criptográfico? → resolve_seed. ¿Symlinks legítimos? → resolve_config. ¿General? → resolve. ¿Modelo firmado? → resolve_model (backlog)"
-- PathPolicy enum conceptual (documentación, no implementación)
-- Ejemplos de uso correcto e incorrecto
 
-Gate: fichero existe en `docs/SECURITY-PATH-PRIMITIVES.md` y está versionado.
-
----
-
-## PASO 2 — DEBT-PROPERTY-TESTING-PATTERN-001 (45 min)
-
-### Qué hacer
-Crear `docs/testing/PROPERTY-TESTING.md` con:
-- Qué es un property test (invariante matemática, no caso específico)
-- Cuándo usarlo (toda superficie crítica con operaciones aritméticas o de paths)
-- Patrón estándar: identificar invariante → escribir loop → verificar RED con código antiguo → GREEN con código nuevo
-- Ejemplos reales del proyecto: F17 (`compute_memory_mb`), `resolve_seed`, `resolve_config`
-- Relación con otras técnicas: unit tests (base) → property tests (invariantes) → fuzzing libFuzzer (parsers) → mutation testing (calidad suite)
-
-Además, añadir 3 property tests nuevos RED→GREEN:
-- `safe_path::resolve_seed` — nunca escapa prefix, nunca acepta symlinks
-- `safe_path::resolve_config` — nunca escapa prefix lexical, acepta symlinks dentro
-- `config_parser` — prefix fijo nunca deriva del input
-
-Gate: `docs/testing/PROPERTY-TESTING.md` existe + 3 property tests PASSED en ctest.
-
----
-
-## PASO 3 — DEBT-PROVISION-PORTABILITY-001 (30 min)
-
-### Qué hacer
-Localizar todas las instancias hardcodeadas de `vagrant` como service user en `provision.sh`:
-
+**1. Localizar el código afectado:**
 ```bash
-grep -n "vagrant\|chown\|chmod\|service_user" \
-  /Users/aironman/CLionProjects/test-zeromq-docker/tools/provision.sh | head -30
+grep -n "execute_command\|system(\|popen(" \
+  /Users/aironman/CLionProjects/test-zeromq-docker/firewall-acl-agent/src/core/iptables_wrapper.cpp | head -20
 ```
 
-Fix: añadir al inicio de `provision.sh`:
-```bash
-ARGUS_SERVICE_USER="${ARGUS_SERVICE_USER:-vagrant}"
+**2. Fix: reemplazar execute_command(string) por execve(argv[]):**
+```cpp
+// ANTES (vulnerable):
+execute_command("iptables -D " + chain + " " + rule);
+
+// DESPUÉS (seguro):
+safe_exec({"/sbin/iptables", "-D", chain, rule});
 ```
 
-Sustituir todas las instancias hardcodeadas de `vagrant` (en contextos de chown/permisos) por `${ARGUS_SERVICE_USER}`.
+**3. Implementar `safe_exec()` en `iptables_wrapper.hpp`:**
+```cpp
+#include <unistd.h>
+#include <sys/wait.h>
+#include <vector>
+#include <string>
 
-Gate: `TEST-PROVISION-1` verde tras el fix. `provision.sh` con `ARGUS_SERVICE_USER=testuser` → seeds con permisos `0400 testuser:testuser`.
+inline int safe_exec(const std::vector<std::string>& args) {
+    std::vector<const char*> argv;
+    for (const auto& a : args) argv.push_back(a.c_str());
+    argv.push_back(nullptr);
+    
+    pid_t pid = fork();
+    if (pid == 0) {
+        execv(argv[0], const_cast<char* const*>(argv.data()));
+        _exit(127);
+    }
+    int status;
+    waitpid(pid, &status, 0);
+    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}
+```
+
+**4. Validar argumentos antes de execv:**
+```cpp
+// Validar IPs: solo alfanumérico, '.', '/', '-'
+// Validar chain names: solo alfanumérico, '-', '_'
+// Rechazar cualquier otro carácter
+```
+
+### Gate
+- `validate_chain_name()` regex allowlist existente (de DAY previo) — verificar que aplica
+- Test RED: con string malicioso `; rm -rf /` en argumento → `safe_exec` NO ejecuta shell
+- Test GREEN: comando iptables válido ejecuta correctamente
+- `make test-all` ALL TESTS COMPLETE
 
 ---
 
-## PASO 4 — DEBT-SNYK-WEB-VERIFICATION-001 (cuando estés en el navegador)
+## PASO 2 — DEBT-ETCDCLIENT-LEGACY-SEED-001 (45 min)
 
-Ejecutar Snyk web sobre `v0.5.2-hardened`:
-- URL: https://app.snyk.io
-- Target: repositorio `alonsoir/argus`
-- Filtro: código C++ de producción
+### Contexto
+EtcdClient intenta leer seed vía `resolve_seed()` — modelo pre-P2P.
+Consejo 5/3: limpiar ANTES de ADR-024. Elimina confusión arquitectónica.
 
-Criterio de triage (Consejo 8/8 DAY 127):
-- Código propio + path/overflow/crypto → Fix bloqueante con RED→GREEN
-- Código propio + otro HIGH → Fix próximo sprint
-- Third-party no alcanzable → Documentar en `docs/security/SNYK-DAY-128.md` con justificación
-- Falso positivo demostrable → Cerrar con justificación documentada
+### Qué hacer
 
-Gate: `docs/security/SNYK-DAY-128.md` existe con clasificación de todos los findings.
+**1. Localizar el código legacy:**
+```bash
+grep -n "resolve_seed\|seed_path\|component_config_path\|CryptoTransport" \
+  /Users/aironman/CLionProjects/test-zeromq-docker/etcd-client/src/etcd_client.cpp | head -20
+```
+
+**2. Marcar como deprecated y deshabilitar en producción:**
+```cpp
+[[deprecated("Legacy pre-P2P. Use ADR-024 Noise_IKpsk3 seed distribution.")]]
+void EtcdClient::init_crypto_legacy(const std::string& path) {
+    #ifndef ARGUS_LEGACY_SEED
+    throw std::runtime_error("Legacy seed disabled. Use P2P distribution (ADR-024).");
+    #endif
+    // ... código legacy ...
+}
+```
+
+**3. Verificar que EtcdClientHmacTest 9/9 pasan SIN sudo:**
+```bash
+vagrant ssh -c "cd /vagrant/ml-detector/build-debug && ./tests/test_etcd_client_hmac 2>&1 | tail -5"
+```
+
+### Gate
+- `EtcdClientHmacTest` 9/9 PASSED sin necesidad de sudo
+- `make test-all` ALL TESTS COMPLETE
+
+---
+
+## PASO 3 — DEBT-FEDER-SCOPE-DOC-001 (20 min)
+
+### Qué hacer
+Crear `docs/FEDER-SCOPE.md` con:
+- Scope mínimo viable: NDR standalone + 2 nodos Vagrant simulados
+- Lo que NO se necesita: ADR-038 completo, federación real, privacidad diferencial
+- Milestone go/no-go: **1 agosto 2026**
+- Script demo: `scripts/feder-demo.sh` (estructura, no implementación)
+- Prerequisitos técnicos para contactar a Andrés Caro Lindo
+
+### Gate
+- `docs/FEDER-SCOPE.md` existe y está versionado
+
+---
+
+## PASO 4 — Property test compute_memory_mb (20 min)
+
+### Contexto
+F17 identificado DAY 125 — overflow en `int64_t`. Fix implementado con `double`.
+Falta el property test formal en ctest (solo existe documentación).
+
+### Qué hacer
+Añadir `test_memory_utils_property.cpp` en el componente donde vive `memory_utils.hpp`:
+```bash
+find /Users/aironman/CLionProjects/test-zeromq-docker -name "memory_utils.hpp" | grep -v build
+```
+
+Property a verificar:
+- `compute_memory_mb(pages, page_size) >= 0` para todo pages >= 0, page_size válido
+- `compute_memory_mb(LONG_MAX/4096, 4096)` no desborda (caso extremo que rompía int64_t)
+- Monotonicidad: si pages1 > pages2, entonces `compute_memory_mb(pages1,ps) > compute_memory_mb(pages2,ps)`
+
+### Gate
+- Test en ctest PASSED RED→GREEN
 
 ---
 
@@ -134,18 +201,21 @@ Gate: `docs/security/SNYK-DAY-128.md` existe con clasificación de todos los fin
 ```bash
 git add -A
 git commit -F - << 'EOF'
-docs: DAY 128 — safe_path taxonomy + property testing pattern + provision portability
+fix+docs: DAY 129 — CWE-78 execve() + EtcdClient cleanup + FEDER scope
 
-- docs/SECURITY-PATH-PRIMITIVES.md: taxonomia safe_path con PathPolicy enum
-  conceptual y diagrama de decision (Consejo 8/8 DAY 127)
-- docs/testing/PROPERTY-TESTING.md: patron formal de property testing
-  con ejemplos reales del proyecto (F17, resolve_seed, resolve_config)
-- 3 property tests nuevos RED->GREEN: resolve_seed + resolve_config + config_parser
-- provision.sh: ARGUS_SERVICE_USER variable (default vagrant, portable)
-- TEST-PROVISION-1: verde post-fix
+- firewall-acl-agent: IPTablesWrapper migra a safe_exec() con execve()
+  Sin shell, sin concatenación de strings (CWE-78 → CERRADO)
+  Test RED→GREEN: safe_exec rechaza metacaracteres shell
+- etcd-client: EtcdClient legacy seed code marcado [[deprecated]]
+  EtcdClientHmacTest 9/9 PASSED sin sudo (cleanup pre-P2P)
+- docs/FEDER-SCOPE.md: scope mínimo viable FEDER + go/no-go 1 agosto
+- test_memory_utils_property: property test compute_memory_mb RED→GREEN
 
-Consejo 8/8 DAY 127: property testing primero, fuzzing despues.
-La herramienta propone; el modelo de amenazas decide (criterio Snyk).
+Consejo 8/8 DAY 128: execve() es el único mecanismo correcto para
+comandos del sistema. Nunca system() ni popen() con strings.
+DEBT-IPTABLES-INJECTION-001: CERRADA
+DEBT-ETCDCLIENT-LEGACY-SEED-001: CERRADA (parcial)
+DEBT-FEDER-SCOPE-DOC-001: CERRADA
 EOF
 
 make test-all 2>&1 | grep -E "ALL TESTS|COMPLETE"
@@ -154,57 +224,29 @@ git push origin main
 
 ---
 
+## Contexto estratégico
 
----
+### Decisiones Consejo DAY 128 (vinculantes)
+Ver `docs/CONSEJO-DAY-128-acta.md` para detalle completo.
 
-## Contexto estratégico — BACKLOG-BIZMODEL-001
-
-### Decisiones tomadas DAY 127 (documentadas en docs/BACKLOG-BIZMODEL-001.md)
-
-**Modelo de negocio:** Open-core. Core MIT siempre gratis. Servicio cloud/fleet de pago.
-
-**Paraguas institucional:** UEx/INCIBE — preferencia clara. No es un acuerdo, es una
-propuesta que hay que presentar a Andrés Caro Lindo antes de julio 2026. Ellos tienen
-prioridad y autonomía total.
-
-**Despliegue:** On-premise primero. Nube europea soberana (Hetzner/OVH/IONOS) para el
-servicio cloud. Internacionalización = servidores clonados en territorio del cliente.
-
-**Hardware pendiente (financiable FEDER):**
-- Raspberry Pi 4/5 ARM64 × 4-8 → caracterización edge deployment
-- Mini PCs x86 × 2-4 → perfil municipio/escuela
-- Servidor de desarrollo (NVIDIA Spark DGX o equivalente MSI) → sin esto el portátil
-  del 2019 es un riesgo de proyecto real
-- Servidor central telemetry-server → CPD UEx o nube europea soberana
-
-**telemetry-collector (ADR-039 pendiente):**
-- Tap en el pipeline, sin tocar el flujo a rag-ingester
-- Mismo crypto-transport (ChaCha20-Poly1305 + HKDF) — no se reinventa nada
-- Collect-first, anonymize-later — geolocalización SIEMPRE asíncrona en servidor
-- Priorización geográfica de distribución de modelos (frente de propagación)
-- Bloqueante de hardware: NO para el código. SÍ para validación a escala real.
-
-## Contexto permanente
-
-### Secuencia canónica
-```bash
-make up           # vagrant up
-make bootstrap    # 8 pasos, todo automático
-make test-all     # verificación completa
+### Taxonomía safe_path (PERMANENTE)
+```
+resolve()        → validación general
+resolve_seed()   → material criptográfico (lstat pre-resolución, 0400, sudo)
+resolve_config() → configs con symlinks legítimos (lexically_normal pre-resolución)
+resolve_model()  → [BACKLOG ADR-038] modelos firmados Ed25519
 ```
 
-### Branch activa
-`main` — limpio. Tag: `v0.5.2-hardened`.
-
-### Estado de deuda al inicio de DAY 128
+### Estado de deuda al inicio de DAY 129
 ```
-🟡 DEBT-SNYK-WEB-VERIFICATION-001        → DAY 128 (navegador) — PASO 4
-🟡 DEBT-PROPERTY-TESTING-PATTERN-001     → DAY 128 — PASO 2
-🟡 DEBT-SAFE-PATH-TAXONOMY-DOC-001       → DAY 128 — PASO 1
-🟢 DEBT-PROVISION-PORTABILITY-001        → DAY 128 — PASO 3
-⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001      → feature/adr038-acrl
-⏳ DEBT-FUZZING-LIBFUZZER-001            → post-property-testing
-⏳ DEBT-PENTESTER-LOOP-001               → POST-DEUDA
+🔴 DEBT-IPTABLES-INJECTION-001      → DAY 129 BLOQUEANTE — execve() sin shell
+🟡 DEBT-ETCDCLIENT-LEGACY-SEED-001  → DAY 129 — cleanup pre-P2P
+🟡 DEBT-FEDER-SCOPE-DOC-001         → DAY 129 — docs/FEDER-SCOPE.md
+🟡 DEBT-FIREWALL-CONFIG-PATH-001    → DAY 129 — verificar resolve_config()
+⏳ DEBT-SEED-CAPABILITIES-001       → v0.6+ — CAP_DAC_READ_SEARCH
+⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001 → feature/adr038-acrl
+⏳ DEBT-FUZZING-LIBFUZZER-001       → post-property-testing
+⏳ DEBT-PENTESTER-LOOP-001          → POST-DEUDA
 ```
 
 ### Modelos firmados activos
@@ -216,272 +258,20 @@ make test-all     # verificación completa
 
 ### Paper arXiv:2604.04952
 Draft v16 activo. https://arxiv.org/abs/2604.04952
-Pendiente: Draft v17 con §5 actualizado:
-- §5.3 "Property Testing as a Security Fix Validator" (hallazgo F17 DAY 125)
-- §5.4 "Dev/Prod Parity via Symlinks, Not Conditional Logic" (DAY 127)
-- §5.5 "RED→GREEN as Non-Negotiable Merge Gate"
-- §5.x "Taxonomía safe_path: lexically_normal vs weakly_canonical" (distinción no documentada en literatura C++20)
-
-Referencias a citar: QuickCheck (Claessen & Hughes), CWE-22/23, TOCTOU literature, OWASP Path Traversal.
-
-### Pregunta crítica FEDER pendiente (Consejo DAY 127)
-¿La demo FEDER requiere federación funcional (ADR-038) o es suficiente con NDR standalone?
-Clarificar con Andrés Caro Lindo ANTES de julio 2026.
-Deadline FEDER: 22 septiembre 2026.
+Pendiente: Draft v17 con §5 actualizado (property testing + safe_path taxonomy).
 
 ### Consejo de Sabios (8 modelos)
 Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
 
-### REGLA DE ORO DAY 128
-Documentar no es burocracia — es el contrato que garantiza que el hallazgo
-de hoy no se convierte en deuda de mañana.
-Un patrón sin documentación es un patrón que se reinventa cada vez.
-
----# ML Defender (aRGus NDR) — DAY 128 Continuity Prompt
-
-Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
-
-## POLÍTICA DE DEUDA TÉCNICA (leer antes de empezar)
-
-- **Bloqueante:** debe cerrarse en esta feature. No hay merge a main sin test verde.
-- **No bloqueante:** asignada a feature destino en BACKLOG. No toca esta feature.
-- **Toda deuda tiene test de cierre.** Implementado sin test = no cerrado.
-- **REGLA CRÍTICA:** El Vagrantfile y el Makefile son la única fuente de verdad.
-- **REGLA SCRIPTS:** Lógica compleja → `tools/script.sh`. Nunca inline en Makefile.
-- **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
-- **REGLA macOS/sed:** Nunca `sed -i` sin `-e ''`. Usar Python3 heredoc para ediciones de ficheros en macOS.
-- **REGLA PERMANENTE (Consejo 7/7 DAY 124):** Ningún fix de seguridad en código de producción se mergea sin test de demostración RED→GREEN. El test debe fallar con el código antiguo y pasar con el nuevo. Sin excepciones.
-- **REGLA PERMANENTE (Consejo 8/8 DAY 125):** Todo fix de seguridad incluye: (1) unit test sintético, (2) property test de invariante, (3) test de integración en componente real. Sin excepciones.
-- **REGLA PERMANENTE (Consejo 8/8 DAY 127):** Toda nueva superficie de ficheros se clasifica con PathPolicy antes de implementar. Documentar en docs/SECURITY-PATH-PRIMITIVES.md.
-
----
-
-## Estado al cierre de DAY 127
-
-### Branch activa
-`main` — limpio. Tag activo: `v0.5.2-hardened`.
-
-### Último merge
-DAY 127 — `fix/day127-dev-prod-symlink` mergeado a main.
-Commit: `resolve_config()` + Makefile paths absolutos via `/etc/ml-defender/`.
-
-### Hitos completados DAY 125-127
-- **DAY 125:** 5 deudas cerradas. Hallazgo: property test encontró bug latente en fix F17.
-- **DAY 126:** 4 deudas críticas cerradas. `lstat()` pre-`resolve()`. Prefix fijo. RED→GREEN traversal tests seed-client + firewall. Tag `v0.5.2-hardened`.
-- **DAY 127:** `DEBT-DEV-PROD-SYMLINK-001` ✅ — `resolve_config()` nueva primitiva safe_path. `lexically_normal()` para verificar prefix ANTES de seguir symlinks. Paridad dev/prod via `/etc/ml-defender/*.json → /vagrant/`. 6/6 RUNNING. Consejo 8/8 feedback recibido.
-
-### Hallazgos técnicos clave DAY 125-127
-1. **`fs::is_symlink(resolved)` es inútil post-`weakly_canonical()`** — `lstat()` sobre el path original es la única defensa correcta para material criptográfico.
-2. **`lexically_normal()` vs `weakly_canonical()`** — dos herramientas para dos casos de seguridad distintos. Para configs con symlinks legítimos, verificar prefix ANTES de resolver.
-3. **Property test encontró bug en el propio fix** — `int64_t` overflow en fix F17. Validación empírica de la adopción sistémica de property testing.
-
-### Taxonomía safe_path (Consejo 8/8 DAY 127 — PERMANENTE)
-```
-resolve()        → validación general (weakly_canonical post-resolución)
-resolve_seed()   → material criptográfico (lstat pre-resolución, sin symlinks, 0400)
-resolve_config() → configs con symlinks legítimos (lexically_normal pre-resolución)
-resolve_model()  → [BACKLOG ADR-038] modelos firmados Ed25519
-```
-
----
-
-## PASO 0 — DAY 128: verificar entorno
-
-```bash
-cd /Users/aironman/CLionProjects/test-zeromq-docker
-git checkout main && git status
-make pipeline-status
-make test-all 2>&1 | grep -E "PASSED|FAILED|ALL TESTS|VERDE|COMPLETE"
-```
-
-Si la VM está parada: `make up && make bootstrap`
-
----
-
-## PASO 1 — DEBT-SAFE-PATH-TAXONOMY-DOC-001 (30 min)
-
-### Qué hacer
-Crear `docs/SECURITY-PATH-PRIMITIVES.md` con:
-- Tabla de las 4 primitivas (3 activas + 1 futura)
-- Diagrama de decisión textual: "¿Material criptográfico? → resolve_seed. ¿Symlinks legítimos? → resolve_config. ¿General? → resolve. ¿Modelo firmado? → resolve_model (backlog)"
-- PathPolicy enum conceptual (documentación, no implementación)
-- Ejemplos de uso correcto e incorrecto
-
-Gate: fichero existe en `docs/SECURITY-PATH-PRIMITIVES.md` y está versionado.
-
----
-
-## PASO 2 — DEBT-PROPERTY-TESTING-PATTERN-001 (45 min)
-
-### Qué hacer
-Crear `docs/testing/PROPERTY-TESTING.md` con:
-- Qué es un property test (invariante matemática, no caso específico)
-- Cuándo usarlo (toda superficie crítica con operaciones aritméticas o de paths)
-- Patrón estándar: identificar invariante → escribir loop → verificar RED con código antiguo → GREEN con código nuevo
-- Ejemplos reales del proyecto: F17 (`compute_memory_mb`), `resolve_seed`, `resolve_config`
-- Relación con otras técnicas: unit tests (base) → property tests (invariantes) → fuzzing libFuzzer (parsers) → mutation testing (calidad suite)
-
-Además, añadir 3 property tests nuevos RED→GREEN:
-- `safe_path::resolve_seed` — nunca escapa prefix, nunca acepta symlinks
-- `safe_path::resolve_config` — nunca escapa prefix lexical, acepta symlinks dentro
-- `config_parser` — prefix fijo nunca deriva del input
-
-Gate: `docs/testing/PROPERTY-TESTING.md` existe + 3 property tests PASSED en ctest.
-
----
-
-## PASO 3 — DEBT-PROVISION-PORTABILITY-001 (30 min)
-
-### Qué hacer
-Localizar todas las instancias hardcodeadas de `vagrant` como service user en `provision.sh`:
-
-```bash
-grep -n "vagrant\|chown\|chmod\|service_user" \
-  /Users/aironman/CLionProjects/test-zeromq-docker/tools/provision.sh | head -30
-```
-
-Fix: añadir al inicio de `provision.sh`:
-```bash
-ARGUS_SERVICE_USER="${ARGUS_SERVICE_USER:-vagrant}"
-```
-
-Sustituir todas las instancias hardcodeadas de `vagrant` (en contextos de chown/permisos) por `${ARGUS_SERVICE_USER}`.
-
-Gate: `TEST-PROVISION-1` verde tras el fix. `provision.sh` con `ARGUS_SERVICE_USER=testuser` → seeds con permisos `0400 testuser:testuser`.
-
----
-
-## PASO 4 — DEBT-SNYK-WEB-VERIFICATION-001 (cuando estés en el navegador)
-
-Ejecutar Snyk web sobre `v0.5.2-hardened`:
-- URL: https://app.snyk.io
-- Target: repositorio `alonsoir/argus`
-- Filtro: código C++ de producción
-
-Criterio de triage (Consejo 8/8 DAY 127):
-- Código propio + path/overflow/crypto → Fix bloqueante con RED→GREEN
-- Código propio + otro HIGH → Fix próximo sprint
-- Third-party no alcanzable → Documentar en `docs/security/SNYK-DAY-128.md` con justificación
-- Falso positivo demostrable → Cerrar con justificación documentada
-
-Gate: `docs/security/SNYK-DAY-128.md` existe con clasificación de todos los findings.
-
----
-
-## PASO 5 — Commit y push
-
-```bash
-git add -A
-git commit -F - << 'EOF'
-docs: DAY 128 — safe_path taxonomy + property testing pattern + provision portability
-
-- docs/SECURITY-PATH-PRIMITIVES.md: taxonomia safe_path con PathPolicy enum
-  conceptual y diagrama de decision (Consejo 8/8 DAY 127)
-- docs/testing/PROPERTY-TESTING.md: patron formal de property testing
-  con ejemplos reales del proyecto (F17, resolve_seed, resolve_config)
-- 3 property tests nuevos RED->GREEN: resolve_seed + resolve_config + config_parser
-- provision.sh: ARGUS_SERVICE_USER variable (default vagrant, portable)
-- TEST-PROVISION-1: verde post-fix
-
-Consejo 8/8 DAY 127: property testing primero, fuzzing despues.
-La herramienta propone; el modelo de amenazas decide (criterio Snyk).
-EOF
-
-make test-all 2>&1 | grep -E "ALL TESTS|COMPLETE"
-git push origin main
-```
-
----
-
-
----
-
-## Contexto estratégico — BACKLOG-BIZMODEL-001
-
-### Decisiones tomadas DAY 127 (documentadas en docs/BACKLOG-BIZMODEL-001.md)
-
-**Modelo de negocio:** Open-core. Core MIT siempre gratis. Servicio cloud/fleet de pago.
-
-**Paraguas institucional:** UEx/INCIBE — preferencia clara. No es un acuerdo, es una
-propuesta que hay que presentar a Andrés Caro Lindo antes de julio 2026. Ellos tienen
-prioridad y autonomía total.
-
-**Despliegue:** On-premise primero. Nube europea soberana (Hetzner/OVH/IONOS) para el
-servicio cloud. Internacionalización = servidores clonados en territorio del cliente.
-
-**Hardware pendiente (financiable FEDER):**
-- Raspberry Pi 4/5 ARM64 × 4-8 → caracterización edge deployment
-- Mini PCs x86 × 2-4 → perfil municipio/escuela
-- Servidor de desarrollo (NVIDIA Spark DGX o equivalente MSI) → sin esto el portátil
-  del 2019 es un riesgo de proyecto real
-- Servidor central telemetry-server → CPD UEx o nube europea soberana
-
-**telemetry-collector (ADR-039 pendiente):**
-- Tap en el pipeline, sin tocar el flujo a rag-ingester
-- Mismo crypto-transport (ChaCha20-Poly1305 + HKDF) — no se reinventa nada
-- Collect-first, anonymize-later — geolocalización SIEMPRE asíncrona en servidor
-- Priorización geográfica de distribución de modelos (frente de propagación)
-- Bloqueante de hardware: NO para el código. SÍ para validación a escala real.
-
-## Contexto permanente
-
-### Secuencia canónica
-```bash
-make up           # vagrant up
-make bootstrap    # 8 pasos, todo automático
-make test-all     # verificación completa
-```
-
-### Branch activa
-`main` — limpio. Tag: `v0.5.2-hardened`.
-
-### Estado de deuda al inicio de DAY 128
-```
-🟡 DEBT-SNYK-WEB-VERIFICATION-001        → DAY 128 (navegador) — PASO 4
-🟡 DEBT-PROPERTY-TESTING-PATTERN-001     → DAY 128 — PASO 2
-🟡 DEBT-SAFE-PATH-TAXONOMY-DOC-001       → DAY 128 — PASO 1
-🟢 DEBT-PROVISION-PORTABILITY-001        → DAY 128 — PASO 3
-⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001      → feature/adr038-acrl
-⏳ DEBT-FUZZING-LIBFUZZER-001            → post-property-testing
-⏳ DEBT-PENTESTER-LOOP-001               → POST-DEUDA
-```
-
-### Modelos firmados activos
-```
-/vagrant/ml-detector/models/production/level1/
-  xgboost_cicids2017_v2.ubj + .sig  (DAY 122 — IN-DISTRIBUTION)
-  wednesday_eval_report.json        (OOD finding sealed)
-```
-
-### Paper arXiv:2604.04952
-Draft v16 activo. https://arxiv.org/abs/2604.04952
-Pendiente: Draft v17 con §5 actualizado:
-- §5.3 "Property Testing as a Security Fix Validator" (hallazgo F17 DAY 125)
-- §5.4 "Dev/Prod Parity via Symlinks, Not Conditional Logic" (DAY 127)
-- §5.5 "RED→GREEN as Non-Negotiable Merge Gate"
-- §5.x "Taxonomía safe_path: lexically_normal vs weakly_canonical" (distinción no documentada en literatura C++20)
-
-Referencias a citar: QuickCheck (Claessen & Hughes), CWE-22/23, TOCTOU literature, OWASP Path Traversal.
-
-### Pregunta crítica FEDER pendiente (Consejo DAY 127)
-¿La demo FEDER requiere federación funcional (ADR-038) o es suficiente con NDR standalone?
-Clarificar con Andrés Caro Lindo ANTES de julio 2026.
-Deadline FEDER: 22 septiembre 2026.
-
-### Consejo de Sabios (8 modelos)
-Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
-
-### REGLA DE ORO DAY 128
-Documentar no es burocracia — es el contrato que garantiza que el hallazgo
-de hoy no se convierte en deuda de mañana.
-Un patrón sin documentación es un patrón que se reinventa cada vez.
+### REGLA DE ORO DAY 129
+`execve()` sin shell no es una opción — es el único mecanismo correcto
+para ejecutar comandos del sistema en código de seguridad.
+`system("cmd" + user_input)` es un contrato de rendición.
 
 ---
 
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
-*"Un fix sin test de demostración es una promesa sin firma." — Qwen, Consejo DAY 124*
-*"Has eliminado la confianza implícita en los fixes. Eso es lo que define un sistema de seguridad maduro." — ChatGPT, Consejo DAY 127*
-
-*"Via Appia Quality — Un escudo que aprende de su propia sombra."*
-*"Un fix sin test de demostración es una promesa sin firma." — Qwen, Consejo DAY 124*
-*"Has eliminado la confianza implícita en los fixes. Eso es lo que define un sistema de seguridad maduro." — ChatGPT, Consejo DAY 127*
+*"La seguridad no es cómoda. Es necesaria." — Qwen, Consejo DAY 128*
+*"No construyas encima de comportamiento incorrecto, aunque sea temporal." — ChatGPT, Consejo DAY 128*
+*"El sistema empieza a comportarse como un sistema que desconfía de sí mismo.
+Ese es el punto de inflexión correcto." — ChatGPT, Consejo DAY 128*

@@ -25,36 +25,37 @@
 
 ---
 
-✅ `main` is tagged `v0.5.2-hardened` — DAY 125-127 debt closure complete. 9 debts closed across 3 days.
+✅ `main` is tagged `v0.5.2-hardened` — DAY 128 documentation + hardening complete. 4 debts closed, 5 property tests GREEN, Snyk 18 findings triaged.
 **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
 ---
 
-## Estado actual — DAY 127 (2026-04-23)
+## Estado actual — DAY 128 (2026-04-24)
 
 **Tag activo:** `v0.5.2-hardened` | **Branch activa:** `main` (limpio)
 
 ### Pipeline
-- 6/6 componentes RUNNING con `resolve_config()` activo
-- `make test-all`: ALL TESTS COMPLETE (desde VM fría: `vagrant halt → make up → make bootstrap → make test-all`)
+- 6/6 componentes RUNNING — validado en VM destruida y reconstruida desde cero
+- `make test-all`: ALL TESTS COMPLETE
 - TEST-PROVISION-1: 8/8 OK
 
-### Hitos DAY 125-127
-- **9 deudas cerradas** en 3 días consecutivos
-- **Tag v0.5.2-hardened** mergeado a main
-- **Hallazgo crítico DAY 126:** `fs::is_symlink(resolved)` es inútil post-`weakly_canonical()`. `lstat()` sobre el path original es la única defensa correcta para material criptográfico.
-- **Hallazgo arquitectónico DAY 127:** `lexically_normal()` vs `weakly_canonical()` — dos herramientas para dos casos de seguridad distintos. Nueva primitiva `resolve_config()` para paridad dev/prod via symlinks.
-- **Consejo 8/8 DAY 127:** Taxonomía safe_path formalizada. Pregunta crítica FEDER: ¿NDR standalone o federación? Clarificar con Andrés Caro Lindo antes de julio.
+### Hitos DAY 128
+- **VM nueva desde cero** — vagrant destroy + up + bootstrap. Pipeline 6/6 RUNNING.
+- **Hallazgo técnico:** `resolve_seed()` enforza `0400` con `std::terminate()`. Componentes con seeds deben arrancar con `sudo`. Documentado como patrón permanente.
+- **4 deudas cerradas:** DEBT-SAFE-PATH-TAXONOMY-DOC-001, DEBT-PROPERTY-TESTING-PATTERN-001, DEBT-PROVISION-PORTABILITY-001, DEBT-SNYK-WEB-VERIFICATION-001
+- **5 property tests GREEN** en `contrib/safe-path/tests/test_safe_path_property.cpp` — integrados en `make test-libs`
+- **18 Snyk findings triados** — 1 HIGH nuevo: DEBT-IPTABLES-INJECTION-001 (CWE-78, DAY 129)
+- **Consejo 8/8 DAY 128:** execve() sin shell para iptables (unánime), NDR standalone para FEDER (unánime), cleanup EtcdClient antes de ADR-024 (5/3)
 
 ### Deuda técnica abierta
 Ver [docs/BACKLOG.md](docs/BACKLOG.md) para detalle completo.
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-SNYK-WEB-VERIFICATION-001 | 🟡 Media | DAY 128 |
-| DEBT-PROPERTY-TESTING-PATTERN-001 | 🟡 Media | DAY 128 |
-| DEBT-SAFE-PATH-TAXONOMY-DOC-001 | 🟡 Media | DAY 128 |
-| DEBT-PROVISION-PORTABILITY-001 | 🟢 Media | DAY 128 |
+| DEBT-IPTABLES-INJECTION-001 | 🔴 BLOQUEANTE | DAY 129 |
+| DEBT-FEDER-SCOPE-DOC-001 | 🟡 Media | DAY 129 |
+| DEBT-FIREWALL-CONFIG-PATH-001 | 🔍 Verificar | DAY 129 |
+| DEBT-ETCDCLIENT-LEGACY-SEED-001 | ⏳ pre-P2P | feature/etcdclient-p2p-cleanup |
 
 ### Próxima frontera (post-deuda)
 - **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
@@ -300,14 +301,23 @@ make test-all
 - [x] **ADR-037** — `contrib/safe-path/` header-only C++20 · 9 RED→GREEN tests ✅
 - [x] **Tag: v0.5.1-hardened** ✅
 
-### 🔜 NEXT — DAY 128: Documentation + Snyk + Portability
+### ✅ DONE — DAY 128 (24 Apr 2026) — Documentation + Hardening 🎉
+- [x] **DEBT-SAFE-PATH-TAXONOMY-DOC-001** ✅ — docs/SECURITY-PATH-PRIMITIVES.md
+- [x] **DEBT-PROPERTY-TESTING-PATTERN-001** ✅ — 5 property tests GREEN en safe_path
+- [x] **DEBT-PROVISION-PORTABILITY-001** ✅ — ARGUS_SERVICE_USER + sudo para seeds
+- [x] **DEBT-SNYK-WEB-VERIFICATION-001** ✅ — 18 findings triados, DEBT-IPTABLES-INJECTION-001 identificado
+- [x] **Hallazgo:** resolve_seed() enforza 0400 con std::terminate() — sudo es el mecanismo correcto
+- [x] **Consejo 8/8** ✅ — 5 decisiones vinculantes documentadas
+
+### 🔜 NEXT — DAY 129: CWE-78 Fix + EtcdClient Cleanup
 
 | Priority | Task |
 |---|---|
-| 🟡 P1 | DEBT-SNYK-WEB-VERIFICATION-001 — Snyk web sobre v0.5.2-hardened |
-| 🟡 P1 | DEBT-PROPERTY-TESTING-PATTERN-001 — docs/testing/PROPERTY-TESTING.md |
-| 🟡 P1 | DEBT-SAFE-PATH-TAXONOMY-DOC-001 — docs/SECURITY-PATH-PRIMITIVES.md |
-| 🟢 P2 | DEBT-PROVISION-PORTABILITY-001 — ARGUS_SERVICE_USER |
+| 🔴 P0 BLOQUEANTE | DEBT-IPTABLES-INJECTION-001 — execve() sin shell en IPTablesWrapper |
+| 🟡 P1 | DEBT-ETCDCLIENT-LEGACY-SEED-001 — cleanup pre-P2P, [[deprecated]] + eliminar |
+| 🟡 P1 | DEBT-FEDER-SCOPE-DOC-001 — docs/FEDER-SCOPE.md |
+| 🟡 P1 | Property test compute_memory_mb (F17) RED→GREEN |
+| 🟡 P2 | Property test HKDF key derivation |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
@@ -342,7 +352,8 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 125: **5 debts closed · property testing validates TDH · 47 test sources recovered** 🎉
 - ✅ DAY 126: **4 debts closed · lstat() pre-resolution · fixed prefix · v0.5.2-hardened** 🎉
 - ✅ DAY 127: **resolve_config() · dev/prod parity · Consejo 8/8 taxonomía safe_path** 🎉
-- 🔜 DAY 128: **Snyk verification + property testing pattern + provision portability**
+- ✅ DAY 128: **VM nueva 6/6 · 4 deudas cerradas · 5 property tests · Snyk 18 findings · Consejo 8/8** 🎉
+- 🔜 DAY 129: **DEBT-IPTABLES-INJECTION-001 (CWE-78) · EtcdClient cleanup · FEDER scope doc**
 
 ---
 
