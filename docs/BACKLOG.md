@@ -256,11 +256,13 @@ DEBT-PROPERTY-TESTING-PATTERN-001:      ░░░░░░░░░░░░░�
 DEBT-SAFE-PATH-TAXONOMY-DOC-001:        ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 128
 DEBT-PROVISION-PORTABILITY-001:         ░░░░░░░░░░░░░░░░░░░░   0% 🟢 DAY 128
 
-DEBT-HMAC-REGRESSION-001:             ░░░░░░░░░░░░░░░░░░░░   0% 🔴 REGRESIÓN — DAY 128
-  Síntoma:  EtcdClientHmacTest 9/9 FAILING. BACKLOG.md marcaba 100%.
-  Causa:    Regresión introducida entre DAY 127 y DAY 128 (pendiente bisect).
-  Gate:     RED→GREEN obligatorio (REGLA PERMANENTE DAY 124).
-  Feature:  fix/debt-hmac-regression-001
+DEBT-ETCDCLIENT-LEGACY-SEED-001:      ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-P2P-CLEANUP
+  Síntoma:  EtcdClientHmacTest 9/9 FAILING — EtcdClient lee seed via resolve_seed().
+  Causa:    Código legado pre-P2P (ADR-026/027). No es regresión — es cleanup pendiente.
+  Acción:   Eliminar lectura de seed en EtcdClient constructor cuando P2P seed
+            distribution esté implementado (ENT-3).
+  Gate:     RED→GREEN tras cleanup. No bloqueante hasta implementar ADR-024/P2P.
+  Feature:  feature/etcdclient-p2p-cleanup
 DEBT-SAFE-PATH-RESOLVE-MODEL-001:       ░░░░░░░░░░░░░░░░░░░░   0% ⏳ feature/adr038-acrl
 DEBT-FUZZING-LIBFUZZER-001:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-property-testing
 DEBT-CRYPTO-003a (mlock+bzero):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳
