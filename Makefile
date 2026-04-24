@@ -400,6 +400,9 @@ plugin-loader-clean:
 	@echo "✅ plugin-loader cleaned"
 
 plugin-loader-test:
+	@echo "Testing safe-path property tests..."
+	@vagrant ssh -c "/vagrant/contrib/safe-path/build/test_safe_path_property" || (echo "❌ safe-path property tests FAILED" && exit 1)
+	@echo ""
 	@echo "🧪 Testing plugin-loader..."
 	@vagrant ssh -c "cd /vagrant/plugin-loader/build && ctest --output-on-failure"
 

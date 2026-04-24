@@ -40,3 +40,15 @@ if(GTest_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_safe_path_conf
     add_test(NAME test_safe_path_config COMMAND test_safe_path_config)
     message(STATUS "✅ test_safe_path_config registered (DEBT-DEV-PROD-SYMLINK-001)")
 endif()
+
+# ─── test_safe_path_property — DEBT-PROPERTY-TESTING-PATTERN-001 ────────────
+if(GTest_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_safe_path_property.cpp")
+    add_executable(test_safe_path_property tests/test_safe_path_property.cpp)
+    target_link_libraries(test_safe_path_property
+        PRIVATE safe_path GTest::gtest GTest::gtest_main)
+    target_include_directories(test_safe_path_property PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    include(GoogleTest)
+    gtest_discover_tests(test_safe_path_property)
+    message(STATUS "✅ test_safe_path_property registered (DEBT-PROPERTY-TESTING-PATTERN-001)")
+endif()
