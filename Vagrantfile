@@ -659,6 +659,14 @@ BASHRC_EOF
       echo "✅ Cryptographic provisioning completed"
       echo "   Keys at: /etc/ml-defender/"
       echo "   Verify:  sudo bash /vagrant/tools/provision.sh status"
+
+      echo "📦 Installing systemd units (TEST-PROVISION-1 Check 5)..."
+      if [ -f /vagrant/etcd-server/config/install-systemd-units.sh ]; then
+        bash /vagrant/etcd-server/config/install-systemd-units.sh
+        echo "✅ systemd units installed"
+      else
+        echo "⚠️  install-systemd-units.sh not found — skipping"
+      fi
     CRYPTO_PROVISION
 
   end  # End defender VM
