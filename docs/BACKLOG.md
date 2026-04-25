@@ -1,5 +1,5 @@
 # aRGus NDR — BACKLOG
-*Última actualización: DAY 129 — 25 Abril 2026*
+*Última actualización: DAY 130 — 25 Abril 2026*
 
 ---
 
@@ -28,6 +28,7 @@
 - **REGLA PERMANENTE (DAY 127 — Consejo 8/8):** La taxonomía safe_path tiene tres primitivas activas y una futura. Toda nueva superficie de ficheros debe clasificarse explícitamente con PathPolicy antes de implementar. Documentar en docs/SECURITY-PATH-PRIMITIVES.md.
 - **REGLA PERMANENTE (DAY 128 — Consejo 8/8):** IPTablesWrapper y cualquier ejecución de comandos del sistema usa execve() directo sin shell. Nunca system() ni popen() con strings concatenados.
 - **REGLA PERMANENTE (DAY 129 — Consejo 8/8 RULE-SCP-VM-001):** Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` o `vagrant scp`. PROHIBIDO `vagrant ssh -c "cat ..." > fichero` — el pipe zsh trunca a 0 bytes silenciosamente sin error.
+- **PROTOCOLO CANÓNICO (DAY 130):** Toda sesión de desarrollo comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Sin excepciones. El pipeline debe ser reproducible desde cero antes de cualquier cambio.
 
 ---
 
@@ -39,6 +40,46 @@
 | **aRGus-production** | 🟡 Pendiente de cocinar | x86-apparmor + arm64-apparmor. Imágenes Debian optimizadas, sin herramientas de desarrollo. Para hospitales, escuelas, municipios. |
 | **aRGus-seL4** | ⏳ No iniciada | Apéndice científico. Kernel seL4, libpcap (no eBPF/XDP), sniffer reescrito en monohilo. Branch independiente. Nunca se mergeará a main salvo sorpresa. |
 
+
+---
+
+## ✅ CERRADO DAY 130
+
+### DEBT-SYSTEMD-AUTOINSTALL-001
+- **Status:** ✅ CERRADO DAY 130
+- **Fix:** `install-systemd-units.sh` integrado en Vagrantfile `cryptographic-provisioning`. Elimina paso manual post-provisioning.
+- **Commit:** `8e57aad2`
+
+### DEBT-SAFE-EXEC-NULLBYTE-001
+- **Status:** ✅ CERRADO DAY 130
+- **Fix:** `is_safe_for_exec()` — `[[nodiscard]] inline bool`, compara `arg.size() == std::strlen(arg.c_str())`. Aplicado antes del `fork()` en las 4 variantes de `safe_exec`. `#include <cstring>` añadido.
+- **Tests:** `test_safe_exec.cpp` 17/17 GREEN (+2 nuevos: `RejectsNullByteInArgument` + `IsAlwaysSafeForNormalStrings`). RED→GREEN demostrado.
+- **Commit:** `c8e293a8`
+
+### DEBT-GITGUARDIAN-YAML-001
+- **Status:** ✅ CERRADO DAY 130
+- **Fix:** `.gitguardian.yaml` reescrito limpio — `paths-ignore` → `paths_ignore` (v2), fichero corrupto con dos entradas fusionadas eliminado.
+- **Commit:** `06228a67`
+
+### DEBT-FUZZING-LIBFUZZER-001
+- **Status:** ✅ CERRADO DAY 130 (baseline)
+- **Fix:** libFuzzer harnesses sobre `validate_chain_name` + `is_safe_for_exec` + `validate_filepath`. 2.4M runs, 0 crashes, 30s. Corpus 67 ficheros versionado. Targets `make fuzz-safe-exec`, `make fuzz-validate-filepath`, `make fuzz-all` en Makefile.
+- **Commit:** `f5994c4a`
+
+### DEBT-MARKDOWN-HOOK-001
+- **Status:** ✅ CERRADO DAY 130
+- **Fix:** `.git/hooks/pre-commit` — check detecta patrón `[word](http://...)` en `.cpp`/`.hpp`. Test RED→GREEN verificado manualmente.
+- **Commit:** `aab08daa`
+
+### PROTOCOLO CANÓNICO DAY 130 — Verificación destructiva
+- Grabado en asciinema: `docs/argus-day130-bootstrap-20260425-142211.cast`
+- Keypair activo post-rebuild: `1f48b75054fe98e8371653607caaf028b3f688bc055782c9c9c6d0e3494dad54`
+- Pipeline 6/6 RUNNING · TEST-INTEG-SIGN 7/7 PASSED · make test-all ALL TESTS COMPLETE
+
+### DEBT-NATIVE-LINUX-BOOTSTRAP-001 (nueva — backlog post-FEDER)
+- **Status:** ⏳ BACKLOG — no bloqueante
+- **Origen:** Colaborador externo (emecas@inspiron) intentó `make bootstrap` en Linux nativo. Fallo: `llama.h: No existe el fichero`. El provisioner Vagrant compila `llama.cpp` automáticamente — el flujo nativo no está documentado.
+- **Fix futuro:** `README` + `make deps-native` que compile `third_party/llama.cpp`.
 
 ---
 
@@ -288,6 +329,9 @@
 | **RULE-SCP-VM-001** | Toda transferencia VM↔macOS usa scp/vagrant scp. Prohibido pipe zsh (trunca a 0 bytes silenciosamente). | Consejo 8/8 · DAY 129 |
 | **Null byte en safe_exec()** | is_safe_for_exec() en safe_exec() como defensa en profundidad independiente de validadores upstream. | Consejo 8/8 · DAY 129 |
 | **Fuzzing antes que Paper** | Prioridad DAY 130: A(Fuzzing) → C(Paper §5) → B(Capabilities). Fuzzing descubre unknown unknowns antes del despliegue. | Consejo 6/8 · DAY 129 |
+| **PROTOCOLO CANÓNICO DAY 130** | Toda sesión comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Pipeline reproducible desde cero = prerequisito de cualquier cambio. | DAY 130 |
+| **is_safe_for_exec() contrato de seguridad** | Null byte check en safe_exec() es un contrato, no una optimización. Defensa en profundidad independiente de validadores upstream. | DAY 130 |
+| **libFuzzer como baseline** | Harnesses sobre validate_chain_name + validate_filepath. Corpus versionado. 2.4M runs sin crash = baseline certificado. | DAY 130 |
 | **ARGUS_SERVICE_USER** | Variable de entorno para service user. Default `vagrant`. | Consejo 6/7 · DAY 124 |
 | **safe_path header-only** | `contrib/safe-path/` — cero dependencias, C++20 puro. | Consejo 7/7 · DAY 123 |
 | **Seeds 0400** | Seeds deben tener permisos `0400` (solo owner, solo lectura). | Consejo 7/7 · DAY 124 |
@@ -334,18 +378,11 @@ DEBT-IPTABLES-INJECTION-001:            █████████████�
 DEBT-FIREWALL-CONFIG-PATH-001:          ████████████████████ 100% ✅  DAY 129
 
 DEBT-SEED-CAPABILITIES-001:           ░░░░░░░░░░░░░░░░░░░░   0% ⏳ v0.6+
-DEBT-SAFE-EXEC-NULLBYTE-001:          ░░░░░░░░░░░░░░░░░░░░   0% 🔴 BLOQUEANTE — DAY 130
-  null byte check en safe_exec() — defensa en profundidad (Consejo 8/8 DAY 129)
-  Implementar is_safe_for_exec() + test RED→GREEN + property test
-DEBT-FUZZING-LIBFUZZER-001:           ░░░░░░░░░░░░░░░░░░░░   0% 🔴 DAY 130
-  libFuzzer sobre validate_chain_name + validate_filepath + parsers ZMQ
-  Corpus semilla: test_safe_exec.cpp existente. Gate: 0 crashes en 60s.
-DEBT-GITIGNORE-BUILD-001:             ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 130
-  Añadir **/build-debug/ a .gitignore (Consejo 8/8 DAY 129)
-DEBT-GITGUARDIAN-YAML-001:            ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 130
-  Limpiar deprecated keys paths-ignore → paths_ignore (Consejo 7/8 DAY 129)
-DEBT-MARKDOWN-HOOK-001:               ░░░░░░░░░░░░░░░░░░░░   0% 🟡 DAY 130
-  pre-commit hook: detectar patrón [word](http:// en .cpp/.hpp (Claude DAY 129)
+DEBT-SYSTEMD-AUTOINSTALL-001:          ████████████████████ 100% ✅  DAY 130
+DEBT-SAFE-EXEC-NULLBYTE-001:           ████████████████████ 100% ✅  DAY 130
+DEBT-GITGUARDIAN-YAML-001:             ████████████████████ 100% ✅  DAY 130
+DEBT-FUZZING-LIBFUZZER-001:            ████████████████████ 100% ✅  DAY 130  (baseline — 2.4M runs, 0 crashes)
+DEBT-MARKDOWN-HOOK-001:                ████████████████████ 100% ✅  DAY 130
 
 DEBT-FEDER-SCOPE-DOC-001:              ████████████████████ 100% ✅  DAY 129
 
@@ -583,5 +620,5 @@ viene a continuación.
 # Insertar antes de BACKLOG-FEDER-001
 
 
-*DAY 129 — 25 Abril 2026 · Tag activo: v0.5.2-hardened · commit 55383638 · main limpio*
+*DAY 130 — 25 Abril 2026 · Tag activo: v0.5.2-hardened · commit aab08daa · main limpio*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*

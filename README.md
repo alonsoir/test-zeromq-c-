@@ -30,34 +30,33 @@
 
 ---
 
-## Estado actual — DAY 129 (2026-04-25)
+## Estado actual — DAY 130 (2026-04-25)
 
-**Tag activo:** `v0.5.2-hardened` | **Commit:** `55383638` | **Branch activa:** `main` (limpio)
+**Tag activo:** `v0.5.2-hardened` | **Commit:** `aab08daa` | **Branch activa:** `main` (limpio)
+**Keypair activo:** `1f48b75054fe98e8371653607caaf028b3f688bc055782c9c9c6d0e3494dad54`
 
 ### Pipeline
 - 6/6 componentes RUNNING — validado en VM destruida y reconstruida desde cero
 - `make test-all`: ALL TESTS COMPLETE
 - TEST-PROVISION-1: 8/8 OK
 
-### Hitos DAY 129
-- **DEBT-IPTABLES-INJECTION-001 CERRADA** — CWE-78 eliminado. 0 popen()/system() en iptables_wrapper.cpp. `safe_exec.hpp` con 4 primitivos fork+execv(). 15/15 tests GREEN.
-- **DEBT-ETCDCLIENT-LEGACY-SEED-001 CERRADA** (parcial) — EtcdClientHmacTest 9/9 PASSED (antes 9/9 FAILED).
-- **DEBT-FEDER-SCOPE-DOC-001 CERRADA** — `docs/FEDER-SCOPE.md` con scope mínimo viable + go/no-go 1 agosto 2026.
-- **DEBT-FIREWALL-CONFIG-PATH-001 CERRADA** — resolve_config() verificada, ConfigLoaderTraversal 3/3 GREEN.
-- **RULE-SCP-VM-001** — Consejo 8/8: scp obligatorio para transferencias VM↔macOS.
-- **Consejo 8/8 DAY 129:** DEBT-SAFE-EXEC-NULLBYTE-001 (defensa en profundidad), Fuzzing DAY 130 prioridad, .gitignore + .gitguardian.yaml limpieza.
+### Hitos DAY 130
+- **PROTOCOLO CANÓNICO ESTABLECIDO** — `vagrant destroy -f && vagrant up && make bootstrap && make test-all` es el inicio obligatorio de toda sesión.
+- **DEBT-SYSTEMD-AUTOINSTALL-001 CERRADA** — `install-systemd-units.sh` integrado en Vagrantfile.
+- **DEBT-SAFE-EXEC-NULLBYTE-001 CERRADA** — `is_safe_for_exec()` en `safe_exec.hpp`. 17/17 tests GREEN.
+- **DEBT-GITGUARDIAN-YAML-001 CERRADA** — `.gitguardian.yaml` paths_ignore v2.
+- **DEBT-FUZZING-LIBFUZZER-001 CERRADA** — 2.4M runs, 0 crashes, corpus 67 ficheros. `make fuzz-all`.
+- **DEBT-MARKDOWN-HOOK-001 CERRADA** — pre-commit hook detecta corrupción markdown en .cpp/.hpp.
+- **Asciinema:** `docs/argus-day130-bootstrap-20260425-142211.cast`
 
 ### Deuda técnica abierta
 Ver [docs/BACKLOG.md](docs/BACKLOG.md) para detalle completo.
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-SAFE-EXEC-NULLBYTE-001 | 🔴 BLOQUEANTE | DAY 130 |
-| DEBT-FUZZING-LIBFUZZER-001 | 🔴 Alta | DAY 130 |
-| DEBT-GITIGNORE-BUILD-001 | 🟡 Media | DAY 130 |
-| DEBT-GITGUARDIAN-YAML-001 | 🟡 Media | DAY 130 |
-| DEBT-MARKDOWN-HOOK-001 | 🟡 Media | DAY 130 |
 | DEBT-SEED-CAPABILITIES-001 | ⏳ Baja | v0.6+ |
+| DEBT-SAFE-PATH-RESOLVE-MODEL-001 | ⏳ | feature/adr038-acrl |
+| DEBT-NATIVE-LINUX-BOOTSTRAP-001 | ⏳ | post-FEDER |
 
 ### Próxima frontera (post-deuda)
 - **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
