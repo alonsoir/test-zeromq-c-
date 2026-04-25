@@ -229,3 +229,7 @@ sniffer/tests/obsolete_archive/
 
 # Binario legacy
 tools/legacy/test_reducer
+
+# Fuzz binaries (DAY 130)
+firewall-acl-agent/fuzz/fuzz_validate_chain
+firewall-acl-agent/fuzz/fuzz_validate_filepath
