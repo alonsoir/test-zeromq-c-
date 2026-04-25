@@ -1,9 +1,5 @@
 version: 2
-paths-ignore:
-  - logs/**
-  - "**/*.jsonl"
-  - "**/*.log"
-  - .venv/**paths-ignore:
+paths_ignore:
   - logs/**
   - data/**
   - "**/*.jsonl"
