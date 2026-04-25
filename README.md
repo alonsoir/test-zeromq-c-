@@ -14,7 +14,7 @@
 [![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
 [![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
 [![XGBoost](https://img.shields.io/badge/XGBoost-Prec%3D0.9945_In--Distribution-brightgreen)]()
-[![Hardened](https://img.shields.io/badge/Security-v0.5.2--hardened-brightgreen)]()
+[![Hardened](https://img.shields.io/badge/Security-v0.5.2--hardened_CWE--78_CLOSED-brightgreen)]()
 [![OOD Finding](https://img.shields.io/badge/OOD_Finding-Published_DAY_122-orange)]()
 [![PRE-PRODUCTION](https://img.shields.io/badge/Status-PRE--PRODUCTION-orange)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
@@ -30,32 +30,34 @@
 
 ---
 
-## Estado actual — DAY 128 (2026-04-24)
+## Estado actual — DAY 129 (2026-04-25)
 
-**Tag activo:** `v0.5.2-hardened` | **Branch activa:** `main` (limpio)
+**Tag activo:** `v0.5.2-hardened` | **Commit:** `55383638` | **Branch activa:** `main` (limpio)
 
 ### Pipeline
 - 6/6 componentes RUNNING — validado en VM destruida y reconstruida desde cero
 - `make test-all`: ALL TESTS COMPLETE
 - TEST-PROVISION-1: 8/8 OK
 
-### Hitos DAY 128
-- **VM nueva desde cero** — vagrant destroy + up + bootstrap. Pipeline 6/6 RUNNING.
-- **Hallazgo técnico:** `resolve_seed()` enforza `0400` con `std::terminate()`. Componentes con seeds deben arrancar con `sudo`. Documentado como patrón permanente.
-- **4 deudas cerradas:** DEBT-SAFE-PATH-TAXONOMY-DOC-001, DEBT-PROPERTY-TESTING-PATTERN-001, DEBT-PROVISION-PORTABILITY-001, DEBT-SNYK-WEB-VERIFICATION-001
-- **5 property tests GREEN** en `contrib/safe-path/tests/test_safe_path_property.cpp` — integrados en `make test-libs`
-- **18 Snyk findings triados** — 1 HIGH nuevo: DEBT-IPTABLES-INJECTION-001 (CWE-78, DAY 129)
-- **Consejo 8/8 DAY 128:** execve() sin shell para iptables (unánime), NDR standalone para FEDER (unánime), cleanup EtcdClient antes de ADR-024 (5/3)
+### Hitos DAY 129
+- **DEBT-IPTABLES-INJECTION-001 CERRADA** — CWE-78 eliminado. 0 popen()/system() en iptables_wrapper.cpp. `safe_exec.hpp` con 4 primitivos fork+execv(). 15/15 tests GREEN.
+- **DEBT-ETCDCLIENT-LEGACY-SEED-001 CERRADA** (parcial) — EtcdClientHmacTest 9/9 PASSED (antes 9/9 FAILED).
+- **DEBT-FEDER-SCOPE-DOC-001 CERRADA** — `docs/FEDER-SCOPE.md` con scope mínimo viable + go/no-go 1 agosto 2026.
+- **DEBT-FIREWALL-CONFIG-PATH-001 CERRADA** — resolve_config() verificada, ConfigLoaderTraversal 3/3 GREEN.
+- **RULE-SCP-VM-001** — Consejo 8/8: scp obligatorio para transferencias VM↔macOS.
+- **Consejo 8/8 DAY 129:** DEBT-SAFE-EXEC-NULLBYTE-001 (defensa en profundidad), Fuzzing DAY 130 prioridad, .gitignore + .gitguardian.yaml limpieza.
 
 ### Deuda técnica abierta
 Ver [docs/BACKLOG.md](docs/BACKLOG.md) para detalle completo.
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-IPTABLES-INJECTION-001 | 🔴 BLOQUEANTE | DAY 129 |
-| DEBT-FEDER-SCOPE-DOC-001 | 🟡 Media | DAY 129 |
-| DEBT-FIREWALL-CONFIG-PATH-001 | 🔍 Verificar | DAY 129 |
-| DEBT-ETCDCLIENT-LEGACY-SEED-001 | ⏳ pre-P2P | feature/etcdclient-p2p-cleanup |
+| DEBT-SAFE-EXEC-NULLBYTE-001 | 🔴 BLOQUEANTE | DAY 130 |
+| DEBT-FUZZING-LIBFUZZER-001 | 🔴 Alta | DAY 130 |
+| DEBT-GITIGNORE-BUILD-001 | 🟡 Media | DAY 130 |
+| DEBT-GITGUARDIAN-YAML-001 | 🟡 Media | DAY 130 |
+| DEBT-MARKDOWN-HOOK-001 | 🟡 Media | DAY 130 |
+| DEBT-SEED-CAPABILITIES-001 | ⏳ Baja | v0.6+ |
 
 ### Próxima frontera (post-deuda)
 - **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
@@ -128,6 +130,7 @@ ML Defender is a **Network Detection and Response (NDR)** system. Its guiding pr
 | **Plugin integrity** | **ADR-025 MERGED** | Ed25519 + TOCTOU-safe dlopen |
 | **AppArmor** | **6/6 enforce** | 0 denials |
 | **Path traversal prevention** | **ADR-037 MERGED** | `safe_path` header-only — 3 primitivas + 16+ RED→GREEN tests |
+| **Command injection prevention** | **DAY 129 MERGED** | `safe_exec.hpp` — execv() sin shell, 0 popen()/system(), 15/15 tests |
 | **Dev/prod parity** | **DAY 127 MERGED** | `resolve_config()` — symlinks legítimos en prefix confiable |
 | **CI gate** | **TEST-PROVISION-1 8/8** | |
 
@@ -309,15 +312,23 @@ make test-all
 - [x] **Hallazgo:** resolve_seed() enforza 0400 con std::terminate() — sudo es el mecanismo correcto
 - [x] **Consejo 8/8** ✅ — 5 decisiones vinculantes documentadas
 
-### 🔜 NEXT — DAY 129: CWE-78 Fix + EtcdClient Cleanup
+### ✅ DONE — DAY 129 (25 Apr 2026) — CWE-78 CERRADO + Consejo 8/8 🎉
+- [x] **DEBT-IPTABLES-INJECTION-001** ✅ — safe_exec.hpp, 0 popen/system, 15/15 tests
+- [x] **DEBT-ETCDCLIENT-LEGACY-SEED-001** ✅ (parcial) — EtcdClientHmacTest 9/9 PASSED
+- [x] **DEBT-FEDER-SCOPE-DOC-001** ✅ — docs/FEDER-SCOPE.md, go/no-go 1 agosto 2026
+- [x] **DEBT-FIREWALL-CONFIG-PATH-001** ✅ — resolve_config() verificada 3/3 GREEN
+- [x] **RULE-SCP-VM-001** ✅ — Consejo 8/8 regla permanente transferencia VM↔macOS
+
+### 🔜 NEXT — DAY 130: Fuzzing + Null byte + Limpieza
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 BLOQUEANTE | DEBT-IPTABLES-INJECTION-001 — execve() sin shell en IPTablesWrapper |
-| 🟡 P1 | DEBT-ETCDCLIENT-LEGACY-SEED-001 — cleanup pre-P2P, [[deprecated]] + eliminar |
-| 🟡 P1 | DEBT-FEDER-SCOPE-DOC-001 — docs/FEDER-SCOPE.md |
-| 🟡 P1 | Property test compute_memory_mb (F17) RED→GREEN |
-| 🟡 P2 | Property test HKDF key derivation |
+| 🔴 P0 BLOQUEANTE | DEBT-SAFE-EXEC-NULLBYTE-001 — null byte check en safe_exec() + test RED→GREEN |
+| 🔴 P0 | DEBT-FUZZING-LIBFUZZER-001 — libFuzzer sobre validate_chain_name + parsers ZMQ |
+| 🟡 P1 | DEBT-GITIGNORE-BUILD-001 — **/build-debug/ en .gitignore |
+| 🟡 P1 | DEBT-GITGUARDIAN-YAML-001 — limpiar deprecated keys |
+| 🟡 P1 | DEBT-MARKDOWN-HOOK-001 — pre-commit hook [word](http:// en .cpp/.hpp |
+| 🟡 P2 | Paper §5 — Draft v17 (property testing + safe_path taxonomy) |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
@@ -353,7 +364,8 @@ Methodology: structured disagreement. Problems must be demonstrated with compila
 - ✅ DAY 126: **4 debts closed · lstat() pre-resolution · fixed prefix · v0.5.2-hardened** 🎉
 - ✅ DAY 127: **resolve_config() · dev/prod parity · Consejo 8/8 taxonomía safe_path** 🎉
 - ✅ DAY 128: **VM nueva 6/6 · 4 deudas cerradas · 5 property tests · Snyk 18 findings · Consejo 8/8** 🎉
-- 🔜 DAY 129: **DEBT-IPTABLES-INJECTION-001 (CWE-78) · EtcdClient cleanup · FEDER scope doc**
+- ✅ DAY 129: **CWE-78 CERRADO · EtcdClientHmac 9/9 · FEDER scope · resolve_config() verificada · Consejo 8/8** 🎉
+- 🔜 DAY 130: **DEBT-SAFE-EXEC-NULLBYTE-001 · libFuzzer · .gitignore · Paper §5**
 
 ---
 

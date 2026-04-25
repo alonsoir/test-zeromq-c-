@@ -1,4 +1,5 @@
-# ML Defender (aRGus NDR) — DAY 129 Continuity Prompt
+python3 << 'PYEOF'
+content = """# ML Defender (aRGus NDR) — DAY 130 Continuity Prompt
 
 Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 
@@ -15,40 +16,42 @@ Buenos días Claude. Soy Alonso (aRGus NDR, ML Defender).
 - **REGLA PERMANENTE (Consejo 8/8 DAY 125):** Todo fix de seguridad incluye: (1) unit test sintético, (2) property test de invariante, (3) test de integración en componente real. Sin excepciones.
 - **REGLA PERMANENTE (Consejo 8/8 DAY 127):** Toda nueva superficie de ficheros se clasifica con PathPolicy antes de implementar. Documentar en docs/SECURITY-PATH-PRIMITIVES.md.
 - **REGLA PERMANENTE (Consejo 8/8 DAY 128):** IPTablesWrapper y cualquier ejecución de comandos del sistema usa execve() directo sin shell. Nunca system() ni popen() con strings concatenados.
+- **REGLA PERMANENTE (Consejo 8/8 DAY 129 — RULE-SCP-VM-001):** Toda transferencia de ficheros entre VM y macOS usa `scp -F /tmp/vagrant-ssh-config` o `vagrant scp`. PROHIBIDO `vagrant ssh -c "cat ..." > fichero` — el pipe zsh trunca a 0 bytes silenciosamente sin error.
 
 ---
 
-## Estado al cierre de DAY 128
+## Estado al cierre de DAY 129
 
 ### Branch activa
-`main` — limpio. Tag activo: `v0.5.2-hardened`.
+`main` — limpio. Tag activo: `v0.5.2-hardened`. Commit: `55383638`.
 
 ### Último commit
-DAY 128 — `858895c` — docs/security/SNYK-DAY-128.md + deudas nuevas.
+DAY 129 — Consejo 8/8 acta decisiones + respuestas 8 modelos.
 
-### Hitos completados DAY 128
-- **VM nueva desde cero** — vagrant destroy + up + bootstrap. Pipeline 6/6 RUNNING.
-- **DEBT-SAFE-PATH-TAXONOMY-DOC-001** ✅ — `docs/SECURITY-PATH-PRIMITIVES.md`
-- **DEBT-PROPERTY-TESTING-PATTERN-001** ✅ — `docs/testing/PROPERTY-TESTING.md` + 5 property tests GREEN
-- **DEBT-PROVISION-PORTABILITY-001** ✅ — `ARGUS_SERVICE_USER` + sudo para seeds
-- **DEBT-SNYK-WEB-VERIFICATION-001** ✅ — 18 findings triados
-- **Consejo 8/8** — 5 decisiones vinculantes documentadas en `docs/CONSEJO-DAY-128-acta.md`
+### Hitos completados DAY 129
+- **DEBT-IPTABLES-INJECTION-001** ✅ — CWE-78 CERRADO. `safe_exec.hpp` 4 primitivos. 0 popen/system en iptables_wrapper.cpp. 15/15 tests GREEN.
+- **DEBT-ETCDCLIENT-LEGACY-SEED-001** ✅ (parcial) — EtcdClientHmacTest 9/9 PASSED.
+- **DEBT-FEDER-SCOPE-DOC-001** ✅ — `docs/FEDER-SCOPE.md` creado. Go/no-go 1 agosto 2026.
+- **DEBT-FIREWALL-CONFIG-PATH-001** ✅ — resolve_config() verificada. 3/3 GREEN.
+- **Consejo 8/8 DAY 129** — 5 decisiones vinculantes. RULE-SCP-VM-001 permanente.
 
-### Hallazgos técnicos clave DAY 128
-1. **`resolve_seed()` enforza exactamente `0400` con `std::terminate()`** — relajar a `0440` viola la invariante. La solución correcta es `sudo`, no relajar permisos.
-2. **`resolve_seed()` lanza excepción, no retorna -1** — la firma `int` es engañosa. Tests usan `EXPECT_THROW<std::exception>`.
-3. **EtcdClientHmacTest 9/9** — no es regresión. Es código legado pre-P2P (ADR-026/027). Cleanup antes de ADR-024 (decisión Consejo 5/3).
+### Hallazgos técnicos clave DAY 129
+1. **Markdown corruption literal** en ficheros .cpp — fix por número de línea, nunca por string matching si el fichero fue editado con editor markdown.
+2. **CRLF en VM vs LF en macOS** — `vagrant ssh -c "cat ..."` produce output CRLF. String matching falla. Preferir edición directa en VM con Python.
+3. **Pipe zsh trunca a 0 bytes** — `vagrant ssh -c "cat ..." > file` silencioso. RULE-SCP-VM-001 activa.
+4. **INVALID_ARGUMENT no existe** en `IPTablesErrorCode` — usar `INVALID_RULE`.
+5. **Backslash al final de comentario** en .hpp actúa como line-continuation — rompe parsing silenciosamente.
 
-### Decisiones vinculantes Consejo DAY 128
-- **D1 (8/8):** `0400 root:root` invariante. `sudo` aceptable. Evolución: `CAP_DAC_READ_SEARCH` en v0.6+.
-- **D2 (8/8):** DEBT-IPTABLES-INJECTION-001 → `execve()` sin shell. BLOQUEANTE DAY 129.
-- **D3 (8/8):** Property testing prioridades: `compute_memory_mb` > HKDF > ZeroMQ parsers > protobuf.
-- **D4 (5/3):** Limpiar EtcdClient ANTES de ADR-024.
-- **D5 (8/8):** Demo FEDER = NDR standalone + 2 nodos simulados. Go/no-go: 1 agosto 2026.
+### Decisiones vinculantes Consejo DAY 129
+- **D1 (8/8):** RULE-SCP-VM-001 — scp obligatorio para transferencias VM↔macOS
+- **D2 (8/8):** `**/build-debug/` en .gitignore
+- **D3 (6/8):** Prioridad DAY 130: A(Fuzzing) → C(Paper §5) → B(Capabilities)
+- **D4 (8/8):** DEBT-SAFE-EXEC-NULLBYTE-001 — null byte check en safe_exec() BLOQUEANTE
+- **D5 (7/8):** Limpiar .gitguardian.yaml deprecated keys
 
 ---
 
-## PASO 0 — DAY 129: verificar entorno
+## PASO 0 — DAY 130: verificar entorno
 
 ```bash
 cd /Users/aironman/CLionProjects/test-zeromq-docker
@@ -61,164 +64,226 @@ Si la VM está parada: `make pipeline-start && sleep 20 && make pipeline-status`
 
 ---
 
-## PASO 1 — DEBT-IPTABLES-INJECTION-001 🔴 BLOQUEANTE (90 min)
+## PASO 1 — Limpieza infra (10 min)
+
+### 1a. .gitignore
+
+```python
+python3 << 'PYEOF'
+path = "/Users/aironman/CLionProjects/test-zeromq-docker/.gitignore"
+with open(path, "r") as f:
+    src = f.read()
+if "**/build-debug/" not in src:
+    src += "\\n# Build artifacts (Consejo 8/8 DAY 129)\\n**/build-debug/\\n**/build-release/\\n"
+    with open(path, "w") as f:
+        f.write(src)
+    print("OK: build-debug añadido")
+else:
+    print("Ya existe")
+PYEOF
+```
+
+### 1b. .gitguardian.yaml — ver contenido actual y limpiar deprecated keys
+
+```bash
+cat /Users/aironman/CLionProjects/test-zeromq-docker/.gitguardian.yaml
+```
+
+Renombrar `paths-ignore:` → `paths_ignore:` y añadir `version: 2` si no existe.
+
+### 1c. Commit trivial
+
+```bash
+git add .gitignore .gitguardian.yaml
+git commit -m "chore: DAY 130 — .gitignore build-debug + .gitguardian.yaml cleanup
+
+Consejo 8/8 DAY 129:
+- D2: **/build-debug/ en .gitignore (artefactos de compilación)
+- D5: .gitguardian.yaml deprecated keys paths-ignore → paths_ignore
+DEBT-GITIGNORE-BUILD-001: CERRADA
+DEBT-GITGUARDIAN-YAML-001: CERRADA"
+```
+
+---
+
+## PASO 2 — DEBT-SAFE-EXEC-NULLBYTE-001 🔴 BLOQUEANTE (45 min)
 
 ### Contexto
-`IPTablesWrapper::cleanup_rules()` en `firewall-acl-agent/src/core/iptables_wrapper.cpp:625`
-llama a `execute_command(cmd)` donde `cmd` es un string concatenado. CWE-78.
-Consejo 8/8 unánime: `execve()` directo sin shell.
+Consejo 8/8 DAY 129 (D4): `safe_exec()` es un primitivo general. Debe defenderse
+independientemente de validadores upstream. Un null byte en un argumento argv[i]
+puede truncar el argumento silenciosamente en execv() sin error.
+
+**Técnica aprobada por Consejo (Qwen/Kimi):**
+```cpp
+// strlen() se detiene en el primer \\0.
+// Si arg.size() != strlen(arg.c_str()) → hay \\0 interno → fail-closed
+if (arg.size() != std::strlen(arg.c_str())) {
+    return -1; // fail-closed, nunca truncar silenciosamente
+}
+```
 
 ### Qué hacer
 
-**1. Localizar el código afectado:**
-```bash
-grep -n "execute_command\|system(\|popen(" \
-  /Users/aironman/CLionProjects/test-zeromq-docker/firewall-acl-agent/src/core/iptables_wrapper.cpp | head -20
+**1. Añadir `is_safe_for_exec()` en `safe_exec.hpp`:**
+```cpp
+[[nodiscard]] inline bool is_safe_for_exec(const std::string& arg) noexcept {
+    // Defensa en profundidad (Consejo 8/8 DAY 129):
+    // strlen() se detiene en \\0; si difiere de size() → null byte interno
+    return arg.size() == std::strlen(arg.c_str());
+}
 ```
 
-**2. Fix: reemplazar execute_command(string) por execve(argv[]):**
+**2. Aplicar en todas las variantes de safe_exec() antes del fork:**
 ```cpp
-// ANTES (vulnerable):
-execute_command("iptables -D " + chain + " " + rule);
-
-// DESPUÉS (seguro):
-safe_exec({"/sbin/iptables", "-D", chain, rule});
+// Antes del fork, validar todos los args:
+for (const auto& a : args) {
+    if (!is_safe_for_exec(a)) return -1; // safe_exec sin output
+    // o para con output: return {-1, "null byte in argument"};
+}
 ```
 
-**3. Implementar `safe_exec()` en `iptables_wrapper.hpp`:**
+**3. Test RED→GREEN en `test_safe_exec.cpp`:**
 ```cpp
-#include <unistd.h>
-#include <sys/wait.h>
-#include <vector>
-#include <string>
+TEST(SafeExecIntegration, RejectsNullByteInArgument) {
+    // RED: argumento con null byte interno → safe_exec retorna -1
+    std::string arg_with_null("chain\\x00evil", 10);
+    int ret = safe_exec({"/bin/echo", arg_with_null});
+    EXPECT_EQ(ret, -1) << "safe_exec debe rechazar null bytes en argumentos";
+}
 
-inline int safe_exec(const std::vector<std::string>& args) {
-    std::vector<const char*> argv;
-    for (const auto& a : args) argv.push_back(a.c_str());
-    argv.push_back(nullptr);
-    
-    pid_t pid = fork();
-    if (pid == 0) {
-        execv(argv[0], const_cast<char* const*>(argv.data()));
-        _exit(127);
+TEST(SafeExecProperty, IsAlwaysSafeForNormalStrings) {
+    // Propiedad: strings sin null → is_safe_for_exec siempre true
+    const std::vector<std::string> safe_strings = {
+        "INPUT", "FORWARD", "/usr/sbin/iptables", "-t", "filter", "-N"
+    };
+    for (const auto& s : safe_strings) {
+        EXPECT_TRUE(is_safe_for_exec(s)) << "String normal debe ser safe: " << s;
     }
-    int status;
-    waitpid(pid, &status, 0);
-    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 ```
 
-**4. Validar argumentos antes de execv:**
-```cpp
-// Validar IPs: solo alfanumérico, '.', '/', '-'
-// Validar chain names: solo alfanumérico, '-', '_'
-// Rechazar cualquier otro carácter
-```
-
 ### Gate
-- `validate_chain_name()` regex allowlist existente (de DAY previo) — verificar que aplica
-- Test RED: con string malicioso `; rm -rf /` en argumento → `safe_exec` NO ejecuta shell
-- Test GREEN: comando iptables válido ejecuta correctamente
+- Tests RED→GREEN compilando y pasando
 - `make test-all` ALL TESTS COMPLETE
 
 ---
 
-## PASO 2 — DEBT-ETCDCLIENT-LEGACY-SEED-001 (45 min)
+## PASO 3 — DEBT-FUZZING-LIBFUZZER-001 (90 min)
 
 ### Contexto
-EtcdClient intenta leer seed vía `resolve_seed()` — modelo pre-P2P.
-Consejo 5/3: limpiar ANTES de ADR-024. Elimina confusión arquitectónica.
+Consejo 8/8 DAY 129 (D3): Fuzzing es la única opción que descubre unknown unknowns
+antes del despliegue en hospitales. Targets primarios:
+1. `validate_chain_name()` — guardián de inyección en iptables
+2. `validate_filepath()` — guardián de path traversal en save/restore
+3. Parser ZMQ (si da tiempo)
 
 ### Qué hacer
 
-**1. Localizar el código legacy:**
+**1. Verificar que libFuzzer está disponible en la VM:**
 ```bash
-grep -n "resolve_seed\|seed_path\|component_config_path\|CryptoTransport" \
-  /Users/aironman/CLionProjects/test-zeromq-docker/etcd-client/src/etcd_client.cpp | head -20
+vagrant ssh -c "clang++ --version && clang++ -fsanitize=fuzzer /dev/null -o /dev/null 2>&1 | head -5"
 ```
 
-**2. Marcar como deprecated y deshabilitar en producción:**
+**2. Crear `firewall-acl-agent/fuzz/fuzz_validate_chain.cpp`:**
 ```cpp
-[[deprecated("Legacy pre-P2P. Use ADR-024 Noise_IKpsk3 seed distribution.")]]
-void EtcdClient::init_crypto_legacy(const std::string& path) {
-    #ifndef ARGUS_LEGACY_SEED
-    throw std::runtime_error("Legacy seed disabled. Use P2P distribution (ADR-024).");
-    #endif
-    // ... código legacy ...
+#include <cstdint>
+#include <string>
+#include "safe_exec.hpp"
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+    std::string input(reinterpret_cast<const char*>(data), size);
+    // Corpus semilla: test_safe_exec.cpp casos existentes
+    bool result = validate_chain_name(input);
+    // No debe crashear — solo retornar true/false
+    (void)result;
+    return 0;
 }
 ```
 
-**3. Verificar que EtcdClientHmacTest 9/9 pasan SIN sudo:**
+**3. Crear `firewall-acl-agent/fuzz/fuzz_validate_filepath.cpp`** (similar)
+
+**4. Añadir target en CMakeLists.txt:**
+```cmake
+if(ARGUS_BUILD_FUZZ)
+    add_executable(fuzz_validate_chain fuzz/fuzz_validate_chain.cpp)
+    target_compile_options(fuzz_validate_chain PRIVATE -fsanitize=fuzzer,address)
+    target_link_options(fuzz_validate_chain PRIVATE -fsanitize=fuzzer,address)
+    target_include_directories(fuzz_validate_chain PRIVATE src/core)
+endif()
+```
+
+**5. Añadir target en Makefile:**
+```makefile
+fuzz-safe-exec:
+    vagrant ssh -c "cd /vagrant/firewall-acl-agent/build-debug && \\
+        cmake .. -DARGUS_BUILD_FUZZ=ON -DCMAKE_CXX_COMPILER=clang++ && \\
+        make fuzz_validate_chain && \\
+        ./fuzz_validate_chain -max_total_time=60 -jobs=4"
+```
+
+**6. Ejecutar:**
 ```bash
-vagrant ssh -c "cd /vagrant/ml-detector/build-debug && ./tests/test_etcd_client_hmac 2>&1 | tail -5"
+make fuzz-safe-exec 2>&1 | tail -20
 ```
 
 ### Gate
-- `EtcdClientHmacTest` 9/9 PASSED sin necesidad de sudo
+- `fuzz_validate_chain` compila sin errores
+- 60 segundos de fuzzing → 0 crashes
+- Documenta corpus en `firewall-acl-agent/fuzz/corpus/`
 - `make test-all` ALL TESTS COMPLETE
 
 ---
 
-## PASO 3 — DEBT-FEDER-SCOPE-DOC-001 (20 min)
+## PASO 4 — DEBT-MARKDOWN-HOOK-001 (15 min)
 
 ### Qué hacer
-Crear `docs/FEDER-SCOPE.md` con:
-- Scope mínimo viable: NDR standalone + 2 nodos Vagrant simulados
-- Lo que NO se necesita: ADR-038 completo, federación real, privacidad diferencial
-- Milestone go/no-go: **1 agosto 2026**
-- Script demo: `scripts/feder-demo.sh` (estructura, no implementación)
-- Prerequisitos técnicos para contactar a Andrés Caro Lindo
+Añadir verificación en pre-commit hook que detecte patrón `[word](http://` en
+ficheros `.cpp`/`.hpp` — indicador inequívoco de corrupción por editor markdown.
 
-### Gate
-- `docs/FEDER-SCOPE.md` existe y está versionado
-
----
-
-## PASO 4 — Property test compute_memory_mb (20 min)
-
-### Contexto
-F17 identificado DAY 125 — overflow en `int64_t`. Fix implementado con `double`.
-Falta el property test formal en ctest (solo existe documentación).
-
-### Qué hacer
-Añadir `test_memory_utils_property.cpp` en el componente donde vive `memory_utils.hpp`:
 ```bash
-find /Users/aironman/CLionProjects/test-zeromq-docker -name "memory_utils.hpp" | grep -v build
+# Ver el pre-commit hook actual
+cat /Users/aironman/CLionProjects/test-zeromq-docker/.git/hooks/pre-commit | head -40
 ```
 
-Property a verificar:
-- `compute_memory_mb(pages, page_size) >= 0` para todo pages >= 0, page_size válido
-- `compute_memory_mb(LONG_MAX/4096, 4096)` no desborda (caso extremo que rompía int64_t)
-- Monotonicidad: si pages1 > pages2, entonces `compute_memory_mb(pages1,ps) > compute_memory_mb(pages2,ps)`
+Añadir al hook:
+```bash
+# Check: markdown corruption en ficheros C++
+if git diff --cached --name-only | grep -E '\\.(cpp|hpp)$' | \\
+   xargs grep -l '\\[.*\\](http://' 2>/dev/null | grep .; then
+    echo "ERROR: Ficheros C++/HPP con markdown corruption detectada ([word](http://...))."
+    echo "Edita el fichero y corrige antes de commitear."
+    exit 1
+fi
+```
 
 ### Gate
-- Test en ctest PASSED RED→GREEN
+- Pre-commit rechaza un .cpp con `[rule.in](http://rule.in)_interface`
+- Pre-commit acepta un .cpp normal
 
 ---
 
-## PASO 5 — Commit y push
+## PASO 5 — Commit final + tag
 
 ```bash
-git add -A
-git commit -F - << 'EOF'
-fix+docs: DAY 129 — CWE-78 execve() + EtcdClient cleanup + FEDER scope
-
-- firewall-acl-agent: IPTablesWrapper migra a safe_exec() con execve()
-  Sin shell, sin concatenación de strings (CWE-78 → CERRADO)
-  Test RED→GREEN: safe_exec rechaza metacaracteres shell
-- etcd-client: EtcdClient legacy seed code marcado [[deprecated]]
-  EtcdClientHmacTest 9/9 PASSED sin sudo (cleanup pre-P2P)
-- docs/FEDER-SCOPE.md: scope mínimo viable FEDER + go/no-go 1 agosto
-- test_memory_utils_property: property test compute_memory_mb RED→GREEN
-
-Consejo 8/8 DAY 128: execve() es el único mecanismo correcto para
-comandos del sistema. Nunca system() ni popen() con strings.
-DEBT-IPTABLES-INJECTION-001: CERRADA
-DEBT-ETCDCLIENT-LEGACY-SEED-001: CERRADA (parcial)
-DEBT-FEDER-SCOPE-DOC-001: CERRADA
-EOF
-
 make test-all 2>&1 | grep -E "ALL TESTS|COMPLETE"
+
+git add -A
+git commit -m "fix+chore: DAY 130 — null byte safe_exec + fuzzing + infra cleanup
+
+- safe_exec.hpp: is_safe_for_exec() — null byte check defensa en profundidad
+  arg.size() != strlen(arg.c_str()) → fail-closed (Consejo 8/8 DAY 129)
+  test_safe_exec.cpp: +2 tests RED→GREEN (17/17 total)
+- fuzz/: harness libFuzzer validate_chain_name + validate_filepath
+  60s fuzzing 0 crashes — corpus en fuzz/corpus/
+- .gitignore: **/build-debug/ añadido
+- .gitguardian.yaml: deprecated keys limpiados
+- .git/hooks/pre-commit: markdown corruption check en .cpp/.hpp
+DEBT-SAFE-EXEC-NULLBYTE-001: CERRADA
+DEBT-FUZZING-LIBFUZZER-001: CERRADA (baseline)
+DEBT-GITIGNORE-BUILD-001: CERRADA
+DEBT-GITGUARDIAN-YAML-001: CERRADA
+DEBT-MARKDOWN-HOOK-001: CERRADA"
+
 git push origin main
 ```
 
@@ -226,52 +291,48 @@ git push origin main
 
 ## Contexto estratégico
 
-### Decisiones Consejo DAY 128 (vinculantes)
-Ver `docs/CONSEJO-DAY-128-acta.md` para detalle completo.
-
 ### Taxonomía safe_path (PERMANENTE)
-```
 resolve()        → validación general
 resolve_seed()   → material criptográfico (lstat pre-resolución, 0400, sudo)
 resolve_config() → configs con symlinks legítimos (lexically_normal pre-resolución)
 resolve_model()  → [BACKLOG ADR-038] modelos firmados Ed25519
-```
 
-### Estado de deuda al inicio de DAY 129
-```
-🔴 DEBT-IPTABLES-INJECTION-001      → DAY 129 BLOQUEANTE — execve() sin shell
-🟡 DEBT-ETCDCLIENT-LEGACY-SEED-001  → DAY 129 — cleanup pre-P2P
-🟡 DEBT-FEDER-SCOPE-DOC-001         → DAY 129 — docs/FEDER-SCOPE.md
-🟡 DEBT-FIREWALL-CONFIG-PATH-001    → DAY 129 — verificar resolve_config()
-⏳ DEBT-SEED-CAPABILITIES-001       → v0.6+ — CAP_DAC_READ_SEARCH
-⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001 → feature/adr038-acrl
-⏳ DEBT-FUZZING-LIBFUZZER-001       → post-property-testing
-⏳ DEBT-PENTESTER-LOOP-001          → POST-DEUDA
-```
+### Estado de deuda al inicio de DAY 130
+🔴 DEBT-SAFE-EXEC-NULLBYTE-001    → DAY 130 BLOQUEANTE — is_safe_for_exec()
+🔴 DEBT-FUZZING-LIBFUZZER-001     → DAY 130 — libFuzzer validate_chain_name + ZMQ
+🟡 DEBT-GITIGNORE-BUILD-001       → DAY 130 — **/build-debug/
+🟡 DEBT-GITGUARDIAN-YAML-001      → DAY 130 — deprecated keys
+🟡 DEBT-MARKDOWN-HOOK-001         → DAY 130 — pre-commit check word
+⏳ DEBT-SEED-CAPABILITIES-001     → v0.6+ — CAP_DAC_READ_SEARCH
+⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001→ feature/adr038-acrl
+⏳ DEBT-PENTESTER-LOOP-001         → POST-DEUDA
+📄 Paper §5 Draft v17             → DAY 130/131
 
 ### Modelos firmados activos
-```
 /vagrant/ml-detector/models/production/level1/
-  xgboost_cicids2017_v2.ubj + .sig  (DAY 122 — IN-DISTRIBUTION)
-  wednesday_eval_report.json        (OOD finding sealed)
-```
+xgboost_cicids2017_v2.ubj + .sig  (DAY 122 — IN-DISTRIBUTION)
+wednesday_eval_report.json        (OOD finding sealed)
 
 ### Paper arXiv:2604.04952
 Draft v16 activo. https://arxiv.org/abs/2604.04952
-Pendiente: Draft v17 con §5 actualizado (property testing + safe_path taxonomy).
+Pendiente: Draft v17 con §5 actualizado (property testing + safe_path taxonomy + CWE-78 fix).
 
 ### Consejo de Sabios (8 modelos)
 Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
 
-### REGLA DE ORO DAY 129
-`execve()` sin shell no es una opción — es el único mecanismo correcto
-para ejecutar comandos del sistema en código de seguridad.
-`system("cmd" + user_input)` es un contrato de rendición.
+### BACKLOG-FEDER-001
+Presentación a Andrés Caro Lindo (UEx/INCIBE). Deadline: 22 septiembre 2026.
+Go/no-go técnico: **1 agosto 2026**.
+Prerequisites: ADR-026 merged + ADR-029 Variants A/B + demo pcap reproducible.
+
+### REGLA DE ORO DAY 130
+`is_safe_for_exec()` no es una optimización — es un contrato de seguridad.
+Un null byte silencioso en execv() es un argumento que miente sobre sí mismo.
 
 ---
 
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
-*"La seguridad no es cómoda. Es necesaria." — Qwen, Consejo DAY 128*
-*"No construyas encima de comportamiento incorrecto, aunque sea temporal." — ChatGPT, Consejo DAY 128*
-*"El sistema empieza a comportarse como un sistema que desconfía de sí mismo.
-Ese es el punto de inflexión correcto." — ChatGPT, Consejo DAY 128*
+*"La seguridad no se construye con héroes que evitan errores.*
+*Se construye con sistemas que hacen difícil cometerlos y fácil recuperarlos." — Qwen, Consejo DAY 129*
+*"Vuestra atención al detalle demuestra el nivel de rigor necesario*
+*para proteger infraestructuras críticas." — Mistral, Consejo DAY 129*

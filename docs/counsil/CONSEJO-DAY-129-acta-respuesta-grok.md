@@ -1,154 +1,73 @@
-# CONSEJO DE SABIOS — DAY 129 — Acta de Revisión
+**Voto del Consejo — Grok (DAY 129 revisión)**
 
-**Fecha:** 25 abril 2026  
-**Branch:** main — commit `55383638`  
-**Quórum requerido:** 8/8 (Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral)
+Quórum alcanzado. Procedo con análisis científico/técnico, priorizando **seguridad, reproducibilidad, mantenibilidad y minimización de superficie de ataque** en el contexto de **Argus** (firewall/ACL/NDR en entornos hospitalarios y críticos). Todo razonamiento se basa en evidencia empírica, estándares de secure coding (CWE, OWASP, Linux capabilities model) y trade-offs medibles.
 
----
+### P1 — Regla permanente sobre transferencia de ficheros VM ↔ macOS
+**Aprobada por unanimidad técnica (sí).**
 
-## Contexto de la sesión
+**Razonamiento:**
+- El pipe `vagrant ssh -c "cat ..."` + zsh/redirección es frágil por diseño: truncamiento silencioso a 0 bytes es un fallo de reproducibilidad clásico en entornos mixtos (CRLF/LF, shell differences, buffering).
+- `scp -F vagrant-ssh-config` o `vagrant scp` usan el protocolo SSH directamente → transferencia binaria fiable, sin interpretación de shell.
+- Evidencia DAY 129: ya se ha manifestado (incidencia #4). Regla permanente elimina clase entera de errores no-deterministas.
+- Impacto en hospitales: cero tolerancia a corrupción silenciosa de configs de iptables/firewall o seeds HMAC.
 
-DAY 129 completó 4 deudas técnicas, todas con evidencia RED→GREEN.
-Pipeline 6/6 RUNNING. ALL TESTS COMPLETE pre y post merge.
+**Propuesta de redacción exacta para continuity prompt:**
+> "Toda transferencia de ficheros entre VM y macOS **debe** usar `scp -F vagrant-ssh-config` o `vagrant scp`. **Prohibido** `vagrant ssh -c "cat ..."` o pipes equivalentes — truncan silenciosamente en zsh."
 
----
+### P2 — Añadir `**/build-debug/` al `.gitignore`
+**Sí, añadir inmediatamente.**
 
-## Hitos completados DAY 129
-
-### 1. DEBT-IPTABLES-INJECTION-001 — CWE-78 CERRADA
-**Surface eliminada:** 13 call-sites de `popen()`/`system()` en `iptables_wrapper.cpp`.  
-**Solución:** `safe_exec.hpp` — 4 primitivos `fork()+execv()` sin shell:
-- `safe_exec()` — sin output
-- `safe_exec_with_output()` — captura stdout/stderr
-- `safe_exec_with_file_out()` — stdout→fichero (iptables-save)
-- `safe_exec_with_file_in()` — stdin←fichero (iptables-restore)
-
-**Validadores añadidos:**
-- `validate_chain_name()` — allowlist `[A-Za-z0-9_-]` 1..29 chars + null byte check explícito
-- `validate_table_name()` — conjunto fijo {filter, nat, mangle, raw, security}
-- `validate_filepath()` — sin `..` ni metacaracteres shell
-
-**Evidencia:**
-- `test_safe_exec.cpp`: 15/15 GREEN (4 unit + 4 property + 7 integración)
-- `grep popen\|system( iptables_wrapper.cpp` → 0 resultados
-
-**Incidencias durante implementación:**
-- Fichero `.cpp` tenía markdown corruption literal (`[rule.in](http://rule.in)_interface`) — fix por número de línea
-- `CRLF` en VM vs `LF` en macOS — fix por número de línea en la VM
-- `INVALID_ARGUMENT` no existía en el enum — corregido a `INVALID_RULE`
-- `safe_exec.hpp` línea con `\` al final de comentario → line-continuation → `validate_chain_name` no visible
-
----
-
-### 2. DEBT-ETCDCLIENT-LEGACY-SEED-001 — CERRADA (parcial)
-**Problema:** `EtcdClient` en `ml-detector` asignaba `component_config_path` siempre, incluso cuando `encryption_enabled=false` (endpoint con `http://`). Los tests mock usaban `http://` pero el constructor intentaba cargar `/etc/ml-defender/ml-detector/seed.bin` → excepción.
-
-**Fix:** `component_config_path` solo se asigna cuando `encryption_enabled=true`.
-
-**Evidencia:** `EtcdClientHmacTest` 9/9 PASSED (antes 9/9 FAILED).
-
-**Parcial porque:** La arquitectura HTTP para distribución de claves HMAC es pre-P2P. Migración completa a ADR-024 (Noise_IKpsk3) pendiente.
-
----
-
-### 3. DEBT-FEDER-SCOPE-DOC-001 — CERRADA
-**Entregable:** `docs/FEDER-SCOPE.md`
-- Scope mínimo viable: NDR standalone + 2 nodos Vagrant simulados
-- Go/no-go técnico: **1 agosto 2026**
-- Prerequisitos: ADR-026 merged + ADR-029 Variants A/B + demo pcap reproducible
-- Argumento FEDER: 1 investigador + 8 AIs en 1 año → Fases 5+6 requieren financiación
-- Estructura `scripts/feder-demo.sh` (implementación en backlog)
-
----
-
-### 4. DEBT-FIREWALL-CONFIG-PATH-001 — CERRADA (verificación)
-**Hallazgo:** `resolve_config()` ya estaba correctamente implementada y testeada.
-- `config_loader.cpp` usa `argus::safe_path::resolve_config(config_path, allowed_prefix)`
-- prefix siempre fijo — nunca derivado del input
-- `ConfigLoaderTraversal` 3/3 GREEN (pre-existente)
-
-**Añadido:** Tabla de verificación en `docs/SECURITY-PATH-PRIMITIVES.md`.
-
----
-
-## Deuda pendiente (estado post-DAY 129)
-
-```
-⏳ DEBT-SEED-CAPABILITIES-001       → v0.6+ — CAP_DAC_READ_SEARCH
-⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001 → feature/adr038-acrl
-⏳ DEBT-FUZZING-LIBFUZZER-001       → DAY 130 candidato
-⏳ DEBT-PENTESTER-LOOP-001          → post-FEDER
-🔴 ADR-026 merge bloqueado          → CIC-IDS-2017 real fixtures pendientes
-🔴 ADR-029 Variants A/B             → bloqueado por ADR-026
-```
-
----
-
-## Preguntas al Consejo
-
-### P1 — REGLA PERMANENTE DAY 129 (propuesta)
-Se propone formalizar la siguiente regla permanente:
-
-> **"Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` 
-> o `vagrant scp`. Nunca `vagrant ssh -c "cat ..." > fichero` — el pipe zsh trunca 
-> a 0 bytes silenciosamente."**
-
-¿El Consejo aprueba añadirla como regla permanente al continuity prompt?
-
-### P2 — build-debug en .gitignore
-Los ficheros `firewall-acl-agent/build-debug/Makefile`, `build-debug/firewall-acl-agent`, 
-y `build-debug/firewall_tests[1]_tests.cmake` aparecen como `Changes not staged` en cada 
-sesión porque no están en `.gitignore`. ¿Añadir `**/build-debug/` al `.gitignore`?
+**Razonamiento:**
+- `build-debug/` es artefacto de compilación/debug (CMake, etc.). No debe versionarse.
+- Aparece como "Changes not staged" en cada sesión → ruido en `git status`, riesgo de commit accidental de binarios/temporales.
+- Patrón `**/build-debug/` es preciso y no afecta otros directorios de build (ej. `build-release` si se usa).
+- Mejora higiene del repo sin coste. Consistente con buenas prácticas CMake/Vagrant.
 
 ### P3 — Prioridad DAY 130
-Deuda disponible sin bloqueantes:
-- A) `DEBT-FUZZING-LIBFUZZER-001` — libFuzzer sobre `validate_chain_name` + parsers ZMQ
-- B) `DEBT-SEED-CAPABILITIES-001` — CAP_DAC_READ_SEARCH en systemd units
-- C) Paper §5 — actualizar con property testing + safe_path taxonomy (Draft v17)
+**Priorizo A) `DEBT-FUZZING-LIBFUZZER-001` (validate_chain_name + parsers ZMQ).**
 
-¿Cuál prioriza el Consejo para DAY 130?
+**Análisis comparativo (método científico):**
+- **A (Fuzzing):** Máximo ROI en seguridad. `validate_chain_name` ya tiene allowlist estricta + null-byte check; libFuzzer generará inputs mutados que cubran edge cases (longitud, metacaracteres Unicode, secuencias de bytes maliciosas). Ideal para parsers ZMQ (superficie de red). Evidencia: tutoriales libFuzzer muestran que parsers pequeños con corpus semilla + dictionary alcanzan cobertura alta rápidamente. Bloquea clases de CWE-20/CWE-78/CWE-119 antes de producción. En hospitales: previene inyección en reglas de firewall.
+- **B (CAP_DAC_READ_SEARCH):** Importante para principio de menor privilegio, pero **parcial**. La capacidad permite bypass de DAC (leer cualquier fichero). En systemd units es común para servicios que necesitan acceso amplio (ej. logs), pero debe combinarse con `NoNewPrivileges=yes`, `PrivateTmp`, `ProtectSystem=strict`, `CapabilityBoundingSet=...` y drop explícito. No es urgente si el servicio ya corre como root o con paths resueltos vía `safe_path`. Riesgo: over-privileging si se añade sin audit completo.
+- **C (Paper §5):** Valioso para documentación/academia (property testing + safe_path taxonomy), pero **no bloqueante** para core security. Postergable a post-fuzzing.
 
-### P4 — Null byte en validate_chain_name
-El test `ChainNameRejectsShellMetachars` requirió constructor explícito 
-`std::string("chain\\x00null", 10)` porque el literal C++ se trunca en `\\0`.
-La implementación actual hace check explícito `name.find('\\0') != npos`.
+**Orden propuesto:** A → B (si fuzzing no revela nada crítico en paths) → C.  
+Fuzzing primero = defensa proactiva; mide cobertura y crashes cuantitativamente.
 
-¿Es suficiente este check o se recomienda también sanitizar en `safe_exec()` 
-antes de pasar a `execv()` (defensa en profundidad)?
+### P4 — Null byte en `validate_chain_name`
+**El check explícito `name.find('\0') != npos` es bueno pero insuficiente solo. Recomiendo defensa en profundidad: sanitizar/rechazar también en `safe_exec()` antes de `execv()`.**
+
+**Razonamiento técnico:**
+- En C++, literal `"chain\0null"` se trunca en el constructor `const char*` (terminador nulo implícito). Constructor con longitud explícita (`std::string("chain\0null", 10)`) es correcto para tests.
+- `iptables` y `execv()` tratan argumentos como arrays de bytes terminados en null. Null byte embebido puede truncar el nombre de chain en el kernel o causar comportamiento indefinido (buffer overruns sutiles en parsers legacy).
+- Allowlist actual (`[A-Za-z0-9_-]`) ya rechaza la mayoría, pero null byte es metacaracter "invisible" → check explícito es correcto.
+- **Defensa en profundidad:** En `safe_exec()` (o wrapper), añadir `if (arg.find('\0') != std::string::npos) throw InvalidArgument{};` antes de `execv()`. Coste: negligible. Beneficio: previene que cualquier llamada futura pase null bytes aunque el validador upstream falle o se modifique.
+- Evidencia: CWE-78 y ataques de inyección de null bytes en command-line args son conocidos. Mejor fail-closed.
+
+Mantener el test con constructor de longitud explícita.
 
 ### P5 — .gitguardian.yaml deprecated keys
-Warnings en cada commit:
-```
-Config key paths-ignore is deprecated, use paths_ignore instead.
-Unrecognized key in config: paths_ignore
-```
-¿Vale la pena limpiar `.gitguardian.yaml` ahora o es ruido tolerable?
+**Limpiar ahora (bajo coste, alto beneficio en higiene).**
+
+**Razonamiento:**
+- `paths-ignore` → `ignored_paths` (o `paths_ignore` según versión; docs actuales usan `ignored_paths` bajo `secret:`).
+- Warnings en cada commit = ruido que desensitiza al equipo ante alertas reales.
+- Acción: actualizar a formato v2 (`version: 2`) y usar claves correctas (`ignored_paths` o `secret.ignored_matches`). No afecta funcionalidad, solo elimina warnings.
+- Tolerable solo si el equipo está en modo "ignore all warnings" (mal práctica). En contexto hospitalario/Argus: mantener señal/ruido limpio.
+
+**Acción recomendada:** Editar `.gitguardian.yaml` en DAY 130 junto con el fuzzing (commit atómico).
 
 ---
 
-## Métricas DAY 129
+**Resumen votos Grok:**
+- P1: **Sí** (regla permanente)
+- P2: **Sí** (gitignore)
+- P3: **A** (fuzzing libFuzzer primero)
+- P4: Check actual OK + sanitizar en `safe_exec()` (defensa en profundidad)
+- P5: **Limpiar ahora**
 
-| Métrica | Valor |
-|---|---|
-| Deudas cerradas | 4 |
-| Tests añadidos | 15 (safe_exec) |
-| Tests que pasaron de FAILED a PASSED | 9 (EtcdClientHmac) |
-| Ficheros modificados | 6 |
-| popen()/system() eliminados | 13 call-sites |
-| Incidencias de entorno | 4 (CRLF, markdown corruption, zsh pipe, backslash comment) |
-| Pipeline al cierre | 6/6 RUNNING |
-| ALL TESTS COMPLETE | ✅ |
+Pipeline sigue verde. Continuidad fuerte. Próximo paso lógico: fuzzing + verificación de capabilities con `systemd-analyze security` y `capsh --decode`.
 
----
+*"Via Appia Quality — Un escudo que aprende de su propia sombra."*
 
-*"Via Appia Quality — Un escudo que aprende de su propia sombra."*  
-*Commit: `55383638` — main*
-"""
-
-path = "/Users/aironman/CLionProjects/test-zeromq-docker/docs/CONSEJO-DAY-129-acta.md"
-with open(path, "w") as f:
-    f.write(content)
-print(f"OK: {path}")
-PYEOF
-
-
+Listo para siguiente iteración. ¿Algún miembro quiere matizar o proponer contra-evidencia?

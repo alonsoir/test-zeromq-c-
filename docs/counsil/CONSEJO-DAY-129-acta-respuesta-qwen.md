@@ -1,154 +1,214 @@
-# CONSEJO DE SABIOS — DAY 129 — Acta de Revisión
-
-**Fecha:** 25 abril 2026  
-**Branch:** main — commit `55383638`  
-**Quórum requerido:** 8/8 (Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral)
+# 🏛️ CONSEJO DE SABIOS — ACTA DE REVISIÓN DAY 129
+*Feedback basado en evidencia científica, metodología rigurosa y enfoque en la misión humanitaria de aRGus NDR*
 
 ---
 
-## Contexto de la sesión
+## 🎯 Veredicto Ejecutivo
 
-DAY 129 completó 4 deudas técnicas, todas con evidencia RED→GREEN.
-Pipeline 6/6 RUNNING. ALL TESTS COMPLETE pre y post merge.
+**EJECUCIÓN TÉCNICA EJEMPLAR CON LECCIONES OPERACIONALES VALIOSAS.**
 
----
+Las cuatro deudas cerradas en DAY 129 demuestran madurez ingenieril: eliminación de `popen()/system()`, corrección de lógica condicional en `EtcdClient`, documentación de scope FEDER, y verificación de `resolve_config()`. Las incidencias de entorno (CRLF, zsh pipe, markdown corruption) no son fallos: son **evidencia empírica de que la reproducibilidad requiere disciplina explícita**.
 
-## Hitos completados DAY 129
-
-### 1. DEBT-IPTABLES-INJECTION-001 — CWE-78 CERRADA
-**Surface eliminada:** 13 call-sites de `popen()`/`system()` en `iptables_wrapper.cpp`.  
-**Solución:** `safe_exec.hpp` — 4 primitivos `fork()+execv()` sin shell:
-- `safe_exec()` — sin output
-- `safe_exec_with_output()` — captura stdout/stderr
-- `safe_exec_with_file_out()` — stdout→fichero (iptables-save)
-- `safe_exec_with_file_in()` — stdin←fichero (iptables-restore)
-
-**Validadores añadidos:**
-- `validate_chain_name()` — allowlist `[A-Za-z0-9_-]` 1..29 chars + null byte check explícito
-- `validate_table_name()` — conjunto fijo {filter, nat, mangle, raw, security}
-- `validate_filepath()` — sin `..` ni metacaracteres shell
-
-**Evidencia:**
-- `test_safe_exec.cpp`: 15/15 GREEN (4 unit + 4 property + 7 integración)
-- `grep popen\|system( iptables_wrapper.cpp` → 0 resultados
-
-**Incidencias durante implementación:**
-- Fichero `.cpp` tenía markdown corruption literal (`[rule.in](http://rule.in)_interface`) — fix por número de línea
-- `CRLF` en VM vs `LF` en macOS — fix por número de línea en la VM
-- `INVALID_ARGUMENT` no existía en el enum — corregido a `INVALID_RULE`
-- `safe_exec.hpp` línea con `\` al final de comentario → line-continuation → `validate_chain_name` no visible
+> *"La seguridad no tolera silencios. Lo que no se documenta, se corrompe."*
 
 ---
 
-### 2. DEBT-ETCDCLIENT-LEGACY-SEED-001 — CERRADA (parcial)
-**Problema:** `EtcdClient` en `ml-detector` asignaba `component_config_path` siempre, incluso cuando `encryption_enabled=false` (endpoint con `http://`). Los tests mock usaban `http://` pero el constructor intentaba cargar `/etc/ml-defender/ml-detector/seed.bin` → excepción.
+## ❓ Respuestas a Preguntas — Formato Científico
 
-**Fix:** `component_config_path` solo se asigna cuando `encryption_enabled=true`.
+### P1 — REGLA PERMANENTE: transferencia de ficheros VM↔macOS
 
-**Evidencia:** `EtcdClientHmacTest` 9/9 PASSED (antes 9/9 FAILED).
+**Veredicto:** **APROBAR como regla permanente. Fundamentación empírica + prevención de corrupción silenciosa.**
 
-**Parcial porque:** La arquitectura HTTP para distribución de claves HMAC es pre-P2P. Migración completa a ADR-024 (Noise_IKpsk3) pendiente.
+**Justificación metodológica:**
+- **Evidencia observada**: El pipe `vagrant ssh -c "cat ..." > file` en zsh trunca silenciosamente a 0 bytes bajo condiciones específicas (buffering, señales, codificación).
+- **Principio de no-silencio**: En seguridad, un fallo silencioso es peor que un fallo explícito. `scp` falla con código de error no-cero si la transferencia se interrumpe.
+- **Reproducibilidad**: `scp -F vagrant-ssh-config` es determinista, auditable y documentable; el pipe zsh depende de configuración de shell no versionada.
 
----
+**Formulación recomendada para continuity prompt:**
+```markdown
+## Regla Permanente #7: Transferencia de Ficheros VM↔Host
 
-### 3. DEBT-FEDER-SCOPE-DOC-001 — CERRADA
-**Entregable:** `docs/FEDER-SCOPE.md`
-- Scope mínimo viable: NDR standalone + 2 nodos Vagrant simulados
-- Go/no-go técnico: **1 agosto 2026**
-- Prerequisitos: ADR-026 merged + ADR-029 Variants A/B + demo pcap reproducible
-- Argumento FEDER: 1 investigador + 8 AIs en 1 año → Fases 5+6 requieren financiación
-- Estructura `scripts/feder-demo.sh` (implementación en backlog)
+✅ PERMITIDO:
+- `scp -F vagrant-ssh-config defender:/ruta/remota ./local`
+- `vagrant scp defender:/ruta/remota ./local`
+- `rsync -avz -e "ssh -F vagrant-ssh-config" ...`
 
----
+❌ PROHIBIDO:
+- `vagrant ssh -c "cat /ruta" > local`  # zsh puede truncar silenciosamente
+- `vagrant ssh -c "base64 /ruta"` | base64 -d > local  # cadena de fallos potencial
 
-### 4. DEBT-FIREWALL-CONFIG-PATH-001 — CERRADA (verificación)
-**Hallazgo:** `resolve_config()` ya estaba correctamente implementada y testeada.
-- `config_loader.cpp` usa `argus::safe_path::resolve_config(config_path, allowed_prefix)`
-- prefix siempre fijo — nunca derivado del input
-- `ConfigLoaderTraversal` 3/3 GREEN (pre-existente)
-
-**Añadido:** Tabla de verificación en `docs/SECURITY-PATH-PRIMITIVES.md`.
-
----
-
-## Deuda pendiente (estado post-DAY 129)
-
-```
-⏳ DEBT-SEED-CAPABILITIES-001       → v0.6+ — CAP_DAC_READ_SEARCH
-⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001 → feature/adr038-acrl
-⏳ DEBT-FUZZING-LIBFUZZER-001       → DAY 130 candidato
-⏳ DEBT-PENTESTER-LOOP-001          → post-FEDER
-🔴 ADR-026 merge bloqueado          → CIC-IDS-2017 real fixtures pendientes
-🔴 ADR-029 Variants A/B             → bloqueado por ADR-026
+Justificación: En seguridad, la corrupción silenciosa de artefactos criptográficos 
+o de configuración es inaceptable. Usar protocolos con verificación de integridad 
+explícita (scp/rsync) no es burocracia: es defensa en profundidad operacional.
 ```
 
+**Riesgo si se ignora:** Corrupción silenciosa de seeds, configs o modelos firmados, llevando a despliegues con material criptográfico inválido o incompleto.
+
 ---
 
-## Preguntas al Consejo
+### P2 — `build-debug/` en `.gitignore`
 
-### P1 — REGLA PERMANENTE DAY 129 (propuesta)
-Se propone formalizar la siguiente regla permanente:
+**Veredicto:** **SÍ, añadir `**/build-debug/` inmediatamente. Principio: ignorar artefactos generados, no fuentes.**
 
-> **"Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` 
-> o `vagrant scp`. Nunca `vagrant ssh -c "cat ..." > fichero` — el pipe zsh trunca 
-> a 0 bytes silenciosamente."**
+**Justificación de ingeniería de software:**
+- **Build artifacts son derivados, no fuentes**: Su contenido es función determinista de fuentes + toolchain. Versionarlos duplica el repositorio sin valor informativo.
+- **Riesgo de commit accidental**: Ficheros como `build-debug/firewall-acl-agent` apareciendo como "Changes not staged" generan ruido cognitivo y riesgo de commit involuntario.
+- **Consistencia con prácticas estándar**: CMake, Bazel, Meson y otros sistemas de build recomiendan ignorar directorios de output.
 
-¿El Consejo aprueba añadirla como regla permanente al continuity prompt?
-
-### P2 — build-debug en .gitignore
-Los ficheros `firewall-acl-agent/build-debug/Makefile`, `build-debug/firewall-acl-agent`, 
-y `build-debug/firewall_tests[1]_tests.cmake` aparecen como `Changes not staged` en cada 
-sesión porque no están en `.gitignore`. ¿Añadir `**/build-debug/` al `.gitignore`?
-
-### P3 — Prioridad DAY 130
-Deuda disponible sin bloqueantes:
-- A) `DEBT-FUZZING-LIBFUZZER-001` — libFuzzer sobre `validate_chain_name` + parsers ZMQ
-- B) `DEBT-SEED-CAPABILITIES-001` — CAP_DAC_READ_SEARCH en systemd units
-- C) Paper §5 — actualizar con property testing + safe_path taxonomy (Draft v17)
-
-¿Cuál prioriza el Consejo para DAY 130?
-
-### P4 — Null byte en validate_chain_name
-El test `ChainNameRejectsShellMetachars` requirió constructor explícito 
-`std::string("chain\\x00null", 10)` porque el literal C++ se trunca en `\\0`.
-La implementación actual hace check explícito `name.find('\\0') != npos`.
-
-¿Es suficiente este check o se recomienda también sanitizar en `safe_exec()` 
-antes de pasar a `execv()` (defensa en profundidad)?
-
-### P5 — .gitguardian.yaml deprecated keys
-Warnings en cada commit:
+**Implementación recomendada:**
+```diff
+# .gitignore
++ # Build artifacts (generated, not source)
++ **/build-debug/
++ **/build-release/
++ **/CMakeFiles/
++ **/cmake_install.cmake
++ **/Makefile
++ **/*.cmake
++ # Keep test sources visible
++ !**/test_*.cpp
++ !**/test_*.hpp
 ```
-Config key paths-ignore is deprecated, use paths_ignore instead.
-Unrecognized key in config: paths_ignore
+
+**Validación post-cambio:**
+```bash
+git status --short  # debe mostrar 0 cambios relacionados con build-debug/
+git clean -fdx      # debe poder eliminar todos los artefactos sin perder fuentes
 ```
-¿Vale la pena limpiar `.gitguardian.yaml` ahora o es ruido tolerable?
+
+**Riesgo si se ignora:** Confusión en revisiones de código, commits accidentales de binarios, y dificultad para distinguir cambios reales de ruido de build.
 
 ---
 
-## Métricas DAY 129
+### P3 — Prioridad DAY 130: ¿A, B o C?
 
-| Métrica | Valor |
-|---|---|
-| Deudas cerradas | 4 |
-| Tests añadidos | 15 (safe_exec) |
-| Tests que pasaron de FAILED a PASSED | 9 (EtcdClientHmac) |
-| Ficheros modificados | 6 |
-| popen()/system() eliminados | 13 call-sites |
-| Incidencias de entorno | 4 (CRLF, markdown corruption, zsh pipe, backslash comment) |
-| Pipeline al cierre | 6/6 RUNNING |
-| ALL TESTS COMPLETE | ✅ |
+**Veredicto:** **PRIORIZAR C (Paper §5) → A (Fuzzing) → B (Capabilities).**
+
+**Justificación estratégica basada en impacto × esfuerzo:**
+
+| Opción | Impacto científico | Impacto operativo | Esfuerzo estimado | Prioridad |
+|--------|-------------------|------------------|-------------------|-----------|
+| **C) Paper §5** | Alto (contribución metodológica publicable) | Medio (documentación) | Bajo (1-2 días) | **1ª** |
+| **A) Fuzzing** | Medio (detección de bugs edge-case) | Alto (seguridad runtime) | Medio (3-4 días) | **2ª** |
+| **B) Capabilities** | Bajo (optimización operacional) | Medio (reduce sudo) | Alto (refactor systemd + testing) | **3ª** |
+
+**Razonamiento:**
+1. **Paper primero**: Los hallazgos de DAY 125-129 (property testing como validador de fixes, taxonomía `safe_path`, RED→GREEN como gate) son contribuciones metodológicas novedosas. Documentarlos ahora asegura que no se pierdan en la iteración técnica y fortalece la credibilidad del paper ante revisores.
+2. **Fuzzing segundo**: `libFuzzer` sobre `validate_chain_name` y parsers ZMQ es la siguiente capa de defensa en profundidad tras property testing. Detecta bugs por inputs malformados que ni unit ni property tests anticipan.
+3. **Capabilities tercero**: `CAP_DAC_READ_SEARCH` es una optimización operacional valiosa, pero no bloquea seguridad ni publicación. Puede esperar a v0.6 sin riesgo.
+
+**Plan recomendado para DAY 130:**
+```markdown
+- [ ] Mañana: Redactar §5.3-§5.5 del paper con hallazgos DAY 125-129
+- [ ] Tarde: Iniciar integración de libFuzzer en CI (solo configuración, no tests completos)
+- [ ] Dejar DEBT-SEED-CAPABILITIES-001 para DAY 131+
+```
 
 ---
 
-*"Via Appia Quality — Un escudo que aprende de su propia sombra."*  
-*Commit: `55383638` — main*
-"""
+### P4 — Null byte en `validate_chain_name`: ¿check suficiente o defensa en profundidad?
 
-path = "/Users/aironman/CLionProjects/test-zeromq-docker/docs/CONSEJO-DAY-129-acta.md"
-with open(path, "w") as f:
-    f.write(content)
-print(f"OK: {path}")
-PYEOF
+**Veredicto:** **El check en `validate_chain_name` es suficiente, PERO añadir validación en `safe_exec()` como defensa en profundidad documentada.**
 
+**Justificación técnica:**
+- **C++ `std::string` y null bytes**: Un `std::string` puede contener `\0` internos si se construye con longitud explícita (`std::string("a\0b", 3)`). El check `name.find('\0') != npos` detecta esto correctamente.
+- **`execv()` y null termination**: `execv()` espera un array de `char*` null-terminated. Si un argumento contiene `\0` interno, el comportamiento es indefinido (puede truncar el argumento o fallar).
+- **Principio de defensa en profundidad**: Validar en el punto de entrada (`validate_chain_name`) es correcto; validar nuevamente en el límite del sistema (`safe_exec`) añade resiliencia contra bugs futuros o bypasses.
 
+**Implementación recomendada:**
+```cpp
+// safe_exec.hpp — validación adicional en el límite del sistema
+[[nodiscard]] inline bool is_safe_for_exec(const std::string& arg) {
+    // Defensa en profundidad: rechazar cualquier argumento con null interno
+    // Aunque validate_* lo haya chequeado, este check protege contra:
+    // 1. Bugs futuros en validadores upstream
+    // 2. Llamadas directas a safe_exec() sin validación previa
+    if (arg.size() != strlen(arg.c_str())) {
+        // strlen se detiene en el primer \0; si difiere de size(), hay \0 interno
+        return false;
+    }
+    return true;
+}
+
+// Uso en safe_exec()
+if (!is_safe_for_exec(arg)) {
+    throw std::invalid_argument("[safe_exec] Argument contains null byte");
+}
+```
+
+**Documentación obligatoria en `docs/SECURITY-VALIDATION.md`:**
+```markdown
+## Null Byte Handling in Command Execution
+
+1. Validación primaria: Cada validador específico (`validate_chain_name`, etc.) 
+   rechaza inputs con `\0` explícitamente.
+2. Validación secundaria: `safe_exec()` verifica que `arg.size() == strlen(arg.c_str())` 
+   como defensa en profundidad.
+3. Justificación: Previene bugs por omisión de validación upstream y protege 
+   contra evolución futura de APIs.
+```
+
+**Riesgo si se ignora:** Un bug futuro que omita `validate_chain_name` podría permitir inyección de null bytes, causando comportamiento indefinido en `execv()`.
+
+---
+
+### P5 — `.gitguardian.yaml` deprecated keys: ¿limpiar ahora o tolerar?
+
+**Veredicto:** **Limpiar ahora. Coste mínimo, beneficio de mantener configuración auditable y sin ruido.**
+
+**Justificación de mantenimiento:**
+- **Coste**: Cambiar `paths-ignore` → `paths_ignore` y eliminar keys no reconocidas es un cambio de 2-3 líneas, 5 minutos de trabajo.
+- **Beneficio**: Elimina warnings en cada commit, previene fallos futuros cuando GitGuardian elimine soporte para keys deprecated, y mantiene la configuración como "single source of truth" auditable.
+- **Principio de "cero ruido"**: Warnings repetitivos generan fatiga de alerta; los desarrolladores pueden empezar a ignorar mensajes importantes.
+
+**Fix recomendado:**
+```yaml
+# .gitguardian.yaml — versión actualizada
+version: 2
+secret:
+  ignored-paths:  # cambiado de paths-ignore (deprecated)
+    - 'docs/SECRETS-EXAMPLE.md'
+    - 'tests/fixtures/*.key'
+  # Eliminar keys no reconocidas:
+  # - paths_ignore:  # ← eliminar esta línea si existe
+```
+
+**Validación post-fix:**
+```bash
+git commit --allow-empty -m "test: verify gitguardian config" 2>&1 | grep -i warning
+# Debe producir 0 warnings relacionados con configuración
+```
+
+**Riesgo si se ignora**: Cuando GitGuardian elimine soporte para keys deprecated (sin aviso mayor), la configuración podría fallar silenciosamente, permitiendo commits con secretos expuestos.
+
+---
+
+## 📋 Checklist de Acciones Inmediatas (DAY 130)
+
+```markdown
+- [ ] Añadir Regla Permanente #7 al continuity prompt (transferencia de ficheros)
+- [ ] Actualizar .gitignore con `**/build-debug/` y validar con `git status`
+- [ ] Redactar §5.3-§5.5 del paper con hallazgos DAY 125-129 (prioridad 1)
+- [ ] Implementar `is_safe_for_exec()` como defensa en profundidad para null bytes
+- [ ] Corregir `.gitguardian.yaml` deprecated keys
+- [ ] Iniciar configuración de libFuzzer en CI (sin tests completos aún)
+- [ ] Documentar lecciones de incidencias DAY 129 en `docs/OPERATIONAL-LESSONS.md`
+```
+
+---
+
+## 🏁 Palabras Finales
+
+Alonso:
+
+DAY 129 ha demostrado que la excelencia técnica no es incompatible con la humildad operacional. Las cuatro deudas cerradas son sólidas; las incidencias de entorno (CRLF, zsh pipe, markdown) no son fracasos, son **datos empíricos** que mejoran la reproducibilidad futura.
+
+> *"La seguridad no se construye con héroes que evitan errores. Se construye con sistemas que hacen difícil cometerlos y fácil recuperarlos."*
+
+Vuestra misión — proteger hospitales, escuelas y municipios que no pueden permitirse soluciones enterprise — exige este nivel de rigor. No es burocracia; es responsabilidad ética.
+
+Proceded con DAY 130. El Consejo revisará el borrador de §5 del paper y la integración inicial de libFuzzer con el mismo rigor con el que evaluamos cada línea de este pipeline.
+
+*Via Appia Quality · Un escudo, nunca una espada.*
+
+**— Consejo de Sabios, DAY 129** 🛡️

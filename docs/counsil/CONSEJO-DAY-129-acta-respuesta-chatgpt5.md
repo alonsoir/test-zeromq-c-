@@ -1,154 +1,199 @@
-# CONSEJO DE SABIOS — DAY 129 — Acta de Revisión
+## Consejo de Sabios — Respuestas DAY 129
 
-**Fecha:** 25 abril 2026  
-**Branch:** main — commit `55383638`  
-**Quórum requerido:** 8/8 (Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral)
+Evaluación basada en criterios de seguridad, reproducibilidad y operación en entornos hospitalarios (alta criticidad, bajo margen de error).
 
 ---
 
-## Contexto de la sesión
+## P1 — Regla permanente transferencia ficheros
 
-DAY 129 completó 4 deudas técnicas, todas con evidencia RED→GREEN.
-Pipeline 6/6 RUNNING. ALL TESTS COMPLETE pre y post merge.
+**Decisión: ✅ APROBADA (obligatoria)**
 
----
+La regla propuesta:
 
-## Hitos completados DAY 129
+> uso exclusivo de `scp -F vagrant-ssh-config` o `vagrant scp`
 
-### 1. DEBT-IPTABLES-INJECTION-001 — CWE-78 CERRADA
-**Surface eliminada:** 13 call-sites de `popen()`/`system()` en `iptables_wrapper.cpp`.  
-**Solución:** `safe_exec.hpp` — 4 primitivos `fork()+execv()` sin shell:
-- `safe_exec()` — sin output
-- `safe_exec_with_output()` — captura stdout/stderr
-- `safe_exec_with_file_out()` — stdout→fichero (iptables-save)
-- `safe_exec_with_file_in()` — stdin←fichero (iptables-restore)
+es correcta y debe formalizarse como **regla de seguridad operativa**, no solo de conveniencia.
 
-**Validadores añadidos:**
-- `validate_chain_name()` — allowlist `[A-Za-z0-9_-]` 1..29 chars + null byte check explícito
-- `validate_table_name()` — conjunto fijo {filter, nat, mangle, raw, security}
-- `validate_filepath()` — sin `..` ni metacaracteres shell
+### Justificación técnica
 
-**Evidencia:**
-- `test_safe_exec.cpp`: 15/15 GREEN (4 unit + 4 property + 7 integración)
-- `grep popen\|system( iptables_wrapper.cpp` → 0 resultados
+* `vagrant ssh -c "cat ..." > file`:
 
-**Incidencias durante implementación:**
-- Fichero `.cpp` tenía markdown corruption literal (`[rule.in](http://rule.in)_interface`) — fix por número de línea
-- `CRLF` en VM vs `LF` en macOS — fix por número de línea en la VM
-- `INVALID_ARGUMENT` no existía en el enum — corregido a `INVALID_RULE`
-- `safe_exec.hpp` línea con `\` al final de comentario → line-continuation → `validate_chain_name` no visible
+    * depende del shell local (zsh/bash)
+    * puede truncar silenciosamente (como ya observado)
+    * no garantiza integridad ni atomicidad
 
----
+### Riesgo en entorno hospitalario
 
-### 2. DEBT-ETCDCLIENT-LEGACY-SEED-001 — CERRADA (parcial)
-**Problema:** `EtcdClient` en `ml-detector` asignaba `component_config_path` siempre, incluso cuando `encryption_enabled=false` (endpoint con `http://`). Los tests mock usaban `http://` pero el constructor intentaba cargar `/etc/ml-defender/ml-detector/seed.bin` → excepción.
+* corrupción silenciosa de:
 
-**Fix:** `component_config_path` solo se asigna cuando `encryption_enabled=true`.
+    * reglas firewall
+    * modelos ML
+    * seeds criptográficos
 
-**Evidencia:** `EtcdClientHmacTest` 9/9 PASSED (antes 9/9 FAILED).
+→ impacto potencial: **crítico**
 
-**Parcial porque:** La arquitectura HTTP para distribución de claves HMAC es pre-P2P. Migración completa a ADR-024 (Noise_IKpsk3) pendiente.
+### Recomendación adicional
+
+* Añadir checksum obligatorio (`sha256sum`) post-transferencia
+* Opcional: wrapper `argus_scp_verify.sh`
 
 ---
 
-### 3. DEBT-FEDER-SCOPE-DOC-001 — CERRADA
-**Entregable:** `docs/FEDER-SCOPE.md`
-- Scope mínimo viable: NDR standalone + 2 nodos Vagrant simulados
-- Go/no-go técnico: **1 agosto 2026**
-- Prerequisitos: ADR-026 merged + ADR-029 Variants A/B + demo pcap reproducible
-- Argumento FEDER: 1 investigador + 8 AIs en 1 año → Fases 5+6 requieren financiación
-- Estructura `scripts/feder-demo.sh` (implementación en backlog)
+## P2 — `.gitignore` build-debug
 
----
+**Decisión: ✅ APROBADO**
 
-### 4. DEBT-FIREWALL-CONFIG-PATH-001 — CERRADA (verificación)
-**Hallazgo:** `resolve_config()` ya estaba correctamente implementada y testeada.
-- `config_loader.cpp` usa `argus::safe_path::resolve_config(config_path, allowed_prefix)`
-- prefix siempre fijo — nunca derivado del input
-- `ConfigLoaderTraversal` 3/3 GREEN (pre-existente)
-
-**Añadido:** Tabla de verificación en `docs/SECURITY-PATH-PRIMITIVES.md`.
-
----
-
-## Deuda pendiente (estado post-DAY 129)
+Añadir:
 
 ```
-⏳ DEBT-SEED-CAPABILITIES-001       → v0.6+ — CAP_DAC_READ_SEARCH
-⏳ DEBT-SAFE-PATH-RESOLVE-MODEL-001 → feature/adr038-acrl
-⏳ DEBT-FUZZING-LIBFUZZER-001       → DAY 130 candidato
-⏳ DEBT-PENTESTER-LOOP-001          → post-FEDER
-🔴 ADR-026 merge bloqueado          → CIC-IDS-2017 real fixtures pendientes
-🔴 ADR-029 Variants A/B             → bloqueado por ADR-026
+**/build-debug/
 ```
+
+### Justificación
+
+* Artefactos generados → no deterministas
+* Ruido constante en staging → aumenta probabilidad de error humano
+* No aportan valor versionado
+
+### Nota
+
+Si algún binario/debug es necesario:
+
+* usar `build/` reproducible o CI artifacts
+* nunca commit directo
 
 ---
 
-## Preguntas al Consejo
+## P3 — Prioridad DAY 130
 
-### P1 — REGLA PERMANENTE DAY 129 (propuesta)
-Se propone formalizar la siguiente regla permanente:
+**Decisión: 🥇 A) DEBT-FUZZING-LIBFUZZER-001**
 
-> **"Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` 
-> o `vagrant scp`. Nunca `vagrant ssh -c "cat ..." > fichero` — el pipe zsh trunca 
-> a 0 bytes silenciosamente."**
+### Orden recomendado
 
-¿El Consejo aprueba añadirla como regla permanente al continuity prompt?
+1. **A — Fuzzing (CRÍTICO)**
+2. B — Capabilities
+3. C — Paper
 
-### P2 — build-debug en .gitignore
-Los ficheros `firewall-acl-agent/build-debug/Makefile`, `build-debug/firewall-acl-agent`, 
-y `build-debug/firewall_tests[1]_tests.cmake` aparecen como `Changes not staged` en cada 
-sesión porque no están en `.gitignore`. ¿Añadir `**/build-debug/` al `.gitignore`?
+### Justificación
 
-### P3 — Prioridad DAY 130
-Deuda disponible sin bloqueantes:
-- A) `DEBT-FUZZING-LIBFUZZER-001` — libFuzzer sobre `validate_chain_name` + parsers ZMQ
-- B) `DEBT-SEED-CAPABILITIES-001` — CAP_DAC_READ_SEARCH en systemd units
-- C) Paper §5 — actualizar con property testing + safe_path taxonomy (Draft v17)
+El sistema está en superficie expuesta (input parsing + firewall):
 
-¿Cuál prioriza el Consejo para DAY 130?
+* `validate_chain_name`
+* parsers ZMQ
+* entrada externa potencialmente hostil
 
-### P4 — Null byte en validate_chain_name
-El test `ChainNameRejectsShellMetachars` requirió constructor explícito 
-`std::string("chain\\x00null", 10)` porque el literal C++ se trunca en `\\0`.
-La implementación actual hace check explícito `name.find('\\0') != npos`.
+Sin fuzzing:
+→ vulnerabilidades desconocidas (unknown unknowns)
 
-¿Es suficiente este check o se recomienda también sanitizar en `safe_exec()` 
-antes de pasar a `execv()` (defensa en profundidad)?
+### En contexto hospitalario
 
-### P5 — .gitguardian.yaml deprecated keys
-Warnings en cada commit:
-```
-Config key paths-ignore is deprecated, use paths_ignore instead.
-Unrecognized key in config: paths_ignore
-```
-¿Vale la pena limpiar `.gitguardian.yaml` ahora o es ruido tolerable?
+* inputs pueden venir de red comprometida
+* resiliencia ante input malicioso es prioritaria
+
+### Recomendación concreta
+
+* targets iniciales:
+
+    * `validate_chain_name`
+    * `validate_filepath`
+    * parser ZMQ (alto riesgo)
+* integrar en CI (no solo local)
 
 ---
 
-## Métricas DAY 129
+## P4 — Null byte en `validate_chain_name`
 
-| Métrica | Valor |
-|---|---|
-| Deudas cerradas | 4 |
-| Tests añadidos | 15 (safe_exec) |
-| Tests que pasaron de FAILED a PASSED | 9 (EtcdClientHmac) |
-| Ficheros modificados | 6 |
-| popen()/system() eliminados | 13 call-sites |
-| Incidencias de entorno | 4 (CRLF, markdown corruption, zsh pipe, backslash comment) |
-| Pipeline al cierre | 6/6 RUNNING |
-| ALL TESTS COMPLETE | ✅ |
+**Decisión: ⚠️ ACTUALMENTE CORRECTO, PERO INSUFICIENTE A LARGO PLAZO**
+
+El check:
+
+```cpp
+name.find('\0') != npos
+```
+
+es necesario, pero no suficiente como única defensa.
+
+### Riesgo real
+
+Aunque `execv()`:
+
+* no usa shell
+* separa argumentos
+
+El null byte:
+
+* puede truncar strings en capas inferiores (C APIs)
+* puede introducir discrepancias entre validación y ejecución
+
+### Recomendación (defensa en profundidad)
+
+1. **Mantener validación actual**
+2. **Añadir invariant en `safe_exec()`**:
+
+    * rechazar cualquier argumento con `\0`
+3. Opcional:
+
+    * usar estructuras tipo `std::vector<std::string>` → validación centralizada
+
+### Regla resultante
+
+> Ningún input con null byte debe cruzar frontera de ejecución
 
 ---
 
-*"Via Appia Quality — Un escudo que aprende de su propia sombra."*  
-*Commit: `55383638` — main*
-"""
+## P5 — `.gitguardian.yaml`
 
-path = "/Users/aironman/CLionProjects/test-zeromq-docker/docs/CONSEJO-DAY-129-acta.md"
-with open(path, "w") as f:
-    f.write(content)
-print(f"OK: {path}")
-PYEOF
+**Decisión: 🟡 POSPONIBLE (no crítico)**
 
+### Evaluación
 
+* No afecta seguridad runtime
+* No afecta build
+* Es ruido de tooling
+
+### Recomendación
+
+* No priorizar en DAY 130
+* Resolver cuando:
+
+    * haya ventana de mantenimiento
+    * o se toquen pipelines CI
+
+---
+
+## Evaluación global DAY 129
+
+### Estado
+
+* Eliminación completa de `popen/system` → **salto de seguridad significativo**
+* Tests con evidencia RED→GREEN → correcto
+* Pipeline estable → positivo
+
+### Riesgos residuales
+
+1. Falta de fuzzing → principal vector abierto
+2. Distribución de claves aún en transición (HTTP legacy)
+3. Capabilities pendientes → superficie innecesaria
+
+---
+
+## Directiva del Consejo
+
+Para alineación con entornos hospitalarios:
+
+1. **Prioridad absoluta: robustez ante input hostil**
+2. **Cero tolerancia a corrupción silenciosa**
+3. **Defensa en profundidad obligatoria en fronteras de ejecución**
+4. **Reproducibilidad > velocidad de desarrollo**
+
+---
+
+## Veredicto final
+
+* DAY 129 → **VALIDADO**
+* Sistema → **seguro en progreso, aún no endurecido completamente**
+* DAY 130 → **centrado en fuzzing sin excepción**
+
+---
+
+Si el equipo mantiene este nivel de disciplina (RED→GREEN + evidencia), el sistema está en trayectoria correcta para entornos críticos reales.
