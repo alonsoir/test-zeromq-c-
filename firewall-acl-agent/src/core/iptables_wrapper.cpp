@@ -14,6 +14,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "firewall/iptables_wrapper.hpp"
+#include "safe_exec.hpp"   // CWE-78: execv() sin shell (Consejo 8/8 DAY 128)
 
 #include <cstring>
 #include <sstream>
@@ -95,21 +96,9 @@ const char* IPTablesWrapper::protocol_to_string(IPTablesProtocol proto) {
 // System Command Execution
 //===----------------------------------------------------------------------===//
 
-static std::pair<int, std::string> execute_command(const std::string& cmd) {
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) {
-        return {-1, "Failed to execute command"};
-    }
-
-    char buffer[512];
-    std::string result;
-    while (fgets(buffer, sizeof(buffer), pipe)) {
-        result += buffer;
-    }
-
-    int ret = pclose(pipe);
-    return {ret, result};
-}
+// execute_command() ELIMINADO — CWE-78 (DEBT-IPTABLES-INJECTION-001).
+// Sustituido por safe_exec() / safe_exec_with_output() / safe_exec_with_file_{out,in}()
+// Ver safe_exec.hpp. Consejo 8/8 DAY 128: execv() sin shell, sin excepcion.
 
 //===----------------------------------------------------------------------===//
 // Chain Management
@@ -129,22 +118,25 @@ IPTablesResult<void> IPTablesWrapper::create_chain(
         });
     }
 
-    // Create chain
-    std::ostringstream cmd;
-    cmd << "iptables -t " << table_to_string(table)
-        << " -N " << chain_name << " 2>&1";
-
-    if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
-    }
-    auto [ret, output] = execute_command(cmd.str());
-
-    if (ret != 0) {
-        return IPTablesResult<void>(IPTablesError{
-            IPTablesErrorCode::KERNEL_ERROR,
-            "Failed to create chain: " + output
-        });
+    // Create chain — CWE-78 fix
+    {
+        const std::string tbl = table_to_string(table);
+        if (!validate_table_name(tbl) || !validate_chain_name(chain_name)) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::INVALID_RULE, "Invalid table or chain name"});
+        }
+        if (m_dry_run) {
+            std::cout << "[DRY-RUN] iptables -t " << tbl << " -N " << chain_name << std::endl;
+            return IPTablesResult<void>();
+        }
+        auto [ret, output] = safe_exec_with_output(
+            {"/usr/sbin/iptables", "-t", tbl, "-N", chain_name});
+        if (ret != 0) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::KERNEL_ERROR,
+                "Failed to create chain: " + output
+            });
+        }
     }
 
     return IPTablesResult<void>();
@@ -163,27 +155,26 @@ IPTablesResult<void> IPTablesWrapper::delete_chain(
         });
     }
 
-    // First, flush the chain
-    std::string flush_cmd = "iptables -t " + std::string(table_to_string(table)) +
-                           " -F " + chain_name + " 2>&1";
-    execute_command(flush_cmd);
-
-    // Then delete it
-    std::ostringstream cmd;
-    cmd << "iptables -t " << table_to_string(table)
-        << " -X " << chain_name << " 2>&1";
-
-    if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
-    }
-    auto [ret, output] = execute_command(cmd.str());
-
-    if (ret != 0) {
-        return IPTablesResult<void>(IPTablesError{
-            IPTablesErrorCode::KERNEL_ERROR,
-            "Failed to delete chain: " + output
-        });
+    // CWE-78 fix: delete_chain
+    {
+        const std::string tbl = table_to_string(table);
+        if (!validate_table_name(tbl) || !validate_chain_name(chain_name)) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::INVALID_RULE, "Invalid table or chain name"});
+        }
+        safe_exec({"/usr/sbin/iptables", "-t", tbl, "-F", chain_name});
+        if (m_dry_run) {
+            std::cout << "[DRY-RUN] iptables -t " << tbl << " -X " << chain_name << std::endl;
+            return IPTablesResult<void>();
+        }
+        auto [ret, output] = safe_exec_with_output(
+            {"/usr/sbin/iptables", "-t", tbl, "-X", chain_name});
+        if (ret != 0) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::KERNEL_ERROR,
+                "Failed to delete chain: " + output
+            });
+        }
     }
 
     return IPTablesResult<void>();
@@ -194,9 +185,13 @@ bool IPTablesWrapper::chain_exists_unlocked(
     IPTablesTable table
 ) const {
     // Internal version - assumes caller already holds mutex_
-    std::string cmd = "iptables -t " + std::string(table_to_string(table)) +
-                     " -L " + chain_name + " -n > /dev/null 2>&1";
-    int ret = system(cmd.c_str());
+    // CWE-78 fix: safe_exec() con execv() sin shell.
+    const std::string table_str = table_to_string(table);
+    if (!validate_table_name(table_str) || !validate_chain_name(chain_name)) {
+        return false;
+    }
+    int ret = safe_exec({"/usr/sbin/iptables", "-t", table_str,
+                         "-L", chain_name, "-n"});
     return (ret == 0);
 }
 
@@ -215,20 +210,25 @@ IPTablesResult<void> IPTablesWrapper::flush_chain(
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::ostringstream cmd;
-    cmd << "iptables -t " << table_to_string(table)
-        << " -F " << chain_name << " 2>&1";
-
-    if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
-    }
-    auto [ret, output] = execute_command(cmd.str());
-
-    if (ret != 0) {
-        return IPTablesResult<void>(IPTablesError{
-            IPTablesErrorCode::KERNEL_ERROR,
-            "Failed to flush chain: " + output
-        });
+    // CWE-78 fix: flush_chain
+    {
+        const std::string tbl = table_to_string(table);
+        if (!validate_table_name(tbl) || !validate_chain_name(chain_name)) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::INVALID_RULE, "Invalid table or chain name"});
+        }
+        if (m_dry_run) {
+            std::cout << "[DRY-RUN] iptables -t " << tbl << " -F " << chain_name << std::endl;
+            return IPTablesResult<void>();
+        }
+        auto [ret, output] = safe_exec_with_output(
+            {"/usr/sbin/iptables", "-t", tbl, "-F", chain_name});
+        if (ret != 0) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::KERNEL_ERROR,
+                "Failed to flush chain: " + output
+            });
+        }
     }
 
     return IPTablesResult<void>();
@@ -238,28 +238,24 @@ std::vector<std::string> IPTablesWrapper::list_chains(IPTablesTable table) const
     std::lock_guard<std::mutex> lock(mutex_);
 
     std::vector<std::string> chains;
-
-    std::string cmd = "iptables -t " + std::string(table_to_string(table)) +
-                     " -L -n | grep '^Chain' | awk '{print $2}' 2>/dev/null";
-
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) {
-        return chains;
-    }
-
-    char buffer[256];
-    while (fgets(buffer, sizeof(buffer), pipe)) {
-        std::string line(buffer);
-        // Remove trailing newline
-        if (!line.empty() && line.back() == '\n') {
-            line.pop_back();
-        }
-        if (!line.empty()) {
-            chains.push_back(line);
+    // CWE-78 fix: safe_exec_with_output() + parsing C++ (sin grep/awk via shell).
+    const std::string table_str_lc = table_to_string(table);
+    if (!validate_table_name(table_str_lc)) return chains;
+    auto [ret_lc, output_lc] = safe_exec_with_output(
+        {"/usr/sbin/iptables", "-t", table_str_lc, "-L", "-n"});
+    std::istringstream iss_lc(output_lc);
+    std::string line_lc;
+    while (std::getline(iss_lc, line_lc)) {
+        if (line_lc.rfind("Chain ", 0) == 0) {
+            auto first_space = line_lc.find(' ');
+            if (first_space == std::string::npos) continue;
+            auto second_space = line_lc.find(' ', first_space + 1);
+            std::string name = (second_space == std::string::npos)
+                ? line_lc.substr(first_space + 1)
+                : line_lc.substr(first_space + 1, second_space - first_space - 1);
+            if (!name.empty()) chains.push_back(name);
         }
     }
-
-    pclose(pipe);
 
     return chains;
 }
@@ -288,94 +284,90 @@ IPTablesResult<void> IPTablesWrapper::add_rule(const IPTablesRule& rule) {
         }
     }
 
-    // Build iptables command
-    std::ostringstream cmd;
-    cmd << "iptables -t " << table_to_string(rule.table);
-
+    // Build iptables argv — CWE-78 fix: vector<string> sin concatenacion shell.
+    std::vector<std::string> ipt_args = {"/usr/sbin/iptables", "-t",
+                                          std::string(table_to_string(rule.table))};
     // Append or insert
     if (rule.position == 0) {
-        cmd << " -A ";  // Append
+        ipt_args.push_back("-A");
     } else {
-        cmd << " -I ";  // Insert at position
+        ipt_args.push_back("-I");
     }
-
     // Chain
     if (!rule.custom_chain_name.empty()) {
-        cmd << rule.custom_chain_name;
+        ipt_args.push_back(rule.custom_chain_name);
     } else {
-        cmd << chain_to_string(rule.chain);
+        ipt_args.push_back(chain_to_string(rule.chain));
     }
-
     if (rule.position > 0) {
-        cmd << " " << rule.position;
+        ipt_args.push_back(std::to_string(rule.position));
     }
 
     // Protocol
     if (rule.protocol != IPTablesProtocol::ALL) {
-        cmd << " -p " << protocol_to_string(rule.protocol);
+        ipt_args.push_back("-p");
+        ipt_args.push_back(protocol_to_string(rule.protocol));
     }
-
     // Source
     if (!rule.source.empty()) {
-        cmd << " -s " << rule.source;
+        ipt_args.push_back("-s"); ipt_args.push_back(rule.source);
     }
-
     // Destination
     if (!rule.destination.empty()) {
-        cmd << " -d " << rule.destination;
+        ipt_args.push_back("-d"); ipt_args.push_back(rule.destination);
     }
-
     // Interface
     if (!rule.in_interface.empty()) {
-        cmd << " -i " << rule.in_interface;
+        ipt_args.push_back("-i"); ipt_args.push_back(rule.in_interface);
     }
     if (!rule.out_interface.empty()) {
-        cmd << " -o " << rule.out_interface;
+        ipt_args.push_back("-o"); ipt_args.push_back(rule.out_interface);
     }
-
-    // Ports (requires protocol to be set)
+    // Ports
     if (rule.source_port > 0) {
-        cmd << " --sport " << rule.source_port;
+        ipt_args.push_back("--sport");
+        ipt_args.push_back(std::to_string(rule.source_port));
     }
     if (rule.dest_port > 0) {
-        cmd << " --dport " << rule.dest_port;
+        ipt_args.push_back("--dport");
+        ipt_args.push_back(std::to_string(rule.dest_port));
     }
-
     // Match extensions (ipset, conntrack, etc.)
     if (!rule.match_set.empty()) {
-        cmd << " -m set --match-set " << rule.match_set << " src";
+        ipt_args.push_back("-m"); ipt_args.push_back("set");
+        ipt_args.push_back("--match-set"); ipt_args.push_back(rule.match_set);
+        ipt_args.push_back("src");
     }
-
     if (!rule.match_extensions.empty()) {
-        cmd << " " << rule.match_extensions;
+        std::istringstream iss_me(rule.match_extensions);
+        std::string tok;
+        while (iss_me >> tok) ipt_args.push_back(tok);
     }
-
-    // Target
-    // Target - use jump_target if specified, otherwise use enum target
+    // Target — use jump_target if specified, otherwise use enum target
+    ipt_args.push_back("-j");
     if (!rule.jump_target.empty()) {
-        cmd << " -j " << rule.jump_target;
+        ipt_args.push_back(rule.jump_target);
     } else {
-        cmd << " -j " << target_to_string(rule.target);
+        ipt_args.push_back(target_to_string(rule.target));
     }
-
-
     // Custom target options
     if (!rule.target_options.empty()) {
-        cmd << " " << rule.target_options;
+        std::istringstream iss_to(rule.target_options);
+        std::string tok;
+        while (iss_to >> tok) ipt_args.push_back(tok);
     }
-
-    // Comment
+    // Comment — argumento separado, sin comillas de shell
     if (!rule.comment.empty()) {
-        cmd << " -m comment --comment \"" << rule.comment << "\"";
+        ipt_args.push_back("-m"); ipt_args.push_back("comment");
+        ipt_args.push_back("--comment"); ipt_args.push_back(rule.comment);
     }
-
-    cmd << " 2>&1";
-
     if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
+        std::ostringstream dry;
+        for (const auto& a : ipt_args) dry << a << " ";
+        std::cout << "[DRY-RUN] Would execute: " << dry.str() << std::endl;
+        return IPTablesResult<void>();
     }
-    auto [ret, output] = execute_command(cmd.str());
+    auto [ret, output] = safe_exec_with_output(ipt_args);
 
     if (ret != 0) {
         return IPTablesResult<void>(IPTablesError{
@@ -394,21 +386,27 @@ IPTablesResult<void> IPTablesWrapper::delete_rule(
 ) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    std::ostringstream cmd;
-    cmd << "iptables -t " << table_to_string(table)
-        << " -D " << chain_name << " " << position << " 2>&1";
-
-    if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd.str() << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
-    }
-    auto [ret, output] = execute_command(cmd.str());
-
-    if (ret != 0) {
-        return IPTablesResult<void>(IPTablesError{
-            IPTablesErrorCode::KERNEL_ERROR,
-            "Failed to delete rule: " + output
-        });
+    // CWE-78 fix: delete_rule
+    {
+        const std::string tbl = table_to_string(table);
+        if (!validate_table_name(tbl) || !validate_chain_name(chain_name)) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::INVALID_RULE, "Invalid table or chain name"});
+        }
+        if (m_dry_run) {
+            std::cout << "[DRY-RUN] iptables -t " << tbl << " -D "
+                      << chain_name << " " << position << std::endl;
+            return IPTablesResult<void>();
+        }
+        auto [ret, output] = safe_exec_with_output(
+            {"/usr/sbin/iptables", "-t", tbl, "-D",
+             chain_name, std::to_string(position)});
+        if (ret != 0) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::KERNEL_ERROR,
+                "Failed to delete rule: " + output
+            });
+        }
     }
 
     return IPTablesResult<void>();
@@ -425,25 +423,20 @@ std::vector<std::string> IPTablesWrapper::list_rules(
     std::string cmd = "iptables -t " + std::string(table_to_string(table)) +
                      " -S " + chain_name + " 2>/dev/null";
 
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) {
+    // CWE-78 fix: safe_exec_with_output() sin shell.
+    const std::string table_str_lr = table_to_string(table);
+    if (!validate_table_name(table_str_lr) || !validate_chain_name(chain_name)) {
         return rules;
     }
-
-    char buffer[1024];
-    while (fgets(buffer, sizeof(buffer), pipe)) {
-        std::string line(buffer);
-        // Remove trailing newline
-        if (!line.empty() && line.back() == '\n') {
-            line.pop_back();
-        }
-        // Skip chain policy lines
-        if (line.find("-P ") != 0 && !line.empty()) {
-            rules.push_back(line);
+    auto [ret_lr, output_lr] = safe_exec_with_output(
+        {"/usr/sbin/iptables", "-t", table_str_lr, "-S", chain_name});
+    std::istringstream iss_lr(output_lr);
+    std::string line_lr;
+    while (std::getline(iss_lr, line_lr)) {
+        if (!line_lr.empty() && line_lr.rfind("-P ", 0) != 0) {
+            rules.push_back(line_lr);
         }
     }
-
-    pclose(pipe);
 
     return rules;
 }
@@ -464,12 +457,18 @@ IPTablesResult<void> IPTablesWrapper::setup_base_rules(const FirewallConfig& con
 
     for (const auto& chain : custom_chains) {
         if (!chain.empty() && !chain_exists_unlocked(chain, IPTablesTable::FILTER)) {
-            std::string cmd = "iptables -t filter -N " + chain + " 2>&1";
-            if (m_dry_run) {
-                std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
-                return IPTablesResult<void>(); // Success in dry-run
+            // CWE-78 fix: setup_base_rules
+            if (!validate_chain_name(chain)) {
+                return IPTablesResult<void>(IPTablesError{
+                    IPTablesErrorCode::INVALID_RULE,
+                    "Invalid chain name: " + chain});
             }
-            auto [ret, output] = execute_command(cmd);
+            if (m_dry_run) {
+                std::cout << "[DRY-RUN] iptables -t filter -N " << chain << std::endl;
+                return IPTablesResult<void>();
+            }
+            auto [ret, output] = safe_exec_with_output(
+                {"/usr/sbin/iptables", "-t", "filter", "-N", chain});
             if (ret != 0) {
                 return IPTablesResult<void>(IPTablesError{
                     IPTablesErrorCode::KERNEL_ERROR,
@@ -620,19 +619,21 @@ IPTablesResult<void> IPTablesWrapper::cleanup_rules(const FirewallConfig& config
                 auto rules = list_rules(main_chain, IPTablesTable::FILTER);
                 for (size_t i = rules.size(); i > 0; --i) {
                     if (rules[i-1].find(chain) != std::string::npos) {
-                        std::string cmd = "iptables -t filter -D " + main_chain +
-                                        " " + std::to_string(i) + " 2>&1";
-                        execute_command(cmd);
+                        // CWE-78 fix
+                        if (validate_chain_name(main_chain)) {
+                            safe_exec({"/usr/sbin/iptables", "-t", "filter",
+                                       "-D", main_chain, std::to_string(i)});
+                        }
                     }
                 }
             }
 
             // Now flush and delete the chain
-            std::string flush_cmd = "iptables -t filter -F " + chain + " 2>&1";
-            execute_command(flush_cmd);
-
-            std::string delete_cmd = "iptables -t filter -X " + chain + " 2>&1";
-            execute_command(delete_cmd);
+            // CWE-78 fix: flush + delete
+            if (validate_chain_name(chain)) {
+                safe_exec({"/usr/sbin/iptables", "-t", "filter", "-F", chain});
+                safe_exec({"/usr/sbin/iptables", "-t", "filter", "-X", chain});
+            }
         }
     }
 
@@ -646,18 +647,23 @@ IPTablesResult<void> IPTablesWrapper::cleanup_rules(const FirewallConfig& config
 IPTablesResult<void> IPTablesWrapper::save(const std::string& filepath) const {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    std::string cmd = "iptables-save > " + filepath + " 2>&1";
-    if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
-    }
-    auto [ret, output] = execute_command(cmd);
-
-    if (ret != 0) {
+    // CWE-78 fix: save via safe_exec_with_file_out
+    if (!validate_filepath(filepath)) {
         return IPTablesResult<void>(IPTablesError{
-            IPTablesErrorCode::KERNEL_ERROR,
-            "Failed to save iptables: " + output
-        });
+            IPTablesErrorCode::INVALID_RULE, "Invalid filepath for save"});
+    }
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] iptables-save > " << filepath << std::endl;
+        return IPTablesResult<void>();
+    }
+    {
+        int ret = safe_exec_with_file_out({"/usr/sbin/iptables-save"}, filepath);
+        if (ret != 0) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::KERNEL_ERROR,
+                "Failed to save iptables (exit " + std::to_string(ret) + ")"
+            });
+        }
     }
 
     return IPTablesResult<void>();
@@ -666,19 +672,24 @@ IPTablesResult<void> IPTablesWrapper::save(const std::string& filepath) const {
 IPTablesResult<void> IPTablesWrapper::restore(const std::string& filepath) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    std::string cmd = "iptables-restore < " + filepath + " 2>&1";
-    if (m_dry_run) {
-        std::cout << "[DRY-RUN] Would execute: " << cmd << std::endl;
-        return IPTablesResult<void>(); // Success in dry-run
-    }
-    auto [ret, output] = execute_command(cmd);
-
-    if (ret != 0) {
+    // CWE-78 fix: restore via safe_exec_with_file_in
+    if (!validate_filepath(filepath)) {
         return IPTablesResult<void>(IPTablesError{
-            IPTablesErrorCode::KERNEL_ERROR,
-            "Failed to restore iptables: " + output
-        });
+            IPTablesErrorCode::INVALID_RULE, "Invalid filepath for restore"});
     }
+    if (m_dry_run) {
+        std::cout << "[DRY-RUN] iptables-restore < " << filepath << std::endl;
+        return IPTablesResult<void>();
+    }
+    {
+        int ret = safe_exec_with_file_in({"/usr/sbin/iptables-restore"}, filepath);
+        if (ret != 0) {
+            return IPTablesResult<void>(IPTablesError{
+                IPTablesErrorCode::KERNEL_ERROR,
+                "Failed to restore iptables (exit " + std::to_string(ret) + ")"
+            });
+    }
+        }
 
     return IPTablesResult<void>();
 }
