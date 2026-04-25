@@ -391,8 +391,8 @@ DEBT-SAFE-PATH-RESOLVE-MODEL-001:       ░░░░░░░░░░░░░�
 DEBT-FUZZING-LIBFUZZER-001:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-property-testing
 DEBT-CRYPTO-003a (mlock+bzero):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳
 DEBT-PENTESTER-LOOP-001 (ACRL):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-DEUDA
-ADR-029 aRGus-production images:        ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-DEUDA
-ADR-029 aRGus-seL4:                     ░░░░░░░░░░░░░░░░░░░░   0% ⏳ branch independiente
+ADR-030 aRGus-production images:        ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-DEUDA
+ADR-031 aRGus-seL4:                     ░░░░░░░░░░░░░░░░░░░░   0% ⏳ branch independiente
 FEAT-CLOUD-RETRAIN-001:                 ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-ACRL
 ```
 
@@ -570,8 +570,8 @@ El experimento ACRL o la confirma o la refuta. En cualquier caso, es ciencia.
 ### Gate de entrada (prerequisites mínimos antes de contactar)
 
 - [x] ADR-026 mergeado a main (XGBoost F1=0.9978)
-- [ ] ADR-029 Variant A (x86 + AppArmor + eBPF/XDP) estable y reproducible
-- [ ] ADR-029 Variant B (ARM64 + AppArmor + libpcap) estable y reproducible
+- [ ] ADR-030 Variant A (x86 + AppArmor + eBPF/XDP) estable y reproducible
+- [ ] ADR-030 Variant B (ARM64 + AppArmor + libpcap) estable y reproducible
 - [ ] pcap relay funcional end-to-end en Vagrant (ambas arquitecturas)
 - [ ] `make bootstrap` + `make pipeline-status` 6/6 RUNNING verde y reproducible
 - [ ] Demo técnica grabable en menos de 10 minutos (`scripts/feder-demo.sh`)
