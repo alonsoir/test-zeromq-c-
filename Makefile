@@ -1027,6 +1027,34 @@ test: test-all
 	@echo "💡 Tip: Use 'make test-components' to test only components"
 
 # ============================================================================
+# Fuzzing Targets (DEBT-FUZZING-LIBFUZZER-001 — DAY 130)
+# ============================================================================
+fuzz-safe-exec:
+	@echo "🔍 Building and running libFuzzer on validate_chain_name + is_safe_for_exec..."
+	@vagrant ssh -c " \
+		cd /vagrant/firewall-acl-agent/fuzz && \
+		clang++ -std=c++20 -fsanitize=fuzzer,address \
+			-I/vagrant/firewall-acl-agent/src/core \
+			-I/vagrant/firewall-acl-agent/include \
+			fuzz_validate_chain.cpp -o fuzz_validate_chain && \
+		./fuzz_validate_chain -max_total_time=60 -jobs=2 corpus/ 2>&1 | tail -5"
+	@echo "✅ fuzz-safe-exec completado"
+
+fuzz-validate-filepath:
+	@echo "🔍 Building and running libFuzzer on validate_filepath..."
+	@vagrant ssh -c " \
+		cd /vagrant/firewall-acl-agent/fuzz && \
+		clang++ -std=c++20 -fsanitize=fuzzer,address \
+			-I/vagrant/firewall-acl-agent/src/core \
+			-I/vagrant/firewall-acl-agent/include \
+			fuzz_validate_filepath.cpp -o fuzz_validate_filepath && \
+		./fuzz_validate_filepath -max_total_time=60 -jobs=2 corpus/ 2>&1 | tail -5"
+	@echo "✅ fuzz-validate-filepath completado"
+
+fuzz-all: fuzz-safe-exec fuzz-validate-filepath
+	@echo "✅ All fuzz targets completed — corpus en firewall-acl-agent/fuzz/corpus/"
+
+# ============================================================================
 # Verification Targets (ENHANCED - Day 57)
 # ============================================================================
 
