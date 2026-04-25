@@ -174,3 +174,30 @@ TEST(SafeExecIntegration, SafeExecWithFileIn) {
     EXPECT_EQ(ret2, 0);
     std::remove(tmp.c_str());
 }
+
+// ============================================================
+// 4. NULL BYTE TESTS — DEBT-SAFE-EXEC-NULLBYTE-001 (Consejo 8/8 DAY 129)
+// is_safe_for_exec(): defensa en profundidad independiente de validadores upstream.
+// Un null byte en argv[i] trunca el argumento silenciosamente en execv() → fail-closed.
+// ============================================================
+
+TEST(SafeExecIntegration, RejectsNullByteInArgument) {
+    // RED: argumento con null byte interno → safe_exec retorna -1 (fail-closed)
+    // Con código antiguo sin is_safe_for_exec(), execv truncaría el argumento
+    // y ejecutaría algo diferente a lo esperado sin error visible.
+    std::string arg_with_null("chain\x00evil", 10);
+    int ret = safe_exec({"/bin/echo", arg_with_null});
+    EXPECT_EQ(ret, -1) << "safe_exec debe rechazar null bytes en argumentos";
+}
+
+TEST(SafeExecProperty, IsAlwaysSafeForNormalStrings) {
+    // Propiedad: strings sin null byte → is_safe_for_exec siempre true
+    const std::vector<std::string> safe_strings = {
+        "INPUT", "FORWARD", "/usr/sbin/iptables", "-t", "filter", "-N",
+        "ARGUS-BLACKLIST", "192.168.1.1", "--dport", "443"
+    };
+    for (const auto& s : safe_strings) {
+        EXPECT_TRUE(is_safe_for_exec(s))
+            << "String normal debe ser safe: " << s;
+    }
+}

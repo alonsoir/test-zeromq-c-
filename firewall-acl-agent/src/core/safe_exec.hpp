@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <cstring>
 
 // ---------------------------------------------------------------------------
 // Validadores — allowlist estricta
@@ -57,12 +58,25 @@ inline bool validate_filepath(const std::string& path) {
 }
 
 // ---------------------------------------------------------------------------
+// is_safe_for_exec — defensa en profundidad contra null bytes (Consejo 8/8 DAY 129)
+// strlen() se detiene en el primer \0. Si arg.size() != strlen(arg.c_str())
+// hay un \0 interno — fail-closed, nunca truncar silenciosamente en execv().
+// ---------------------------------------------------------------------------
+[[nodiscard]] inline bool is_safe_for_exec(const std::string& arg) noexcept {
+    return arg.size() == std::strlen(arg.c_str());
+}
+
+// ---------------------------------------------------------------------------
 // safe_exec — fork+execv sin shell, sin captura de output
 // Redirige stdout+stderr a /dev/null.
 // Retorna exit code del proceso hijo, o -1 si fork/execv falla.
 // ---------------------------------------------------------------------------
 inline int safe_exec(const std::vector<std::string>& args) {
     if (args.empty()) return -1;
+    // Defensa en profundidad: null byte en argv[i] trunca arg silenciosamente (Consejo 8/8 DAY 129)
+    for (const auto& a : args) {
+        if (!is_safe_for_exec(a)) return -1;
+    }
 
     pid_t pid = fork();
     if (pid == -1) return -1;
@@ -97,6 +111,10 @@ inline std::pair<int, std::string> safe_exec_with_output(
     const std::vector<std::string>& args)
 {
     if (args.empty()) return {-1, "empty args"};
+    // Defensa en profundidad: null byte check (Consejo 8/8 DAY 129)
+    for (const auto& a : args) {
+        if (!is_safe_for_exec(a)) return {-1, "null byte in argument"};
+    }
 
     int pipefd[2];
     if (pipe(pipefd) == -1) return {-1, "pipe() failed"};
@@ -149,6 +167,10 @@ inline int safe_exec_with_file_out(
     const std::string& filepath)
 {
     if (args.empty()) return -1;
+    // Defensa en profundidad: null byte check (Consejo 8/8 DAY 129)
+    for (const auto& a : args) {
+        if (!is_safe_for_exec(a)) return -1;
+    }
 
     pid_t pid = fork();
     if (pid == -1) return -1;
@@ -186,6 +208,10 @@ inline int safe_exec_with_file_in(
     const std::string& filepath)
 {
     if (args.empty()) return -1;
+    // Defensa en profundidad: null byte check (Consejo 8/8 DAY 129)
+    for (const auto& a : args) {
+        if (!is_safe_for_exec(a)) return -1;
+    }
 
     pid_t pid = fork();
     if (pid == -1) return -1;
