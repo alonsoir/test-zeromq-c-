@@ -329,10 +329,16 @@ if(BUILD_TESTS)
             tests/unit/test_ipset_wrapper.cpp
             tests/unit/test_logger.cpp
             tests/unit/test_config_loader_traversal.cpp
+            tests/unit/test_safe_exec.cpp
     )
 
     add_executable(firewall_tests
             ${TEST_SOURCES}
+    )
+
+    target_include_directories(firewall_tests
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/core
     )
 
     target_link_libraries(firewall_tests
