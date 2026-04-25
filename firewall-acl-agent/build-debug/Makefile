@@ -498,6 +498,30 @@ tests/unit/test_logger.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_logger.cpp.s
 .PHONY : tests/unit/test_logger.cpp.s
 
+tests/unit/test_safe_exec.o: tests/unit/test_safe_exec.cpp.o
+.PHONY : tests/unit/test_safe_exec.o
+
+# target to build an object file
+tests/unit/test_safe_exec.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_safe_exec.cpp.o
+.PHONY : tests/unit/test_safe_exec.cpp.o
+
+tests/unit/test_safe_exec.i: tests/unit/test_safe_exec.cpp.i
+.PHONY : tests/unit/test_safe_exec.i
+
+# target to preprocess a source file
+tests/unit/test_safe_exec.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_safe_exec.cpp.i
+.PHONY : tests/unit/test_safe_exec.cpp.i
+
+tests/unit/test_safe_exec.s: tests/unit/test_safe_exec.cpp.s
+.PHONY : tests/unit/test_safe_exec.s
+
+# target to generate assembly for a file
+tests/unit/test_safe_exec.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/firewall_tests.dir/build.make CMakeFiles/firewall_tests.dir/tests/unit/test_safe_exec.cpp.s
+.PHONY : tests/unit/test_safe_exec.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -550,6 +574,9 @@ help:
 	@echo "... tests/unit/test_logger.o"
 	@echo "... tests/unit/test_logger.i"
 	@echo "... tests/unit/test_logger.s"
+	@echo "... tests/unit/test_safe_exec.o"
+	@echo "... tests/unit/test_safe_exec.i"
+	@echo "... tests/unit/test_safe_exec.s"
 .PHONY : help
 
 
