@@ -71,7 +71,7 @@
 - **Fix:** `.git/hooks/pre-commit` — check detecta patrón `[word](http://...)` en `.cpp`/`.hpp`. Test RED→GREEN verificado manualmente.
 - **Commit:** `aab08daa`
 
-### PROTOCOLO CANÓNICO DAY 130 — Verificación destructiva
+### REGLA EMECAS (DAY 130) — Verificación destructiva
 - Grabado en asciinema: `docs/argus-day130-bootstrap-20260425-142211.cast`
 - Keypair activo post-rebuild: `1f48b75054fe98e8371653607caaf028b3f688bc055782c9c9c6d0e3494dad54`
 - Pipeline 6/6 RUNNING · TEST-INTEG-SIGN 7/7 PASSED · make test-all ALL TESTS COMPLETE
@@ -329,7 +329,7 @@
 | **RULE-SCP-VM-001** | Toda transferencia VM↔macOS usa scp/vagrant scp. Prohibido pipe zsh (trunca a 0 bytes silenciosamente). | Consejo 8/8 · DAY 129 |
 | **Null byte en safe_exec()** | is_safe_for_exec() en safe_exec() como defensa en profundidad independiente de validadores upstream. | Consejo 8/8 · DAY 129 |
 | **Fuzzing antes que Paper** | Prioridad DAY 130: A(Fuzzing) → C(Paper §5) → B(Capabilities). Fuzzing descubre unknown unknowns antes del despliegue. | Consejo 6/8 · DAY 129 |
-| **PROTOCOLO CANÓNICO DAY 130** | Toda sesión comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Pipeline reproducible desde cero = prerequisito de cualquier cambio. | DAY 130 |
+| **REGLA EMECAS (DAY 130)** | Toda sesión comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Pipeline reproducible desde cero = prerequisito de cualquier cambio. | DAY 130 |
 | **is_safe_for_exec() contrato de seguridad** | Null byte check en safe_exec() es un contrato, no una optimización. Defensa en profundidad independiente de validadores upstream. | DAY 130 |
 | **libFuzzer como baseline** | Harnesses sobre validate_chain_name + validate_filepath. Corpus versionado. 2.4M runs sin crash = baseline certificado. | DAY 130 |
 | **ARGUS_SERVICE_USER** | Variable de entorno para service user. Default `vagrant`. | Consejo 6/7 · DAY 124 |

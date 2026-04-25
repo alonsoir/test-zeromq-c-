@@ -3,7 +3,7 @@
 
 ---
 
-## 🔴 REGLA CERO o REGLA EMECAS— OBLIGATORIA ANTES DE CUALQUIER ACCIÓN
+## 🔴 REGLA EMECAS o REGLA EMECAS— OBLIGATORIA ANTES DE CUALQUIER ACCIÓN
 
 ```bash
 vagrant destroy -f
@@ -28,7 +28,7 @@ Si falla en cualquier punto → diagnosticar, corregir, repetir desde `vagrant d
 **Paper:** arXiv:2604.04952 — Draft v16 activo
 **Keypair activo (post-rebuild DAY 130):** `1f48b75054fe98e8371653607caaf028b3f688bc055782c9c9c6d0e3494dad54`
 
-### Pipeline esperado tras REGLA CERO
+### Pipeline esperado tras REGLA EMECAS
 - 6/6 RUNNING: etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall
 - TEST-INTEG-SIGN: 7/7 PASSED
 - make test-all: ALL TESTS COMPLETE
@@ -51,7 +51,7 @@ Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
 | DEBT-MARKDOWN-HOOK-001 — pre-commit hook [word](http://) en .cpp/.hpp | `aab08daa` |
 
 ### Nuevas reglas permanentes
-- **PROTOCOLO CANÓNICO DAY 130:** `vagrant destroy -f && vagrant up && make bootstrap && make test-all`
+- **REGLA EMECAS (DAY 130):** `vagrant destroy -f && vagrant up && make bootstrap && make test-all`
 - **is_safe_for_exec() es un contrato de seguridad**, no una optimización
 - **libFuzzer baseline certificado:** 2.4M runs sin crash = superficie validada
 
