@@ -131,3 +131,18 @@ Los componentes que leen seeds vía `resolve_seed()` requieren `sudo` en el Make
 - OWASP Path Traversal
 - TOCTOU literature
  
+---
+
+## Estado de Verificación (DAY 129)
+
+| Primitivo | Implementado | Tests | Estado |
+|---|---|---|---|
+| `resolve_seed()` | ✅ | TEST-INVARIANT-SEED | ✅ VERIFICADO |
+| `resolve_config()` | ✅ | ConfigLoaderTraversal 3/3 | ✅ VERIFICADO DAY 129 |
+| `resolve_model()` | ⏳ | — | BACKLOG ADR-038 |
+| `resolve()` | ✅ | — | ✅ ACTIVO |
+
+`DEBT-FIREWALL-CONFIG-PATH-001`: CERRADA DAY 129.
+- `resolve_config()` en `config_loader.cpp` usa `argus::safe_path::resolve_config()`
+- prefix siempre fijo (`/etc/ml-defender/`) — nunca derivado del input
+- 3/3 tests GREEN: dot-dot rejection + out-of-prefix rejection + valid path acceptance
