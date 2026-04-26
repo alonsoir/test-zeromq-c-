@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v17 — DAY 127 — April 2026
+% Draft v17 — DAY 132 — 26 April 2026
 % % Author: Alonso Isidoro Román
 % Target: cs.CR
 % ============================================================
@@ -832,6 +832,65 @@ in Resource-Constrained Organizations}}
     not before the feature, as a specification.
 
 
+
+    \subsection{The RED\,$\to$\,GREEN Gate: Merge as a Non-Negotiable Contract}
+    \label{subsec:red-green-gate}
+
+    \emph{Test-Driven Hardening} requires not only that tests be written before fixes,
+    but that the transition from RED (failing) to GREEN (passing) constitute the
+    \emph{only} legitimate gate for merging a security fix into the main branch.
+    This subsection formalises the principle and documents the one case in
+    aRGus development where it was violated --- and the consequences that followed.
+
+    \paragraph{The contract.}
+    A security fix on the \texttt{aRGus} codebase is subject to the following
+    three-part merge contract, enforced without exception:
+
+    \begin{enumerate}
+        \item \textbf{A test exposing the defect is written first.}
+        The test must fail with the defective code (\emph{RED}) and describe
+        the security invariant that is violated --- not merely reproduce the
+        symptom. Writing the failing test before the fix is what distinguishes
+        TDH from after-the-fact regression coverage.
+
+        \item \textbf{The fix is applied; the test transitions to GREEN.}
+        The fix is considered valid only when the previously-failing test passes.
+        A fix that passes only the new test but breaks existing tests is rejected;
+        the regression suite must remain entirely GREEN.
+
+        \item \textbf{No merge is permitted until \texttt{make test-all} returns
+        \texttt{ALL TESTS COMPLETE}.}
+        This is executed inside a freshly provisioned Vagrant VM
+        (\emph{REGLA EMECAS}: \texttt{vagrant destroy -f \&\& vagrant up \&\&
+        make bootstrap \&\& make test-all}), not in the development shell,
+        eliminating any dependency on host-machine environment state.
+    \end{enumerate}
+
+    The RED$\to$GREEN gate is enforced as a \emph{protocol}, not a preference.
+    It is documented in the project's contribution rules and was validated
+    adversarially in DAY~126: when a symlink-rejection test was written against
+    the original \texttt{weakly\_canonical()} path
+    (\S\ref{subsubsec:symlink-trap}), the test passed despite the defect being
+    present --- revealing that the test itself was incorrect. This failure exposed
+    a second-order requirement: the RED state must be verified empirically, not
+    assumed. A test that passes with defective code is not a RED test; it is no
+    test at all.
+
+    \paragraph{Why this is harder than it sounds.}
+    The temptation in security hardening is to write the fix first and the test
+    second --- to confirm that what was done is correct, rather than to prove that
+    what existed was wrong. This reversal breaks the epistemological guarantee of
+    TDH. A test written after a fix cannot distinguish between ``the fix is correct''
+    and ``the test was written to match the fix.'' Only a test that fails with
+    defective code provides evidence that it is testing the right property.
+
+    \paragraph{The non-negotiable character of the gate.}
+    The Council of Wise Men (DAY~127) unanimously endorsed the RED$\to$GREEN gate
+    as a non-negotiable invariant for all security-affecting changes. The one
+    documented exception --- a test committed without a prior RED verification ---
+    required a two-day remediation sprint and introduced DEBT-CONFIG-PARSER-FIXED-PREFIX-001.
+    The cost of the exception was three times the cost of applying the gate.
+
     \subsection{HKDF Context Symmetry: A Pedagogical Case Study in Test-Driven Hardening}
     \label{subsec:hkdf-context-symmetry}
 
@@ -1037,6 +1096,87 @@ TEST(ZmqMemoryOverflow, PropertyNeverNegative) {
         defects invisible to the previous one.
     \end{enumerate}
 
+
+    \subsection{Fuzzing as the Third Testing Layer}
+    \label{subsec:fuzzing-third-layer}
+
+    Unit tests establish point coverage over known inputs. Property tests establish
+    invariant coverage over structured input domains. Neither addresses the space of
+    \emph{malformed}, \emph{adversarially crafted}, or \emph{boundary-violating}
+    inputs that characterize real attack surfaces in parser and deserialization code.
+    This gap motivates the third layer of the TDH testing hierarchy: coverage-guided
+    fuzzing~\cite{libfuzzer2016}.
+
+    \paragraph{The three-layer hierarchy.}
+    The testing architecture validated by the Council of Wise Men (DAY~127) and
+    applied to all security-critical surfaces in aRGus follows a strict ordering:
+
+    \begin{enumerate}
+        \item \textbf{Unit tests} (known regression cases) ---
+        Verify that specific, previously-identified failure inputs are handled
+        correctly. Scope: finite, explicitly enumerated.
+
+        \item \textbf{Property tests} (mathematical invariants) ---
+        Verify that a stated invariant holds across a structured domain of
+        generated inputs. Scope: infinite within the domain's constraints.
+        Required for every arithmetic, path, and cryptographic operation with
+        security implications (\S\ref{subsec:property-testing-validator}).
+
+        \item \textbf{Coverage-guided fuzzing} (adversarial exploration) ---
+        Mutate valid inputs pseudo-randomly under coverage feedback to discover
+        inputs that trigger previously unreachable code paths, assertion failures,
+        or undefined behavior. Scope: unrestricted; discovers what structured
+        generation cannot anticipate.
+    \end{enumerate}
+
+    Each layer catches a class of defects invisible to the previous one.
+    Unit tests miss unseen inputs. Property tests miss parser-level structural
+    anomalies. Fuzzing misses nothing within CPU time and cannot prove absence of
+    defects, but systematically explores the boundary between valid and invalid
+    input that adversaries exploit.
+
+    \paragraph{Application to aRGus.}
+    The surfaces identified as fuzzing targets in the aRGus backlog are precisely
+    those that receive external or untrusted input at runtime: the Protocol Buffers
+    deserialization path (\texttt{ring-consumer} and \texttt{ml-detector}), the
+    JSON configuration parser (\texttt{rag-ingester}), the \texttt{safe\_path}
+    validation library (\S\ref{subsec:safe-path-lessons}), and the plugin
+    Ed25519 signature verification path (\S\ref{subsec:tdh}, ADR-025).
+
+    \begin{lstlisting}[language=C++,
+        caption={Minimal libFuzzer harness for the safe\_path resolve\_seed() function},
+        basicstyle=\ttfamily\small, breaklines=true]
+// fuzz/fuzz_safe_path.cpp
+#include "safe_path.hpp"
+#include <cstdint>
+#include <string>
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+    const std::string path(reinterpret_cast<const char*>(data), size);
+    try {
+        (void) safe_path::resolve_seed(path, "/etc/ml-defender/");
+    } catch (const std::exception&) {
+        // Exceptions are the expected failure mode -- not crashes.
+    }
+    return 0;
+}
+    \end{lstlisting}
+
+    The invariant under fuzzing is stronger than the property test: no input of
+    any length or byte content may cause \texttt{resolve\_seed()} to abort,
+    segfault, or return a path outside the allowed prefix. Exceptions are
+    acceptable; undefined behavior is not. This harness compiles with
+    \texttt{-fsanitize=address,undefined,fuzzer} and is tracked as
+    \texttt{DEBT-FUZZING-SAFEPATH-001} in the project backlog.
+
+    \paragraph{Relationship to TDH.}
+    Fuzzing is not a replacement for the RED$\to$GREEN gate
+    (\S\ref{subsec:red-green-gate}). A crash discovered by the fuzzer becomes a
+    unit test (the minimal reproducing input), which enters the regression suite
+    as a permanent RED$\to$GREEN fixture. The testing hierarchy is therefore
+    self-reinforcing: fuzzing discovers, unit tests anchor, property tests
+    generalize.
+
     \subsection{Path Traversal Prevention: Lessons from \texttt{safe\_path}}
     \label{subsec:safe-path-lessons}
 
@@ -1159,6 +1299,82 @@ const auto resolved = fs::weakly_canonical(fs::path(path));
     different path security classes is not explicitly documented in the C++17/20 standard
     library documentation or in commonly referenced C++ security guidelines.
 
+
+    \subsection{CWE-78: \texttt{execv()} Without a Shell as a Physical Barrier}
+    \label{subsec:cwe78-execv}
+
+    Operating system command injection (CWE-78~\cite{cwe78}) arises when attacker-controlled
+    input reaches a shell interpreter --- most commonly via \texttt{system()}, \texttt{popen()},
+    or their equivalents. The canonical defense is input sanitization, but sanitization is a
+    \emph{policy} constraint: it can be bypassed by an incomplete allowlist, a missed encoding,
+    or a future code path that omits the check.
+
+    aRGus applies a stronger defense: all subprocess invocations use \texttt{execv()} (or
+    \texttt{execvp()}) directly, without invoking a shell. This transforms CWE-78 from a policy
+    constraint into a \emph{physical impossibility}.
+
+    \paragraph{The mechanism.}
+    The POSIX \texttt{exec()} family replaces the current process image with a new program,
+    passing arguments as a null-terminated array of strings. No shell is involved; no shell
+    metacharacters (\texttt{\&}, \texttt{|}, \texttt{;}, \texttt{\$()}, backticks) are
+    interpreted. The distinction is categorical:
+
+    \begin{lstlisting}[language=C++,
+        caption={system() vs execv(): shell injection possibility vs physical impossibility},
+        basicstyle=\ttfamily\small, breaklines=true]
+// VULNERABLE: shell interprets attacker-controlled chain_name.
+// e.g. chain_name = "ARGUS; rm -rf /"
+system(("iptables -N " + chain_name).c_str());
+
+// SAFE: no shell, no interpretation. chain_name is a verbatim argument.
+const char* argv[] = { "iptables", "-N", chain_name.c_str(), nullptr };
+execv("/sbin/iptables", const_cast<char* const*>(argv));
+    \end{lstlisting}
+
+    \paragraph{Complementary validation layer.}
+    Even with \texttt{execv()}, the argument \texttt{chain\_name} is validated against a
+    strict allowlist before the call, providing defense in depth. The allowlist uses a
+    POSIX extended regular expression compiled once at startup:
+
+    \begin{lstlisting}[language=C++,
+        caption={validate\_chain\_name() --- allowlist as a defence-in-depth layer over execv()},
+        basicstyle=\ttfamily\small, breaklines=true]
+// Allowlist: alphanumeric, hyphen, underscore, 1-30 characters.
+// Compiled once; applied before every execv() call.
+[[nodiscard]] bool validate_chain_name(const std::string& name) {
+    static const std::regex kAllowed(R"(^[A-Za-z0-9_\-]{1,30}$)");
+    return std::regex_match(name, kAllowed);
+}
+
+// At call site:
+if (!validate_chain_name(chain_name))
+    throw std::runtime_error("[firewall] SECURITY: invalid chain_name rejected");
+// Only then invoke execv().
+    \end{lstlisting}
+
+    The \texttt{execv()} call provides the \emph{structural} guarantee; the allowlist
+    provides \emph{semantic} validation. Neither is sufficient alone: a structural guarantee
+    without semantic validation may allow valid-looking but unintended arguments;
+    semantic validation without the structural guarantee remains vulnerable to shell
+    metacharacters outside the character class.
+
+    \paragraph{Discovery context.}
+    This pattern was identified during the Snyk static analysis sprint (ADR-037, DAY~124),
+    which flagged three potential CWE-78 surfaces in the \texttt{firewall-acl-agent}
+    component. The remediation replaced all \texttt{system()} invocations with
+    \texttt{execv()}-based dispatch and introduced \texttt{validate\_chain\_name()}.
+    All three surfaces were validated by the RED$\to$GREEN gate
+    (\S\ref{subsec:red-green-gate}) before merge.
+
+    \paragraph{Generalizability.}
+    This pattern applies to any C/C++ security component that must invoke external
+    programs with partially attacker-influenced arguments: firewall management,
+    certificate tools, network utilities. The structural guarantee that
+    \texttt{execv()} provides is unconditional and does not depend on the
+    completeness of the input validation layer. It is therefore a candidate for
+    inclusion in C++ security coding standards alongside CWE-22 (\texttt{safe\_path})
+    and CWE-367 (TOCTOU).
+
     \subsection{Dev/Prod Parity via Symlinks, Not Conditional Logic}
     \label{subsec:dev-prod-parity}
 
@@ -1196,10 +1412,109 @@ const std::string config_prefix =
     exercises exactly the same code path as production, eliminating a class of security
     regressions that manifest only in production deployments.
 
+
+    \subsection{The Build/Runtime Separation Axiom}
+    \label{subsec:bsr-axiom}
+
+    Security-critical software faces a structural risk that neither testing nor
+    formal verification addresses directly: the possibility that a compiler, build
+    tool, or dependency installed in the runtime environment can be used to modify
+    production binaries after deployment. This risk motivates what we term the
+    \emph{Build/Runtime Separation} (BSR) axiom, formalized in ADR-039 (DAY~130).
+
+    \paragraph{The axiom.}
+    \begin{quote}
+        \emph{The environment in which production binaries are compiled must be
+        physically distinct from the environment in which they execute. No compiler,
+            linker, or build toolchain may be present in the production deployment.}
+    \end{quote}
+
+    This is stronger than the common practice of separating CI/CD pipelines from
+    production: it requires that the \emph{absence} of a compiler in production be
+    mechanically verified at every deployment and cannot be circumvented by a
+    sufficiently privileged process.
+
+    \paragraph{Implementation in aRGus.}
+    ADR-039 implements the BSR axiom through three complementary mechanisms:
+
+    \begin{enumerate}
+        \item \textbf{Separate Vagrant VMs for build and runtime.}
+        The \texttt{dev} VM contains the full C++20 toolchain
+        (\texttt{clang++}, \texttt{cmake}, \texttt{libsodium} sources).
+        The \texttt{hardened-x86} and \texttt{hardened-arm64} VMs contain
+        only runtime dependencies: \texttt{libsodium}, \texttt{libzmq},
+        \texttt{libprotobuf}, \texttt{onnxruntime}. No compiler is installed.
+
+        \item \textbf{Signed artifact distribution.}
+        Production binaries are placed in \texttt{dist/} (excluded from
+        version control via \texttt{.gitignore}) together with a
+        \texttt{SHA256SUMS} file. Each binary is individually checksummed;
+        the sums file is signed with the project Ed25519 key.
+        A runtime verification step (\texttt{make verify-production}) rejects
+        any binary whose checksum does not match the signed manifest.
+
+        \item \textbf{Automated compiler-absence verification.}
+        The \texttt{check-prod-no-compiler} target queries \texttt{dpkg}
+        for the presence of any C/C++ compiler and fails with a non-zero
+        exit code if one is found:
+    \end{enumerate}
+
+    \begin{lstlisting}[language=make,
+        caption={check-prod-no-compiler: mechanical enforcement of the BSR axiom},
+        basicstyle=\ttfamily\small, breaklines=true]
+check-prod-no-compiler:
+	@echo "=== BSR: verifying no compiler in production ==="
+	@if dpkg -l | grep -qE 'gcc|g\+\+|clang|cmake|build-essential'; then \
+		echo "FAIL: compiler found in production environment"; exit 1; \
+	else \
+		echo "OK: no compiler present"; \
+	fi
+    \end{lstlisting}
+
+    \paragraph{Security properties.}
+    The BSR axiom provides two guarantees that complement the cryptographic signing
+    chain (ADR-025):
+
+    \begin{enumerate}
+        \item \textbf{Post-deployment code injection is physically impossible.}
+        An attacker with shell access to the production VM cannot recompile
+        a modified version of a pipeline component: the toolchain is absent.
+        They can replace a binary, but the \texttt{verify-production} gate
+        will detect the checksum mismatch before the next restart cycle.
+
+        \item \textbf{Supply-chain attacks through the build environment are
+        scoped to the build VM.}
+        A compromised compiler (\emph{Trusting Trust}~\cite{thompson1984})
+        can only affect the build VM. The production VM never executes the
+        compiler; it only executes binaries that were checksummed and signed
+        in the build environment and verified before execution.
+    \end{enumerate}
+
+    \paragraph{Relationship to the Ed25519 signing chain.}
+    The BSR axiom and the plugin signing chain (ADR-025) are complementary, not
+    redundant. ADR-025 ensures that only correctly signed plugins are loaded at
+    runtime. The BSR axiom ensures that the plugin loader itself --- and all
+    six pipeline components --- cannot be modified in production without
+    invalidating the checksum manifest. Together they form a two-layer integrity
+    guarantee: cryptographic integrity over plugins (ADR-025) and checksum
+    integrity over all production binaries (ADR-039).
+
+    \paragraph{Limitations.}
+    The current implementation verifies compiler absence via \texttt{dpkg}, which
+    is Debian/Ubuntu-specific and does not detect statically linked compiler
+    binaries copied into the VM outside the package manager. A stronger
+    implementation would use a read-only root filesystem or a verified boot chain.
+    Both are tracked as future work in the ADR-031 (seL4/Genode) research branch.
+
+    The BSR axiom establishes a structural property that cannot be achieved by
+    policy alone. It is offered as a named architectural pattern applicable to
+    any security-critical C++ system deployed in environments where post-deployment
+    modification is a credible attack vector.
+
     \subsection{Attribution}
 
     The author remained the final arbiter of all decisions; all empirical validation was
-    performed by the human author. The seven models are credited as intellectual co-contributors
+    performed by the human author. The eight models are credited as intellectual co-contributors
     in the project's commit history, ADRs, and this paper. In the context of arXiv submission,
     the models are acknowledged in \S\ref{sec:acknowledgments}; formal co-authorship conventions
     for AI systems remain an evolving area, and this paper adopts the most transparent available
@@ -2062,7 +2377,7 @@ vagrant ssh client -c "sudo tcpreplay -i eth1 --mbps=100 --loop=3 \
 
     The author engaged eight large language models --- Claude (Anthropic), Grok (xAI), ChatGPT
     (OpenAI), DeepSeek, Qwen (Alibaba), Gemini (Google), Kimi (Moonshot AI), and Mistral
-    (Mistral AI) --- as structured intellectual collaborators across 127 days of continuous
+    (Mistral AI) --- as structured intellectual collaborators across 132 days of continuous
     development. Their contributions to
     architectural decisions, failure mode identification, debugging, test scenarios, and paper
     review are documented in the project's commit history and ADRs. The \emph{Test Driven
