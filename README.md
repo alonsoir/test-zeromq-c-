@@ -242,6 +242,53 @@ DAY 125-127 validated key TDH principles through empirical evidence:
 
 ---
 
+---
+
+## 🔧 Prerequisites
+
+Before cloning the repository, install the following tools on your **host machine** (macOS or Linux):
+
+### macOS
+
+```bash
+# 1. Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 2. Install VirtualBox (required by Vagrant)
+brew install --cask virtualbox
+
+# 3. Install Vagrant
+brew install --cask vagrant
+
+# 4. Install make (via Xcode Command Line Tools)
+xcode-select --install
+```
+
+### Linux (Debian/Ubuntu)
+
+```bash
+sudo apt-get update
+sudo apt-get install -y make
+
+# VirtualBox
+sudo apt-get install -y virtualbox
+
+# Vagrant
+wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update && sudo apt-get install -y vagrant
+```
+
+### Verify installation
+
+```bash
+vagrant --version   # Vagrant 2.x
+vboxmanage --version  # 7.x
+make --version      # GNU Make 3.x or later
+```
+
+> **Note:** All pipeline logic runs inside a Vagrant/VirtualBox VM. Your host machine only needs `vagrant`, `virtualbox`, and `make`. No C++ toolchain required on the host.
+
 ## 🚀 Quick Start
 
 > **Critical rules:**
