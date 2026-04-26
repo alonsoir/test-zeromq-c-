@@ -1,5 +1,5 @@
-# Prompt de Continuidad — DAY 131
-*aRGus NDR — arXiv:2604.04952 — 25 Abril 2026*
+# Prompt de Continuidad — DAY 132
+*aRGus NDR — arXiv:2604.04952 — 26 Abril 2026*
 
 ---
 
@@ -25,7 +25,7 @@ Vagrant y sin querer certifico que el protocolo es solido.*
 
 ---
 
-## Estado del proyecto al inicio de DAY 131
+## Estado del proyecto al inicio de DAY 132
 
 **Repositorio:** `alonsoir/argus` en GitHub
 **Branch activa:** `main`
@@ -37,7 +37,7 @@ Vagrant y sin querer certifico que el protocolo es solido.*
 
 ### Pipeline esperado tras REGLA EMECAS
 - 6/6 RUNNING: etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall
-- TEST-INTEG-SIGN: 7/7 PASSED
+- TEST-INTEG-SIGN: 7/7 PASSED (SIGN-8/9/10 son post-FEDER, no implementados aun)
 - make test-all: ALL TESTS COMPLETE
 - Fallo pre-existente conocido (no regresion): `rag-ingester test_config_parser`
   1/8 — safe_path rechaza `/vagrant/...`, prefijo `/etc/ml-defender/` requerido
@@ -47,51 +47,60 @@ Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
 
 ---
 
-## Trabajo completado DAY 130
+## Trabajo completado DAY 131
 
-### 5 deudas cerradas
-| Deuda | Commit |
-|-------|--------|
-| DEBT-SYSTEMD-AUTOINSTALL-001 | `8e57aad2` |
-| DEBT-SAFE-EXEC-NULLBYTE-001 — is_safe_for_exec() 17/17 tests | `c8e293a8` |
-| DEBT-GITGUARDIAN-YAML-001 — paths_ignore v2 | `06228a67` |
-| DEBT-FUZZING-LIBFUZZER-001 — 2.4M runs, 0 crashes, corpus 67 | `f5994c4a` |
-| DEBT-MARKDOWN-HOOK-001 — pre-commit hook | `aab08daa` |
+### Documentacion actualizada (sin commits tecnicos)
 
-### ADR-039 aprobado (Consejo 8/8)
-Build/Runtime Separation for Production Variants
-- Opcion B aprobada para FEDER
-- Axioma BSR publicable (con "trusted build environment assumption")
-- Flags produccion con enmiendas: -fstack-clash-protection, -fno-strict-overflow,
-  -Werror=format-security, -fasynchronous-unwind-tables, -Wl,-z,noexecstack
-- -march=x86-64 baseline como default (5/8), x86-64-v2 como opt-in (8/8)
-- SHA256SUMS obligatorio en dist/
-- CHECK-PROD-NO-COMPILER via dpkg (no solo which)
-- CHECK-PROD-CHECKSEC gate BLOQUEANTE
+**ADR-025 — Extension D13 documentada:**
+- Emergency Patch Protocol: Plugin Unload via Signed Message [POST-FEDER]
+- Payload `action="unload"` + `target_plugin` firmado con Ed25519
+- Reutiliza canal ZeroMQ + verificacion Ed25519 + `dlclose()` existentes
+- Zero new attack surface — semantica extendida sobre infraestructura existente
+- Tests SIGN-8/9/10 anadidos a la tabla de tests
+- D13 correctamente posicionado dentro de "Decisiones detalladas" (despues D12)
+- Origen: sugerencia de founder externo via LinkedIn (DAY 131)
 
-### Nuevas deudas abiertas (DAY 130)
-| ID | Descripcion | Target |
-|----|-------------|--------|
-| DEBT-BUILD-PIPELINE-001 | Builder VM separada (Opcion A) | post-FEDER |
-| DEBT-PROD-METRICS-001 | Completar tabla metricas §5 paper | DAY 131-135 |
-| DEBT-PROD-COMPAT-BASELINE-001 | HARDWARE-REQUIREMENTS.md | DAY 131 |
-| DEBT-PROD-DEBUG-SYMBOLS-001 | Simbolos debug separados para forense | v1.1 |
-| DEBT-NATIVE-LINUX-BOOTSTRAP-001 | Flujo nativo Linux sin Vagrant | post-FEDER |
+**BACKLOG actualizado:**
+- ADR-025-EXT-001 anadido a tabla PHASE 5 (post-FEDER)
+- "Plugin unload via mensaje firmado" anadido a Decisiones de diseno consolidadas
 
----
+**Analisis EventSentinel.ai:**
+- No es competidor directo de aRGus
+- EventSentinel = observabilidad de hardware (predice fallos de disco/CPU/NIC)
+- aRGus = seguridad NDR (detecta ataques en red)
+- Precio EventSentinel: $384/nodo/ano → ~19.000€/ano para 50 nodos
+- Argumento FEDER: ese coste es solo monitoring, aRGus da seguridad completa gratis
+- Enterprise ofrece on-premise pero custom pricing — soberania de datos cuestionable
 
-## Plan DAY 131
+**LinkedIn — respuesta a founder sobre compiler removal:**
+- Founder identifico blind spot: runtime-only updates tienen sus propios riesgos
+- Respuesta enviada: reconoce critica + describe D13 como solucion elegante
+- D13 responde exactamente al blind spot: rollback sin compilador, sin protocolo nuevo
 
-### P0 — Commitear ADR-039 + acta + LinkedIn + prompt
-Ficheros pendientes de commit:
+### Ficheros pendientes de commit (P0 DAY 131 no completado)
+- `docs/adr/ADR-025.md` — D13 + tests SIGN-8/9/10 + entrada en Registro
 - `docs/adr/ADR-039-build-runtime-separation.md`
 - `docs/consejo/CONSEJO-ADR039-DAY130.md`
 - `docs/continuity/PROMPT_CONTINUE_CLAUDE.md`
 - `.gitignore` (anadir `dist/`)
-- `docs/BACKLOG.md` (anadir nuevas deudas DAY 130)
+- `docs/BACKLOG.md` (deudas DAY 130 + ADR-025-EXT-001 + decision plugin unload)
+
+---
+
+## Plan DAY 132
+
+### P0 — Commits pendientes (arrastre de DAY 131)
+Commitear todo lo pendiente en un commit atomico de documentacion:
+```bash
+git add docs/adr/ADR-025.md docs/adr/ADR-039-build-runtime-separation.md \
+        docs/consejo/CONSEJO-ADR039-DAY130.md \
+        docs/continuity/PROMPT_CONTINUE_CLAUDE.md \
+        .gitignore docs/BACKLOG.md
+git commit -m "docs: ADR-025 D13 + ADR-039 + BACKLOG DAY 131"
+```
 
 ### P1 — Paper §5 Draft v17
-Actualizar arXiv:2604.04952 con contribuciones metodologicas DAY 124-130:
+Actualizar arXiv:2604.04952 con contribuciones metodologicas DAY 124-131:
 
 | Seccion | Contenido |
 |---------|-----------|
@@ -104,7 +113,7 @@ Actualizar arXiv:2604.04952 con contribuciones metodologicas DAY 124-130:
 | §5.7 | Fuzzing como tercera capa de testing (unit -> property -> fuzzing) |
 | §5.8 | Dev/Prod parity via symlinks, not conditional logic |
 
-### P2 — ADR-030 Implementacion (prerequisito FEDER)
+### P2 — ADR-030 Implementacion Variant A (prerequisito FEDER)
 Implementar lo aprobado en ADR-039 para Variant A (x86):
 
 1. Anadir `dist/` a `.gitignore`
@@ -112,7 +121,7 @@ Implementar lo aprobado en ADR-039 para Variant A (x86):
 3. `check-prod-no-compiler` (via dpkg)
 4. `check-prod-checksec` (via checksec)
 5. `vagrant/hardened-x86/Vagrantfile`
-6. `docs/HARDWARE-REQUIREMENTS.md`
+6. `docs/HARDWARE-REQUIREMENTS.md` (DEBT-PROD-COMPAT-BASELINE-001)
 
 ### P3 — ADR-030 Variant B (ARM64, prerequisito FEDER)
 - `vagrant/hardened-arm64/Vagrantfile`
@@ -125,12 +134,37 @@ Implementar lo aprobado en ADR-039 para Variant A (x86):
 **Deadline:** 22 septiembre 2026
 **Go/no-go tecnico:** 1 agosto 2026
 **Contacto:** Andres Caro Lindo (UEx/INCIBE)
+**Argumento central:** 19.000€/ano solo para monitoring de hardware (EventSentinel)
+vs aRGus NDR completo open-source. Brecha de mercado demostrable con numeros reales.
 
 **Prerequisites pendientes:**
 - [ ] ADR-030 Variant A (x86 + AppArmor + eBPF/XDP) estable
 - [ ] ADR-030 Variant B (ARM64 + AppArmor + libpcap) estable
 - [ ] Demo pcap reproducible en < 10 minutos (`scripts/feder-demo.sh`)
 - [ ] Paper §5 Draft v17 con axioma BSR
+- [ ] Clarificar con Andres: NDR standalone vs federacion funcional (antes julio 2026)
+
+---
+
+## Deudas abiertas relevantes
+
+| ID | Descripcion | Target |
+|----|-------------|--------|
+| DEBT-PROD-METRICS-001 | Completar tabla metricas §5 paper | DAY 132-135 |
+| DEBT-PROD-COMPAT-BASELINE-001 | HARDWARE-REQUIREMENTS.md | DAY 132 |
+| DEBT-BUILD-PIPELINE-001 | Builder VM separada (Opcion A ADR-039) | post-FEDER |
+| DEBT-PROD-DEBUG-SYMBOLS-001 | Simbolos debug separados para forense | v1.1 |
+| DEBT-NATIVE-LINUX-BOOTSTRAP-001 | Flujo nativo Linux sin Vagrant | post-FEDER |
+| DEBT-SEED-CAPABILITIES-001 | CAP_DAC_READ_SEARCH en lugar de sudo | v0.6+ |
+| DEBT-CRYPTO-003a | mlock() + explicit_bzero(seed) post-HKDF | feature/crypto-hardening |
+
+## Backlog post-FEDER relevante
+
+| ID | Descripcion |
+|----|-------------|
+| ADR-025-EXT-001 | Emergency Patch Protocol — implementar D13 (action="unload") |
+| DEBT-PENTESTER-LOOP-001 | ACRL: Caldera + ATT&CK + XGBoost warm-start |
+| ADR-030 aRGus-seL4 | Branch independiente, nunca a main |
 
 ---
 
@@ -152,8 +186,11 @@ Implementar lo aprobado en ADR-039 para Variant A (x86):
 - **JSON es la ley:** No hardcoded values.
 - **Fail-closed:** En caso de duda, rechazar.
 - **dist/:** Nunca en git. SHA256SUMS obligatorio.
+- **Lógica compleja:** Siempre a `tools/script.sh`, nunca inline en Makefile.
+- **Seed ChaCha20:** NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
+- **Seguridad:** Todo fix requiere RED->GREEN + property test + test integracion. Sin excepciones.
 
 ---
 
-*DAY 130 — 25 Abril 2026 · main @ 84dc3af9 · v0.5.2-hardened*
+*DAY 132 — 26 Abril 2026 · main @ 84dc3af9 · v0.5.2-hardened*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*

@@ -285,6 +285,7 @@
 |----|-------|--------------|
 | **DEBT-PENTESTER-LOOP-001** | ACRL: Caldera → eBPF capture → XGBoost warm-start → Ed25519 sign → hot-swap | G1: reproducibilidad · G2: ground-truth flow · G3: ≥3 ATT&CK · G4: RFC-válido · G5: sandbox |
 | **ADR-038** | ACRL ADR formal | Aprobado por Consejo |
+| **ADR-025-EXT-001** | Emergency Patch Protocol — Plugin Unload: implementar `action="unload"` en plugin-loader. Tabla interna de handles activos. `dlclose()` con log NOTICE. Tests SIGN-8/9/10. | TEST-INTEG-SIGN-8/9/10 RED→GREEN | post-FEDER |
 
 ### Variantes de producción (ADR-029)
 
@@ -336,6 +337,7 @@
 | **safe_path header-only** | `contrib/safe-path/` — cero dependencias, C++20 puro. | Consejo 7/7 · DAY 123 |
 | **Seeds 0400** | Seeds deben tener permisos `0400` (solo owner, solo lectura). | Consejo 7/7 · DAY 124 |
 | **Tres variantes** | aRGus-dev · aRGus-production (x86+ARM apparmor) · aRGus-seL4 (apéndice científico). | DAY 124 |
+| **Plugin unload vía mensaje firmado** | Emergency Patch Protocol: `action="unload"` + Ed25519 + ZeroMQ. Zero new attack surface. Reutiliza cadena de confianza existente. Post-FEDER. | DAY 131 — sugerencia founder LinkedIn |
 
 ---
 

@@ -132,7 +132,7 @@ La clave pública Ed25519 se inyecta en tiempo de compilación como constante en
 # tools/provision.sh exporta la pubkey como hex
 # CMakeLists.txt la inyecta en compilación:
 target_compile_definitions(plugin_loader PRIVATE
-    MLD_PLUGIN_PUBKEY_HEX="${PLUGIN_PUBKEY_HEX}")
+        MLD_PLUGIN_PUBKEY_HEX="${PLUGIN_PUBKEY_HEX}")
 ```
 
 **Garantía contractual (explícita):** El plugin-loader rechaza cualquier firma generada con una clave distinta a la embebida en el binario actual, sin excepción. Esta garantía se deriva del funcionamiento de Ed25519 pero se documenta como invariante de diseño.
@@ -209,6 +209,49 @@ Mitiga inyección vía linker dinámico (V6).
 
 El campo `"allowed_key_id"` en el JSON config está preparado para que en futuras versiones cada componente pueda tener su propia clave de confianza. Formato: `"ed25519:YYYY-MM-<env>"` (ej: `"ed25519:2026-04-prod"`). Mitiga el vector V11 (mixed signing).
 
+### D13 — Emergency Patch Protocol: Plugin Unload via Signed Message [POST-FEDER]
+
+En producción sin compilador, la única forma segura de retirar un plugin
+comprometido o defectuoso es mediante un plugin especial firmado con
+`action="unload"`. Reutiliza íntegramente la infraestructura de confianza
+existente: canal ZeroMQ, verificación Ed25519, y `dlclose()`.
+
+**Payload del plugin de rollback:**
+
+```json
+{
+  "action": "unload",
+  "target_plugin": "libxgboost_v1.2.so",
+  "reason": "CVE-2026-XXXX — modelo comprometido",
+  "signature": "/usr/lib/ml-defender/plugins/unload_libxgboost_v1.2.sig"
+}
+```
+
+**Secuencia de ejecución:**
+
+1. Plugin-loader recibe plugin de tipo `action="unload"`
+2. Verifica firma Ed25519 — misma cadena de confianza que cualquier plugin
+3. Localiza handle activo de `target_plugin` en tabla interna
+4. `dlclose(handle)` — descarga limpia
+5. Elimina entrada de la tabla de plugins activos
+6. Log `NOTICE`: nombre del plugin, motivo, timestamp, fingerprint de clave
+
+**Garantías:**
+
+- Un plugin de unload con firma inválida → CRITICAL + terminate() (D9)
+- Un plugin de unload que referencia un plugin no cargado → WARNING, no terminate()
+- La clave privada de firma nunca reside en producción (D1 — invariante)
+- Zero downtime del pipeline: los demás componentes continúan operando
+
+**Por qué es correcto:**
+
+El sistema que sabe inyectar un anticuerpo sabe retirarlo.
+Misma confianza, mismo canal, semántica extendida con un campo `action`.
+No se añade superficie de ataque — se añade semántica a la superficie existente.
+
+**Origen:** Sugerencia de founder externo vía LinkedIn (DAY 131).
+Registrado como extensión post-FEDER de ADR-025, no como ADR independiente.
+
 ---
 
 ## Ficheros afectados
@@ -234,6 +277,9 @@ El campo `"allowed_key_id"` en el JSON config está preparado para que en futura
 | TEST-INTEG-SIGN-5 | Path traversal en JSON config | CRITICAL + terminate() |
 | TEST-INTEG-SIGN-6 | Plugin firmado con clave rotada (mismatch) | CRITICAL + terminate() |
 | TEST-INTEG-SIGN-7 | Plugin truncado (size check) | CRITICAL + terminate() |
+| TEST-INTEG-SIGN-8 | Plugin unload con firma válida — target cargado | dlclose() exitoso + log NOTICE |
+| TEST-INTEG-SIGN-9 | Plugin unload con firma inválida | CRITICAL + terminate() |
+| TEST-INTEG-SIGN-10 | Plugin unload — target no cargado | WARNING, pipeline continúa |
 
 ---
 
@@ -299,6 +345,7 @@ ADR-025 asume que el atacante no tiene privilegios root en el host de producció
 - Fail-closed explícito y auditable ante cualquier fallo de verificación
 - Logging forense distingue corrupción de tampering
 - Sin dependencias nuevas (libsodium ya en el proyecto)
+- D13: Emergency Patch Protocol permite rollback de plugins en producción sin compilador
 
 **Negativas / trade-offs:**
 - Cada plugin nuevo requiere firma explícita en deploy
@@ -316,6 +363,8 @@ Desarrollado en tres rondas del Consejo de Sabios (Claude, ChatGPT-5, DeepSeek, 
 **Ronda 2:** Resolución de preguntas operacionales sobre rotación de claves, coste de D7, comportamiento de `provision.sh --reset` y rol de Falco. Consenso en todas las preguntas principales.
 
 **Ronda 3:** Ajustes de precisión sin cambios bloqueantes. Incorporados: orden prefix_check antes de open(), validación de tamaño MIN/MAX para .so y .sig, systemd Restart=always, formato allowed_key_id, exclusiones dpkg/apt en regla Falco, log st_mtime en D6, garantía contractual explícita en D7, ejemplo concreto de root compromise en threat model boundaries, tabla de tests TEST-INTEG-SIGN-1 a 7.
+
+**Extensión DAY 131:** D13 (Emergency Patch Protocol) añadido a raíz de sugerencia de founder externo vía LinkedIn. Tests SIGN-8/9/10 añadidos. Implementación diferida a post-FEDER.
 
 **Posición de minoría registrada (Grok, ronda 1):** En componentes ultra-críticos como `firewall-acl-agent`, `std::terminate()` incluso para plugins sin `require_signature: true`. Árbitro adopta posición mayoritaria: el flag por componente con default `true` en producción es el mecanismo de control.
 
