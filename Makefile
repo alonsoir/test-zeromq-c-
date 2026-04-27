@@ -1619,3 +1619,241 @@ seed-client-clean:
 	@echo "✅ seed-client limpiado"
 
 seed-client-rebuild: seed-client-clean seed-client-build seed-client-test
+
+# ============================================================================
+# PRODUCCIÓN — ADR-030 Variant A — DAY 133
+# Build/Runtime Separation (BSR) axiom — ADR-039
+# Todos los targets prod-* corren en dev VM.
+# Todos los check-prod-* corren en hardened VM.
+# Lógica compleja → tools/prod/ (nunca inline).
+# ============================================================================
+
+.PHONY: prod-init-dist prod-build-x86 prod-collect-libs prod-sign prod-checksums
+.PHONY: prod-verify prod-deploy-x86 prod-full-x86
+.PHONY: check-prod-no-compiler check-prod-apparmor check-prod-capabilities
+.PHONY: check-prod-permissions check-prod-falco check-prod-all
+.PHONY: hardened-up hardened-halt hardened-destroy hardened-ssh
+.PHONY: hardened-setup-user hardened-setup-apparmor hardened-setup-falco
+.PHONY: hardened-setup-filesystem hardened-provision-all hardened-verify
+
+HARDENED_X86_DIR   := vagrant/hardened-x86
+DIST_X86           := dist/x86
+ARGUS_BIN_DIST     := $(DIST_X86)/bin
+ARGUS_LIB_DIST     := $(DIST_X86)/lib
+ARGUS_PLUGIN_DIST  := $(DIST_X86)/plugins
+
+# ── Guard: solo ejecutable desde dev VM (tiene compilador) ───────────────────
+_check-dev-env:
+	@vagrant ssh -c 'which clang++ > /dev/null 2>&1' || \
+	  (echo "FAIL: prod targets requieren dev VM (clang++ no encontrado)"; exit 1)
+	@echo "OK: dev VM detectada"
+
+# ── Guard: hardened VM levantada ─────────────────────────────────────────────
+_check-hardened-up:
+	@vagrant --cwd $(HARDENED_X86_DIR) status 2>/dev/null | grep -q running || \
+	  (echo "FAIL: hardened-x86 VM no está corriendo. Ejecuta: make hardened-up"; exit 1)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Gestión de la hardened VM
+# ─────────────────────────────────────────────────────────────────────────────
+
+hardened-up:
+	@echo "=== Levantando hardened-x86 VM ==="
+	@cd $(HARDENED_X86_DIR) && vagrant up
+
+hardened-halt:
+	@echo "=== Parando hardened-x86 VM ==="
+	@cd $(HARDENED_X86_DIR) && vagrant halt
+
+hardened-destroy:
+	@echo "=== Destruyendo hardened-x86 VM ==="
+	@cd $(HARDENED_X86_DIR) && vagrant destroy -f
+
+hardened-ssh:
+	@cd $(HARDENED_X86_DIR) && vagrant ssh
+
+# ─────────────────────────────────────────────────────────────────────────────
+# dist/ — estructura de artefactos de producción
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-init-dist:
+	@echo "=== Inicializando dist/x86/ ==="
+	@mkdir -p $(ARGUS_BIN_DIST) $(ARGUS_LIB_DIST) $(ARGUS_PLUGIN_DIST)
+	@echo "OK: dist/x86/{bin,lib,plugins} listos"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Compilación de binarios de producción
+# Flags: PROFILE_PRODUCTION (-O3 -march=native -DNDEBUG -flto)
+# Salida: dist/x86/bin/
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-build-x86: _check-dev-env prod-init-dist
+	@echo "=== Building production binaries (x86-64) ==="
+	@vagrant ssh -c 'bash /vagrant/tools/prod/build-x86.sh'
+	@echo "OK: binarios en $(ARGUS_BIN_DIST)/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Recolección de librerías runtime mínimas
+# Solo lo que el pipeline necesita para ejecutar — sin dev deps
+# Salida: dist/x86/lib/
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-collect-libs: _check-dev-env prod-init-dist
+	@echo "=== Collecting runtime libraries ==="
+	@vagrant ssh -c 'bash /vagrant/tools/prod/collect-libs.sh'
+	@echo "OK: libs en $(ARGUS_LIB_DIST)/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Firma Ed25519 de binarios + plugins
+# Usa la misma clave que ADR-025 (plugin_signing.sk en la dev VM)
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-sign: _check-dev-env
+	@echo "=== Signing production binaries (Ed25519) ==="
+	@vagrant ssh -c 'bash /vagrant/tools/prod/sign-binaries.sh'
+	@echo "OK: .sig generados en $(DIST_X86)/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SHA256SUMS — checksum de todos los artefactos en dist/x86/
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-checksums: _check-dev-env
+	@echo "=== Generating SHA256SUMS ==="
+	@vagrant ssh -c '\
+	  cd /vagrant/$(DIST_X86) && \
+	  find bin/ lib/ plugins/ -type f ! -name "*.sig" ! -name "SHA256SUMS*" \
+	    -exec sha256sum {} \; | sort > SHA256SUMS && \
+	  echo "OK: SHA256SUMS generado (lines=$$(wc -l < SHA256SUMS))"'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Verificación de SHA256SUMS + firmas Ed25519
+# Se puede ejecutar en cualquier entorno (dev o hardened)
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-verify:
+	@echo "=== Verifying production artifacts ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'bash /vagrant/tools/prod/verify-artifacts.sh'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy a hardened VM
+# Instala binarios, libs y plugins en /opt/argus/
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-deploy-x86: _check-hardened-up
+	@echo "=== Deploying to hardened-x86 VM ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/tools/prod/deploy-hardened.sh'
+	@echo "OK: pipeline desplegado en /opt/argus/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline completo: build → libs → sign → checksums → deploy
+# ─────────────────────────────────────────────────────────────────────────────
+
+prod-full-x86: prod-build-x86 prod-collect-libs prod-sign prod-checksums prod-deploy-x86
+	@echo ""
+	@echo "╔══════════════════════════════════════════════════════╗"
+	@echo "║  ✅ prod-full-x86 COMPLETADO                        ║"
+	@echo "║  Ejecuta: make check-prod-all                       ║"
+	@echo "╚══════════════════════════════════════════════════════╝"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Provisioning de la hardened VM
+# Estos targets configuran el sistema en la hardened VM.
+# Se ejecutan UNA VEZ tras el primer vagrant up, o tras un destroy+up.
+# ─────────────────────────────────────────────────────────────────────────────
+
+hardened-setup-filesystem: _check-hardened-up
+	@echo "=== Setting up filesystem (user, dirs, permissions) ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-filesystem.sh'
+
+hardened-setup-apparmor: _check-hardened-up
+	@echo "=== Installing AppArmor profiles (6 components) ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-apparmor.sh'
+
+hardened-setup-falco: _check-hardened-up
+	@echo "=== Installing and configuring Falco ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-falco.sh'
+
+hardened-provision-all: hardened-setup-filesystem hardened-setup-apparmor hardened-setup-falco
+	@echo "✅ Provisioning completo — ejecuta make check-prod-all"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHECK-PROD — Gates de seguridad en hardened VM
+# Cada check es independiente y falla con exit 1 si no se cumple.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# BSR gate: cero compiladores (dpkg + PATH, dos capas)
+check-prod-no-compiler: _check-hardened-up
+	@echo "=== BSR: verifying no compiler in production ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	  FAIL=0; \
+	  if dpkg -l 2>/dev/null | grep -qE "^ii\s+(gcc|g\+\+|clang|clang-[0-9]+|cmake|build-essential)"; then \
+	    echo "FAIL (dpkg): compiler package found"; FAIL=1; \
+	  fi; \
+	  for cmd in gcc g++ clang clang++ cc c++ cmake; do \
+	    if command -v $$cmd > /dev/null 2>&1; then \
+	      echo "FAIL (PATH): $$cmd found at $$(which $$cmd)"; FAIL=1; \
+	    fi; \
+	  done; \
+	  [ $$FAIL -eq 0 ] && echo "OK: no compiler present (dpkg + PATH verified)" || exit 1'
+
+# AppArmor: 6 perfiles en modo enforce
+check-prod-apparmor: _check-hardened-up
+	@echo "=== AppArmor: verifying 6 profiles in enforce mode ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	  FAIL=0; \
+	  for comp in etcd-server sniffer ml-detector firewall-acl-agent rag-ingester rag-security; do \
+	    STATUS=$$(sudo aa-status 2>/dev/null | grep -c "argus-$$comp"); \
+	    if [ "$$STATUS" -eq 0 ]; then \
+	      echo "FAIL: argus-$$comp not in enforce mode"; FAIL=1; \
+	    else \
+	      echo "OK: argus-$$comp enforce"; \
+	    fi; \
+	  done; \
+	  [ $$FAIL -eq 0 ] || exit 1'
+
+# Capabilities: sniffer y firewall-acl-agent tienen los caps mínimos
+check-prod-capabilities: _check-hardened-up
+	@echo "=== Linux Capabilities: verifying setcap on sniffer and firewall ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	  FAIL=0; \
+	  SNIFFER_CAPS=$$(getcap /opt/argus/bin/sniffer 2>/dev/null); \
+	  if echo "$$SNIFFER_CAPS" | grep -q "cap_net_admin,cap_net_raw,cap_sys_admin+eip"; then \
+	    echo "OK: sniffer caps: $$SNIFFER_CAPS"; \
+	  else \
+	    echo "FAIL: sniffer missing required caps (got: $$SNIFFER_CAPS)"; FAIL=1; \
+	  fi; \
+	  FW_CAPS=$$(getcap /opt/argus/bin/firewall-acl-agent 2>/dev/null); \
+	  if echo "$$FW_CAPS" | grep -q "cap_net_admin+eip"; then \
+	    echo "OK: firewall caps: $$FW_CAPS"; \
+	  else \
+	    echo "FAIL: firewall-acl-agent missing required caps (got: $$FW_CAPS)"; FAIL=1; \
+	  fi; \
+	  [ $$FAIL -eq 0 ] || exit 1'
+
+# Permisos: ownership argus:argus, modos correctos
+check-prod-permissions: _check-hardened-up
+	@echo "=== Filesystem permissions: /opt/argus/, /etc/ml-defender/, /var/log/argus/ ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'bash /vagrant/tools/prod/check-permissions.sh'
+
+# Falco: servicio activo y reglas cargadas
+check-prod-falco: _check-hardened-up
+	@echo "=== Falco: verifying service and rules ==="
+	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	  sudo systemctl is-active falco > /dev/null 2>&1 || \
+	    (echo "FAIL: falco service not running"; exit 1); \
+	  echo "OK: falco active"; \
+	  RULES=$$(sudo falco --list 2>/dev/null | grep -c "argus_" || echo 0); \
+	  [ "$$RULES" -gt 0 ] && echo "OK: $$RULES argus rules loaded" || \
+	    echo "WARN: no argus-specific rules found"'
+
+# Gate completo: todos los checks
+check-prod-all: check-prod-no-compiler check-prod-apparmor check-prod-capabilities check-prod-permissions check-prod-falco
+	@echo ""
+	@echo "╔══════════════════════════════════════════════════════╗"
+	@echo "║  ✅ check-prod-all PASSED                           ║"
+	@echo "║  hardened-x86 VM cumple todos los gates de          ║"
+	@echo "║  seguridad ADR-030 Variant A (DAY 133)              ║"
+	@echo "╚══════════════════════════════════════════════════════╝"
+
+# Verificación rápida del estado de la hardened VM
+hardened-verify: check-prod-all

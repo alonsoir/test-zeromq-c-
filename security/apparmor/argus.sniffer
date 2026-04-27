@@ -1,0 +1,76 @@
+# /etc/apparmor.d/argus.sniffer
+# AppArmor profile para aRGus sniffer (eBPF/XDP dual-NIC).
+# Capabilities mínimas: net_admin + net_raw + sys_admin (eBPF load) + ipc_lock (mlock seed).
+# Sin root completo. Sin acceso a /home, /root, /tmp exec.
+#
+# DAY 133 — aRGus NDR — ADR-030 Variant A
+
+profile argus-sniffer /opt/argus/bin/sniffer {
+  #include <abstractions/base>
+
+  # ── Linux Capabilities mínimas ─────────────────────────────────────────────
+  capability net_admin,     # XDP attach, iptables
+  capability net_raw,       # raw socket capture
+  capability sys_admin,     # eBPF program load (bpf syscall)
+  capability ipc_lock,      # mlock() para seed en memoria
+
+  # ── Network ────────────────────────────────────────────────────────────────
+  network inet  tcp,
+  network inet  udp,
+  network inet6 tcp,
+  network inet6 udp,
+  network packet raw,       # packet capture
+
+  # ── Propio binario ─────────────────────────────────────────────────────────
+  /opt/argus/bin/sniffer   mr,
+  /opt/argus/bin/sniffer.sig r,
+
+  # ── Librerías runtime ──────────────────────────────────────────────────────
+  /opt/argus/lib/**        mr,
+  /usr/local/lib/libsodium.so* mr,
+  /usr/local/lib/libzmq.so*    mr,
+  /usr/local/lib/libprotobuf.so* mr,
+  /usr/local/lib/libcrypto_transport.so* mr,
+  /usr/local/lib/libseed_client.so*      mr,
+  /usr/local/lib/libplugin_loader.so*    mr,
+  /usr/local/lib/libetcd_client.so*      mr,
+  /usr/local/lib/libbpf.so*             mr,
+  /lib/x86_64-linux-gnu/**  mr,
+  /usr/lib/x86_64-linux-gnu/** mr,
+
+  # ── Configuración (solo lectura) ───────────────────────────────────────────
+  /etc/ml-defender/sniffer/** r,
+  /etc/ml-defender/plugins/plugin_signing.pk r,
+
+  # ── Plugins (cargar via dlopen) ────────────────────────────────────────────
+  /opt/argus/plugins/*.so   mr,
+  /opt/argus/plugins/*.sig  r,
+
+  # ── eBPF filesystem ────────────────────────────────────────────────────────
+  /sys/fs/bpf/**            rw,
+  /sys/kernel/debug/tracing/** r,
+  /proc/sys/net/**          r,
+  /proc/net/**              r,
+
+  # ── Logs (escritura solo en su directorio) ─────────────────────────────────
+  /var/log/argus/sniffer/  rw,
+  /var/log/argus/sniffer/** rw,
+
+  # ── Interfaces de red (lectura de info) ────────────────────────────────────
+  /sys/class/net/**         r,
+  /sys/devices/**           r,
+
+  # ── Denegar explícitamente ─────────────────────────────────────────────────
+  deny /root/**             rwx,
+  deny /home/**             rwx,
+  deny /tmp/**              x,
+  deny /var/tmp/**          x,
+  deny /etc/passwd          w,
+  deny /etc/shadow          rw,
+  deny /etc/ml-defender/ml-detector/** rwx,
+  deny /etc/ml-defender/firewall-acl-agent/** rwx,
+  deny /etc/ml-defender/rag-ingester/** rwx,
+  deny /etc/ml-defender/rag-security/** rwx,
+  deny /opt/argus/bin/ml-detector   x,
+  deny /opt/argus/bin/firewall-acl-agent x,
+}

@@ -1,0 +1,49 @@
+# /etc/apparmor.d/argus.etcd-server
+# AppArmor profile para aRGus etcd-server.
+# Gestiona seeds y registro de componentes.
+# Capability: ipc_lock (mlock seed), net_bind_service (puerto 2379).
+#
+# DAY 133 — aRGus NDR — ADR-030 Variant A
+
+profile argus-etcd-server /opt/argus/bin/etcd-server {
+  #include <abstractions/base>
+
+  capability ipc_lock,        # mlock() seed material
+  capability net_bind_service, # bind puerto privilegiado 2379
+
+  network inet  tcp,
+  network inet6 tcp,
+
+  /opt/argus/bin/etcd-server   mr,
+  /opt/argus/bin/etcd-server.sig r,
+
+  /opt/argus/lib/**            mr,
+  /usr/local/lib/libsodium.so*    mr,
+  /usr/local/lib/libzmq.so*       mr,
+  /usr/local/lib/libcrypto_transport.so* mr,
+  /usr/local/lib/libseed_client.so*      mr,
+  /lib/x86_64-linux-gnu/**     mr,
+  /usr/lib/x86_64-linux-gnu/** mr,
+
+  # Seeds — lectura estricta
+  /etc/ml-defender/etcd-server/seed.bin r,
+  /etc/ml-defender/etcd-server/*.json   r,
+
+  /var/log/argus/etcd-server/  rw,
+  /var/log/argus/etcd-server/** rw,
+
+  /proc/@{pid}/status r,
+
+  deny /root/**          rwx,
+  deny /home/**          rwx,
+  deny /tmp/**           x,
+  deny /var/tmp/**       x,
+  deny /etc/passwd       w,
+  deny /etc/shadow       rw,
+  # etcd-server no puede leer los seeds de otros componentes
+  deny /etc/ml-defender/sniffer/seed.bin    r,
+  deny /etc/ml-defender/ml-detector/seed.bin r,
+  deny /etc/ml-defender/firewall-acl-agent/seed.bin r,
+  deny /etc/ml-defender/rag-ingester/seed.bin r,
+  deny /etc/ml-defender/rag-security/seed.bin r,
+}

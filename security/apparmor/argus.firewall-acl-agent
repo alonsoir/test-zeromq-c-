@@ -1,0 +1,74 @@
+# /etc/apparmor.d/argus.firewall-acl-agent
+# AppArmor profile para aRGus firewall-acl-agent.
+# Capability: net_admin (iptables/ipset).
+# execv() sin shell — CWE-78 barrier física (ADR-037).
+#
+# DAY 133 — aRGus NDR — ADR-030 Variant A
+
+profile argus-firewall-acl-agent /opt/argus/bin/firewall-acl-agent {
+  #include <abstractions/base>
+
+  # ── Capabilities mínimas ───────────────────────────────────────────────────
+  capability net_admin,   # iptables, ipset
+  capability ipc_lock,    # mlock() para seed
+
+  # ── Network ────────────────────────────────────────────────────────────────
+  network inet tcp,
+  network inet6 tcp,
+  network netlink raw,    # necesario para iptables
+
+  # ── Propio binario ─────────────────────────────────────────────────────────
+  /opt/argus/bin/firewall-acl-agent   mr,
+  /opt/argus/bin/firewall-acl-agent.sig r,
+
+  # ── Librerías runtime ──────────────────────────────────────────────────────
+  /opt/argus/lib/**            mr,
+  /usr/local/lib/libsodium.so*    mr,
+  /usr/local/lib/libzmq.so*       mr,
+  /usr/local/lib/libprotobuf.so*  mr,
+  /usr/local/lib/libcrypto_transport.so* mr,
+  /usr/local/lib/libseed_client.so*      mr,
+  /usr/local/lib/libplugin_loader.so*    mr,
+  /usr/local/lib/libetcd_client.so*      mr,
+  /lib/x86_64-linux-gnu/**     mr,
+  /usr/lib/x86_64-linux-gnu/** mr,
+
+  # ── Configuración (solo lectura) ───────────────────────────────────────────
+  /etc/ml-defender/firewall-acl-agent/** r,
+  /etc/ml-defender/plugins/plugin_signing.pk r,
+
+  # ── Plugins ────────────────────────────────────────────────────────────────
+  /opt/argus/plugins/*.so  mr,
+  /opt/argus/plugins/*.sig r,
+
+  # ── Ejecutables de red que invoca via execv() (sin shell) ──────────────────
+  # CWE-78: execv() directo, AppArmor restringe qué binarios puede exec
+  /sbin/iptables      ix,
+  /sbin/iptables-save ix,
+  /sbin/ipset         ix,
+  /usr/sbin/iptables  ix,
+  /usr/sbin/ipset     ix,
+
+  # ── Logs ───────────────────────────────────────────────────────────────────
+  /var/log/argus/firewall-acl-agent/  rw,
+  /var/log/argus/firewall-acl-agent/** rw,
+
+  # ── /proc ──────────────────────────────────────────────────────────────────
+  /proc/@{pid}/status r,
+  /proc/sys/net/**    r,
+
+  # ── Denegar explícitamente ─────────────────────────────────────────────────
+  deny /root/**          rwx,
+  deny /home/**          rwx,
+  deny /tmp/**           x,
+  deny /var/tmp/**       x,
+  deny /etc/passwd       w,
+  deny /etc/shadow       rw,
+  deny /sys/fs/bpf/**    rwx,
+  deny /etc/ml-defender/sniffer/** rwx,
+  deny /etc/ml-defender/ml-detector/** rwx,
+  # No puede exec shells ni intérpretes
+  deny /bin/bash         x,
+  deny /bin/sh           x,
+  deny /usr/bin/python*  x,
+}
