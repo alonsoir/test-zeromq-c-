@@ -1,6 +1,6 @@
 % ============================================================
 % ML Defender (aRGus NDR) — arXiv preprint
-% Draft v18 — DAY 133 — 27 April 2026
+% Draft v17 — DAY 132 — 26 April 2026
 % % Author: Alonso Isidoro Román
 % Target: cs.CR
 % ============================================================
@@ -79,7 +79,7 @@ in Resource-Constrained Organizations}}
     \href{https://github.com/alonsoir/argus}{github.com/alonsoir/argus}
 }
 
-\date{Draft v18 --- April 2026}
+\date{Draft v17 --- April 2026}
 
 % ============================================================
 \begin{document}
@@ -1131,9 +1131,14 @@ TEST(ZmqMemoryOverflow, PropertyNeverNegative) {
 
     Each layer catches a class of defects invisible to the previous one.
     Unit tests miss unseen inputs. Property tests miss parser-level structural
-    anomalies. Fuzzing misses nothing within CPU time and cannot prove absence of
-    defects, but systematically explores the boundary between valid and invalid
-    input that adversaries exploit.
+    anomalies. Coverage-guided fuzzing~\cite{libfuzzer2016} systematically
+    explores the input space through mutation guided by code coverage feedback,
+    increasing the probability of discovering crashes and undefined behavior at
+    parser and protocol boundaries. It provides no completeness guarantee ---
+    bugs may remain undiscovered after millions of executions --- but each
+    corpus-expanding input permanently extends the regression suite, and no
+    crashes or sanitizer violations observed after extensive runs constitute
+    empirical evidence of robustness.
 
     \paragraph{Application to aRGus.}
     The surfaces identified as fuzzing targets in the aRGus backlog are precisely
@@ -1510,42 +1515,6 @@ check-prod-no-compiler:
     policy alone. It is offered as a named architectural pattern applicable to
     any security-critical C++ system deployed in environments where post-deployment
     modification is a credible attack vector.
-
-    \paragraph{Measured BSR metrics (DAY~133).}
-    Table~\ref{tab:bsr-metrics} reports the package count and disk footprint
-    of the development and hardened VMs as measured on a freshly provisioned
-    Vagrant/VirtualBox environment. Both VMs share the same base box
-    (\texttt{debian/bookworm64}), isolating the delta to aRGus provisioning choices.
-
-    \begin{table}[h]
-        \centering
-        \caption{Build/Runtime Separation metrics: development VM vs.\ hardened VM
-            (Variant~A, ADR-030). Both environments start from the same
-            \texttt{debian/bookworm64} base box. Measurements obtained via
-            \texttt{dpkg -l | grep -c "\^{}ii"} and \texttt{df -h /}.}
-        \label{tab:bsr-metrics}
-        \begin{tabular}{llll}
-            \toprule
-            \textbf{Environment} & \textbf{Packages} & \textbf{Disk used} & \textbf{Compilers present} \\
-            \midrule
-            Dev VM   & 719   & 5.9~GB & gcc, g++, clang, cmake, build-essential \\
-            Hardened VM (ADR-030 Var.~A) & 304 & 1.3~GB & \textbf{NONE} (\texttt{check-prod-no-compiler}: OK) \\
-            Minbase target$^{\dagger}$ & ${\sim}$100 & ${\sim}$0.4~GB & NONE \\
-            \bottomrule
-        \end{tabular}
-        \medskip\\
-        \footnotesize{$\dagger$ Estimated for a \texttt{debootstrap --variant=minbase} image
-        with only aRGus runtime dependencies. The Vagrant base box imposes a floor of
-            ${\sim}$250 packages (systemd, SSH, Perl, Python, qemu-utils) regardless of
-            provisioning choices. A true minimal image requires bare-metal deployment and is
-            tracked as DEBT-PROD-FS-MINIMIZATION-001 (Future Work).}
-    \end{table}
-
-    The 58\% package reduction (719~$\to$~304) and 78\% disk reduction (5.9~GB~$\to$~1.3~GB)
-    quantify the attack-surface gain of the hardened variant. Zero compilers in the runtime
-    environment mechanically enforces the BSR axiom: an attacker with shell access cannot
-    recompile a modified pipeline component. The minbase target represents the design
-    aspiration for bare-metal x86 and ARM deployments (ADR-030 Variant~B, ADR-031).
 
     \subsection{Attribution}
 

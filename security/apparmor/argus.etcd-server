@@ -1,15 +1,20 @@
 # /etc/apparmor.d/argus.etcd-server
 # AppArmor profile para aRGus etcd-server.
 # Gestiona seeds y registro de componentes.
-# Capability: ipc_lock (mlock seed), net_bind_service (puerto 2379).
 #
-# DAY 133 — aRGus NDR — ADR-030 Variant A
+# Capabilities (post-Consejo DAY 133):
+#   cap_ipc_lock — mlock() del seed en memoria
+#   cap_net_bind_service — ELIMINADA (puerto 2379 > 1024, no necesaria)
+#
+# RLIMIT_MEMLOCK: gestionado via LimitMEMLOCK=16M en la unit systemd.
+# El seed.bin ocupa 32 bytes — no requiere cap_sys_resource.
+#
+# DAY 133 (rev. Consejo) — aRGus NDR — ADR-030 Variant A
 
 profile argus-etcd-server /opt/argus/bin/etcd-server {
   #include <abstractions/base>
 
-  capability ipc_lock,        # mlock() seed material
-  capability net_bind_service, # bind puerto privilegiado 2379
+  capability ipc_lock,       # mlock() seed material en RAM
 
   network inet  tcp,
   network inet6 tcp,
@@ -25,7 +30,7 @@ profile argus-etcd-server /opt/argus/bin/etcd-server {
   /lib/x86_64-linux-gnu/**     mr,
   /usr/lib/x86_64-linux-gnu/** mr,
 
-  # Seeds — lectura estricta
+  # Seeds — solo su propio directorio, lectura estricta
   /etc/ml-defender/etcd-server/seed.bin r,
   /etc/ml-defender/etcd-server/*.json   r,
 
@@ -34,6 +39,7 @@ profile argus-etcd-server /opt/argus/bin/etcd-server {
 
   /proc/@{pid}/status r,
 
+  # ── Denegar explícitamente ─────────────────────────────────────────────────
   deny /root/**          rwx,
   deny /home/**          rwx,
   deny /tmp/**           x,
@@ -41,9 +47,9 @@ profile argus-etcd-server /opt/argus/bin/etcd-server {
   deny /etc/passwd       w,
   deny /etc/shadow       rw,
   # etcd-server no puede leer los seeds de otros componentes
-  deny /etc/ml-defender/sniffer/seed.bin    r,
-  deny /etc/ml-defender/ml-detector/seed.bin r,
-  deny /etc/ml-defender/firewall-acl-agent/seed.bin r,
-  deny /etc/ml-defender/rag-ingester/seed.bin r,
-  deny /etc/ml-defender/rag-security/seed.bin r,
+  deny /etc/ml-defender/sniffer/seed.bin              r,
+  deny /etc/ml-defender/ml-detector/seed.bin          r,
+  deny /etc/ml-defender/firewall-acl-agent/seed.bin   r,
+  deny /etc/ml-defender/rag-ingester/seed.bin         r,
+  deny /etc/ml-defender/rag-security/seed.bin         r,
 }

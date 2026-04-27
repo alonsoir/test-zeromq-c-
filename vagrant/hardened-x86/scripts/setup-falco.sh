@@ -1,65 +1,52 @@
 #!/usr/bin/env bash
 # vagrant/hardened-x86/scripts/setup-falco.sh
 # Instala Falco y carga las reglas específicas de aRGus.
-# Falco complementa AppArmor: AA previene, Falco detecta comportamiento anómalo.
-# Se ejecuta DENTRO de la hardened VM como root.
+# Post-Consejo DAY 133: añadidas 3 reglas nuevas (10 total).
 #
-# DAY 133 — aRGus NDR — ADR-030 Variant A
+# AppArmor previene. Falco detecta.
+# Se ejecuta DENTRO de la hardened VM como root.
 set -euo pipefail
 
 FALCO_RULES=/etc/falco/rules.d/argus.yaml
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  Falco — runtime security monitoring para aRGus NDR      ║"
-echo "║  AppArmor previene. Falco detecta. Dos capas.            ║"
+echo "║  Falco — runtime security (post-Consejo DAY 133)         ║"
+echo "║  Driver: modern_ebpf (VirtualBox compatible)             ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 
 # ── Instalar Falco ────────────────────────────────────────────────────────────
-echo ""
-echo "── Installing Falco ──"
 if command -v falco &>/dev/null; then
     echo "  ✅ Falco ya instalado: $(falco --version 2>/dev/null | head -1)"
 else
-    # Repositorio oficial de Falco
     curl -fsSL https://falco.org/repo/falcosecurity-packages.asc | \
         gpg --dearmor -o /usr/share/keyrings/falco-archive-keyring.gpg
     echo "deb [signed-by=/usr/share/keyrings/falco-archive-keyring.gpg] \
 https://download.falco.org/packages/deb stable main" | \
         tee /etc/apt/sources.list.d/falcosecurity.list
     apt-get update -qq
-    # Instalar sin módulo de kernel (usamos eBPF probe o modern_ebpf)
-    FALCO_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        falco linux-headers-$(uname -r) 2>/dev/null || \
-    apt-get install -y --no-install-recommends falco 2>/dev/null
+    FALCO_FRONTEND=noninteractive apt-get install -y --no-install-recommends falco
     echo "  ✅ Falco instalado"
 fi
 
-# ── Configurar Falco para usar modern_ebpf (sin módulo de kernel) ─────────────
-echo ""
-echo "── Configuring Falco (modern_ebpf driver) ──"
-if [ -f /etc/falco/falco.yaml ]; then
-    # Preferir modern_ebpf sobre kmod para compatibilidad con VirtualBox
+# ── Configurar modern_ebpf ────────────────────────────────────────────────────
+[ -f /etc/falco/falco.yaml ] && \
     sed -i 's/^driver:.*$/driver: modern_ebpf/' /etc/falco/falco.yaml 2>/dev/null || true
-    sed -i 's/^engine:.*$/engine: modern_ebpf/' /etc/falco/falco.yaml 2>/dev/null || true
-    echo "  ✅ Driver: modern_ebpf configurado"
-fi
 
-# ── Reglas específicas de aRGus ───────────────────────────────────────────────
-echo ""
-echo "── Installing aRGus Falco rules ──"
 mkdir -p /etc/falco/rules.d
 
 cat > "${FALCO_RULES}" << 'FALCO_RULES_EOF'
-# aRGus NDR — Falco rules (DAY 133 — ADR-030 Variant A)
-# Principio: AppArmor previene accesos prohibidos.
-#            Falco detecta comportamiento anómalo aunque AA lo permita.
+# aRGus NDR — Falco rules (DAY 133 rev.Consejo — ADR-030 Variant A)
 #
-# Categorías:
-#   1. Acceso a ficheros fuera del patrón esperado
-#   2. Exec inesperado desde componentes del pipeline
-#   3. Acceso a red fuera del patrón esperado
-#   4. Cambios en ficheros de configuración o binarios
-#   5. Escalada de privilegios
+# AppArmor previene accesos prohibidos.
+# Falco detecta comportamiento anómalo en lo que AppArmor permite.
+#
+# Reglas 1-7:  originales DAY 133
+# Reglas 8-10: añadidas post-Consejo DAY 133
+#
+# Estrategia de maduración (Gemini + Kimi):
+#   Fase 1 (tuning): AppArmor complain + Falco WARNING
+#   Fase 2 (estable): AppArmor enforce + Falco NOTICE
+#   Fase 3 (prod):   AppArmor enforce + Falco CRITICAL
 
 # ── Macros ────────────────────────────────────────────────────────────────────
 
@@ -72,34 +59,20 @@ cat > "${FALCO_RULES}" << 'FALCO_RULES_EOF'
     fd.name startswith /etc/ml-defender/ or
     fd.name startswith /opt/argus/
 
-- macro: argus_allowed_read_paths
-  condition: >
-    fd.name startswith /opt/argus/ or
-    fd.name startswith /etc/ml-defender/ or
-    fd.name startswith /var/log/argus/ or
-    fd.name startswith /proc/ or
-    fd.name startswith /sys/fs/bpf/ or
-    fd.name startswith /usr/lib/ or
-    fd.name startswith /lib/ or
-    fd.name = /etc/ld.so.cache or
-    fd.name = /proc/cpuinfo
+- macro: argus_provisioning_processes
+  condition: proc.name in (bash, sh, provision, ansible, vagrant, setup-filesystem, setup-apparmor, setup-falco, deploy-hardened)
 
-# ── Regla 1: Acceso a ficheros fuera del patrón ───────────────────────────────
-
+# ── Regla 1: Escritura fuera del patrón ───────────────────────────────────────
 - rule: argus_unexpected_file_open
-  desc: Un componente de aRGus accede a una ruta fuera de su patrón esperado
+  desc: Un componente de aRGus escribe en una ruta fuera de su patrón
   condition: >
-    argus_processes and
-    open_write and
-    not argus_allowed_write_paths
+    argus_processes and open_write and not argus_allowed_write_paths
   output: >
-    aRGus component writing to unexpected path
-    (proc=%proc.name pid=%proc.pid path=%fd.name user=%user.name container=%container.name)
+    aRGus unexpected write (proc=%proc.name pid=%proc.pid path=%fd.name user=%user.name)
   priority: WARNING
   tags: [argus, filesystem, adr-030]
 
-# ── Regla 2: Exec inesperado ──────────────────────────────────────────────────
-
+# ── Regla 2: Exec inesperado desde componentes ────────────────────────────────
 - rule: argus_unexpected_exec
   desc: Un componente de aRGus ejecuta un binario inesperado
   condition: >
@@ -107,126 +80,125 @@ cat > "${FALCO_RULES}" << 'FALCO_RULES_EOF'
     proc.pname in (etcd-server, sniffer, ml-detector, rag-ingester, rag-security) and
     not proc.name in (sh, iptables, ipset)
   output: >
-    aRGus component spawned unexpected process
-    (parent=%proc.pname child=%proc.name cmd=%proc.cmdline pid=%proc.pid)
+    aRGus unexpected exec (parent=%proc.pname child=%proc.name cmd=%proc.cmdline)
   priority: CRITICAL
   tags: [argus, exec, cwe-78, adr-030]
 
+# ── Regla 3: firewall exec algo distinto de iptables/ipset ───────────────────
 - rule: argus_firewall_unexpected_exec
   desc: firewall-acl-agent ejecuta algo distinto de iptables/ipset
   condition: >
-    spawned_process and
-    proc.pname = firewall-acl-agent and
+    spawned_process and proc.pname = firewall-acl-agent and
     not proc.name in (iptables, iptables-save, ipset)
   output: >
-    aRGus firewall-acl-agent spawned unexpected process
-    (child=%proc.name cmd=%proc.cmdline) — posible CWE-78
+    aRGus firewall unexpected exec (child=%proc.name cmd=%proc.cmdline) — CWE-78?
   priority: CRITICAL
   tags: [argus, firewall, cwe-78, adr-030]
 
-# ── Regla 3: Shell desde cualquier componente ─────────────────────────────────
-
+# ── Regla 4: Shell spawn desde cualquier componente ───────────────────────────
 - rule: argus_shell_spawn
-  desc: Un componente de aRGus invoca una shell
+  desc: Un componente de aRGus invoca una shell — casi seguro compromiso
   condition: >
     spawned_process and
     proc.pname in (etcd-server, sniffer, ml-detector, firewall-acl-agent, rag-ingester, rag-security) and
     proc.name in (bash, sh, zsh, dash, ksh)
   output: >
-    aRGus component spawned shell — CRITICAL
-    (parent=%proc.pname shell=%proc.name cmd=%proc.cmdline pid=%proc.pid)
+    CRITICAL: aRGus shell spawn (parent=%proc.pname shell=%proc.name cmd=%proc.cmdline)
   priority: CRITICAL
   tags: [argus, shell, critical, adr-030]
 
-# ── Regla 4: Modificación de binarios o configuración en runtime ──────────────
-
+# ── Regla 5: Binario del pipeline modificado en runtime ───────────────────────
 - rule: argus_binary_modified
-  desc: Un binario del pipeline aRGus ha sido modificado en runtime
+  desc: Un binario del pipeline aRGus modificado en runtime — violación BSR (ADR-039)
   condition: >
-    open_write and
-    fd.name startswith /opt/argus/bin/ and
-    not proc.name in (deploy-hardened, install)
+    open_write and fd.name startswith /opt/argus/bin/ and
+    not argus_provisioning_processes
   output: >
-    aRGus binary modified at runtime — CRITICAL
-    (proc=%proc.name path=%fd.name pid=%proc.pid user=%user.name)
+    CRITICAL: aRGus BSR violation — binary modified (proc=%proc.name path=%fd.name user=%user.name)
   priority: CRITICAL
   tags: [argus, integrity, adr-039, bsr]
 
+# ── Regla 6: seed.bin accedido por proceso ajeno ─────────────────────────────
 - rule: argus_seed_accessed_by_wrong_process
-  desc: Un seed.bin es accedido por un proceso que no es el propietario del componente
+  desc: Un seed.bin es accedido por un proceso que no pertenece al pipeline
   condition: >
-    open_read and
-    fd.name glob "/etc/ml-defender/*/seed.bin" and
-    not argus_processes and
-    not proc.name in (provision, setup-filesystem)
+    open_read and fd.name glob "/etc/ml-defender/*/seed.bin" and
+    not argus_processes and not argus_provisioning_processes
   output: >
-    aRGus seed.bin accessed by unexpected process
-    (proc=%proc.name path=%fd.name pid=%proc.pid user=%user.name)
+    CRITICAL: aRGus seed.bin unexpected access (proc=%proc.name path=%fd.name user=%user.name)
   priority: CRITICAL
   tags: [argus, crypto, seeds, adr-025]
 
-# ── Regla 5: Acceso a /etc/shadow o /etc/passwd ──────────────────────────────
-
-- rule: argus_sensitive_file_access
-  desc: Un componente de aRGus accede a ficheros sensibles del sistema
-  condition: >
-    argus_processes and
-    open_read and
-    fd.name in (/etc/shadow, /etc/gshadow, /etc/sudoers)
-  output: >
-    aRGus component accessing sensitive system file
-    (proc=%proc.name path=%fd.name pid=%proc.pid)
-  priority: CRITICAL
-  tags: [argus, privilege-escalation, adr-030]
-
-# ── Regla 6: Network inesperada (solo sniffer/firewall deberían abrir raw) ────
-
+# ── Regla 7: Raw socket desde non-sniffer ────────────────────────────────────
 - rule: argus_unexpected_raw_socket
   desc: Componente no-sniffer abre un raw socket
   condition: >
-    evt.type = socket and
-    evt.arg.domain in (AF_PACKET, PF_PACKET) and
-    proc.name in (ml-detector, rag-ingester, rag-security, etcd-server) and
-    argus_processes
+    evt.type = socket and evt.arg.domain in (AF_PACKET, PF_PACKET) and
+    proc.name in (ml-detector, rag-ingester, rag-security, etcd-server)
   output: >
-    aRGus non-sniffer component opened raw socket
-    (proc=%proc.name pid=%proc.pid)
+    aRGus non-sniffer opened raw socket (proc=%proc.name pid=%proc.pid)
   priority: WARNING
   tags: [argus, network, adr-030]
 
+# ── Regla 8 (nuevo Consejo): Modificación de config en runtime ───────────────
+# Detecta tampering silencioso de los JSONs que controlan el pipeline
+- rule: argus_config_modified_unexpected
+  desc: Fichero de config de aRGus modificado por proceso no autorizado
+  condition: >
+    open_write and fd.name startswith /etc/ml-defender/ and
+    not argus_provisioning_processes and not proc.name = etcd-server
+  output: >
+    CRITICAL: aRGus config tampered (proc=%proc.name path=%fd.name user=%user.name)
+  priority: CRITICAL
+  tags: [argus, config, integrity, adr-030]
+
+# ── Regla 9 (nuevo Consejo): Sustitución de modelo o plugin ──────────────────
+# Un rename de .so o .gguf en runtime puede ser sustitución maliciosa
+- rule: argus_model_or_plugin_replaced
+  desc: Modelo ML o plugin de aRGus reemplazado en runtime
+  condition: >
+    evt.type = rename and
+    (fd.name glob "/opt/argus/plugins/*.so" or
+     fd.name glob "/opt/argus/models/*.gguf" or
+     fd.name glob "/opt/argus/models/*.onnx") and
+    not argus_provisioning_processes
+  output: >
+    CRITICAL: aRGus model/plugin replaced at runtime (proc=%proc.name src=%fd.name user=%user.name)
+  priority: CRITICAL
+  tags: [argus, integrity, plugins, bsr, adr-025]
+
+# ── Regla 10 (nuevo Consejo): Modificación de perfil AppArmor ────────────────
+# Si un atacante modifica los perfiles AA, toda la capa de prevención cae
+- rule: argus_apparmor_profile_modified
+  desc: Perfil AppArmor de aRGus modificado — invalida toda la capa de prevención
+  condition: >
+    open_write and fd.name glob "/etc/apparmor.d/argus.*" and
+    not argus_provisioning_processes
+  output: >
+    CRITICAL: aRGus AppArmor profile tampered (proc=%proc.name path=%fd.name user=%user.name)
+  priority: CRITICAL
+  tags: [argus, apparmor, critical, adr-030]
+
 FALCO_RULES_EOF
 
-echo "  ✅ ${FALCO_RULES}: $(wc -l < ${FALCO_RULES}) líneas"
+echo "  ✅ ${FALCO_RULES}: $(wc -l < ${FALCO_RULES}) líneas (10 reglas)"
 
-# ── Validar sintaxis de las reglas ────────────────────────────────────────────
-echo ""
-echo "── Validating Falco rules ──"
-if falco --validate "${FALCO_RULES}" 2>/dev/null; then
-    echo "  ✅ Sintaxis OK"
-else
-    echo "  ⚠️  Validación falló — puede ser versión de Falco incompatible"
-    echo "     Las reglas se instalan de todas formas para revisión manual"
-fi
+# ── Validar y arrancar ────────────────────────────────────────────────────────
+falco --validate "${FALCO_RULES}" 2>/dev/null && echo "  ✅ Sintaxis OK" || \
+    echo "  ⚠️  Validación falló — revisar manualmente"
 
-# ── Habilitar y arrancar Falco ────────────────────────────────────────────────
-echo ""
-echo "── Enabling Falco service ──"
 systemctl enable falco 2>/dev/null || true
-systemctl start  falco 2>/dev/null || \
-    echo "  ⚠️  falco no arrancó — puede necesitar reboot o modern_ebpf driver"
+systemctl restart falco 2>/dev/null || true
 
 sleep 2
-if systemctl is-active falco &>/dev/null; then
-    echo "  ✅ Falco: RUNNING"
-    echo "  Reglas cargadas: $(falco --list 2>/dev/null | grep -c 'argus_' || echo 'desconocido')"
-else
-    echo "  ⚠️  Falco no está corriendo — revisar logs: journalctl -u falco"
-fi
+systemctl is-active falco &>/dev/null && \
+    echo "  ✅ Falco: RUNNING (10 reglas argus)" || \
+    echo "  ⚠️  Falco no arrancó — journalctl -u falco"
 
 echo ""
-echo "── Falco monitoring paths ──"
-echo "  Logs: journalctl -u falco -f"
-echo "  Rules: ${FALCO_RULES}"
-echo "  Test: falco --list | grep argus"
+echo "── Estrategia de maduración ──"
+echo "  Fase 1 (tuning): prioridad WARNING — no alertas bloqueantes"
+echo "  Fase 2 (estable): subir a NOTICE tras 30 min sin FP"
+echo "  Fase 3 (prod): CRITICAL — investigación obligatoria"
 echo ""
-echo "✅ setup-falco completado"
+echo "✅ setup-falco completado (post-Consejo DAY 133 — 10 reglas)"

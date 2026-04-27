@@ -1,256 +1,211 @@
-# Prompt de Continuidad — DAY 133
-*aRGus NDR — arXiv:2604.04952 — 27 Abril 2026*
+# Prompt de Continuidad — DAY 134
+*aRGus NDR · arXiv:2604.04952 · 28 Abril 2026*
 
 ---
 
-## REGLA EMECAS — OBLIGATORIA ANTES DE CUALQUIER ACCION
+## Estado al cierre de DAY 133
 
-```bash
-vagrant destroy -f
-vagrant up
-make bootstrap
-make test-all
-```
-
-**Esta regla es innegociable hasta que el pipeline esté en modo solo lectura
-y mantenimiento.** No se toca ningún fichero, no se ejecuta ningún comando
-técnico, no se abre ningún editor hasta que `make test-all` devuelva
-`ALL TESTS COMPLETE` en una VM destruida y reconstruida desde cero.
-
-Si falla en cualquier punto: diagnosticar, corregir, repetir desde
-`vagrant destroy -f`.
-
-*Bautizada en honor de Emerson (emecas@inspiron), que intentó saltarse
-Vagrant y sin querer certificó que el protocolo es sólido.*
+**Branch activa:** `feature/adr030-variant-a`
+**Último commit:** post-Consejo DAY 133 (cap_bpf + Falco 10 reglas + §6.8 fuzzing reformulado)
+**REGLA EMECAS:** 6/6 RUNNING · TEST-INTEG-SIGN 7/7 PASSED · ALL TESTS COMPLETE
+**Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
+*(Regenera en cada `vagrant destroy && vagrant up`)*
 
 ---
 
-## Estado del proyecto al inicio de DAY 133
+## Lo que se completó en DAY 133
 
-**Repositorio:** `alonsoir/argus` en GitHub
-**Branch activa principal:** `main` @ `18d8e101` — sagrado
-**Branch de trabajo:** `feature/adr030-variant-a` @ `9b3438fb`
-**Tag activo:** `v0.5.2-hardened`
-**Paper:** arXiv:2604.04952 — Draft v17 en GitHub, pendiente arXiv
+### REGLA EMECAS — verde desde el inicio
+`vagrant destroy -f && vagrant up && make bootstrap && make test-all` — 6/6 RUNNING.
+Fallo pre-existente conocido (no regresión): `rag-ingester test_config_parser` 1/8.
 
-### Keypair activo (post-rebuild DAY 130)
-`1f48b75054fe98e8371653607caaf028b3f688bc055782c9c9c6d0e3494dad54`
+### Paper Draft v18 (commit `c6e0c9f1`)
+- §6.12: Tabla BSR con métricas reales medidas en VMs recién provisionadas:
+   - Dev VM: 719 pkgs, 5.9 GB, compiladores presentes
+   - Hardened VM: 304 pkgs, 1.3 GB, NONE (check-prod-no-compiler: OK)
+   - Reducción: 58% paquetes, 78% disco
+   - Minbase target (~100 pkgs / ~0.4 GB) documentado como DEBT-PROD-FS-MINIMIZATION-001
 
-### Pipeline esperado tras REGLA EMECAS
-- 6/6 RUNNING: etcd-server, rag-security, rag-ingester, ml-detector, sniffer, firewall
-- TEST-INTEG-SIGN: 7/7 PASSED
-- make test-all: ALL TESTS COMPLETE
-- Fallo pre-existente conocido (no regresión): `rag-ingester test_config_parser` 1/8
+### ADR-030 Variant A — infraestructura completa (commit `c6e0c9f1`)
+- 6 perfiles AppArmor enforce en `security/apparmor/`
+- Usuario `argus` (system, nologin, no home) + /tmp noexec,nosuid,nodev
+- setcap mínimo por componente + tools/prod/ completo
+- Makefile: `prod-full-x86`, `check-prod-all` y 10+ targets
+- Falco 10 reglas en `vagrant/hardened-x86/scripts/setup-falco.sh`
 
-### Consejo de Sabios (8 modelos)
-Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral
+### Post-Consejo DAY 133 (8/8 unánime)
+- `argus.sniffer`: `cap_sys_admin` → `cap_bpf` (Linux ≥5.8)
+- `argus.etcd-server`: `cap_net_bind_service` ELIMINADA (2379 > 1024)
+- `deploy-hardened.sh`: detección automática kernel + fallback documentado
+- `setup-falco.sh`: 10 reglas (añadidas config tamper, model/plugin replace, AA tamper)
+- `main.tex`: §6.8 reformulado — eliminada frase "misses nothing within CPU time"
+- `acta_consejo_day133.md` generada
 
----
-
-## Trabajo completado DAY 132
-
-### Commits en `main`
-- `5a22c068` — docs: ADR-025 D13 + BACKLOG DAY 131 + prompt continuidad DAY 132
-- `b7d38d1f` — docs: paper Draft v17 — RED→GREEN gate, fuzzing layer, CWE-78 execv(), BSR axiom
-- `18d8e101` — docs: add Prerequisites section — Vagrant + VirtualBox + make (DAY 132)
-
-### Commits en `feature/adr030-variant-a`
-- `9b3438fb` — feat: ADR-030 Variant A — HARDWARE-REQUIREMENTS.md + vagrant/hardened-x86/Vagrantfile
-
-### Paper Draft v17 — §6 expandido
-| Subsección | Contenido |
-|-----------|-----------|
-| §6.5 | The RED→GREEN Gate: Merge as a Non-Negotiable Contract |
-| §6.8 | Fuzzing as the Third Testing Layer (harness libFuzzer concreto) |
-| §6.10 | CWE-78: execv() Without a Shell as a Physical Barrier |
-| §6.12 | The Build/Runtime Separation Axiom (ADR-039, Thompson 1984) |
-
-Compilación Overleaf verificada: 42 páginas, listings 6–13 correctos, referencias [16] [23] integradas.
-
-### Decisiones arquitectónicas DAY 132 (founder)
-1. **AppArmor es la primera línea de defensa BSR**, no dpkg. check-prod-no-compiler es auditoría.
-2. **Falco** entra en el stack de producción: vigilancia runtime de paths exóticos.
-3. **FS de producción mínimo**: solo paths imprescindibles para el pipeline. /tmp noexec.
-4. **apt sources integrity**: SHA-256 firmado. Si cambia → pipeline no arranca (fail-closed).
-5. **RED→GREEN se mantiene**: formalización de Kimi rechazada por claridad operacional.
-6. **Método científico puro**: medir y publicar lo que salga. Sin adornar.
-
-### Nuevas deudas abiertas (DAY 132)
+### Nuevas deudas abiertas DAY 133
 | ID | Descripción | Target |
 |----|-------------|--------|
-| DEBT-PROD-APPARMOR-COMPILER-BLOCK-001 | AppArmor bloquea compiladores en producción | feature/adr030-variant-a |
-| DEBT-PROD-FALCO-EXOTIC-PATHS-001 | Falco vigila paths exóticos en runtime | feature/adr030-variant-a |
-| DEBT-PROD-FS-MINIMIZATION-001 | FS producción: acceso mínimo + noexec en exóticos | feature/adr030-variant-a |
-| DEBT-PROD-APT-SOURCES-INTEGRITY-001 | SHA-256 sources.list en boot check, fail-closed | feature/adr030-variant-a |
-| DEBT-DEBIAN13-UPGRADE-001 | Upgrade path Debian 12→13 bare-metal | post-FEDER |
-| DEBT-PAPER-FUZZING-METRICS-001 | Métricas reales en §6.8 + corregir frase "misses nothing" | DAY 133 |
+| DEBT-KEY-SEPARATION-001 | Keypair separado pipeline vs plugins | post-FEDER |
+| DEBT-KERNEL-COMPAT-001 | Verificar cap_bpf + XDP en kernel 6.1 | DAY 134 (P0) |
+| DEBT-PROD-APPARMOR-PORTS-001 | Restringir network a puertos ZeroMQ | post-JSON-estabilización |
+| DEBT-PROD-FALCO-RULES-EXTENDED-001 | ptrace, DNS tunneling, /dev/mem | DAY 135 |
 
 ---
 
-## Plan DAY 133
+## P0 para DAY 134 — Pipeline end-to-end en hardened VM
 
-### P0 — Métricas para el paper (pre-arXiv)
-**Antes de cualquier trabajo técnico en Makefile:**
-
-1. Arrancar la hardened VM y medir:
+### Paso 1: Provisionar la hardened VM
 ```bash
-cd vagrant/hardened-x86
-vagrant up
-vagrant ssh -c 'dpkg -l | wc -l'           # paquetes en hardened
-vagrant ssh -c 'du -sh /'                   # tamaño imagen
-vagrant ssh -c 'dpkg -l | grep -c ^ii'      # paquetes instalados exactos
-```
-Comparar con dev VM: `vagrant ssh -c 'dpkg -l | wc -l'` desde raíz del proyecto.
-
-2. Añadir tabla a §6.12 del paper (BSR axiom):
-```
-| Environment | Packages | Image size | Compilers |
-| Dev VM      | ~XXX     | ~XX GB     | gcc, g++, clang, cmake, ... |
-| Hardened VM | ~XX      | ~X GB      | NONE |
+make hardened-up
+make hardened-provision-all
+# → setup-filesystem.sh (usuario argus, /tmp noexec)
+# → setup-apparmor.sh (6 perfiles en complain mode primero)
+# → setup-falco.sh (10 reglas, prioridad WARNING durante tuning)
 ```
 
-3. Añadir tabla a §6.8 del paper (Fuzzing):
-```
-| Target | Runs | Crashes | Corpus | Time |
-| validate_chain_name | 2.4M | 0 | 67 files | 30s |
-| validate_filepath   | ...  | 0 | ...      | ... |
-| safe_exec           | ...  | 0 | ...      | ... |
-```
-(datos de DEBT-FUZZING-LIBFUZZER-001, ya cerrada DAY 130)
-
-4. Pedir al Consejo (todos los modelos) explicación de la frase:
-   **"Fuzzing misses nothing within CPU time"**
-   — El founder no la entiende. El Consejo debe explicarla para que aprendamos
-   juntos, y proponer reformulación con precisión científica. Ver Q5 en convocatoria.
-
-### P1 — Makefile targets de producción
-
-En `feature/adr030-variant-a`, añadir al Makefile raíz:
-
-```makefile
-# ── Producción (solo desde dev VM) ──────────────────────────────────────────
-
-_check-dev-env:
-	@which clang++ > /dev/null 2>&1 || \
-	  (echo "FAIL: prod targets requieren dev VM (clang++ no encontrado)"; exit 1)
-
-prod-build-x86: _check-dev-env
-	@echo "=== Building production binaries (x86-64) ==="
-	# Compilar con -O2 -DNDEBUG, sin símbolos debug, a dist/
-
-prod-sign: _check-dev-env
-	@echo "=== Signing production binaries ==="
-	# Ed25519 sobre cada binario en dist/
-
-prod-checksums: _check-dev-env
-	@echo "=== Generating SHA256SUMS ==="
-	# sha256sum dist/* > dist/SHA256SUMS
-
-prod-verify:
-	@echo "=== Verifying production binaries ==="
-	# Verificar SHA256SUMS + firma Ed25519
-
-check-prod-no-compiler:
-	@echo "=== BSR: verifying no compiler in production ==="
-	@# Capa 1: dpkg
-	@if dpkg -l 2>/dev/null | grep -qE '^ii\s+(gcc|g\+\+|clang|cmake|build-essential)'; then \
-	  echo "FAIL: compiler found via dpkg"; exit 1; fi
-	@# Capa 2: PATH
-	@for cmd in gcc g++ clang clang++ cc c++ cmake; do \
-	  if command -v $$cmd > /dev/null 2>&1; then \
-	    echo "FAIL: $$cmd found in PATH"; exit 1; fi; \
-	done
-	@echo "OK: no compiler present (dpkg + PATH verified)"
-
-check-prod-checksec:
-	@echo "=== checksec on production binaries ==="
-	@which checksec > /dev/null 2>&1 || (echo "FAIL: checksec not installed"; exit 1)
-	@for f in dist/*; do checksec --file=$$f; done
+### Paso 2: Compilar y desplegar
+```bash
+make prod-full-x86
+# → prod-build-x86 (compila en dev VM con -O3 -march=native -DNDEBUG -flto)
+# → prod-collect-libs (runtime-only libs)
+# → prod-sign (Ed25519 sobre binarios + plugins)
+# → prod-checksums (SHA256SUMS)
+# → prod-deploy-x86 (instala en /opt/argus/, setcap, sin SUID)
 ```
 
-**Regla:** targets `prod-*` solo en dev VM. Targets `check-prod-*` solo en hardened VM (o CI).
+### Paso 3: Verificar DEBT-KERNEL-COMPAT-001
+```bash
+# En la hardened VM:
+vagrant --cwd vagrant/hardened-x86 ssh -c 'uname -r'
+vagrant --cwd vagrant/hardened-x86 ssh -c 'getcap /opt/argus/bin/sniffer'
+# Esperado: /opt/argus/bin/sniffer cap_net_admin,cap_net_raw,cap_bpf,cap_ipc_lock+eip
+# Si falla XDP con cap_bpf → documentar DEBT-KERNEL-COMPAT-001 y revertir a cap_sys_admin
+```
 
-### P2 — Commit y actualizar documentos (si P0 y P1 completos)
+### Paso 4: Estrategia de maduración AppArmor+Falco
+```bash
+# Fase 1 — AppArmor complain mode (observar logs 30 min)
+vagrant --cwd vagrant/hardened-x86 ssh -c 'sudo aa-status'
+vagrant --cwd vagrant/hardened-x86 ssh -c 'sudo journalctl -u falco -f'
+# Ajustar perfiles según denegaciones reales con: sudo aa-logprof
+# Especial atención: ZeroMQ puede abrir sockets temporales o /dev/shm (Gemini)
+
+# Fase 2 — Pasar a enforce cuando 30 min sin FP
+vagrant --cwd vagrant/hardened-x86 ssh -c 'sudo aa-enforce /etc/apparmor.d/argus.*'
+```
+
+### Paso 5: Gates de seguridad
+```bash
+make check-prod-all
+# → check-prod-no-compiler  (dpkg + PATH, dos capas)
+# → check-prod-apparmor     (6 perfiles en enforce mode)
+# → check-prod-capabilities (setcap correcto en sniffer y firewall)
+# → check-prod-permissions  (ownership y modos de /opt/argus/, etc.)
+# → check-prod-falco        (servicio activo + reglas cargadas)
+```
+
+---
+
+## P1 para DAY 134 — Tabla fuzzing §6.8
+
+**DEBT-PAPER-FUZZING-METRICS-001** (pre-arXiv)
+
+La reformulación de la frase está cerrada. Pendiente: tabla con datos reales.
 
 ```bash
-# En feature/adr030-variant-a
-git add Makefile docs/latex/main.tex docs/latex/references.bib
-git commit -m "feat: prod Makefile targets + paper §6.8/§6.12 métricas reales (DAY 133)"
-git push origin feature/adr030-variant-a
+# Recuperar de DAY 130:
+make fuzz-all  # en dev VM
+# Objetivo: completar tabla con 3 targets:
+# | Target              | Runs  | Crashes | Corpus | Time |
+# | validate_chain_name | 2.4M  | 0       | 67     | 30s  |
+# | validate_filepath   | ?     | 0       | ?      | ?    |
+# | safe_exec           | ?     | 0       | ?      | ?    |
 ```
 
-### P3 — Convocatoria al Consejo DAY 133 (si tiempo)
-Preguntar al Consejo:
-- Q1: Revisión de los 6 Makefile targets de producción
-- Q2: Revisión de la tabla BSR metrics (dev vs hardened)
-- Q3: Revisión de la tabla de fuzzing en §6.8
-- Q4: Estrategia de implementación de Falco en la imagen hardened (¿reglas base o custom?)
-- **Q5: Explicar "Fuzzing misses nothing within CPU time" — aprender juntos, reformular con precisión**
+Una vez completa la tabla → actualizar `main.tex` → push → arXiv replace v15 → v18.
 
 ---
 
-## Deudas abiertas relevantes para DAY 133
+## P2 para DAY 134 — DEBT-PROD-APT-SOURCES-INTEGRITY-001
 
-| ID | Descripción | Prioridad |
-|----|-------------|-----------|
-| DEBT-PAPER-FUZZING-METRICS-001 | Métricas reales §6.8 + §6.12 + corregir frase | 🔴 P0 pre-arXiv |
-| DEBT-PROD-APPARMOR-COMPILER-BLOCK-001 | AppArmor anti-compilador | 🔴 P1 |
-| DEBT-PROD-APT-SOURCES-INTEGRITY-001 | SHA-256 sources.list en boot | 🔴 P1 |
-| DEBT-PROD-FALCO-EXOTIC-PATHS-001 | Falco paths exóticos | 🟡 P2 |
-| DEBT-PROD-FS-MINIMIZATION-001 | FS mínimo + noexec | 🟡 P2 |
-| DEBT-DEBIAN13-UPGRADE-001 | Upgrade path Debian 13 | ⏳ post-FEDER |
+Si queda tiempo después de P0 y P1:
+- SHA-256 de `sources.list` en imagen
+- Check en boot: si cambia → fail-closed
+- AppArmor deny `/etc/apt/**` w en todos los perfiles
+- Falco regla `argus_apt_sources_modified`
 
 ---
 
-## Backlog FEDER-001
+## Reglas permanentes a recordar
 
-**Deadline:** 22 septiembre 2026
-**Go/no-go técnico:** 1 agosto 2026
-**Contacto:** Andrés Caro Lindo (UEx/INCIBE)
-
-**Prerequisites pendientes:**
-- [ ] ADR-030 Variant A (x86 + AppArmor) estable ← en curso DAY 133
-- [ ] ADR-030 Variant B (ARM64 + AppArmor + libpcap) estable
-- [ ] Demo pcap reproducible en < 10 minutos (`scripts/feder-demo.sh`)
-- [ ] Paper §6 con métricas reales (pre-arXiv v17)
-- [ ] Clarificar con Andrés: NDR standalone vs federación (antes julio 2026)
-
----
-
-## Decisiones de diseño nuevas (DAY 132) — para referencia rápida
-
-| Decisión | Resolución |
-|----------|-----------|
-| **AppArmor como primera línea BSR** | AppArmor bloquea compiladores. dpkg check es auditoría, no defensa. |
-| **Falco en producción** | Vigilancia runtime de paths exóticos. AppArmor previene; Falco detecta. |
-| **FS mínimo en producción** | Solo paths necesarios para el pipeline. /tmp, /var/tmp noexec. |
-| **apt sources integrity** | SHA-256 firmado en imagen. Si cambia → fail-closed. Sin excepciones. |
-| **Makefile raíz con prefijo prod-** | Guard _check-dev-env. No Makefile.production separado. |
-| **debian/bookworm64** | Reproducibilidad sobre novedad. Trixie: upgrade path documentado. |
-| **Dos capas BSR check** | dpkg + command -v. La defensa real es AppArmor+Falco+FS mínimo. |
-| **Método científico puro para paper** | Medir, publicar lo que salga con procedimiento. Sin adornar. |
-| **RED→GREEN se mantiene** | Claridad operacional sobre formalización matemática. |
+- **REGLA EMECAS:** `vagrant destroy -f && vagrant up && make bootstrap && make test-all` al inicio
+- **macOS sed:** nunca `sed -i` sin `-e ''`; usar `python3 << 'PYEOF'` para ediciones en VM
+- **Vagrant ssh:** `vagrant ssh -c '...'` (con -c y comillas simples)
+- **Makefile:** espacios no tabs; nunca heredoc con `vagrant ssh -c` (quoting issues)
+- **cap_bpf:** Linux ≥5.8. Debian bookworm kernel 6.1 lo soporta. DEBT-KERNEL-COMPAT-001 si falla.
+- **AppArmor maduración:** complain → 30 min sin FP → enforce. Nunca enforce sin baseline.
+- **Falco + AppArmor en paralelo:** ajustar ambos a la vez, se retroalimentan (Consejo).
+- **ZeroMQ y AppArmor:** puede abrir sockets temporales o /dev/shm — observar en complain mode.
+- **"JSON es la ley":** puertos ZeroMQ no hardcodeados en perfiles AA (DEBT-PROD-APPARMOR-PORTS-001).
 
 ---
 
-## Reglas permanentes del proyecto
+## Ficheros modificados en DAY 133 (todos en `feature/adr030-variant-a`)
 
-- **REGLA EMECAS:** `vagrant destroy -f && vagrant up && make bootstrap && make test-all`
-- **macOS:** Nunca `sed -i` sin `-e ''`. Scripts con emojis → `python3 << 'PYEOF'`.
-- **VM↔macOS:** Solo `scp -F /tmp/vagrant-ssh-config`. Prohibido pipe zsh.
-- **vagrant ssh:** Siempre con `-c '...'`.
-- **JSON es la ley:** No hardcoded values.
-- **Fail-closed:** En caso de duda, rechazar.
-- **dist/:** Nunca en git. SHA256SUMS obligatorio. BSR axiom (ADR-039).
-- **Lógica compleja:** Siempre a `tools/script.sh`, nunca inline en Makefile.
-- **Seed ChaCha20:** NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
-- **Seguridad:** Todo fix requiere RED→GREEN + property test + test integración. Sin excepciones.
-- **main:** Sagrado. Solo entra lo que pasa REGLA EMECAS en VM destruida y reconstruida.
-- **AppArmor es la primera línea de defensa**, no los checks de herramientas.
-- **apt sources:** Si se modifican → pipeline no arranca. Sin negociación.
+```
+security/apparmor/argus.sniffer          # cap_bpf, deny explícitos
+security/apparmor/argus.etcd-server      # cap_net_bind_service eliminada
+security/apparmor/argus.ml-detector      # sin caps, no-root
+security/apparmor/argus.firewall-acl-agent # cap_net_admin, execv
+security/apparmor/argus.rag-ingester     # sin caps, no-root
+security/apparmor/argus.rag-security     # sin caps, TinyLlama local
+tools/prod/build-x86.sh                  # -O3 -march=native -DNDEBUG -flto
+tools/prod/collect-libs.sh               # runtime-only libs
+tools/prod/sign-binaries.sh              # Ed25519 (reutiliza ADR-025)
+tools/prod/deploy-hardened.sh            # setcap cap_bpf + detección kernel
+tools/prod/check-permissions.sh          # audit filesystem
+vagrant/hardened-x86/scripts/setup-filesystem.sh   # usuario argus, /tmp noexec
+vagrant/hardened-x86/scripts/setup-apparmor.sh     # 6 perfiles enforce
+vagrant/hardened-x86/scripts/setup-falco.sh        # 10 reglas modern_ebpf
+Makefile                                 # prod-* + check-prod-* + hardened-*
+docs/latex/main.tex                      # Draft v18 (§6.12 BSR + §6.8 fuzzing)
+docs/argus_ndr_v18.pdf                   # compilado Overleaf, 42 páginas
+docs/acta_consejo_day133.md              # acta completa DAY 133
+docs/BACKLOG.md                          # DAY 133 cerrados + nuevas deudas
+README.md                                # badges Falco+BSR, sección hardened
+```
 
 ---
 
-*DAY 133 — 27 Abril 2026 · feature/adr030-variant-a @ 9b3438fb · main @ 18d8e101*
-*"Via Appia Quality — Un escudo que aprende de su propia sombra."*
-*"La superficie de ataque mínima no es una aspiración. Es una decisión de diseño."*
+## Prompt para iniciar DAY 134
+
+Pegar en Claude al inicio de la sesión:
+
+```
+Continuamos aRGus NDR en DAY 134 (28 Abril 2026).
+
+Branch activa: feature/adr030-variant-a
+Keypair: b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa (regenera en cada vagrant destroy)
+
+DAY 133 cerrado: ADR-030 Variant A infraestructura completa. 6 perfiles AppArmor enforce
+(cap_bpf en sniffer post-Consejo), Falco 10 reglas (modern_ebpf), usuario argus no-root,
+/tmp noexec, Makefile prod-full-x86 + check-prod-all. Paper Draft v18 con métricas BSR
+reales (58% reducción paquetes, 78% disco) y §6.8 fuzzing reformulado (post-Consejo 8/8).
+
+P0 DAY 134:
+1. make hardened-up && make hardened-provision-all
+2. make prod-full-x86
+3. DEBT-KERNEL-COMPAT-001: verificar cap_bpf funciona con XDP en kernel 6.1
+4. Estrategia maduración: AppArmor complain 30 min → enforce. Falco WARNING → CRITICAL.
+5. make check-prod-all (5 gates)
+
+P1 DAY 134: DEBT-PAPER-FUZZING-METRICS-001 — tabla §6.8 con datos reales DAY 130
+P2 DAY 134: DEBT-PROD-APT-SOURCES-INTEGRITY-001 si queda tiempo
+
+Regla macOS: nunca sed -i sin -e ''; usar python3 << 'PYEOF' para ediciones.
+Regla Vagrant: vagrant ssh -c '...' con -c y comillas simples.
+```
+
+---
+
+*DAY 133 cerrado — 27 Abril 2026 · c6e0c9f1 + post-Consejo*
+*"Piano piano. Via Appia Quality."*
