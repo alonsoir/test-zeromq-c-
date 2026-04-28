@@ -1,3 +1,4 @@
+#include <tunables/global>
 # /etc/apparmor.d/argus.firewall-acl-agent
 # AppArmor profile para aRGus firewall-acl-agent.
 # Capability: net_admin (iptables/ipset).

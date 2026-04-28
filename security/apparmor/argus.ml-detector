@@ -1,3 +1,4 @@
+#include <tunables/global>
 # /etc/apparmor.d/argus.ml-detector
 # AppArmor profile para aRGus ml-detector.
 # Sin capabilities especiales — corre como argus (no-root real).

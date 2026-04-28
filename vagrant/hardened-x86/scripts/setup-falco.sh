@@ -18,14 +18,16 @@ echo "╚═══════════════════════�
 if command -v falco &>/dev/null; then
     echo "  ✅ Falco ya instalado: $(falco --version 2>/dev/null | head -1)"
 else
-    curl -fsSL https://falco.org/repo/falcosecurity-packages.asc | \
-        gpg --dearmor -o /usr/share/keyrings/falco-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/falco-archive-keyring.gpg] \
-https://download.falco.org/packages/deb stable main" | \
-        tee /etc/apt/sources.list.d/falcosecurity.list
-    apt-get update -qq
-    FALCO_FRONTEND=noninteractive apt-get install -y --no-install-recommends falco
-    echo "  ✅ Falco instalado"
+    FALCO_DEB=$(ls /vagrant/falco_*.deb 2>/dev/null | head -1)
+    if [ -z "$FALCO_DEB" ]; then
+        echo "  ❌ ERROR: falco_*.deb not found in /vagrant"
+        echo "  Run from dev VM: sudo apt-get download falco"
+        exit 1
+    fi
+    echo "  📦 Instalando desde $FALCO_DEB (offline, ADR-030 BSR)"
+    FALCO_FRONTEND=noninteractive FALCO_DRIVER_CHOICE=modern_ebpf dpkg -i "$FALCO_DEB" || \
+        apt-get install -f -y --no-install-recommends
+    echo "  ✅ Falco instalado (offline)"
 fi
 
 # ── Configurar modern_ebpf ────────────────────────────────────────────────────
@@ -62,6 +64,13 @@ cat > "${FALCO_RULES}" << 'FALCO_RULES_EOF'
 - macro: argus_provisioning_processes
   condition: proc.name in (bash, sh, provision, ansible, vagrant, setup-filesystem, setup-apparmor, setup-falco, deploy-hardened)
 
+# ── Macros estándar Falco (inline — no depender de falco_rules.yaml) ─────────
+- macro: open_write
+  condition: (evt.type in (open,openat,openat2) and evt.is_open_write=true and fd.typechar=f and fd.num>=0)
+- macro: open_read
+  condition: (evt.type in (open,openat,openat2) and evt.is_open_read=true and fd.typechar=f and fd.num>=0)
+- macro: spawned_process
+  condition: evt.type=execve
 # ── Regla 1: Escritura fuera del patrón ───────────────────────────────────────
 - rule: argus_unexpected_file_open
   desc: Un componente de aRGus escribe en una ruta fuera de su patrón

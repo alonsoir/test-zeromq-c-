@@ -1650,7 +1650,7 @@ _check-dev-env:
 
 # ── Guard: hardened VM levantada ─────────────────────────────────────────────
 _check-hardened-up:
-	@vagrant --cwd $(HARDENED_X86_DIR) status 2>/dev/null | grep -q running || \
+	@cd $(HARDENED_X86_DIR) && vagrant status 2>/dev/null | grep -q running || \
 	  (echo "FAIL: hardened-x86 VM no está corriendo. Ejecuta: make hardened-up"; exit 1)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1732,7 +1732,7 @@ prod-checksums: _check-dev-env
 
 prod-verify:
 	@echo "=== Verifying production artifacts ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'bash /vagrant/tools/prod/verify-artifacts.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'bash /vagrant/tools/prod/verify-artifacts.sh'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Deploy a hardened VM
@@ -1741,7 +1741,7 @@ prod-verify:
 
 prod-deploy-x86: _check-hardened-up
 	@echo "=== Deploying to hardened-x86 VM ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/tools/prod/deploy-hardened.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/tools/prod/deploy-hardened.sh'
 	@echo "OK: pipeline desplegado en /opt/argus/"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1763,15 +1763,15 @@ prod-full-x86: prod-build-x86 prod-collect-libs prod-sign prod-checksums prod-de
 
 hardened-setup-filesystem: _check-hardened-up
 	@echo "=== Setting up filesystem (user, dirs, permissions) ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-filesystem.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-filesystem.sh'
 
 hardened-setup-apparmor: _check-hardened-up
 	@echo "=== Installing AppArmor profiles (6 components) ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-apparmor.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-apparmor.sh'
 
 hardened-setup-falco: _check-hardened-up
 	@echo "=== Installing and configuring Falco ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-falco.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-falco.sh'
 
 hardened-provision-all: hardened-setup-filesystem hardened-setup-apparmor hardened-setup-falco
 	@echo "✅ Provisioning completo — ejecuta make check-prod-all"
@@ -1784,7 +1784,7 @@ hardened-provision-all: hardened-setup-filesystem hardened-setup-apparmor harden
 # BSR gate: cero compiladores (dpkg + PATH, dos capas)
 check-prod-no-compiler: _check-hardened-up
 	@echo "=== BSR: verifying no compiler in production ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '\
 	  FAIL=0; \
 	  if dpkg -l 2>/dev/null | grep -qE "^ii\s+(gcc|g\+\+|clang|clang-[0-9]+|cmake|build-essential)"; then \
 	    echo "FAIL (dpkg): compiler package found"; FAIL=1; \
@@ -1799,7 +1799,7 @@ check-prod-no-compiler: _check-hardened-up
 # AppArmor: 6 perfiles en modo enforce
 check-prod-apparmor: _check-hardened-up
 	@echo "=== AppArmor: verifying 6 profiles in enforce mode ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '\
 	  FAIL=0; \
 	  for comp in etcd-server sniffer ml-detector firewall-acl-agent rag-ingester rag-security; do \
 	    STATUS=$$(sudo aa-status 2>/dev/null | grep -c "argus-$$comp"); \
@@ -1814,7 +1814,7 @@ check-prod-apparmor: _check-hardened-up
 # Capabilities: sniffer y firewall-acl-agent tienen los caps mínimos
 check-prod-capabilities: _check-hardened-up
 	@echo "=== Linux Capabilities: verifying setcap on sniffer and firewall ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '\
 	  FAIL=0; \
 	  SNIFFER_CAPS=$$(getcap /opt/argus/bin/sniffer 2>/dev/null); \
 	  if echo "$$SNIFFER_CAPS" | grep -q "cap_net_admin,cap_net_raw,cap_sys_admin+eip"; then \
@@ -1833,12 +1833,12 @@ check-prod-capabilities: _check-hardened-up
 # Permisos: ownership argus:argus, modos correctos
 check-prod-permissions: _check-hardened-up
 	@echo "=== Filesystem permissions: /opt/argus/, /etc/ml-defender/, /var/log/argus/ ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c 'bash /vagrant/tools/prod/check-permissions.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'bash /vagrant/tools/prod/check-permissions.sh'
 
 # Falco: servicio activo y reglas cargadas
 check-prod-falco: _check-hardened-up
 	@echo "=== Falco: verifying service and rules ==="
-	@vagrant --cwd $(HARDENED_X86_DIR) ssh -c '\
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '\
 	  sudo systemctl is-active falco > /dev/null 2>&1 || \
 	    (echo "FAIL: falco service not running"; exit 1); \
 	  echo "OK: falco active"; \

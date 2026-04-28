@@ -1,3 +1,4 @@
+#include <tunables/global>
 # /etc/apparmor.d/argus.rag-security
 # AppArmor profile para aRGus rag-security (TinyLlama local).
 # Sin capabilities especiales. Solo lectura de FAISS index + query HTTP.

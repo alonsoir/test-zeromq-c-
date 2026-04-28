@@ -1,3 +1,4 @@
+#include <tunables/global>
 # /etc/apparmor.d/argus.rag-ingester
 # AppArmor profile para aRGus rag-ingester.
 # Sin capabilities especiales. Escribe en SQLite + FAISS index.

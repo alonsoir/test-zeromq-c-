@@ -564,6 +564,20 @@ BASHRC_EOF
       fi
 
       echo "✅ PROVISIONING COMPLETED SUCCESSFULLY!"
+      # Falco .deb — descargado en dev VM para instalar offline en hardened VM (ADR-030 BSR)
+      FALCO_DEB_DEST="/vagrant/falco_$(apt-cache show falco 2>/dev/null | grep ^Version | head -1 | awk '{print $2}')_amd64.deb"
+      if ls /vagrant/falco_*.deb 1>/dev/null 2>&1; then
+        echo "✅ Falco .deb ya presente en /vagrant"
+      else
+        echo "📦 Descargando Falco .deb para hardened VM..."
+        curl -fsSL https://falco.org/repo/falcosecurity-packages.asc | \
+          gpg --dearmor -o /usr/share/keyrings/falco-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/falco-archive-keyring.gpg] https://download.falco.org/packages/deb stable main" | \
+          tee /etc/apt/sources.list.d/falcosecurity.list
+        apt-get update -qq
+        cd /vagrant && apt-get download falco
+        echo "✅ Falco .deb descargado en /vagrant"
+      fi
     DEPENDENCIES_EOF
 
     # ════════════════════════════════════════════════════════════════════════

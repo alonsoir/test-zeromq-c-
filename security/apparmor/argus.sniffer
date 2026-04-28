@@ -1,3 +1,4 @@
+#include <tunables/global>
 # /etc/apparmor.d/argus.sniffer
 # AppArmor profile para aRGus sniffer (eBPF/XDP dual-NIC).
 #
