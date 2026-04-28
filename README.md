@@ -36,9 +36,9 @@
 
 ## Estado actual — DAY 134 (2026-04-28)
 
-**Tag activo:** `v0.5.2-hardened` | **Commit:** `c6e0c9f1` | **Branch activa:** `feature/adr030-variant-a`
+**Tag activo:** `v0.5.2-hardened` | **Commit:** `2e9a5b39` | **Branch activa:** `feature/adr030-variant-a`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
-**Paper:** arXiv:2604.04952 · Draft v18 en GitHub (pre-arXiv, pendiente tabla fuzzing §6.8)
+**Paper:** arXiv:2604.04952 · Draft v18 COMPLETO (tabla fuzzing §6.8 real, pre-arXiv replace pendiente)
 **ADR-040:** ML Plugin Retraining Contract — PROPUESTO v2 (Consejo 8/8, 17 enmiendas)
 **ADR-041:** Hardware Acceptance Metrics FEDER — PROPUESTO (Consejo 8/8)
 
@@ -47,20 +47,30 @@
 - `make test-all`: ALL TESTS COMPLETE
 - TEST-PROVISION-1: 8/8 OK · TEST-INTEG-SIGN: 7/7 PASSED
 
+### Hitos DAY 134 🎉
+- **Pipeline E2E hardened VM — check-prod-all PASSED** — 5/5 gates verdes: BSR, AppArmor 6/6, cap_bpf, permisos, Falco 10 reglas. 15 problemas de integración resueltos.
+- **DEBT-KERNEL-COMPAT-001 CERRADO** — `cap_bpf` verificado en kernel 6.1 con XDP.
+- **Draft v18 completo** — tabla fuzzing §6.8 con datos reales: 3 targets, 0 crashes, análisis delta exec/s.
+- **ADR-040 + ADR-041** — Contratos ML retraining + métricas hardware FEDER. Consejo 8/8.
+- **Consejo síntesis DAY 134** — 7 decisiones vinculantes para DAY 135.
+
 ### Hitos DAY 133
-- **Paper Draft v18** — tabla BSR §6.12 con métricas reales. Reformulación §6.8 fuzzing post-Consejo (eliminada frase incorrecta). Compilado Overleaf, 42 páginas.
-- **ADR-030 Variant A — infraestructura completa** — 6 perfiles AppArmor enforce, usuario `argus` no-root, `cap_bpf` en lugar de `cap_sys_admin`, Falco 10 reglas, `/tmp` noexec.
+- **Paper Draft v18** — tabla BSR §6.12 con métricas reales. Reformulación §6.8 fuzzing post-Consejo.
+- **ADR-030 Variant A — infraestructura completa** — 6 perfiles AppArmor enforce, `cap_bpf`, Falco 10 reglas.
 - **Makefile prod-* targets** — `prod-full-x86`, `check-prod-all` y 10+ targets de producción.
-- **Consejo 8/8 DAY 133** — `cap_bpf` unánime, 3 reglas Falco nuevas, keypairs post-FEDER, reformulación fuzzing.
-- **Acta del Consejo** — `docs/acta_consejo_day133.md`.
+- **Consejo 8/8 DAY 133** — `cap_bpf` unánime, 3 reglas Falco nuevas, keypairs post-FEDER.
 
 ### Deuda técnica abierta
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
 | DEBT-PROD-APT-SOURCES-INTEGRITY-001 | 🔴 Crítica | feature/adr030-variant-a |
-| DEBT-PAPER-FUZZING-METRICS-001 | 🟡 Media | DAY 134 (tabla completa) |
-| DEBT-KERNEL-COMPAT-001 | 🟡 Media | DAY 134 (verificar cap_bpf+XDP) |
+| DEBT-PAPER-FUZZING-METRICS-001 | ✅ CERRADO | DAY 134 |
+| DEBT-KERNEL-COMPAT-001 | ✅ CERRADO | DAY 134 |
+| DEBT-EMECAS-HARDENED-001 | 🔴 Crítica | DAY 135 (make hardened-full) |
+| DEBT-VENDOR-FALCO-001 | 🟡 Media | DAY 135 (dist/vendor/CHECKSUMS) |
+| DEBT-SEEDS-DEPLOY-001 | 🟡 Media | DAY 135 (prod-deploy-seeds) |
+| DEBT-CONFIDENCE-SCORE-001 | 🔴 Crítica | DAY 135 (prerequisito IPW) |
 | DEBT-PROD-FALCO-RULES-EXTENDED-001 | 🟡 Media | DAY 135 |
 | DEBT-KEY-SEPARATION-001 | 🟡 Media | post-FEDER |
 | DEBT-PROD-APPARMOR-PORTS-001 | 🟢 Baja | post-JSON-estabilización |
@@ -70,7 +80,7 @@
 | DEBT-ADR041-001..006 | ⏳ pre-FEDER | ADR-041 HW Acceptance Metrics (6 tareas — ver BACKLOG.md) |
 
 ### Próxima frontera
-- **DAY 134** — primer pipeline end-to-end en hardened VM: `make hardened-provision-all → prod-full-x86 → check-prod-all`
+- **DAY 135** — `make hardened-full` (EMECAS sagrado desde cero) · DEBT-PROD-APT-SOURCES-INTEGRITY-001 · dist/vendor/CHECKSUMS · confidence_score verificación · arXiv replace v15→v18
 - **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
 
 ---
@@ -202,6 +212,10 @@ vagrant destroy -f && vagrant up && make bootstrap && make test-all
 ### Hardened VM (ADR-030 Variant A)
 
 ```bash
+# EMECAS sagrado (reproducibilidad total — para demo FEDER y validación)
+make hardened-full            # destroy → up → provision → build → deploy → check
+
+# Workflow alternativo (iteración rápida durante desarrollo)
 make hardened-up
 make hardened-provision-all   # filesystem + AppArmor + Falco
 make prod-full-x86            # build → sign → checksums → deploy
@@ -232,15 +246,24 @@ make check-prod-all           # 5 security gates
 ### ✅ DONE — DAY 124–130
 - [x] ADR-037 safe_path · v0.5.2-hardened · CWE-78 cerrado · libFuzzer 2.4M runs · REGLA EMECAS
 
-### 🔜 NEXT — DAY 134: pipeline end-to-end en hardened VM
+### ✅ DONE — DAY 134 (28 Apr 2026) — Pipeline E2E hardened + ADR-040/041 🎉
+- [x] `make check-prod-all` PASSED — 5/5 gates verdes en hardened VM
+- [x] DEBT-KERNEL-COMPAT-001 CERRADO — cap_bpf + XDP en kernel 6.1 ✅
+- [x] DEBT-PAPER-FUZZING-METRICS-001 CERRADO — tabla §6.8 con datos reales ✅
+- [x] Draft v18 completo — 42 páginas, listo para arXiv replace
+- [x] ADR-040 ML Retraining Contract (8/8, 17 enmiendas) + ADR-041 FEDER HW Metrics (8/8)
+
+### 🔜 NEXT — DAY 135: EMECAS hardened + apt sources + arXiv
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 | `make hardened-provision-all → prod-full-x86 → check-prod-all` |
-| 🔴 P0 | DEBT-KERNEL-COMPAT-001 — verificar cap_bpf + XDP en kernel 6.1 |
-| 🔴 P0 | DEBT-PAPER-FUZZING-METRICS-001 — tabla completa §6.8 con datos DAY 130 |
-| 🟡 P1 | DEBT-PROD-APT-SOURCES-INTEGRITY-001 — SHA-256 sources.list fail-closed |
-| 🟡 P2 | DEBT-PROD-FALCO-RULES-EXTENDED-001 — ptrace, DNS tunneling, /dev/mem |
+| 🔴 P0 | `make hardened-full` desde VM destruida — EMECAS sagrado (Kimi/Consejo D6) |
+| 🔴 P0 | DEBT-PROD-APT-SOURCES-INTEGRITY-001 — SHA-256 sources.list fail-closed (Mistral D7) |
+| 🔴 P0 | DEBT-CONFIDENCE-SCORE-001 — verificar confidence_score en ml-detector (prerequisito IPW) |
+| 🟡 P1 | DEBT-VENDOR-FALCO-001 — dist/vendor/CHECKSUMS + make vendor-download |
+| 🟡 P1 | DEBT-SEEDS-DEPLOY-001 — make prod-deploy-seeds + WARNs → INFO |
+| 🟡 P2 | arXiv replace v15 → v18 |
+| 🟢 P3 | DEBT-PROD-FALCO-RULES-EXTENDED-001 — ptrace, DNS tunneling, /dev/mem |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
@@ -274,7 +297,8 @@ Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests
 - ✅ DAY 132: **Paper Draft v17 · HARDWARE-REQUIREMENTS · vagrant/hardened-x86 · Consejo 8/8** 🎉
 - ✅ DAY 133: **ADR-030 Variant A — cap_bpf · AppArmor 6/6 · Falco 10 reglas · Paper v18** 🎉
 - ✅ DAY 134: **ADR-040 ML Retraining Contract (8/8, 17 enmiendas) · ADR-041 FEDER HW Metrics (8/8)** 🎉
-- 🔜 DAY 134: **Pipeline E2E en hardened VM · check-prod-all verde**
+- ✅ DAY 134: **Pipeline E2E hardened · check-prod-all PASSED · Draft v18 completo · ADR-040+041** 🎉
+- 🔜 DAY 135: **make hardened-full EMECAS · apt sources integrity · arXiv replace v15→v18**
 
 ---
 

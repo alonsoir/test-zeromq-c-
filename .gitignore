@@ -240,3 +240,4 @@ dist/
 */build-prod/
 */build-production/
 dist/
+firewall-acl-agent/fuzz/corpus/

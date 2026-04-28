@@ -30,6 +30,10 @@
 - **REGLA PERMANENTE (DAY 129 — Consejo 8/8 RULE-SCP-VM-001):** Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` o `vagrant scp`. PROHIBIDO pipe zsh — trunca a 0 bytes silenciosamente.
 - **PROTOCOLO CANÓNICO (DAY 130 — REGLA EMECAS):** Toda sesión de desarrollo comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Sin excepciones.
 - **REGLA PERMANENTE (DAY 133 — Consejo 8/8):** `cap_sys_admin` está prohibida en imágenes de producción si el kernel es ≥5.8. Usar `cap_bpf` para operaciones eBPF. Documentar fallback con DEBT-KERNEL-COMPAT-001 si necesario.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** `make hardened-full` es el EMECAS sagrado de la hardened VM — siempre incluye `vagrant destroy -f`. Para iteración de desarrollo usar `make hardened-redeploy` (sin destroy). Los gates `check-prod-all` se ejecutan siempre en ambos modos.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** Las semillas criptográficas NO se transfieren en el procedimiento EMECAS. La hardened VM arranca sin seeds. Target `prod-deploy-seeds` explícito para el momento del deploy real. Los WARNs de `seed.bin no existe` en `check-prod-permissions` son estado correcto por diseño.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** Falco .deb y artefactos binarios de terceros van en `dist/vendor/` (gitignored). El hash SHA-256 se committea en `dist/vendor/CHECKSUMS`. `make vendor-download` descarga y verifica. Si hash no coincide → abort.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** DEBT-ADR040-002 (`confidence_score` en ml-detector) es prerequisito bloqueante de DEBT-ADR040-006 (IPW). No implementar IPW sin verificar primero que el campo existe y varía en runtime.
 
 ---
 
@@ -40,6 +44,30 @@
 | **aRGus-dev** | ✅ Activa | x86-debug, imagen Vagrant completa. Para desarrollo diario. |
 | **aRGus-production** | 🟡 En construcción | x86-apparmor + arm64-apparmor. Debian optimizado. Para hospitales, escuelas, municipios. |
 | **aRGus-seL4** | ⏳ No iniciada | Apéndice científico. Kernel seL4, libpcap. Branch independiente. |
+
+---
+
+## ✅ CERRADO DAY 134
+
+### Pipeline E2E en hardened VM — check-prod-all PASSED
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** Primer pipeline end-to-end en hardened VM con 5/5 gates verdes. 15 problemas de integración resueltos (vagrant --cwd, AppArmor tunables/global, Falco offline via .deb, macros inline Falco 0.43, cmake flags, pipeline-build PROFILE=production, firewall-build faltante en pipeline-build, prod-sign PEM canónico, ownership root:argus, getcap path, check caps post-Consejo, check-prod-falco API 0.43, permisos sudo).
+- **Commits:** `f256e6f0` + `2e9a5b39`
+
+### DEBT-KERNEL-COMPAT-001
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** `cap_bpf` funciona correctamente con XDP en kernel 6.1.0-44-amd64 (Debian bookworm). `sniffer: cap_net_admin,cap_net_raw,cap_ipc_lock,cap_bpf=eip` — verificado en hardened VM.
+- **Commit:** `2e9a5b39`
+
+### DEBT-PAPER-FUZZING-METRICS-001
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** Tabla §6.8 con datos reales de tres campañas libFuzzer (DAY 130). `validate_chain_name`: 2.4M runs, 0 crashes, corpus 67, ~80K exec/s. `safe_exec`: 2.6M runs, 0 crashes, corpus 37, 42K exec/s. `validate_filepath`: 282K runs, 0 crashes, corpus 111, 4.6K exec/s. Análisis delta exec/s documentado. Paper actualizado a Draft v18.
+- **Commit:** post-`2e9a5b39`
+
+### ADR-040 + ADR-041 — Integración en BACKLOG + README
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** ADR-040 ML Plugin Retraining Contract v2 (8/8, 17 enmiendas) + ADR-041 Hardware Acceptance Metrics FEDER (8/8) integrados en BACKLOG.md y README.md. 25 ficheros, 4648 inserciones.
+- **Commit:** `87680d83`
 
 ---
 
@@ -239,6 +267,65 @@ Reglas Falco propuestas en Consejo DAY 133 no adoptadas: ptrace (Gemini), DNS tu
 **Nota DeepSeek:** Temperatura ARM ≤75°C sin ventilador — gate no negociable para armarios hospitalarios 24/7.
 **Tolerancias ML:** x86 TOLERANCE=0.0000 · ARM TOLERANCE=0.0005 (NEON vs AVX2).
 
+---
+
+### DEBT-EMECAS-HARDENED-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🔴 Crítica | **Bloqueante:** Sí | **Target:** DAY 135
+**Origen:** Consejo síntesis 8/8 DAY 134
+
+Implementar `make hardened-full` como EMECAS sagrado de la hardened VM:
+- Fail-fast obligatorio (`set -e`)
+- Siempre incluye `vagrant destroy -f` al inicio
+- Gates `check-prod-all` siempre completos, nunca cacheados
+- Target paralelo `make hardened-redeploy` (sin destroy, para iteración en desarrollo de perfiles AppArmor/Falco)
+- Documentar en `docs/EMECAS-hardened.md`: cuándo usar cada target
+
+**Test de cierre:** `make hardened-full` desde VM destruida → check-prod-all PASSED en <45 min. Segunda ejecución de `make hardened-full` también PASSED (reproducibilidad).
+
+---
+
+### DEBT-VENDOR-FALCO-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 135
+**Origen:** Consejo síntesis 8/8 DAY 134
+
+Formalizar gestión de artefactos binarios de terceros:
+- Directorio `dist/vendor/` gitignored
+- `dist/vendor/CHECKSUMS` committeado con SHA-256 de cada artefacto
+- `make vendor-download` descarga y verifica hash — si no coincide → abort
+- Falco .deb actual (`falco_0.43.1_amd64.deb`) mover a `dist/vendor/`
+- Documentar en `docs/VENDOR-ARTIFACTS.md`
+
+**Test de cierre:** `make vendor-download` en repo limpio descarga y verifica Falco .deb. Hash incorrecto → exit 1.
+
+---
+
+### DEBT-SEEDS-DEPLOY-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 135
+**Origen:** Consejo síntesis 7/8 DAY 134
+
+Crear target `make prod-deploy-seeds` para transferencia explícita de semillas desde dev VM a hardened VM en el momento del deploy real:
+- Usar `scp -F vagrant-ssh-config` (REGLA PERMANENTE DAY 129)
+- Permisos `0400 argus:argus` en destino
+- Convertir WARNs de `seed.bin no existe` en `check-prod-permissions` a INFO documentados
+- La ausencia de seeds en EMECAS es estado correcto por diseño
+
+**Test de cierre:** `make prod-deploy-seeds` → seeds en `/etc/ml-defender/*/seed.bin` con permisos correctos → `check-prod-permissions` sin WARNs.
+
+---
+
+### DEBT-CONFIDENCE-SCORE-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🔴 Crítica | **Bloqueante:** Sí (prerequisito ADR-040 Regla 4) | **Target:** DAY 135
+**Origen:** Consejo síntesis 8/8 DAY 134
+
+Verificar que ml-detector emite `confidence_score ∈ [0,1]` en salida ZeroMQ antes de implementar IPW (DEBT-ADR040-006):
+- **Paso 1 — Inspección estática:** `scripts/check-confidence-score.sh` — verifica campo en `.proto` y asignación en código fuente
+- **Paso 2 — Test de integración:** `tests/integration/test_confidence_score.py` — captura mensaje ZeroMQ real con golden pcap determinista, verifica presencia + rango + variabilidad (no constante entre benign/attack)
+- Si el campo no existe → DEBT-ADR040-002 abierto, IPW bloqueado
+- Si el campo existe pero es constante → bug de implementación, requiere fix antes de IPW
+
+**Test de cierre:** Ambos scripts pasan. Score varía entre flows benignos y maliciosos. DEBT-ADR040-002 marcado como CERRADO solo cuando ambos pasen.
+
+
 
 ## 🔵 BACKLOG — Deuda de seguridad crítica (pre-producción)
 
@@ -356,9 +443,9 @@ Linux Capabilities mínimas:             100% ✅  DAY 133 (post-Consejo)
 Falco 10 reglas aRGus:                  100% ✅  DAY 133 (post-Consejo)
 vagrant/hardened-x86/ completo:         100% ✅  DAY 133
 DEBT-PROD-APT-SOURCES-INTEGRITY-001:      0% ⏳  feature/adr030-variant-a
-DEBT-PAPER-FUZZING-METRICS-001:          40% 🟡  DAY 134 (reformulación cerrada, tabla pendiente)
+DEBT-PAPER-FUZZING-METRICS-001:         100% ✅  DAY 134 CERRADO
 DEBT-KEY-SEPARATION-001:                  0% ⏳  post-FEDER
-DEBT-KERNEL-COMPAT-001:                   0% ⏳  DAY 134
+DEBT-KERNEL-COMPAT-001:                 100% ✅  DAY 134 CERRADO — cap_bpf ok en kernel 6.1
 DEBT-PROD-APPARMOR-PORTS-001:             0% ⏳  post-JSON-estabilización
 DEBT-PROD-FALCO-RULES-EXTENDED-001:       0% ⏳  DAY 135
 DEBT-DEBIAN13-UPGRADE-001:                0% ⏳  post-FEDER
@@ -369,6 +456,10 @@ DEBT-PENTESTER-LOOP-001 (ACRL):           0% ⏳  POST-DEUDA
 ADR-031 aRGus-seL4:                       0% ⏳  branch independiente
 ADR-040 ML Retraining Contract (def.):    100% ✅  DAY 134 (Consejo 8/8, 17 enmiendas)
 ADR-041 HW Acceptance Metrics (def.):     100% ✅  DAY 134 (Consejo 8/8)
+DEBT-EMECAS-HARDENED-001 (make hardened-full): 0% ⏳  DAY 135
+DEBT-VENDOR-FALCO-001 (dist/vendor/CHECKSUMS): 0% ⏳  DAY 135
+DEBT-SEEDS-DEPLOY-001 (prod-deploy-seeds):     0% ⏳  DAY 135
+DEBT-CONFIDENCE-SCORE-001 (prerequisito IPW):  0% ⏳  DAY 135
 DEBT-ADR040-001 (golden set v1):            0% ⏳  v1.0 post-FEDER
 DEBT-ADR040-002 (confidence_score):         0% ⏳  v1.0
 DEBT-ADR040-003 (walk_forward_split.py):    0% ⏳  v1.1
@@ -450,7 +541,7 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 
 - [x] ADR-026 mergeado a main (XGBoost F1=0.9978)
 - [x] ADR-030 Variant A infraestructura completa (DAY 133)
-- [ ] Pipeline E2E en hardened VM verde (`make check-prod-all`) — DAY 134
+- [x] Pipeline E2E en hardened VM verde (`make check-prod-all`) — DAY 134 ✅
 - [ ] ADR-030 Variant B (ARM64) estable
 - [ ] Demo técnica grabable < 10 minutos (`scripts/feder-demo.sh`)
 - [ ] ADR-041 protocolo hardware: métricas validadas en x86 + ARM (`make feder-demo`)
@@ -491,6 +582,6 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 >  aprende sin olvidar, sin retroalimentarse y sin regresionar en silencio.' — Consejo (8/8)"
 > — Consejo de Sabios (8/8) · DAY 134
 
-*DAY 134 — 28 Abril 2026 · ADR-040 + ADR-041 integrados · feature/adr030-variant-a*
+*DAY 134 — 28 Abril 2026 · check-prod-all PASSED · Draft v18 completo · feature/adr030-variant-a*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
 *"La superficie de ataque mínima no es una aspiración. Es una decisión de diseño."*
