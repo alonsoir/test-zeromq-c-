@@ -194,6 +194,52 @@ Reglas Falco propuestas en Consejo DAY 133 no adoptadas: ptrace (Gemini), DNS tu
 
 ---
 
+
+---
+
+### DEBT-ADR040-001 a 012 — ML Plugin Retraining Contract *(nuevas — DAY 134)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** post-FEDER (implementación Año 1)
+**Origen:** ADR-040 v2 — Consejo 8/8 DAY 134 (17 enmiendas, aprobado unánime)
+
+| ID | Descripción | Target |
+|----|-------------|--------|
+| DEBT-ADR040-001 | Golden set v1 (≥50K flows, 70/30, Parquet, SHA-256 embebido en plugin) | v1.0 — pre-FEDER si posible |
+| DEBT-ADR040-002 | Verificar que ml-detector emite `confidence_score ∈ [0,1]` en salida ZeroMQ | v1.0 |
+| DEBT-ADR040-003 | `walk_forward_split.py` — `--split-field timestamp_first_packet`, mín. 3 ventanas, KS drift | v1.1 |
+| DEBT-ADR040-004 | `check_guardrails.py` — Recall −0.5pp / F1 −2pp / FPR +1pp / latencia p99 +10% → exit 1 | v1.1 |
+| DEBT-ADR040-005 | Integrar guardrail en proceso de firma Ed25519 (ADR-025) — `prod-sign` invoca guardrail | v1.1 |
+| DEBT-ADR040-006 | IPW + uncertainty sampling (P≈0.5) en rag-ingester, ratio adaptativo [3%-10%] por drift | v1.2 |
+| DEBT-ADR040-007 | Interfaz web revisión exploración en rag-security — etiquetado manual del 5% (Año 1) | v1.2 |
+| DEBT-ADR040-008 | Informe diversidad por ciclo: Shannon entropy, MITRE ATT&CK coverage %, novelty score | v1.2 |
+| DEBT-ADR040-009 | Competición algoritmos: XGBoost vs CatBoost vs LightGBM vs RF (multicriterio, una vez) | pre-lock-in |
+| DEBT-ADR040-010 | Dataset lineage en metadatos del plugin (hash dataset + golden set + git commits) | v1.1 |
+| DEBT-ADR040-011 | Canary deployment: 5-10% tráfico 24h antes de 100% (manual Año 1, flota Año 2) | v1.2 |
+| DEBT-ADR040-012 | `docs/GOLDEN-SET-REGISTRY.md` con hash v1 + proceso evolución controlada | v1.0 |
+
+**Prerequisito crítico (enmienda Claude, DAY 134):** IPW no es implementable sin `confidence_score`. DEBT-ADR040-002 debe resolverse antes de DEBT-ADR040-006.
+
+**Test de cierre DEBT-ADR040-004:** `make retrain-eval PLUGIN=candidate.ubj` → exit 1 ante regresión. `make prod-sign` no ejecuta si guardrail falla.
+
+---
+
+### DEBT-ADR041-001 a 006 — Hardware Acceptance Metrics FEDER *(nuevas — DAY 134)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** pre-FEDER, deadline 22 sep 2026
+**Origen:** ADR-041 — Consejo 8/8 DAY 134
+
+| ID | Descripción | Estado |
+|----|-------------|--------|
+| DEBT-ADR041-001 | Subconjunto pcap CTU-13 benchmark versionado con SHA-256 (`ctu13-neris-benchmark.pcap`) | ⏳ PENDIENTE |
+| DEBT-ADR041-002 | `make golden-set-eval ARCH=$(uname -m)` — exit 0 dentro de tolerancia, exit 1 regresión | ⏳ PENDIENTE (depende ADR-040) |
+| DEBT-ADR041-003 | `make feder-demo` — suite completa desde VM fría, <30 min, sin trucos pregrabados | ⏳ PENDIENTE |
+| DEBT-ADR041-004 | Compra hardware x86 (NUC/mini-PC ~300€, NIC con soporte XDP nativo — mlx5/i40e/ixgbe) | ⏳ post-métricas definidas |
+| DEBT-ADR041-005 | Compra Raspberry Pi 4/5 | ⏳ post-métricas definidas |
+| DEBT-ADR041-006 | Primera ejecución protocolo completo en hardware físico | ⏳ post-compra hardware |
+
+**Nota DeepSeek:** Verificar driver NIC antes de comprar x86. Sin XDP nativo el delta científico A/B se distorsiona.
+**Nota DeepSeek:** Temperatura ARM ≤75°C sin ventilador — gate no negociable para armarios hospitalarios 24/7.
+**Tolerancias ML:** x86 TOLERANCE=0.0000 · ARM TOLERANCE=0.0005 (NEON vs AVX2).
+
+
 ## 🔵 BACKLOG — Deuda de seguridad crítica (pre-producción)
 
 | ID | Tarea | Test de cierre | Feature destino |
@@ -257,6 +303,16 @@ Reglas Falco propuestas en Consejo DAY 133 no adoptadas: ptrace (Gemini), DNS tu
 | **network inet tcp sin restricción** | ZeroMQ usa puertos configurables via JSON. DEBT-PROD-APPARMOR-PORTS-001. | Founder · DAY 133 |
 | **Keypairs separados post-FEDER** | DEBT-KEY-SEPARATION-001. No bloquea DAY 134. | Consejo 8/8 · DAY 133 |
 | **"Fuzzing misses nothing" ELIMINADA** | Frase incorrecta. Fuzzing es estocástico, no exhaustivo. | Consejo 8/8 · DAY 133 |
+| **Walk-forward obligatorio (ADR-040)** | K-fold prohibido. Split sobre `timestamp_first_packet` ordenado. Mín. 3 ventanas. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Golden set inmutable (ADR-040)** | ≥50K flows, SHA-256 embebido en plugin firmado. Evolución controlada, solapamiento 6 meses. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Guardrail asimétrico Ed25519 (ADR-040)** | Recall −0.5pp (más restrictivo). F1 −2pp. FPR +1pp. Latencia p99 +10%. Exit 1 = no firma. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **IPW + uncertainty sampling (ADR-040)** | 5% exploración (P≈0.5). Ratio adaptativo [3%-10%] por drift. Memory replay buffer. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Competición algoritmos pre-lock-in (ADR-040)** | Multicriterio: Recall 40% + F1 25% + latencia 20% + tamaño 10% + carga 5%. Una sola vez. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Dataset lineage obligatorio (ADR-040)** | Hash dataset + golden set + features_version + git commits. Sin lineage = no firma. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Niveles despliegue FEDER (ADR-041)** | Nivel 1 (RPi4/5, ≤50 usuarios) + Nivel 2 (x86, 50-200). Demo mínima: ambos simultáneos. | ADR-041 · Consejo 8/8 · DAY 134 |
+| **Latencia end-to-end como métrica primaria (ADR-041)** | Captura → alerta → iptables efectiva. Más relevante que latencia de detección aislada. | ADR-041 · DeepSeek · DAY 134 |
+| **Temperatura ARM como gate (ADR-041)** | ≤75°C sin ventilador. Crítica para armarios hospitalarios 24/7. | ADR-041 · DeepSeek · DAY 134 |
+| **Pipeline evaluación híbrido (ADR-040)** | Scripts en repo (local Vagrant). CI = mismo código, segunda entrada. Opción A recomendada FEDER. | ADR-040 · Consejo 6/7 · DAY 134 |
 | **Falco modern_ebpf driver** | Correcto para 2026. kmod en deprecación. | Consejo 8/8 · DAY 133 |
 | **10 reglas Falco aRGus** | 7 originales + config tamper + model/plugin replace + AA profile tamper. | Consejo 8/8 · DAY 133 |
 | **Estrategia maduración AppArmor+Falco** | complain→enforce en paralelo. 30 min sin FP antes de pasar a enforce+CRITICAL. | Consejo 8/8 · DAY 133 |
@@ -311,6 +367,26 @@ DEBT-CRYPTO-003a (mlock+bzero):           0% ⏳
 DEBT-SEED-CAPABILITIES-001:               0% ⏳  v0.6+
 DEBT-PENTESTER-LOOP-001 (ACRL):           0% ⏳  POST-DEUDA
 ADR-031 aRGus-seL4:                       0% ⏳  branch independiente
+ADR-040 ML Retraining Contract (def.):    100% ✅  DAY 134 (Consejo 8/8, 17 enmiendas)
+ADR-041 HW Acceptance Metrics (def.):     100% ✅  DAY 134 (Consejo 8/8)
+DEBT-ADR040-001 (golden set v1):            0% ⏳  v1.0 post-FEDER
+DEBT-ADR040-002 (confidence_score):         0% ⏳  v1.0
+DEBT-ADR040-003 (walk_forward_split.py):    0% ⏳  v1.1
+DEBT-ADR040-004 (check_guardrails.py):      0% ⏳  v1.1
+DEBT-ADR040-005 (guardrail + Ed25519):      0% ⏳  v1.1
+DEBT-ADR040-006 (IPW + uncertainty):        0% ⏳  v1.2
+DEBT-ADR040-007 (interfaz web exploración): 0% ⏳  v1.2 Año 1
+DEBT-ADR040-008 (informe diversidad):       0% ⏳  v1.2
+DEBT-ADR040-009 (competición algoritmos):   0% ⏳  pre-lock-in XGBoost
+DEBT-ADR040-010 (dataset lineage):          0% ⏳  v1.1
+DEBT-ADR040-011 (canary deployment):        0% ⏳  Año 2 flota
+DEBT-ADR040-012 (GOLDEN-SET-REGISTRY.md):  0% ⏳  v1.0
+DEBT-ADR041-001 (pcap CTU-13 versionado):   0% ⏳  pre-FEDER
+DEBT-ADR041-002 (make golden-set-eval):     0% ⏳  depende ADR-040
+DEBT-ADR041-003 (make feder-demo):          0% ⏳  pre-FEDER
+DEBT-ADR041-004 (compra hardware x86):      0% ⏳  post-métricas
+DEBT-ADR041-005 (compra Raspberry Pi 4/5):  0% ⏳  post-métricas
+DEBT-ADR041-006 (ejecución hw físico):      0% ⏳  post-compra
 ```
 
 ---
@@ -377,10 +453,44 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 - [ ] Pipeline E2E en hardened VM verde (`make check-prod-all`) — DAY 134
 - [ ] ADR-030 Variant B (ARM64) estable
 - [ ] Demo técnica grabable < 10 minutos (`scripts/feder-demo.sh`)
+- [ ] ADR-041 protocolo hardware: métricas validadas en x86 + ARM (`make feder-demo`)
+- [ ] Golden set v1 creado y versionado (DEBT-ADR040-001)
 - [ ] Clarificación scope con Andrés: NDR standalone vs federación (antes julio 2026)
 
 ---
 
-*DAY 133 — 27 Abril 2026 · Commit c6e0c9f1 · feature/adr030-variant-a*
+
+---
+
+## 📝 Notas del Consejo de Sabios — DAY 134 (8/8)
+
+> "DAY 134 — ADR-040 + ADR-041: contratos de calidad ML y métricas de aceptación hardware.
+>
+> ADR-040 — 17 enmiendas, aprobado 8/8:
+> D1: Walk-forward obligatorio. K-fold prohibido en NDR temporal.
+> D2: Golden set inmutable con SHA-256 embebido en plugin firmado (Gemini).
+> D3: Guardrail asimétrico — Recall más restrictivo que F1 (infraestructura crítica).
+> D4: IPW + uncertainty sampling (P≈0.5), no exploración aleatoria pura (Gemini).
+> D5: Ratio exploración adaptativo [3%-10%] por drift detectado (ChatGPT-5).
+> D6: Memory replay buffer como complemento al golden set (Grok).
+> D7: Competición algoritmos multicriterio — XGBoost no asumido ganador a priori.
+> D8: Dataset lineage obligatorio — prerequisito de firma Ed25519.
+> D9: Canary 5-10% / 24h antes de despliegue completo (ChatGPT-5).
+> D10: Pipeline evaluación híbrido — mismo código, dos entradas (local + CI).
+> Enmienda crítica (Claude): confidence_score es prerequisito de IPW.
+>
+> ADR-041 — aprobado 8/8:
+> D1: Tres niveles despliegue con métricas proporcionales (Qwen).
+> D2: Latencia end-to-end (→ iptables) como métrica operacional primaria (DeepSeek).
+> D3: Temperatura ARM ≤75°C — gate no negociable para armarios hospitalarios (DeepSeek).
+> D4: Delta XDP/libpcap es contribución científica independiente publicable.
+> D5: Demo FEDER reproducible por evaluador externo — sin trucos pregrabados.
+> Pregunta abierta: Opción A (Vagrant) recomendada demo FEDER. Opción B (CI) post-FEDER.
+>
+> 'El contrato de calidad ML no termina en el deploy. Termina cuando el modelo
+>  aprende sin olvidar, sin retroalimentarse y sin regresionar en silencio.' — Consejo (8/8)"
+> — Consejo de Sabios (8/8) · DAY 134
+
+*DAY 134 — 28 Abril 2026 · ADR-040 + ADR-041 integrados · feature/adr030-variant-a*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
 *"La superficie de ataque mínima no es una aspiración. Es una decisión de diseño."*

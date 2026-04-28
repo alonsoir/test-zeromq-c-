@@ -14,6 +14,8 @@
 [![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
 [![Falco](https://img.shields.io/badge/Falco-10_reglas_aRGus-brightgreen)]()
 [![BSR](https://img.shields.io/badge/BSR-cap__bpf_ADR--039-brightgreen)]()
+[![ADR-040](https://img.shields.io/badge/ADR--040-ML_Retraining_Contract-blue)](docs/adr/ADR-040-ml-plugin-retraining-contract.md)
+[![ADR-041](https://img.shields.io/badge/ADR--041-FEDER_HW_Metrics-orange)](docs/adr/ADR-041-hardware-acceptance-metrics-feder.md)
 [![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
 [![XGBoost](https://img.shields.io/badge/XGBoost-Prec%3D0.9945_In--Distribution-brightgreen)]()
 [![Hardened](https://img.shields.io/badge/Security-v0.5.2--hardened_CWE--78_CLOSED-brightgreen)]()
@@ -27,16 +29,18 @@
 
 ---
 
-✅ `main` is tagged `v0.5.2-hardened`. Branch activa: `feature/adr030-variant-a` — ADR-030 Variant A infraestructura completa (DAY 133).
+✅ `main` is tagged `v0.5.2-hardened`. Branch activa: `feature/adr030-variant-a` — ADR-030 Variant A completa (DAY 133) · ADR-040 + ADR-041 aprobados (DAY 134).
 **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
 ---
 
-## Estado actual — DAY 133 (2026-04-27)
+## Estado actual — DAY 134 (2026-04-28)
 
 **Tag activo:** `v0.5.2-hardened` | **Commit:** `c6e0c9f1` | **Branch activa:** `feature/adr030-variant-a`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 en GitHub (pre-arXiv, pendiente tabla fuzzing §6.8)
+**ADR-040:** ML Plugin Retraining Contract — PROPUESTO v2 (Consejo 8/8, 17 enmiendas)
+**ADR-041:** Hardware Acceptance Metrics FEDER — PROPUESTO (Consejo 8/8)
 
 ### Pipeline
 - 6/6 componentes RUNNING — validado en VM destruida y reconstruida desde cero (REGLA EMECAS)
@@ -62,6 +66,8 @@
 | DEBT-PROD-APPARMOR-PORTS-001 | 🟢 Baja | post-JSON-estabilización |
 | DEBT-SAFE-PATH-RESOLVE-MODEL-001 | ⏳ | feature/adr038-acrl |
 | DEBT-CRYPTO-003a | ⏳ | feature/crypto-hardening |
+| DEBT-ADR040-001..012 | ⏳ post-FEDER | ADR-040 ML Retraining (12 deudas — ver BACKLOG.md) |
+| DEBT-ADR041-001..006 | ⏳ pre-FEDER | ADR-041 HW Acceptance Metrics (6 tareas — ver BACKLOG.md) |
 
 ### Próxima frontera
 - **DAY 134** — primer pipeline end-to-end en hardened VM: `make hardened-provision-all → prod-full-x86 → check-prod-all`
@@ -215,6 +221,11 @@ make check-prod-all           # 5 security gates
 - [x] Makefile prod-* targets — `prod-full-x86`, `check-prod-all`
 - [x] Acta Consejo DAY 133 — convergencias + divergencias + decisiones
 
+### ✅ DONE — DAY 134 (28 Apr 2026) — ADR-040 + ADR-041 🎉
+- [x] ADR-040 ML Plugin Retraining Contract v2 — 7 reglas, 12 deudas, Consejo 8/8 (17 enmiendas)
+- [x] ADR-041 Hardware Acceptance Metrics FEDER — 3 niveles, 10 métricas, Consejo 8/8
+- [x] BACKLOG.md + README.md actualizados con ADR-040 + ADR-041
+
 ### ✅ DONE — DAY 132 (26 Apr 2026)
 - [x] Paper Draft v17 · HARDWARE-REQUIREMENTS · vagrant/hardened-x86 skeleton · Prerequisites README
 
@@ -262,6 +273,7 @@ Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests
 - ✅ DAY 130: **REGLA EMECAS · libFuzzer 2.4M runs** 🎉
 - ✅ DAY 132: **Paper Draft v17 · HARDWARE-REQUIREMENTS · vagrant/hardened-x86 · Consejo 8/8** 🎉
 - ✅ DAY 133: **ADR-030 Variant A — cap_bpf · AppArmor 6/6 · Falco 10 reglas · Paper v18** 🎉
+- ✅ DAY 134: **ADR-040 ML Retraining Contract (8/8, 17 enmiendas) · ADR-041 FEDER HW Metrics (8/8)** 🎉
 - 🔜 DAY 134: **Pipeline E2E en hardened VM · check-prod-all verde**
 
 ---
