@@ -61,7 +61,7 @@ for lib in \
     libgomp.so.1 \
     libstdc++.so.6 \
     libgcc_s.so.1; do
-    path=$(ldconfig -p 2>/dev/null | grep "^\s*${lib}" | awk '{print $NF}' | head -1)
+    path=$(ldconfig -p 2>/dev/null | grep "^\s*${lib}" | awk '{print $NF}' | head -1) || true
     if [ -n "${path}" ] && [ -f "${path}" ]; then
         echo "  📋 ${lib} (system, no copy needed)"
     else

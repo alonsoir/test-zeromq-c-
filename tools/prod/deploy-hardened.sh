@@ -39,12 +39,11 @@ fi
 # Crear estructura de directorios
 echo ""
 echo "── Creating /opt/argus/ structure ──"
-install -d -o ${ARGUS_USER} -g ${ARGUS_GROUP} -m 0755 \
-    ${OPT_ARGUS} \
-    ${OPT_ARGUS}/bin \
-    ${OPT_ARGUS}/lib \
-    ${OPT_ARGUS}/plugins \
-    ${OPT_ARGUS}/models
+install -d -o root -g ${ARGUS_GROUP} -m 0755 ${OPT_ARGUS}
+install -d -o ${ARGUS_USER} -g ${ARGUS_GROUP} -m 0755 ${OPT_ARGUS}/bin
+install -d -o root -g ${ARGUS_GROUP} -m 0755 ${OPT_ARGUS}/lib
+install -d -o root -g ${ARGUS_GROUP} -m 0755 ${OPT_ARGUS}/plugins
+install -d -o ${ARGUS_USER} -g ${ARGUS_GROUP} -m 0750 ${OPT_ARGUS}/models
 
 # Instalar binarios
 echo ""

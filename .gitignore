@@ -237,3 +237,6 @@ firewall-acl-agent/fuzz/fuzz_validate_filepath
 # Production build artifacts
 dist/
 *.deb
+*/build-prod/
+*/build-production/
+dist/

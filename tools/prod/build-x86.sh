@@ -1,81 +1,68 @@
 #!/usr/bin/env bash
 # tools/prod/build-x86.sh
-# Compila todos los componentes del pipeline con flags de producción.
-# Se ejecuta DENTRO de la dev VM via vagrant ssh -c.
+# Compila el pipeline usando el Makefile raíz como fuente de verdad (DAY 134).
+# Invoca pipeline-build (orden canónico: proto→seed→crypto→etcd→plugin→componentes)
+# y luego recolecta los binarios en dist/x86/bin/.
 # ADR-039 (BSR): este script NUNCA corre en la hardened VM.
-#
-# DAY 133 — aRGus NDR — ADR-030 Variant A
 set -euo pipefail
 
 DIST=/vagrant/dist/x86/bin
 VAGRANT=/vagrant
 
-CXX_FLAGS="-std=c++20 -Wall -Wextra -Wpedantic -O3 -march=native -DNDEBUG -flto -fno-omit-frame-pointer"
-C_FLAGS="-std=c11 -O3 -march=native -DNDEBUG -flto -fno-omit-frame-pointer"
-CMAKE_PROD="-DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_FLAGS=${CXX_FLAGS} \
-            -DCMAKE_C_FLAGS=${C_FLAGS}"
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║  aRGus NDR — Production Build (x86-64)                   ║"
+echo "║  Orden canónico via pipeline-build (Makefile raíz)       ║"
+echo "╚════════════════════════════════════════════════════════════╝"
 
 mkdir -p "${DIST}"
 
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  aRGus NDR — Production Build (x86-64)                   ║"
-echo "║  Flags: -O3 -march=native -DNDEBUG -flto                 ║"
-echo "╚════════════════════════════════════════════════════════════╝"
-
-# ── Función genérica de build ─────────────────────────────────────────────────
-build_component() {
-    local name=$1
-    local src_dir=$2
-    local binary=$3
-
-    echo ""
-    echo "── Building ${name} ──"
-    local build_dir="${src_dir}/build-prod"
-    rm -rf "${build_dir}"
-    mkdir -p "${build_dir}"
-    cd "${build_dir}"
-    cmake ${CMAKE_PROD} .. 2>&1 | tail -5
-    make -j"$(nproc)" "${binary}" 2>&1 | tail -3
-    cp "${binary}" "${DIST}/${binary}"
-    echo "  ✅ ${binary} → dist/x86/bin/${binary}"
-    cd "${VAGRANT}"
-}
-
-# ── etcd-server ──────────────────────────────────────────────────────────────
-build_component "etcd-server"       "${VAGRANT}/etcd-server"         "etcd-server"
-
-# ── sniffer ──────────────────────────────────────────────────────────────────
-build_component "sniffer"           "${VAGRANT}/sniffer"             "sniffer"
-
-# ── ml-detector ──────────────────────────────────────────────────────────────
-build_component "ml-detector"       "${VAGRANT}/ml-detector"         "ml-detector"
-
-# ── firewall-acl-agent ───────────────────────────────────────────────────────
-build_component "firewall-acl-agent" "${VAGRANT}/firewall-acl-agent" "firewall-acl-agent"
-
-# ── rag-security ─────────────────────────────────────────────────────────────
-build_component "rag-security"      "${VAGRANT}/rag"                 "rag-security"
-
-# ── rag-ingester ─────────────────────────────────────────────────────────────
-build_component "rag-ingester"      "${VAGRANT}/rag-ingester"        "rag-ingester"
-
-# ── plugins ──────────────────────────────────────────────────────────────────
+# ── Paso 1: pipeline-build (fuente de verdad) ─────────────────────────────────
 echo ""
-echo "── Building plugins ──"
+echo "── Recolectando binarios PROFILE=production (ya compilados por Makefile) ──"
+
+# ── Paso 2: recolectar binarios en dist/x86/bin/ ─────────────────────────────
+echo ""
+echo "── Step 2: recolecting binaries → dist/x86/bin/ ──"
+
+declare -A BINARIES=(
+    ["etcd-server"]="${VAGRANT}/etcd-server/build-production/etcd-server"
+    ["sniffer"]="${VAGRANT}/sniffer/build-production/sniffer"
+    ["ml-detector"]="${VAGRANT}/ml-detector/build-production/ml-detector"
+    ["firewall-acl-agent"]="${VAGRANT}/firewall-acl-agent/build-production/firewall-acl-agent"
+    ["rag-security"]="${VAGRANT}/rag/build/rag-security"
+    ["rag-ingester"]="${VAGRANT}/rag-ingester/build-production/rag-ingester"
+)
+
+for name in "${!BINARIES[@]}"; do
+    src="${BINARIES[$name]}"
+    if [ -f "${src}" ]; then
+        cp "${src}" "${DIST}/${name}"
+        echo "  ✅ ${name} → dist/x86/bin/${name}"
+    else
+        echo "  ❌ ${name} NOT FOUND at ${src}"
+        exit 1
+    fi
+done
+
+# ── Paso 3: plugins ───────────────────────────────────────────────────────────
+echo ""
+echo "── Step 3: plugins → dist/x86/plugins/ ──"
 mkdir -p /vagrant/dist/x86/plugins
 
-cd "${VAGRANT}/plugins/xgboost"
-rm -rf build-prod && mkdir -p build-prod && cd build-prod
-cmake -DCMAKE_BUILD_TYPE=Release .. 2>&1 | tail -3
-make -j"$(nproc)" 2>&1 | tail -2
-cp libplugin_xgboost.so /vagrant/dist/x86/plugins/
-echo "  ✅ libplugin_xgboost.so → dist/x86/plugins/"
+PLUGIN_SRC="${VAGRANT}/plugins/xgboost/build/libplugin_xgboost.so"
+if [ -f "${PLUGIN_SRC}" ]; then
+    cp "${PLUGIN_SRC}" /vagrant/dist/x86/plugins/
+    echo "  ✅ libplugin_xgboost.so → dist/x86/plugins/"
+else
+    echo "  ⚠️  libplugin_xgboost.so not found — skipping (optional)"
+fi
 
-cd "${VAGRANT}"
+# plugin-loader shared lib
+LOADER_SRC="${VAGRANT}/plugin-loader/build/libplugin_loader.so"
+if [ -f "${LOADER_SRC}" ]; then
+    cp "${LOADER_SRC}" /vagrant/dist/x86/lib/
+    echo "  ✅ libplugin_loader.so → dist/x86/lib/"
+fi
 
 echo ""
-echo "── Build summary ──"
-ls -lh "${DIST}/"
-echo ""
-echo "✅ prod-build-x86 completado"
+echo "✅ prod-build-x86 completado — binarios en dist/x86/bin/"

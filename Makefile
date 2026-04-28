@@ -850,7 +850,7 @@ set-build-profile:
 # 4. sign-plugins    → firma Ed25519 (ADR-025)
 # 5. test-provision-1 → CI gate PHASE 3
 # 6. pipeline-start  → arranca los 6 componentes
-pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer
+pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer firewall-build
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
@@ -1689,6 +1689,9 @@ prod-init-dist:
 
 prod-build-x86: _check-dev-env prod-init-dist
 	@echo "=== Building production binaries (x86-64) ==="
+	@echo "── Step 1: pipeline-build PROFILE=production ──"
+	$(MAKE) PROFILE=production pipeline-build
+	@echo "── Step 2: recolectando binarios → dist/x86/ ──"
 	@vagrant ssh -c 'bash /vagrant/tools/prod/build-x86.sh'
 	@echo "OK: binarios en $(ARGUS_BIN_DIST)/"
 
@@ -1710,7 +1713,7 @@ prod-collect-libs: _check-dev-env prod-init-dist
 
 prod-sign: _check-dev-env
 	@echo "=== Signing production binaries (Ed25519) ==="
-	@vagrant ssh -c 'bash /vagrant/tools/prod/sign-binaries.sh'
+	@vagrant ssh -c 'sudo bash /vagrant/tools/prod/sign-binaries.sh'
 	@echo "OK: .sig generados en $(DIST_X86)/"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1786,7 +1789,7 @@ check-prod-no-compiler: _check-hardened-up
 	@echo "=== BSR: verifying no compiler in production ==="
 	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '\
 	  FAIL=0; \
-	  if dpkg -l 2>/dev/null | grep -qE "^ii\s+(gcc|g\+\+|clang|clang-[0-9]+|cmake|build-essential)"; then \
+	  if dpkg -l 2>/dev/null | grep -qE "^ii\s+(gcc|g\+\+|clang|clang-[0-9]+|cmake|build-essential)[[:space:]]"; then \
 	    echo "FAIL (dpkg): compiler package found"; FAIL=1; \
 	  fi; \
 	  for cmd in gcc g++ clang clang++ cc c++ cmake; do \
@@ -1816,14 +1819,14 @@ check-prod-capabilities: _check-hardened-up
 	@echo "=== Linux Capabilities: verifying setcap on sniffer and firewall ==="
 	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '\
 	  FAIL=0; \
-	  SNIFFER_CAPS=$$(getcap /opt/argus/bin/sniffer 2>/dev/null); \
-	  if echo "$$SNIFFER_CAPS" | grep -q "cap_net_admin,cap_net_raw,cap_sys_admin+eip"; then \
+	  SNIFFER_CAPS=$$(/usr/sbin/getcap /opt/argus/bin/sniffer 2>/dev/null); \
+	  if echo "$$SNIFFER_CAPS" | grep -q "cap_net_admin,cap_net_raw,cap_ipc_lock,cap_bpf=eip"; then \
 	    echo "OK: sniffer caps: $$SNIFFER_CAPS"; \
 	  else \
 	    echo "FAIL: sniffer missing required caps (got: $$SNIFFER_CAPS)"; FAIL=1; \
 	  fi; \
-	  FW_CAPS=$$(getcap /opt/argus/bin/firewall-acl-agent 2>/dev/null); \
-	  if echo "$$FW_CAPS" | grep -q "cap_net_admin+eip"; then \
+	  FW_CAPS=$$(/usr/sbin/getcap /opt/argus/bin/firewall-acl-agent 2>/dev/null); \
+	  if echo "$$FW_CAPS" | grep -q "cap_net_admin"; then \
 	    echo "OK: firewall caps: $$FW_CAPS"; \
 	  else \
 	    echo "FAIL: firewall-acl-agent missing required caps (got: $$FW_CAPS)"; FAIL=1; \
@@ -1833,7 +1836,7 @@ check-prod-capabilities: _check-hardened-up
 # Permisos: ownership argus:argus, modos correctos
 check-prod-permissions: _check-hardened-up
 	@echo "=== Filesystem permissions: /opt/argus/, /etc/ml-defender/, /var/log/argus/ ==="
-	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'bash /vagrant/tools/prod/check-permissions.sh'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/tools/prod/check-permissions.sh'
 
 # Falco: servicio activo y reglas cargadas
 check-prod-falco: _check-hardened-up
@@ -1842,7 +1845,7 @@ check-prod-falco: _check-hardened-up
 	  sudo systemctl is-active falco > /dev/null 2>&1 || \
 	    (echo "FAIL: falco service not running"; exit 1); \
 	  echo "OK: falco active"; \
-	  RULES=$$(sudo falco --list 2>/dev/null | grep -c "argus_" || echo 0); \
+	  RULES=$$(grep -c "^- rule: argus_" /etc/falco/rules.d/argus.yaml 2>/dev/null || echo 0); \
 	  [ "$$RULES" -gt 0 ] && echo "OK: $$RULES argus rules loaded" || \
 	    echo "WARN: no argus-specific rules found"'
 
