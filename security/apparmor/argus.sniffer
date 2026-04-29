@@ -1,0 +1,93 @@
+#include <tunables/global>
+# /etc/apparmor.d/argus.sniffer
+# AppArmor profile para aRGus sniffer (eBPF/XDP dual-NIC).
+#
+# Capabilities mínimas (post-Consejo DAY 133):
+#   cap_net_admin  — XDP attach, netlink
+#   cap_net_raw    — raw socket capture
+#   cap_bpf        — carga de programas eBPF (Linux ≥5.8, reemplaza cap_sys_admin)
+#   cap_ipc_lock   — mlock() para seed en memoria
+#
+# DEBT-KERNEL-COMPAT-001: Si cap_bpf falla con XDP en kernels <5.8,
+# reemplazar cap_bpf por cap_sys_admin y documentar.
+# Debian bookworm (kernel 6.1): cap_bpf confirmada disponible.
+#
+# DAY 133 (rev. Consejo) — aRGus NDR — ADR-030 Variant A
+
+profile argus-sniffer /opt/argus/bin/sniffer {
+  #include <abstractions/base>
+
+  # ── Linux Capabilities mínimas ─────────────────────────────────────────────
+  capability net_admin,     # XDP attach, iptables, netlink
+  capability net_raw,       # raw socket capture
+  capability bpf,           # carga de programas eBPF (Linux ≥5.8, cap_sys_admin eliminada)
+  capability ipc_lock,      # mlock() para seed en memoria
+
+  # ── Network ────────────────────────────────────────────────────────────────
+  network inet  tcp,
+  network inet  udp,
+  network inet6 tcp,
+  network inet6 udp,
+  network packet raw,       # packet capture
+
+  # ── Propio binario ─────────────────────────────────────────────────────────
+  /opt/argus/bin/sniffer   mr,
+  /opt/argus/bin/sniffer.sig r,
+
+  # ── Librerías runtime ──────────────────────────────────────────────────────
+  /opt/argus/lib/**        mr,
+  /usr/local/lib/libsodium.so* mr,
+  /usr/local/lib/libzmq.so*    mr,
+  /usr/local/lib/libprotobuf.so* mr,
+  /usr/local/lib/libcrypto_transport.so* mr,
+  /usr/local/lib/libseed_client.so*      mr,
+  /usr/local/lib/libplugin_loader.so*    mr,
+  /usr/local/lib/libetcd_client.so*      mr,
+  /usr/local/lib/libbpf.so*             mr,
+  /lib/x86_64-linux-gnu/**  mr,
+  /usr/lib/x86_64-linux-gnu/** mr,
+
+  # ── Configuración (solo lectura) ───────────────────────────────────────────
+  /etc/ml-defender/sniffer/** r,
+  /etc/ml-defender/plugins/plugin_signing.pk r,
+
+  # ── Plugins (cargar via dlopen) ────────────────────────────────────────────
+  /opt/argus/plugins/*.so   mr,
+  /opt/argus/plugins/*.sig  r,
+
+  # ── eBPF filesystem ────────────────────────────────────────────────────────
+  /sys/fs/bpf/**            rw,
+  /sys/kernel/debug/tracing/** r,
+  /proc/sys/net/**          r,
+  /proc/net/**              r,
+
+  # ── Logs (escritura solo en su directorio) ─────────────────────────────────
+  /var/log/argus/sniffer/  rw,
+  /var/log/argus/sniffer/** rw,
+
+  # ── Interfaces de red ──────────────────────────────────────────────────────
+  /sys/class/net/**         r,
+  /sys/devices/**           r,
+
+  # ── Denegar explícitamente (documentación de intención + defensa en profundidad) ──
+  deny /root/**             rwx,
+  deny /home/**             rwx,
+  deny /tmp/**              x,
+  deny /var/tmp/**          x,
+  deny /etc/passwd          w,
+  deny /etc/shadow          rw,
+  deny /etc/ml-defender/ml-detector/** rwx,
+  deny /etc/ml-defender/firewall-acl-agent/** rwx,
+  deny /etc/ml-defender/rag-ingester/** rwx,
+  deny /etc/ml-defender/rag-security/** rwx,
+  deny /opt/argus/bin/ml-detector           x,
+  deny /opt/argus/bin/firewall-acl-agent    x,
+  deny /opt/argus/bin/rag-ingester          x,
+  deny /opt/argus/bin/rag-security          x,
+
+  # ── APT Sources integrity (DEBT-PROD-APT-SOURCES-INTEGRITY-001 DAY 135) ───
+  deny /etc/apt/sources.list w,
+  deny /etc/apt/sources.list.d/** w,
+  deny /etc/apt/trusted.gpg.d/** w,
+  deny /etc/apt/preferences.d/** w,
+}

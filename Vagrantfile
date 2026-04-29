@@ -564,6 +564,23 @@ BASHRC_EOF
       fi
 
       echo "✅ PROVISIONING COMPLETED SUCCESSFULLY!"
+      # Falco .deb — descargado en dev VM → dist/vendor/ para instalar offline en hardened VM (ADR-030 BSR)
+      # dist/vendor/ es la fuente de verdad. CHECKSUMS generado aquí y committeado. .deb gitignored.
+      mkdir -p /vagrant/dist/vendor
+      if ls /vagrant/dist/vendor/falco_*.deb 1>/dev/null 2>&1; then
+        echo "✅ Falco .deb ya presente en /vagrant/dist/vendor/"
+      else
+        echo "📦 Descargando Falco .deb → dist/vendor/..."
+        curl -fsSL https://falco.org/repo/falcosecurity-packages.asc | \
+          gpg --dearmor -o /usr/share/keyrings/falco-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/falco-archive-keyring.gpg] https://download.falco.org/packages/deb stable main" | \
+          tee /etc/apt/sources.list.d/falcosecurity.list
+        apt-get update -qq
+        cd /vagrant/dist/vendor && apt-get download falco
+        echo "✅ Falco .deb descargado en /vagrant/dist/vendor/"
+      fi
+      sha256sum /vagrant/dist/vendor/falco_*.deb > /vagrant/dist/vendor/CHECKSUMS
+      echo "✅ dist/vendor/CHECKSUMS actualizado"
     DEPENDENCIES_EOF
 
     # ════════════════════════════════════════════════════════════════════════

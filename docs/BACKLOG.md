@@ -1,5 +1,5 @@
 # aRGus NDR — BACKLOG
-*Última actualización: DAY 130 — 25 Abril 2026*
+*Última actualización: DAY 133 — 27 Abril 2026*
 
 ---
 
@@ -23,12 +23,17 @@
 - **REGLA CRÍTICA:** El Vagrantfile y el Makefile son la única fuente de verdad.
 - **REGLA DE SCRIPTS:** Lógica compleja → `tools/script.sh`, nunca inline en Makefile.
 - **REGLA SEED:** La seed ChaCha20 es material criptográfico secreto. NUNCA en CMake ni logs. Solo runtime: mlock() + explicit_bzero().
-- **REGLA PERMANENTE (DAY 124 — Consejo 7/7):** Ningún fix de seguridad en código de producción se mergea sin test de demostración RED→GREEN. El test debe fallar con el código antiguo y pasar con el nuevo. Sin excepciones.
+- **REGLA PERMANENTE (DAY 124 — Consejo 7/7):** Ningún fix de seguridad en código de producción se mergea sin test de demostración RED→GREEN. Sin excepciones.
 - **REGLA PERMANENTE (DAY 125 — Consejo 8/8):** Todo fix de seguridad incluye: (1) unit test sintético, (2) property test de invariante, (3) test de integración en el componente real. Sin excepciones.
-- **REGLA PERMANENTE (DAY 127 — Consejo 8/8):** La taxonomía safe_path tiene tres primitivas activas y una futura. Toda nueva superficie de ficheros debe clasificarse explícitamente con PathPolicy antes de implementar. Documentar en docs/SECURITY-PATH-PRIMITIVES.md.
+- **REGLA PERMANENTE (DAY 127 — Consejo 8/8):** La taxonomía safe_path tiene tres primitivas activas y una futura. Toda nueva superficie de ficheros debe clasificarse con PathPolicy antes de implementar.
 - **REGLA PERMANENTE (DAY 128 — Consejo 8/8):** IPTablesWrapper y cualquier ejecución de comandos del sistema usa execve() directo sin shell. Nunca system() ni popen() con strings concatenados.
-- **REGLA PERMANENTE (DAY 129 — Consejo 8/8 RULE-SCP-VM-001):** Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` o `vagrant scp`. PROHIBIDO `vagrant ssh -c "cat ..." > fichero` — el pipe zsh trunca a 0 bytes silenciosamente sin error.
-- **PROTOCOLO CANÓNICO (DAY 130):** Toda sesión de desarrollo comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Sin excepciones. El pipeline debe ser reproducible desde cero antes de cualquier cambio.
+- **REGLA PERMANENTE (DAY 129 — Consejo 8/8 RULE-SCP-VM-001):** Toda transferencia de ficheros entre VM y macOS usa `scp -F vagrant-ssh-config` o `vagrant scp`. PROHIBIDO pipe zsh — trunca a 0 bytes silenciosamente.
+- **PROTOCOLO CANÓNICO (DAY 130 — REGLA EMECAS):** Toda sesión de desarrollo comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Sin excepciones.
+- **REGLA PERMANENTE (DAY 133 — Consejo 8/8):** `cap_sys_admin` está prohibida en imágenes de producción si el kernel es ≥5.8. Usar `cap_bpf` para operaciones eBPF. Documentar fallback con DEBT-KERNEL-COMPAT-001 si necesario.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** `make hardened-full` es el EMECAS sagrado de la hardened VM — siempre incluye `vagrant destroy -f`. Para iteración de desarrollo usar `make hardened-redeploy` (sin destroy). Los gates `check-prod-all` se ejecutan siempre en ambos modos.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** Las semillas criptográficas NO se transfieren en el procedimiento EMECAS. La hardened VM arranca sin seeds. Target `prod-deploy-seeds` explícito para el momento del deploy real. Los WARNs de `seed.bin no existe` en `check-prod-permissions` son estado correcto por diseño.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** Falco .deb y artefactos binarios de terceros van en `dist/vendor/` (gitignored). El hash SHA-256 se committea en `dist/vendor/CHECKSUMS`. `make vendor-download` descarga y verifica. Si hash no coincide → abort.
+- **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** DEBT-ADR040-002 (`confidence_score` en ml-detector) es prerequisito bloqueante de DEBT-ADR040-006 (IPW). No implementar IPW sin verificar primero que el campo existe y varía en runtime.
 
 ---
 
@@ -36,274 +41,327 @@
 
 | Variante | Estado | Descripción |
 |----------|--------|-------------|
-| **aRGus-dev** | ✅ Activa | x86-debug, imagen Vagrant con todas las herramientas, build-debug. Para investigación y desarrollo diario. |
-| **aRGus-production** | 🟡 Pendiente de cocinar | x86-apparmor + arm64-apparmor. Imágenes Debian optimizadas, sin herramientas de desarrollo. Para hospitales, escuelas, municipios. |
-| **aRGus-seL4** | ⏳ No iniciada | Apéndice científico. Kernel seL4, libpcap (no eBPF/XDP), sniffer reescrito en monohilo. Branch independiente. Nunca se mergeará a main salvo sorpresa. |
+| **aRGus-dev** | ✅ Activa | x86-debug, imagen Vagrant completa. Para desarrollo diario. |
+| **aRGus-production** | 🟡 En construcción | x86-apparmor + arm64-apparmor. Debian optimizado. Para hospitales, escuelas, municipios. |
+| **aRGus-seL4** | ⏳ No iniciada | Apéndice científico. Kernel seL4, libpcap. Branch independiente. |
 
+---
+
+## ✅ CERRADO DAY 134
+
+### Pipeline E2E en hardened VM — check-prod-all PASSED
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** Primer pipeline end-to-end en hardened VM con 5/5 gates verdes. 15 problemas de integración resueltos (vagrant --cwd, AppArmor tunables/global, Falco offline via .deb, macros inline Falco 0.43, cmake flags, pipeline-build PROFILE=production, firewall-build faltante en pipeline-build, prod-sign PEM canónico, ownership root:argus, getcap path, check caps post-Consejo, check-prod-falco API 0.43, permisos sudo).
+- **Commits:** `f256e6f0` + `2e9a5b39`
+
+### DEBT-KERNEL-COMPAT-001
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** `cap_bpf` funciona correctamente con XDP en kernel 6.1.0-44-amd64 (Debian bookworm). `sniffer: cap_net_admin,cap_net_raw,cap_ipc_lock,cap_bpf=eip` — verificado en hardened VM.
+- **Commit:** `2e9a5b39`
+
+### DEBT-PAPER-FUZZING-METRICS-001
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** Tabla §6.8 con datos reales de tres campañas libFuzzer (DAY 130). `validate_chain_name`: 2.4M runs, 0 crashes, corpus 67, ~80K exec/s. `safe_exec`: 2.6M runs, 0 crashes, corpus 37, 42K exec/s. `validate_filepath`: 282K runs, 0 crashes, corpus 111, 4.6K exec/s. Análisis delta exec/s documentado. Paper actualizado a Draft v18.
+- **Commit:** post-`2e9a5b39`
+
+### ADR-040 + ADR-041 — Integración en BACKLOG + README
+- **Status:** ✅ CERRADO DAY 134
+- **Fix:** ADR-040 ML Plugin Retraining Contract v2 (8/8, 17 enmiendas) + ADR-041 Hardware Acceptance Metrics FEDER (8/8) integrados en BACKLOG.md y README.md. 25 ficheros, 4648 inserciones.
+- **Commit:** `87680d83`
+
+---
+
+## ✅ CERRADO DAY 133
+
+### Paper Draft v18 — §6.12 métricas BSR reales
+- **Status:** ✅ CERRADO DAY 133
+- **Fix:** Tabla BSR con métricas medidas: Dev VM (719 pkgs / 5.9 GB / compiladores) vs Hardened VM (304 pkgs / 1.3 GB / NONE). Reducción 58% paquetes, 78% disco. Nota al pie honesta sobre suelo Vagrant (~250 pkgs).
+- **Commit:** `c6e0c9f1` + post-Consejo
+
+### Paper Draft v18 — §6.8 reformulación fuzzing (post-Consejo DAY 133)
+- **Status:** ✅ CERRADO DAY 133
+- **Fix:** Eliminada "Fuzzing misses nothing within CPU time" (Consejo 8/8 unánime — científicamente incorrecta). Sustituida por formulación que reconoce naturaleza estocástica, guía por cobertura, sin garantía de completitud. Añadida `\cite{libfuzzer2016}`.
+- **Commit:** post-Consejo DAY 133
+
+### DEBT-PROD-APPARMOR-COMPILER-BLOCK-001
+- **Status:** ✅ CERRADO DAY 133
+- **Fix:** 6 perfiles AppArmor enforce en `security/apparmor/` (uno por componente). Default-deny con allowlists mínimas. `deny` explícitos mantenidos — claridad auditiva para auditores hospitalarios (decisión founder). Post-Consejo: `cap_sys_admin` → `cap_bpf` en sniffer.
+- **Commit:** `c6e0c9f1` + post-Consejo
+
+### DEBT-PROD-FALCO-EXOTIC-PATHS-001
+- **Status:** ✅ CERRADO DAY 133
+- **Fix:** Falco instalado en hardened VM con `modern_ebpf` driver. 10 reglas aRGus: 7 originales + 3 post-Consejo (`argus_config_modified_unexpected`, `argus_model_or_plugin_replaced`, `argus_apparmor_profile_modified`). Estrategia maduración 3 fases.
+- **Commit:** `c6e0c9f1` + post-Consejo
+
+### DEBT-PROD-FS-MINIMIZATION-001 (parcial)
+- **Status:** ✅ CERRADO DAY 133 (parcial — minbase es deuda futura)
+- **Fix:** Usuario `argus` (system, nologin, no home). `/opt/argus/` ownership estricto. `/tmp` y `/var/tmp` noexec,nosuid,nodev. `seed.bin` 0400. Sin SUID — capabilities via `setcap`. Gate `check-prod-permissions` automatizado.
+- **Pendiente:** imagen minbase x86+ARM (DEBT-PROD-FS-MINIMIZATION-001 → post-FEDER)
+
+### Makefile — targets de producción ADR-030 Variant A
+- **Status:** ✅ CERRADO DAY 133
+- **Fix:** `prod-build-x86`, `prod-collect-libs`, `prod-sign`, `prod-checksums`, `prod-deploy-x86`, `prod-full-x86`. Provisioning: `hardened-provision-all`. Gates: `check-prod-no-compiler` (dpkg+PATH), `check-prod-apparmor`, `check-prod-capabilities`, `check-prod-permissions`, `check-prod-falco`, `check-prod-all`. Scripts en `tools/prod/`.
+- **Commit:** `c6e0c9f1`
+
+### Linux Capabilities — setcap mínimo (post-Consejo DAY 133)
+- **Status:** ✅ CERRADO DAY 133
+- **Decisiones Consejo 8/8:** sniffer: `cap_bpf` reemplaza `cap_sys_admin` (Linux ≥5.8). etcd-server: `cap_net_bind_service` ELIMINADA (2379 > 1024). etcd-server: `cap_ipc_lock` + `LimitMEMLOCK=16M` en systemd. ml-detector, rag-ingester, rag-security: sin capabilities (no-root real).
+
+---
+
+## ✅ CERRADO DAY 132
+
+### DEBT-PROD-COMPAT-BASELINE-001
+- **Status:** ✅ CERRADO DAY 132
+- **Fix:** `docs/HARDWARE-REQUIREMENTS.md` — especificaciones mínimas y recomendadas, compatibilidad XDP por driver NIC, paquetes runtime vs prohibidos en producción.
+- **Commit:** `9b3438fb`
+
+### vagrant/hardened-x86/Vagrantfile — ADR-030 Variant A
+- **Status:** ✅ COMPLETADO DAY 133
+- **Fix:** VM Debian 12 + AppArmor enforcing + sin compilador + BSR verificado. Makefile targets completos. AppArmor 6 perfiles. Falco 10 reglas.
+- **Commit:** `c6e0c9f1`
+
+### Paper Draft v17 → v18
+- **Status:** ✅ Draft v18 COMPLETADO DAY 133
+- **Fix:** v18 = v17 + tabla BSR métricas reales (§6.12) + reformulación fuzzing (§6.8 post-Consejo). Compilado Overleaf, 42 páginas.
+
+### README — Prerequisites
+- **Status:** ✅ CERRADO DAY 132
+- **Commit:** `18d8e101` en `main`
 
 ---
 
 ## ✅ CERRADO DAY 130
 
 ### DEBT-SYSTEMD-AUTOINSTALL-001
-- **Status:** ✅ CERRADO DAY 130
-- **Fix:** `install-systemd-units.sh` integrado en Vagrantfile `cryptographic-provisioning`. Elimina paso manual post-provisioning.
-- **Commit:** `8e57aad2`
+- **Status:** ✅ CERRADO DAY 130 — **Commit:** `8e57aad2`
 
 ### DEBT-SAFE-EXEC-NULLBYTE-001
-- **Status:** ✅ CERRADO DAY 130
-- **Fix:** `is_safe_for_exec()` — `[[nodiscard]] inline bool`, compara `arg.size() == std::strlen(arg.c_str())`. Aplicado antes del `fork()` en las 4 variantes de `safe_exec`. `#include <cstring>` añadido.
-- **Tests:** `test_safe_exec.cpp` 17/17 GREEN (+2 nuevos: `RejectsNullByteInArgument` + `IsAlwaysSafeForNormalStrings`). RED→GREEN demostrado.
-- **Commit:** `c8e293a8`
+- **Status:** ✅ CERRADO DAY 130 — 17/17 GREEN — **Commit:** `c8e293a8`
 
 ### DEBT-GITGUARDIAN-YAML-001
-- **Status:** ✅ CERRADO DAY 130
-- **Fix:** `.gitguardian.yaml` reescrito limpio — `paths-ignore` → `paths_ignore` (v2), fichero corrupto con dos entradas fusionadas eliminado.
-- **Commit:** `06228a67`
+- **Status:** ✅ CERRADO DAY 130 — **Commit:** `06228a67`
 
 ### DEBT-FUZZING-LIBFUZZER-001
-- **Status:** ✅ CERRADO DAY 130 (baseline)
-- **Fix:** libFuzzer harnesses sobre `validate_chain_name` + `is_safe_for_exec` + `validate_filepath`. 2.4M runs, 0 crashes, 30s. Corpus 67 ficheros versionado. Targets `make fuzz-safe-exec`, `make fuzz-validate-filepath`, `make fuzz-all` en Makefile.
-- **Commit:** `f5994c4a`
+- **Status:** ✅ CERRADO DAY 130 (baseline) — 2.4M runs, 0 crashes, corpus 67 ficheros — **Commit:** `f5994c4a`
 
 ### DEBT-MARKDOWN-HOOK-001
-- **Status:** ✅ CERRADO DAY 130
-- **Fix:** `.git/hooks/pre-commit` — check detecta patrón `[word](http://...)` en `.cpp`/`.hpp`. Test RED→GREEN verificado manualmente.
-- **Commit:** `aab08daa`
+- **Status:** ✅ CERRADO DAY 130 — **Commit:** `aab08daa`
 
-### REGLA EMECAS (DAY 130) — Verificación destructiva
-- Grabado en asciinema: `docs/argus-day130-bootstrap-20260425-142211.cast`
-- Keypair activo post-rebuild: `1f48b75054fe98e8371653607caaf028b3f688bc055782c9c9c6d0e3494dad54`
-- Pipeline 6/6 RUNNING · TEST-INTEG-SIGN 7/7 PASSED · make test-all ALL TESTS COMPLETE
-
-### DEBT-NATIVE-LINUX-BOOTSTRAP-001 (nueva — backlog post-FEDER)
-- **Status:** ⏳ BACKLOG — no bloqueante
-- **Origen:** Colaborador externo (emecas@inspiron) intentó `make bootstrap` en Linux nativo. Fallo: `llama.h: No existe el fichero`. El provisioner Vagrant compila `llama.cpp` automáticamente — el flujo nativo no está documentado.
-- **Fix futuro:** `README` + `make deps-native` que compile `third_party/llama.cpp`.
+### REGLA EMECAS — Keypair activo post-rebuild DAY 133
+`b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
+Pipeline 6/6 RUNNING · TEST-INTEG-SIGN 7/7 PASSED · ALL TESTS COMPLETE
 
 ---
 
-## ✅ CERRADO DAY 129
+## ✅ CERRADO DAY 124–129
 
-### DEBT-IPTABLES-INJECTION-001
-- **Status:** ✅ CERRADO DAY 129
-- **Fix:** `safe_exec.hpp` — 4 primitivos fork+execv() sin shell. 14 call-sites migrados en `iptables_wrapper.cpp`. 0 popen()/system() restantes.
-- **Validadores:** `validate_chain_name()` allowlist [A-Za-z0-9_-] 1..29 chars + null byte check. `validate_table_name()` conjunto fijo. `validate_filepath()` sin traversal.
-- **Tests:** `test_safe_exec.cpp` 15/15 GREEN (4 unit + 4 property + 7 integración). RED→GREEN demostrado.
-- **Incidencias:** markdown corruption en .cpp (fix por línea), CRLF VM vs macOS, backslash en comentario safe_exec.hpp, INVALID_ARGUMENT → INVALID_RULE.
-
-### DEBT-ETCDCLIENT-LEGACY-SEED-001 (parcial)
-- **Status:** ✅ CERRADO DAY 129 (parcial — ADR-024 pendiente)
-- **Fix:** `component_config_path` solo se asigna cuando `encryption_enabled=true` en `ml-detector/src/etcd_client.cpp`.
-- **Tests:** EtcdClientHmacTest 9/9 PASSED (antes 9/9 FAILED).
-
-### DEBT-FEDER-SCOPE-DOC-001
-- **Status:** ✅ CERRADO DAY 129
-- **Fix:** `docs/FEDER-SCOPE.md` — scope mínimo viable, go/no-go 1 agosto 2026, prerequisitos técnicos, estructura `scripts/feder-demo.sh`.
-
-### DEBT-FIREWALL-CONFIG-PATH-001
-- **Status:** ✅ CERRADO DAY 129 (verificación)
-- **Fix:** `resolve_config()` ya correctamente implementada y testeada. `ConfigLoaderTraversal` 3/3 GREEN pre-existente. Tabla de verificación añadida a `docs/SECURITY-PATH-PRIMITIVES.md`.
-
-### Consejo de Sabios DAY 129 (8/8)
-- **D1 (8/8):** RULE-SCP-VM-001 — scp obligatorio, pipe zsh prohibido
-- **D2 (8/8):** `**/build-debug/` en .gitignore
-- **D3 (6/8):** A Fuzzing → C Paper → B Capabilities para DAY 130
-- **D4 (8/8):** DEBT-SAFE-EXEC-NULLBYTE-001 — null byte en safe_exec() obligatorio
-- **D5 (7/8):** Limpiar .gitguardian.yaml deprecated keys
+DAY 124: ADR-037 safe_path → v0.5.1-hardened
+DAY 125-126: 8 deudas cerradas · lstat() pre-resolution · prefix fijo · v0.5.2-hardened
+DAY 127: resolve_config() · dev/prod parity · taxonomía safe_path
+DAY 128: Snyk 18 findings triados · 5 property tests · provision portability
+DAY 129: CWE-78 CERRADO · EtcdClientHmac 9/9 · FEDER scope
 
 ---
 
-## ✅ CERRADO DAY 128
+## 🔴 DEUDA ABIERTA — Seguridad imagen de producción (ADR-030)
 
-### DEBT-SAFE-PATH-TAXONOMY-DOC-001
-- **Status:** ✅ CERRADO DAY 128
-- **Fix:** `docs/SECURITY-PATH-PRIMITIVES.md` — taxonomía 4 primitivas safe_path, PathPolicy enum conceptual, diagrama de decisión, ejemplos.
+### DEBT-PROD-APT-SOURCES-INTEGRITY-001
+**Severidad:** 🔴 Crítica | **Bloqueante:** Sí | **Target:** feature/adr030-variant-a
 
-### DEBT-PROPERTY-TESTING-PATTERN-001
-- **Status:** ✅ CERRADO DAY 128
-- **Fix:** `docs/testing/PROPERTY-TESTING.md` + 5 property tests GREEN en `contrib/safe-path/tests/test_safe_path_property.cpp`. Integrados en `make test-libs`.
-- **Tests:** 5/5 PASSED.
+SHA-256 de `sources.list` firmado en imagen. Si cambia → fail-closed (default) o fail-warn configurable. AppArmor deny de escritura en `/etc/apt/`. Falco alerta si cualquier proceso escribe en `/etc/apt/`.
 
-### DEBT-PROVISION-PORTABILITY-001
-- **Status:** ✅ CERRADO DAY 128
-- **Fix:** `ARGUS_SERVICE_USER` en `provision.sh`. Seeds `0400 root:root`. Componentes con seeds arrancan con `sudo` en Makefile.
-- **Hallazgo:** `resolve_seed()` enforza exactamente `0400` con `std::terminate()`. `sudo` es la solución, no relajar permisos.
-- **Tests:** TEST-PROVISION-1 8/8 OK. Pipeline 6/6 RUNNING en VM nueva.
-
-### DEBT-SNYK-WEB-VERIFICATION-001
-- **Status:** ✅ CERRADO DAY 128
-- **Fix:** 18 findings triados en `docs/security/SNYK-DAY-128.md`.
-  - 5 falsos positivos cerrados · 11 contrib/tools no alcanzables
-  - 1 HIGH nuevo → DEBT-IPTABLES-INJECTION-001 (DAY 129 BLOQUEANTE)
-  - 1 pendiente → DEBT-FIREWALL-CONFIG-PATH-001 (probable falso positivo)
-
-### DEBT-ETCDCLIENT-LEGACY-SEED-001 (reclasificada)
-- **Status:** Reclasificada DAY 128 — no es regresión, es código legado pre-P2P.
-- **Diagnóstico:** EtcdClient intenta leer seed vía `resolve_seed()` — modelo anterior a ADR-026/027.
-- **Decisión Consejo 5/3:** Limpiar ANTES de ADR-024. Feature: `feature/etcdclient-p2p-cleanup`.
+**Test de cierre:** Modificar `sources.list` en VM hardened → pipeline no arranca. Restaurar → arranca normalmente.
 
 ---
 
-## ✅ CERRADO DAY 127
+### DEBT-DEBIAN13-UPGRADE-001
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** post-FEDER
 
-### DEBT-DEV-PROD-SYMLINK-001
-- **Status:** ✅ CERRADO DAY 127 — mergeado a main
-- **Fix:** Nueva primitiva `resolve_config()` en `safe_path.hpp`. Usa `lexically_normal()` para verificar el prefix ANTES de seguir symlinks. Permite `/etc/ml-defender/*.json → /vagrant/*.json` en dev via `provision.sh`. Corrección de hardcodes en `firewall-acl-agent/src/main.cpp` y `Makefile`. `config_loader.cpp` y `config_parser.cpp` usan `resolve_config()` en lugar de `resolve()`.
-- **Hallazgo técnico clave:** `fs::is_symlink(resolved)` es inútil post-`weakly_canonical()` — el symlink ya fue resuelto. Para configs con symlinks legítimos, verificar el prefix sobre el path lexical (antes de resolver). Dos primitivas distintas para dos casos de seguridad distintos.
-- **Tests:** `test_safe_path_config.cpp` — 5/5 RED→GREEN. 6/6 RUNNING. `make test-all` ALL TESTS COMPLETE.
+Documentar y validar upgrade path Debian 12 (bookworm) → Debian 13 (trixie) para bare-metal hospitalario.
 
 ---
 
-## ✅ CERRADO DAY 126
+### DEBT-PAPER-FUZZING-METRICS-001
+**Severidad:** 🟡 Media | **Bloqueante:** Sí (pre-arXiv) | **Target:** DAY 134
 
-### DEBT-SAFE-PATH-SEED-SYMLINK-001
-- **Status:** ✅ CERRADO DAY 126 — mergeado a main (v0.5.2-hardened)
-- **Fix:** `lstat` ANTES de `resolve()` en `resolve_seed()`. `fs::is_symlink(resolved)` llegaba tarde: `weakly_canonical()` ya había resuelto el symlink. `lstat()` sobre el path original es la única defensa correcta. Sin flag configurable.
-- **Tests:** 11/11 `test_safe_path` PASSED incluyendo `SeedRejectSymlink` RED→GREEN.
-
-### DEBT-CONFIG-PARSER-FIXED-PREFIX-001
-- **Status:** ✅ CERRADO DAY 126 — mergeado a main
-- **Fix:** `allowed_prefix` explícito como parámetro en `rag_ingester::ConfigParser::load()` y `mldefender::firewall::ConfigLoader::load_from_file()`. Default `/etc/ml-defender/`. El prefix nunca se deriva del input.
-- **Tests:** 4/4 `test_config_parser_traversal` + 3/3 `ConfigLoaderTraversal` PASSED.
-
-### DEBT-PRODUCTION-TESTS-REMAINING-001
-- **Status:** ✅ CERRADO DAY 126 — mergeado a main
-- **Fix:** `test_seed_client_traversal.cpp` (3/3) y `test_config_loader_traversal.cpp` (3/3). RED→GREEN en seed-client y firewall-acl-agent.
-
-### DEBT-MEMORY-UTILS-BOUNDS-001
-- **Status:** ✅ CERRADO DAY 126 — mergeado a main
-- **Fix:** `MAX_REALISTIC_MEMORY_MB = 1024.0 * 1024.0` en `memory_utils.hpp`. `RealisticBounds` test añadido. `PropertyNeverNegative` separado correctamente de bounds check.
-- **Tests:** 5/5 PASSED.
-
-### Tag v0.5.2-hardened
-- **Status:** ✅ MERGEADO a main DAY 126
+Tabla completa de métricas §6.8 con datos reales DAY 130. Reformulación de la frase: CERRADA (post-Consejo DAY 133). Pendiente: recuperar métricas exactas de `validate_filepath` y `safe_exec`.
 
 ---
 
-## ✅ CERRADO DAY 125
+### DEBT-KEY-SEPARATION-001 *(nueva — DAY 133)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** post-FEDER
+**Origen:** Consejo 8/8 DAY 133 — unánime
 
-### DEBT-GITIGNORE-TEST-SOURCES-001
-- **Status:** ✅ CERRADO DAY 125
-- **Fix:** `**/build/**/test_*` + excepciones `!test_*.cpp` / `!test_*.hpp`
-- **Bonus:** 47 fuentes de test versionadas en commit atómico separado
+Separar keypairs Ed25519: `pipeline-signing.sk/pk` (binarios) vs `plugin-signing.sk/pk` (plugins). Actualmente mismo keypair para ambos dominios. Blast radius reducido. Rotación independiente.
 
-### DEBT-INTEGER-OVERFLOW-TEST-001
-- **Status:** ✅ CERRADO DAY 125
-- **Fix:** `compute_memory_mb()` extraída a `memory_utils.hpp` header-only. Aritmética `double` directa — `int64_t` insuficiente para valores extremos (`LONG_MAX/4096 * 8192` desborda `int64_t`, no `double`).
-- **Tests:** 4/4 RED→GREEN: unit sintético (A) + valor extremo (GREEN) + property nunca negativo (C) + property monotonicidad (C)
-- **Hallazgo:** El property test encontró un bug que el unit test no cubría. Valida Opción C del Consejo DAY 124.
-
-### DEBT-SAFE-PATH-TEST-RELATIVE-001
-- **Status:** ✅ CERRADO DAY 125
-- **Fix:** Test 10 `RelativePathResolvesBeforePrefixCheck` en `contrib/safe-path/tests/test_safe_path.cpp`
-
-### DEBT-SAFE-PATH-TEST-PRODUCTION-001 (rag-ingester)
-- **Status:** ✅ CERRADO DAY 125 (rag-ingester) + completado DAY 126 (seed-client + firewall)
-- **Fix:** `test_config_parser_traversal.cpp` — 3 tests.
-
-### DEBT-CRYPTO-TRANSPORT-CTEST-001
-- **Status:** ✅ CERRADO DAY 125
-- **Causa raíz:** permisos `0600` en seeds de test fixtures. Fix: `0400`.
-- **Tests:** 5/5 ctest PASSED
+**Fix:** Generar `pipeline-signing.sk/pk` en `provision.sh`. Documentar en `docs/SECURITY-KEY-MANAGEMENT.md`.
 
 ---
 
-## ✅ CERRADO DAY 124
+### DEBT-KERNEL-COMPAT-001 *(nueva — DAY 133)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 134
+**Origen:** Consejo 8/8 DAY 133
 
-### ADR-037 — Static Analysis Security Hardening (safe_path)
-- **Status:** ✅ CERRADO DAY 124 — mergeado a main
-- **Tag:** `v0.5.1-hardened`
+Verificar que `cap_bpf` funciona correctamente para XDP en hardened VM (Debian bookworm kernel 6.1). `deploy-hardened.sh` tiene detección automática y fallback documentado.
 
----
-
-## 🟡 DEUDA ABIERTA — Pendiente
-
-### DEBT-SNYK-WEB-VERIFICATION-001
-**Severidad:** 🟡 Media | **Bloqueante:** Sí (científicamente) | **Target:** DAY 128
-**Origen:** DAY 124 — verificación solo con Snyk CLI macOS, no con Snyk web
-**Descripción:** Los 23 findings originales de Snyk web no han sido re-verificados post-fix. No podemos afirmar cierre completo de ADR-037 hasta ejecutar Snyk web sobre `v0.5.2-hardened`.
-
-**Criterio de triage (Consejo 8/8 DAY 127):**
-
-| Tipo | Código propio | Third-party | Acción |
-|------|--------------|-------------|--------|
-| Path traversal / overflow / crypto misuse | 🔴 Bloqueante | 🔴 Bloqueante | Fix con RED→GREEN |
-| Otro HIGH en código propio | 🔴 Bloqueante | 🟡 Analizar | Fix o justificar en ADR |
-| MEDIUM en código propio | 🟡 Próximo sprint | 🟢 Documentar | KNOWN-ISSUES.md |
-| Falso positivo demostrable | 🟢 Documentar | 🟢 Documentar | Cerrar con justificación |
-| Third-party no alcanzable en prod | — | 🟢 Monitorizar | `.trivyignore` + upstream |
-
-**Regla:** La herramienta propone; el modelo de amenazas decide. El Consejo revisa criterios, no cada finding individual. El Consejo solo interviene en findings HIGH/CRITICAL en código de producción propio.
-
-**Test de cierre:** Snyk web report → 0 findings HIGH/CRITICAL en código C++ de producción propio. Residuos documentados en `docs/security/SNYK-DAY-128.md`.
+**Test de cierre:** `ip link set dev eth1 xdp obj sniffer.bpf.o` exitoso con `cap_bpf+cap_net_admin` sin `cap_sys_admin`.
 
 ---
 
-### DEBT-PROPERTY-TESTING-PATTERN-001
-**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 128
-**Origen:** DAY 127 — redefinida (antes DEBT-PROPERTY-TESTING-RAPIDCHECK-001, sin deps nuevas)
-**Descripción:** Formalizar el patrón de property testing manual que ya demostró valor (F17 DAY 125). Sin dependencias nuevas — el patrón manual es suficiente y ya está validado. rapidcheck queda como opción futura si se necesita shrinking automático.
-
-**Plan:**
-1. `docs/testing/PROPERTY-TESTING.md` — qué es un property test, cuándo usarlo, patrón estándar
-2. Aplicar property tests de invariantes a `resolve_seed()`, `resolve_config()`, `config_parser`
-3. Diagrama de decisión: unit test + property test + integration test como capas
-
-**Test de cierre:** `docs/testing/PROPERTY-TESTING.md` existe con patrón documentado + 3 nuevos property tests RED→GREEN en superficies críticas.
+### DEBT-PROD-APPARMOR-PORTS-001 *(nueva — DAY 133)*
+**Severidad:** 🟢 Baja | **Bloqueante:** No | **Target:** post-estabilización JSON
+**Decisión founder:** No implementar hasta que los puertos sean fuente de verdad compartida entre JSON y perfil AA. "JSON es la ley."
 
 ---
 
-### DEBT-PROVISION-PORTABILITY-001
-**Severidad:** 🟢 Media | **Bloqueante:** No | **Target:** DAY 128
-**Origen:** DAY 124 — `vagrant` hardcodeado en `chown` de `provision.sh`
-**Descripción:** En producción bare metal o cualquier hipervisor distinto de Vagrant, el service user será diferente.
+### DEBT-PROD-FALCO-RULES-EXTENDED-001 *(nueva — DAY 133)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 135
 
-**Fix:** `ARGUS_SERVICE_USER="${ARGUS_SERVICE_USER:-vagrant}"` al inicio de `provision.sh`. Validación explícita: si variable crítica no definida → error explícito.
-
-**Test de cierre:** `provision.sh` con `ARGUS_SERVICE_USER=testuser` → seeds con permisos `0400 testuser:testuser`. `TEST-PROVISION-1` verde.
+Reglas Falco propuestas en Consejo DAY 133 no adoptadas: ptrace (Gemini), DNS tunneling (Kimi), conexiones salientes inesperadas (ChatGPT, Mistral), `/dev/mem` (Mistral), fork bombs (Mistral).
 
 ---
+
+
+---
+
+### DEBT-ADR040-001 a 012 — ML Plugin Retraining Contract *(nuevas — DAY 134)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** post-FEDER (implementación Año 1)
+**Origen:** ADR-040 v2 — Consejo 8/8 DAY 134 (17 enmiendas, aprobado unánime)
+
+| ID | Descripción | Target |
+|----|-------------|--------|
+| DEBT-ADR040-001 | Golden set v1 (≥50K flows, 70/30, Parquet, SHA-256 embebido en plugin) | v1.0 — pre-FEDER si posible |
+| DEBT-ADR040-002 | Verificar que ml-detector emite `confidence_score ∈ [0,1]` en salida ZeroMQ | v1.0 |
+| DEBT-ADR040-003 | `walk_forward_split.py` — `--split-field timestamp_first_packet`, mín. 3 ventanas, KS drift | v1.1 |
+| DEBT-ADR040-004 | `check_guardrails.py` — Recall −0.5pp / F1 −2pp / FPR +1pp / latencia p99 +10% → exit 1 | v1.1 |
+| DEBT-ADR040-005 | Integrar guardrail en proceso de firma Ed25519 (ADR-025) — `prod-sign` invoca guardrail | v1.1 |
+| DEBT-ADR040-006 | IPW + uncertainty sampling (P≈0.5) en rag-ingester, ratio adaptativo [3%-10%] por drift | v1.2 |
+| DEBT-ADR040-007 | Interfaz web revisión exploración en rag-security — etiquetado manual del 5% (Año 1) | v1.2 |
+| DEBT-ADR040-008 | Informe diversidad por ciclo: Shannon entropy, MITRE ATT&CK coverage %, novelty score | v1.2 |
+| DEBT-ADR040-009 | Competición algoritmos: XGBoost vs CatBoost vs LightGBM vs RF (multicriterio, una vez) | pre-lock-in |
+| DEBT-ADR040-010 | Dataset lineage en metadatos del plugin (hash dataset + golden set + git commits) | v1.1 |
+| DEBT-ADR040-011 | Canary deployment: 5-10% tráfico 24h antes de 100% (manual Año 1, flota Año 2) | v1.2 |
+| DEBT-ADR040-012 | `docs/GOLDEN-SET-REGISTRY.md` con hash v1 + proceso evolución controlada | v1.0 |
+
+**Prerequisito crítico (enmienda Claude, DAY 134):** IPW no es implementable sin `confidence_score`. DEBT-ADR040-002 debe resolverse antes de DEBT-ADR040-006.
+
+**Test de cierre DEBT-ADR040-004:** `make retrain-eval PLUGIN=candidate.ubj` → exit 1 ante regresión. `make prod-sign` no ejecuta si guardrail falla.
+
+---
+
+### DEBT-ADR041-001 a 006 — Hardware Acceptance Metrics FEDER *(nuevas — DAY 134)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** pre-FEDER, deadline 22 sep 2026
+**Origen:** ADR-041 — Consejo 8/8 DAY 134
+
+| ID | Descripción | Estado |
+|----|-------------|--------|
+| DEBT-ADR041-001 | Subconjunto pcap CTU-13 benchmark versionado con SHA-256 (`ctu13-neris-benchmark.pcap`) | ⏳ PENDIENTE |
+| DEBT-ADR041-002 | `make golden-set-eval ARCH=$(uname -m)` — exit 0 dentro de tolerancia, exit 1 regresión | ⏳ PENDIENTE (depende ADR-040) |
+| DEBT-ADR041-003 | `make feder-demo` — suite completa desde VM fría, <30 min, sin trucos pregrabados | ⏳ PENDIENTE |
+| DEBT-ADR041-004 | Compra hardware x86 (NUC/mini-PC ~300€, NIC con soporte XDP nativo — mlx5/i40e/ixgbe) | ⏳ post-métricas definidas |
+| DEBT-ADR041-005 | Compra Raspberry Pi 4/5 | ⏳ post-métricas definidas |
+| DEBT-ADR041-006 | Primera ejecución protocolo completo en hardware físico | ⏳ post-compra hardware |
+
+**Nota DeepSeek:** Verificar driver NIC antes de comprar x86. Sin XDP nativo el delta científico A/B se distorsiona.
+**Nota DeepSeek:** Temperatura ARM ≤75°C sin ventilador — gate no negociable para armarios hospitalarios 24/7.
+**Tolerancias ML:** x86 TOLERANCE=0.0000 · ARM TOLERANCE=0.0005 (NEON vs AVX2).
+
+---
+
+### DEBT-EMECAS-HARDENED-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🔴 Crítica | **Bloqueante:** Sí | **Target:** DAY 135
+**Origen:** Consejo síntesis 8/8 DAY 134
+
+Implementar `make hardened-full` como EMECAS sagrado de la hardened VM:
+- Fail-fast obligatorio (`set -e`)
+- Siempre incluye `vagrant destroy -f` al inicio
+- Gates `check-prod-all` siempre completos, nunca cacheados
+- Target paralelo `make hardened-redeploy` (sin destroy, para iteración en desarrollo de perfiles AppArmor/Falco)
+- Documentar en `docs/EMECAS-hardened.md`: cuándo usar cada target
+
+**Test de cierre:** `make hardened-full` desde VM destruida → check-prod-all PASSED en <45 min. Segunda ejecución de `make hardened-full` también PASSED (reproducibilidad).
+
+---
+
+### DEBT-VENDOR-FALCO-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 135
+**Origen:** Consejo síntesis 8/8 DAY 134
+
+Formalizar gestión de artefactos binarios de terceros:
+- Directorio `dist/vendor/` gitignored
+- `dist/vendor/CHECKSUMS` committeado con SHA-256 de cada artefacto
+- `make vendor-download` descarga y verifica hash — si no coincide → abort
+- Falco .deb actual (`falco_0.43.1_amd64.deb`) mover a `dist/vendor/`
+- Documentar en `docs/VENDOR-ARTIFACTS.md`
+
+**Test de cierre:** `make vendor-download` en repo limpio descarga y verifica Falco .deb. Hash incorrecto → exit 1.
+
+---
+
+### DEBT-SEEDS-DEPLOY-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🟡 Media | **Bloqueante:** No | **Target:** DAY 135
+**Origen:** Consejo síntesis 7/8 DAY 134
+
+Crear target `make prod-deploy-seeds` para transferencia explícita de semillas desde dev VM a hardened VM en el momento del deploy real:
+- Usar `scp -F vagrant-ssh-config` (REGLA PERMANENTE DAY 129)
+- Permisos `0400 argus:argus` en destino
+- Convertir WARNs de `seed.bin no existe` en `check-prod-permissions` a INFO documentados
+- La ausencia de seeds en EMECAS es estado correcto por diseño
+
+**Test de cierre:** `make prod-deploy-seeds` → seeds en `/etc/ml-defender/*/seed.bin` con permisos correctos → `check-prod-permissions` sin WARNs.
+
+---
+
+### DEBT-CONFIDENCE-SCORE-001 *(nueva — DAY 134, Consejo síntesis)*
+**Severidad:** 🔴 Crítica | **Bloqueante:** Sí (prerequisito ADR-040 Regla 4) | **Target:** DAY 135
+**Origen:** Consejo síntesis 8/8 DAY 134
+
+Verificar que ml-detector emite `confidence_score ∈ [0,1]` en salida ZeroMQ antes de implementar IPW (DEBT-ADR040-006):
+- **Paso 1 — Inspección estática:** `scripts/check-confidence-score.sh` — verifica campo en `.proto` y asignación en código fuente
+- **Paso 2 — Test de integración:** `tests/integration/test_confidence_score.py` — captura mensaje ZeroMQ real con golden pcap determinista, verifica presencia + rango + variabilidad (no constante entre benign/attack)
+- Si el campo no existe → DEBT-ADR040-002 abierto, IPW bloqueado
+- Si el campo existe pero es constante → bug de implementación, requiere fix antes de IPW
+
+**Test de cierre:** Ambos scripts pasan. Score varía entre flows benignos y maliciosos. DEBT-ADR040-002 marcado como CERRADO solo cuando ambos pasen.
+
+
 
 ## 🔵 BACKLOG — Deuda de seguridad crítica (pre-producción)
 
 | ID | Tarea | Test de cierre | Feature destino |
 |----|-------|---------------|----------------|
-| **DEBT-SAFE-PATH-RESOLVE-MODEL-001** | `resolve_model()` — primitiva futura para modelos firmados Ed25519. Los modelos XGBoost (`.ubj`) son input crítico del ml-detector. Verificación criptográfica debe estar en `safe_path`, no dispersa. (Propuesto por Kimi DAY 127) | `resolve_model()` implementada + test RED→GREEN | feature/adr038-acrl |
-| **DEBT-SAFE-PATH-TAXONOMY-DOC-001** | `docs/SECURITY-PATH-PRIMITIVES.md` — diagrama de decisión taxonomía safe_path con PathPolicy enum conceptual. (Propuesto por ChatGPT/Grok/Qwen DAY 127) | Fichero existe con tabla + diagrama | DAY 128 |
-| **DEBT-CRYPTO-003a** | mlock() + explicit_bzero(seed) post-derivación HKDF. SecureBuffer C++20. | Valgrind/ASan: seed no permanece en heap | feature/crypto-hardening |
+| **DEBT-SAFE-PATH-RESOLVE-MODEL-001** | `resolve_model()` — primitiva futura para modelos firmados Ed25519 | `resolve_model()` + test RED→GREEN | feature/adr038-acrl |
+| **DEBT-CRYPTO-003a** | mlock() + explicit_bzero(seed) post-derivación HKDF | Valgrind/ASan: seed no permanece en heap | feature/crypto-hardening |
 | **DEBT-SNIFFER-SEED** | Unificar sniffer bajo SeedClient | sniffer arranca con SeedClient | feature/crypto-hardening |
-| **DEBT-FUZZING-LIBFUZZER-001** | libFuzzer sobre superficies críticas: `safe_path`, `crypto_transport`, `config_parser` (parsers JSON). Siguiente capa después de property testing. | 1h de fuzzing sin crash para cada superficie | post-property-testing |
+| **DEBT-NATIVE-LINUX-BOOTSTRAP-001** | README + make deps-native para bootstrap sin Vagrant | make deps-native verde en Ubuntu 22.04 | post-FEDER |
 
 ---
 
 ## 📋 BACKLOG — P3 Features futuras
 
-### PHASE 5 — Loop Adversarial (→ feature/adr038-acrl)
+### PHASE 5 — Loop Adversarial
 
 | ID | Tarea | Gates mínimos |
 |----|-------|--------------|
-| **DEBT-PENTESTER-LOOP-001** | ACRL: Caldera → eBPF capture → XGBoost warm-start → Ed25519 sign → hot-swap | G1: reproducibilidad · G2: ground-truth flow · G3: ≥3 ATT&CK · G4: RFC-válido · G5: sandbox |
+| **DEBT-PENTESTER-LOOP-001** | ACRL: Caldera → eBPF capture → XGBoost warm-start → Ed25519 sign → hot-swap | G1: reproducibilidad · G2: ground-truth · G3: ≥3 ATT&CK · G4: RFC-válido · G5: sandbox |
 | **ADR-038** | ACRL ADR formal | Aprobado por Consejo |
-| **ADR-025-EXT-001** | Emergency Patch Protocol — Plugin Unload: implementar `action="unload"` en plugin-loader. Tabla interna de handles activos. `dlclose()` con log NOTICE. Tests SIGN-8/9/10. | TEST-INTEG-SIGN-8/9/10 RED→GREEN | post-FEDER |
+| **ADR-025-EXT-001** | Emergency Patch Protocol — Plugin Unload vía mensaje firmado | TEST-INTEG-SIGN-8/9/10 RED→GREEN | post-FEDER |
 
-### Variantes de producción (ADR-029)
+### Variantes de producción
 
 | Variante | Tarea | Feature destino |
 |----------|-------|----------------|
-| **aRGus-production x86** | Imagen Debian cocinada apparmor x86 + Vagrantfile | feature/production-images |
-| **aRGus-production arm64** | Imagen Debian cocinada apparmor arm64 + Vagrantfile | feature/production-images |
-| **aRGus-seL4** | kernel seL4, libpcap, sniffer monohilo reescrito. Branch independiente. | feature/sel4-research |
+| **aRGus-production x86** | Pipeline E2E en hardened VM · check-prod-all verde | feature/adr030-variant-a |
+| **aRGus-production arm64** | Imagen Debian arm64 + AppArmor + Vagrantfile | feature/production-images |
+| **aRGus-seL4** | kernel seL4, libpcap, sniffer monohilo. Branch independiente. | feature/sel4-research |
 
-### Paper arXiv:2604.04952 — Draft v17
+### Paper arXiv:2604.04952
 
 | Tarea | Target |
 |-------|--------|
-| §5.3 "Property Testing as a Security Fix Validator" — hallazgo F17 | Draft v17 |
-| §5.4 "Dev/Prod Parity via Symlinks, Not Conditional Logic" | Draft v17 |
-| §5.5 "RED→GREEN as Non-Negotiable Merge Gate" | Draft v17 |
-| §5.x "Taxonomía safe_path: lexically_normal vs weakly_canonical" — distinción no documentada en literatura C++20 | Draft v17 |
-| Trabajo relacionado: QuickCheck (Claessen & Hughes), CWE-22/23, TOCTOU literature, OWASP Path Traversal | Draft v17 |
+| Tabla métricas fuzzing §6.8 (datos reales DAY 130) | DAY 134 |
+| arXiv replace v15 → v18 | post DAY 134 |
 
 ---
 
@@ -313,314 +371,306 @@
 |---|---|---|
 | **Test RED→GREEN obligatorio** | Todo fix de seguridad requiere test de demostración antes del merge. Sin excepciones. | Consejo 7/7 · DAY 124 |
 | **Property test obligatorio** | Todo fix de seguridad incluye property test de invariante si aplica. | Consejo 8/8 · DAY 125 |
-| **double para compute_memory_mb** | Aritmética double directa — int64_t insuficiente para valores extremos. | DAY 125 |
-| **Symlinks en seeds: NO** | resolve_seed() rechaza symlinks estrictamente. lstat() ANTES de resolve(). Sin flag. | Consejo 8/8 · DAY 125-126 |
+| **Symlinks en seeds: NO** | resolve_seed(): lstat() ANTES de resolve(). Sin symlinks, sin flag. | Consejo 8/8 · DAY 125-126 |
 | **ConfigParser prefix fijo** | allowed_prefix explícito, default /etc/ml-defender/. Nunca derivado del input. | Consejo 8/8 · DAY 125-126 |
-| **resolve_config() para configs** | lexically_normal() verifica prefix ANTES de seguir symlinks. Permite paridad dev/prod. | DAY 127 |
-| **Makefile paths absolutos** | rag-ingester y firewall arrancan con paths /etc/ml-defender/ — fin de paths relativos. | DAY 127 |
-| **Taxonomía safe_path: 3 primitivas activas** | resolve() general · resolve_seed() criptográfico · resolve_config() configs con symlinks. Documentar con PathPolicy enum conceptual. | Consejo 8/8 · DAY 127 |
-| **resolve_model() como primitiva futura** | Modelos XGBoost son superficie crítica. resolve_model() verificará firma Ed25519 en safe_path. Backlog ADR-038. | Consejo (Kimi) · DAY 127 |
-| **Property testing primero, fuzzing después** | Property testing formalizar DAY 128. libFuzzer para parsers post-property. Mutation testing último. | Consejo 8/8 · DAY 127 |
-| **Snyk: modelo de amenazas decide** | La herramienta propone; el modelo de amenazas decide. Código propio = bloqueante. Third-party = documentar. | Consejo 8/8 · DAY 127 |
-| **Paper §5 — lecciones TDH** | Incluir en §5 del paper actual. Framing: "unit testing insuficiente para fixes de seguridad". | Consejo 8/8 · DAY 125-127 |
-| **seeds 0400 + sudo** | `0400 root:root` invariante. `sudo` aceptable. Evolución: `CAP_DAC_READ_SEARCH` v0.6+ | Consejo 8/8 · DAY 128 |
-| **CWE-78 execve()** | IPTablesWrapper migra a execve() sin shell. libiptc a largo plazo. Bloqueante DAY 129. | Consejo 8/8 · DAY 128 |
-| **EtcdClient cleanup antes de ADR-024** | Mayoría 5/3: limpiar legacy pre-P2P antes de ADR-024. | Consejo 5/3 · DAY 128 |
-| **Demo FEDER = NDR standalone** | NDR standalone + 2 nodos simulados. No requiere ADR-038. Go/no-go: 1 agosto 2026. | Consejo 8/8 · DAY 128 |
-| **RULE-SCP-VM-001** | Toda transferencia VM↔macOS usa scp/vagrant scp. Prohibido pipe zsh (trunca a 0 bytes silenciosamente). | Consejo 8/8 · DAY 129 |
-| **Null byte en safe_exec()** | is_safe_for_exec() en safe_exec() como defensa en profundidad independiente de validadores upstream. | Consejo 8/8 · DAY 129 |
-| **Fuzzing antes que Paper** | Prioridad DAY 130: A(Fuzzing) → C(Paper §5) → B(Capabilities). Fuzzing descubre unknown unknowns antes del despliegue. | Consejo 6/8 · DAY 129 |
-| **REGLA EMECAS (DAY 130)** | Toda sesión comienza con `vagrant destroy -f && vagrant up && make bootstrap && make test-all`. Pipeline reproducible desde cero = prerequisito de cualquier cambio. | DAY 130 |
-| **is_safe_for_exec() contrato de seguridad** | Null byte check en safe_exec() es un contrato, no una optimización. Defensa en profundidad independiente de validadores upstream. | DAY 130 |
-| **libFuzzer como baseline** | Harnesses sobre validate_chain_name + validate_filepath. Corpus versionado. 2.4M runs sin crash = baseline certificado. | DAY 130 |
-| **ARGUS_SERVICE_USER** | Variable de entorno para service user. Default `vagrant`. | Consejo 6/7 · DAY 124 |
-| **safe_path header-only** | `contrib/safe-path/` — cero dependencias, C++20 puro. | Consejo 7/7 · DAY 123 |
-| **Seeds 0400** | Seeds deben tener permisos `0400` (solo owner, solo lectura). | Consejo 7/7 · DAY 124 |
-| **Tres variantes** | aRGus-dev · aRGus-production (x86+ARM apparmor) · aRGus-seL4 (apéndice científico). | DAY 124 |
-| **Plugin unload vía mensaje firmado** | Emergency Patch Protocol: `action="unload"` + Ed25519 + ZeroMQ. Zero new attack surface. Reutiliza cadena de confianza existente. Post-FEDER. | DAY 131 — sugerencia founder LinkedIn |
+| **resolve_config() para configs** | lexically_normal() verifica prefix ANTES de seguir symlinks. | DAY 127 |
+| **Taxonomía safe_path: 3 primitivas activas** | resolve() · resolve_seed() · resolve_config(). | Consejo 8/8 · DAY 127 |
+| **CWE-78 execve()** | execv() sin shell. | Consejo 8/8 · DAY 128 |
+| **RULE-SCP-VM-001** | scp/vagrant scp. Prohibido pipe zsh. | Consejo 8/8 · DAY 129 |
+| **REGLA EMECAS** | vagrant destroy -f && vagrant up && make bootstrap && make test-all. | DAY 130 |
+| **AppArmor como primera línea BSR** | AppArmor bloquea compiladores. check-prod-no-compiler es auditoría, no defensa. | DAY 132 — founder |
+| **Falco para paths exóticos** | AppArmor previene; Falco detecta. | DAY 132 — founder |
+| **FS de producción mínimo** | /tmp noexec. Usuario argus no-root. | DAY 132 — founder |
+| **apt sources integrity** | SHA-256 firmado. Si cambia: fail-closed. | DAY 132 — founder |
+| **Makefile raíz con prefijo prod-** | Guard _check-dev-env. | Consejo 8/8 · DAY 132 |
+| **cap_bpf reemplaza cap_sys_admin** | Linux ≥5.8: cap_bpf para eBPF. cap_sys_admin prohibida si evitable. | Consejo 8/8 · DAY 133 |
+| **cap_net_bind_service eliminada** | Puerto 2379 > 1024. Innecesaria. | Consejo 8/8 · DAY 133 |
+| **LimitMEMLOCK en systemd** | etcd-server: LimitMEMLOCK=16M. No cap_sys_resource para seed de 32 bytes. | Consejo 8/8 · DAY 133 |
+| **deny explícitos en AppArmor** | Mantener — claridad auditiva + defensa ante cambios futuros en abstractions/base. | Founder · DAY 133 |
+| **network inet tcp sin restricción** | ZeroMQ usa puertos configurables via JSON. DEBT-PROD-APPARMOR-PORTS-001. | Founder · DAY 133 |
+| **Keypairs separados post-FEDER** | DEBT-KEY-SEPARATION-001. No bloquea DAY 134. | Consejo 8/8 · DAY 133 |
+| **"Fuzzing misses nothing" ELIMINADA** | Frase incorrecta. Fuzzing es estocástico, no exhaustivo. | Consejo 8/8 · DAY 133 |
+| **Walk-forward obligatorio (ADR-040)** | K-fold prohibido. Split sobre `timestamp_first_packet` ordenado. Mín. 3 ventanas. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Golden set inmutable (ADR-040)** | ≥50K flows, SHA-256 embebido en plugin firmado. Evolución controlada, solapamiento 6 meses. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Guardrail asimétrico Ed25519 (ADR-040)** | Recall −0.5pp (más restrictivo). F1 −2pp. FPR +1pp. Latencia p99 +10%. Exit 1 = no firma. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **IPW + uncertainty sampling (ADR-040)** | 5% exploración (P≈0.5). Ratio adaptativo [3%-10%] por drift. Memory replay buffer. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Competición algoritmos pre-lock-in (ADR-040)** | Multicriterio: Recall 40% + F1 25% + latencia 20% + tamaño 10% + carga 5%. Una sola vez. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Dataset lineage obligatorio (ADR-040)** | Hash dataset + golden set + features_version + git commits. Sin lineage = no firma. | ADR-040 · Consejo 8/8 · DAY 134 |
+| **Niveles despliegue FEDER (ADR-041)** | Nivel 1 (RPi4/5, ≤50 usuarios) + Nivel 2 (x86, 50-200). Demo mínima: ambos simultáneos. | ADR-041 · Consejo 8/8 · DAY 134 |
+| **Latencia end-to-end como métrica primaria (ADR-041)** | Captura → alerta → iptables efectiva. Más relevante que latencia de detección aislada. | ADR-041 · DeepSeek · DAY 134 |
+| **Temperatura ARM como gate (ADR-041)** | ≤75°C sin ventilador. Crítica para armarios hospitalarios 24/7. | ADR-041 · DeepSeek · DAY 134 |
+| **Pipeline evaluación híbrido (ADR-040)** | Scripts en repo (local Vagrant). CI = mismo código, segunda entrada. Opción A recomendada FEDER. | ADR-040 · Consejo 6/7 · DAY 134 |
+| **Falco modern_ebpf driver** | Correcto para 2026. kmod en deprecación. | Consejo 8/8 · DAY 133 |
+| **10 reglas Falco aRGus** | 7 originales + config tamper + model/plugin replace + AA profile tamper. | Consejo 8/8 · DAY 133 |
+| **Estrategia maduración AppArmor+Falco** | complain→enforce en paralelo. 30 min sin FP antes de pasar a enforce+CRITICAL. | Consejo 8/8 · DAY 133 |
 
 ---
 
 ## 📊 Estado global del proyecto
 
 ```
-Foundation + Thread-Safety:             ████████████████████ 100% ✅
-HMAC Infrastructure:                    ████████████████████ 100% ✅
-F1=0.9985 (CTU-13 Neris):              ████████████████████ 100% ✅
-CryptoTransport (HKDF+AEAD):            ████████████████████ 100% ✅
-ADR-025 Plugin Integrity (Ed25519):     ████████████████████ 100% ✅
-TEST-INTEG-4a/4b/4c/4d/4e + SIGN:      ████████████████████ 100% ✅
-AppArmor 6/6 enforce:                   ████████████████████ 100% ✅
-arXiv:2604.04952 PUBLICADO:             ████████████████████ 100% ✅
-PHASE 3 v0.4.0:                         ████████████████████ 100% ✅
-PHASE 4 v0.5.0-preprod:                 ████████████████████ 100% ✅
-ADR-026 XGBoost Prec=0.9945:            ████████████████████ 100% ✅
-Wednesday OOD finding:                  ████████████████████ 100% ✅
-make bootstrap idempotente:             ████████████████████ 100% ✅
-ADR-037 safe_path v0.5.1-hardened:      ████████████████████ 100% ✅  DAY 124
-DEBT-GITIGNORE-TEST-SOURCES-001:        ████████████████████ 100% ✅  DAY 125
-DEBT-INTEGER-OVERFLOW-TEST-001:         ████████████████████ 100% ✅  DAY 125
-DEBT-SAFE-PATH-TEST-RELATIVE-001:       ████████████████████ 100% ✅  DAY 125
-DEBT-SAFE-PATH-TEST-PRODUCTION-001:     ████████████████████ 100% ✅  DAY 126
-DEBT-CRYPTO-TRANSPORT-CTEST-001:        ████████████████████ 100% ✅  DAY 125
-DEBT-SAFE-PATH-SEED-SYMLINK-001:        ████████████████████ 100% ✅  DAY 126
-DEBT-CONFIG-PARSER-FIXED-PREFIX-001:    ████████████████████ 100% ✅  DAY 126
-DEBT-PRODUCTION-TESTS-REMAINING-001:    ████████████████████ 100% ✅  DAY 126
-DEBT-MEMORY-UTILS-BOUNDS-001:           ████████████████████ 100% ✅  DAY 126
-DEBT-DEV-PROD-SYMLINK-001:              ████████████████████ 100% ✅  DAY 127
-
-DEBT-SNYK-WEB-VERIFICATION-001:         ████████████████████ 100% ✅  DAY 128
-DEBT-PROPERTY-TESTING-PATTERN-001:      ████████████████████ 100% ✅  DAY 128
-DEBT-SAFE-PATH-TAXONOMY-DOC-001:        ████████████████████ 100% ✅  DAY 128
-DEBT-PROVISION-PORTABILITY-001:         ████████████████████ 100% ✅  DAY 128
-
-
-DEBT-IPTABLES-INJECTION-001:            ████████████████████ 100% ✅  DAY 129
-
-DEBT-FIREWALL-CONFIG-PATH-001:          ████████████████████ 100% ✅  DAY 129
-
-DEBT-SEED-CAPABILITIES-001:           ░░░░░░░░░░░░░░░░░░░░   0% ⏳ v0.6+
-DEBT-SYSTEMD-AUTOINSTALL-001:          ████████████████████ 100% ✅  DAY 130
-DEBT-SAFE-EXEC-NULLBYTE-001:           ████████████████████ 100% ✅  DAY 130
-DEBT-GITGUARDIAN-YAML-001:             ████████████████████ 100% ✅  DAY 130
-DEBT-FUZZING-LIBFUZZER-001:            ████████████████████ 100% ✅  DAY 130  (baseline — 2.4M runs, 0 crashes)
-DEBT-MARKDOWN-HOOK-001:                ████████████████████ 100% ✅  DAY 130
-
-DEBT-FEDER-SCOPE-DOC-001:              ████████████████████ 100% ✅  DAY 129
-
-DEBT-ETCDCLIENT-LEGACY-SEED-001:       ████████████████████ 100% ✅  DAY 129 (parcial — ADR-024 pendiente)
-DEBT-SAFE-PATH-RESOLVE-MODEL-001:       ░░░░░░░░░░░░░░░░░░░░   0% ⏳ feature/adr038-acrl
-DEBT-FUZZING-LIBFUZZER-001:             ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-property-testing
-DEBT-CRYPTO-003a (mlock+bzero):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳
-DEBT-PENTESTER-LOOP-001 (ACRL):         ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-DEUDA
-ADR-030 aRGus-production images:        ░░░░░░░░░░░░░░░░░░░░   0% ⏳ POST-DEUDA
-ADR-031 aRGus-seL4:                     ░░░░░░░░░░░░░░░░░░░░   0% ⏳ branch independiente
-FEAT-CLOUD-RETRAIN-001:                 ░░░░░░░░░░░░░░░░░░░░   0% ⏳ post-ACRL
+Foundation + Thread-Safety:             100% ✅
+HMAC Infrastructure:                    100% ✅
+F1=0.9985 (CTU-13 Neris):              100% ✅
+CryptoTransport (HKDF+AEAD):            100% ✅
+ADR-025 Plugin Integrity (Ed25519):     100% ✅
+TEST-INTEG-4a/4b/4c/4d/4e + SIGN:      100% ✅
+arXiv:2604.04952 PUBLICADO:             100% ✅
+PHASE 3 v0.4.0:                         100% ✅
+PHASE 4 v0.5.0-preprod:                 100% ✅
+ADR-026 XGBoost Prec=0.9945:            100% ✅
+ADR-037 safe_path v0.5.1-hardened:      100% ✅  DAY 124
+DEBT-SAFE-PATH-SEED-SYMLINK-001:        100% ✅  DAY 126
+DEBT-CONFIG-PARSER-FIXED-PREFIX-001:    100% ✅  DAY 126
+DEBT-DEV-PROD-SYMLINK-001:              100% ✅  DAY 127
+DEBT-SNYK-WEB-VERIFICATION-001:         100% ✅  DAY 128
+DEBT-PROPERTY-TESTING-PATTERN-001:      100% ✅  DAY 128
+DEBT-PROVISION-PORTABILITY-001:         100% ✅  DAY 128
+DEBT-IPTABLES-INJECTION-001:            100% ✅  DAY 129
+DEBT-FEDER-SCOPE-DOC-001:              100% ✅  DAY 129
+DEBT-SYSTEMD-AUTOINSTALL-001:           100% ✅  DAY 130
+DEBT-SAFE-EXEC-NULLBYTE-001:            100% ✅  DAY 130
+DEBT-FUZZING-LIBFUZZER-001:             100% ✅  DAY 130 (baseline)
+DEBT-PROD-COMPAT-BASELINE-001:          100% ✅  DAY 132
+DEBT-PROD-APPARMOR-COMPILER-BLOCK-001:  100% ✅  DAY 133
+DEBT-PROD-FALCO-EXOTIC-PATHS-001:       100% ✅  DAY 133 (10 reglas)
+DEBT-PROD-FS-MINIMIZATION-001:           60% 🟡  DAY 133 (parcial — minbase post-FEDER)
+Paper Draft v18 §6.12 BSR:              100% ✅  DAY 133
+Paper Draft v18 §6.8 fuzzing:           100% ✅  DAY 133 (post-Consejo)
+Makefile prod-* targets:                100% ✅  DAY 133
+AppArmor 6 perfiles enforce:            100% ✅  DAY 133
+Linux Capabilities mínimas:             100% ✅  DAY 133 (post-Consejo)
+Falco 10 reglas aRGus:                  100% ✅  DAY 133 (post-Consejo)
+vagrant/hardened-x86/ completo:         100% ✅  DAY 133
+DEBT-PROD-APT-SOURCES-INTEGRITY-001:      0% ⏳  feature/adr030-variant-a
+DEBT-PAPER-FUZZING-METRICS-001:         100% ✅  DAY 134 CERRADO
+DEBT-KEY-SEPARATION-001:                  0% ⏳  post-FEDER
+DEBT-KERNEL-COMPAT-001:                 100% ✅  DAY 134 CERRADO — cap_bpf ok en kernel 6.1
+DEBT-PROD-APPARMOR-PORTS-001:             0% ⏳  post-JSON-estabilización
+DEBT-PROD-FALCO-RULES-EXTENDED-001:       0% ⏳  DAY 135
+DEBT-DEBIAN13-UPGRADE-001:                0% ⏳  post-FEDER
+DEBT-SAFE-PATH-RESOLVE-MODEL-001:         0% ⏳  feature/adr038-acrl
+DEBT-CRYPTO-003a (mlock+bzero):           0% ⏳
+DEBT-SEED-CAPABILITIES-001:               0% ⏳  v0.6+
+DEBT-PENTESTER-LOOP-001 (ACRL):           0% ⏳  POST-DEUDA
+ADR-031 aRGus-seL4:                       0% ⏳  branch independiente
+ADR-040 ML Retraining Contract (def.):    100% ✅  DAY 134 (Consejo 8/8, 17 enmiendas)
+ADR-041 HW Acceptance Metrics (def.):     100% ✅  DAY 134 (Consejo 8/8)
+DEBT-EMECAS-HARDENED-001 (make hardened-full): 0% ⏳  DAY 135
+DEBT-VENDOR-FALCO-001 (dist/vendor/CHECKSUMS): 0% ⏳  DAY 135
+DEBT-SEEDS-DEPLOY-001 (prod-deploy-seeds):     0% ⏳  DAY 135
+DEBT-CONFIDENCE-SCORE-001 (prerequisito IPW):  0% ⏳  DAY 135
+DEBT-ADR040-001 (golden set v1):            0% ⏳  v1.0 post-FEDER
+DEBT-ADR040-002 (confidence_score):         0% ⏳  v1.0
+DEBT-ADR040-003 (walk_forward_split.py):    0% ⏳  v1.1
+DEBT-ADR040-004 (check_guardrails.py):      0% ⏳  v1.1
+DEBT-ADR040-005 (guardrail + Ed25519):      0% ⏳  v1.1
+DEBT-ADR040-006 (IPW + uncertainty):        0% ⏳  v1.2
+DEBT-ADR040-007 (interfaz web exploración): 0% ⏳  v1.2 Año 1
+DEBT-ADR040-008 (informe diversidad):       0% ⏳  v1.2
+DEBT-ADR040-009 (competición algoritmos):   0% ⏳  pre-lock-in XGBoost
+DEBT-ADR040-010 (dataset lineage):          0% ⏳  v1.1
+DEBT-ADR040-011 (canary deployment):        0% ⏳  Año 2 flota
+DEBT-ADR040-012 (GOLDEN-SET-REGISTRY.md):  0% ⏳  v1.0
+DEBT-ADR041-001 (pcap CTU-13 versionado):   0% ⏳  pre-FEDER
+DEBT-ADR041-002 (make golden-set-eval):     0% ⏳  depende ADR-040
+DEBT-ADR041-003 (make feder-demo):          0% ⏳  pre-FEDER
+DEBT-ADR041-004 (compra hardware x86):      0% ⏳  post-métricas
+DEBT-ADR041-005 (compra Raspberry Pi 4/5):  0% ⏳  post-métricas
+DEBT-ADR041-006 (ejecución hw físico):      0% ⏳  post-compra
 ```
 
 ---
 
-## 📝 Notas del Consejo de Sabios — DAY 129 (8/8)
+## 📝 Notas del Consejo de Sabios — DAY 133 (8/8)
 
-> "DAY 129 eliminó la última superficie de inyección de comandos conocida (CWE-78).
-> La transición de popen()/system() a execv() es una barrera física, no una promesa de seguridad.
+> "DAY 133 — Transición de 'diseño correcto' a 'comportamiento real verificable'.
 >
-> Decisiones vinculantes:
-> - D1 (8/8): RULE-SCP-VM-001 — pipe zsh trunca silenciosamente, scp obligatorio
-> - D2 (8/8): **/build-debug/ en .gitignore — ruido cognitivo eliminado
-> - D3 (6/8): Fuzzing DAY 130 primero — unknown unknowns antes del despliegue
-> - D4 (8/8): DEBT-SAFE-EXEC-NULLBYTE-001 — defensa en profundidad en safe_exec()
-> - D5 (7/8): .gitguardian.yaml — alert fatigue es riesgo de compliance hospitalario
+> Decisiones vinculantes (8/8 unánime):
+> D1: cap_sys_admin → cap_bpf (Linux ≥5.8). cap_sys_admin es root disfrazado.
+> D2: cap_net_bind_service eliminada de etcd-server (2379 > 1024).
+> D3: LimitMEMLOCK=16M en systemd. No cap_sys_resource.
+> D4: Keypairs separados pipeline vs plugins — post-FEDER.
+> D5: modern_ebpf driver Falco correcto para 2026.
+> D6: 'Fuzzing misses nothing' — INCORRECTA, reformulada.
+> D7: 3 reglas Falco adicionales adoptadas.
 >
-> 'La seguridad no se construye con héroes que evitan errores.
->  Se construye con sistemas que hacen difícil cometerlos y fácil recuperarlos.' — Qwen
-> 'Vuestra atención al detalle demuestra el nivel de rigor necesario
->  para proteger infraestructuras críticas.' — Mistral
-> 'El sistema empieza a comportarse como un sistema que desconfía de sí mismo.
->  Ese es el punto de inflexión correcto.' — ChatGPT"
-> — Consejo de Sabios (8/8) · DAY 129
+> Decisiones del founder:
+> deny explícitos mantenidos (claridad auditiva hospitalaria).
+> network inet tcp sin restricción (JSON es la ley).
+> Keypair único mantenido hasta post-FEDER.
+>
+> Q5 educativa respondida (8/8): Fuzzing es estocástico, no exhaustivo.
+> Proporciona evidencia empírica de robustez, no prueba de corrección.
+>
+> 'Un escudo que no se prueba contra el ataque real es un escudo de teatro.
+>  Vosotros estáis construyendo acero.' — Qwen"
+> — Consejo de Sabios (8/8) · DAY 133
 
-## 📝 Notas del Consejo de Sabios — DAY 128 (8/8)
+---
 
-> "DAY 128 consolidó documentación, metodología y hallazgos técnicos con consecuencias arquitectónicas.
->
-> Decisiones vinculantes:
-> - D1 (8/8): 0400 root:root se mantiene. sudo aceptable. Evolución CAP_DAC_READ_SEARCH v0.6+
-> - D2 (8/8): DEBT-IPTABLES-INJECTION-001 → execve() sin shell, DAY 129 BLOQUEANTE
-> - D3 (8/8): Property testing prioridades: compute_memory_mb > HKDF > ZeroMQ > protobuf
-> - D4 (5/3): Limpiar EtcdClient ANTES de ADR-024
-> - D5 (8/8): Demo FEDER = NDR standalone + 2 nodos simulados. Go/no-go: 1 agosto 2026
->
-> 'La seguridad no es cómoda. Es necesaria.' — Qwen
-> 'No construyas encima de comportamiento incorrecto, aunque sea temporal.' — ChatGPT
-> 'El sistema empieza a comportarse como un sistema que desconfía de sí mismo.
->  Ese es el punto de inflexión correcto.' — ChatGPT"
-> — Consejo de Sabios (8/8) · DAY 128
+## 📝 Notas del Consejo de Sabios — DAY 132 (8/8)
 
-## 📝 Notas del Consejo de Sabios — DAY 127 (8/8)
-
-> "DAY 125-127 cierra una fase de hardening excepcional. El sistema es ahora más seguro
-> y la metodología TDH está validada por la práctica.
->
-> Hallazgos técnicos clave:
-> - lstat() ANTES de resolve() es la única defensa correcta para material criptográfico.
-    >   fs::is_symlink(resolved) llega tarde — weakly_canonical() ya resolvió el symlink.
-> - lexically_normal() vs weakly_canonical(): dos herramientas para dos casos de seguridad.
-    >   La distinción no está bien documentada en la literatura C++20 — contribución §5 del paper.
-> - Property test encontró bug en el propio fix (F17). Valida la adopción sistémica.
->
-> Taxonomía safe_path aprobada (8/8):
-> - resolve()         → validación general (weakly_canonical, post-resolución)
-> - resolve_seed()    → material criptográfico (lstat pre-resolución, sin symlinks, 0400)
-> - resolve_config()  → configs con symlinks legítimos (lexically_normal pre-resolución)
-> - resolve_model()   → [BACKLOG] modelos firmados Ed25519 (ADR-038)
->
-> Formalizar PathPolicy enum como documentación semántica de la taxonomía.
-> No añadir más primitivas sin caso de uso concreto demostrado.
->
-> Pregunta crítica para FEDER (Kimi):
-> ¿La demo FEDER requiere federación funcional o es suficiente con NDR standalone?
-> Clarificar con Andrés Caro Lindo ANTES de julio 2026.
-> Si requiere federación, el deadline septiembre 2026 es imposible sin equipo.
-> Si es NDR standalone, el deadline es alcanzable.
->
-> Orden de testing validado (8/8):
-> 1. Unit tests (RED→GREEN obligatorio)
-> 2. Property tests (invariantes matemáticas — DAY 128)
-> 3. Fuzzing libFuzzer (parsers, interfaces externas — post-property)
-> 4. Mutation testing (calidad de suite — pre-release)
->
-> Regla permanente añadida DAY 127:
-> 'Toda nueva superficie de ficheros se clasifica con PathPolicy antes de implementar.
->  La taxonomía safe_path se documenta con diagrama de decisión.'
->
-> Frase del día — ChatGPT: 'Has eliminado la confianza implícita en los fixes.
-> Eso es lo que define un sistema de seguridad maduro.'"
-> — Consejo de Sabios (8/8) · DAY 127
+> "La superficie de ataque de la imagen de producción se define hoy como principio estructural.
+> D1 (8/8): Makefile raíz con prefijo prod- y guard _check-dev-env.
+> D2 (8/8): debian/bookworm64. Trixie como upgrade path.
+> D3 (8/8): Dos capas BSR check. AppArmor+Falco es la defensa real.
+> D4 (8/8): Paper Draft v17 no sube a arXiv hasta tener métricas reales.
+> 'La superficie de ataque mínima no es una aspiración. Es una decisión de diseño.'"
+> — Consejo de Sabios (8/8) · DAY 132
 
 ---
 
 ## 🧬 HIPÓTESIS CENTRAL — Inmunidad Global Adaptativa
 
-**Formulada:** DAY 128 — 24 Abril 2026  
-**Estado:** Pendiente demostración experimental (DEBT-PENTESTER-LOOP-001)
+**Formulada:** DAY 128 | **Estado:** Pendiente demostración (DEBT-PENTESTER-LOOP-001)
 
-### Hipótesis fuerte
+Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polinomial. Un sistema estático no converge nunca. La analogía con el sistema inmune adaptativo es estructuralmente correcta.
 
-> Dado un espacio de técnicas ATT&CK finito y enumerable, un sistema con ACRL
-> converge hacia cobertura total en tiempo polinomial respecto al número de técnicas
-> observadas. Un sistema estático no converge nunca — su error en técnicas no vistas
-> es constante.
-
-### Analogía estructural: sistema inmune adaptativo
-
-El sistema inmune adaptativo tiene tres propiedades que hacen la analogía
-estructuralmente correcta, no solo metafórica:
-
-1. **Memoria distribuida** — cada nodo que ha visto un ataque retiene el "anticuerpo"
-   (modelo reentrenado). La inteligencia está en la red, no en un servidor central.
-   Corresponde a ADR-026 (federación de modelos).
-
-2. **Tolerancia al self** — el sistema aprende a no atacar tráfico legítimo propio.
-   aRGus ya tiene esto implícitamente: el Wednesday OOD finding (DAY 122) demuestra
-   que el modelo rechaza patrones "self" sin reentrenamiento.
-
-3. **Respuesta secundaria más rápida** — la segunda exposición a un patógeno produce
-   respuesta órdenes de magnitud más rápida. Con ACRL y warm-start, la segunda
-   exposición a una técnica ATT&CK ya vista produce detección casi instantánea.
-
-### Lo que falta ver (intuición DAY 128)
-
-La agregación segura de modelos entre nodos sin revelar datos locales.
-Aprendizaje federado con privacidad diferencial — SecureBoost para XGBoost.
-El salto de "cada hospital aprende solo" a "todos los hospitales aprenden juntos
-sin compartir datos de pacientes".
-
-Ese es el resultado que trasciende arXiv cs.CR.
-
-### Experimento mínimo viable (DEBT-PENTESTER-LOOP-001)
-
-Pipeline 6/6 capturando tráfico real
-Caldera lanza escenario ATT&CK (T1046 + T1595 como mínimo)
-eBPF captura los flujos generados
-XGBoost warm-start sobre modelo existente con nuevos datos
-Ed25519 firma el nuevo modelo
-Hot-swap sin reiniciar el pipeline
-Medición: ¿el nuevo modelo detecta mejor variantes del mismo ataque?
-Repetir con 3+ técnicas ATT&CK distintas
-
-### Implicación si se demuestra
-
-Un sistema con N ciclos ACRL habrá visto y codificado N clases de técnicas
-adversariales. El coste marginal de detectar la técnica N+1 decrece con cada ciclo.
-En el límite, el sistema hace obsoleto el modelo de pentesting periódico —
-que es exactamente el problema de hospitales y municipios sin Red Teams continuos.
-
-**Esto no es especulación arquitectónica. Es una hipótesis falsificable.**
-El experimento ACRL o la confirma o la refuta. En cualquier caso, es ciencia.
-
-### Referencias
-- Sommer & Paxson (2010) — límites de los clasificadores estáticos en NDR
-- SecureBoost (Cheng et al.) — XGBoost federado con privacidad
-- MITRE ATT&CK — taxonomía de técnicas adversariales
-- arXiv:2604.04952 §11.18 — propuesta arquitectónica ACRL
+**Experimento mínimo viable:** Caldera → eBPF capture → XGBoost warm-start → Ed25519 sign → hot-swap → medición de mejora en variantes del mismo ataque.
 
 ---
 
----
+## BACKLOG-FEDER-001
 
-## BACKLOG-FEDER-001 — Convocatoria FEDER: Presentación a Andrés Caro Lindo (UEx/INCIBE)
+## DEBT-APT-TIMEOUT-CONFIG-001 — Timeout apt-integrity configurable
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** `FailureAction=poweroff` inmediato (Voto de Oro Alonso DAY 135).
+Timeout hardcoded por decisión de seguridad. Post-FEDER, los admins del sistema
+pueden necesitar ajustarlo para entornos con latencia alta (hospitales rurales).
+Mínimo hardcoded nunca inferior a 0 — poweroff siempre inmediato.
+**Prerequisito para:** Operación en entornos con SIEM remoto lento.
+**Plazo:** post-FEDER
+
+## DEBT-SEEDS-LOCAL-GEN-001 — Generación local de seeds en hardened VM
+**Severidad:** 🔴 Alta
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Actualmente los seeds se transfieren desde dev VM via /vagrant
+(shared folder VirtualBox). Aceptable en Vagrant. En producción real (Jenkins +
+hardware físico) hay que eliminar el canal de transferencia por completo.
+Opción C (generación local en hardened VM) aprobada por Consejo 7/7 (DAY 135).
+No viola ADR-013. Elimina el vector de transferencia en origen.
+**Prerequisito para:** Despliegue en hardware físico, certificación formal.
+**Plazo:** post-FEDER
+
+## DEBT-SEEDS-BACKUP-001 — Backup offline obligatorio de seeds
+**Severidad:** 🔴 Alta
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Con generación local (DEBT-SEEDS-LOCAL-GEN-001), la pérdida del
+seed = pérdida del nodo. Backup obligatorio en almacenamiento aislado
+(YubiKey / offline vault) inmediatamente post-generación. Señalado por Qwen
+como crítico en Consejo DAY 135.
+**Prerequisito para:** DEBT-SEEDS-LOCAL-GEN-001
+**Plazo:** post-FEDER
+
+## DEBT-FEDER-DEMO-SCRIPT-001 — Script de demo reproducible para FEDER
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** La presentación a Andrés Caro Lindo (deadline 22 Sep 2026)
+requiere una demo pcap reproducible del pipeline completo. Necesita
+ADR-029 Variants A/B estables. Script: scripts/feder-demo.sh
+**Prerequisito para:** BACKLOG-FEDER-001
+**Plazo:** DAY 136+
+
+## DEBT-CHECK-PROD-SEED-CONDITIONAL-001 — check-prod-all verifica seeds condicionalmente
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Propuesta Kimi (Consejo DAY 135). check-prod-all debe verificar
+que si encryption_enabled=true, entonces seed existe. En EMECAS el check
+pasa (componentes no activos). En operación real fallaría explícitamente
+si falta el seed. Actualmente los WARNs de seeds desaparecen tras
+prod-deploy-seeds pero no hay gate condicional formal.
+**Plazo:** post-merge
+
+## DEBT-COMPILER-WARNINGS-001 — Eliminar todos los warnings de compilación
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** ODR violations (RF inline trees), Protobuf dual-copy en
+ml-detector, conversiones signed/unsigned, Wreorder en ZMQHandler.
+No bloqueantes para merge. Bloqueantes para certificación formal.
+**Prerequisito para:** Verificación formal, auditoría, FEDER fase final.
+**Plazo:** post-FEDER
+
+## DEBT-COMPILER-WARNINGS-001 — Eliminar todos los warnings de compilación
+**Severidad:** 🟡 Media (potencial puerta de entrada a vulnerabilidades)
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Durante `make hardened-full` (DAY 135) se observaron warnings de compilación
+pre-existentes en múltiples componentes. No son regresiones nuevas pero deben eliminarse
+antes de cualquier proceso de verificación formal (certificación, auditoría, FEDER).
+**Categorías identificadas:**
+- ODR violations: `internal_trees_inline.hpp` vs `traffic_trees_inline.hpp` (RF inline, ml-detector + sniffer)
+- Protobuf ODR: `network_security.pb.h` copia dual en ml-detector (build-production vs src/protobuf)
+- Conversiones signed/unsigned: múltiples componentes (ml-detector, rag-ingester, sniffer)
+- Deprecated API: SHA256_Init/Update/Final OpenSSL 3.0 en rag_logger.cpp
+- Wreorder: ZMQHandler, RingBufferConsumer, DualNICManager
+**Impacto bloqueante:** NO para merge actual. SÍ para certificación formal / auditoría.
+**Prerequisito para:** Verificación formal, proceso FEDER fase final.
+**Rama sugerida:** `fix/debt-compiler-warnings-001`
 
 **Estado:** PENDIENTE — bloqueado por prerequisites técnicos
-**Contacto:** Andrés Caro Lindo — UEx/INCIBE, endorser arXiv:2604.04952
-**Deadline límite:** 22 septiembre 2026
-**Objetivo:** Obtener financiación europea para las Fases 5 y 6 del proyecto
+**Contacto:** Andrés Caro Lindo — UEx/INCIBE
+**Deadline límite:** 22 septiembre 2026 | **Go/no-go técnico:** 1 agosto 2026
 
----
-
-### ⚠️ Pregunta crítica pendiente (Consejo DAY 127)
-
-**¿La demo FEDER requiere federación funcional (ADR-038) o es suficiente con NDR standalone?**
-
-- Si es NDR standalone → deadline septiembre 2026 es **alcanzable** con el ritmo actual
-- Si requiere federación funcional → deadline septiembre 2026 es **imposible** sin equipo adicional
-
-**Acción requerida:** Clarificar scope con Andrés Caro Lindo ANTES de julio 2026.
-
----
-
-### Gate de entrada (prerequisites mínimos antes de contactar)
+### Gate de entrada
 
 - [x] ADR-026 mergeado a main (XGBoost F1=0.9978)
-- [ ] ADR-030 Variant A (x86 + AppArmor + eBPF/XDP) estable y reproducible
-- [ ] ADR-030 Variant B (ARM64 + AppArmor + libpcap) estable y reproducible
-- [ ] pcap relay funcional end-to-end en Vagrant (ambas arquitecturas)
-- [ ] `make bootstrap` + `make pipeline-status` 6/6 RUNNING verde y reproducible
-- [ ] Demo técnica grabable en menos de 10 minutos (`scripts/feder-demo.sh`)
-
----
-
-### Argumento central para la convocatoria
-
-Durante aproximadamente un año de desarrollo en solitario, un investigador
-independiente y un Consejo de Sabios compuesto por 8 modelos de IA han
-construido un sistema NDR open source orientado a infraestructura crítica
-(hospitales, centros educativos, municipios) con las siguientes capacidades
-demostradas y documentadas científicamente (arXiv:2604.04952):
-
-- Pipeline de 6 componentes en C++20 con cifrado ChaCha20-Poly1305
-- Detección ML con XGBoost (F1=0.9978, ROC-AUC=1.0000 vs CIC-IDS-2017)
-- Integridad de plugins via Ed25519 + TOCTOU-safe dlopen
-- AppArmor enforce en los 6 componentes (0 denials)
-- Metodología TDH (Test-Driven Hardening) reproducible y documentada
-- Validado en x86 y ARM64
-
-Este es el límite físico de lo que un investigador independiente puede
-producir sin financiación externa. Los fondos FEDER desbloquean lo que
-viene a continuación.
-
----
-
-### FASE 5 — Lo que los fondos desbloquean [REQUIRES-FUNDING] [REQUIRES-HW]
-#### 5.1 — Componente de Telemetría y Datos Soberanos
-#### 5.2 — Entrenamiento Local de Modelos
-#### 5.3 — Argus Cloud (Federación de Inteligencia) — **REQUIERE CLARIFICACIÓN DE SCOPE**
-#### 5.4 — Validación en Hardware de Bajos Recursos [REQUIRES-HW]
-
-### FASE 6 — Ecosistema de Plugins y Componente Enterprise [POST-FEDER]
-
-#### 6.1 — Integración Wazuh
-#### 6.2 — Generación de Flujos (NetFlow/sFlow/IPFIX)
-#### 6.3 — Grafos de Ataque (kill chain + MITRE ATT&CK)
-#### 6.4 — Plugins ML Especializados
-#### 6.5 — Componente Enterprise
+- [x] ADR-030 Variant A infraestructura completa (DAY 133)
+- [x] Pipeline E2E en hardened VM verde (`make check-prod-all`) — DAY 134 ✅
+- [ ] ADR-030 Variant B (ARM64) estable
+- [ ] Demo técnica grabable < 10 minutos (`scripts/feder-demo.sh`)
+- [ ] ADR-041 protocolo hardware: métricas validadas en x86 + ARM (`make feder-demo`)
+- [ ] Golden set v1 creado y versionado (DEBT-ADR040-001)
+- [ ] Clarificación scope con Andrés: NDR standalone vs federación (antes julio 2026)
 
 ---
 
 
+---
 
-# Insertar antes de BACKLOG-FEDER-001
+## 📝 Notas del Consejo de Sabios — DAY 134 (8/8)
 
+> "DAY 134 — ADR-040 + ADR-041: contratos de calidad ML y métricas de aceptación hardware.
+>
+> ADR-040 — 17 enmiendas, aprobado 8/8:
+> D1: Walk-forward obligatorio. K-fold prohibido en NDR temporal.
+> D2: Golden set inmutable con SHA-256 embebido en plugin firmado (Gemini).
+> D3: Guardrail asimétrico — Recall más restrictivo que F1 (infraestructura crítica).
+> D4: IPW + uncertainty sampling (P≈0.5), no exploración aleatoria pura (Gemini).
+> D5: Ratio exploración adaptativo [3%-10%] por drift detectado (ChatGPT-5).
+> D6: Memory replay buffer como complemento al golden set (Grok).
+> D7: Competición algoritmos multicriterio — XGBoost no asumido ganador a priori.
+> D8: Dataset lineage obligatorio — prerequisito de firma Ed25519.
+> D9: Canary 5-10% / 24h antes de despliegue completo (ChatGPT-5).
+> D10: Pipeline evaluación híbrido — mismo código, dos entradas (local + CI).
+> Enmienda crítica (Claude): confidence_score es prerequisito de IPW.
+>
+> ADR-041 — aprobado 8/8:
+> D1: Tres niveles despliegue con métricas proporcionales (Qwen).
+> D2: Latencia end-to-end (→ iptables) como métrica operacional primaria (DeepSeek).
+> D3: Temperatura ARM ≤75°C — gate no negociable para armarios hospitalarios (DeepSeek).
+> D4: Delta XDP/libpcap es contribución científica independiente publicable.
+> D5: Demo FEDER reproducible por evaluador externo — sin trucos pregrabados.
+> Pregunta abierta: Opción A (Vagrant) recomendada demo FEDER. Opción B (CI) post-FEDER.
+>
+> 'El contrato de calidad ML no termina en el deploy. Termina cuando el modelo
+>  aprende sin olvidar, sin retroalimentarse y sin regresionar en silencio.' — Consejo (8/8)"
+> — Consejo de Sabios (8/8) · DAY 134
 
-*DAY 130 — 25 Abril 2026 · Tag activo: v0.5.2-hardened · commit aab08daa · main limpio*
+*DAY 134 — 28 Abril 2026 · check-prod-all PASSED · Draft v18 completo · feature/adr030-variant-a*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
+*"La superficie de ataque mínima no es una aspiración. Es una decisión de diseño."*
+## DEBT-IRP-SYSTEMD-FIX-001 — BUG CRÍTICO: ExecStopPre no existe en systemd
+**Severidad:** 🔴 Crítica
+**Estado:** CORREGIDO — DAY 135
+**Identificado por:** Kimi (Consejo adversarial ADR-042 v2)
+**Contexto:** `ExecStopPre` no es una directiva válida de systemd. Con este
+bug, los pasos de notificación (argus-irp-notify) y aislamiento de red
+(argus-network-isolate) definidos en argus-apt-integrity.service NUNCA
+se habrían ejecutado antes del poweroff — exactamente lo contrario de lo
+que el protocolo IRP-A requiere.
+**Fix:** Reemplazar `ExecStopPre=` por `ExecStartPre=` en ADR-042.
+La directiva `ExecStartPre` se ejecuta en orden ANTES de `ExecStart`.
+**Lección:** Los ADRs con código systemd deben pasar por revisión adversarial
+antes de implementación. El Consejo de Sabios atrapó este bug en revisión
+de documento, no en producción.

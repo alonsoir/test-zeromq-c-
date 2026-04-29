@@ -235,5 +235,11 @@ firewall-acl-agent/fuzz/fuzz_validate_chain
 firewall-acl-agent/fuzz/fuzz_validate_filepath
 
 # Production build artifacts
-dist/
+dist/*
+!dist/vendor/
+dist/vendor/*
+!dist/vendor/CHECKSUMS
 *.deb
+*/build-prod/
+*/build-production/
+firewall-acl-agent/fuzz/corpus/
