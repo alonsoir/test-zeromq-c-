@@ -533,6 +533,65 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 
 ## BACKLOG-FEDER-001
 
+## DEBT-APT-TIMEOUT-CONFIG-001 — Timeout apt-integrity configurable
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** `FailureAction=poweroff` inmediato (Voto de Oro Alonso DAY 135).
+Timeout hardcoded por decisión de seguridad. Post-FEDER, los admins del sistema
+pueden necesitar ajustarlo para entornos con latencia alta (hospitales rurales).
+Mínimo hardcoded nunca inferior a 0 — poweroff siempre inmediato.
+**Prerequisito para:** Operación en entornos con SIEM remoto lento.
+**Plazo:** post-FEDER
+
+## DEBT-SEEDS-LOCAL-GEN-001 — Generación local de seeds en hardened VM
+**Severidad:** 🔴 Alta
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Actualmente los seeds se transfieren desde dev VM via /vagrant
+(shared folder VirtualBox). Aceptable en Vagrant. En producción real (Jenkins +
+hardware físico) hay que eliminar el canal de transferencia por completo.
+Opción C (generación local en hardened VM) aprobada por Consejo 7/7 (DAY 135).
+No viola ADR-013. Elimina el vector de transferencia en origen.
+**Prerequisito para:** Despliegue en hardware físico, certificación formal.
+**Plazo:** post-FEDER
+
+## DEBT-SEEDS-BACKUP-001 — Backup offline obligatorio de seeds
+**Severidad:** 🔴 Alta
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Con generación local (DEBT-SEEDS-LOCAL-GEN-001), la pérdida del
+seed = pérdida del nodo. Backup obligatorio en almacenamiento aislado
+(YubiKey / offline vault) inmediatamente post-generación. Señalado por Qwen
+como crítico en Consejo DAY 135.
+**Prerequisito para:** DEBT-SEEDS-LOCAL-GEN-001
+**Plazo:** post-FEDER
+
+## DEBT-FEDER-DEMO-SCRIPT-001 — Script de demo reproducible para FEDER
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** La presentación a Andrés Caro Lindo (deadline 22 Sep 2026)
+requiere una demo pcap reproducible del pipeline completo. Necesita
+ADR-029 Variants A/B estables. Script: scripts/feder-demo.sh
+**Prerequisito para:** BACKLOG-FEDER-001
+**Plazo:** DAY 136+
+
+## DEBT-CHECK-PROD-SEED-CONDITIONAL-001 — check-prod-all verifica seeds condicionalmente
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Propuesta Kimi (Consejo DAY 135). check-prod-all debe verificar
+que si encryption_enabled=true, entonces seed existe. En EMECAS el check
+pasa (componentes no activos). En operación real fallaría explícitamente
+si falta el seed. Actualmente los WARNs de seeds desaparecen tras
+prod-deploy-seeds pero no hay gate condicional formal.
+**Plazo:** post-merge
+
+## DEBT-COMPILER-WARNINGS-001 — Eliminar todos los warnings de compilación
+**Severidad:** 🟡 Media
+**Estado:** ABIERTO — DAY 135
+**Contexto:** ODR violations (RF inline trees), Protobuf dual-copy en
+ml-detector, conversiones signed/unsigned, Wreorder en ZMQHandler.
+No bloqueantes para merge. Bloqueantes para certificación formal.
+**Prerequisito para:** Verificación formal, auditoría, FEDER fase final.
+**Plazo:** post-FEDER
+
 ## DEBT-COMPILER-WARNINGS-001 — Eliminar todos los warnings de compilación
 **Severidad:** 🟡 Media (potencial puerta de entrada a vulnerabilidades)
 **Estado:** ABIERTO — DAY 135

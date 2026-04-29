@@ -307,3 +307,43 @@ Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests
 MIT License — See [LICENSE](LICENSE)
 
 **Via Appia Quality** 🏛️ — *Built to last decades.*
+## Hardened Deployment (ADR-030 Variant A)
+
+Production-hardened VM with AppArmor, Falco, BSR gate, and apt-sources integrity.
+
+### Prerequisites
+```bash
+# Dev VM must be running with pipeline built
+make up && make bootstrap && make test-all
+make vendor-download  # Verify Falco .deb checksum
+```
+
+### Full hardened deploy (gate pre-merge)
+```bash
+make hardened-full          # destroy → up → provision → build → deploy → check
+```
+
+### Daily iteration (fast, no destroy)
+```bash
+make hardened-redeploy      # build → deploy → check
+make prod-deploy-seeds      # deploy seeds explicitly (D2 — never in EMECAS)
+make check-prod-permissions # verify seeds + permissions
+```
+
+### Security gates (check-prod-all)
+```bash
+make check-prod-all         # 5/5 gates: BSR + AppArmor + cap_bpf + permissions + Falco
+```
+
+### APT Sources Integrity
+- SHA-256 of apt sources captured at provisioning time
+- Verified on every boot via systemd oneshot
+- **`FailureAction=poweroff` — immediate, no grace period**
+- A node with compromised apt sources is radioactive material.
+  It does not restart. It is isolated, autopsied, and restored from scratch.
+
+### Hardened VM SSH
+```bash
+cd vagrant/hardened-x86 && vagrant ssh -c '...'
+```
+
