@@ -533,6 +533,22 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 
 ## BACKLOG-FEDER-001
 
+## DEBT-COMPILER-WARNINGS-001 — Eliminar todos los warnings de compilación
+**Severidad:** 🟡 Media (potencial puerta de entrada a vulnerabilidades)
+**Estado:** ABIERTO — DAY 135
+**Contexto:** Durante `make hardened-full` (DAY 135) se observaron warnings de compilación
+pre-existentes en múltiples componentes. No son regresiones nuevas pero deben eliminarse
+antes de cualquier proceso de verificación formal (certificación, auditoría, FEDER).
+**Categorías identificadas:**
+- ODR violations: `internal_trees_inline.hpp` vs `traffic_trees_inline.hpp` (RF inline, ml-detector + sniffer)
+- Protobuf ODR: `network_security.pb.h` copia dual en ml-detector (build-production vs src/protobuf)
+- Conversiones signed/unsigned: múltiples componentes (ml-detector, rag-ingester, sniffer)
+- Deprecated API: SHA256_Init/Update/Final OpenSSL 3.0 en rag_logger.cpp
+- Wreorder: ZMQHandler, RingBufferConsumer, DualNICManager
+**Impacto bloqueante:** NO para merge actual. SÍ para certificación formal / auditoría.
+**Prerequisito para:** Verificación formal, proceso FEDER fase final.
+**Rama sugerida:** `fix/debt-compiler-warnings-001`
+
 **Estado:** PENDIENTE — bloqueado por prerequisites técnicos
 **Contacto:** Andrés Caro Lindo — UEx/INCIBE
 **Deadline límite:** 22 septiembre 2026 | **Go/no-go técnico:** 1 agosto 2026
