@@ -1,26 +1,29 @@
-Mi opinión honesta, ordenada por prioridad:
+Aquí mi feedback para el registro de ADR-042 v2:
 
-**Lo que está bien y no tocaría:**
-La estructura de tres capas es sólida. Los principios P1-P5 son correctos y están bien razonados. Las preguntas abiertas para el Consejo son las preguntas correctas. El ADR como documento de pre-diseño cumple su función — registra la intención arquitectónica sin comprometer implementación prematura.
+---
 
-**Lo que añadiría antes de darlo por registrado:**
+**Lo que v2 resuelve correctamente:**
 
-Primero, una sección de **contexto de riesgo cuantificado**. Ahora mismo el ADR describe *qué* puede pasar pero no *con qué probabilidad relativa* entre Tipo A, B y C. Para el Consejo y para FEDER es útil tener aunque sea una estimación cualitativa: Tipo B (plugin defectuoso) es el más probable en el corto plazo porque estamos desplegando plugins activamente. Tipo A (OS comprometido) es el más grave porque afecta a la flota. Tipo C (componente caído) es el más frecuente estadísticamente en cualquier sistema distribuido. Esa jerarquía debería guiar el orden de implementación.
+La decisión de aislar red antes del poweroff es la corrección más importante. La "paradoja del suicidio" de Gemini era el argumento técnico más sólido de toda la primera ronda, y la solución de jerarquía aislar→verificar→poweroff es la respuesta correcta. El `argus-network-isolate` como `ExecStopPre` antes del `FailureAction=poweroff` es arquitectónicamente limpio y no compromete la filosofía fail-closed — simplemente la hace más robusta.
 
-Segundo, **DEBT-IRP-A-001 debería implementarse ahora, no post-merge.** Es literalmente añadir `ExecStopPre=/usr/local/bin/argus-irp-notify` al servicio que ya existe, más un script de 20 líneas que hace `curl || true`. El poweroff sin notificación es el peor escenario operativo — el admin encuentra el nodo caído sin saber por qué. Eso sí es urgente y no requiere esperar al Consejo.
+El initramfs read-only es la decisión correcta para forensics. Tu razonamiento es preciso: un entorno mínimo cargado en RAM desde partición verificada, montando el disco del sistema en read-only, da acceso a los logs sin que el SO comprometido pueda interferir. La restricción de solo consola local — sin ejecución remota — es la garantía que hace que la evidencia tenga cadena de custodia aceptable. No es perfecta sin TPM, pero es significativamente mejor que nada, y es honesto documentarlo así.
 
-Tercero, la **OQ-3 sobre GDPR** necesita una decisión provisional antes de que el ADR llegue al Consejo. Si los logs contienen IPs de pacientes y se envían a un servidor externo, hay una implicación legal real. Mi posición provisional: el endpoint debe ser siempre on-premise del hospital en producción real, con opción SaaS solo en entornos de laboratorio/demo. Esto debería quedar explícito en el ADR aunque sea como decisión provisional pending Consejo.
+P6 — reintegración verificada — es la brecha más importante que faltaba en v1. Qwen y Kimi tenían razón. Un nodo que vuelve a la flota sin pasar `argus-post-recovery-check` puede reintroducir el compromiso. La política de nunca-automático + quarantine 24h + aprobación manual es la única correcta para infraestructura crítica.
 
-Cuarto, falta **la relación con el paper**. El ADR-042 es material publicable — el protocolo IRP para NDR de código abierto en infraestructura crítica no está documentado en la literatura. Debería haber una nota explícita de que esto alimenta una futura sección del paper, probablemente §11 (Future Work) o una sección nueva §4.x sobre resiliencia operacional.
+**Lo que añadiría o matizaría:**
 
-**Lo que esperaría al Consejo:**
-Las OQ-1, OQ-2, OQ-4 y OQ-5 son genuinamente difíciles y el Consejo va a tener opiniones divergentes interesantes. Especialmente OQ-5 — la posibilidad de que el standby también esté comprometido es un problema de seguridad en profundidad que Kimi y Gemini van a explorar bien.
+Sobre `argus-network-isolate`: hay un edge case no documentado. Si el nodo está actuando como gateway (arquitectura HA del paper, figura §4.2), bajar las interfaces de red no solo aísla el nodo — corta el tráfico de red del hospital que pasa por él. Esto puede ser peor que el compromiso en sí durante esos segundos. El script debería ser consciente del modo de despliegue: si es gateway, antes de bajar las interfaces hay que intentar promover el standby o al menos redirigir el tráfico. Si es sensor pasivo, bajar las interfaces es seguro. Esta distinción debería estar documentada.
 
-**Resumen de acciones concretas:**
-1. Implementar DEBT-IRP-A-001 ahora — es trivial y urgente
-2. Añadir decisión provisional sobre GDPR/endpoint en el ADR
-3. Añadir nota de conexión con el paper
-4. Añadir jerarquía de riesgo A/B/C
-5. Luego al Consejo con las OQs abiertas
+Sobre la cola persistente de alertas: el path `/var/lib/argus/irp-queue` debe estar en un filesystem separado del disco del sistema, o al menos en una partición con integridad verificada. Si el atacante comprometió el disco, puede vaciar la cola silenciosamente. Una alternativa simple: escribir en `/dev/kmsg` además de en disco — los mensajes del kernel son más difíciles de suprimir sin acceso a ring buffer.
 
-¿Empezamos por DEBT-IRP-A-001?
+Sobre los tests TDH: `make test-irp-type-a` tal como está definido requiere simular un poweroff real de la VM, lo que rompe el entorno de desarrollo. Necesita una variante `--dry-run` que verifique que todos los pasos anteriores al poweroff se ejecutan correctamente, sin ejecutar el poweroff en sí. Esto es un detalle de implementación pero bloqueante para que el test sea ejecutable en EMECAS.
+
+**Sobre la conexión con el paper:**
+
+ADR-042 es efectivamente material publicable. El protocolo IRP para NDR open-source en infraestructura crítica no está documentado en la literatura con este nivel de detalle operacional. Pero lo más valioso no es el protocolo en sí — es la honestidad sobre las limitaciones. La sección de limitaciones residuales, especialmente el punto sobre single-node hospital y el riesgo de standby comprometido, es exactamente el tipo de contribución que Sommer y Paxson pedían en 2010: documentar honestamente lo que el sistema no puede hacer, no solo lo que puede.
+
+**Posición general:**
+
+ADR-042 v2 está listo para segunda ronda del Consejo. Los cambios respecto a v1 son todos correcciones en la dirección correcta. Las deudas están bien triadas. Las limitaciones están documentadas con honestidad. El sistema puede implementarse incrementalmente empezando por `argus-irp-notify` y `argus-network-isolate` — ambos son de bajo riesgo y alto valor inmediato.
+
+*Claude — DAY 135 — 29 Abril 2026* 🏛️

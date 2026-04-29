@@ -1,256 +1,305 @@
-El ADR-042 apunta a un problema real y crítico: **cerrar el hueco entre detección y respuesta sin destruir disponibilidad ni evidencia**. La dirección es buena, pero tal como está, tiene varios riesgos serios de diseño que en producción pueden empeorar la situación en lugar de resolverla.
-
-Voy a ser directo y técnico.
+El ADR ha mejorado de forma clara respecto a la V1. La intuición central —separar detección, acción y recuperación— es correcta y está alineada con prácticas reales de respuesta a incidentes. Aun así, hay varios puntos críticos donde el diseño sigue siendo frágil o incompleto desde un punto de vista operativo y adversarial. A continuación tienes un análisis duro pero accionable.
 
 ---
 
-# 🟢 Puntos fuertes (lo que está bien planteado)
+# 🧠 Evaluación global
 
-### 1. Separación conceptual correcta (detección → acción → recuperación)
+**Fortalezas reales:**
 
-Esto está alineado con frameworks reales como:
+* Separación por capas (detección → contención → recuperación): correcta y estándar en IR.
+* Introducción de aislamiento previo al apagado: elimina un vector trivial de DoS.
+* Reconocimiento explícito de limitaciones forenses: científicamente honesto.
+* Reintegración controlada: muy bien alineado con prácticas de producción.
 
-* NIST (Detect → Respond → Recover)
-* MITRE
+**Problema principal:**
+El ADR sigue siendo **demasiado “determinista” para un entorno adversarial**.
+Asume que:
 
-✔ Bien: no mezclas reacción con forensics
-✔ Bien: introduces proporcionalidad
+* la detección es fiable,
+* el sistema ejecuta correctamente los scripts,
+* el atacante no interfiere con IRP.
 
----
-
-### 2. Fail-closed en incidentes de integridad crítica
-
-El enfoque:
-
-> OS comprometido → cortar
-
-Es correcto **para sistemas con capacidad de propagación lateral**, como el tuyo.
+Eso no es cierto en escenarios reales.
 
 ---
 
-### 3. Introducción de fallback (RandomForest)
+# 🔴 Problemas críticos (bloqueantes reales)
 
-Esto es clave:
+## 1. IRP ejecutado en sistema comprometido
 
-* evita downtime total
-* mantiene defensa básica
+### Problema
 
-✔ Esto es ingeniería pragmática real
+Todo el flujo (notify, isolate, logs) se ejecuta en el mismo sistema que ya se considera comprometido.
 
----
+Un atacante con root puede:
 
-### 4. Forensics como primer paso
+* interceptar `curl`
+* modificar `logger`
+* falsear logs
+* evitar aislamiento (`ip link set down` no ejecutado realmente)
+* bloquear `systemctl poweroff`
 
-Muy buena decisión:
+### Consecuencia
 
-* evita destruir evidencia
-* permite mejora iterativa del sistema
-
----
-
-# 🔴 Problemas críticos (hay varios importantes)
+**No hay garantía de que el IRP ocurra realmente.**
 
 ---
 
-## ❌ Problema 1 — “Poweroff inmediato” rompe el sistema en producción real
+### Alternativa de la industria
 
-### Qué falla
+* **Out-of-band control plane**
 
-Tu diseño actual:
+  * IPMI / BMC
+  * watchdog externo
+  * nodo supervisor
 
-```ini
-FailureAction=poweroff
-```
+Ejemplo real:
 
-* webhook best-effort
-
-👉 Esto es peligroso en hospitales.
-
-### Por qué
-
-En producción real:
-
-* puedes tener **falsos positivos**
-* puedes tener **errores de hash**
-* puedes tener **drift legítimo**
-
-Resultado:
-👉 apagas nodos sanos
-👉 pierdes protección innecesariamente
-
-Esto es un **single-point catastrophic action**
-
----
-
-### Alternativa usada en industria
-
-Modelo escalonado (muy estándar):
-
-```
-Detect → Quarantine → Observe → Kill
-```
-
-No:
-
-```
-Detect → Kill inmediatamente
-```
+* EDRs empresariales usan **kernel hooks + remote orchestrator**, no scripts locales.
 
 ---
 
 ### Recomendación
 
-Reemplazar por:
+Separar IRP en dos niveles:
 
-```
-Nivel 1: ALERT + TAG node as compromised
-Nivel 2: AISLAMIENTO (network isolation)
-Nivel 3: POWER OFF (solo si confirmación o timeout)
-```
+**Nivel 1 (local, best-effort):**
 
-### Implementación concreta
+* lo que ya tienes
 
-```bash
-# 1. bloquear salida (no apagar aún)
-iptables -P OUTPUT DROP
+**Nivel 2 (externo, autoritativo):**
 
-# 2. permitir solo canal forense
-iptables -A OUTPUT -d forensic.endpoint -j ACCEPT
-
-# 3. iniciar recolección
-argus-forensic-collect
-
-# 4. poweroff tras timeout o confirmación
-```
-
----
-
-### Riesgo actual
-
-* auto-DoS de tu propia infraestructura
-* pérdida de disponibilidad sin necesidad
-* comportamiento no aceptable en entorno hospitalario
-
----
-
-## ❌ Problema 2 — Forensics desde sistema comprometido es poco fiable
-
-### Qué falla
-
-```bash
-argus-forensic-collect
-```
-
-ejecutado en el mismo sistema comprometido
-
----
-
-### Problema técnico
-
-Si el sistema está comprometido:
-
-* logs pueden estar manipulados
-* binarios pueden estar alterados
-* timestamps falsificados
-
-👉 evidencia contaminada
-
----
-
-### Alternativa real
-
-En industria se usan:
-
-* adquisición externa (remote pull)
-* o boot forense (read-only)
-
----
-
-### Recomendación
-
-Dos modos:
-
-#### Modo A (rápido, baja confianza)
-
-* desde sistema activo (lo que tienes)
-
-#### Modo B (fiable, recomendado)
-
-* boot en entorno inmutable (initramfs / live)
-* montar disco en read-only
+* nodo central detecta anomalía → ordena aislamiento/poweroff
 
 ---
 
 ### Test reproducible
 
 ```bash
-# simular rootkit que altera logs
-echo "fake" > /var/log/syslog
+# Simular rootkit trivial
+alias ip="echo 'fake isolation'"
+alias curl="echo 'fake notify'"
+alias systemctl="echo 'fake poweroff'"
 
-# ejecutar forensic-collect
-# comprobar inconsistencia con hash previo
+# Ejecutar IRP
+argus-apt-integrity-check
 ```
+
+**Resultado esperado actual:** pasa sin errores
+**Resultado correcto:** detección de fallo en ejecución
 
 ---
 
-## ❌ Problema 3 — Webhook no es canal fiable
-
-### Qué falla
-
-```bash
-curl ... || true
-```
-
----
+## 2. Aislamiento de red no es fiable
 
 ### Problema
 
-* atacante corta red → no hay alerta
-* DNS poisoning → envías a endpoint falso
-* webhook no autenticado → spoofing
-
----
-
-### Alternativa
-
-Sistema robusto usa:
-
-* colas persistentes (disk-backed)
-* múltiples canales:
-
-    * syslog remoto
-    * SIEM
-    * buffer local
-
----
-
-### Recomendación
-
-Modelo:
-
-```
-1. escribir evento en disco (append-only)
-2. intentar envío (retry)
-3. múltiples endpoints
+```bash
+ip link set eth0 down
 ```
 
+Esto:
+
+* no bloquea tráfico ya establecido
+* no bloquea loopback
+* no bloquea sockets existentes
+* puede ser revertido por el atacante
+
 ---
 
-## ❌ Problema 4 — Falta de “rate limiting” en acciones críticas
+### Alternativa estándar
 
-### Qué falta
+**fail-closed con firewall en kernel:**
 
-Nada evita:
+```bash
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+```
 
-* múltiples triggers → múltiples poweroffs
-* tormenta de eventos
+o mejor:
+
+* eBPF policy drop-all
 
 ---
 
 ### Riesgo
 
-* cascada de apagados en flota
-* inestabilidad total
+El nodo puede seguir comunicándose durante “aislamiento”.
+
+---
+
+### Recomendación
+
+Orden correcto:
+
+1. Drop ALL tráfico (kernel-level)
+2. Kill procesos no esenciales
+3. Luego poweroff
+
+---
+
+## 3. Safe mode no es confiable sin root of trust
+
+### Problema
+
+El initramfs puede estar comprometido si:
+
+* GRUB fue modificado
+* kernel fue alterado
+* firmware comprometido
+
+El propio ADR lo reconoce, pero:
+
+👉 **Entonces no puedes basar IRP en él como mecanismo principal.**
+
+---
+
+### Alternativa real
+
+* Secure Boot + TPM attestation
+* arranque desde medio externo verificado
+
+---
+
+### Recomendación
+
+Cambiar semántica:
+
+❌ “forensics confiables”
+✅ “forensics best-effort, no confiables legalmente”
+
+---
+
+## 4. Riesgo de DoS sigue existiendo
+
+Has mitigado el vector original, pero queda otro:
+
+### Ataque
+
+Un atacante modifica `/etc/apt/sources.list` repetidamente.
+
+Resultado:
+
+* nodo entra en IRP continuamente
+* queda fuera de servicio permanente
+
+---
+
+### Industria
+
+* **rate limiting en IR triggers**
+* **multi-signal correlation**
+
+---
+
+### Recomendación
+
+No disparar IRP-A solo con una señal.
+
+Ejemplo:
+
+```text
+APT change + Falco alert + hash mismatch → IRP
+```
+
+---
+
+## 5. Plugin fallback (RF) no está validado operativamente
+
+### Problema
+
+Se asume:
+
+> RF embedded → F1 ~0.97
+
+Pero:
+
+* no hay medición en producción
+* no hay validación de latencia
+* no hay validación de carga real
+
+---
+
+### Riesgo
+
+El fallback puede:
+
+* saturar CPU
+* degradar detección
+* generar falsos negativos críticos
+
+---
+
+### Recomendación
+
+Convertir fallback en **feature validada**, no supuesta:
+
+#### Test mínimo
+
+```bash
+tcpreplay dataset.pcap
+medir:
+- F1
+- latency
+- CPU
+```
+
+---
+
+## 6. Cola persistente IRP (riesgo de crecimiento infinito)
+
+```bash
+echo "$PAYLOAD" >> "$QUEUE/pending-*.json"
+```
+
+### Problema
+
+* sin límite
+* sin rotación
+* sin GC
+
+---
+
+### Resultado
+
+* DoS por disco lleno
+
+---
+
+### Recomendación
+
+* límite de tamaño (ej: 10MB)
+* política FIFO
+* compresión opcional
+
+---
+
+## 7. Reintegración manual: correcto pero incompleto
+
+### Problema
+
+```bash
+argus-post-recovery-check
+```
+
+Valida:
+
+* hashes
+* plugins
+* apt
+
+Pero NO valida:
+
+* comportamiento en runtime
+* tráfico real
+* integridad de memoria
+
+---
+
+### Industria
+
+* quarantine + shadow mode
 
 ---
 
@@ -258,244 +307,121 @@ Nada evita:
 
 Añadir:
 
-```bash
-if last_incident < 5 min → ignore
-```
-
-o:
-
-```bash
-token bucket limiter
+```text
+Fase 1: quarantine (sin bloquear tráfico)
+Fase 2: monitorización activa
+Fase 3: promoción manual
 ```
 
 ---
 
-## ❌ Problema 5 — Plugin unload no es seguro completamente
+# 🟡 Problemas medios
 
-### Qué falla
+## Webhook
 
-```cpp
-dlclose()
-```
+Correcto como best-effort.
 
----
+Pero:
 
-### Problema técnico
+* no autenticado
+* no firmado
 
-* memoria puede quedar corrupta
-* threads activos pueden seguir ejecutando código descargado
-* estado inconsistente
+👉 Añadir firma Ed25519 del payload
 
 ---
 
-### Alternativa real
+## SLA plugin restore
 
-Industria usa:
-
-* process isolation (plugin en proceso separado)
-* kill + restart
-
----
-
-### Recomendación
-
-Reemplazar:
-
-```
-dlclose()
-```
-
-por:
-
-```
-kill plugin worker process
-fallback automático
-```
-
----
-
-## ❌ Problema 6 — Falta de SLA y métricas en IRP
-
-Todo el ADR es conceptual, pero no define:
-
-* tiempo máximo de:
-
-    * detección
-    * aislamiento
-    * recuperación
-* tasa de falsos positivos tolerable
-
----
-
-### Sin esto
-
-No es verificable científicamente.
-
----
-
-## ❌ Problema 7 — “Standby auto-promote” no está modelado
-
-Dices:
-
-> promover antes del poweroff
-
-Pero no defines:
-
-* cómo detectar estado sano del standby
-* split-brain
-* quorum
-
----
-
-### Esto es un problema clásico de sistemas distribuidos
-
-Necesita:
-
-* consenso (Raft, etcd)
-* health checks reales
-
----
-
-# 🟡 Problemas de diseño secundarios
-
----
-
-### 1. `confidence_score` como trigger es débil
-
-* depende del modelo
-* puede generar falsos positivos
-
-👉 debe ser señal secundaria, no primaria
-
----
-
-### 2. Endpoint forense SaaS vs on-prem
-
-No puedes dejar esto ambiguo:
-
-* GDPR obliga a on-prem o control estricto
-
----
-
-### 3. Safe mode no definido técnicamente
+Correcto conceptualmente.
 
 Falta:
 
-* cómo se activa
-* cómo se protege
-* quién lo controla
+* automatización
+* rollback automático si métricas caen
 
 ---
 
-# 🧪 Tests que deberías añadir (críticos)
+## Standby
+
+Correcto no autopromover.
+
+Pero falta:
+
+* health-check criptográfico del standby
+* quorum (aunque sea mínimo)
 
 ---
 
-### Test 1 — falso positivo APT
+# 🟢 Lo que está especialmente bien
 
-```bash
-# modificar sources legítimamente
-apt update
+* Aislamiento antes de poweroff → gran mejora
+* Reconocimiento explícito de GDPR → muy sólido
+* Introducción de quarantine → alineado con SOC reales
+* Separación Tipo A / B → correcto modelado de amenazas
 
-# verificar:
-NO poweroff inmediato
-SÍ aislamiento + alerta
+---
+
+# 📊 Recomendación estructural final
+
+## Cambiar mentalidad del ADR
+
+Ahora mismo:
+
+> IRP = script que reacciona
+
+Debe ser:
+
+> IRP = sistema distribuido con verificación cruzada
+
+---
+
+## Arquitectura recomendada (simplificada)
+
+```
+[Node]
+  ↓ detecta
+  ↓ reporta (best-effort)
+
+[Control Plane externo]
+  ↓ valida evento
+  ↓ decide acción
+
+[Node]
+  ↓ ejecuta acción (aislar / apagar)
 ```
 
 ---
 
-### Test 2 — pérdida de red
+# 📌 Respuestas directas a tu intención
 
-```bash
-iptables -A OUTPUT DROP
+El ADR **no está mal**, pero:
 
-# trigger incidente
-
-# verificar:
-evento persistido localmente
-NO pérdida total de evidencia
-```
+* Está **muy bien diseñado a nivel conceptual**
+* Está **incompleto a nivel adversarial real**
+* Necesita **externalizar confianza fuera del nodo**
 
 ---
 
-### Test 3 — plugin corrupto en runtime
+# 🧪 Resumen accionable (prioridades)
 
-```bash
-kill plugin process
+### 🔴 Hacer ya
 
-# verificar:
-fallback RF activo
-latencia < threshold
-```
+* Aislamiento con firewall drop-all
+* límite de cola IRP
+* multi-signal trigger para IRP-A
 
----
+### 🟡 Antes de FEDER
 
-### Test 4 — tormenta de incidentes
+* test real de fallback RF
+* firma de payloads IRP
+* quarantine mode funcional
 
-```bash
-for i in {1..100}; do trigger; done
-```
+### 🔵 Post-FEDER
 
-verificar:
-
-* no reboot storm
-* rate limit activo
+* control plane externo
+* TPM attestation
+* secure boot
 
 ---
 
-# 🧭 Recomendación global del Consejo
-
-El ADR tiene una base muy buena, pero necesita evolucionar a:
-
-## Modelo correcto
-
-```
-Detect
-→ Contain (aislar)
-→ Observe (recoger evidencia)
-→ Decide (automático o humano)
-→ Act (poweroff / rollback)
-→ Recover
-```
-
-No:
-
-```
-Detect → Poweroff
-```
-
----
-
-# 📌 Conclusión clara
-
-### Lo bueno
-
-* dirección correcta
-* mentalidad de seguridad sólida
-* integración con el resto del sistema
-
-### Lo peligroso
-
-* acciones demasiado agresivas sin amortiguación
-* suposiciones optimistas sobre entorno comprometido
-* falta de mecanismos de estabilidad (rate limit, aislamiento, consenso)
-
----
-
-# 🧠 Recomendación final
-
-No descartes el ADR.
-
-Pero conviértelo en:
-
-> **IRP v2 = “fail-closed con contención progresiva”**
-
-Ese modelo sí está alineado con:
-
-* producción real
-* entornos críticos (hospitales)
-* sistemas distribuidos modernos
-
----
-
-Si quieres, en el siguiente paso puedo reescribirte el ADR-042 en versión “lista para producción real” manteniendo tu filosofía pero corrigiendo estos puntos críticos.
+Si se corrigen estos puntos, el ADR pasa de ser “bien pensado” a ser **defendible frente a un adversario real y ante revisión técnica seria**.

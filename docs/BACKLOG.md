@@ -660,3 +660,17 @@ antes de cualquier proceso de verificación formal (certificación, auditoría, 
 *DAY 134 — 28 Abril 2026 · check-prod-all PASSED · Draft v18 completo · feature/adr030-variant-a*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*
 *"La superficie de ataque mínima no es una aspiración. Es una decisión de diseño."*
+## DEBT-IRP-SYSTEMD-FIX-001 — BUG CRÍTICO: ExecStopPre no existe en systemd
+**Severidad:** 🔴 Crítica
+**Estado:** CORREGIDO — DAY 135
+**Identificado por:** Kimi (Consejo adversarial ADR-042 v2)
+**Contexto:** `ExecStopPre` no es una directiva válida de systemd. Con este
+bug, los pasos de notificación (argus-irp-notify) y aislamiento de red
+(argus-network-isolate) definidos en argus-apt-integrity.service NUNCA
+se habrían ejecutado antes del poweroff — exactamente lo contrario de lo
+que el protocolo IRP-A requiere.
+**Fix:** Reemplazar `ExecStopPre=` por `ExecStartPre=` en ADR-042.
+La directiva `ExecStartPre` se ejecuta en orden ANTES de `ExecStart`.
+**Lección:** Los ADRs con código systemd deben pasar por revisión adversarial
+antes de implementación. El Consejo de Sabios atrapó este bug en revisión
+de documento, no en producción.

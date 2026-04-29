@@ -1,8 +1,8 @@
 # ADR-042 — Incident Response & Recovery Protocol (IRP)
-**Estado:** PRE-DISEÑO — DAY 135
+**Estado:** DRAFT v2 — DAY 135
 **Autor:** Alonso Isidoro Román
-**Revisión:** Consejo de Sabios (pendiente DAY 136)
-**Relacionado:** ADR-025 (Plugin Integrity), ADR-025-EXT-001 (Emergency Patch), ADR-030 (Hardened Variant A), ADR-039 (BSR)
+**Revisión:** Consejo de Sabios 8/8 (DAY 135) — segunda ronda pendiente
+**Relacionado:** ADR-025, ADR-025-EXT-001, ADR-030, ADR-039
 
 ---
 
@@ -10,23 +10,25 @@
 
 Dos incidentes distintos, un mismo patrón arquitectónico sin resolver:
 
-**Incidente tipo A — OS comprometido (DAY 135):**
+**Incidente Tipo A — OS comprometido (DAY 135):**
 `argus-apt-integrity.service` detecta que `/etc/apt/sources.list` ha sido
-modificado. `FailureAction=poweroff` se ejecuta inmediatamente. El nodo cae.
-El hospital queda sin protección hasta que un humano interviene.
-Sin notificación. Sin forensics automatizados. Sin recuperación asistida.
+modificado. Sin este ADR: poweroff silencioso, hospital sin protección,
+admin sin información, sin herramientas de recuperación.
 
-**Incidente tipo B — Plugin defectuoso o malicioso (Hugo Vázquez Caramés):**
-Un plugin Ed25519-firmado se despliega en producción y produce falsos positivos
-masivos, bloquea tráfico legítimo, o exhibe comportamiento anómalo.
+**Incidente Tipo B — Plugin defectuoso o malicioso (Hugo Vázquez Caramés):**
+Plugin Ed25519-firmado con comportamiento anómalo en producción.
 Hay que sacarlo ASAP sin parar el pipeline ni dejar la red sin protección.
-El mecanismo de unload existe (ADR-025-EXT-001) pero el protocolo completo
-detección → decisión → acción → recuperación no está definido.
 
 **El patrón común:**
-Ambos son emergencias de integridad que generan emergencias de disponibilidad
-si no existe un protocolo de respuesta. aRGus no puede ser un sistema que
-elige entre seguridad y disponibilidad — debe gestionar ambas.
+Emergencias de integridad que generan emergencias de disponibilidad
+si no existe protocolo de respuesta. aRGus no puede elegir entre
+seguridad y disponibilidad — debe gestionar ambas.
+
+**Lección del Consejo DAY 135 (Gemini — "Paradoja del suicidio"):**
+Un poweroff inmediato sin aislamiento previo de red es un vector de DoS
+trivial: un atacante que conoce el mecanismo puede apagar el nodo a
+voluntad tocando `sources.list`. La respuesta correcta es
+**aislar primero, recopilar evidencia, poweroff después**.
 
 ---
 
@@ -34,26 +36,33 @@ elige entre seguridad y disponibilidad — debe gestionar ambas.
 
 **P1 — El sistema nunca muere en silencio.**
 Toda acción defensiva va precedida de notificación al exterior.
-Si no hay red, la evidencia queda en disco local.
-Si hay red, el admin es alertado en segundos.
+Si no hay red, evidencia en disco local. Si hay red, admin alertado
+en segundos via múltiples canales (webhook + syslog remoto + cola local).
 
 **P2 — La acción defensiva es proporcional al incidente.**
-OS comprometido → poweroff inmediato (riesgo de flota).
-Plugin defectuoso → unload + rollback (riesgo localizado).
-Pipeline degradado → modo safe + alerta (riesgo parcial).
+OS comprometido → aislar red → forensics → poweroff.
+Plugin defectuoso → unload + rollback a versión anterior.
+Pipeline degradado → modo safe + alerta (DEBT-IRP-C-001).
 
 **P3 — El admin tiene herramientas, no un sistema negro.**
-Safe mode recopila evidencia completa, la firma, la envía,
-y confirma visualmente al admin con referencia de incidencia trazable.
+Safe mode (initramfs read-only) recopila evidencia con dignidad forense,
+la firma, la envía, y confirma al admin con referencia trazable.
+El admin opera en local — sin ejecución remota desde sistema comprometido.
 
 **P4 — El hospital no queda indefenso.**
-Si existe nodo standby → promover antes del poweroff.
-Si no existe → SLA de restauración es el tiempo crítico a minimizar.
+Si existe nodo standby: verificar integridad del standby ANTES de promover.
+Standby comprometido no se promueve (OQ-5 Consejo: riesgo de amplificación).
+Si no hay standby: SLA de restauración es el tiempo crítico a minimizar.
+Documentar explícitamente en manual de operaciones.
 
 **P5 — Forensics primero, diagnóstico después.**
 La evidencia se recopila antes de cualquier intento de recuperación.
-Limpiar el nodo antes de recopilar evidencia destruye la capacidad
-de entender qué ocurrió y cómo prevenir la siguiente vez.
+Limpiar el nodo antes de recopilar = destruir la escena del crimen.
+
+**P6 — Reintegración verificada, nunca automática.**
+Un nodo restaurado no vuelve a la flota sin pasar
+`argus-post-recovery-check` completo + aprobación manual del admin.
+(Brecha nueva identificada por Qwen y Kimi — Consejo DAY 135)
 
 ---
 
@@ -61,111 +70,205 @@ de entender qué ocurrió y cómo prevenir la siguiente vez.
 
 ### Tres capas por incidente
 
+```
 ┌─────────────────────────────────────────────────────┐
 │  CAPA 1 — DETECCIÓN + GRITO                         │
-│  El sistema detecta, documenta y notifica           │
-│  antes de actuar. Nunca en silencio.                │
+│  Múltiples canales: webhook + syslog + cola local   │
+│  Nunca silencioso. Nunca bloqueante.                │
 ├─────────────────────────────────────────────────────┤
 │  CAPA 2 — ACCIÓN DEFENSIVA PROPORCIONAL             │
-│  Poweroff / Plugin unload / Pipeline degradado      │
+│  Aislar red → Verificar standby → Poweroff          │
+│  Plugin unload → RF fallback → Rollback             │
 ├─────────────────────────────────────────────────────┤
-│  CAPA 3 — RECUPERACIÓN ASISTIDA (SAFE MODE)         │
-│  Forensics → Firma → Envío → Confirmación           │
-│  El admin ve qué pasó y que la evidencia fue        │
-│  enviada antes de intentar restaurar.               │
+│  CAPA 3 — RECUPERACIÓN ASISTIDA                     │
+│  initramfs read-only → Forensics → Firma → Envío   │
+│  Post-recovery check → Quarantine → Reintegración  │
 └─────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Incidente Tipo A — OS comprometido (apt sources)
 
-### Capa 1: Detección + Grito
+### Capa 1: Detección + Grito (múltiples canales)
 
 ```bash
-# argus-apt-integrity-check — secuencia antes del poweroff
-journalctl --flush
-logger -p auth.crit "ARGUS IRP-A: APT INTEGRITY VIOLATION node=$(hostname)"
+# argus-irp-notify — store-and-forward, nunca bloqueante
+QUEUE="/var/lib/argus/irp-queue"
+mkdir -p "$QUEUE"
 
-# Webhook best-effort — si falla no bloquea el poweroff
-curl --max-time 5 --silent \
-  -X POST "${ARGUS_ALERT_WEBHOOK}" \
-  -H "Content-Type: application/json" \
-  -d "{\"incident\":\"IRP-A\",\"node\":\"$(hostname)\",
-       \"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-       \"message\":\"APT sources integrity violation — powering off\",
-       \"hash_expected\":\"${EXPECTED}\",
-       \"hash_actual\":\"${ACTUAL}\"}" || true
+PAYLOAD="{\"incident\":\"IRP-A\",\"node\":\"$(hostname)\",
+  \"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+  \"severity\":\"CRITICAL\",
+  \"message\":\"APT sources integrity violation — isolating network\"}"
+
+# Canal 1: syslog local (siempre funciona)
+logger -p auth.crit "ARGUS IRP-A: $(hostname) APT INTEGRITY VIOLATION"
+journalctl --flush
+
+# Canal 2: webhook best-effort con cola persistente
+if curl --max-time 5 --silent -X POST "$ARGUS_ALERT_WEBHOOK" \
+   -H "Content-Type: application/json" -d "$PAYLOAD"; then
+    logger "ARGUS IRP-A: webhook delivered"
+else
+    # Fallo: encolar para reintento post-recuperación
+    echo "$PAYLOAD" >> "$QUEUE/pending-$(date +%s).json"
+    logger "ARGUS IRP-A: webhook failed — queued for retry"
+fi
+
+# Canal 3: syslog remoto (si rsyslog configurado — best-effort)
+logger -n "$ARGUS_SYSLOG_HOST" -p auth.crit \
+  "ARGUS IRP-A: $(hostname) APT INTEGRITY VIOLATION" 2>/dev/null || true
 ```
 
-### Capa 2: Acción
+### Capa 2: Acción — Jerarquía de respuesta
 
+**Decisión Consejo DAY 135 (Gemini + Grok + Kimi + DeepSeek):**
+Aislar red PRIMERO, poweroff DESPUÉS. El poweroff inmediato sin aislamiento
+es un vector de DoS para el atacante.
+
+```bash
+# argus-apt-integrity-check — secuencia de respuesta
+
+# PASO 1: Aislar red inmediatamente (corta el vector lateral)
+ip link set eth0 down 2>/dev/null || true
+ip link set eth1 down 2>/dev/null || true
+logger -p auth.crit "ARGUS IRP-A: network isolated"
+
+# PASO 2: Verificar si hay standby disponible e íntegro
+if argus-standby-ping --timeout=3 2>/dev/null; then
+    # Standby responde — notificar pero NO auto-promover
+    # El admin debe verificar integridad del standby antes de promover
+    logger -p auth.crit "ARGUS IRP-A: standby detected — manual promotion required"
+    argus-irp-notify --message="Standby available — verify integrity before promoting"
+fi
+
+# PASO 3: Poweroff
+# Red ya aislada — el poweroff es ahora seguro
+# El atacante no puede usar los segundos finales para lateral movement
+systemctl poweroff
+```
+
+**Systemd unit actualizada:**
 ```ini
 [Service]
-FailureAction=poweroff           # Voto de Oro Alonso DAY 135
+Type=oneshot
+ExecStart=/usr/local/bin/argus-apt-integrity-check
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+# Capa 1: evidencia antes de actuar
 ExecStopPre=/usr/bin/journalctl --flush
-ExecStopPre=/usr/bin/logger -p auth.crit "ARGUS IRP-A: powering off"
-ExecStopPre=/usr/local/bin/argus-irp-notify   # webhook best-effort
+ExecStopPre=/usr/bin/logger -p auth.crit "ARGUS IRP-A: APT integrity violation"
+ExecStopPre=/usr/local/bin/argus-irp-notify
+
+# Capa 2: aislar red antes del poweroff
+ExecStopPre=/usr/local/bin/argus-network-isolate
+
+# Acción final: poweroff (no reboot — Voto de Oro Alonso DAY 135)
+FailureAction=poweroff
+
+# Anti-bootloop
 StartLimitIntervalSec=300
 StartLimitBurst=2
 ```
 
-### Capa 3: Safe Mode (boot externo / entrada GRUB especial)
+### Capa 3: Safe Mode — initramfs read-only (decisión Alonso DAY 135)
 
-```bash
-make safe-mode
-# o directamente:
-/usr/local/bin/argus-forensic-collect
+**Filosofía:** Un initramfs mínimo montado en RAM desde partición verificada
+da acceso a los logs del disco sin que el SO comprometido pueda interferir.
+El admin opera en LOCAL únicamente — sin ejecución remota posible.
+Esto es mejor que apagar sin recopilar nada.
+
+**Activación:**
+```
+GRUB entry: "aRGus Safe Mode (Forensic)"
+  → Arranca initramfs mínimo desde partición read-only verificada
+  → Monta disco del sistema en read-only
+  → NO arranca servicios normales
+  → NO acepta conexiones SSH ni remotas
+  → Admin opera en consola física o IPMI
 ```
 
-**`argus-forensic-collect` recopila:**
-1. SHA-256 de todos los binarios del pipeline
+**`argus-forensic-collect` en safe mode recopila:**
+1. SHA-256 de todos los binarios del pipeline (`/opt/argus/bin/*`)
 2. SHA-256 actual vs baseline de apt sources
-3. Lista completa de paquetes instalados
+3. Lista de paquetes instalados vs baseline
 4. Logs de Falco desde el último boot
 5. journald completo desde el último boot
-6. `/etc/argus-integrity/apt-sources.sha256` (baseline original)
+6. `/etc/argus-integrity/apt-sources.sha256` (baseline)
 7. Timestamps de modificación en `/etc/apt/`
 
-**Empaqueta, firma con Ed25519 del nodo, y envía.**
+**Limitación documentada (honestidad científica):**
+La evidencia recopilada desde initramfs tiene cadena de custodia media —
+mejor que recopilar desde sistema comprometido, pero sin garantía absoluta
+si el kernel o el disco han sido alterados. Para evidencia de alta confianza
+se requiere TPM 2.0 + attestation remota (DEBT-IRP-FORENSICS-TPM-001,
+post-FEDER). Esta limitación se documenta en el paper.
 
 **El admin ve:**
+```
+╔══════════════════════════════════════════════════════╗
+║  aRGus Forensic Mode — Node: hospital-argus-01      ║
+╚══════════════════════════════════════════════════════╝
+Incident: IRP-A — APT Sources Integrity Violation
+Detected: 2026-04-29T09:32:15Z
 
-✅ Evidencia recopilada: 47 ficheros, 2.3 MB
-✅ Firmada: SHA-256 = abc123...
-✅ Enviada a: irp.argus-ndr.org/incidents/INC-2026-0429-001
-📋 Referencia: INC-2026-0429-001
-📧 Equipo notificado. Tiempo de respuesta: <4h
-⚠️  NO RESTAURAR hasta recibir confirmación del equipo aRGus.
-⚠️  El nodo está aislado. La flota continúa operativa.
+Collecting evidence...
+  ✅ Pipeline binaries: 6 files, SHA-256 computed
+  ✅ APT sources: MISMATCH DETECTED
+     Expected: a3f2b1c4...
+     Actual:   7e9d41ae...
+  ✅ Falco logs: 47 entries
+  ✅ journald: 1,247 entries
+  ✅ Package list: 304 packages
+
+Packaging evidence...
+  ✅ argus-forensics-hospital-argus-01-20260429-093215.tar.gz
+  ✅ Signed: Ed25519 — b5b6cbdf...
+  ✅ Sent to: [on-premise receiver / queued for delivery]
+  📋 Reference: INC-2026-0429-001
+
+⚠️  DO NOT RESTORE until team confirmation received.
+⚠️  Node isolated. Fleet continues operating.
+⚠️  Manual standby promotion required if needed.
+```
 
 ---
 
 ## Incidente Tipo B — Plugin defectuoso o malicioso
 
 ### Detección
-
-- **Automático:** Falco — regla `argus_model_or_plugin_replaced`
-- **Métrico:** `confidence_score` fuera de rango durante >N eventos
-- **Operador:** falsos positivos masivos en firewall-acl-agent
+- Falco: regla `argus_model_or_plugin_replaced`
+- Métrico: `confidence_score` fuera de rango durante >N eventos
+- Operador: falsos positivos masivos en firewall-acl-agent
 
 ### Capa 2: Emergency Plugin Unload
 
 ```bash
 make emergency-plugin-unload PLUGIN=libplugin_xgboost.so
 
-# PluginLoader recibe mensaje firmado:
-# { "action": "unload", "target": "libplugin_xgboost.so",
-#   "reason": "IRP-B-001", "signature": "Ed25519..." }
+# PluginLoader recibe mensaje firmado Ed25519:
+# { "action": "unload", "target_plugin": "libplugin_xgboost.so",
+#   "reason": "IRP-B-001", "signature": "..." }
 # → dlclose() inmediato
 # → pipeline continúa con RandomForest embedded (fallback)
-# → log con trace_id
+# → log con trace_id + alerta al admin
 ```
 
-### Capa 3: Restauración sin downtime
+### Capa 3: Restauración + SLA
 
 ```bash
-# Pipeline continúa — RF embedded es el fallback
-# Admin restaura versión anterior firmada:
+# SLA de restauración (decisión Consejo DAY 135):
+# - Versión anterior disponible en dist/: restaurar en <15 minutos
+# - Sin versión anterior: <4h para nuevo plugin firmado por equipo aRGus
+
+# RF embedded como fallback expone métricas de degradación:
+# Pipeline status: "⚠️ FALLBACK ACTIVE — RF embedded
+#   F1 estimated: ~0.97 (vs 0.9985 XGBoost)
+#   Investigate and restore plugin within SLA"
+
 make prod-deploy-plugin PLUGIN=libplugin_xgboost_v1.0.so
 # → verifica firma Ed25519 → hot-swap sin reinicio
 ```
@@ -174,9 +277,61 @@ make prod-deploy-plugin PLUGIN=libplugin_xgboost_v1.0.so
 
 ## Incidente Tipo C — Pipeline degradado
 
-Un componente falla (etcd, ml-detector) pero OS íntegro y plugins correctos.
-Pipeline en modo degradado: Sniffer + Fast Detector + Firewall continúan.
-**No implementado — DEBT-IRP-C-001 — post-FEDER.**
+Componente falla (etcd, ml-detector) pero OS íntegro y plugins correctos.
+Sniffer + Fast Detector + Firewall continúan con últimas reglas conocidas.
+**DEBT-IRP-C-001 — post-FEDER.**
+
+---
+
+## Reintegración post-recovery (P6 — nueva)
+
+Un nodo restaurado NO vuelve a la flota sin verificación completa:
+
+```bash
+# argus-post-recovery-check — ejecutado en cada boot post-IRP
+post_recovery_validation() {
+    # Check 1: apt sources íntegros
+    /usr/local/bin/argus-apt-integrity-check || return 1
+
+    # Check 2: firma de todos los plugins válida
+    argus-verify-all-plugins || return 1
+
+    # Check 3: binarios del pipeline vs manifest firmado
+    verify_baseline_hashes "/var/lib/argus/baseline-manifest.json" || return 1
+
+    logger "ARGUS POST-RECOVERY: node eligible for quarantine monitoring"
+    return 0
+}
+```
+
+**Política de reintegración:**
+- Verificación automática obligatoria en boot post-IRP
+- 24h de monitoreo reforzado (quarantine period)
+- Aprobación manual del admin siempre requerida
+- Reintegración automática a la flota: NUNCA
+
+---
+
+## GDPR y endpoint receptor
+
+**Decisión Consejo DAY 135 (7/8 coinciden):**
+El endpoint receptor de evidencia forense debe ser **on-premise del hospital**
+en producción real. Los logs de red pueden contener IPs de pacientes,
+timestamps de procedimientos médicos, y metadatos DNS sensibles.
+Enviar a SaaS externo sin anonimización viola GDPR Art. 5(1)(c)
+y Art. 9 (datos de salud).
+
+**Política:**
+- **Producción hospitalaria:** endpoint on-premise obligatorio
+- **Demo FEDER / laboratorio:** endpoint de prueba con anonimización
+- **SaaS gestionado por aRGus:** solo con DPA firmado + PII redaction
+
+**PII redaction antes de cualquier envío externo:**
+```python
+# IPs internas → hash SHA-256 irreversible
+# Timestamps → ventanas de 5 minutos
+# Payloads → solo primeros 128 bytes (headers)
+```
 
 ---
 
@@ -184,14 +339,14 @@ Pipeline en modo degradado: Sniffer + Fast Detector + Firewall continúan.
 
 | Componente | Descripción | Prioridad |
 |------------|-------------|-----------|
-| `argus-irp-notify` | Webhook best-effort pre-poweroff | 🔴 Alta |
-| `argus-forensic-collect` | Recopilación + firma + envío | 🔴 Alta |
-| `make safe-mode` | Makefile target modo forense | 🔴 Alta |
-| `ARGUS_ALERT_WEBHOOK` | Discord / email / SIEM | 🟡 Media |
-| `irp.argus-ndr.org/incidents/` | Endpoint receptor | 🟡 Media |
-| Guardrail runtime confidence_score | Detección automática Tipo B | 🟡 Media |
-| Nodo standby auto-promote | HA antes del poweroff | 🔴 Alta (hospitales) |
-| DEBT-IRP-C-001 | Pipeline degradado | ⏳ post-FEDER |
+| `argus-network-isolate` | Aislar red antes del poweroff | 🔴 Alta — inmediato |
+| `argus-irp-notify` | Webhook + syslog + cola persistente | 🔴 Alta — inmediato |
+| `argus-forensic-collect` | Recopilación, firma, envío | 🔴 Alta — post-merge |
+| initramfs safe mode | GRUB entry + entorno read-only | 🟡 Media — post-FEDER |
+| `argus-post-recovery-check` | Verificación pre-reintegración | 🟡 Media — post-merge |
+| `argus-standby-verify` | Verificar integridad standby pre-promote | 🟡 Media — post-FEDER |
+| Endpoint on-premise | Receptor de evidencia del hospital | 🟡 Media — post-FEDER |
+| TPM attestation | Evidencia de alta confianza | ⏳ post-FEDER |
 
 ---
 
@@ -199,45 +354,67 @@ Pipeline en modo degradado: Sniffer + Fast Detector + Firewall continúan.
 
 | ID | Descripción | Plazo |
 |----|-------------|-------|
-| DEBT-IRP-A-001 | `argus-irp-notify` — webhook best-effort pre-poweroff | post-merge |
-| DEBT-IRP-A-002 | `argus-forensic-collect` + `make safe-mode` | post-FEDER |
-| DEBT-IRP-A-003 | Endpoint receptor de evidencia forense | post-FEDER |
-| DEBT-IRP-B-001 | Guardrail runtime confidence_score | post-FEDER |
+| DEBT-IRP-A-001 | `argus-irp-notify` multi-canal + cola persistente | post-merge |
+| DEBT-IRP-A-002 | `argus-network-isolate` pre-poweroff | post-merge |
+| DEBT-IRP-A-003 | `argus-forensic-collect` + initramfs safe mode | post-FEDER |
+| DEBT-IRP-A-004 | Endpoint receptor on-premise (GDPR) | post-FEDER |
+| DEBT-IRP-A-005 | `argus-post-recovery-check` + quarantine period | post-merge |
+| DEBT-IRP-B-001 | Métricas degradación RF fallback expuestas | post-merge |
+| DEBT-IRP-B-002 | SLA restauración plugin documentado en ops | post-merge |
 | DEBT-IRP-C-001 | Modo pipeline degradado | post-FEDER |
+| DEBT-IRP-FORENSICS-TPM-001 | TPM 2.0 attestation para evidencia alta confianza | post-FEDER |
+| DEBT-IRP-GDPR-001 | PII redaction + DPA framework | post-FEDER |
 
 ---
 
-## Preguntas abiertas para el Consejo DAY 136
+## Tests de cierre (TDH)
 
-**OQ-1:** ¿El webhook es best-effort (nunca bloquea) o síncrono con
-timeout máximo de 5s? Tensión: si el atacante cortó la red, falla
-de todas formas. Pero 5s de bloqueo antes del poweroff puede ser
-aceptable si aumenta significativamente la probabilidad de notificación.
-
-**OQ-2:** ¿`argus-forensic-collect` en safe mode (boot externo) o
-puede ejecutarse en el sistema comprometido? Tensión: evidencia
-recopilada desde sistema comprometido puede estar contaminada.
-
-**OQ-3:** ¿El endpoint receptor es SaaS gestionado por el equipo aRGus
-o on-premise del hospital? Implicaciones GDPR: los logs pueden contener
-IPs de pacientes.
-
-**OQ-4:** ¿RandomForest embedded como fallback de Tipo B es suficiente
-para un hospital, o debe existir SLA máximo de restauración de plugin?
-
-**OQ-5:** ¿La promoción automática del standby antes del poweroff es
-siempre deseable? ¿Puede el standby también estar comprometido?
+```bash
+make test-irp-type-a    # simular compromiso apt → verificar: red aislada,
+                         # alerta enviada, poweroff, evidencia recopilada
+make test-irp-type-b    # plugin malformado → verificar: unload, RF activo,
+                         # métricas degradación visibles, rollback <15min
+make test-irp-recovery  # post-poweroff → verificar: recovery check pasa/falla
+                         # nodo no se reintegra sin aprobación manual
+```
 
 ---
 
-## Estado
+## Conexión con el paper (arXiv:2604.04952)
 
-**PRE-DISEÑO — pendiente revisión Consejo DAY 136.**
-No hay código implementado. Solo arquitectura y deudas documentadas.
-`DEBT-IRP-A-001` (`argus-irp-notify`) es la más urgente — puede añadirse
-a `argus-apt-integrity.service` en pocas horas sin riesgo arquitectónico.
+El protocolo IRP para NDR open-source en infraestructura crítica no está
+documentado en la literatura. ADR-042 es material para:
+- §11 Future Work (subsección nueva: Operational Resilience)
+- §4.x Integration Philosophy (resiliencia como principio de diseño)
+
+Se publicará con honestidad científica: las limitaciones de forensics en
+sistema comprometido, la dependencia de hardware para TPM attestation,
+y el riesgo conocido de standby comprometido están documentados aquí.
 
 ---
 
-*DAY 135 — 29 Abril 2026*
-*"El sistema nunca muere en silencio. Grita, documenta, y cae con dignidad."*
+## Limitaciones residuales documentadas
+
+1. **Forensics en initramfs:** cadena de custodia media, no alta. Un
+   rootkit que modifica el gestor de arranque puede contaminar incluso
+   el initramfs. Mitigación completa requiere TPM + Secure Boot (post-FEDER).
+
+2. **Standby comprometido:** si el vector de ataque llegó via red a toda
+   la flota, el standby puede estar comprometido. Sin quorum externo
+   no hay forma de saberlo automáticamente. Mitigación: verificación
+   manual obligatoria pre-promote.
+
+3. **Webhook en red cortada:** si el atacante cortó el tráfico saliente,
+   la notificación queda en cola local. El admin no sabe que el nodo cayó
+   hasta que lo descubre por ausencia de heartbeat o visualmente.
+
+4. **Single-node hospital:** sin standby, el poweroff = red sin protección
+   indefinidamente hasta restauración manual. Documentado en manual de
+   operaciones como riesgo conocido y aceptado.
+
+---
+
+*DAY 135 — Draft v2 — 29 Abril 2026*
+*"El sistema nunca muere en silencio. Grita, aísla, documenta, y cae con dignidad."*
+
+

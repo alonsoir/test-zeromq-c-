@@ -1,87 +1,68 @@
-**Consejo de Sabios — Revisión ADR-042: Incident Response & Recovery Protocol (IRP)**
+**Consejo de Sabios — Revisión ADR-042 v2 (DRAFT)**
 
-El ADR-042 es **bonito, bien estructurado y filosófica/arquitectónicamente sólido**. Captura perfectamente el espíritu aRGus: **"El sistema nunca muere en silencio. Grita, documenta, y cae con dignidad."** Las tres capas (Detección + Grito → Acción Defensiva Proporcional → Recuperación Asistida/Safe Mode), los principios P1-P5 y la distinción clara entre Incidentes Tipo A (OS comprometido), Tipo B (plugin defectuoso/malicioso) y Tipo C (degradación) están muy bien pensados.
+La v2 representa una **mejora significativa** respecto a la v1. El equipo ha incorporado feedback clave del DAY 135 de forma madura: reconoce la **"Paradoja del suicidio"** (poweroff inmediato como vector DoS trivial), introduce **aislamiento de red primero**, múltiples canales de notificación con cola persistente, initramfs read-only para safe mode, reintegración verificada **nunca automática** (P6 nuevo), GDPR/on-premise explícito, y documentación honesta de limitaciones residuales.
 
-Refleja madurez: prioriza **forensics primero**, proporcionalidad, trazabilidad y que el hospital **no quede indefenso**. La integración con mecanismos existentes (Falco, Ed25519 signing, AppArmor, fallback RF embedded, `argus-apt-integrity.service`) es elegante y coherente con ADRs previos (025, 030, 039). El formato es limpio, las deudas están bien triaged y las preguntas abiertas (OQ-1 a OQ-5) son las correctas.
+Esto eleva el ADR de "bonito" a **sólido y profesional**. La estructura de tres capas está más clara, la jerarquía de respuesta en Tipo A es más defensiva, y la conexión con el paper arXiv muestra visión científica. La filosofía *"Grita, aísla, documenta, y cae con dignidad"* está bien ejecutada.
 
-Dicho esto, siendo duros pero justos: **tiene puntos débiles importantes**, especialmente para un entorno hospitalario (alta criticidad, disponibilidad 24/7, implicaciones GDPR/PHI, SLA clínicos estrictos y regulaciones como HIPAA/NIST aplicables a healthcare). Algunos riesgos son reales y podrían convertir un incidente localizado en un problema mayor de disponibilidad o forensics contaminada.
+Sin embargo, siendo duros pero justos, **aún quedan debilidades importantes** para un sistema en infraestructura crítica hospitalaria (alta disponibilidad, regulaciones estrictas, impacto en pacientes). Algunos riesgos persisten y podrían afectar la viabilidad en producción real.
 
-### Puntos Fuertes (lo bonito y bien pensado)
+### Puntos Fuertes (lo que está muy bien pensado)
 
-- **Filosofía alineada**: Fail-loud + proporcionalidad + "admin tiene herramientas, no caja negra" → excelente. Evita el típico "todo o nada" de muchos sistemas de seguridad.
-- **Separación clara de severidad**: Tipo A (poweroff) vs Tipo B (unload + fallback) vs Tipo C (degradado) es pragmática y reduce blast radius.
-- **Forensics-first antes de recuperación**: Correcto en espíritu. Recopilar evidencia antes de limpiar es estándar industrial.
-- **Uso de firma Ed25519 + webhook best-effort + referencia trazable (INC-YYYY-MMDD-XXX)**: Muy bueno para cadena de custodia.
-- **Fallback a RandomForest embedded** en Tipo B: Inteligente. Mantiene protección básica mientras se restaura el plugin avanzado.
-- **Integración temprana posible**: `argus-irp-notify` se puede añadir rápido al servicio de apt-integrity sin riesgo grande.
+- **Incorporación de lecciones previas**: La corrección del poweroff inmediato → **aislar red primero** es excelente y evita el DoS trivial. Esto alinea con prácticas de contención en entornos OT/Healthcare.
+- **Notificación multi-canal + store-and-forward (cola persistente)**: Mucho más robusto. Nunca bloqueante y resiliente a red cortada.
+- **Safe Mode en initramfs read-only + monta disco RO**: Buena mitigación práctica para forensics sin ejecutar el SO comprometido. Mejor que recolectar en sistema vivo.
+- **Reintegración post-recovery (P6)**: `argus-post-recovery-check` + quarantine period + aprobación **manual** es una de las mejores adiciones. Evita reinfección automática.
+- **GDPR y endpoint on-premise**: Decisión correcta y realista. La redacción de PII antes de envío externo es madura.
+- **Limitaciones residuales documentadas explícitamente**: Honestidad científica alta (cadena de custodia media, riesgo standby comprometido, single-node). Esto fortalece el paper.
+- **Tests de cierre (TDH)**: Excelente. Hace el ADR accionable y verificable.
+- **Proporcionalidad y fallback RF en Tipo B**: Sigue siendo uno de los puntos más elegantes.
 
-### Puntos Débiles y Problemas Identificados (seamos duros)
+### Puntos Débiles y Problemas Restantes
 
-1. **Tensión disponibilidad vs seguridad en Tipo A (OS comprometido)**
-   Poweroff inmediato (`FailureAction=poweroff`) es coherente con la decisión DAY 135, pero en un hospital puede ser **inaceptable** si no hay HA real. Un solo nodo cayendo deja al hospital "sin protección" (como se menciona en el incidente tipo A). La mención a "nodo standby → promover" es buena, pero vaga. ¿Cómo se detecta compromiso en standby? ¿Promoción automática es segura?
+1. **Contención en Tipo A aún incompleta**  
+   `ip link set eth0 down` es un aislamiento **brusco y total**. En hospitales, esto puede cortar también el heartbeat/management plane o la comunicación con dispositivos médicos críticos. Práctica industrial recomendada (NIST SP 800-61, guías healthcare/IoMT): **quarantine VLAN** o microsegmentación (mover puerto a remediation VLAN) en lugar de down total. Esto permite seguir enviando logs/forensics mientras se corta tráfico lateral/malicioso. El ADR menciona "la flota continúa operativa" pero no detalla cómo se mantiene visibilidad central una vez aislado el nodo.
 
-2. **Forensics en sistema comprometido (OQ-2)**
-   Ejecutar `argus-forensic-collect` en el sistema vivo (incluso en safe mode desde GRUB) tiene riesgo alto de contaminación si el rootkit/kernel compromise ya está activo. Industria (forensics best practices) recomienda **live triage solo para volatile data** (RAM, conexiones, procesos) cuando el sistema está corriendo, y **dead/offline analysis** (boot desde medio forense confiable o imagen disco) para lo persistente. Mezclar ambos sin separación clara es riesgoso. Evidencia firmada desde sistema comprometido puede ser repudiada legalmente o contaminada sutilmente.
+2. **Forensics en initramfs (limitación admitida pero insuficiente)**  
+   Es mejor que nada, pero sigue teniendo cadena de custodia **media**. Si el bootloader/GRUB o firmware está comprometido (posible en supply-chain o persistencia avanzada), el initramfs puede ser afectado. Práctica forense estándar: combinación **híbrida** — volatile collection rápida (si posible) + dead imaging posterior (disco extraído o imaged con write-blocker). El ADR documenta la limitación y posterga TPM a post-FEDER, lo cual es honesto, pero en producción real para hospitales esto puede no ser suficiente para auditorías regulatorias o evidencia legal.
 
-3. **Webhook best-effort vs síncrono (OQ-1)**
-   Best-effort es correcto (nunca bloquear el poweroff), pero 5s de timeout puede ser demasiado en red cortada por atacante. En práctica, muchos playbooks usan "fire-and-forget" a múltiples destinos (local journal + secondary out-of-band como satellite modem, SMS gateway, o bastión management plane separado).
+3. **Standby verification (OQ-5)**  
+   "Verificar integridad del standby ANTES de promover" es correcto en espíritu, pero `argus-standby-ping` suena demasiado simple. Si el vector de ataque es común (supply-chain apt/plugin), el standby puede estar igualmente comprometido. Falta detalle: ¿qué checks concretos? (apt-integrity, plugin signatures, baseline hashes, etc.). Sin quorum o attestation externa, la promoción sigue siendo riesgosa.
 
-4. **Falta de contención granular y HA madura**
-   No se detalla aislamiento de red (quarantine VLAN, null-routing, o firewall rules agresivas) antes/durante poweroff. En healthcare, NIST y guías específicas recomiendan **containment rápido** (aislar) antes de eradication/recovery, preservando evidencia. El ADR asume demasiado que "la flota continúa operativa" sin mecanismos explícitos de failover.
+4. **Tipo C sigue post-FEDER**  
+   Sigue siendo la deuda más peligrosa. Un fallo en ml-detector o etcd no debería dejar el pipeline "degradado silenciosamente". Necesita definición más temprana de graceful degradation (e.g., fallback a reglas Falco puras + sniffer básico).
 
-5. **Tipo C (pipeline degradado) post-FEDER**
-   Es la deuda más peligrosa. Un ml-detector o etcd caído no debería degradar silenciosamente la detección. Necesita definición temprana de "safe mode pipeline" (e.g., solo reglas Falco estáticas + sniffer + ACL básicas).
+5. **Aspectos operativos y regulatorios pendientes**
+    - No hay mención explícita a **roles y responsabilidades** (Incident Commander, coordinación con equipo hospitalario, ICS — Incident Command System). En healthcare es crítico.
+    - Falta **Post-Incident Activity** formal (lessons learned, root cause analysis, update de baselines, tabletop exercises).
+    - SLA de restauración en single-node hospitals sigue siendo un riesgo conocido alto (puede dejar red sin protección durante horas).
 
-6. **Aspectos operativos y regulatorios**
-   - GDPR/PHI: Enviar logs con IPs de pacientes a `irp.argus-ndr.org` (SaaS) requiere Data Processing Agreement fuerte, anonimización o on-premise.
-   - No hay mención explícita a **post-incident review** (lessons learned), testing del IRP (tabletop exercises), ni cadena de custodia formal.
-   - SLA de restauración en Tipo B no está cuantificado.
+### Comparación con Prácticas de la Industria (Healthcare / NIST / IoMT)
 
-### Alternativas Factibles Adaptadas de la Industria (Healthcare/Security Systems)
+- **NIST SP 800-61**: Enfatiza **Containment** como fase clave (short-term vs long-term), gathering evidence durante containment, y priorizar disponibilidad en sistemas críticos. Aislamiento debe ser estratégico, no total si afecta operaciones. Post-incident lessons learned es obligatorio.
+- **Healthcare/IoMT best practices**: Fuerte énfasis en **network segmentation**, quarantine VLAN/remediation VLAN, continuous monitoring, asset inventory, y playbooks que preserven continuidad clínica. Poweroff es último recurso. Muchas guías recomiendan microsegmentación para limitar blast radius sin matar disponibilidad.
+- **Forensics**: Estándar es hybrid (live para volatile + dead/offline para persistente). initramfs RO es una buena aproximación práctica, pero no sustituye full disk imaging forense.
 
-- **Para Tipo A (OS comprometido)**:
-  En lugar de poweroff puro, adoptar **containment primero** (estándar NIST SP 800-61 y playbooks healthcare):
-  - Aislar red (mover a quarantine VLAN o drop all except management plane).
-  - Ejecutar **live triage rápido** (volatile: RAM dump si posible, procesos, netstat, etc.) vía herramienta trusted (pre-instalada en read-only o desde medium externo).
-  - Luego poweroff o reboot a safe mode forense (boot desde USB/partition verificada con TPM/Secure Boot).
-  - **HA real**: Usar al menos 2-3 nodos activos-activos o N+1 con auto-failover via keepalived/VRRP o cluster manager ligero. Promoción automática solo si el standby pasa quick integrity checks (medidas similares a apt-integrity).
+### Recomendaciones del Consejo
 
-- **Forensics (OQ-2)**:
-  **Híbrido recomendado** (práctica común):
-  1. Live collection mínima y trusted (volatile + hashes clave) si el sistema aún responde.
-  2. Boot a entorno forense externo (e.g., GRUB entry que monta root read-only o desde live USB con herramientas como `tsurugi`, `caffeine` o custom minimal).
-  3. Crear imagen forense del disco (ddrescue o similar) antes de cualquier wipe.
-  Firma todo con clave del nodo + timestamp + hash del recolector.
+**El ADR-042 v2 está listo para avanzar a "Proposed" o "Accepted with Revisions"**, pero **no a Final** todavía. Es un gran paso y refleja excelente iteración del equipo.
 
-- **Notificación (OQ-1)**:
-  Best-effort a múltiples sinks: journald local + webhook (timeout 3-5s) + secondary channel (e.g., email via relay externo o GSM modem). Nunca bloquear acción crítica.
+**Acciones prioritarias para v3 / implementación:**
 
-- **Tipo B (Plugin)**:
-  Muy bien pensado. Industria usa **canary deployments**, feature flags o hot-swap con versiones firmadas + rollback automático a versión anterior conocida-buena. El fallback a RF embedded es equivalente a "circuit breaker + degraded mode". Añadir rate-limiting de unload y confirmación manual del admin antes de hot-swap de vuelta.
+- **Refinar Capa 2 Tipo A**: Reemplazar `ip link set down` por mecanismo de quarantine más granular (VLAN, nftables/iptables drop selective, o null-route selectivo). Mantener canal de management/forensics abierto si posible.
+- **Fortalecer forensics**: Definir secuencia híbrida (volatile mínima en initramfs + full disk imaging recomendada). Documentar cuándo extraer disco físicamente.
+- **Añadir sección "Post-Incident Activities"**: Lessons learned, RCA, update baselines, y testing periódico del IRP (tabletop + simulaciones).
+- **HA y Standby**: Detallar checks concretos para `argus-standby-verify`. Considerar quorum mínimo o señal externa para entornos de alta criticidad.
+- **Tipo C**: Traer definición básica antes de FEDER (aunque implementación completa sea posterior).
+- **Tests**: Expandir `make test-irp-type-a` para simular quarantine VLAN y verificación de que logs/forensics siguen fluyendo.
 
-- **General (adaptado de healthcare IRPs)**:
-  - Definir roles claros (Incident Commander, Technical Lead, Communications).
-  - Integrar con Incident Command System (ICS) del hospital.
-  - Tests regulares: tabletop + red team exercises simulando Tipo A/B.
-  - Para supply-chain (apt/plugin): combinar con SBOM, reproducible builds y pinning fuerte (ya tenéis mucho de esto).
+**Preguntas de vuelta para DAY 136:**
 
-### Recomendaciones del Consejo para DAY 136
+- **OQ-nuevo**: ¿Cómo se diseña el aislamiento de red para mantener visibilidad central (logs, heartbeats) mientras se corta lateral movement? ¿Tenemos soporte real de VLANs/microsegmentación en el hardware hospitalario?
+- ¿Cuál es el nivel actual de HA real en deployments (N+1, active-active, tiempo de failover)?
+- ¿Aceptamos que en single-node deployments el riesgo de "hospital sin protección" sea documentado como aceptado (con SLA manual estricto)?
 
-- **Aprobar el ADR-042 en principio**, pero **no como FINAL**. Pasarlo a **DRAFT** con revisiones obligatorias.
-- Priorizar implementación de **DEBT-IRP-A-001** (`argus-irp-notify`) ya (bajo riesgo).
-- Para DAY 136/137:
-  - Refinar Tipo A con containment + HA explícita + hybrid forensics.
-  - Decidir OQ-3 (endpoint receptor): Recomiendo **on-premise primero** (hospital gestiona sus PHI) con opción de forward cifrado a equipo aRGus.
-  - Definir SLA cuantitativos (e.g., restauración plugin < 30-60 min en Tipo B).
-  - Añadir sección "Post-Incident Activities" (root cause, lessons learned, update baselines).
+En resumen: **v2 es mucho más robusta y profesional**. Con los ajustes de contención granular y post-incident formal, se convertirá en un protocolo de primera línea adecuado para infraestructura crítica. Buen trabajo al autor (Alonso) y al equipo por la iteración rápida y honesta.
 
-**Preguntas de vuelta al autor (Alonso) y equipo**:
-- ¿Cuál es el nivel real de HA actual en deployments hospitalarios (número de nodos, failover automático)?
-- ¿Tenemos capacidad de boot forense externo confiable (USB/partition verificada)?
-- ¿Aceptamos que en Tipo A el nodo quede en quarantine (no poweroff inmediato) si hay standby verificado?
+¿Miembros del Consejo quieren profundizar en contención de red, forensics hybrid, o Tipo C antes de cerrar la ronda?
 
-El ADR es un gran paso adelante. Con estos ajustes se vuelve **robusto para producción real** en entornos críticos.
-
-¿Consejo: ¿algún miembro quiere profundizar en algún punto específico (HA, forensics, Tipo C) antes de cerrar?
-
-*"Grita, documenta, y recupera con dignidad y evidencia."* 🏛️
+*"Grita, aísla inteligentemente, documenta, y recupera con verificación estricta."* 🏛️

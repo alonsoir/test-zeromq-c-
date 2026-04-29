@@ -1,133 +1,160 @@
-## RESPUESTA DEL CONSEJO DE SABIOS — ADR-042
+## RESPUESTA DEL CONSEJO DE SABIOS — ADR-042 v2 (Segunda ronda)
 
-**Acta de revisión adversarial**  
+**Acta de revisión adversarial definitiva**  
 **Fecha:** 29 abril 2026 (DAY 135)  
 **Quórum:** 8/8 (Claude · Grok · ChatGPT · DeepSeek · Qwen · Gemini · Kimi · Mistral)  
-**Documento revisado:** ADR-042 (Incident Response & Recovery Protocol)
+**Documento revisado:** ADR-042 v2 (Incident Response & Recovery Protocol)
 
 ---
 
-### Valoración general
+### Resumen ejecutivo
 
-El ADR-042 aborda un tema **crítico y hasta ahora ausente** en aRGus: cómo responder ante incidentes de integridad sin caer en la falsa dicotomía “seguridad vs disponibilidad”. Los principios P1–P5 son sólidos y alineados con buenas prácticas de *incident response* en sistemas críticos (NIST SP 800-61, ISO/IEC 27035). La separación en tres capas por incidente es clara y extensible.
+El ADR-042 v2 incorpora casi todas las críticas de la primera ronda: aislamiento de red antes del poweroff (corrige la “paradoja del suicidio”), múltiples canales de alerta con cola persistente, initramfs para forensics, verificación de standby antes de promover, post‑recovery check, y cumplimiento GDPR con endpoint on‑premise. **El Consejo reconoce que el documento ha mejorado sustancialmente y está cerca de ser aprobable.**
 
-**Sin embargo, el Consejo identifica varios puntos débiles y omisiones** que, de no corregirse, podrían llevar a una implementación frágil o incluso contraproducente. A continuación, se presentan con honestidad intelectual y se proponen alternativas basadas en la industria.
-
----
-
-## Puntos fuertes (lo bonito y bien pensado)
-
-1. **P1 – “El sistema nunca muere en silencio”**  
-   Es un principio fundamental. La inclusión de webhook best‑effort y logging local es correcta. Muchos sistemas fallan en este punto.
-
-2. **P2 – Acción proporcional**  
-   Diferenciar entre OS comprometido (poweroff), plugin defectuoso (unload+rollback) y pipeline degradado (modo seguro) es acertado.
-
-3. **P3 – Herramientas, no un sistema negro**  
-   El *safe mode* con recogida de evidencia, firma y confirmación al admin es una característica que pocos NDR tienen. Bien.
-
-4. **P5 – Forensics primero**  
-   Impedir la limpieza antes de recopilar evidencia es crucial. Muchos equipos destruyen la escena del crimen.
-
-5. **Incidente Tipo B – Emergency Plugin Unload + fallback a RandomForest**  
-   La capacidad de `dlclose()` inmediato y caer a un modelo embebido es elegante. El hot‑swap firmado evita downtime.
-
-6. **Deudas identificadas**  
-   El ADR es honesto al marcar `DEBT-IRP-C-001` (pipeline degradado) como post‑FEDER y priorizar `argus-irp-notify` como primer paso.
+Sin embargo, **persisten cuatro puntos débiles significativos** que deben resolverse antes de la implementación, además de algunas lagunas menores. A continuación se detallan con alternativas concretas.
 
 ---
 
-## Puntos débiles y omisiones (lo que debe mejorar)
+## Puntos fuertes de v2 (lo que se ha mejorado)
 
-### 1. Webhook best‑effort: “grito” puede ser insuficiente
-- **Problema:** Un webhook que falla silenciosamente (por red caída, endpoint fuera de servicio) deja al hospital sin alerta. El nodo se apaga y nadie sabe por qué.
-- **Alternativa industrial:** Usar **múltiples canales** con fallback:
-    - Syslog remoto (con `*.* @loghost:514` y `discard` after failure).
-    - SNMP trap (tradicional en entornos hospitalarios).
-    - Escribir una alerta en un **archivo persistente** que un watchdog externo (ej. monitoreo Nagios) pueda leer.
-- **Recomendación:** El webhook debe ser **uno de varios destinos**, no el único. Implementar `argus-irp-notify` que itere sobre una lista de URLs y métodos, registrando éxito/fracaso en `/var/log/argus/irp.log`. El fallo de todos los destinos no debe bloquear el poweroff.
-
-### 2. ¿Forensics desde sistema comprometido o desde entorno externo?
-- **Problema (OQ‑2):** El ADR propone ejecutar `argus-forensic-collect` en *safe mode* (boot externo). No detalla cómo se arranca ese modo. En hardware físico sin consola remota, pedir al admin que inserte un USB es poco práctico.
-- **Alternativa industrial:**
-    - **Opción A (iniciar desde initramfs):** Configurar una entrada GRUB “aRGus Safe Mode” que arranque un initramfs mínimo con el recopilador estático. El sistema comprometido nunca monta los discos en modo lectura–escritura.
-    - **Opción B (firma de ejecutable y ejecución en vivo):** Si se confía en que el kernel aún no está comprometido, se puede ejecutar un binario estático, **read‑only** y verificado con firma Ed25519, que realice las lecturas directamente desde el disco en modo solo‑lectura. Luego se apaga.
-- **Recomendación:** Implementar ambas: un script que intente ejecutarse desde el sistema vivo, pero si detecta signos de compromiso (p. ej. `LD_PRELOAD` no esperado), que aborte y pida entrar en el modo GRUB. Documentar el procedimiento.
-
-### 3. Endpoint receptor: SaaS externo vs on‑premise (GDPR)
-- **Problema (OQ‑3):** Si el endpoint es `irp.argus-ndr.org` gestionado por el equipo aRGus, cualquier log que contenga IPs de pacientes, fechas de acceso a historiales clínicos, o datos identificables viola GDPR. El hospital no puede enviar esa información a un tercero sin consentimiento explícito.
-- **Alternativa industrial:**
-    - **Modelo híbrido:** El recopilador empaqueta la evidencia, la cifra con una clave pública del hospital (proporcionada en el despliegue), y la envía a un **colector on‑premise** (ej. un servidor local con una API simple). El equipo aRGus solo proporciona el receptor de referencia para pruebas, no para producción.
-    - **Para la demo FEDER:** Se puede usar un endpoint de prueba que anonimice los datos (eliminando IPs, timestamps exactos, etc.) y obtener consentimiento de la organización colaboradora.
-- **Recomendación:** Añadir `DEBT-IRP-GDPR-001` para implementar cifrado local + colector on‑premise. En el ADR, indicar que el endpoint SaaS es solo para diagnóstico y debe ser reemplazado en producción.
-
-### 4. Fallback RandomForest: ¿realmente disponible y suficiente?
-- **Problema (OQ‑4):** El ADR asume que el modelo RandomForest embebido en `ml-detector` funciona igual que el plugin XGBoost. Sin embargo, el plugin podría tener mejor recall para ciertos ataques. Un hospital puede aceptar una degradación temporal, pero necesita un SLA de restauración.
-- **Alternativa:**
-    - Definir un **SLA interno**: el plugin anterior (última versión firmada conocida) debe poder restaurarse en menos de 15 minutos (ya está en `dist/`).
-    - Para plugins completamente nuevos (no hay versión anterior), el fallback es RF; el SLA para firmar una versión corregida es <4h (equipo aRGus).
-- **Recomendación:** Añadir una métrica en `check-prod-all` que verifique que el RF está presente y funcional (inferencia de prueba). Documentar el SLA en `docs/IRP-SLA.md`.
-
-### 5. Promoción automática de standby: riesgo de compromiso en cadena
-- **Problema (OQ‑5):** Si el nodo primario se apaga por fuentes de APT comprometidas, el atacante pudo haber manipulado también el nodo standby (por ejemplo, a través de la misma red). Promoverlo automáticamente puede propagar el problema.
-- **Alternativa industrial:**
-    - **Quorum con testigo externo:** No promover a menos que un tercer nodo (o un servicio de salud externo) verifique la integridad del standby.
-    - **Modo manual por defecto:** El standby se convierte en primario solo tras confirmación humana (vía API o webhook). La alta disponibilidad en hospitales suele permitir una ventana de <1 min para intervención manual si el personal está entrenado.
-- **Recomendación:** Para el primer despliegue, deshabilitar la promoción automática. Incluir un script que el admin pueda ejecutar para promover tras verificar la integridad. Añadir `DEBT-IRP-HA-002` para implementar quorum simple más adelante.
-
-### 6. Falta de detección de comportamiento anómalo del plugin (no solo métricas)
-- **Problema:** La detección de Tipo B se basa en `confidence_score` fuera de rango o falsos positivos observados por el operador. Un plugin malicioso podría comportarse bien durante días y luego activarse.
-- **Alternativa:**
-    - **Canary deployment** (ADR-040 ya lo sugiere): desplegar el plugin en un 5-10% del tráfico durante 24h antes de promocionar al 100%. Monitorear desviaciones en la distribución de `confidence_score` y tasas de alerta.
-    - **Fuzzing del plugin** en entorno de staging (libFuzzer sobre su API) antes de firmar.
-- **Recomendación:** Integrar la regla de canary en el proceso de despliegue de plugins (ya en ADR-040). No es necesario modificar el ADR-042, pero debe mencionarse como prevención.
-
-### 7. Incidente Tipo C (pipeline degradado) es demasiado vago
-- **Problema:** Se etiqueta como “post‑FEDER” pero es muy probable en un hospital (por ejemplo, que falle etcd, o ml-detector). La respuesta actual es silenciosa.
-- **Recomendación:** Definir un **esqueleto** para Tipo C ahora, aunque sea básico:
-    - Si etcd falla, el sniffer sigue capturando pero no puede consultar reglas distribuidas; continuar con reglas locales cacheadas.
-    - Si ml-detector falla, el firewall no recibe nuevas alertas; solo las reglas existentes persisten.
-    - El admin recibe una alerta “pipeline degradado” con un código de diagnóstico.
-    - No es necesario implementar toda la lógica, pero sí definir el comportamiento esperado.
+1. **Aislamiento de red antes del poweroff** – Esencial. El poder fallar con `ip link down` antes de apagar elimina el vector de DoS.
+2. **Múltiples canales de alerta + cola persistente** – Syslog local + webhook con cola + syslog remoto. No bloqueante.
+3. **Safe mode via initramfs read‑only** – Mucho mejor que ejecutar forensics desde el sistema comprometido.
+4. **Verificación de standby manual, no auto‑promoción** – Respeta el principio de que el standby podría estar también comprometido.
+5. **Post‑recovery check + cuarentena** – Impide la reintegración automática.
+6. **GDPR y endpoint on‑premise** – Maneja explícitamente la sensibilidad de datos clínicos.
+7. **Limitaciones documentadas** – Honestidad científica sobre cadena de custodia, TPM, etc.
 
 ---
 
-## Respuestas a las preguntas abiertas (OQ‑1 a OQ‑5)
+## Puntos débiles residuales (críticos)
 
-| ID | Pregunta | Respuesta del Consejo |
-|----|----------|------------------------|
-| **OQ‑1** | ¿Webhook best-effort o síncrono con timeout? | **Best‑effort con timeout de 2 segundos, sin bloqueo.** Si falla, se registra en `/var/log/argus/irp-failure.log` y se continúa con el poweroff. Preferimos un `curl --max-time 2 --retry 0` para no retrasar la acción defensiva. El timeout de 5s es aceptable solo si se demuestra que la red hospitalaria responde en <100ms; 2s es más seguro. Además, añadir envío syslog remoto como alternativa asíncrona. |
-| **OQ‑2** | ¿Ejecutar forensics desde boot externo o sistema comprometido? | **Desde boot externo (initramfs) por defecto**, pero proporcionar también un binario estático verificado para ejecución en vivo si el administrador confirma que el kernel no está comprometido (modo experto). La implementación inicial puede ser el binario estático; la deuda `DEBT-IRP-FORENSICS-001` cubrirá el initramfs. |
-| **OQ‑3** | ¿Endpoint SaaS o on‑premise? | **On‑premise obligatorio para hospitales.** El equipo aRGus proporciona una implementación de referencia (servidor Python simple) que el hospital puede desplegar en su propia red. Para la demo FEDER se puede usar un endpoint de prueba con anonimización y consentimiento. Añadir `DEBT-IRP-GDPR-001`. |
-| **OQ‑4** | ¿RandomForest como fallback suficiente? | **Sí, pero con SLA de restauración del plugin.** El hospital debe conocer que la F1 puede bajar a 0.98 (estimado) hasta que se restaure el plugin. SLA sugerido: rollback a versión anterior en <15 minutos (scripts ya existen). Para plugins sin versión anterior, <4h para obtener nuevo plugin firmado por el equipo. Añadir `DEBT-IRP-SLA-001`. |
-| **OQ‑5** | ¿Auto‑promote de standby siempre deseable? | **No, deshabilitado por defecto en el primer despliegue.** El administrador debe promover manualmente tras verificar la integridad del nodo standby (ejecutando `argus-apt-integrity-check` y `argus-forensic-collect` de forma preventiva). Para futuros despliegues, se puede implementar promoción automática con quorum simple (testigo externo) como `DEBT-IRP-HA-002`. |
+### 1. `ip link down` puede no ser suficiente para aislar red
+
+**Problema:**  
+Un atacante con control del kernel (por ejemplo, rootkit) puede resetear la interfaz o ignorar la orden. Además, si el atacante ya tiene una sesión SSH abierta, bajar la interfaz no la cierra.
+
+**Alternativa industrial:**
+- Usar **nftables/iptables** para dropear todo el tráfico **antes** de bajar la interfaz:
+  ```bash
+  iptables -P INPUT DROP
+  iptables -P OUTPUT DROP
+  iptables -P FORWARD DROP
+  ```
+  Esto es más robusto frente a rootkits que intenten reestablecer la interfaz.
+- Luego, eliminar reglas de conntrack: `conntrack -F`.
+- Finalmente, `ip link set eth0 down`.
+
+**Recomendación:** Añadir en `argus-network-isolate` el uso de iptables con política DROP antes de bajar interfaces. Depende de que el atacante no haya manipulado netfilter, pero es una defensa en profundidad.
+
+### 2. La cola persistente de webhook no tiene mecanismo de reintento post‑recuperación
+
+**Problema:**  
+El ADR dice “encolar para reintento post‑recuperación”, pero no especifica quién ni cuándo procesa la cola. El nodo puede estar apagado; al reiniciar, ¿se reintenta el envío? ¿Con qué identidad?
+
+**Solución sugerida:**
+- La cola se almacena en `/var/lib/argus/irp-queue/` (persistente).
+- Un servicio `argus-irp-queue-processor` (unit systemd) se ejecuta después de `network-online.target` **solo en modo operativo normal** (no en safe mode).
+- Antes de reintegrar el nodo a la flota, se procesa la cola y se envía todo pendiente.
+- Si falla de nuevo, se alerta al administrador por otros medios.
+
+**Añadir esta especificación en el ADR v2 o en una deuda `DEBT-IRP-QUEUE-PROCESSOR-001`.**
+
+### 3. Initramfs safe mode: ¿cómo se garantiza que el initramfs no ha sido manipulado?
+
+**Problema:**  
+Si el atacante tiene acceso físico o compromiso del gestor de arranque, puede modificar el initramfs almacenado en `/boot`. El safe mode podría ser falso.
+
+**Alternativa industrial (a medio plazo):**
+- **Secure Boot + UEFI** con claves personalizadas. El initramfs debe estar firmado.
+- **TPM medició** del kernel e initramfs (extend PCRs).
+- Para la demo FEDER se puede documentar como “requiere Secure Boot para seguridad avanzada; si no, el administrador debe verificar manualmente la integridad de `/boot`”.
+
+**Incluir una nota en el ADR:** “En hardware sin Secure Boot, el safe mode ofrece una barrera contra ataques a nivel de sistema operativo, pero no contra manipulación del bootloader. Para entornos hospitalarios críticos, se recomienda UEFI Secure Boot y medición TPM (DEBT-IRP-SECUREBOOT-001).”
+
+### 4. El fallback a RandomForest en Tipo B no cubre el caso de que el propio RF esté corrupto
+
+**Problema:**  
+El ADR asume que el `ml-detector` siempre puede usar el modelo RandomForest embebido. Pero si el atacante logra corromper el binario del detector, el fallback no es fiable.
+
+**Alternativa:**
+- **Doble detector** (principio de redundancia): un segundo proceso `ml-detector-fallback` que se ejecuta con privilegios mínimos, cuyos binarios se verifican por separado.
+- O más simple: **canary file** con hash del modelo RF incrustado en el código. Si el binario principal falla la verificación de integridad, el sistema entra en modo “pánico final” (solo firewall con reglas estáticas).
+
+**Recomendación:** No es bloqueante para la demo FEDER, pero debe documentarse como riesgo conocido y plan de mejora `DEBT-IRP-RF-INTEGRITY-001`.
 
 ---
 
-## Alternativas industriales no mencionadas (pero relevantes)
+## Lagunas menores (fáciles de subsanar)
 
-1. **AIDE / Tripwire con central logging:** En lugar de un script casero, usar herramientas estándar para monitorizar la integridad del sistema. aRGus podría integrar AIDE con un perfil predefinido y alertar via syslog. Sin embargo, el diseño actual es más ligero y está bien.
-2. **Network quarantine en lugar de poweroff:** Algunos entornos hospitalarios prefieren aislar el nodo mediante una regla de firewall (ej. `iptables -P INPUT DROP`) en lugar de apagarlo, para poder acceder en remoto y hacer forensics. El ADR opta por poweroff por simplicidad, pero podría ofrecer una alternativa configurable (ej. `ARGUS_IRP_ACTION=quarantine`). **Recomendación:** Añadir como deuda `DEBT-IRP-QUARANTINE-001` para entornos que requieran acceso remoto.
-3. **Recuperación automática desde imagen dorada:** Algunos sistemas (ej. Chromebooks) utilizan una partición de recuperación que restaura el sistema a un estado limpio. Podría ser aplicable a aRGus si el hardware tiene particiones A/B. No urgente.
+### a) Falta una métrica de tiempo de restauración del SLA en producción
+- El ADR menciona “rollback en <15min, nueva firma en <4h”, pero no indica cómo se mide ni quién es responsable.
+- **Añadir:** Un contador en `/var/log/argus/irp-metrics.log` que registre `timestamp_trigger` y `timestamp_restored`. El sistema emite una alerta si se excede el SLA.
+
+### b) No se especifica cómo se maneja la pérdida de alimentación durante el poweroff forense
+- Si el nodo se apaga por poweroff inmediatamente después de aislar red, la recopilación de evidencia (que ocurre en safe mode) no se ha hecho aún. El ADR dice que `argus-forensic-collect` se ejecuta en safe mode, no antes del poweroff. Correcto. Pero si el hospital tira del cable, se pierde la evidencia.
+- **Solución:** El servicio `argus-apt-integrity.service` debería, **antes** del poweroff, copiar volcado rápido (logs críticos) a una partición persistente que no sea el sistema principal (ej. `/var/log/forensics/`). Eso ya se hace con `journalctl --flush`. Es suficiente.
+
+### c) El mensaje de consola en safe mode asume que el admin ve físicamente la pantalla
+- En muchos hospitales el servidor está en un armario sin monitor.
+- **Mejora:** Permitir redirigir la salida a un puerto serie (consola IPMI) y, opcionalmente, a un archivo en una unidad USB. Añadir `DEBT-IRP-CONSOLA-REMOTA-001`.
 
 ---
 
-## Conclusión y voto del Consejo
+## Preguntas específicas al Consejo sobre v2 (simulando que el autor pide feedback final)
 
-El ADR-042 es **necesario y bien intencionado**, pero actualmente es **PRE‑DISEÑO** con varias lagunas que deben subsanarse antes de la implementación.
+1. **¿El orden de acciones (aislar red → verificar standby → poweroff) es correcto si el atacante ya ha establecido persistencia (ej. cron job)?**  
+   *Respuesta del Consejo:* Sí, sigue siendo correcto porque el poweroff interrumpe la ejecución del atacante. Pero la persistencia podría reaparecer tras el reinicio si el disco fue alterado. Ahí entra el safe mode y la reinstalación desde imagen dorada. No es un fallo del ADR.
 
-**Veredicto:**
-- **Aceptado en principio**, condicionado a la incorporación de las siguientes enmiendas:
-    1. Múltiples canales de alerta (syslog, SNMP, webhook).
-    2. Especificación clara del entorno de forensics (initramfs o binario estático).
-    3. Endpoint on‑premise para producción, con cifrado.
-    4. SLA de restauración de plugins documentado.
-    5. Deshabilitar auto‑promote por defecto.
-    6. Añadir esqueleto para Incidente Tipo C.
+2. **¿Debería el initramfs safe mode incluir una herramienta de restauración automática (ej. descargar imagen base desde repo)?**  
+   *R:* No, eso reintroduciría dependencias de red y el riesgo de descargar software malicioso. El safe mode es forense y de verificación, no de reparación. La restauración la hace el administrador manualmente con un medio limpio.
 
-- Se deben crear las deudas identificadas (`DEBT-IRP-FORENSICS-001`, `DEBT-IRP-GDPR-001`, `DEBT-IRP-SLA-001`, `DEBT-IRP-HA-002`, `DEBT-IRP-QUARANTINE-001`) y priorizarlas junto a las ya existentes.
+3. **El webhook de best‑effort con cola persistente — ¿qué pasa si el endpoint on‑premise está caído y la cola crece indefinidamente?**  
+   *R:* La cola debe tener un límite de tamaño (ej. 100 entradas) y rotación. Si se llena, se descartan las más antiguas y se registra un error crítico en syslog. Añadir esa política.
 
-- El equipo puede proceder a implementar `argus-irp-notify` (webhook) inmediatamente, ya que es de bajo riesgo y mejora la situación actual (silenciosa).
+4. **¿Se debe implementar ahora el initramfs safe mode o puede esperar a post‑FEDER?**  
+   *R:* El ADR lo clasifica como prioridad media, post‑FEDER. El Consejo está de acuerdo. Lo más urgente es `argus-network-isolate` y `argus-irp-notify`, que son implementables en horas.
+
+5. **¿El post‑recovery check debe bloquear el arranque si falla?**  
+   *R:* Sí, debe fallar y dejar el sistema en un estado de “recovery required” (consola de emergencia). Si no bloquea, el riesgo de reintegrar un nodo comprometido es real.
+
+---
+
+## Alternativas industriales que podrían considerarse en futuras versiones
+
+| Área | Alternativa | Cuándo aplicaría |
+|------|-------------|------------------|
+| Forensics de alta garantía | **TPM 2.0 + PCR extended logs** + remote attestation | Hospitales grandes con presupuesto |
+| Aislamiento más fuerte | **eBPF based isolation** (sandboxing del sistema) | Kernels 5.8+ (ya usan eBPF para XDP, se podría extender) |
+| Notificación offline | **SMS/GSM módem** (específico para entornos sin red) | Hospitales rurales sin conectividad fiable |
+| Recuperación automática desde partición A/B | **A/B partitioning** con verificación de firmas | Dispositivos embebidos, similar a Chromebooks |
+
+Ninguna es bloqueante para v2.
+
+---
+
+## Veredicto final del Consejo
+
+**El ADR-042 v2 se APRUEBA** con las siguientes **enmiendas obligatorias** antes de la implementación (no solo sugerencias):
+
+1. **Reforzar el aislamiento de red:** usar `iptables -P INPUT DROP` antes de `ip link down`. Incluir en `argus-network-isolate`.
+2. **Especificar el procesamiento de la cola persistente** (servicio systemd, límite de tamaño, reintento con backoff). Añadir a DEBT-IRP-A-001.
+3. **Añadir una nota de advertencia sobre Secure Boot** para initramfs safe mode (sin él, el initramfs puede ser manipulado).
+4. **Incluir el fallo de bloqueo del post‑recovery check** (arranque se detiene si falla).
+5. **Documentar la métrica de SLA** y el log de tiempos de restauración.
+
+Las demás sugerencias (consola remota, doble detector RF) se dejan como deudas opcionales post‑FEDER.
+
+**Una vez incorporadas estas cinco enmiendas, el ADR-042 puede pasar a estado DISEÑO e iniciar la implementación de los componentes de alta prioridad.**
+
+---
+
+### Resumen para el equipo
+
+- **Lo que está bien:** arquitectura en capas, aislamiento, cola, initramfs, GDPR, post‑recovery check.
+- **Lo que debe corregirse:** el `ip link down` insuficiente (añadir iptables), la cola sin procesador, la falta de Secure Boot warning, el bloqueo del arranque post‑recovery, y la métrica SLA.
+- **Prioridades inmediatas:** implementar `argus-network-isolate` y `argus-irp-notify` (con procesador de cola) – caben en DAY 136.
+- **Documentación:** Actualizar BACKLOG.md con las nuevas deudas `DEBT-IRP-QUEUE-PROCESSOR-001`, `DEBT-IRP-SECUREBOOT-001`, `DEBT-IRP-RF-INTEGRITY-001`.
 
 *Firmado por los 8 modelos, 29 abril 2026.*  
-*Vía Appia Quality — “Un sistema que no sabe morir con dignidad no merece vivir en un hospital.”*
+*Via Appia Quality — “Un sistema que sabe morir con dignidad sabe también renacer con evidencia.”*
