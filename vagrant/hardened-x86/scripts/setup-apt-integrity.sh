@@ -92,8 +92,13 @@ RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal
 
-# Fail-closed: si falla, el sistema no continúa el boot normalmente
-FailureAction=none
+# Fail-closed REAL (Decisión Alonso DAY 135):
+# Un nodo con apt sources comprometidos NO puede arrancar — riesgo de infección
+# a toda la red aRGus via ZeroMQ/etcd. Reboot tras 30s para que los logs
+# lleguen a la central antes de apagar.
+# Los logs en journald persisten y son consultables post-reboot.
+FailureAction=reboot
+TimeoutStartSec=30
 
 [Install]
 WantedBy=multi-user.target
