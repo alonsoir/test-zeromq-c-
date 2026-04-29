@@ -1,172 +1,270 @@
-# Consejo de Sabios — DAY 135
-*aRGus NDR · arXiv:2604.04952 · 29 Abril 2026*
-*Solicitud de revisión adversarial — 8 modelos*
+## Kimi — Respuesta al Consejo de Sabios — DAY 135
+
+*Evaluación bajo criterios de fail-closed operacional, criptografía de transferencia y priorización de entregables críticos.*
 
 ---
 
-## Lo que se completó en DAY 135
+### Q1 — `FailureAction=reboot` en `argus-apt-integrity.service`
 
-### EMECAS dev (04:00)
-- `vagrant destroy -f && vagrant up && make bootstrap && make test-all` → ✅ ALL TESTS COMPLETE
-- Línea base limpia confirmada antes de cualquier trabajo en hardened VM
+**Hipótesis:** Un nodo cuya cadena de suministro de paquetes está comprometida no puede ser confiable para ninguna operación posterior, incluida la notificación de su propio compromiso.
 
-### P2 — DEBT-VENDOR-FALCO-001 ✅ CERRADO
-- Problema: `dist/vendor/` no existía, `vendor-download` intentaba descargar desde dev VM (fallaba)
-- Solución arquitectónica: Vagrantfile dev es el **productor** de `dist/vendor/falco_*.deb` + `CHECKSUMS`
-- `vendor-download` convertido en **verificador puro** (SHA-256, fail si no hay EMECAS dev previo)
-- `.gitignore`: `dist/vendor/*.deb` ignorado, `dist/vendor/CHECKSUMS` committeado (D4 Consejo)
-- Commits: `531b9792`
+**Veredicto: APROBADA la filosofía fail-closed. MODIFICADA la implementación: 30 segundos son insuficientes para envío remoto; NO configurable vía etcd/JSON.**
 
-### P0 — `make hardened-full` ✅ GATE PRE-MERGE PASSED
-- Implementados targets: `hardened-full`, `hardened-redeploy`, `vendor-download`
-- `hardened-full`: destroy → up → vendor-download → provision → build → deploy → check
-- Decisión Consejo D6 (Kimi): gate obligatorio antes de merge a main
-- Bugs encontrados y corregidos durante ejecución:
-    - `etcd` en apt del Vagrantfile hardened → eliminado (no existe en bookworm, aRGus lo compila)
-    - `setup-falco.sh` buscaba `.deb` en `/vagrant/` → corregido a `/vagrant/dist/vendor/`
-- **`check-prod-all` PASSED — 5/5 gates:**
-    - BSR: no compiler ✅
-    - AppArmor: 6/6 enforce ✅
-    - Capabilities: cap_bpf + cap_net_admin ✅
-    - Permissions: root:argus correcto ✅
-    - Falco: 10 reglas aRGus cargadas ✅
-- Commit: `ecce0334`
+**Justificación técnica:**
 
-### Docs — DEBT-COMPILER-WARNINGS-001
-- Documentado en BACKLOG.md: ODR violations, Protobuf dual-copy, signed/unsigned conversions
-- Clasificados como no-bloqueantes para merge actual, bloqueantes para certificación formal
-- Commit: `4ac23ad6`
+La decisión de `FailureAction=reboot` es arquitectónicamente correcta para un sistema de seguridad de red en entornos hospitalarios. Si `/etc/apt/sources.list` o sus hashes SHA-256 han sido modificados, el atacante ya tiene capacidad de persistencia a nivel de sistema operativo. Permitir que el nodo arranque y se una a la red aRGus (ZeroMQ, etcd) convierte un compromiso local en un compromiso de flota.
 
-### P1 — DEBT-PROD-APT-SOURCES-INTEGRITY-001 ✅ CERRADO (Mistral D7)
-- `setup-apt-integrity.sh`: captura SHA-256 de apt sources en provisioning
-- `/usr/local/bin/argus-apt-integrity-check`: verificador en boot
-- `argus-apt-integrity.service` (systemd oneshot): **FailureAction=reboot** (decisión Alonso DAY 135)
-    - Filosofía: nodo con apt sources comprometidos NO arranca. Fail-closed. Fail-loud. Fail-fast.
-    - Riesgo de infección a toda la red aRGus via ZeroMQ/etcd es peor que un nodo parado.
-- Falco regla 11: `argus_apt_sources_modified` (supply-chain detection)
-- AppArmor 6/6 perfiles: `deny /etc/apt/** w` (prevención)
-- Makefile: `hardened-setup-apt-integrity` + integrado en `hardened-provision-all`
-- Commits: `57bbe236`, `e8709788`
+**Análisis de los 30 segundos:**
 
-### P3 — DEBT-SEEDS-DEPLOY-001 ✅ CERRADO (D2 Consejo)
-- `prod-deploy-seeds`: 6 seeds + `plugin_signing.pk` desplegados en hardened VM
-- Ownership correcto: `400 argus:argus` para seeds, `444 root:argus` para `.pk`
-- Solo clave pública desplegada en hardened (`.sk` nunca sale de dev VM)
-- `check-prod-permissions` PASSED **sin WARNs** — WARNs eliminados de forma natural
-- Deuda documentada: `DEBT-SEEDS-SECURE-TRANSFER-001` (transferencia via /vagrant aceptable
-  en Vagrant; producción real requiere canal cifrado directo — post-FEDER)
-- Commit: `bf4c21bf`
+| Evento | Tiempo estimado | ¿Ocurre en 30s? |
+|--------|----------------|-----------------|
+| `systemd` detecta fallo del servicio | < 1s | Sí |
+| `journald` escribe entrada persistente | < 2s | Sí |
+| Envío de log vía rsyslog/syslog-ng a central | 5–30s (depende de red) | **A veces no** |
+| Falco detecta la modificación y genera alerta | 1–5s | Sí |
+| ZeroMQ pub del nodo a la red | Variable | No garantizado |
 
-### P4 — DEBT-CONFIDENCE-SCORE-001 ✅ CERRADO (D5 Consejo)
-**Inspección estática:**
-- `confidence_score` en proto (network_security.proto:350) ✅
-- `set_confidence_score()` activo en `zmq_handler.cpp` ✅
-- Campo poblado en CSV `2026-04-29.csv`
+Los 30 segundos son suficientes para que `journald` persista el evento en disco (si `Storage=persistent` está configurado), pero **no son suficientes** para garantizar la entrega remota. La evidencia forense debe residir en el disco local, no depender de la red.
 
-**Variabilidad verificada con tráfico real (tcpreplay CTU-13 Neris):**
-- BENIGN: `confidence_score = 0.854557`
-- RANSOMWARE_CONFIRMED: `confidence_score = 0.700000`
-- `MISSING_FEATURE_SENTINEL = -9999.0` correcto por diseño (fuera del dominio RF)
+**Configurabilidad vía etcd/JSON: RECHAZADA.**
 
-**Observación:** L2 dice `RANSOMWARE_CONFIRMED` pero L1 dice `BENIGN` en los eventos del CSV.
-Esto se debe a que son eventos del rag-ingester procesando features sintéticas de ransomware,
-no tráfico real del sniffer. Comportamiento esperado por diseño.
-- Commit: `7691f867` (--allow-empty)
+Si los apt sources están comprometidos, no se puede confiar en:
+- El daemon etcd (podría estar apuntando a un endpoint malicioso)
+- El parser JSON (podría haber sido modificado por el atacante)
+- El propio fichero de configuración (podría haber sido alterado)
 
-### P5 — arXiv replace v15→v18 ✅ ENVIADO
-- `main.tex` Draft v18 + `references.bib` subidos a arXiv:2604.04952
-- Replace confirmado — Cornell procesando (~1h)
+Hacer configurable el `FailureAction` vía etcd introduce una dependencia circular de confianza. La decisión de reboot debe ser **hardcoded** en la unit systemd o en un binario firmado en `/usr/local/bin/` protegido por AppArmor.
 
----
+**Modificación recomendada:**
 
-## Estado del branch
+```ini
+# /etc/systemd/system/argus-apt-integrity.service
+[Unit]
+Description=Argus APT Sources Integrity Check
+After=network.target
 
-**Branch:** `feature/adr030-variant-a`
-**Último commit:** `7691f867`
-**Push:** ✅ `origin/feature/adr030-variant-a` actualizado
-**`check-prod-all`:** PASSED (5/5 gates)
-**`hardened-full`:** PASSED desde VM destruida
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/argus-apt-integrity-check
+TimeoutStartSec=30
+# Hardcoded: no configurable externamente
+FailureAction=reboot
+
+# Protección contra loop de reboot infinito
+StartLimitIntervalSec=300
+StartLimitBurst=2
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Con `StartLimitIntervalSec=300` y `Burst=2`:** Si el check falla dos veces en 5 minutos, systemd marca la unidad como failed y **no reintenta más**. Esto evita que un bug en el script de verificación convierta el nodo en un brick de reboot cíclico.
+
+**Riesgo identificado:** Un falso positivo en el checksum (por ejemplo, una actualización legítima de seguridad de Debian que modifica `sources.list` durante el boot) provocaría un reboot inesperado. Mitigación: el script debe verificar contra un **checksum conocido y versionado** en el repo, no contra un checksum capturado dinámicamente. Si Debian actualiza sus sources, el admin debe actualizar el checksum versionado y redeploy.
+
+**Test reproducible:**
+
+```bash
+# Test de comportamiento ante compromiso simulado
+vagrant ssh hardened-x86 -c 'sudo bash -c "
+    echo \"deb http://evil.example.com/debian bookworm main\" > /etc/apt/sources.list
+    systemctl start argus-apt-integrity.service
+    sleep 5
+    # Verificar que el nodo ha iniciado reboot
+    # (en Vagrant esto se observa como desconexión de SSH)
+"'
+
+# En el host, verificar que journald persistió el evento antes del reboot
+vagrant ssh hardened-x86 -c 'sudo journalctl -u argus-apt-integrity.service --no-pager'
+# Esperado: "FAIL: APT sources hash mismatch" seguido de "Rebooting..."
+```
 
 ---
-
-## Preguntas para el Consejo
-
-### Q1 — FailureAction=reboot en argus-apt-integrity.service
-Hemos implementado `FailureAction=reboot` con `TimeoutStartSec=30s` para dar tiempo
-a que los logs lleguen a la central antes del reboot. La filosofía es: un nodo con
-apt sources comprometidos no puede arrancar bajo ninguna circunstancia — el riesgo
-de infectar toda la red aRGus via ZeroMQ/etcd es inaceptable.
-
-**¿Están de acuerdo con esta decisión? ¿30 segundos es suficiente para que los logs
-lleguen a una central de monitorización? ¿Debería ser configurable via JSON (etcd)?**
 
 ### Q2 — DEBT-SEEDS-SECURE-TRANSFER-001
-Los seeds pasan brevemente por el Mac host via `/vagrant` (shared folder VirtualBox).
-Esto es aceptable en Vagrant dev/test pero no en producción real (Jenkins + hardware físico).
 
-**¿Cuál es la arquitectura correcta para la transferencia segura de seeds en producción?
-Opciones consideradas:**
-- (A) SSH con clave efímera generada en provisioning
-- (B) Noise Protocol IK handshake directo entre dev VM y hardened VM
-- (C) Seeds generados directamente en la hardened VM (elimina el problema de transferencia)
-- (D) Otra opción
+**Hipótesis:** La transferencia de seeds entre entornos de confianza es el momento de máximo riesgo criptográfico. Eliminar la transferencia es preferible a asegurarla.
 
-**¿La opción C (generación local en hardened VM) viola algún principio de ADR-013?**
+**Veredicto: Opción C (generación local en hardened VM) es la arquitectónicamente correcta para el modelo P2P/federado. NO viola ADR-013.**
 
-### Q3 — merge de feature/adr030-variant-a a main
-El gate pre-merge (`make hardened-full` PASSED) está cumplido. Los 5 checks de
-`check-prod-all` pasan. Las 7 decisiones del Consejo DAY 134 están implementadas.
+**Análisis de opciones:**
 
-**¿Hay algún bloqueante técnico o arquitectónico que el Consejo identifique antes
-de aprobar el merge de `feature/adr030-variant-a` a `main`?**
+| Opción | Seguridad | Complejidad | Alineación con ADR-026/027 | Veredicto |
+|--------|-----------|-------------|---------------------------|-----------|
+| **A) SSH efímero** | Media | Baja | Neutro | Aceptable como fallback |
+| **B) Noise IK** | Alta | Alta | Muy alta | Correcta para transferencia obligatoria |
+| **C) Generación local** | **Máxima** | **Mínima** | **Muy alta** | **Recomendada** |
+| **D) TPM/SGX** | Máxima | Media | Alta | Ideal post-FEDER |
 
-Elementos pendientes conocidos (no bloqueantes para el merge):
-- `DEBT-COMPILER-WARNINGS-001` (warnings de compilación — pre-existentes)
-- `DEBT-SEEDS-SECURE-TRANSFER-001` (transferencia segura en producción real)
-- `hardened-full` no integra `prod-deploy-seeds` (intencional — D2: deploy explícito)
+**Justificación de Opción C:**
+
+En una arquitectura P2P (ADR-026/027), cada nodo es una identidad criptográfica independiente. No hay razón técnica para que el nodo A y el nodo B compartan el mismo seed. Cada nodo debe generar su propio seed a partir de entropía del kernel (`getrandom(2)`, `/dev/urandom`) durante el provisioning inicial.
+
+**¿Violación de ADR-013? No.** ADR-013 establece:
+- Seeds a `0400 root:root`
+- Seeds solo en runtime, nunca en CMake ni logs
+- `mlock()` + `explicit_bzero()`
+- `resolve_seed()` verifica permisos estrictos
+
+Ninguna de estas reglas prohíbe la generación local. De hecho, la generación local **satisface** ADR-013 de forma más pura que la transferencia, porque elimina un vector de exposición (el canal de transferencia).
+
+**Secuencia de generación local propuesta:**
+
+```bash
+# /usr/local/bin/argus-seed-init — ejecutado una vez en provisioning
+# Firmado con Ed25519 del sistema (ADR-025)
+
+#!/bin/bash
+set -euo pipefail
+
+COMPONENT=$1
+SEED_DIR="/etc/ml-defender/${COMPONENT}"
+SEED_FILE="${SEED_DIR}/seed.bin"
+
+mkdir -p "$SEED_DIR"
+chmod 0750 "$SEED_DIR"
+
+# 32 bytes de entropía criptográfica del kernel
+head -c 32 /dev/urandom > "$SEED_FILE"
+chmod 0400 "$SEED_FILE"
+chown root:root "$SEED_FILE"
+
+# Verificación inmediata
+if [ "$(stat -c %a "$SEED_FILE")" != "400" ]; then
+    echo "FAIL: Seed permissions incorrect" >&2
+    rm -f "$SEED_FILE"
+    exit 1
+fi
+
+echo "OK: Seed generated locally for ${COMPONENT}"
+```
+
+**Cuándo usar Opción B (Noise IK):** Si el modelo pre-P2P (etcd centralizado) requiere que todos los nodos compartan un seed común (por ejemplo, para derivar claves de cifrado de flota), entonces la transferencia es inevitable. En ese caso, Noise IK es la opción correcta. Pero ADR-026/027 apuntan a P2P, donde cada nodo tiene su propia identidad.
+
+**Riesgo identificado:** Si la generación local ocurre en una VM clonada (misma entropía inicial por snapshot), los seeds podrían no ser únicos. Mitigación: asegurar que la VM hardened se provisiona desde cero (`vagrant destroy && vagrant up`), no desde snapshot. En bare-metal, el TPM proporciona entropía única por dispositivo.
+
+**Recomendación para post-FEDER:** Implementar Opción C como default. Documentar Opción B como fallback para escenarios pre-P2P o de recuperación de desastre donde un nodo debe restaurar su identidad previa desde backup cifrado.
+
+---
+
+### Q3 — Merge de `feature/adr030-variant-a` a `main`
+
+**Hipótesis:** Un branch que pasa el gate pre-merge (`hardened-full` + `check-prod-all`) y no introduce regresiones en el EMECAS de desarrollo es candidato válido para merge.
+
+**Veredicto: APROBADO para merge. Sin bloqueantes técnicos ni arquitectónicos identificados.**
+
+**Justificación:**
+
+| Criterio | Estado | Evaluación |
+|----------|--------|------------|
+| EMECAS dev (destroy + up + bootstrap + test-all) | ✅ PASSED (04:00 DAY 135) | Línea base limpia confirmada |
+| EMECAS hardened (`hardened-full`) | ✅ PASSED | Reproducibilidad total desde cero |
+| `check-prod-all` (5/5 gates) | ✅ PASSED | BSR, AppArmor, capabilities, permissions, Falco |
+| Deudas pendientes | No bloqueantes | Compiler warnings (pre-existentes), secure transfer (post-FEDER), seeds deploy explícito (intencional) |
+| Conflicto con `main` | No reportado | Asumido limpio |
+
+**Bloqueantes potenciales que NO existen:**
+- No hay cambios en la interfaz pública del pipeline (API ZeroMQ, protobuf)
+- No hay cambios en el modelo ML (F1 invariante)
+- No hay introducción de nuevas dependencias de runtime en la dev VM
+- No hay modificación de `resolve_seed()` ni de las primitivas `safe_path`
+
+**Condición de merge:** Ejecutar EMECAS dev una vez más en `main` **post-merge** para confirmar que la integración no introduce efectos de borde. Esto no es un bloqueante previo, es una verificación posterior.
+
+**Riesgo identificado:** El merge introduce ~15 commits nuevos en `main`. Si otro desarrollador tiene un branch paralelo basado en `main` antiguo, podría haber conflictos en el `Makefile` (nuevos targets de producción). Mitigación: comunicar el merge inmediatamente al equipo y recomendar `git rebase main` en branches activos.
+
+---
 
 ### Q4 — `hardened-redeploy` + `prod-deploy-seeds` en el flujo diario
-Actualmente el flujo de iteración rápida es:
 
-make hardened-redeploy        # build → deploy → check (sin destroy)
-make prod-deploy-seeds        # deploy explícito de seeds (D2)
-make check-prod-permissions   # verificación limpia
+**Hipótesis:** La separación entre deploy de infraestructura y deploy de material criptográfico es una barrera de seguridad intencional que no debe eliminarse por conveniencia.
 
-**¿Este flujo es correcto para el trabajo diario post-merge? ¿Debería existir
-un `make hardened-full-with-seeds` que integre todo para el caso de uso
-"deploy completo desde cero incluyendo seeds"?**
+**Veredicto: El flujo actual es CORRECTO. NO crear `hardened-full-with-seeds`.**
 
-### Q5 — Próximos pasos post-merge
-Una vez mergeado `feature/adr030-variant-a` a `main`, los candidatos para DAY 136 son:
+**Justificación:**
 
-**Opción A — BACKLOG-FEDER-001 (deadline 22 Sept 2026)**
-Preparar presentación para Andrés Caro Lindo. Prerequisites: ADR-026 merged +
-ADR-029 Variants A/B stable + reproducible Vagrant pcap demo.
+El deploy de seeds es una operación de **alto privilegio** que debe ser:
+1. **Consciente:** El operador debe saber que está desplegando material criptográfico
+2. **Auditada:** Debe quedar constancia de cuándo y qué seeds se desplegaron
+3. **Reversible:** Debe poder eliminarse sin afectar la infraestructura subyacente
 
-**Opción B — ADR-029 Variant B (Debian+AppArmor+libpcap)**
-Vagrantfile separado `vagrant/hardened-arm64/`. Comparativa eBPF/XDP vs libpcap
-como contribución científica publicable.
+Si `hardened-full-with-seeds` existiera, un desarrollador podría ejecutarlo accidentalmente en un entorno de demostración, dejando seeds de producción (o de test) en una VM que luego se comparte. Esto viola el principio de **separación de concerns** y el BSR axiom (la VM de runtime no debe contener material de build, y viceversa).
 
-**Opción C — DEBT-COMPILER-WARNINGS-001**
-Rama `fix/debt-compiler-warnings-001`. ODR violations en RF inline trees,
-Protobuf dual-copy en ml-detector, conversiones signed/unsigned.
+**Flujo correcto documentado:**
 
-**¿Cuál es la recomendación del Consejo para DAY 136?**
+```bash
+# Iteración rápida (desarrollo, múltiples veces al día)
+make hardened-redeploy        # Infraestructura + binarios
+make check-prod-all           # Verificación
 
----
+# Deploy de seeds (operación consciente, una vez por entorno)
+make prod-deploy-seeds        # Material criptográfico
+make check-prod-permissions   # Verificación de seeds
 
-## Reglas permanentes confirmadas en DAY 135
+# Validación total (release, gate pre-merge)
+make hardened-full            # Desde cero, sin seeds
+# + manual: make prod-deploy-seeds (si el entorno requiere operación)
+```
 
-- **REGLA EMECAS dev:** `vagrant destroy -f && vagrant up && make bootstrap && make test-all`
-- **REGLA EMECAS hardened:** `make hardened-full` (destroy incluido, gate pre-merge)
-- **REGLA EMECAS hardened iter:** `make hardened-redeploy` (sin destroy, iteración rápida)
-- **REGLA vendor:** Vagrantfile dev produce `dist/vendor/CHECKSUMS`. `vendor-download` solo verifica.
-- **REGLA seeds:** NO en EMECAS. `prod-deploy-seeds` explícito (D2 Consejo DAY 134).
-- **REGLA apt-integrity:** `FailureAction=reboot`. Nodo comprometido no arranca. Sin excepciones.
-- **REGLA macOS sed:** nunca `sed -i` sin `-e ''`; usar `python3` para ediciones.
+**Riesgo identificado:** La ausencia de `hardened-full-with-seeds` podría hacer que un operador olvide ejecutar `prod-deploy-seeds` después de `hardened-full`, dejando el sistema sin seeds y con componentes criptográficos fallando. Mitigación: `check-prod-all` debe incluir una verificación de que **si** el componente requiere criptografía (ej. `encryption_enabled=true`), **entonces** el seed existe. Durante EMECAS, los componentes no están habilitados, así que el check pasa. En operación, el check fallaría explícitamente.
 
 ---
 
-*DAY 135 cerrado — 29 Abril 2026*
-*Commits: 531b9792..7691f867 · check-prod-all PASSED · arXiv v18 enviado*
-*"Fail-closed. Fail-loud. Fail-fast. Sin excepciones."* 🏛️
+### Q5 — Próximos pasos post-merge (DAY 136)
+
+**Hipótesis:** La priorización post-merge debe maximizar el valor acumulado para FEDER mientras minimiza el riesgo de no entregar entregables tangibles.
+
+**Evaluación de opciones:**
+
+| Opción | Entregable | Riesgo de no entrega | Bloqueos | Contribución al paper | Veredicto |
+|--------|-----------|----------------------|----------|----------------------|-----------|
+| **A) FEDER prep** | Presentación | Alto (prereqs no cumplidos) | ADR-026 no merged, ADR-029 B no estable | Media | Prematuro |
+| **B) ADR-029 Variant B** | Vagrantfile ARM64 + datos comparativos | Bajo | Ninguno (cross-compile o QEMU) | **Alta** (delta XDP/libpcap publicable) | **Recomendada** |
+| **C) Compiler warnings** | Código limpio | Muy bajo | Ninguno | Baja | Paralelizable |
+
+**Veredicto: Opción B — ADR-029 Variant B para DAY 136.**
+
+**Justificación:**
+
+1. **Contribución científica publicable:** El delta de rendimiento entre eBPF/XDP (Variant A) y libpcap (Variant B) es un dato empírico que no existe en la literatura para NDR de código abierto en ARM. Proporciona contenido concreto para §5 del paper y para la narrativa FEDER: *"Protección de grado hospitalario desde x86 hasta ARM64"*.
+2. **Prerequisito de FEDER:** La demo FEDER requiere ADR-029 Variants A/B estables. Sin Variant B, la presentación carece de la dimensión de portabilidad hardware, que es un pilar del argumento de coste (150€ vs 15.000€).
+3. **Scope acotado:** Un Vagrantfile `hardened-arm64/` con cross-compilation desde la dev VM x86 es un entregable de 1-2 días. No requiere hardware ARM físico (QEMU user-mode o Vagrant con box ARM64).
+4. **Paralelismo:** Opción C (compiler warnings) puede ejecutarse en una rama paralela `fix/debt-compiler-warnings-001` sin ocupar el ciclo diario del Consejo. No requiere toma de decisiones arquitectónicas.
+
+**Riesgo de Opción A (FEDER):** Preparar una presentación sin ADR-026 merged y sin Variant B estable es construir sobre cimientos inexistentes. El riesgo de tener que reescribir la presentación es alto.
+
+**Plan DAY 136 propuesto:**
+
+| Horario | Tarea |
+|---------|-------|
+| 05:00–08:00 | REGLA EMECAS dev + REGLA EMECAS hardened (confirmar main post-merge) |
+| 08:30–12:00 | `vagrant/hardened-arm64/Vagrantfile` — Debian ARM64, AppArmor, sin compilador |
+| 12:00–14:00 | Cross-compilation: `make build-production-arm64` desde dev VM x86 |
+| 14:30–18:00 | Medición comparativa: throughput XDP (x86) vs libpcap (ARM64) con mismo pcap |
+| 18:00–20:00 | Documentación: tabla de métricas para paper §5 + ADR-041 actualización |
+
+**Métricas mínimas a obtener:**
+
+| Métrica | x86 XDP | ARM64 libpcap | Delta |
+|---------|---------|---------------|-------|
+| Throughput máximo (Mbps) | ? | ? | ? |
+| Latencia p50 (ms) | ? | ? | ? |
+| CPU % a 100 Mbps | ? | ? | ? |
+| RAM RSS (MB) | ? | ? | ? |
+
+---
+
+### Resumen de posiciones — Kimi
+
+| Pregunta | Veredicto | Acción inmediata |
+|----------|-----------|------------------|
+| **Q1** | `FailureAction=reboot` aprobado; 30s suficiente para journald local; **NO configurable** vía etcd/JSON | Añadir `StartLimitIntervalSec=300` y `StartLimitBurst=2` a la unit |
+| **Q2** | **Opción C** (generación local) recomendada para P2P; no viola ADR-013 | Implementar `argus-seed-init` como binario firmado en provisioning |
+| **Q3** | **Merge aprobado** sin bloqueantes | Ejecutar EMECAS dev post-merge como verificación |
+| **Q4** | **NO** a `hardened-full-with-seeds`; flujo actual correcto | Documentar flujo de 3 pasos; añadir check condicional de seeds en operación |
+| **Q5** | **Opción B** (ADR-029 Variant B) para DAY 136 | Crear `vagrant/hardened-arm64/` + medición comparativa XDP/libpcap |
+
+**Moción:** Propongo que el merge de `feature/adr030-variant-a` a `main` se ejecute inmediatamente tras esta sesión, seguido de un EMECAS dev de verificación. El DAY 136 debe comenzar con la creación de la infraestructura ARM64, no con la preparación de la presentación FEDER. Los datos comparativos de rendimiento son el insumo crítico que falta para que cualquier presentación sea creíble.
+
+— *Kimi*  
+*Via Appia Quality — La seguridad no se instala. Se diseña.*
