@@ -1633,6 +1633,7 @@ seed-client-rebuild: seed-client-clean seed-client-build seed-client-test
 .PHONY: check-prod-no-compiler check-prod-apparmor check-prod-capabilities
 .PHONY: check-prod-permissions check-prod-falco check-prod-all
 .PHONY: hardened-up hardened-halt hardened-destroy hardened-ssh
+.PHONY: hardened-full hardened-redeploy vendor-download
 .PHONY: hardened-setup-user hardened-setup-apparmor hardened-setup-falco
 .PHONY: hardened-setup-filesystem hardened-provision-all hardened-verify
 
@@ -1860,3 +1861,55 @@ check-prod-all: check-prod-no-compiler check-prod-apparmor check-prod-capabiliti
 
 # Verificación rápida del estado de la hardened VM
 hardened-verify: check-prod-all
+# ─────────────────────────────────────────────────────────────────────────────
+# vendor-download — verifica Falco .deb en dist/vendor/ (producido por EMECAS dev)
+# El .deb lo descarga el Vagrantfile dev durante provisioning. Este target solo verifica.
+# ─────────────────────────────────────────────────────────────────────────────
+vendor-download:
+	@if ! ls dist/vendor/falco_*.deb 1>/dev/null 2>&1; then \
+		echo "FAIL: dist/vendor/falco_*.deb no encontrado."; \
+		echo "      Ejecuta EMECAS dev primero: vagrant destroy -f && vagrant up && make bootstrap && make test-all"; \
+		exit 1; \
+	fi
+	@EXPECTED=$$(grep falco dist/vendor/CHECKSUMS 2>/dev/null | cut -d' ' -f1); \
+	ACTUAL=$$(sha256sum dist/vendor/falco_*.deb | cut -d' ' -f1); \
+	if [ "$$ACTUAL" != "$$EXPECTED" ]; then \
+		echo "FAIL: hash de dist/vendor/falco_*.deb no coincide con CHECKSUMS"; \
+		echo "      Ejecuta EMECAS dev para regenerar"; \
+		exit 1; \
+	fi
+	@echo "✅ dist/vendor/falco_*.deb verificado (SHA-256 OK)"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# hardened-full — EMECAS hardened: destroy → provision → build → deploy → check
+# Decisión Consejo D6 (DAY 134). Gate pre-merge feature/adr030-variant-a.
+# ─────────────────────────────────────────────────────────────────────────────
+hardened-full:
+	@echo ""
+	@echo "╔══════════════════════════════════════════════════════╗"
+	@echo "║  EMECAS HARDENED — destroy → build → check          ║"
+	@echo "║  Gate pre-merge: feature/adr030-variant-a           ║"
+	@echo "╚══════════════════════════════════════════════════════╝"
+	@echo ""
+	$(MAKE) hardened-destroy
+	$(MAKE) hardened-up
+	$(MAKE) vendor-download
+	$(MAKE) hardened-provision-all
+	$(MAKE) prod-full-x86
+	$(MAKE) check-prod-all
+	@echo ""
+	@echo "╔══════════════════════════════════════════════════════╗"
+	@echo "║  ✅ EMECAS HARDENED PASSED                          ║"
+	@echo "║  feature/adr030-variant-a autorizado para merge     ║"
+	@echo "╚══════════════════════════════════════════════════════╝"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# hardened-redeploy — iteración rápida sin destroy (Consejo D1 DAY 134)
+# Asume VM ya levantada y provisionada. Solo build → deploy → check.
+# ─────────────────────────────────────────────────────────────────────────────
+hardened-redeploy:
+	@echo "=== HARDENED REDEPLOY (sin destroy) ==="
+	$(MAKE) prod-full-x86
+	$(MAKE) check-prod-all
+	@echo "✅ hardened-redeploy PASSED"
