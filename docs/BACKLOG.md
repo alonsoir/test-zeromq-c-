@@ -531,6 +531,65 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 
 ---
 
+
+## DEBT-JENKINS-SEED-DISTRIBUTION-001 — Jenkins/CI para distribución de seeds
+**Severidad:** 🔴 Alta
+**Estado:** ABIERTO — DAY 136
+**Origen:** Consejo 8/8 DAY 136 — convergencia unánime
+**Contexto:** Actualmente los seeds se distribuyen desde el portátil Mac del
+founder via /vagrant (shared folder VirtualBox). Esto es inaceptable en
+producción real: el portátil del founder no puede ser parte de la cadena
+criptográfica de producción de un sistema hospitalario.
+**Propuesta:** Jenkins (o equivalente CI open source — Gitea Actions, Forgejo)
+gestiona el ciclo: generación local en nodo hardened → distribución out-of-band
+→ verificación de permisos. El Mac nunca toca el material criptográfico.
+**Prerrequisito para:** DEBT-SEEDS-LOCAL-GEN-001, despliegue hardware físico.
+**Plazo:** pre-FEDER (mecanismo mínimo viable en Vagrant antes de demo)
+**Test de cierre:** `make ci-deploy-seeds` desde pipeline Jenkins sin
+intervención del portátil del founder. Seeds verificados con check-prod-permissions.
+
+## DEBT-CRYPTO-MATERIAL-STORAGE-001 — Almacenamiento material criptográfico open source
+**Severidad:** 🔴 Alta
+**Estado:** ABIERTO — DAY 136
+**Origen:** Consejo 8/8 DAY 136 — convergencia unánime
+**Contexto:** Seeds ChaCha20, keypairs Ed25519 (plugin-signing, pipeline-signing)
+no tienen solución de almacenamiento robusta más allá de ficheros con permisos
+0400. En producción hospitalaria un fallo de disco = pérdida del material
+criptográfico = pipeline inoperable.
+**Propuesta implementación demo:** HashiCorp Vault (open source, Vagrant-deployable).
+Vault como backend para seeds + keypairs. Acceso via AppRole (sin contraseña humana).
+**Propuesta objetivo final:** TPM 2.0 (presente en servidores hospitalarios modernos).
+tpm2-tools + clevis para binding de seeds al hardware.
+**Candidatos evaluados:**
+- HashiCorp Vault OSS — portable, Vagrant-friendly, demo FEDER ✅
+- YubiKey — offline vault, requiere hardware adicional 🟡
+- TPM 2.0 — hardware presente, no portable entre nodos 🟡 (objetivo final)
+**Plazo:** propuesta + prototipo Vault antes de demo FEDER (1 agosto 2026)
+**Test de cierre:** `make vault-init && make vault-deploy-seeds` → seeds en
+Vault → check-prod-permissions PASSED sin ficheros en disco del host.
+
+## DEBT-COMPILER-WARNINGS-CLEANUP-001 — Resolver TODOS los warnings de compilación
+**Severidad:** 🔴 Alta (en infraestructura crítica ODR violation = UB = inaceptable)
+**Estado:** ABIERTO — DAY 136
+**Origen:** Consejo 8/8 DAY 136 — TODOS los modelos, convergencia unánime
+**Contexto:** Durante EMECAS DAY 136 se observaron warnings de compilación
+en múltiples componentes. El Consejo es unánime: en C++ un ODR violation
+es Undefined Behaviour. UB en producción hospitalaria no es hipotético,
+es inevitable bajo carga o condiciones de hardware específicas.
+**Categorías a resolver (por orden de riesgo):**
+1. 🔴 ODR violations: internal_trees_inline.hpp vs traffic_trees_inline.hpp
+   (InternalNode vs TrafficNode — mismo nombre, tipo diferente) — UB real
+2. 🔴 Protobuf ODR: network_security.pb.h copia dual en ml-detector
+   (build-production/proto vs src/protobuf) — versiones incompatibles
+3. 🟡 Conversiones signed/unsigned: ml-detector, rag-ingester, sniffer
+4. 🟡 Deprecated API: SHA256_Init/Update/Final OpenSSL 3.0 → EVP_DigestInit
+5. 🟡 Wreorder: ZMQHandler, RingBufferConsumer, DualNICManager
+6. 🟡 test_etcd_client_hmac_grace_period DISABLED (requires GTest)
+7. 🟢 lto-wrapper serial compilation warnings (informativo, no crítico)
+**Rama:** `fix/compiler-warnings-cleanup-001`
+**Plazo:** DAY 137+ — rama dedicada. Bloqueante para certificación formal.
+**Test de cierre:** `make hardened-full 2>&1 | grep -E "^.*warning:" | wc -l` = 0
+
 ## BACKLOG-FEDER-001
 
 ## DEBT-APT-TIMEOUT-CONFIG-001 — Timeout apt-integrity configurable
@@ -674,3 +733,39 @@ La directiva `ExecStartPre` se ejecuta en orden ANTES de `ExecStart`.
 **Lección:** Los ADRs con código systemd deben pasar por revisión adversarial
 antes de implementación. El Consejo de Sabios atrapó este bug en revisión
 de documento, no en producción.
+
+## 📝 Notas del Consejo de Sabios — DAY 136 (8/8)
+
+> "DAY 136 — v0.6.0-hardened-variant-a mergeado. El pipeline respira solo.
+>
+> Convergencias unánimes (8/8):
+> D1: DEBT-IRP-NFTABLES-001 es P0 pre-FEDER. argus-network-isolate inexistente
+>     = fail catastrófico en demo ante evaluadores FEDER.
+> D2: Jenkins para distribución de seeds — el Mac del founder no puede ser
+>     parte de la cadena criptográfica de producción hospitalaria.
+> D3: Material criptográfico necesita solución open source. Propuesta:
+>     HashiCorp Vault (demo) + TPM 2.0 (objetivo final).
+> D4: Compiler warnings — ODR violation en C++ es UB. UB en hospital
+>     es inaceptable. Rama dedicada fix/compiler-warnings-cleanup-001.
+> D5: DEBT-SEEDS-BACKUP-001 — el más preocupante para infraestructura crítica.
+>     Protocolo ejecutable sin conocimientos de criptografía.
+>
+> Delta científico XDP vs libpcap:
+> - Punto de captura (antes/después del stack de red)
+> - CPU por paquete bajo carga sostenida
+> - Hardware mínimo para F1≥0.9985 con 0 paquetes perdidos
+> - Temperatura ARM ≤75°C sin ventilador (armarios hospitalarios 24/7)
+>
+> 'Los warnings ODR en C++ son bombas de reloj. En infraestructura crítica,
+>  el comportamiento indefinido no es hipotético — es inevitable.' — Grok
+>
+> 'Un hospital no tiene un DevOps team. El protocolo de backup de seeds
+>  debe ser ejecutable por el administrador que también gestiona las
+>  impresoras.' — Kimi
+>
+> 'Jenkins no es lujo. Es el mínimo de profesionalismo para cualquier
+>  sistema que procese datos de pacientes.' — ChatGPT"
+> — Consejo de Sabios (8/8) · DAY 136
+
+*DAY 136 — 29 Abril 2026 · v0.6.0-hardened-variant-a · merge completo*
+*"Via Appia Quality — Un escudo que aprende de su propia sombra."*
