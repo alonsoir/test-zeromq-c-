@@ -97,8 +97,37 @@ StandardError=journal
 # a toda la red aRGus via ZeroMQ/etcd. Reboot tras 30s para que los logs
 # lleguen a la central antes de apagar.
 # Los logs en journald persisten y son consultables post-reboot.
-FailureAction=reboot
-TimeoutStartSec=30
+# POWEROFF INMEDIATO — Voto de Oro Alonso DAY 135.
+#
+# Filosofía: un nodo con apt sources comprometidos es material radiactivo.
+# No se reanima. Se aisla, se analiza en autopsia, se restaura desde cero.
+#
+# Razones:
+#   1. Reboot da tiempo al atacante para persistir, evadir, contaminar.
+#   2. La red aRGus puede tener miles/millones de nodos. Un nodo infectado
+#      que vuelve a la red via ZeroMQ/etcd puede fundir la flota entera.
+#   3. El análisis forense (journald en disco) queda intacto con poweroff.
+#      Con reboot, el atacante tiene ciclos para destruir evidencia.
+#   4. Un humano DEBE intervenir físicamente o via consola de gestión
+#      (IPMI, iDRAC) para restaurar. No hay vuelta atrás automática.
+#
+# Flujo post-poweroff:
+#   → Admin accede via consola física o IPMI (sin red)
+#   → Autopsia: journalctl, /etc/argus-integrity/, /var/log/
+#   → Restauración desde imagen limpia conocida y firmada
+#   → Re-provisioning completo: make hardened-full
+#
+# Si en el futuro los admins consideran esta política demasiado restrictiva,
+# pueden modificarla con pleno conocimiento del riesgo que asumen.
+# Pero el default es y debe ser: POWEROFF INMEDIATO. Sin excepciones.
+# Sin configuración externa. Hardcoded. Inmutable sin acceso físico.
+#
+# "Mientras más tiempo esté expuesto a la red, más tiempo ha tenido
+#  el atacante para colocar sus mierdas y hacer daño." — Alonso, DAY 135
+FailureAction=poweroff
+# Anti-bootloop: si falla 2 veces en 5 min, systemd no reintenta
+StartLimitIntervalSec=300
+StartLimitBurst=2
 
 [Install]
 WantedBy=multi-user.target
