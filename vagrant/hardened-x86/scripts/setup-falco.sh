@@ -18,10 +18,10 @@ echo "╚═══════════════════════�
 if command -v falco &>/dev/null; then
     echo "  ✅ Falco ya instalado: $(falco --version 2>/dev/null | head -1)"
 else
-    FALCO_DEB=$(ls /vagrant/falco_*.deb 2>/dev/null | head -1)
+    FALCO_DEB=$(ls /vagrant/dist/vendor/falco_*.deb 2>/dev/null | head -1)
     if [ -z "$FALCO_DEB" ]; then
         echo "  ❌ ERROR: falco_*.deb not found in /vagrant"
-        echo "  Run from dev VM: sudo apt-get download falco"
+        echo "  Ejecuta EMECAS dev: vagrant destroy -f && vagrant up && make bootstrap && make test-all"
         exit 1
     fi
     echo "  📦 Instalando desde $FALCO_DEB (offline, ADR-030 BSR)"

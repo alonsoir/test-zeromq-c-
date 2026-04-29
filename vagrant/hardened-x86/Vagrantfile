@@ -84,7 +84,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       apparmor-profiles \
       ipset \
       iptables \
-      etcd \
       curl \
       ca-certificates \
       libsodium23 \
