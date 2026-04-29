@@ -1934,6 +1934,12 @@ hardened-full:
 	@echo "║  feature/adr030-variant-a autorizado para merge     ║"
 	@echo "╚══════════════════════════════════════════════════════╝"
 
+hardened-full-with-seeds:
+	@echo "⚠️  TESTING/FEDER ONLY — NO usar en producción"
+	$(MAKE) hardened-full
+	$(MAKE) prod-deploy-seeds
+	$(MAKE) check-prod-all
+
 # ─────────────────────────────────────────────────────────────────────────────
 # hardened-redeploy — iteración rápida sin destroy (Consejo D1 DAY 134)
 # Asume VM ya levantada y provisionada. Solo build → deploy → check.
