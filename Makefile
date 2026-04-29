@@ -1628,7 +1628,7 @@ seed-client-rebuild: seed-client-clean seed-client-build seed-client-test
 # Lógica compleja → tools/prod/ (nunca inline).
 # ============================================================================
 
-.PHONY: prod-init-dist prod-build-x86 prod-collect-libs prod-sign prod-checksums
+.PHONY: prod-init-dist prod-build-x86 prod-collect-libs prod-sign prod-checksums prod-deploy-seeds
 .PHONY: prod-verify prod-deploy-x86 prod-full-x86
 .PHONY: check-prod-no-compiler check-prod-apparmor check-prod-capabilities
 .PHONY: check-prod-permissions check-prod-falco check-prod-all
@@ -1747,6 +1747,32 @@ prod-deploy-x86: _check-hardened-up
 	@echo "=== Deploying to hardened-x86 VM ==="
 	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/tools/prod/deploy-hardened.sh'
 	@echo "OK: pipeline desplegado en /opt/argus/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# prod-deploy-seeds — Copia seeds desde dev VM a hardened VM
+# Decisión Consejo D2 (DAY 134): seeds NO en EMECAS — deploy explícito.
+#
+# ⚠️  SEGURIDAD: seeds pasan brevemente por Mac host via /vagrant (shared folder).
+#     Aceptable en Vagrant dev/test. En producción real: transferencia directa cifrada.
+#     DEBT-SEEDS-SECURE-TRANSFER-001 (post-FEDER, Jenkins + hardware físico).
+# ─────────────────────────────────────────────────────────────────────────────
+prod-deploy-seeds: _check-hardened-up
+	@echo "=== Deploying seeds to hardened-x86 VM ==="
+	@echo "⚠️  Seeds pasan por Mac host via /vagrant — solo para Vagrant dev/test"
+	@mkdir -p dist/seeds
+	@chmod 700 dist/seeds
+	@echo "── Step 1: extrayendo seeds de dev VM ──"
+	@vagrant ssh -c 'sudo cp -r /etc/ml-defender/*/seed.bin /etc/ml-defender/*/seed.hex /tmp/seeds-export/ 2>/dev/null || true; 		sudo mkdir -p /tmp/seeds-export; 		for comp in etcd-server sniffer ml-detector firewall-acl-agent rag-ingester rag-security; do 			sudo mkdir -p /tmp/seeds-export/$$comp; 			sudo cp /etc/ml-defender/$$comp/seed.bin /tmp/seeds-export/$$comp/; 			sudo cp /etc/ml-defender/$$comp/seed.hex /tmp/seeds-export/$$comp/; 		done; 		sudo cp -r /tmp/seeds-export/* /vagrant/dist/seeds/; 		sudo chmod -R 700 /vagrant/dist/seeds/; 		sudo rm -rf /tmp/seeds-export'
+	@echo "── Step 2: instalando seeds en hardened VM ──"
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c '		for comp in etcd-server sniffer ml-detector firewall-acl-agent rag-ingester rag-security; do 			sudo cp /vagrant/dist/seeds/$$comp/seed.bin /etc/ml-defender/$$comp/seed.bin; 			sudo cp /vagrant/dist/seeds/$$comp/seed.hex /etc/ml-defender/$$comp/seed.hex; 			sudo chmod 0400 /etc/ml-defender/$$comp/seed.bin; 			sudo chmod 0400 /etc/ml-defender/$$comp/seed.hex; 			sudo chown argus:argus /etc/ml-defender/$$comp/seed.bin; 			sudo chown argus:argus /etc/ml-defender/$$comp/seed.hex; 			echo "  ✅ $$comp/seed.bin desplegado"; 		done'
+	@echo "── Step 2b: desplegando plugin_signing.pk (clave pública) ──"
+	@vagrant ssh -c 'sudo cp /etc/ml-defender/plugins/plugin_signing.pk /vagrant/dist/seeds/plugin_signing.pk; sudo chmod 644 /vagrant/dist/seeds/plugin_signing.pk'
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo cp /vagrant/dist/seeds/plugin_signing.pk /etc/ml-defender/plugins/plugin_signing.pk; sudo chmod 0444 /etc/ml-defender/plugins/plugin_signing.pk; sudo chown root:argus /etc/ml-defender/plugins/plugin_signing.pk; echo "  ✅ plugin_signing.pk desplegado"'
+	@rm -f dist/seeds/plugin_signing.pk
+	@echo "── Step 3: limpieza inmediata de dist/seeds/ ──"
+	@rm -rf dist/seeds/
+	@echo "  ✅ dist/seeds/ eliminado del Mac host"
+	@echo "✅ prod-deploy-seeds completado (6 componentes)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pipeline completo: build → libs → sign → checksums → deploy
