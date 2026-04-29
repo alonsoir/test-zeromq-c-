@@ -1634,7 +1634,7 @@ seed-client-rebuild: seed-client-clean seed-client-build seed-client-test
 .PHONY: check-prod-permissions check-prod-falco check-prod-all
 .PHONY: hardened-up hardened-halt hardened-destroy hardened-ssh
 .PHONY: hardened-full hardened-redeploy vendor-download
-.PHONY: hardened-setup-user hardened-setup-apparmor hardened-setup-falco
+.PHONY: hardened-setup-user hardened-setup-apparmor hardened-setup-falco hardened-setup-apt-integrity
 .PHONY: hardened-setup-filesystem hardened-provision-all hardened-verify
 
 HARDENED_X86_DIR   := vagrant/hardened-x86
@@ -1777,7 +1777,11 @@ hardened-setup-falco: _check-hardened-up
 	@echo "=== Installing and configuring Falco ==="
 	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-falco.sh'
 
-hardened-provision-all: hardened-setup-filesystem hardened-setup-apparmor hardened-setup-falco
+hardened-setup-apt-integrity: _check-hardened-up
+	@echo "=== APT Sources Integrity (DEBT-PROD-APT-SOURCES-INTEGRITY-001) ==="
+	@cd $(HARDENED_X86_DIR) && vagrant ssh -c 'sudo bash /vagrant/vagrant/hardened-x86/scripts/setup-apt-integrity.sh'
+
+hardened-provision-all: hardened-setup-filesystem hardened-setup-apparmor hardened-setup-falco hardened-setup-apt-integrity
 	@echo "✅ Provisioning completo — ejecuta make check-prod-all"
 
 # ─────────────────────────────────────────────────────────────────────────────

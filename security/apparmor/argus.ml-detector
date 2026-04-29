@@ -68,4 +68,10 @@ profile argus-ml-detector /opt/argus/bin/ml-detector {
   deny /etc/ml-defender/firewall-acl-agent/** rwx,
   deny /opt/argus/bin/sniffer x,
   deny /opt/argus/bin/firewall-acl-agent x,
+
+  # ── APT Sources integrity (DEBT-PROD-APT-SOURCES-INTEGRITY-001 DAY 135) ───
+  deny /etc/apt/sources.list w,
+  deny /etc/apt/sources.list.d/** w,
+  deny /etc/apt/trusted.gpg.d/** w,
+  deny /etc/apt/preferences.d/** w,
 }

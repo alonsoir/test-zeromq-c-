@@ -49,4 +49,10 @@ profile argus-rag-ingester /opt/argus/bin/rag-ingester {
   deny /etc/ml-defender/sniffer/** rwx,
   deny /etc/ml-defender/ml-detector/** rwx,
   deny /etc/ml-defender/firewall-acl-agent/** rwx,
+
+  # ── APT Sources integrity (DEBT-PROD-APT-SOURCES-INTEGRITY-001 DAY 135) ───
+  deny /etc/apt/sources.list w,
+  deny /etc/apt/sources.list.d/** w,
+  deny /etc/apt/trusted.gpg.d/** w,
+  deny /etc/apt/preferences.d/** w,
 }

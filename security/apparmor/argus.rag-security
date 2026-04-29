@@ -54,4 +54,10 @@ profile argus-rag-security /opt/argus/bin/rag-security {
   deny /opt/argus/bin/firewall-acl-agent x,
   deny /sbin/iptables x,
   deny /sbin/ipset    x,
+
+  # ── APT Sources integrity (DEBT-PROD-APT-SOURCES-INTEGRITY-001 DAY 135) ───
+  deny /etc/apt/sources.list w,
+  deny /etc/apt/sources.list.d/** w,
+  deny /etc/apt/trusted.gpg.d/** w,
+  deny /etc/apt/preferences.d/** w,
 }

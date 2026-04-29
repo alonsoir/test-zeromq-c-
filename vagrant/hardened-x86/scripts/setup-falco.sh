@@ -188,9 +188,23 @@ cat > "${FALCO_RULES}" << 'FALCO_RULES_EOF'
   priority: CRITICAL
   tags: [argus, apparmor, critical, adr-030]
 
+# ── Regla 11 (DEBT-PROD-APT-SOURCES-INTEGRITY-001 DAY 135): apt sources modificados ──
+# Modificar sources.list en producción es el vector clásico de supply-chain attack
+- rule: argus_apt_sources_modified
+  desc: Fichero apt sources modificado en VM de producción — posible supply-chain attack
+  condition: >
+    open_write and
+    (fd.name = /etc/apt/sources.list or
+     fd.name glob "/etc/apt/sources.list.d/*") and
+    not argus_provisioning_processes
+  output: >
+    CRITICAL: apt sources tampered in production (proc=%proc.name path=%fd.name user=%user.name)
+  priority: CRITICAL
+  tags: [argus, supply-chain, apt, adr-030]
+
 FALCO_RULES_EOF
 
-echo "  ✅ ${FALCO_RULES}: $(wc -l < ${FALCO_RULES}) líneas (10 reglas)"
+echo "  ✅ ${FALCO_RULES}: $(wc -l < ${FALCO_RULES}) líneas (11 reglas)"
 
 # ── Validar y arrancar ────────────────────────────────────────────────────────
 falco --validate "${FALCO_RULES}" 2>/dev/null && echo "  ✅ Sintaxis OK" || \
@@ -201,7 +215,7 @@ systemctl restart falco 2>/dev/null || true
 
 sleep 2
 systemctl is-active falco &>/dev/null && \
-    echo "  ✅ Falco: RUNNING (10 reglas argus)" || \
+    echo "  ✅ Falco: RUNNING (11 reglas argus)" || \
     echo "  ⚠️  Falco no arrancó — journalctl -u falco"
 
 echo ""
@@ -210,4 +224,4 @@ echo "  Fase 1 (tuning): prioridad WARNING — no alertas bloqueantes"
 echo "  Fase 2 (estable): subir a NOTICE tras 30 min sin FP"
 echo "  Fase 3 (prod): CRITICAL — investigación obligatoria"
 echo ""
-echo "✅ setup-falco completado (post-Consejo DAY 133 — 10 reglas)"
+echo "✅ setup-falco completado (11 reglas — DAY 135 +apt-sources-integrity)"
