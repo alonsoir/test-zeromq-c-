@@ -39,7 +39,13 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 # Required programs
 find_program(CLANG clang REQUIRED)
 find_program(LLVM_STRIP llvm-strip REQUIRED)
-find_program(BPFTOOL bpftool REQUIRED)
+
+
+# ADR-029 Variant B — capture backend selection
+option(USE_LIBPCAP "Use libpcap instead of eBPF/XDP (Variant B)" OFF)
+if(NOT USE_LIBPCAP)
+  find_program(BPFTOOL bpftool REQUIRED)
+endif()
 
 # Required packages
 find_package(PkgConfig REQUIRED)
@@ -47,7 +53,13 @@ find_package(Protobuf REQUIRED)
 find_package(Threads REQUIRED)
 
 # Core eBPF and networking dependencies (REQUIRED)
-pkg_check_modules(LIBBPF REQUIRED libbpf>=0.8)
+if(USE_LIBPCAP)
+  message(STATUS "ADR-029 Variant B: libpcap backend — skipping libbpf")
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBPCAP REQUIRED libpcap)
+else()
+  pkg_check_modules(LIBBPF REQUIRED libbpf>=0.8)
+endif()
 pkg_check_modules(ZMQ REQUIRED libzmq>=4.3)
 pkg_check_modules(JSONCPP REQUIRED jsoncpp>=1.9)
 
@@ -167,7 +179,12 @@ include_directories(${ML_DEFENDER_DIR}/include)
 include_directories(/vagrant/common/include)
 
 # Core dependencies includes
-include_directories(${LIBBPF_INCLUDE_DIRS})
+if(USE_LIBPCAP)
+  include_directories(${LIBPCAP_INCLUDE_DIRS})
+  add_definitions(-DUSE_LIBPCAP)
+else()
+  include_directories(${LIBBPF_INCLUDE_DIRS})
+endif()
 include_directories(${ZMQ_INCLUDE_DIRS})
 include_directories(${JSONCPP_INCLUDE_DIRS})
 
@@ -190,26 +207,34 @@ if(CRYPTO_TRANSPORT_LIB)
 endif()
 
 # ============================================================================
-# eBPF PROGRAM COMPILATION
+# eBPF PROGRAM COMPILATION — Variant A only (USE_LIBPCAP=OFF)
 # ============================================================================
 
-set(BPF_SOURCE ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c)
-set(BPF_OBJECT ${CMAKE_BINARY_DIR}/sniffer.bpf.o)
+if(NOT USE_LIBPCAP)
+  set(BPF_SOURCE ${CMAKE_SOURCE_DIR}/src/kernel/sniffer.bpf.c)
+  set(BPF_OBJECT ${CMAKE_BINARY_DIR}/sniffer.bpf.o)
+  
+  add_custom_command(
+          OUTPUT ${BPF_OBJECT}
+          COMMAND ${CLANG}
+          -O2 -target bpf -D__TARGET_ARCH_x86 -g
+          -I${LIBBPF_INCLUDE_DIRS}  # Variant A only
+          -I/usr/include/x86_64-linux-gnu
+          -I/usr/include/bpf
+          -c ${BPF_SOURCE}
+          -o ${BPF_OBJECT}
+          DEPENDS ${BPF_SOURCE}
+          COMMENT "Compiling eBPF program with BTF support"
+  )
+else()
+  set(BPF_OBJECT "")  # Variant B: no eBPF object
+endif()
 
-add_custom_command(
-        OUTPUT ${BPF_OBJECT}
-        COMMAND ${CLANG}
-        -O2 -target bpf -D__TARGET_ARCH_x86 -g
-        -I${LIBBPF_INCLUDE_DIRS}
-        -I/usr/include/x86_64-linux-gnu
-        -I/usr/include/bpf
-        -c ${BPF_SOURCE}
-        -o ${BPF_OBJECT}
-        DEPENDS ${BPF_SOURCE}
-        COMMENT "Compiling eBPF program with BTF support"
-)
-
-add_custom_target(bpf_program DEPENDS ${BPF_OBJECT})
+if(NOT USE_LIBPCAP)
+  add_custom_target(bpf_program DEPENDS ${BPF_OBJECT})
+else()
+  add_custom_target(bpf_program)  # empty target en Variant B
+endif()
 
 # ============================================================================
 # PROTOBUF - USAR ARCHIVOS UNIFICADOS
@@ -297,6 +322,7 @@ endif()
 # EXECUTABLE TARGET
 # ============================================================================
 
+if(NOT USE_LIBPCAP)  # Variant A only — Variant B usa sniffer-libpcap
 add_executable(sniffer
         ${SNIFFER_SOURCES}
         ${SHARDED_FLOW_SOURCES})
@@ -318,7 +344,7 @@ target_include_directories(sniffer PRIVATE
         /vagrant/common/include
 
         # Core dependencies includes
-        ${LIBBPF_INCLUDE_DIRS}
+        $<$<NOT:$<BOOL:${USE_LIBPCAP}>>:${LIBBPF_INCLUDE_DIRS}>
         ${ZMQ_INCLUDE_DIRS}
         ${JSONCPP_INCLUDE_DIRS}
         ${Protobuf_INCLUDE_DIRS}
@@ -368,7 +394,7 @@ target_compile_options(sniffer PRIVATE
 
 # Core libraries (always linked)
 set(SNIFFER_CORE_LIBRARIES
-        ${LIBBPF_LIBRARIES}
+        $<IF:$<BOOL:${USE_LIBPCAP}>,${LIBPCAP_LIBRARIES},${LIBBPF_LIBRARIES}>
         ${ZMQ_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         ${Protobuf_LIBRARIES}
@@ -422,7 +448,7 @@ target_link_libraries(sniffer ${SNIFFER_CORE_LIBRARIES} ${SNIFFER_OPTIONAL_LIBRA
 # ============================================================================
 
 set(SNIFFER_LINK_DIRECTORIES
-        ${LIBBPF_LIBRARY_DIRS}
+        $<IF:$<BOOL:${USE_LIBPCAP}>,${LIBPCAP_LIBRARY_DIRS},${LIBBPF_LIBRARY_DIRS}>
         ${ZMQ_LIBRARY_DIRS}
         ${JSONCPP_LIBRARY_DIRS}
         ${LZ4_LIBRARY_DIRS}
@@ -440,7 +466,7 @@ target_link_directories(sniffer PRIVATE ${SNIFFER_LINK_DIRECTORIES})
 # ============================================================================
 
 set(SNIFFER_COMPILE_OPTIONS
-        ${LIBBPF_CFLAGS_OTHER}
+        $<$<NOT:$<BOOL:${USE_LIBPCAP}>>:${LIBBPF_CFLAGS_OTHER}>
         ${ZMQ_CFLAGS_OTHER}
         ${JSONCPP_CFLAGS_OTHER}
         ${LZ4_CFLAGS_OTHER}
@@ -504,6 +530,37 @@ endforeach()
 # ============================================================================
 
 install(TARGETS sniffer DESTINATION bin)
+endif()  # NOT USE_LIBPCAP — Variant A target
+
+# ============================================================================
+# ADR-029 Variant B — sniffer-libpcap (libpcap, sin eBPF/XDP)
+# Target completamente independiente — cero #ifdef en código existente
+# DEBT-VARIANT-B-PCAP-IMPL-001: stub compilable, poll loop pendiente
+# DAY 137 — 2026-04-30
+# ============================================================================
+if(USE_LIBPCAP)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBPCAP REQUIRED libpcap)
+
+  add_executable(sniffer-libpcap
+    ${CMAKE_SOURCE_DIR}/src/userspace/main_libpcap.cpp
+    ${CMAKE_SOURCE_DIR}/src/userspace/pcap_backend.cpp
+  )
+
+  target_include_directories(sniffer-libpcap PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${LIBPCAP_INCLUDE_DIRS}
+  )
+
+  target_compile_definitions(sniffer-libpcap PRIVATE USE_LIBPCAP)
+
+  target_link_libraries(sniffer-libpcap PRIVATE
+    ${LIBPCAP_LIBRARIES}
+  )
+
+  message(STATUS "ADR-029 Variant B: sniffer-libpcap target configured")
+endif()
+
 install(FILES ${BPF_OBJECT} DESTINATION lib/sniffer)
 install(FILES ${CMAKE_BINARY_DIR}/config/sniffer.json DESTINATION etc/sniffer)
 
@@ -521,7 +578,11 @@ message(STATUS "   CXX Flags: ${CMAKE_CXX_FLAGS}")
 
 message(STATUS "")
 message(STATUS "🔧 Core Dependencies:")
-message(STATUS "   libbpf: ${LIBBPF_VERSION}")
+if(USE_LIBPCAP)
+  message(STATUS "   libpcap: ${LIBPCAP_VERSION} (Variant B)")
+else()
+  message(STATUS "   libbpf: ${LIBBPF_VERSION} (Variant A)")
+endif()
 message(STATUS "   ZeroMQ: ${ZMQ_VERSION}")
 message(STATUS "   jsoncpp: ${JSONCPP_VERSION}")
 message(STATUS "   Protobuf: ${Protobuf_VERSION}")

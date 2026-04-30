@@ -206,7 +206,7 @@ Vagrant.configure("2") do |config|
       apt-get install -y build-essential git wget curl vim jq make rsync locales libc-bin file tmux xxd
 
       # eBPF toolchain
-      apt-get install -y clang llvm bpftool linux-headers-amd64
+      apt-get install -y clang llvm bpftool linux-headers-amd64 libpcap-dev
 
       # CRITICAL: libbpf 1.4.6 (FIX PERMANENTE)
       CURRENT_LIBBPF_VERSION=$(PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}" pkg-config --modversion libbpf 2>/dev/null || echo "0.0.0")

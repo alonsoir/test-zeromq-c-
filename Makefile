@@ -874,6 +874,37 @@ tools: proto etcd-client-build crypto-transport-build
 	@echo ""
 	@echo "✅ Tools built ($(PROFILE))"
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADR-029 Variant B — sniffer compilado con libpcap (sin eBPF/XDP)
+# DEBT-VARIANT-B-PCAP-IMPL-001: stub compilable, implementación real pendiente
+# DAY 137 — 2026-04-30
+# ─────────────────────────────────────────────────────────────────────────────
+SNIFFER_LIBPCAP_BUILD_DIR := /vagrant/sniffer/build-$(PROFILE)-libpcap
+
+.PHONY: sniffer-libpcap
+
+sniffer-libpcap: proto etcd-client-build plugin-loader-build
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔨 Building Sniffer Variant B [libpcap, $(PROFILE)]      ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Build dir: $(SNIFFER_LIBPCAP_BUILD_DIR)"
+	@echo "Flags: $(CMAKE_FLAGS) -DUSE_LIBPCAP=ON"
+	@echo ""
+	@echo "Copying protobuf files..."
+	@vagrant ssh -c 'mkdir -p $(SNIFFER_LIBPCAP_BUILD_DIR)/proto && \
+		cp /vagrant/protobuf/network_security.pb.* $(SNIFFER_LIBPCAP_BUILD_DIR)/proto/'
+	@echo "Running CMake and build (Variant B)..."
+	@vagrant ssh -c 'cd /vagrant/sniffer && \
+		mkdir -p $(SNIFFER_LIBPCAP_BUILD_DIR) && \
+		cd $(SNIFFER_LIBPCAP_BUILD_DIR) && \
+		cmake $(CMAKE_FLAGS) -DUSE_LIBPCAP=ON .. && \
+		make sniffer-libpcap -j4'
+	@echo ""
+	@echo "✅ Sniffer Variant B built ($(PROFILE), libpcap)"
+
 # Aliases for consistency with existing workflows
 detector: ml-detector
 sniffer-build: sniffer
