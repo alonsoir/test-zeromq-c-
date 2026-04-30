@@ -365,6 +365,23 @@ Verificar que ml-detector emite `confidence_score ∈ [0,1]` en salida ZeroMQ an
 
 ---
 
+
+## DEBT-CAPTURE-BACKEND-ISP-001 — Interfaz CaptureBackend mínima (ISP)
+**Severidad:** 🟡 Media — pre-FEDER
+**Estado:** ABIERTO — DAY 137
+**Origen:** Consejo 8/8 DAY 137 — 5-2-1 (mayoría: mover métodos eBPF fuera de la base)
+**Contexto:** `CaptureBackend` contiene `attach_skb()`, `get_ringbuf_fd()` y filter
+map fds con defaults no-op para `PcapBackend`. Viola ISP. Con dos `main` separados
+(`main.cpp` y `main_libpcap.cpp`) no existe código común que requiera polimorfismo
+sobre `CaptureBackend*` — el argumento original era incorrecto.
+**Fix:** Interfaz base mínima (open/poll/close/get_fd/get_packet_count).
+Mover attach_skb(), get_ringbuf_fd() y filter map fds exclusivamente a EbpfBackend.
+main.cpp usa EbpfBackend directamente.
+**Rama:** feature/variant-b-libpcap
+**Plazo:** pre-FEDER
+**Test de cierre:** `make sniffer && make sniffer-libpcap` compilando sin warnings.
+EbpfBackend compila con todos sus métodos. PcapBackend no hereda métodos eBPF.
+
 ## 🔑 Decisiones de diseño consolidadas
 
 | Decisión | Resolución | DAY |
@@ -403,6 +420,7 @@ Verificar que ml-detector emite `confidence_score ∈ [0,1]` en salida ZeroMQ an
 | **Falco modern_ebpf driver** | Correcto para 2026. kmod en deprecación. | Consejo 8/8 · DAY 133 |
 | **10 reglas Falco aRGus** | 7 originales + config tamper + model/plugin replace + AA profile tamper. | Consejo 8/8 · DAY 133 |
 | **Estrategia maduración AppArmor+Falco** | complain→enforce en paralelo. 30 min sin FP antes de pasar a enforce+CRITICAL. | Consejo 8/8 · DAY 133 |
+| **CaptureBackend mínima (ISP)** | Interfaz base sin métodos eBPF. EbpfBackend los tiene. main.cpp usa EbpfBackend directamente. | Consejo 5-2-1 · DAY 137 |
 
 ---
 
@@ -478,6 +496,7 @@ DEBT-ADR041-003 (make feder-demo):          0% ⏳  pre-FEDER
 DEBT-ADR041-004 (compra hardware x86):      0% ⏳  post-métricas
 DEBT-ADR041-005 (compra Raspberry Pi 4/5):  0% ⏳  post-métricas
 DEBT-ADR041-006 (ejecución hw físico):      0% ⏳  post-compra
+DEBT-CAPTURE-BACKEND-ISP-001 (CaptureBackend mínima): 0% ⏳  pre-FEDER
 ```
 
 ---

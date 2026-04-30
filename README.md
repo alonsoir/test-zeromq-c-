@@ -34,9 +34,9 @@
 
 ---
 
-## Estado actual — DAY 136 (2026-04-29)
+## Estado actual — DAY 137 (2026-04-30)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Commit:** `737ba0d5` | **Branch activa:** `main`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Commit:** `26059f78` | **Branch activa:** `feature/variant-b-libpcap`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 enviado (Cornell procesando)
 **ADR-040:** ML Plugin Retraining Contract — APROBADO v2 (Consejo 8/8, 17 enmiendas)
@@ -78,6 +78,7 @@
 | DEBT-SEEDS-BACKUP-001 | 🔴 Alta | post-FEDER |
 | DEBT-KEY-SEPARATION-001 | 🟡 Media | post-FEDER |
 | DEBT-PROD-APPARMOR-PORTS-001 | 🟢 Baja | post-JSON |
+| DEBT-CAPTURE-BACKEND-ISP-001 | 🟡 Media | pre-FEDER |
 | DEBT-ADR040-001..012 | ⏳ | post-FEDER (ver BACKLOG.md) |
 | DEBT-ADR041-001..006 | ⏳ | pre-FEDER (ver BACKLOG.md) |
 
@@ -268,14 +269,24 @@ make check-prod-all           # 5 security gates
 - [x] docs/KNOWN-DEBTS-v0.6.md creado (6 deudas)
 - [x] hardened-full-with-seeds target (FEDER ONLY)
 
-### 🔜 NEXT — DAY 137: Variant B + compiler warnings + IRP + Vault
+### ✅ DONE — DAY 137 (30 Apr 2026) — feature/variant-b-libpcap 🎉
+- [x] EMECAS dev + EMECAS hardened PASSED
+- [x] KNOWN-FAIL-001 documentado (test_config_parser dev VM — expected by design)
+- [x] vagrant/hardened-arm64/ Vagrantfile (libpcap0.8 runtime, sin eBPF/XDP)
+- [x] capture_backend.hpp (interfaz abstracta), ebpf_backend.hpp/cpp, pcap_backend.hpp/cpp
+- [x] main_libpcap.cpp — Variant B limpio sin #ifdef
+- [x] sniffer-libpcap compila y arranca (`sudo ./sniffer-libpcap eth1` ✅)
+- [x] Variant A sniffer intacto y verde
+- [x] DEBT-CAPTURE-BACKEND-ISP-001 registrada (Consejo 5-2-1)
+- [x] Consejo 8/8 DAY 137
+
+### 🔜 NEXT — DAY 138: ISP refactor + compiler warnings + IRP + Vault
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 | EMECAS completo desde VM destruida |
-| 🔴 P0 | `git checkout -b feature/variant-b-libpcap` — sniffer libpcap, Vagrantfile ARM64 |
-| 🔴 P0 | DEBT-IRP-NFTABLES-001 — argus-network-isolate con nftables drop-all |
+| 🔴 P0 | DEBT-CAPTURE-BACKEND-ISP-001 — CaptureBackend mínima, mover métodos eBPF a EbpfBackend |
 | 🔴 P0 | `fix/compiler-warnings-cleanup-001` — ODR violations UB (bloqueante certificación) |
+| 🔴 P0 | DEBT-IRP-NFTABLES-001 — argus-network-isolate con nftables drop-all |
 | 🟡 P1 | DEBT-CRYPTO-MATERIAL-STORAGE-001 — prototipo HashiCorp Vault en Vagrant |
 | 🟡 P1 | DEBT-JENKINS-SEED-DISTRIBUTION-001 — mecanismo mínimo viable CI seeds |
 | 🟢 P2 | DEBT-IRP-QUEUE-PROCESSOR-001 — irp-queue límites + procesador systemd |
@@ -315,7 +326,8 @@ Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests
 - ✅ DAY 134: **Pipeline E2E hardened · check-prod-all PASSED · Draft v18 completo · ADR-040+041** 🎉
 - ✅ DAY 135: **make hardened-full EMECAS · apt-integrity · seeds deploy · confidence_score · arXiv v18** 🎉
 - ✅ DAY 136: **v0.6.0-hardened-variant-a · merge main · Consejo 8/8 · KNOWN-DEBTS-v0.6.md** 🎉
-- 🔜 DAY 137: **feature/variant-b-libpcap · fix/compiler-warnings · IRP nftables · Vault prototipo**
+- ✅ DAY 137: **feature/variant-b-libpcap · sniffer-libpcap compilable · KISS dos binarios · Consejo 8/8** 🎉
+- 🔜 DAY 138: **DEBT-CAPTURE-BACKEND-ISP-001 · fix/compiler-warnings · IRP nftables · Vault prototipo**
 
 ---
 

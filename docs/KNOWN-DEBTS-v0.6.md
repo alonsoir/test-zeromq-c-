@@ -88,6 +88,27 @@ En hardened VM el config vive en `/etc/ml-defender/` y el test pasaría.
 **Referencia:** ADR-028, DEBT-SAFE-PATH-TEST-PRODUCTION-001
 **Descubierto:** DAY 137 — 2026-04-30
 
+
+---
+## DEBT-CAPTURE-BACKEND-ISP-001
+**Severidad:** 🟡 Media — pre-FEDER
+**Componente:** sniffer / capture_backend.hpp
+**Descripción:** La interfaz abstracta `CaptureBackend` contiene métodos
+específicos de eBPF (`attach_skb()`, `get_ringbuf_fd()`, filter map fds)
+con defaults no-op para `PcapBackend`. Viola el Interface Segregation
+Principle (ISP). Dado que ya existen dos `main` separados (`main.cpp` y
+`main_libpcap.cpp`), no existe código común que requiera polimorfismo sobre
+`CaptureBackend*` — el argumento original para mantenerlos en la base
+era incorrecto.
+**Corrección:** Interfaz base mínima (open/poll/close/get_fd/get_packet_count).
+Mover attach_skb(), get_ringbuf_fd() y filter map fds exclusivamente a
+`EbpfBackend`. `main.cpp` usa `EbpfBackend` directamente sin downcast.
+**Veredicto Consejo DAY 137:** 5-2-1 (ChatGPT, DeepSeek, Gemini, Grok, Kimi
+→ MOVER. Claude, Mistral → MANTENER. Qwen → MANTENER con fail-fast).
+Claude (proponente original) reconoce el error: el argumento de evitar
+downcast era innecesario con dos binarios separados.
+**Referencia:** ADR-029, feature/variant-b-libpcap
+**Descubierto:** DAY 137 — 2026-04-30
 ## Notas
 - Deudas 🔴 Alta post-merge se abordan antes de demo FEDER (deadline 1 agosto 2026)
 - Deudas 🟡 Media se abordan antes de deadline FEDER (22 septiembre 2026)
