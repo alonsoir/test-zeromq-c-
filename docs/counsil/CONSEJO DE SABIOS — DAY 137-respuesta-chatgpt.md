@@ -1,45 +1,260 @@
-Aquí el informe para el Consejo:
+A continuación va la revisión del Consejo, centrada en corrección arquitectónica, mantenibilidad y consecuencias medibles en un sistema de captura de alto rendimiento.
 
 ---
 
-**CONSEJO DE SABIOS — DAY 137 — 2026-04-30**
-**Rama:** `feature/variant-b-libpcap`
-**Commit HEAD:** `26059f78`
+# Evaluación de la decisión actual
+
+**Situación:**
+`CaptureBackend` expone métodos específicos de eBPF (`attach_skb()`, `get_ringbuf_fd()`, fds de mapas), con implementaciones *no-op* en libpcap.
+
+**Conclusión corta:**
+No es la mejor decisión. Funciona ahora, pero introduce **deuda estructural** que va a penalizar exactamente el objetivo de Variant B: comparabilidad científica y claridad de arquitectura.
 
 ---
 
-**TRABAJO REALIZADO HOY**
+# Problemas técnicos detectados
 
-EMECAS completo (dev + hardened) pasado al inicio de sesión. KNOWN-FAIL-001 (`test_config_parser` en dev VM) documentado en `docs/KNOWN-DEBTS-v0.6.md` — comportamiento correcto por diseño, no regresión.
+## 1) Violación del principio de sustitución (LSP)
 
-ADR-029 Variant B iniciada. Decisión arquitectónica clave tomada durante la sesión: **dos binarios completamente separados, cero `#ifdef` en código existente** (KISS). Intentamos el enfoque `#ifdef` sobre el código existente (`ring_consumer`, `main.cpp`, etc.) y lo descartamos tras constatar que el acoplamiento eBPF en `RingBufferConsumer` es profundo y legítimo — no debe tocarse.
+Un `PcapBackend` **no puede cumplir semánticamente**:
 
-Arquitectura final implementada:
-- `capture_backend.hpp` — interfaz abstracta `CaptureBackend`
-- `ebpf_backend.hpp/cpp` — wrapper `EbpfLoader` (Variant A)
-- `pcap_backend.hpp/cpp` — stub libpcap compilable (Variant B)
-- `main_libpcap.cpp` — main limpio, solo `PcapBackend`
-- `sniffer-libpcap` target en CMakeLists.txt + Makefile
+* `attach_skb()` no tiene equivalente
+* `ringbuf_fd` no existe en libpcap
+* maps eBPF no existen
 
-Resultado: `make sniffer` ✅ y `make sniffer-libpcap` ✅ compilan independientemente. `sniffer-libpcap eth1` arranca, abre la interfaz con libpcap y termina limpio.
+→ Estás forzando a que una implementación finja capacidades que no tiene.
 
-`DEBT-VARIANT-B-PCAP-IMPL-001` registrada: `pcap_loop → ZeroMQ → ml-detector` pendiente pre-FEDER.
+**Efecto real:**
 
-`libpcap-dev` añadido al `Vagrantfile` dev. `libpcap0.8` runtime en `vagrant/hardened-arm64/Vagrantfile`.
-
-**PREGUNTA AL CONSEJO**
-
-La interfaz abstracta `CaptureBackend` define `attach_skb()`, `get_ringbuf_fd()` y filter map fds con defaults no-op para Variant B. ¿Es correcto mantener estos métodos en la interfaz base o deberían moverse a `EbpfBackend` únicamente y eliminarlos de la interfaz? El criterio actual es mantenerlos para que `main.cpp` (Variant A) pueda usar `CaptureBackend*` directamente sin downcast.
-
-**MÉTRICAS DEL DÍA**
-- Commits: 4
-- Ficheros nuevos: 8 (6 código + 1 Vagrantfile + .gitignore)
-- Líneas añadidas: ~500
-- Tests rotos: 0
-- Deudas nuevas: 1 (DEBT-VARIANT-B-PCAP-IMPL-001)
-- Deudas cerradas: 0
-- KNOWN-FAIL documentados: 1
+* API engañosa
+* errores silenciosos (no-op ≠ correcto)
+* dificultad para razonar sobre comportamiento en runtime
 
 ---
 
-Pega este informe a cada uno de los 7 modelos del Consejo y cuando tengas sus respuestas lo consolidamos en las actas. ¿Procedemos con el ritual de documentación mientras tanto?
+## 2) Acoplamiento semántico hacia eBPF
+
+La interfaz base deja de ser “abstracción de captura” y pasa a ser:
+
+> “abstracción de captura eBPF con compatibilidad degradada”
+
+Esto rompe tu objetivo declarado:
+
+> “dos binarios completamente separados, cero #ifdef”
+
+Porque aunque eliminaste `#ifdef`, **el acoplamiento sigue existiendo en la interfaz**.
+
+---
+
+## 3) Coste cognitivo y de mantenimiento
+
+Cada nuevo backend futuro (AF_PACKET, DPDK, Netmap) tendrá que:
+
+* implementar no-ops
+* documentar excepciones
+* convivir con métodos irrelevantes
+
+Esto escala mal.
+
+---
+
+## 4) Riesgo en benchmarking científico (muy importante)
+
+Para el paper:
+
+* Si la interfaz no es neutra, introduces sesgos invisibles
+* El camino de datos no es comparable 1:1
+
+Ejemplo:
+
+* eBPF → ring buffer → userspace
+* libpcap → callback → userspace
+
+Pero tu API fuerza una forma “tipo eBPF”
+
+→ Esto puede invalidar conclusiones si no se separa correctamente
+
+---
+
+# Qué hace la industria en este punto
+
+Patrón dominante en sistemas de red de alto rendimiento:
+
+## → Separación en **dos niveles de abstracción**
+
+### Nivel 1 — Captura pura (común)
+
+```cpp
+class CaptureBackend {
+public:
+    virtual bool start() = 0;
+    virtual bool stop() = 0;
+    virtual int get_fd() const = 0;   // opcional (poll/select)
+    virtual ~CaptureBackend() = default;
+};
+```
+
+### Nivel 2 — Extensiones específicas (NO en la base)
+
+#### eBPF específico
+
+```cpp
+class EbpfBackend : public CaptureBackend {
+public:
+    int get_ringbuf_fd() const;
+    int get_map_fd(const std::string& name) const;
+    bool attach_skb();
+};
+```
+
+#### libpcap específico
+
+```cpp
+class PcapBackend : public CaptureBackend {
+public:
+    pcap_t* handle();
+};
+```
+
+---
+
+# Alternativas viables
+
+## Opción A — Interfaz mínima (RECOMENDADA)
+
+Eliminar de `CaptureBackend` todo lo específico de eBPF.
+
+Ventajas:
+
+* API limpia
+* backends realmente intercambiables
+* paper científicamente sólido
+
+Inconveniente:
+
+* `main.cpp` Variant A necesitará conocer `EbpfBackend`
+
+→ Esto es correcto y esperado
+
+---
+
+## Opción B — Capability-based design (más avanzada)
+
+```cpp
+enum class Capability {
+    RING_BUFFER,
+    BPF_MAPS,
+    ZERO_COPY
+};
+
+virtual bool supports(Capability c) const = 0;
+```
+
+Y luego:
+
+```cpp
+if (backend->supports(Capability::RING_BUFFER)) {
+    auto* ebpf = dynamic_cast<EbpfBackend*>(backend);
+}
+```
+
+Ventajas:
+
+* extensible
+* explícito
+
+Inconvenientes:
+
+* más complejidad
+* innecesario para tu fase actual
+
+---
+
+## Opción C — Template/static polymorphism
+
+No recomendable aquí:
+
+* rompe desacoplamiento runtime
+* complica build
+* no aporta valor para tu caso
+
+---
+
+# Recomendación del Consejo
+
+**Adoptar Opción A inmediatamente:**
+
+1. `CaptureBackend` → solo lo común
+2. Mover todo lo eBPF a `EbpfBackend`
+3. `main.cpp` Variant A usa `EbpfBackend` directamente
+4. `main_libpcap.cpp` usa `PcapBackend`
+
+Esto es coherente con tu decisión previa:
+
+> “dos binarios completamente separados”
+
+---
+
+# Impacto en tu pipeline (importante)
+
+## Positivo
+
+* Código más limpio
+* Comparativa XDP vs libpcap válida científicamente
+* Menor deuda técnica futura
+* Facilita añadir DPDK / AF_XDP más adelante
+
+## Negativo (menor)
+
+* ligeros cambios en `main.cpp`
+* pérdida de “intercambiabilidad artificial” (que en realidad no era real)
+
+---
+
+# Observación estratégica (clave para el paper)
+
+Esta decisión afecta directamente a tu contribución:
+
+Si lo haces bien, puedes documentar:
+
+> “We deliberately separated capture abstractions to avoid cross-contamination between kernel-bypass (XDP) and user-space capture (libpcap), ensuring fair benchmarking.”
+
+Eso es **material publicable**.
+
+---
+
+# Veredicto final
+
+* La arquitectura general (dos binarios, sin `#ifdef`) es **excelente**
+* La interfaz actual de `CaptureBackend` es **incorrecta a nivel de diseño**
+* El problema no es de implementación, sino de **modelo mental de abstracción**
+
+---
+
+# Respuesta directa a tu pregunta
+
+> ¿Mantener los métodos en la interfaz base o moverlos?
+
+**Moverlos fuera de la interfaz base. Sin duda.**
+
+Mantenerlos:
+
+* rompe LSP
+* introduce deuda
+* contamina el diseño
+
+Moverlos:
+
+* alinea con principios sólidos
+* mejora la validez científica
+* escala correctamente
+
+---
+
+Si se quiere ir un paso más allá en el siguiente ciclo, el Consejo recomendaría revisar también:
+
+* el contrato de entrega de paquetes (`ZeroMQ boundary`)
+* la simetría de latencias entre backends
+* el punto exacto de timestamping (kernel vs userland)
+
+Ahí es donde estará la diferencia real entre Variant A y B.

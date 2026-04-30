@@ -1,45 +1,35 @@
-Aquí el informe para el Consejo:
+Resultado del Consejo: **5-2-1**.
+
+- **5 votan MOVER** (ChatGPT, DeepSeek, Gemini, Grok, Kimi): ISP violado, interfaz base mínima
+- **2 votan MANTENER** (Claude, Mistral): KISS, evitar downcasts
+- **1 voto MANTENER con fail-fast** (Qwen): throws en lugar de no-op
+
+**Mi posición actualizada: el Consejo tiene razón y yo estaba equivocado.**
+
+El argumento que me convenció — señalado por DeepSeek y Grok — es el más simple: **ya tenemos dos `main` separados**. `main.cpp` nunca necesita polimorfismo sobre `CaptureBackend*` porque siempre será `EbpfBackend`. Mi argumento de "evitar downcast" era defender una complejidad que no existe.
 
 ---
 
-**CONSEJO DE SABIOS — DAY 137 — 2026-04-30**
-**Rama:** `feature/variant-b-libpcap`
-**Commit HEAD:** `26059f78`
+**Qué aceptamos:**
+
+✅ Interfaz base mínima — solo `open()`, `poll()`, `close()`, `get_fd()`, `get_packet_count()`
+
+✅ `attach_skb()`, `get_ringbuf_fd()`, filter map fds → exclusivos de `EbpfBackend`
+
+✅ `main.cpp` usa `EbpfBackend` directamente, sin `CaptureBackend*`
+
+✅ `main_libpcap.cpp` usa `PcapBackend` directamente
+
+**Qué NO aceptamos (pre-FEDER, KISS):**
+
+❌ Capability-based design con `EbpfCapable`/`PcapCapable` (Kimi) — elegante pero innecesario ahora
+
+❌ `DefaultBackend` intermedio (Mistral) — añade una capa sin valor actual
+
+❌ `throw std::logic_error` en la base (Qwen) — si los métodos no están en la base, el problema desaparece
 
 ---
 
-**TRABAJO REALIZADO HOY**
+**Acción:** Registrar como `DEBT-CAPTURE-BACKEND-ISP-001` — refactor pre-FEDER, DAY 138.
 
-EMECAS completo (dev + hardened) pasado al inicio de sesión. KNOWN-FAIL-001 (`test_config_parser` en dev VM) documentado en `docs/KNOWN-DEBTS-v0.6.md` — comportamiento correcto por diseño, no regresión.
-
-ADR-029 Variant B iniciada. Decisión arquitectónica clave tomada durante la sesión: **dos binarios completamente separados, cero `#ifdef` en código existente** (KISS). Intentamos el enfoque `#ifdef` sobre el código existente (`ring_consumer`, `main.cpp`, etc.) y lo descartamos tras constatar que el acoplamiento eBPF en `RingBufferConsumer` es profundo y legítimo — no debe tocarse.
-
-Arquitectura final implementada:
-- `capture_backend.hpp` — interfaz abstracta `CaptureBackend`
-- `ebpf_backend.hpp/cpp` — wrapper `EbpfLoader` (Variant A)
-- `pcap_backend.hpp/cpp` — stub libpcap compilable (Variant B)
-- `main_libpcap.cpp` — main limpio, solo `PcapBackend`
-- `sniffer-libpcap` target en CMakeLists.txt + Makefile
-
-Resultado: `make sniffer` ✅ y `make sniffer-libpcap` ✅ compilan independientemente. `sniffer-libpcap eth1` arranca, abre la interfaz con libpcap y termina limpio.
-
-`DEBT-VARIANT-B-PCAP-IMPL-001` registrada: `pcap_loop → ZeroMQ → ml-detector` pendiente pre-FEDER.
-
-`libpcap-dev` añadido al `Vagrantfile` dev. `libpcap0.8` runtime en `vagrant/hardened-arm64/Vagrantfile`.
-
-**PREGUNTA AL CONSEJO**
-
-La interfaz abstracta `CaptureBackend` define `attach_skb()`, `get_ringbuf_fd()` y filter map fds con defaults no-op para Variant B. ¿Es correcto mantener estos métodos en la interfaz base o deberían moverse a `EbpfBackend` únicamente y eliminarlos de la interfaz? El criterio actual es mantenerlos para que `main.cpp` (Variant A) pueda usar `CaptureBackend*` directamente sin downcast.
-
-**MÉTRICAS DEL DÍA**
-- Commits: 4
-- Ficheros nuevos: 8 (6 código + 1 Vagrantfile + .gitignore)
-- Líneas añadidas: ~500
-- Tests rotos: 0
-- Deudas nuevas: 1 (DEBT-VARIANT-B-PCAP-IMPL-001)
-- Deudas cerradas: 0
-- KNOWN-FAIL documentados: 1
-
----
-
-Pega este informe a cada uno de los 7 modelos del Consejo y cuando tengas sus respuestas lo consolidamos en las actas. ¿Procedemos con el ritual de documentación mientras tanto?
+¿Procedemos con el ritual de documentación y cerramos DAY 137?
