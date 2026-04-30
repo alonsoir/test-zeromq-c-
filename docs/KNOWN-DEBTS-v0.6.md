@@ -72,6 +72,22 @@ Requiere unidad systemd irp-queue-processor con límites explícitos
 
 ---
 
+
+---
+## KNOWN-TEST-FAILURES (expected — no action required)
+
+### KNOWN-FAIL-001: test_config_parser (rag-ingester, dev VM)
+**Severidad:** ℹ️ Informativo — comportamiento correcto por diseño
+**Componente:** rag-ingester / safe_path guard
+**Descripción:** El test falla en dev VM porque carga el config desde
+`/vagrant/rag-ingester/config/rag-ingester.json`, path fuera del prefix
+permitido `/etc/ml-defender/`. El safe_path guard emite SECURITY VIOLATION
+y aborta — exactamente como debe comportarse.
+En hardened VM el config vive en `/etc/ml-defender/` y el test pasaría.
+**Acción:** Ninguna. No es regresión. No confundir con un bug.
+**Referencia:** ADR-028, DEBT-SAFE-PATH-TEST-PRODUCTION-001
+**Descubierto:** DAY 137 — 2026-04-30
+
 ## Notas
 - Deudas 🔴 Alta post-merge se abordan antes de demo FEDER (deadline 1 agosto 2026)
 - Deudas 🟡 Media se abordan antes de deadline FEDER (22 septiembre 2026)
