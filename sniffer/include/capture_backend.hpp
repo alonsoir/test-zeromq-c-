@@ -31,18 +31,7 @@ public:
 
     virtual uint64_t get_packet_count() = 0;
 
-    // Filter map fds — solo significativos en eBPF, -1 en pcap
-    // attach/detach — no-op en PcapBackend (open() lo gestiona todo)
-    virtual bool attach_skb(const std::string& /*iface*/) { return true; }
-    virtual bool detach_skb(const std::string& /*iface*/) { return true; }
 
-    // Alias de get_fd() para compatibilidad con código existente
-    virtual int get_ringbuf_fd() const { return get_fd(); }
-
-    virtual int get_excluded_ports_fd()    const { return -1; }
-    virtual int get_included_ports_fd()    const { return -1; }
-    virtual int get_filter_settings_fd()   const { return -1; }
-    virtual int get_interface_configs_fd() const { return -1; }
 };
 
 } // namespace sniffer

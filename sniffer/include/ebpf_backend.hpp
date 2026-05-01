@@ -19,10 +19,17 @@ public:
     int  get_fd() const override;
     uint64_t get_packet_count() override;
 
-    int get_excluded_ports_fd()    const override;
-    int get_included_ports_fd()    const override;
-    int get_filter_settings_fd()   const override;
-    int get_interface_configs_fd() const override;
+    int get_excluded_ports_fd()    const;
+    int get_included_ports_fd()    const;
+    int get_filter_settings_fd()   const;
+    int get_interface_configs_fd() const;
+
+    // eBPF-specific: attach/detach XDP/SKB program
+    bool attach_skb(const std::string& iface);
+    bool detach_skb(const std::string& iface);
+
+    // eBPF-specific: ring buffer fd alias
+    int get_ringbuf_fd() const;
 
     // Acceso directo al loader para BPFMapManager (main.cpp)
     EbpfLoader& loader() { return *loader_; }
