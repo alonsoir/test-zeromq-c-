@@ -7,6 +7,12 @@
 
 namespace sniffer {
 
+// Datos pasados como 'user' a pcap_dispatch — evita friend/acceso privado
+struct PcapCallbackData {
+    CaptureBackend::PacketCallback cb;
+    void* ctx;
+};
+
 class PcapBackend : public CaptureBackend {
 public:
     PcapBackend();
@@ -25,6 +31,7 @@ private:
     pcap_t*        handle_       = nullptr;
     PacketCallback cb_           = nullptr;
     void*          ctx_          = nullptr;
+    PcapCallbackData cb_data_     = {nullptr, nullptr};
     uint64_t       packet_count_ = 0;
     int            pipe_fd_[2]   = {-1, -1};
 };

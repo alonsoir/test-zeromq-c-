@@ -545,17 +545,27 @@ if(USE_LIBPCAP)
   add_executable(sniffer-libpcap
     ${CMAKE_SOURCE_DIR}/src/userspace/main_libpcap.cpp
     ${CMAKE_SOURCE_DIR}/src/userspace/pcap_backend.cpp
+    ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc
   )
 
   target_include_directories(sniffer-libpcap PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${LIBPCAP_INCLUDE_DIRS}
+    ${CMAKE_BINARY_DIR}/proto
+    /usr/local/include
   )
 
   target_compile_definitions(sniffer-libpcap PRIVATE USE_LIBPCAP)
 
   target_link_libraries(sniffer-libpcap PRIVATE
     ${LIBPCAP_LIBRARIES}
+    lz4
+    zmq
+    protobuf
+    crypto_transport
+    seed_client
+    etcd_client
+    ${CMAKE_DL_LIBS}
   )
 
   message(STATUS "ADR-029 Variant B: sniffer-libpcap target configured")
