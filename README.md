@@ -16,10 +16,10 @@
 [![BSR](https://img.shields.io/badge/BSR-cap__bpf_ADR--039-brightgreen)]()
 [![ADR-040](https://img.shields.io/badge/ADR--040-ML_Retraining_Contract-blue)](docs/adr/ADR-040-ml-plugin-retraining-contract.md)
 [![ADR-041](https://img.shields.io/badge/ADR--041-FEDER_HW_Metrics-orange)](docs/adr/ADR-041-hardware-acceptance-metrics-feder.md)
+[![Variant B](https://img.shields.io/badge/ADR--029-Variant_B_libpcap_pipeline-blue)]()
 [![Reproducible](https://img.shields.io/badge/Infra-make_bootstrap-brightgreen)]()
 [![XGBoost](https://img.shields.io/badge/XGBoost-Prec%3D0.9945_In--Distribution-brightgreen)]()
 [![Hardened](https://img.shields.io/badge/Security-v0.6.0--hardened__variant__a-brightgreen)]()
-[![OOD Finding](https://img.shields.io/badge/OOD_Finding-Published_DAY_122-orange)]()
 [![PRE-PRODUCTION](https://img.shields.io/badge/Status-PRE--PRODUCTION-orange)]()
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
@@ -29,65 +29,50 @@
 
 ---
 
-✅ `main` is tagged `v0.6.0-hardened-variant-a`. Branch activa: `main` — ADR-030 Variant A mergeada (DAY 136) · ADR-040 + ADR-041 aprobados (DAY 134).
+✅ `main` is tagged `v0.6.0-hardened-variant-a`. Branch activa: `feature/variant-b-libpcap` — ADR-029 Variant B pipeline completo (DAY 138).
 **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
 ---
 
-## Estado actual — DAY 137 (2026-04-30)
+## Estado actual — DAY 138 (2026-05-01)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Commit:** `26059f78` | **Branch activa:** `feature/variant-b-libpcap`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `da1badf7`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
-**Paper:** arXiv:2604.04952 · Draft v18 enviado (Cornell procesando)
-**ADR-040:** ML Plugin Retraining Contract — APROBADO v2 (Consejo 8/8, 17 enmiendas)
-**ADR-041:** Hardware Acceptance Metrics FEDER — APROBADO (Consejo 8/8)
+**Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
+**FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
 
 ### Pipeline
-- 6/6 componentes RUNNING — validado en VM destruida y reconstruida desde cero (REGLA EMECAS)
-- `make test-all`: ALL TESTS COMPLETE
-- `make hardened-full`: EMECAS HARDENED PASSED ✅
-- `make check-prod-all`: PASSED sin warnings ✅
+- 6/6 componentes RUNNING — validado EMECAS DAY 138 ✅
+- `make test-all`: ALL TESTS COMPLETE (9/9 sniffer, incluyendo 8 tests Variant B)
+- `make sniffer && make sniffer-libpcap`: ambos ✅ sin warnings nuevos
 
-### Hitos DAY 136 🎉
-- **feature/adr030-variant-a → main MERGEADO** — 179 ficheros, 19.443 inserciones.
-- **Tag v0.6.0-hardened-variant-a** publicado en origin.
-- **EMECAS HARDENED PASSED** — 6 binarios, 6 librerías, AppArmor 6/6, Falco 11 reglas, seeds sin WARNs.
-- **docs/KNOWN-DEBTS-v0.6.md** — 6 deudas documentadas pre-merge.
-- **hardened-full-with-seeds** — target Makefile FEDER ONLY añadido.
-- **Consejo 8/8 DAY 136** — 3 nuevas deudas: Jenkins seeds, Vault criptográfico, compiler warnings.
-
-### Hitos DAY 135
-- **EMECAS hardened PASSED** — DEBT-EMECAS-HARDENED-001 CERRADO.
-- **DEBT-PROD-APT-SOURCES-INTEGRITY-001 CERRADO** — FailureAction=poweroff, ExecStartPre corregido.
-- **DEBT-SEEDS-DEPLOY-001 CERRADO** — prod-deploy-seeds, 6 seeds + plugin_signing.pk.
-- **DEBT-CONFIDENCE-SCORE-001 CERRADO** — BENIGN=0.854557, RANSOMWARE=0.700000.
-- **ADR-042 IRP DRAFT v2** — Consejo 8/8 x2 rondas adversariales, aprobado como arquitectura.
-- **arXiv replace v15→v18 ENVIADO.**
+### Hitos DAY 138 🎉
+- **DEBT-CAPTURE-BACKEND-ISP-001 CERRADA** — commit `1a7f723a`. `CaptureBackend` a 5 métodos puros. Métodos eBPF en `EbpfBackend`. Consejo 5-2-1 → implementado.
+- **DEBT-VARIANT-B-PCAP-IMPL-001 CERRADA** — commits `22df0099` + `da1badf7`. Pipeline completo `pcap_dispatch → proto → LZ4 → ChaCha20 → ZMQ`. Wire format idéntico a Variant A. 8/8 tests PASSED.
+- **DEBT-VARIANT-B-CONFIG-001 REGISTRADA** — JSON propio pendiente. Campos multihilo hardcodeados en binario.
+- **Consejo 8/8 DAY 138** — 7 preguntas, veredictos unánimes: ODR P0 bloqueante, dontwait correcto, nft -f transaccional, seL4 no diseñar ahora.
 
 ### Deuda técnica abierta
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-IRP-NFTABLES-001 | 🔴 Alta | P0 pre-FEDER |
+| DEBT-COMPILER-WARNINGS-CLEANUP-001 (ODR P0) | 🔴 Alta — bloqueante | DAY 139+ |
+| DEBT-VARIANT-B-CONFIG-001 | 🔴 Alta | pre-FEDER |
+| DEBT-IRP-NFTABLES-001 | 🔴 Alta | pre-FEDER |
 | DEBT-IRP-QUEUE-PROCESSOR-001 | 🔴 Alta | post-merge |
 | DEBT-JENKINS-SEED-DISTRIBUTION-001 | 🔴 Alta | pre-FEDER |
-| DEBT-CRYPTO-MATERIAL-STORAGE-001 | 🔴 Alta | pre-FEDER demo |
-| DEBT-COMPILER-WARNINGS-CLEANUP-001 | 🔴 Alta | DAY 137+ rama dedicada |
+| DEBT-CRYPTO-MATERIAL-STORAGE-001 | 🔴 Alta | pre-FEDER |
 | DEBT-SEEDS-SECURE-TRANSFER-001 | 🔴 Alta | post-FEDER |
-| DEBT-SEEDS-LOCAL-GEN-001 | 🔴 Alta | post-FEDER |
-| DEBT-SEEDS-BACKUP-001 | 🔴 Alta | post-FEDER |
+| DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 | 🟢 Baja | trivial |
 | DEBT-KEY-SEPARATION-001 | 🟡 Media | post-FEDER |
-| DEBT-PROD-APPARMOR-PORTS-001 | 🟢 Baja | post-JSON |
-| DEBT-CAPTURE-BACKEND-ISP-001 | 🟡 Media | pre-FEDER |
-| DEBT-ADR040-001..012 | ⏳ | post-FEDER (ver BACKLOG.md) |
-| DEBT-ADR041-001..006 | ⏳ | pre-FEDER (ver BACKLOG.md) |
+| DEBT-ADR040-001..012 | ⏳ | post-FEDER |
+| DEBT-ADR041-001..006 | ⏳ | pre-FEDER |
 
-### Próxima frontera — DAY 137
-- **PASO 1** — `git checkout -b feature/variant-b-libpcap` (ADR-029 Variant B)
-- **PASO 2** — `fix/compiler-warnings-cleanup-001` — ODR violations, Protobuf dual-copy
-- **PASO 3** — `DEBT-IRP-NFTABLES-001` — implementar argus-network-isolate con nftables
-- **PASO 4** — `DEBT-CRYPTO-MATERIAL-STORAGE-001` — prototipo HashiCorp Vault en Vagrant
-- **DEBT-PENTESTER-LOOP-001** — ACRL: Caldera → eBPF capture → XGBoost retrain → Ed25519 sign → hot-swap
+### Próxima frontera — DAY 139
+1. EMECAS obligatorio
+2. `DEBT-COMPILER-WARNINGS-CLEANUP-001` sub-tarea ODR (P0 bloqueante — Consejo 8/8 unánime)
+3. O: `DEBT-VARIANT-B-CONFIG-001` (JSON propio + hardcoding + test e2e)
+4. Según decisión: `DEBT-IRP-NFTABLES-001` o `DEBT-CRYPTO-MATERIAL-STORAGE-001`
 
 ---
 
@@ -97,14 +82,14 @@
 |----------|--------|-------------|
 | **aRGus-dev** | ✅ Activa (`main`) | x86-debug, imagen Vagrant completa. Para investigación y desarrollo diario. |
 | **aRGus-production** | 🟡 En construcción | x86-apparmor + arm64-apparmor. AppArmor enforce, cap_bpf, Falco, noexec. Para hospitales, escuelas, municipios. |
-| **aRGus-seL4** | ⏳ Diseño futuro | Apéndice científico. Kernel seL4, libpcap. Branch independiente. |
+| **aRGus-seL4** | ⏳ Research track post-FEDER | Kernel seL4, libpcap. Reescritura completa. Branch independiente. |
 
 ---
 
 ## 📄 Preprint
 
 **arXiv:** [arXiv:2604.04952 \[cs.CR\]](https://arxiv.org/abs/2604.04952)
-**Published:** 3 April 2026 · **Draft v18** (DAY 133 — pre-arXiv, pendiente tabla fuzzing) · MIT license
+**Published:** 3 April 2026 · **Draft v18** (Cornell procesando) · MIT license
 **Code:** https://github.com/alonsoir/argus
 
 ---
@@ -137,10 +122,11 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 | **BSR — Hardened VM** | **304 pkgs / 1.3 GB** | NONE (check-prod-no-compiler: OK) ✅ |
 | **AppArmor profiles** | **6/6 enforce** | cap_bpf (Linux ≥5.8), no cap_sys_admin |
 | **Falco rules** | **11 aRGus-specific** | modern_ebpf driver |
+| **Variant B tests** | **8/8 PASSED** | DAY 138 — unit/integ/stress/regression |
 
 ---
 
-## 🔒 DAY 133 Security Hardening — ADR-030 Variant A
+## 🔒 Security Hardening — ADR-030 Variant A
 
 ### Build/Runtime Separation (BSR) — ADR-039
 
@@ -148,30 +134,17 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 |---|---|---|---|
 | Dev VM | 719 | 5.9 GB | gcc, g++, clang, cmake |
 | **Hardened VM** | **304** | **1.3 GB** | **NONE** ✅ |
-| Minbase target† | ~100 | ~0.4 GB | NONE |
 
-†DEBT-PROD-FS-MINIMIZATION-001. Vagrant base box floor: ~250 packages.
+### Linux Capabilities — no SUID root
 
-### Linux Capabilities — no SUID root (post-Consejo DAY 133)
+| Component | Capabilities |
+|---|---|
+| sniffer | `cap_net_admin,cap_net_raw,cap_bpf,cap_ipc_lock` |
+| firewall-acl-agent | `cap_net_admin` |
+| etcd-server | `cap_ipc_lock` (+ LimitMEMLOCK=16M) |
+| ml-detector, rag-ingester, rag-security | none |
 
-| Component | Capabilities | Nota |
-|---|---|---|
-| sniffer | `cap_net_admin,cap_net_raw,cap_bpf,cap_ipc_lock` | cap_bpf reemplaza cap_sys_admin (Linux ≥5.8) |
-| firewall-acl-agent | `cap_net_admin` | iptables/ipset |
-| etcd-server | `cap_ipc_lock` (+ LimitMEMLOCK=16M systemd) | cap_net_bind_service eliminada (2379 > 1024) |
-| ml-detector | none | argus no-root real |
-| rag-ingester | none | argus no-root real |
-| rag-security | none | argus no-root real |
-
-### AppArmor — 6 profiles enforce
-
-Un perfil por componente en `security/apparmor/`. Default-deny. `deny` explícitos mantenidos para claridad auditiva (decisión founder DAY 133).
-
-### Falco — 10 aRGus-specific rules (modern_ebpf)
-
-Reglas: unexpected writes, unexpected exec, shell spawn, binary modification (BSR), seed access by wrong process, raw socket from non-sniffer, config tampering, model/plugin replacement, AppArmor profile tampering.
-
-**Estrategia:** AppArmor complain + Falco WARNING → 30 min stable → AppArmor enforce + Falco CRITICAL.
+### AppArmor — 6 profiles enforce · Falco — 11 aRGus-specific rules
 
 ---
 
@@ -185,28 +158,94 @@ brew install --cask vagrant
 xcode-select --install
 ```
 
+> **Note:** `git clone --recurse-submodules` is required. `third_party/llama.cpp` is a git submodule. Cloning without this flag leaves it empty and `rag-security` builds without LLM support. Use `make submodule-init` to fix an existing clone.
+
 ### Linux (Debian/Ubuntu)
 
 ```bash
-sudo apt-get install -y make virtualbox
+sudo apt-get update
+sudo apt-get install -y make
+```
+
+VirtualBox from official repo (apt may be outdated):
+```bash
+wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo gpg --dearmor -o /usr/share/keyrings/oracle-virtualbox.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox.gpg] https://download.virtualbox.org/virtualbox/debian $(lsb_release -cs) contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+sudo apt-get update && sudo apt-get install -y virtualbox-7.0
+```
+
+Vagrant:
+```bash
 wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update && sudo apt-get install -y vagrant
 ```
 
-> **Note:** All pipeline logic runs inside a Vagrant/VirtualBox VM. No C++ toolchain required on the host.
+### Linux (RHEL/Fedora/CentOS)
+
+```bash
+sudo dnf install -y make
+```
+
+VirtualBox:
+```bash
+sudo dnf install -y kernel-devel kernel-headers dkms
+sudo dnf config-manager --add-repo https://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo
+sudo dnf install -y VirtualBox-7.0
+```
+
+Vagrant:
+```bash
+sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+sudo dnf install -y vagrant
+```
+
+> **Note:** `git clone --recurse-submodules` is required. `third_party/llama.cpp` is a git submodule. Cloning without this flag leaves it empty and `rag-security` builds without LLM support. Use `make submodule-init` to fix an existing clone.
+
+> **Note (RHEL/CentOS):** VirtualBox requires Secure Boot to be disabled or the kernel module to be signed. On WSL2, VirtualBox is not supported — use a native Linux install.
+
+### Windows 11 (best-effort, not officially supported)
+
+> ⚠️ **aRGus NDR only produces Linux binaries** (x86-64 and ARM64). There are no Windows binaries and none are planned. The pipeline runs inside a Linux VM — Windows is only the host.
+
+Prerequisites:
+```powershell
+winget install Git.Git
+winget install Oracle.VirtualBox
+winget install Hashicorp.Vagrant
+```
+
+Run all commands from **Git Bash** (not CMD or PowerShell — the Makefile requires bash syntax).
+
+> ⚠️ **Hyper-V conflict:** Windows 11 enables Hyper-V by default for WSL2. VirtualBox 7.0+ has experimental Hyper-V support but with ~30% performance penalty. You must choose one of:
+> - Disable Hyper-V (loses WSL2): `bcdedit /set hypervisorlaunchtype off` + reboot
+> - Use VirtualBox 7.0+ in Hyper-V mode (slower, less stable)
+
+**Not tested by the maintainer.** If you hit issues on Windows 11, please [open an issue](https://github.com/alonsoir/argus/issues) — we'll help with the resources we have.
+
 
 ---
 
 ## 🚀 Quick Start
 
-### Primera vez
+> ⚠️ **Vagrant is required.** Native Linux bootstrap without Vagrant is not yet implemented ([DEBT-NATIVE-LINUX-BOOTSTRAP-001](docs/KNOWN-DEBTS-v0.6.md)). Running `make` directly on a bare Linux host will fail.
 
 ```bash
-git clone https://github.com/alonsoir/argus.git
+# STEP 1 — Clone with submodules (mandatory — llama.cpp is a git submodule)
+git clone --recurse-submodules https://github.com/alonsoir/argus.git
 cd argus
-make up          # vagrant up — full provisioning ~20-30 min
-make bootstrap   # all 8 steps in one command
+
+# Already cloned without --recurse-submodules? Fix it:
+# make submodule-init
+```
+
+> 📦 **TinyLlama model** (`tinyllama-1.1b-chat-v1.0.Q4_0.gguf`, ~700MB) is downloaded
+> automatically during `vagrant up`. It is gitignored and never committed to the repo.
+
+```bash
+# STEP 2 — Start VM and provision all dependencies (~20-30 min first time)
+# Downloads TinyLlama, builds llama.cpp, installs FAISS/ONNX/XGBoost/libsodium
+make up && make bootstrap
 ```
 
 ### Workflow diario (REGLA EMECAS)
@@ -218,95 +257,54 @@ vagrant destroy -f && vagrant up && make bootstrap && make test-all
 ### Hardened VM (ADR-030 Variant A)
 
 ```bash
-# EMECAS sagrado (reproducibilidad total — para demo FEDER y validación)
-make hardened-full            # destroy → up → provision → build → deploy → check
-
-# Workflow alternativo (iteración rápida durante desarrollo)
-make hardened-up
-make hardened-provision-all   # filesystem + AppArmor + Falco
-make prod-full-x86            # build → sign → checksums → deploy
-make check-prod-all           # 5 security gates
+make hardened-full   # destroy → up → provision → build → deploy → check
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-### ✅ DONE — DAY 133 (27 Apr 2026) — ADR-030 Variant A infrastructure 🎉
-- [x] Paper Draft v18 — §6.12 BSR métricas reales + §6.8 fuzzing reformulado (post-Consejo)
-- [x] AppArmor 6 perfiles enforce — `security/apparmor/`
-- [x] Linux Capabilities mínimas — `cap_bpf` reemplaza `cap_sys_admin` (Consejo 8/8)
-- [x] Falco 10 reglas — `modern_ebpf` driver, estrategia 3 fases
-- [x] Filesystem hardened — usuario `argus`, `/tmp` noexec, seeds 0400
-- [x] Makefile prod-* targets — `prod-full-x86`, `check-prod-all`
-- [x] Acta Consejo DAY 133 — convergencias + divergencias + decisiones
-
-### ✅ DONE — DAY 134 (28 Apr 2026) — ADR-040 + ADR-041 🎉
-- [x] ADR-040 ML Plugin Retraining Contract v2 — 7 reglas, 12 deudas, Consejo 8/8 (17 enmiendas)
-- [x] ADR-041 Hardware Acceptance Metrics FEDER — 3 niveles, 10 métricas, Consejo 8/8
-- [x] BACKLOG.md + README.md actualizados con ADR-040 + ADR-041
-
-### ✅ DONE — DAY 132 (26 Apr 2026)
-- [x] Paper Draft v17 · HARDWARE-REQUIREMENTS · vagrant/hardened-x86 skeleton · Prerequisites README
-
-### ✅ DONE — DAY 124–130
-- [x] ADR-037 safe_path · v0.5.2-hardened · CWE-78 cerrado · libFuzzer 2.4M runs · REGLA EMECAS
-
-### ✅ DONE — DAY 134 (28 Apr 2026) — Pipeline E2E hardened + ADR-040/041 🎉
-- [x] `make check-prod-all` PASSED — 5/5 gates verdes en hardened VM
-- [x] DEBT-KERNEL-COMPAT-001 CERRADO — cap_bpf + XDP en kernel 6.1 ✅
-- [x] DEBT-PAPER-FUZZING-METRICS-001 CERRADO — tabla §6.8 con datos reales ✅
-- [x] Draft v18 completo — 42 páginas, listo para arXiv replace
-- [x] ADR-040 ML Retraining Contract (8/8, 17 enmiendas) + ADR-041 FEDER HW Metrics (8/8)
-
-### ✅ DONE — DAY 135-136: EMECAS hardened + merge + v0.6.0 🎉
-- [x] make hardened-full PASSED desde VM destruida
-- [x] DEBT-PROD-APT-SOURCES-INTEGRITY-001 CERRADO — FailureAction=poweroff
-- [x] DEBT-CONFIDENCE-SCORE-001 CERRADO — variabilidad confirmada
-- [x] arXiv replace v15 → v18 ENVIADO
-- [x] feature/adr030-variant-a → main MERGEADO
-- [x] Tag v0.6.0-hardened-variant-a publicado
-- [x] docs/KNOWN-DEBTS-v0.6.md creado (6 deudas)
-- [x] hardened-full-with-seeds target (FEDER ONLY)
+### ✅ DONE — DAY 138 (1 May 2026) — ADR-029 Variant B pipeline 🎉
+- [x] DEBT-CAPTURE-BACKEND-ISP-001 CERRADA — `CaptureBackend` 5 métodos puros
+- [x] DEBT-VARIANT-B-PCAP-IMPL-001 CERRADA — pipeline pcap → proto → LZ4 → ChaCha20 → ZMQ
+- [x] Suite 8 tests Variant B — 8/8 PASSED en make test-all
+- [x] `PcapCallbackData` — mecanismo callback sin friend/miembros públicos
+- [x] Wire format idéntico a Variant A — ml-detector recibe ambos sin modificación
+- [x] Consejo 8/8 DAY 138 — 7 veredictos, ODR P0 bloqueante confirmado
 
 ### ✅ DONE — DAY 137 (30 Apr 2026) — feature/variant-b-libpcap 🎉
 - [x] EMECAS dev + EMECAS hardened PASSED
-- [x] KNOWN-FAIL-001 documentado (test_config_parser dev VM — expected by design)
-- [x] vagrant/hardened-arm64/ Vagrantfile (libpcap0.8 runtime, sin eBPF/XDP)
-- [x] capture_backend.hpp (interfaz abstracta), ebpf_backend.hpp/cpp, pcap_backend.hpp/cpp
-- [x] main_libpcap.cpp — Variant B limpio sin #ifdef
-- [x] sniffer-libpcap compila y arranca (`sudo ./sniffer-libpcap eth1` ✅)
-- [x] Variant A sniffer intacto y verde
-- [x] DEBT-CAPTURE-BACKEND-ISP-001 registrada (Consejo 5-2-1)
-- [x] Consejo 8/8 DAY 137
+- [x] capture_backend.hpp · ebpf_backend.hpp/cpp · pcap_backend.hpp/cpp
+- [x] main_libpcap.cpp — Variant B sin #ifdef
+- [x] sniffer-libpcap compilable y arranca limpio
 
-### 🔜 NEXT — DAY 138: ISP refactor + compiler warnings + IRP + Vault
+### ✅ DONE — DAY 135-136: v0.6.0 🎉
+- [x] make hardened-full EMECAS PASSED
+- [x] feature/adr030-variant-a → main MERGEADO
+- [x] Tag v0.6.0-hardened-variant-a publicado
+- [x] arXiv replace v15 → v18 ENVIADO
+
+### ✅ DONE — DAY 133-134: ADR-030 + ADR-040 + ADR-041 🎉
+- [x] AppArmor 6/6 enforce · Falco 10 reglas · cap_bpf · Paper v18
+- [x] ADR-040 ML Retraining Contract (8/8, 17 enmiendas)
+- [x] ADR-041 Hardware Acceptance Metrics FEDER (8/8)
+- [x] Pipeline E2E hardened · check-prod-all PASSED
+
+### 🔜 NEXT — DAY 139
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 | DEBT-CAPTURE-BACKEND-ISP-001 — CaptureBackend mínima, mover métodos eBPF a EbpfBackend |
-| 🔴 P0 | `fix/compiler-warnings-cleanup-001` — ODR violations UB (bloqueante certificación) |
-| 🔴 P0 | DEBT-IRP-NFTABLES-001 — argus-network-isolate con nftables drop-all |
-| 🟡 P1 | DEBT-CRYPTO-MATERIAL-STORAGE-001 — prototipo HashiCorp Vault en Vagrant |
-| 🟡 P1 | DEBT-JENKINS-SEED-DISTRIBUTION-001 — mecanismo mínimo viable CI seeds |
-| 🟢 P2 | DEBT-IRP-QUEUE-PROCESSOR-001 — irp-queue límites + procesador systemd |
+| 🔴 P0 BLOQUEANTE | `DEBT-COMPILER-WARNINGS-CLEANUP-001` — sub-tarea ODR (UB en C++20) |
+| 🔴 P0 | `DEBT-VARIANT-B-CONFIG-001` — sniffer-libpcap.json propio + test e2e |
+| 🔴 P0 | `DEBT-IRP-NFTABLES-001` — argus-network-isolate con nft -f transaccional |
+| 🟡 P1 | `DEBT-CRYPTO-MATERIAL-STORAGE-001` — prototipo HashiCorp Vault |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
-| Priority | Task |
-|---|---|
-| P0 | **DEBT-PENTESTER-LOOP-001** — MITRE Caldera → real flows → XGBoost retrain |
-| P0 | **BACKLOG-FEDER-001** — clarificar scope con Andrés Caro Lindo |
-| P1 | aRGus-production ARM64 |
-| P2 | aRGus-seL4 research branch |
-
----
-
-## 🧠 Consejo de Sabios — Multi-Model Peer Review
-
-**Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Kimi** (Moonshot) · **Mistral**
-
-Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests compilables o matemáticas antes de proponer soluciones. Documentado en §6 del preprint.
+- DEBT-PENTESTER-LOOP-001 — ACRL completo
+- BACKLOG-FEDER-001 — presentación Andrés Caro Lindo
+- aRGus-production ARM64
+- aRGus-seL4 research branch (post-FEDER, equipo especializado)
 
 ---
 
@@ -317,17 +315,33 @@ Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests
 - ✅ DAY 118: **PHASE 3 COMPLETADA — v0.4.0** 🎉
 - ✅ DAY 122: **PHASE 4 COMPLETADA — v0.5.0-preproduction** 🎉
 - ✅ DAY 124: **ADR-037 MERGED — v0.5.1-hardened** 🎉
-- ✅ DAY 126: **v0.5.2-hardened — lstat() + prefix fijo** 🎉
 - ✅ DAY 129: **CWE-78 CERRADO — execv() sin shell** 🎉
 - ✅ DAY 130: **REGLA EMECAS · libFuzzer 2.4M runs** 🎉
-- ✅ DAY 132: **Paper Draft v17 · HARDWARE-REQUIREMENTS · vagrant/hardened-x86 · Consejo 8/8** 🎉
-- ✅ DAY 133: **ADR-030 Variant A — cap_bpf · AppArmor 6/6 · Falco 10 reglas · Paper v18** 🎉
-- ✅ DAY 134: **ADR-040 ML Retraining Contract (8/8, 17 enmiendas) · ADR-041 FEDER HW Metrics (8/8)** 🎉
-- ✅ DAY 134: **Pipeline E2E hardened · check-prod-all PASSED · Draft v18 completo · ADR-040+041** 🎉
-- ✅ DAY 135: **make hardened-full EMECAS · apt-integrity · seeds deploy · confidence_score · arXiv v18** 🎉
-- ✅ DAY 136: **v0.6.0-hardened-variant-a · merge main · Consejo 8/8 · KNOWN-DEBTS-v0.6.md** 🎉
-- ✅ DAY 137: **feature/variant-b-libpcap · sniffer-libpcap compilable · KISS dos binarios · Consejo 8/8** 🎉
-- 🔜 DAY 138: **DEBT-CAPTURE-BACKEND-ISP-001 · fix/compiler-warnings · IRP nftables · Vault prototipo**
+- ✅ DAY 133: **ADR-030 Variant A — cap_bpf · AppArmor 6/6 · Falco 10 reglas** 🎉
+- ✅ DAY 134: **ADR-040 (8/8, 17 enmiendas) · ADR-041 FEDER HW Metrics (8/8)** 🎉
+- ✅ DAY 136: **v0.6.0-hardened-variant-a · merge main** 🎉
+- ✅ DAY 137: **feature/variant-b-libpcap · sniffer-libpcap compilable · KISS** 🎉
+- ✅ DAY 138: **ISP cerrado · pipeline Variant B completo · 8/8 tests · Consejo 8/8** 🎉
+- 🔜 DAY 139: **ODR cleanup P0 · DEBT-VARIANT-B-CONFIG-001 · IRP nftables**
+
+---
+
+## 🧠 Consejo de Sabios — Multi-Model Peer Review
+
+**Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Kimi** (Moonshot) · **Mistral**
+
+Metodología: desacuerdo estructurado. Documentado en §6 del preprint.
+
+---
+
+## Hardened Deployment (ADR-030 Variant A)
+
+```bash
+make hardened-full          # EMECAS sagrado — destroy → up → provision → build → deploy → check
+make hardened-redeploy      # iteración rápida sin destroy
+make prod-deploy-seeds      # deploy seeds explícito (nunca en EMECAS)
+make check-prod-all         # 5/5 gates: BSR + AppArmor + cap_bpf + permissions + Falco
+```
 
 ---
 
@@ -336,43 +350,3 @@ Metodología: desacuerdo estructurado. Los problemas deben demostrarse con tests
 MIT License — See [LICENSE](LICENSE)
 
 **Via Appia Quality** 🏛️ — *Built to last decades.*
-## Hardened Deployment (ADR-030 Variant A)
-
-Production-hardened VM with AppArmor, Falco, BSR gate, and apt-sources integrity.
-
-### Prerequisites
-```bash
-# Dev VM must be running with pipeline built
-make up && make bootstrap && make test-all
-make vendor-download  # Verify Falco .deb checksum
-```
-
-### Full hardened deploy (gate pre-merge)
-```bash
-make hardened-full          # destroy → up → provision → build → deploy → check
-```
-
-### Daily iteration (fast, no destroy)
-```bash
-make hardened-redeploy      # build → deploy → check
-make prod-deploy-seeds      # deploy seeds explicitly (D2 — never in EMECAS)
-make check-prod-permissions # verify seeds + permissions
-```
-
-### Security gates (check-prod-all)
-```bash
-make check-prod-all         # 5/5 gates: BSR + AppArmor + cap_bpf + permissions + Falco
-```
-
-### APT Sources Integrity
-- SHA-256 of apt sources captured at provisioning time
-- Verified on every boot via systemd oneshot
-- **`FailureAction=poweroff` — immediate, no grace period**
-- A node with compromised apt sources is radioactive material.
-  It does not restart. It is isolated, autopsied, and restored from scratch.
-
-### Hardened VM SSH
-```bash
-cd vagrant/hardened-x86 && vagrant ssh -c '...'
-```
-
