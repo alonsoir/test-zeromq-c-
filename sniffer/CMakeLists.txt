@@ -828,3 +828,134 @@ target_link_libraries(test_sharded_flow_multithread
 )
 
 message(STATUS "🧪 Unit Test: test_sharded_flow_multithread configured (Day 46 - Concurrency)")
+
+# ============================================================================
+# ADR-029 VARIANT B — PcapBackend Test Suite (DAY 138)
+# 8 tests: unit, integration, stress, regression
+# ============================================================================
+
+# Fuente proto compartida para tests que usan NetworkSecurityEvent
+set(PCAP_PROTO_SRC ${CMAKE_BINARY_DIR}/proto/network_security.pb.cc)
+
+# --- Unit: lifecycle ---
+add_executable(test_pcap_backend_lifecycle
+    tests/test_pcap_backend_lifecycle.cpp
+    src/userspace/pcap_backend.cpp
+)
+target_include_directories(test_pcap_backend_lifecycle PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+)
+pkg_check_modules(LIBPCAP REQUIRED libpcap)
+target_link_libraries(test_pcap_backend_lifecycle PRIVATE
+    ${LIBPCAP_LIBRARIES} gtest gtest_main
+)
+add_test(NAME test_pcap_backend_lifecycle COMMAND test_pcap_backend_lifecycle)
+message(STATUS "🧪 Variant B Test: test_pcap_backend_lifecycle configured")
+
+# --- Unit: poll con handle nulo ---
+add_executable(test_pcap_backend_poll_null
+    tests/test_pcap_backend_poll_null.cpp
+    src/userspace/pcap_backend.cpp
+)
+target_include_directories(test_pcap_backend_poll_null PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_pcap_backend_poll_null PRIVATE
+    ${LIBPCAP_LIBRARIES} gtest gtest_main
+)
+add_test(NAME test_pcap_backend_poll_null COMMAND test_pcap_backend_poll_null)
+message(STATUS "🧪 Variant B Test: test_pcap_backend_poll_null configured")
+
+# --- Unit: callback ---
+add_executable(test_pcap_backend_callback
+    tests/test_pcap_backend_callback.cpp
+    src/userspace/pcap_backend.cpp
+)
+target_include_directories(test_pcap_backend_callback PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_pcap_backend_callback PRIVATE
+    ${LIBPCAP_LIBRARIES} gtest gtest_main
+)
+add_test(NAME test_pcap_backend_callback COMMAND test_pcap_backend_callback)
+message(STATUS "🧪 Variant B Test: test_pcap_backend_callback configured")
+
+# --- Unit: error handling ---
+add_executable(test_pcap_backend_error
+    tests/test_pcap_backend_error.cpp
+    src/userspace/pcap_backend.cpp
+)
+target_include_directories(test_pcap_backend_error PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_pcap_backend_error PRIVATE
+    ${LIBPCAP_LIBRARIES} gtest gtest_main
+)
+add_test(NAME test_pcap_backend_error COMMAND test_pcap_backend_error)
+message(STATUS "🧪 Variant B Test: test_pcap_backend_error configured")
+
+# --- Integration: proto parse TCP ---
+add_executable(test_pcap_proto_parse_tcp
+    tests/test_pcap_proto_parse_tcp.cpp
+    ${PCAP_PROTO_SRC}
+)
+target_include_directories(test_pcap_proto_parse_tcp PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+    /usr/local/include
+)
+target_link_libraries(test_pcap_proto_parse_tcp PRIVATE
+    protobuf gtest gtest_main
+)
+add_test(NAME test_pcap_proto_parse_tcp COMMAND test_pcap_proto_parse_tcp)
+message(STATUS "🧪 Variant B Test: test_pcap_proto_parse_tcp configured")
+
+# --- Integration: proto parse UDP ---
+add_executable(test_pcap_proto_parse_udp
+    tests/test_pcap_proto_parse_udp.cpp
+    ${PCAP_PROTO_SRC}
+)
+target_include_directories(test_pcap_proto_parse_udp PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+    /usr/local/include
+)
+target_link_libraries(test_pcap_proto_parse_udp PRIVATE
+    protobuf gtest gtest_main
+)
+add_test(NAME test_pcap_proto_parse_udp COMMAND test_pcap_proto_parse_udp)
+message(STATUS "🧪 Variant B Test: test_pcap_proto_parse_udp configured")
+
+# --- Stress: N callbacks, count exacto ---
+add_executable(test_pcap_backend_stress
+    tests/test_pcap_backend_stress.cpp
+    src/userspace/pcap_backend.cpp
+)
+target_include_directories(test_pcap_backend_stress PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_pcap_backend_stress PRIVATE
+    ${LIBPCAP_LIBRARIES} gtest gtest_main Threads::Threads
+)
+add_test(NAME test_pcap_backend_stress COMMAND test_pcap_backend_stress)
+message(STATUS "🧪 Variant B Test: test_pcap_backend_stress configured")
+
+# --- Regression: estado limpio tras ciclos ---
+add_executable(test_pcap_backend_regression
+    tests/test_pcap_backend_regression.cpp
+    src/userspace/pcap_backend.cpp
+)
+target_include_directories(test_pcap_backend_regression PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/proto
+)
+target_link_libraries(test_pcap_backend_regression PRIVATE
+    ${LIBPCAP_LIBRARIES} gtest gtest_main
+)
+add_test(NAME test_pcap_backend_regression COMMAND test_pcap_backend_regression)
+message(STATUS "🧪 Variant B Test: test_pcap_backend_regression configured")
