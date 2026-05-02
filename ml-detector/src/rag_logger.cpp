@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 
 namespace fs = std::filesystem;
 
@@ -590,10 +591,12 @@ std::string RAGLogger::get_iso8601_timestamp() const {
 
 std::string RAGLogger::calculate_sha256(const std::string& data) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, data.c_str(), data.size());
-    SHA256_Final(hash, &sha256);
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr);
+    EVP_DigestUpdate(ctx, data.c_str(), data.size());
+    unsigned int hash_len = 0;
+    EVP_DigestFinal_ex(ctx, hash, &hash_len);
+    EVP_MD_CTX_free(ctx);
 
     std::ostringstream oss;
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
