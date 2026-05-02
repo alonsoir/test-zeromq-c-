@@ -32,7 +32,7 @@ int ContractValidator::count_features(const protobuf::NetworkSecurityEvent& even
             const google::protobuf::Reflection* sub_reflection = sub_msg.GetReflection();
             std::vector<const google::protobuf::FieldDescriptor*> sub_fields;
             sub_reflection->ListFields(sub_msg, &sub_fields);
-            count += sub_fields.size();
+            count += static_cast<int>(sub_fields.size());
         } else {
             // Campo escalar simple
             count++;

@@ -452,18 +452,18 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
                 if (artifact_tx_) {
                     int orig_size = static_cast<int>(serialized.size());
                     int max_c = LZ4_compressBound(orig_size);
-                    std::vector<uint8_t> compressed(sizeof(uint32_t) + max_c);
+                    std::vector<uint8_t> compressed(sizeof(uint32_t) + static_cast<size_t>(max_c));
                     uint32_t orig_le = static_cast<uint32_t>(orig_size);
                     std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
                     int c_size = LZ4_compress_default(serialized.data(),
                         reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
                         orig_size, max_c);
-                    if (c_size > 0) compressed.resize(sizeof(uint32_t) + c_size);
+                    if (c_size > 0) compressed.resize(sizeof(uint32_t) + static_cast<size_t>(c_size));
                     else compressed = std::vector<uint8_t>(serialized.begin(), serialized.end());
                     auto encrypted = artifact_tx_->encrypt(compressed);
-                    pb_file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+                    pb_file.write(reinterpret_cast<const char*>(encrypted.data()), static_cast<std::streamsize>(encrypted.size()));
                 } else {
-                    pb_file.write(serialized.data(), serialized.size());
+                    pb_file.write(serialized.data(), static_cast<std::streamsize>(serialized.size()));
                 }
                 pb_file.close();
 
@@ -484,18 +484,18 @@ void RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent& event,
                 if (artifact_tx_) {
                     int orig_size = static_cast<int>(json_str.size());
                     int max_c = LZ4_compressBound(orig_size);
-                    std::vector<uint8_t> compressed(sizeof(uint32_t) + max_c);
+                    std::vector<uint8_t> compressed(sizeof(uint32_t) + static_cast<size_t>(max_c));
                     uint32_t orig_le = static_cast<uint32_t>(orig_size);
                     std::memcpy(compressed.data(), &orig_le, sizeof(orig_le));
                     int c_size = LZ4_compress_default(json_str.data(),
                         reinterpret_cast<char*>(compressed.data() + sizeof(uint32_t)),
                         orig_size, max_c);
-                    if (c_size > 0) compressed.resize(sizeof(uint32_t) + c_size);
+                    if (c_size > 0) compressed.resize(sizeof(uint32_t) + static_cast<size_t>(c_size));
                     else compressed = std::vector<uint8_t>(json_str.begin(), json_str.end());
                     auto encrypted = artifact_tx_->encrypt(compressed);
-                    json_file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+                    json_file.write(reinterpret_cast<const char*>(encrypted.data()), static_cast<std::streamsize>(encrypted.size()));
                 } else {
-                    json_file.write(json_str.data(), json_str.size());
+                    json_file.write(json_str.data(), static_cast<std::streamsize>(json_str.size()));
                 }
                 json_file.close();
 
@@ -630,8 +630,8 @@ std::unique_ptr<RAGLogger> create_rag_logger_from_config(
     config.node_id = config_json.value("node_id", "detector-01");
     config.min_score_to_log = config_json.value("min_score_to_log", 0.70);
     config.min_divergence_to_log = config_json.value("min_divergence_to_log", 0.30);
-    config.max_events_per_file = config_json.value("max_events_per_file", 10000);
-    config.max_file_size_mb = config_json.value("max_file_size_mb", 100);
+    config.max_events_per_file = static_cast<size_t>(config_json.value("max_events_per_file", 10000));
+    config.max_file_size_mb = static_cast<size_t>(config_json.value("max_file_size_mb", 100));
     config.save_protobuf_artifacts = config_json.value("save_protobuf_artifacts", true);
     config.save_json_artifacts = config_json.value("save_json_artifacts", true);
 
