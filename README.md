@@ -1,4 +1,4 @@
-# ML Defender (aRGus NDR)
+````# ML Defender (aRGus NDR)
 
 **Open-source, embedded-ML network detection and response system protecting critical infrastructure from ransomware and DDoS attacks.**
 
@@ -34,9 +34,9 @@
 
 ---
 
-## Estado actual — DAY 138 (2026-05-01)
+## Estado actual — DAY 139 (2026-05-02)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `da1badf7`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `91281005`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
 **FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
@@ -56,7 +56,7 @@
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-COMPILER-WARNINGS-CLEANUP-001 (ODR P0) | 🔴 Alta — bloqueante | DAY 139+ |
+| DEBT-COMPILER-WARNINGS-CLEANUP-001 (ODR P0) | 🟡 En curso — 192→67 warnings | DAY 140 |
 | DEBT-VARIANT-B-CONFIG-001 | 🔴 Alta | pre-FEDER |
 | DEBT-IRP-NFTABLES-001 | 🔴 Alta | pre-FEDER |
 | DEBT-IRP-QUEUE-PROCESSOR-001 | 🔴 Alta | post-merge |
@@ -322,7 +322,8 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - ✅ DAY 136: **v0.6.0-hardened-variant-a · merge main** 🎉
 - ✅ DAY 137: **feature/variant-b-libpcap · sniffer-libpcap compilable · KISS** 🎉
 - ✅ DAY 138: **ISP cerrado · pipeline Variant B completo · 8/8 tests · Consejo 8/8** 🎉
-- 🔜 DAY 139: **ODR cleanup P0 · DEBT-VARIANT-B-CONFIG-001 · IRP nftables**
+- ✅ DAY 139: **192→67 warnings — Wreorder·OpenSSL·Wsign-conversion·Wconversion eliminados** 🎉
+- 🔜 DAY 140: **Cerrar DEBT-COMPILER-WARNINGS-CLEANUP-001 · -Werror · ODR LTO · pcap relay**
 
 ---
 
@@ -349,4 +350,4 @@ make check-prod-all         # 5/5 gates: BSR + AppArmor + cap_bpf + permissions 
 
 MIT License — See [LICENSE](LICENSE)
 
-**Via Appia Quality** 🏛️ — *Built to last decades.*
+**Via Appia Quality** 🏛️ — *Built to last decades.*````

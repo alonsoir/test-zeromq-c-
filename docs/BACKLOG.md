@@ -447,7 +447,7 @@ v0.6.0-hardened-variant-a mergeado:     100% ✅  DAY 136
 docs/KNOWN-DEBTS-v0.6.md:              100% ✅  DAY 136 (actualizado DAY 138)
 DEBT-CAPTURE-BACKEND-ISP-001:           100% ✅  DAY 138
 DEBT-VARIANT-B-PCAP-IMPL-001:          100% ✅  DAY 138 (8/8 tests)
-DEBT-COMPILER-WARNINGS-CLEANUP-001:       0% ⏳  DAY 139+ (ODR P0 bloqueante)
+DEBT-COMPILER-WARNINGS-CLEANUP-001:      60% 🟡  DAY 139 en curso (192→67 warnings)
 DEBT-VARIANT-B-CONFIG-001:               0% ⏳  pre-FEDER
 DEBT-IRP-NFTABLES-001:                   0% ⏳  pre-FEDER
 DEBT-IRP-QUEUE-PROCESSOR-001:            0% ⏳  post-merge
@@ -524,5 +524,5 @@ ADR-031 aRGus-seL4:                      0% ⏳  branch independiente
 
 Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polinomial. Un sistema estático no converge nunca.
 
-*DAY 138 — 1 Mayo 2026 · feature/variant-b-libpcap @ da1badf7*
+*DAY 139 — 2 Mayo 2026 · feature/variant-b-libpcap @ 91281005*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*

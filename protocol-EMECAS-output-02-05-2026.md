@@ -6,6 +6,7 @@
 ==> defender: network to not work properly. If the network doesn't work
 ==> defender: properly, try changing this IP.
 ==> defender: Destroying VM and associated drives...
+
 # FASE VAGRANT UP
 (.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % vagrant up
 Bringing machine 'defender' up with 'virtualbox' provider...
@@ -4429,3 +4430,2926 @@ defender: ✅ systemd units installed
 
 # FASE MAKE BOOTSTRAP
 
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make bootstrap
+╔════════════════════════════════════════════════════════════╗
+║  🚀 aRGus NDR — Bootstrap from scratch                    ║
+║  Ejecutar tras: git clone && make up                      ║
+╚════════════════════════════════════════════════════════════╝
+[1/8] Verificando entorno post-up...
+🔍 Verificando entorno post-up...
+🔍 Verificando dependencias del sistema...
+✅ Todas las dependencias del sistema presentes
+✅ Entorno post-up verificado
+[2/8] Verificando dependencias del sistema...
+🔍 Verificando dependencias del sistema...
+✅ Todas las dependencias del sistema presentes
+[3/8] Activando perfil de build...
+═══ Activando perfil de build: debug ═══
+═══ Activando perfil: debug ═══
+✅ etcd-server: build-active → build-debug
+✅ rag: build-active → build-debug
+✅ rag-ingester: build-active → build-debug
+✅ ml-detector: build-active → build-debug
+✅ sniffer: build-active → build-debug
+✅ firewall-acl-agent: build-active → build-debug
+
+Perfil activo guardado en /etc/ml-defender/build.env
+Recarga units: sudo systemctl daemon-reload
+═══ Listo ═══
+[4/8] Instalando systemd units...
+═══ Instalando systemd units ML Defender ═══
+═══ Instalando systemd units ML Defender (PHASE 3) ═══
+✅ Instalado: /etc/systemd/system/ml-defender-etcd-server.service
+✅ Instalado: /etc/systemd/system/ml-defender-rag-security.service
+✅ Instalado: /etc/systemd/system/ml-defender-rag-ingester.service
+✅ Instalado: /etc/systemd/system/ml-defender-ml-detector.service
+✅ Instalado: /etc/systemd/system/ml-defender-sniffer.service
+✅ Instalado: /etc/systemd/system/ml-defender-firewall-acl-agent.service
+
+⏳ Recargando systemd daemon...
+
+⚠️  Units instalados pero NO habilitados ni iniciados.
+Para habilitar en arranque:
+systemctl enable ml-defender-etcd-server.service
+systemctl enable ml-defender-rag-security.service
+systemctl enable ml-defender-rag-ingester.service
+systemctl enable ml-defender-ml-detector.service
+systemctl enable ml-defender-sniffer.service
+systemctl enable ml-defender-firewall-acl-agent.service
+
+Para verificar:
+systemctl status ml-defender-*.service
+
+═══ Instalación completada ═══
+[5/8] Compilando pipeline (incluye pubkey runtime + plugin-test-message)...
+╔══════════════════════════════════════════════╗
+║  Building seed-client...                     ║
+╚══════════════════════════════════════════════╝
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found nlohmann_json: /usr/share/cmake/nlohmann_json/nlohmann_jsonConfig.cmake (found suitable version "3.11.2", minimum required is "3.9")
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/libs/seed-client/build
+[ 12%] Building CXX object CMakeFiles/seed_client.dir/src/seed_client.cpp.o
+[ 25%] Linking CXX shared library libseed_client.so
+[ 25%] Built target seed_client
+[ 37%] Building CXX object CMakeFiles/test_seed_client_traversal.dir/tests/test_seed_client_traversal.cpp.o
+[ 62%] Building CXX object CMakeFiles/test_seed_client.dir/tests/test_seed_client.cpp.o
+[ 62%] Building CXX object CMakeFiles/test_perms_seed.dir/tests/test_perms_seed.cpp.o
+[ 75%] Linking CXX executable test_perms_seed
+[ 75%] Built target test_perms_seed
+[ 87%] Linking CXX executable test_seed_client_traversal
+[ 87%] Built target test_seed_client_traversal
+[100%] Linking CXX executable test_seed_client
+[100%] Built target test_seed_client
+[ 25%] Built target seed_client
+[ 50%] Built target test_seed_client
+[ 75%] Built target test_perms_seed
+[100%] Built target test_seed_client_traversal
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /usr/local/lib/libseed_client.so.1.0.0
+-- Up-to-date: /usr/local/lib/libseed_client.so.1
+-- Up-to-date: /usr/local/lib/libseed_client.so
+-- Up-to-date: /usr/local/include/seed_client
+-- Up-to-date: /usr/local/include/seed_client/seed_client.hpp
+✅ seed-client instalado
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building crypto-transport Library                     ║
+╚════════════════════════════════════════════════════════════╝
+
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Build type: Release
+-- C++ Standard: 20
+-- CXX Flags (from Makefile):
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- libsodium lib:     /usr/local/lib/libsodium.so
+-- libsodium include: /usr/local/include
+-- Checking for module 'liblz4'
+--   Found liblz4, version 1.9.4
+-- libseed_client: /usr/local/lib/libseed_client.so
+-- ========================================
+-- crypto-transport Tests Configuration
+-- ========================================
+-- Test framework: Google Test
+-- Tests: test_crypto, test_compression, test_integration, test_crypto_transport
+-- ========================================
+-- ========================================
+-- crypto-transport Tests Configuration
+-- ========================================
+-- Test framework: Google Test
+-- Tests: test_crypto, test_compression, test_integration
+-- ========================================
+-- ========================================
+-- crypto-transport Library Configuration
+-- ========================================
+-- Build type: Release
+-- C++ Standard: 20
+-- CXX Flags:
+-- libsodium:
+-- LZ4: 1.9.4
+-- ========================================
+-- Public Headers:
+--   - include/crypto_transport/crypto.hpp
+--   - include/crypto_transport/compression.hpp
+--   - include/crypto_transport/utils.hpp
+--   - include/crypto_transport/crypto_manager.hpp
+--   - include/crypto_transport/transport.hpp
+--   - include/crypto_transport/contexts.hpp
+-- ========================================
+-- Install destinations:
+--   Library: /usr/local/lib
+--   Headers: /usr/local/include/crypto_transport
+--
+-- 🎯 Single Source of Truth:
+--   Compiler Flags: Controlled by root Makefile via PROFILE
+-- ========================================
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/crypto-transport/build
+[  6%] Building CXX object CMakeFiles/crypto_transport.dir/src/compression.cpp.o
+[ 20%] Building CXX object CMakeFiles/crypto_transport.dir/src/transport.cpp.o
+[ 20%] Building CXX object CMakeFiles/crypto_transport.dir/src/utils.cpp.o
+[ 26%] Building CXX object CMakeFiles/crypto_transport.dir/src/crypto.cpp.o
+[ 33%] Linking CXX shared library libcrypto_transport.so
+[ 33%] Built target crypto_transport
+[ 40%] Building CXX object tests/CMakeFiles/test_crypto_transport.dir/test_crypto_transport.cpp.o
+[ 46%] Building CXX object tests/CMakeFiles/test_crypto.dir/test_crypto.cpp.o
+[ 53%] Building CXX object tests/CMakeFiles/test_compression.dir/test_compression.cpp.o
+[ 60%] Building CXX object tests/CMakeFiles/test_integration.dir/test_integration.cpp.o
+[ 66%] Linking CXX executable test_compression
+[ 73%] Linking CXX executable test_crypto
+[ 80%] Linking CXX executable test_integration
+[ 80%] Built target test_compression
+[ 80%] Built target test_crypto
+[ 80%] Built target test_integration
+[ 86%] Building CXX object tests/CMakeFiles/test_integ_contexts.dir/test_integ_contexts.cpp.o
+[ 93%] Linking CXX executable test_crypto_transport
+/usr/bin/ld: aviso: libsodium.so.26, necesario para ../libcrypto_transport.so.1.0.0, podría entrar en conflicto con libsodium.so.23
+[ 93%] Built target test_crypto_transport
+[100%] Linking CXX executable test_integ_contexts
+/usr/bin/ld: aviso: libsodium.so.26, necesario para ../libcrypto_transport.so.1.0.0, podría entrar en conflicto con libsodium.so.23
+[100%] Built target test_integ_contexts
+Installing system-wide...
+[ 33%] Built target crypto_transport
+[ 46%] Built target test_crypto
+[ 60%] Built target test_compression
+[ 73%] Built target test_integration
+[ 86%] Built target test_crypto_transport
+[100%] Built target test_integ_contexts
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /usr/local/lib/libcrypto_transport.so.1.0.0
+-- Up-to-date: /usr/local/lib/libcrypto_transport.so.1
+-- Set runtime path of "/usr/local/lib/libcrypto_transport.so.1.0.0" to ""
+-- Up-to-date: /usr/local/lib/libcrypto_transport.so
+-- Up-to-date: /usr/local/include/crypto_transport/crypto.hpp
+-- Up-to-date: /usr/local/include/crypto_transport/compression.hpp
+-- Up-to-date: /usr/local/include/crypto_transport/utils.hpp
+-- Up-to-date: /usr/local/include/crypto_transport/crypto_manager.hpp
+-- Up-to-date: /usr/local/include/crypto_transport/transport.hpp
+-- Up-to-date: /usr/local/include/crypto_transport/contexts.hpp
+
+✅ crypto-transport installed to /usr/local/lib
+lrwxrwxrwx 1 root root  24 may  2 03:17 /usr/local/lib/libcrypto_transport.so -> libcrypto_transport.so.1
+lrwxrwxrwx 1 root root  28 may  2 03:17 /usr/local/lib/libcrypto_transport.so.1 -> libcrypto_transport.so.1.0.0
+-rw-r--r-- 1 root root 51K may  2 03:22 /usr/local/lib/libcrypto_transport.so.1.0.0
+🔨 Protobuf Unified System...
+╔════════════════════════════════════════════════════════════╗
+║  Protobuf Schema Generator                                 ║
+╚════════════════════════════════════════════════════════════╝
+
+📋 Schema: network_security.proto
+📂 Output: /vagrant/protobuf
+
+✅ libprotoc 3.21.12
+
+🔨 Generating C++ protobuf files...
+✅ Generated successfully:
+-rwxrwxr-x 1 vagrant vagrant 916K may  2 03:23 /vagrant/protobuf/network_security.pb.cc
+-rwxrwxr-x 1 vagrant vagrant 997K may  2 03:23 /vagrant/protobuf/network_security.pb.h
+
+📊 Statistics:
+network_security.pb.cc: 20782 lines
+network_security.pb.h:  24569 lines
+
+🐍 Generating Python protobuf files...
+✅ network_security_pb2.py: 141 lines
+
+📦 Distribuyendo protobuf unificado a componentes...
+✅ Copiado a sniffer
+✅ Copiado a ml-detector
+✅ Copiado a firewall
+🎯 Protobuf unificado distribuido a 3 componentes
+
+╔════════════════════════════════════════════════════════════╗
+║  ✅ Protobuf generation complete                           ║
+╚════════════════════════════════════════════════════════════╝
+
+🎯 Next steps:
+1. Rebuild sniffer: cd /vagrant/sniffer && make
+2. Rebuild ml-detector: cd /vagrant/ml-detector/build && cmake .. && make
+3. Rebuild firewall: cd /vagrant/firewall-acl-agent/build && cmake .. && make
+
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building etcd-client Library                          ║
+╚════════════════════════════════════════════════════════════╝
+
+Dependencies:
+✅ proto-unified
+✅ crypto-transport-build
+
+-- The CXX compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Build type: Release
+-- C++ Standard: 20
+-- CXX Flags (from Makefile):
+-- Found PkgConfig: /usr/bin/pkg-config (found version "1.8.1")
+-- ✅ Found seed-client: /usr/local/lib/libseed_client.so
+-- Checking for module 'liblz4'
+--   Found liblz4, version 1.9.4
+-- ✅ LZ4 found
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.19")  
+-- ========================================
+-- etcd-client Tests Configuration
+-- ========================================
+-- Tests configured:
+--   - test_compression (crypto-transport)
+--   - test_encryption (crypto-transport)
+--   - test_pipeline (crypto-transport)
+--   - test_put_config_integration (etcd_client)
+--   - test_hmac_client (Day 53 - HMAC unit tests)
+--   - test_hmac_integration_client (Day 53 - requires etcd-server)
+--   - test_service_discovery (Day 59 - requires etcd-server)
+--   ⚠️  test_etcd_client_hmac_grace_period (DISABLED - requires GTest)
+-- ========================================
+-- OpenSSL: 3.0.19
+-- ========================================
+-- ========================================
+-- etcd-client Library Configuration
+-- ========================================
+-- Build type: Release
+-- C++ Standard: 20
+-- CXX Flags:
+-- crypto-transport: Found
+--   Encryption: ChaCha20-Poly1305
+--   Compression: LZ4
+--
+-- 🎯 Single Source of Truth:
+--   Compiler Flags: Controlled by root Makefile via PROFILE
+-- ========================================
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/etcd-client/build
+[ 10%] Building CXX object tests/CMakeFiles/test_compression.dir/test_compression.cpp.o
+[ 10%] Building CXX object tests/CMakeFiles/test_pipeline.dir/test_pipeline.cpp.o
+[ 21%] Building CXX object CMakeFiles/etcd_client.dir/src/etcd_client.cpp.o
+[ 21%] Building CXX object tests/CMakeFiles/test_encryption.dir/test_encryption.cpp.o
+[ 26%] Linking CXX executable test_pipeline
+[ 31%] Linking CXX executable test_encryption
+[ 31%] Built target test_pipeline
+[ 31%] Built target test_encryption
+[ 36%] Building CXX object CMakeFiles/etcd_client.dir/src/config_loader.cpp.o
+[ 42%] Building CXX object CMakeFiles/etcd_client.dir/src/http_client.cpp.o
+[ 47%] Linking CXX executable test_compression
+[ 47%] Built target test_compression
+[ 52%] Building CXX object CMakeFiles/etcd_client.dir/src/component_registration.cpp.o
+/vagrant/etcd-client/src/component_registration.cpp: In function ‘std::string etcd_client::component::build_heartbeat_payload(const etcd_client::Config&)’:
+/vagrant/etcd-client/src/component_registration.cpp:37:55: warning: unused parameter ‘config’ [-Wunused-parameter]
+37 |     std::string build_heartbeat_payload(const Config& config) {
+|                                         ~~~~~~~~~~~~~~^~~~~~
+[ 57%] Linking CXX shared library libetcd_client.so
+[ 57%] Built target etcd_client
+[ 63%] Building CXX object tests/CMakeFiles/test_hmac_client.dir/test_hmac_client.cpp.o
+[ 73%] Building CXX object tests/CMakeFiles/test_hmac_integration_client.dir/test_hmac_integration_client.cpp.o
+[ 73%] Building CXX object tests/CMakeFiles/test_put_config_integration.dir/test_put_config_integration.cpp.o
+[ 78%] Building CXX object tests/CMakeFiles/test_service_discovery.dir/test_service_discovery.cpp.o
+[ 84%] Linking CXX executable test_service_discovery
+[ 84%] Built target test_service_discovery
+[ 89%] Linking CXX executable test_hmac_client
+[ 89%] Built target test_hmac_client
+[ 94%] Linking CXX executable test_hmac_integration_client
+[ 94%] Built target test_hmac_integration_client
+[100%] Linking CXX executable test_put_config_integration
+[100%] Built target test_put_config_integration
+Installing system-wide...
+[ 26%] Built target etcd_client
+[ 36%] Built target test_compression
+[ 47%] Built target test_encryption
+[ 57%] Built target test_pipeline
+[ 68%] Built target test_put_config_integration
+[ 78%] Built target test_hmac_client
+[ 89%] Built target test_hmac_integration_client
+[100%] Built target test_service_discovery
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /usr/local/lib/libetcd_client.so.1.0.0
+-- Up-to-date: /usr/local/lib/libetcd_client.so.1
+-- Set runtime path of "/usr/local/lib/libetcd_client.so.1.0.0" to ""
+-- Up-to-date: /usr/local/lib/libetcd_client.so
+-- Up-to-date: /usr/local/include/etcd_client/etcd_client.hpp
+-- Up-to-date: /usr/local/include/etcd_client
+-- Up-to-date: /usr/local/include/etcd_client/etcd_client.hpp
+
+✅ etcd-client installed to /usr/local/lib
+
+Verifying library size and methods...
+lrwxrwxr-x 1 vagrant vagrant 19 may  2 03:24 /vagrant/etcd-client/build/libetcd_client.so -> libetcd_client.so.1
+lrwxrwxrwx 1 root root   19 may  2 03:17 /usr/local/lib/libetcd_client.so -> libetcd_client.so.1
+lrwxrwxrwx 1 root root   23 may  2 03:17 /usr/local/lib/libetcd_client.so.1 -> libetcd_client.so.1.0.0
+-rw-r--r-- 1 root root 1,1M may  2 03:24 /usr/local/lib/libetcd_client.so.1.0.0
+Public methods: 49
+
+╔════════════════════════════════════════════════════════════╗
+║  🔌 Building plugin-loader Library (PHASE 1)              ║
+╚════════════════════════════════════════════════════════════╝
+
+Phase: 1 — no crypto, no seed-client (ADR-012)
+Auth:  PHASE 2 (ADR-013, seed-client DAY 95-96)
+
+-- The CXX compiler identification is GNU 12.2.0
+-- The C compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Build type: Release
+-- C++ Standard: 20
+-- CXX Flags (from Makefile):
+-- libsodium: /usr/local/lib/libsodium.so
+-- MLD_PLUGIN_PUBKEY_HEX: read from runtime file (DEBT-PUBKEY-RUNTIME-001)
+-- ========================================
+-- plugin-loader Library Configuration
+-- ========================================
+-- Build type: Release
+-- C++ Standard: 20
+-- Phase: 2 — Ed25519 plugin verification (ADR-025)
+--   Auth: PHASE 2 (ADR-013, seed-client DAY 95-96)
+-- Public Headers:
+--   - include/plugin_loader/plugin_api.h
+--   - include/plugin_loader/plugin_loader.hpp
+-- ========================================
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/plugin-loader/build
+[ 50%] Building CXX object CMakeFiles/plugin_loader.dir/src/plugin_loader.cpp.o
+[100%] Linking CXX shared library libplugin_loader.so
+[100%] Built target plugin_loader
+Installing system-wide...
+[100%] Built target plugin_loader
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /usr/local/lib/libplugin_loader.so.1.0.0
+-- Up-to-date: /usr/local/lib/libplugin_loader.so.1
+-- Set runtime path of "/usr/local/lib/libplugin_loader.so.1.0.0" to ""
+-- Up-to-date: /usr/local/lib/libplugin_loader.so
+-- Up-to-date: /usr/local/include/plugin_loader/plugin_api.h
+-- Up-to-date: /usr/local/include/plugin_loader/plugin_loader.hpp
+
+✅ plugin-loader installed to /usr/local/lib
+lrwxrwxrwx 1 root root  21 may  2 03:17 /usr/local/lib/libplugin_loader.so -> libplugin_loader.so.1
+lrwxrwxrwx 1 root root  25 may  2 03:17 /usr/local/lib/libplugin_loader.so.1 -> libplugin_loader.so.1.0.0
+-rw-r--r-- 1 root root 71K may  2 03:24 /usr/local/lib/libplugin_loader.so.1.0.0
+
+╔════════════════════════════════════════════════════════════╗
+║  🔌 Building Test Message Plugin (ADR-025 integration)    ║
+╚════════════════════════════════════════════════════════════╝
+-- The CXX compiler identification is GNU 12.2.0
+-- The C compiler identification is GNU 12.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/plugins/test-message/build
+[ 50%] Building CXX object CMakeFiles/plugin_test_message.dir/plugin_test_message.cpp.o
+[100%] Linking CXX shared library libplugin_test_message.so
+[100%] Built target plugin_test_message
+✅ libplugin_test_message.so deployed to /usr/lib/ml-defender/plugins/
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building etcd-server [debug]                     ║
+╚════════════════════════════════════════════════════════════╝
+
+Build dir: /vagrant/etcd-server/build-debug
+Flags: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG -DCMAKE_C_FLAGS=-std=c11 -g -O0 -fno-omit-frame-pointer -DDEBUG
+
+-- ========================================
+-- etcd-server Configuration
+-- ========================================
+-- Build type: Debug
+-- C++ Standard: 20
+-- CXX Flags (from Makefile): -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- ✅ OpenSSL found - HMAC support enabled
+--    Version: 3.0.19
+--    Include: /usr/include
+--    Libraries: /usr/lib/x86_64-linux-gnu/libssl.so;/usr/lib/x86_64-linux-gnu/libcrypto.so
+-- ✅ libsodium found - Using ChaCha20-Poly1305 + randombytes
+-- ✅ LZ4 found - Compression enabled
+-- ✅ Found crypto-transport library: /usr/local/lib/libcrypto_transport.so
+-- ✅ Found crypto-transport headers: /usr/local/include
+-- ✅ Found seed-client library: /usr/local/lib/libseed_client.so
+-- ✅ Found seed-client headers: /usr/local/include
+-- ========================================
+-- Building Tests
+-- ========================================
+-- ✅ Test executables configured:
+--    - test_secrets_manager
+--    - test_hmac_integration
+-- ========================================
+-- ========================================
+-- Build Configuration:
+--   C++ Standard: 20
+--   Build Type: Debug
+--   CXX Flags: -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- ========================================
+-- Dependencies:
+--   crypto-transport: /usr/local/lib/libcrypto_transport.so
+--   libsodium: sodium
+--   LZ4: lz4
+--   OpenSSL: /usr/lib/x86_64-linux-gnu/libssl.so;/usr/lib/x86_64-linux-gnu/libcrypto.so
+-- ========================================
+-- Sources:
+--   - src/main.cpp
+--   - src/etcd_server.cpp
+--   - src/component_registry.cpp
+--   - src/crypto_manager.cpp
+--   - src/compression_lz4.cpp
+--   - src/secrets_manager.cpp
+-- ========================================
+-- 🎯 Single Source of Truth:
+--   Compiler Flags: Controlled by root Makefile via PROFILE
+-- ========================================
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/etcd-server/build-debug
+[  7%] Building CXX object CMakeFiles/test_secrets_manager_simple.dir/tests/test_secrets_manager_simple.cpp.o
+[ 15%] Building CXX object CMakeFiles/test_hmac_integration.dir/tests/test_hmac_integration.cpp.o
+[ 23%] Building CXX object CMakeFiles/test_secrets_manager_simple.dir/src/secrets_manager.cpp.o
+[ 30%] Building CXX object CMakeFiles/etcd-server.dir/src/main.cpp.o
+[ 38%] Building CXX object CMakeFiles/etcd-server.dir/src/etcd_server.cpp.o
+[ 46%] Building CXX object CMakeFiles/etcd-server.dir/src/component_registry.cpp.o
+[ 53%] Linking CXX executable test_secrets_manager_simple
+[ 61%] Building CXX object CMakeFiles/test_hmac_integration.dir/src/secrets_manager.cpp.o
+[ 61%] Built target test_secrets_manager_simple
+[ 69%] Building CXX object CMakeFiles/etcd-server.dir/src/crypto_manager.cpp.o
+[ 76%] Building CXX object CMakeFiles/etcd-server.dir/src/compression_lz4.cpp.o
+[ 84%] Building CXX object CMakeFiles/etcd-server.dir/src/secrets_manager.cpp.o
+/vagrant/etcd-server/src/etcd_server.cpp: In lambda function:
+/vagrant/etcd-server/src/etcd_server.cpp:447:54: warning: unused parameter ‘req’ [-Wunused-parameter]
+447 |     server.Get("/health", [](const httplib::Request& req, httplib::Response& res) {
+|                              ~~~~~~~~~~~~~~~~~~~~~~~~^~~
+/vagrant/etcd-server/src/etcd_server.cpp: In lambda function:
+/vagrant/etcd-server/src/etcd_server.cpp:457:56: warning: unused parameter ‘req’ [-Wunused-parameter]
+457 |     server.Get("/info", [this](const httplib::Request& req, httplib::Response& res) {
+|                                ~~~~~~~~~~~~~~~~~~~~~~~~^~~
+[ 92%] Linking CXX executable test_hmac_integration
+[ 92%] Built target test_hmac_integration
+[100%] Linking CXX executable etcd-server
+/usr/bin/ld: aviso: libsodium.so.26, necesario para /usr/local/lib/libcrypto_transport.so, podría entrar en conflicto con libsodium.so.23
+[100%] Built target etcd-server
+
+✅ etcd-server built (debug)
+🔨 Building RAG Security System [debug]...
+-- Build type: Debug
+-- Found llama.cpp: /vagrant/rag/../third_party/llama.cpp
+-- ✅ Found llama shared library: /vagrant/rag/../third_party/llama.cpp/build/bin/libllama.so
+-- 🔍 Buscando dependencias del sistema...
+-- 🔍 Buscando FAISS library...
+-- ✅ Found FAISS library: /usr/local/lib/libfaiss.so
+-- ✅ Found FAISS headers: /usr/local/include
+-- ✅ Found BLAS: /usr/lib/x86_64-linux-gnu/libblas.so
+-- 🔍 Buscando ONNX Runtime...
+-- ✅ Found ONNX Runtime: /usr/local/lib/libonnxruntime.so
+-- ✅ Found ONNX headers: /usr/local/include
+-- 🔍 Buscando etcd-client library...
+-- ✅ Found etcd-client library: /usr/local/lib/libetcd_client.so
+-- ✅ llama.cpp integration enabled
+-- ✅ FAISS linked to rag-security
+-- plugin-loader: /usr/local/lib/libplugin_loader.so
+-- 🧪 Configurando tests FAISS...
+-- ✅ test_faiss_basic configured
+-- ✅ test_embedder configured
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- ✅ test_onnx_basic configured
+--    ONNX include: /usr/local/include
+--    ONNX library: /usr/local/lib/libonnxruntime.so
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--
+-- ╔════════════════════════════════════════════════════════════╗
+-- ║  RAG Security System - Build Configuration                ║
+-- ╚════════════════════════════════════════════════════════════╝
+--
+-- 📦 Core Dependencies:
+--    - httplib: /usr/local/include
+--    - nlohmann/json: /usr/include
+--    - llama.cpp: TRUE
+--    - etcd-client: /usr/local/lib/libetcd_client.so
+--    - threads: OK
+--
+-- 🔬 Phase 2A Dependencies:
+--    - FAISS: TRUE
+--      • Library: /usr/local/lib/libfaiss.so
+--      • Include: /usr/local/include
+--      • BLAS: /usr/lib/x86_64-linux-gnu/libblas.so
+--    - ONNX Runtime: TRUE
+--      • Library: /usr/local/lib/libonnxruntime.so
+--      • Include: /usr/local/include
+--
+-- 🎯 Targets:
+--    - rag-security (main executable)
+--    - test_faiss_basic (FAISS integration test)
+--    - test_onnx_basic (planned)
+--
+-- ═══════════════════════════════════════════════════════════
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/rag/build
+[  5%] Building CXX object CMakeFiles/test_faiss_basic.dir/tests/test_faiss_basic.cpp.o
+[ 25%] Built target test_embedder
+[ 30%] Building CXX object CMakeFiles/test_onnx_basic.dir/tests/test_onnx_basic.cpp.o
+[ 35%] Building CXX object CMakeFiles/rag-security.dir/src/main.cpp.o
+[ 40%] Building CXX object CMakeFiles/rag-security.dir/src/rag_command_manager.cpp.o
+[ 45%] Linking CXX executable test_faiss_basic
+[ 45%] Built target test_faiss_basic
+In file included from /vagrant/rag/include/rag/rag_command_manager.hpp:2,
+from /vagrant/rag/src/rag_command_manager.cpp:1:
+/vagrant/rag/include/rag/command_manager.hpp: In member function ‘virtual void Rag::CommandManager::showConfig(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/include/rag/command_manager.hpp:15:65: warning: unused parameter ‘args’ [-Wunused-parameter]
+15 |         virtual void showConfig(const std::vector<std::string>& args) {}
+|                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/include/rag/command_manager.hpp: In member function ‘virtual void Rag::CommandManager::updateSetting(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/include/rag/command_manager.hpp:16:68: warning: unused parameter ‘args’ [-Wunused-parameter]
+16 |         virtual void updateSetting(const std::vector<std::string>& args) {}
+|                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/include/rag/command_manager.hpp: In member function ‘virtual void Rag::CommandManager::showCapabilities(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/include/rag/command_manager.hpp:17:71: warning: unused parameter ‘args’ [-Wunused-parameter]
+17 |         virtual void showCapabilities(const std::vector<std::string>& args) {}
+|                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+In file included from /vagrant/rag/include/rag/whitelist_manager.hpp:2,
+from /vagrant/rag/src/main.cpp:3:
+/vagrant/rag/include/rag/command_manager.hpp: In member function ‘virtual void Rag::CommandManager::showConfig(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/include/rag/command_manager.hpp:15:65: warning: unused parameter ‘args’ [-Wunused-parameter]
+15 |         virtual void showConfig(const std::vector<std::string>& args) {}
+|                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/include/rag/command_manager.hpp: In member function ‘virtual void Rag::CommandManager::updateSetting(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/include/rag/command_manager.hpp:16:68: warning: unused parameter ‘args’ [-Wunused-parameter]
+16 |         virtual void updateSetting(const std::vector<std::string>& args) {}
+|                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/include/rag/command_manager.hpp: In member function ‘virtual void Rag::CommandManager::showCapabilities(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/include/rag/command_manager.hpp:17:71: warning: unused parameter ‘args’ [-Wunused-parameter]
+17 |         virtual void showCapabilities(const std::vector<std::string>& args) {}
+|                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+[ 50%] Linking CXX executable test_onnx_basic
+[ 50%] Built target test_onnx_basic
+/vagrant/rag/src/rag_command_manager.cpp: In member function ‘virtual void Rag::RagCommandManager::showConfig(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/src/rag_command_manager.cpp:59:68: warning: unused parameter ‘args’ [-Wunused-parameter]
+59 | void RagCommandManager::showConfig(const std::vector<std::string>& args) {
+|                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/src/rag_command_manager.cpp: In member function ‘virtual void Rag::RagCommandManager::showCapabilities(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/src/rag_command_manager.cpp:85:74: warning: unused parameter ‘args’ [-Wunused-parameter]
+85 | void RagCommandManager::showCapabilities(const std::vector<std::string>& args) {
+|                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/src/rag_command_manager.cpp: In member function ‘void Rag::RagCommandManager::handleStats(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/src/rag_command_manager.cpp:306:69: warning: unused parameter ‘args’ [-Wunused-parameter]
+306 | void RagCommandManager::handleStats(const std::vector<std::string>& args) {
+|                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/rag/src/rag_command_manager.cpp: In member function ‘void Rag::RagCommandManager::handleInfo(const std::vector<std::__cxx11::basic_string<char> >&)’:
+/vagrant/rag/src/rag_command_manager.cpp:334:68: warning: unused parameter ‘args’ [-Wunused-parameter]
+334 | void RagCommandManager::handleInfo(const std::vector<std::string>& args) {
+|                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+[ 55%] Linking CXX executable rag-security
+[100%] Built target rag-security
+✅ rag-security built (debug)
+✅ Protobuf unificado generado y distribuido
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building RAG Ingester [debug]                    ║
+╚════════════════════════════════════════════════════════════╝
+
+Build dir: /vagrant/rag-ingester/build-debug
+Flags: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG -DCMAKE_C_FLAGS=-std=c11 -g -O0 -fno-omit-frame-pointer -DDEBUG
+
+Copying protobuf files...
+Running CMake and build...
+-- Build type: Debug
+-- C++ Standard: 20
+-- CXX Flags (from Makefile): -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- ✅ Found etcd_client: /usr/local/lib/libetcd_client.so
+-- ✅ Found crypto_transport: /usr/local/lib/libcrypto_transport.so
+-- ✅ Found seed-client: /usr/local/lib/libseed_client.so
+-- ✅ LZ4 found: 1.9.4
+-- ✅ Found common-rag-ingester: /vagrant/common-rag-ingester/build/libcommon-rag-ingester.so
+-- ✅ Found FAISS
+-- ✅ Found ONNX Runtime: /usr/local/lib/libonnxruntime.so
+-- ✅ protobuf headers: /vagrant/rag-ingester/build-debug/proto
+-- ✅ crypto-transport headers: /vagrant/crypto-transport/include
+-- ✅ reason_codes.hpp headers: /vagrant/common/include
+-- ✅ OpenSSL headers: /usr/include
+-- plugin-loader: /usr/local/lib/libplugin_loader.so
+-- ✅ test_config_parser_traversal registered (DEBT-SAFE-PATH-TEST-PRODUCTION-001)
+--
+-- === RAG Ingester Build Configuration ===
+-- Build type: Debug
+-- C++ standard: 20
+-- CXX Flags: -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+--
+-- Required libraries:
+--   etcd-client:      /usr/local/lib/libetcd_client.so
+--   crypto-transport: /usr/local/lib/libcrypto_transport.so
+--   protobuf:         /usr/lib/x86_64-linux-gnu/libprotobuf.so
+--   OpenSSL:          3.0.19
+--
+-- Optional libraries:
+--   common-rag-ingester: ENABLED
+--   FAISS: ENABLED
+--   ONNX Runtime: ENABLED
+--
+-- Day 40 Components:
+--   EventLoader:   crypto-transport (.pb protobuf)
+--   FileWatcher:   inotify IN_CLOSE_WRITE (*.pb)
+--   MetadataDB:    Producer (write)
+--   FAISS:         Persistence enabled
+--   Features:      101 (61 base + 40 embedded)
+--
+-- Day 67 Components:
+--   CsvFileWatcher:  inotify IN_MODIFY + offset (append-only CSV)
+--   CsvEventLoader:  127-col CSV parser + HMAC-SHA256 verification
+--   Feature vector:  62 raw NetworkFeatures (Section 2)
+--   WAL mode:        SQLite WAL required for streaming inserts
+--
+-- Day 69 Components:
+--   CsvDirWatcher:          inotify on directory, daily rotation
+--   FirewallCsvEventLoader: 7-col CSV parser + HMAC-SHA256
+--   Source A (ml-detector): CsvDirWatcher → FAISS + MetadataDB INSERT
+--   Source B (firewall):    CsvFileWatcher → MetadataDB UPDATE
+--   Correlation:            provisional by src_ip+ts_window (±5s)
+--                           clean path via trace_id (Day 72)
+--
+-- Day 72 Components:
+--   Idempotency guard:      exists() before embed+index (FAISS/DB sync)
+--   trace_id_generator:     header-only, include/utils/
+--                           SHA256(src|dst|attack|bucket) prefix 16B
+--                           O(1), zero-coordination, deterministic
+--                           Sentinel: empty IP → 0.0.0.0 (warn logged)
+--                           Sentinel: empty attack → unknown (warn logged)
+--   MetadataDB schema:      complete from birth (no ALTER TABLE needed)
+--   test_trace_id:          6 test groups incl. edge cases
+--
+-- 🎯 Single Source of Truth:
+--   Compiler Flags: Controlled by root Makefile via PROFILE
+-- ========================================
+--
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/rag-ingester/build-debug
+[  2%] Building CXX object CMakeFiles/csv_event_loader.dir/src/csv_event_loader.cpp.o
+[  4%] Building CXX object CMakeFiles/file_watcher.dir/src/file_watcher.cpp.o
+[  6%] Building CXX object CMakeFiles/csv_file_watcher.dir/src/csv_file_watcher.cpp.o
+[  8%] Building CXX object CMakeFiles/event_loader.dir/src/event_loader.cpp.o
+[ 11%] Linking CXX static library libcsv_event_loader.a
+[ 13%] Linking CXX static library libfile_watcher.a
+[ 15%] Linking CXX static library libcsv_file_watcher.a
+[ 15%] Built target csv_event_loader
+[ 15%] Built target file_watcher
+[ 15%] Built target csv_file_watcher
+[ 17%] Building CXX object CMakeFiles/csv_dir_watcher.dir/src/csv_dir_watcher.cpp.o
+[ 20%] Building CXX object CMakeFiles/firewall_csv_event_loader.dir/src/firewall_csv_event_loader.cpp.o
+[ 22%] Building CXX object tests/CMakeFiles/test_config_parser.dir/test_config_parser.cpp.o
+[ 24%] Building CXX object CMakeFiles/event_loader.dir/proto/network_security.pb.cc.o
+[ 26%] Linking CXX static library libfirewall_csv_event_loader.a
+[ 26%] Built target firewall_csv_event_loader
+[ 28%] Building CXX object tests/CMakeFiles/test_config_parser_traversal.dir/test_config_parser_traversal.cpp.o
+[ 31%] Linking CXX static library libcsv_dir_watcher.a
+[ 31%] Built target csv_dir_watcher
+[ 33%] Building CXX object tests/CMakeFiles/test_file_watcher.dir/test_file_watcher.cpp.o
+/vagrant/rag-ingester/tests/test_file_watcher.cpp: In lambda function:
+/vagrant/rag-ingester/tests/test_file_watcher.cpp:162:44: warning: unused parameter ‘filepath’ [-Wunused-parameter]
+162 |     auto callback = [&](const std::string& filepath) {
+|                         ~~~~~~~~~~~~~~~~~~~^~~~~~~~
+[ 35%] Linking CXX executable test_file_watcher
+[ 35%] Built target test_file_watcher
+[ 37%] Building CXX object tests/CMakeFiles/test_config_parser_traversal.dir/__/src/common/config_parser.cpp.o
+[ 40%] Building CXX object tests/CMakeFiles/test_config_parser.dir/__/src/common/config_parser.cpp.o
+[ 42%] Building CXX object tests/CMakeFiles/test_csv_file_watcher.dir/test_csv_file_watcher.cpp.o
+[ 44%] Linking CXX executable test_csv_file_watcher
+[ 44%] Built target test_csv_file_watcher
+[ 46%] Building CXX object tests/CMakeFiles/test_csv_event_loader.dir/test_csv_event_loader.cpp.o
+[ 48%] Linking CXX executable test_csv_event_loader
+[ 48%] Built target test_csv_event_loader
+[ 51%] Building CXX object tests/CMakeFiles/test_csv_dir_watcher.dir/test_csv_dir_watcher.cpp.o
+[ 53%] Linking CXX static library libevent_loader.a
+[ 55%] Linking CXX executable test_config_parser
+[ 57%] Linking CXX executable test_csv_dir_watcher
+[ 57%] Built target test_csv_dir_watcher
+[ 60%] Linking CXX executable test_config_parser_traversal
+[ 62%] Building CXX object tests/CMakeFiles/test_firewall_csv_event_loader.dir/test_firewall_csv_event_loader.cpp.o
+[ 62%] Built target test_config_parser
+[ 64%] Building CXX object tests/CMakeFiles/test_trace_id.dir/test_trace_id.cpp.o
+[ 64%] Built target test_config_parser_traversal
+[ 66%] Linking CXX executable test_firewall_csv_event_loader
+[ 66%] Built target event_loader
+[ 66%] Built target test_firewall_csv_event_loader
+[ 68%] Building CXX object CMakeFiles/rag-ingester.dir/src/main.cpp.o
+[ 71%] Building CXX object CMakeFiles/rag-ingester.dir/src/common/thread_pool.cpp.o
+[ 73%] Building CXX object CMakeFiles/rag-ingester.dir/src/ingester_service.cpp.o
+[ 75%] Linking CXX executable test_trace_id
+[ 77%] Building CXX object CMakeFiles/rag-ingester.dir/src/common/config_parser.cpp.o
+[ 77%] Built target test_trace_id
+[ 80%] Building CXX object CMakeFiles/rag-ingester.dir/src/embedders/chronos_embedder.cpp.o
+[ 82%] Building CXX object CMakeFiles/rag-ingester.dir/src/embedders/sbert_embedder.cpp.o
+[ 84%] Building CXX object CMakeFiles/rag-ingester.dir/src/embedders/attack_embedder.cpp.o
+[ 86%] Building CXX object CMakeFiles/rag-ingester.dir/src/embedders/simple_embedder.cpp.o
+[ 88%] Building CXX object CMakeFiles/rag-ingester.dir/src/indexers/multi_index_manager.cpp.o
+/vagrant/rag-ingester/src/embedders/attack_embedder.cpp: In member function ‘bool rag_ingester::AttackEmbedder::should_embed(const rag_ingester::Event&) const’:
+/vagrant/rag-ingester/src/embedders/attack_embedder.cpp:63:48: warning: unused parameter ‘event’ [-Wunused-parameter]
+63 | bool AttackEmbedder::should_embed(const Event& event) const {
+|                                   ~~~~~~~~~~~~~^~~~~
+[ 91%] Building CXX object CMakeFiles/rag-ingester.dir/src/indexers/eventual_consistency.cpp.o
+[ 93%] Building CXX object CMakeFiles/rag-ingester.dir/src/indexers/index_health_monitor.cpp.o
+[ 95%] Building CXX object CMakeFiles/rag-ingester.dir/src/metadata_db.cpp.o
+[ 97%] Building CXX object CMakeFiles/rag-ingester.dir/proto/network_security.pb.cc.o
+/vagrant/rag-ingester/src/indexers/index_health_monitor.cpp: In member function ‘double rag_ingester::IndexHealthMonitor::compute_cv(const void*)’:
+/vagrant/rag-ingester/src/indexers/index_health_monitor.cpp:10:51: warning: unused parameter ‘index’ [-Wunused-parameter]
+10 | double IndexHealthMonitor::compute_cv(const void* index) {
+|                                       ~~~~~~~~~~~~^~~~~
+[100%] Linking CXX executable rag-ingester
+[100%] Built target rag-ingester
+
+✅ RAG Ingester built (debug)
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building ML Detector [debug]                     ║
+╚════════════════════════════════════════════════════════════╝
+
+Build dir: /vagrant/ml-detector/build-debug
+Flags: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG -DCMAKE_C_FLAGS=-std=c11 -g -O0 -fno-omit-frame-pointer -DDEBUG
+
+Copying protobuf files...
+Running CMake and build...
+-- Build type: Debug
+-- C++ Standard: 20
+-- CXX Flags (from Makefile): -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- Found nlohmann_json
+-- Found ZeroMQ: 4.3.4
+-- Found Protobuf: 3.21.12
+-- Found ONNX Runtime (manual): /usr/local/lib/libonnxruntime.so
+-- Found nlohmann/json: 3.11.2
+-- Found spdlog: 1.10.0
+-- Could NOT find c-ares (missing: c-ares_DIR)
+-- Found RE2 via pkg-config.
+-- Found etcd-cpp-api: 0.15.3
+-- ✅ Found etcd-client library: /vagrant/etcd-client/build/libetcd_client.so
+-- ✅ Found crypto-transport library: /usr/local/lib/libcrypto_transport.so
+-- ✅ Found crypto-transport headers: /usr/local/include
+-- ✅ Found seed-client: /usr/local/lib/libseed_client.so
+-- ✅ LZ4 found: 1.9.4
+-- ✅ Protobuf unificado encontrado: /vagrant/ml-detector/build-debug/proto/network_security.pb.cc
+--
+-- 🔗 Setting up models symlink...
+--    Source: /vagrant/ml-detector/models
+--    Target: /vagrant/ml-detector/build-debug/models
+-- ✅ Models symlink created successfully
+--    Config will use: models/production/
+--    Points to:       ../models/production/
+--
+-- 🔗 Setting up config symlink...
+--    Source: /vagrant/ml-detector/config
+--    Target: /vagrant/ml-detector/build-debug/config
+-- ✅ Config symlink created successfully
+--
+-- Found OpenSSL: 3.0.19
+-- ✅ test_rag_logger_artifact_save registered (DAY 75)
+-- ✅ test_zmq_memory_overflow registered (DEBT-INTEGER-OVERFLOW-TEST-001)
+-- ✅ test_csv_event_writer registered
+-- ✅ test_csv_feature_extraction registered
+--
+-- ─── Test suite ──────────────────────────────
+--   Unit:
+--     test_classifier             (stub)
+--     test_feature_extractor       (stub)
+--     test_model_loader            (stub)
+--     test_ransomware_detector_unit
+--     test_detectors               (standalone, no ctest)
+--   Integration:
+--     test_ransomware_detector_integration
+--     test_pipeline                (stub)
+--   Day 64 — CSV pipeline:
+--     test_csv_event_writer
+--     test_csv_feature_extraction
+--     test_etcd_client_hmac
+-- ─────────────────────────────────────────────
+--
+-- ✅ Found plugin-loader: /usr/local/lib/libplugin_loader.so
+--
+-- ======================================
+-- ML Detector Tricapa - Configuration
+-- ======================================
+-- Build type:        Debug
+-- C++ compiler:      GNU 12.2.0
+-- C++ standard:      20
+-- Install prefix:    /usr/local
+-- CXX Flags:         -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+--
+-- Dependencies:
+--   ZeroMQ:          4.3.4
+--   Protobuf:        3.21.12
+--   ONNX Runtime:    Found
+--   nlohmann/json:   Found
+--   spdlog:          Found
+--   etcd-client:     TRUE
+--   crypto-transport: TRUE
+--   etcd-cpp-api:    TRUE
+--
+-- Options:
+--   Build tests:     ON
+--
+-- 🎯 Single Source of Truth:
+--   Models:          /vagrant/ml-detector/models → build/models (symlink)
+--   Config:          /vagrant/ml-detector/config → build/config (symlink)
+--   Protobuf:        /vagrant/ml-detector/build-debug/proto/network_security.pb.cc (unificado)
+--   Compiler Flags:  Controlled by root Makefile via PROFILE
+-- ======================================
+--
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/ml-detector/build-debug
+[  1%] Linking CXX executable test_classifier
+[  5%] Built target test_feature_extractor
+[  7%] Building CXX object CMakeFiles/ransomware_detector.dir/src/ransomware_detector.cpp.o
+[  9%] Linking CXX executable test_model_loader
+[ 11%] Building CXX object tests/CMakeFiles/test_rag_logger_artifact_save.dir/unit/test_rag_logger_artifact_save.cpp.o
+[ 13%] Built target test_classifier
+[ 15%] Built target test_model_loader
+[ 17%] Building CXX object tests/CMakeFiles/test_zmq_memory_overflow.dir/unit/test_zmq_memory_overflow.cpp.o
+[ 19%] Building CXX object tests/CMakeFiles/test_detectors.dir/unit/test_detectors.cpp.o
+[ 21%] Linking CXX executable test_detectors
+[ 23%] Linking CXX static library libransomware_detector.a
+[ 23%] Built target ransomware_detector
+[ 28%] Built target test_detectors
+[ 30%] Linking CXX executable test_pipeline
+[ 34%] Building CXX object tests/CMakeFiles/test_csv_event_writer.dir/integration/test_csv_event_writer.cpp.o
+[ 34%] Built target test_pipeline
+[ 36%] Linking CXX executable test_zmq_memory_overflow
+[ 38%] Building CXX object tests/CMakeFiles/test_csv_feature_extraction.dir/integration/test_csv_feature_extraction.cpp.o
+[ 38%] Built target test_zmq_memory_overflow
+[ 40%] Building CXX object tests/CMakeFiles/test_rag_logger_artifact_save.dir/__/proto/network_security.pb.cc.o
+[ 42%] Building CXX object tests/CMakeFiles/test_etcd_client_hmac.dir/integration/test_etcd_client_hmac.cpp.o
+[ 44%] Building CXX object tests/CMakeFiles/test_etcd_client_hmac.dir/__/src/etcd_client.cpp.o
+[ 46%] Building CXX object tests/CMakeFiles/test_csv_event_writer.dir/__/src/csv_event_writer.cpp.o
+[ 48%] Building CXX object tests/CMakeFiles/test_csv_feature_extraction.dir/__/src/csv_event_writer.cpp.o
+[ 50%] Linking CXX executable test_etcd_client_hmac
+[ 50%] Built target test_etcd_client_hmac
+[ 51%] Linking CXX executable test_rag_logger_artifact_save
+[ 53%] Building CXX object tests/CMakeFiles/test_csv_feature_extraction.dir/__/proto/network_security.pb.cc.o
+[ 53%] Built target test_rag_logger_artifact_save
+[ 55%] Building CXX object CMakeFiles/ml-detector.dir/src/main.cpp.o
+[ 57%] Building CXX object tests/CMakeFiles/test_csv_event_writer.dir/__/proto/network_security.pb.cc.o
+[ 59%] Building CXX object CMakeFiles/ml-detector.dir/src/feature_extractor.cpp.o
+/vagrant/ml-detector/src/feature_extractor.cpp: In member function ‘std::vector<float> ml_detector::FeatureExtractor::extract_level2_ddos_features(const protobuf::NetworkFeatures&)’:
+/vagrant/ml-detector/src/feature_extractor.cpp:232:44: warning: conversion from ‘uint32_t’ {aka ‘unsigned int’} to ‘float’ may change value [-Wconversion]
+230 |     float total_flags = nf.fin_flag_count() + nf.syn_flag_count() +
+|                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+231 |                        nf.rst_flag_count() + nf.psh_flag_count() +
+|                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+232 |                        nf.ack_flag_count() + nf.urg_flag_count();
+|                        ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/feature_extractor.cpp:233:48: warning: conversion from ‘uint32_t’ {aka ‘unsigned int’} to ‘float’ may change value [-Wconversion]
+233 |     features[0] = safe_divide(nf.syn_flag_count(), total_flags);
+|                               ~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:236:54: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+236 |     float total_packets = nf.total_forward_packets() + nf.total_backward_packets();
+|                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/feature_extractor.cpp:237:55: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+237 |     features[1] = safe_divide(nf.total_forward_packets(), total_packets);
+|                               ~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:247:49: warning: conversion from ‘double’ to ‘float’ may change value [-Wfloat-conversion]
+247 |     features[4] = normalize(nf.packet_length_std(), 0.0f, 1500.0f);
+|                             ~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:250:45: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+250 |     float fwd_bytes = nf.total_forward_bytes();
+|                       ~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:251:46: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+251 |     float bwd_bytes = nf.total_backward_bytes();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:255:48: warning: conversion from ‘uint32_t’ {aka ‘unsigned int’} to ‘float’ may change value [-Wconversion]
+255 |     features[6] = safe_divide(nf.fin_flag_count(), total_packets);
+|                               ~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:261:56: warning: conversion from ‘double’ to ‘float’ may change value [-Wfloat-conversion]
+261 |     float flow_bytes_per_sec = nf.flow_bytes_per_second();
+|                                ~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp: In member function ‘std::vector<float> ml_detector::FeatureExtractor::extract_level3_traffic_features(const protobuf::NetworkFeatures&)’:
+/vagrant/ml-detector/src/feature_extractor.cpp:353:54: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+353 |     float total_packets = nf.total_forward_packets() + nf.total_backward_packets();
+|                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/feature_extractor.cpp:369:34: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+369 |         nf.total_forward_bytes() + nf.total_backward_bytes(),
+|         ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/feature_extractor.cpp:376:66: warning: conversion from ‘double’ to ‘float’ may change value [-Wfloat-conversion]
+376 |     float port_entropy = normalize(nf.flow_inter_arrival_time_std(), 0.0f, 1e6f);
+|                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:393:40: warning: conversion from ‘double’ to ‘float’ may change value [-Wfloat-conversion]
+393 |         nf.flow_inter_arrival_time_mean(),
+|         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp: In member function ‘std::vector<float> ml_detector::FeatureExtractor::extract_level3_internal_features(const protobuf::NetworkFeatures&)’:
+/vagrant/ml-detector/src/feature_extractor.cpp:410:54: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+410 |     float total_packets = nf.total_forward_packets() + nf.total_backward_packets();
+|                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/feature_extractor.cpp:431:26: warning: conversion from ‘uint32_t’ {aka ‘unsigned int’} to ‘float’ may change value [-Wconversion]
+431 |         nf.syn_flag_count(),
+|         ~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:435:26: warning: conversion from ‘uint32_t’ {aka ‘unsigned int’} to ‘float’ may change value [-Wconversion]
+435 |         nf.fin_flag_count(),
+|         ~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:441:46: warning: conversion from ‘uint32_t’ {aka ‘unsigned int’} to ‘float’ may change value [-Wconversion]
+441 |     features[6] = normalize(nf.rst_flag_count(), 0.0f, 100.0f);
+|                             ~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:445:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘float’ may change value [-Wconversion]
+445 |         nf.total_forward_bytes(),
+|         ~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:451:73: warning: conversion from ‘double’ to ‘float’ may change value [-Wfloat-conversion]
+451 |     float temporal_variance = safe_divide(nf.flow_inter_arrival_time_std(),
+|                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/feature_extractor.cpp:456:49: warning: conversion from ‘double’ to ‘float’ may change value [-Wfloat-conversion]
+456 |     features[9] = normalize(nf.packet_length_std(), 0.0f, 500.0f);
+|                             ~~~~~~~~~~~~~~~~~~~~^~
+[ 61%] Building CXX object CMakeFiles/ml-detector.dir/src/rag_logger.cpp.o
+[ 63%] Building CXX object CMakeFiles/ml-detector.dir/src/contract_validator.cpp.o
+[ 65%] Linking CXX executable test_csv_event_writer
+[ 67%] Linking CXX executable test_csv_feature_extraction
+/vagrant/ml-detector/src/rag_logger.cpp: In member function ‘void ml_defender::RAGLogger::save_artifacts(const protobuf::NetworkSecurityEvent&, const nlohmann::json_abi_v3_11_2::json&)’:
+/vagrant/ml-detector/src/rag_logger.cpp:454:72: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+454 |                     std::vector<uint8_t> compressed(sizeof(uint32_t) + max_c);
+|                                                                        ^~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:460:74: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+460 |                     if (c_size > 0) compressed.resize(sizeof(uint32_t) + c_size);
+|                                                                          ^~~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:463:98: warning: conversion to ‘std::streamsize’ {aka ‘long int’} from ‘std::vector<unsigned char>::size_type’ {aka ‘long unsigned int’} may change the sign of the result [-Wsign-conversion]
+463 |                     pb_file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+|                                                                                    ~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/rag_logger.cpp:465:69: warning: conversion to ‘std::streamsize’ {aka ‘long int’} from ‘std::__cxx11::basic_string<char>::size_type’ {aka ‘long unsigned int’} may change the sign of the result [-Wsign-conversion]
+465 |                     pb_file.write(serialized.data(), serialized.size());
+|                                                      ~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/rag_logger.cpp:486:72: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+486 |                     std::vector<uint8_t> compressed(sizeof(uint32_t) + max_c);
+|                                                                        ^~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:492:74: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+492 |                     if (c_size > 0) compressed.resize(sizeof(uint32_t) + c_size);
+|                                                                          ^~~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:495:100: warning: conversion to ‘std::streamsize’ {aka ‘long int’} from ‘std::vector<unsigned char>::size_type’ {aka ‘long unsigned int’} may change the sign of the result [-Wsign-conversion]
+495 |                     json_file.write(reinterpret_cast<const char*>(encrypted.data()), encrypted.size());
+|                                                                                      ~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/rag_logger.cpp:497:67: warning: conversion to ‘std::streamsize’ {aka ‘long int’} from ‘std::__cxx11::basic_string<char>::size_type’ {aka ‘long unsigned int’} may change the sign of the result [-Wsign-conversion]
+497 |                     json_file.write(json_str.data(), json_str.size());
+|                                                      ~~~~~~~~~~~~~^~
+/vagrant/ml-detector/src/rag_logger.cpp:416:21: warning: unused variable ‘nf’ [-Wunused-variable]
+416 |         const auto& nf = event.network_features();
+|                     ^~
+/vagrant/ml-detector/src/rag_logger.cpp: In static member function ‘static std::string ml_defender::RAGLogger::calculate_sha256(const std::string&)’:
+/vagrant/ml-detector/src/rag_logger.cpp:594:16: warning: ‘int SHA256_Init(SHA256_CTX*)’ is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+594 |     SHA256_Init(&sha256);
+|     ~~~~~~~~~~~^~~~~~~~~
+In file included from /vagrant/ml-detector/src/rag_logger.cpp:19:
+/usr/include/openssl/sha.h:73:27: note: declared here
+73 | OSSL_DEPRECATEDIN_3_0 int SHA256_Init(SHA256_CTX *c);
+|                           ^~~~~~~~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:595:18: warning: ‘int SHA256_Update(SHA256_CTX*, const void*, size_t)’ is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+595 |     SHA256_Update(&sha256, data.c_str(), data.size());
+|     ~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/openssl/sha.h:74:27: note: declared here
+74 | OSSL_DEPRECATEDIN_3_0 int SHA256_Update(SHA256_CTX *c,
+|                           ^~~~~~~~~~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:596:17: warning: ‘int SHA256_Final(unsigned char*, SHA256_CTX*)’ is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+596 |     SHA256_Final(hash, &sha256);
+|     ~~~~~~~~~~~~^~~~~~~~~~~~~~~
+/usr/include/openssl/sha.h:76:27: note: declared here
+76 | OSSL_DEPRECATEDIN_3_0 int SHA256_Final(unsigned char *md, SHA256_CTX *c);
+|                           ^~~~~~~~~~~~
+/vagrant/ml-detector/src/rag_logger.cpp: In function ‘std::unique_ptr<ml_defender::RAGLogger> ml_defender::create_rag_logger_from_config(const std::string&, std::shared_ptr<spdlog::logger>, std::shared_ptr<void>)’:
+/vagrant/ml-detector/src/rag_logger.cpp:630:51: warning: conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+630 |     config.max_events_per_file = config_json.value("max_events_per_file", 10000);
+|                                  ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/rag_logger.cpp:631:48: warning: conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+631 |     config.max_file_size_mb = config_json.value("max_file_size_mb", 100);
+|                               ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+[ 67%] Built target test_csv_feature_extraction
+[ 69%] Building CXX object tests/CMakeFiles/test_ransomware_detector_unit.dir/unit/test_ransomware_detector.cpp.o
+/vagrant/ml-detector/tests/unit/test_ransomware_detector.cpp: In function ‘void test_performance()’:
+/vagrant/ml-detector/tests/unit/test_ransomware_detector.cpp:96:25: warning: ignoring return value of ‘ml_defender::RansomwareDetector::Prediction ml_defender::RansomwareDetector::predict(const Features&) const’, declared with attribute ‘nodiscard’ [-Wunused-result]
+96 |         detector.predict(features);
+|         ~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from /vagrant/ml-detector/tests/unit/test_ransomware_detector.cpp:4:
+/vagrant/ml-detector/include/ml_defender/ransomware_detector.hpp:65:30: note: declared here
+65 |     [[nodiscard]] Prediction predict(const Features& features) const noexcept;
+|                              ^~~~~~~
+[ 69%] Built target test_csv_event_writer
+[ 71%] Building CXX object CMakeFiles/ml-detector.dir/src/zmq_handler.cpp.o
+/vagrant/ml-detector/src/contract_validator.cpp: In static member function ‘static int mldefender::ContractValidator::count_features(const protobuf::NetworkSecurityEvent&)’:
+/vagrant/ml-detector/src/contract_validator.cpp:35:38: warning: conversion to ‘std::vector<const google::protobuf::FieldDescriptor*>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+35 |             count += sub_fields.size();
+|                                      ^
+/vagrant/ml-detector/src/contract_validator.cpp:35:38: warning: conversion from ‘std::vector<const google::protobuf::FieldDescriptor*>::size_type’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+/vagrant/ml-detector/src/contract_validator.cpp: In static member function ‘static void mldefender::ContractValidator::log_missing_features(const protobuf::NetworkSecurityEvent&, uint64_t)’:
+/vagrant/ml-detector/src/contract_validator.cpp:89:34: warning: conversion from ‘std::vector<const google::protobuf::FieldDescriptor*>::size_type’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+89 |         ddos_fields = fields.size();
+|                       ~~~~~~~~~~~^~
+/vagrant/ml-detector/src/contract_validator.cpp:105:40: warning: conversion from ‘std::vector<const google::protobuf::FieldDescriptor*>::size_type’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+105 |         ransomware_fields = fields.size();
+|                             ~~~~~~~~~~~^~
+/vagrant/ml-detector/src/contract_validator.cpp:121:37: warning: conversion from ‘std::vector<const google::protobuf::FieldDescriptor*>::size_type’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+121 |         traffic_fields = fields.size();
+|                          ~~~~~~~~~~~^~
+/vagrant/ml-detector/src/contract_validator.cpp:137:38: warning: conversion from ‘std::vector<const google::protobuf::FieldDescriptor*>::size_type’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+137 |         internal_fields = fields.size();
+|                           ~~~~~~~~~~~^~
+[ 73%] Linking CXX executable test_ransomware_detector_unit
+[ 73%] Built target test_ransomware_detector_unit
+[ 75%] Building CXX object CMakeFiles/ml-detector.dir/src/onnx_model.cpp.o
+[ 76%] Building CXX object CMakeFiles/ml-detector.dir/src/config_loader.cpp.o
+In file included from /vagrant/ml-detector/src/zmq_handler.cpp:5:
+/vagrant/ml-detector/include/zmq_handler.hpp: In constructor ‘ml_detector::ZMQHandler::ZMQHandler(const ml_detector::DetectorConfig&, std::shared_ptr<ml_detector::ONNXModel>, std::shared_ptr<ml_detector::FeatureExtractor>, std::shared_ptr<ml_defender::DDoSDetector>, std::shared_ptr<ml_defender::RansomwareDetector>, std::shared_ptr<ml_defender::TrafficDetector>, std::shared_ptr<ml_defender::InternalDetector>, std::string)’:
+/vagrant/ml-detector/include/zmq_handler.hpp:106:20: warning: ‘ml_detector::ZMQHandler::context_’ will be initialized after [-Wreorder]
+106 |     zmq::context_t context_;
+|                    ^~~~~~~~
+/vagrant/ml-detector/include/zmq_handler.hpp:92:32: warning:   ‘std::shared_ptr<ml_detector::ONNXModel> ml_detector::ZMQHandler::level1_model_’ [-Wreorder]
+92 |     std::shared_ptr<ONNXModel> level1_model_;
+|                                ^~~~~~~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp:16:1: warning:   when initialized here [-Wreorder]
+16 | ZMQHandler::ZMQHandler(
+| ^~~~~~~~~~
+/vagrant/ml-detector/include/zmq_handler.hpp:137:17: warning: ‘ml_detector::ZMQHandler::hmac_key_hex_’ will be initialized after [-Wreorder]
+137 |     std::string hmac_key_hex_;  // Day 63: stored for CsvEventWriter init
+|                 ^~~~~~~~~~~~~
+/vagrant/ml-detector/include/zmq_handler.hpp:111:23: warning:   ‘std::atomic<bool> ml_detector::ZMQHandler::running_’ [-Wreorder]
+111 |     std::atomic<bool> running_;
+|                       ^~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp:16:1: warning:   when initialized here [-Wreorder]
+16 | ZMQHandler::ZMQHandler(
+| ^~~~~~~~~~
+/vagrant/ml-detector/include/zmq_handler.hpp:120:37: warning: ‘ml_detector::ZMQHandler::logger_’ will be initialized after [-Wreorder]
+120 |     std::shared_ptr<spdlog::logger> logger_;
+|                                     ^~~~~~~
+/vagrant/ml-detector/include/zmq_handler.hpp:117:43: warning:   ‘std::chrono::_V2::steady_clock::time_point ml_detector::ZMQHandler::last_stats_report_’ [-Wreorder]
+117 |     std::chrono::steady_clock::time_point last_stats_report_;
+|                                           ^~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp:16:1: warning:   when initialized here [-Wreorder]
+16 | ZMQHandler::ZMQHandler(
+| ^~~~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp:130:62: warning: conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+130 |             csv_cfg.max_events_per_file = config_.csv_writer.max_events_per_file;
+|                                           ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp: In member function ‘void ml_detector::ZMQHandler::process_event(const std::string&)’:
+/vagrant/ml-detector/src/zmq_handler.cpp:447:20: warning: conversion to ‘uint64_t’ {aka ‘long unsigned int’} from ‘std::chrono::duration<long int, std::ratio<1, 1000000000> >::rep’ {aka ‘long int’} may change the sign of the result [-Wsign-conversion]
+445 |             std::chrono::duration_cast<std::chrono::nanoseconds>(
+|             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+446 |                 std::chrono::system_clock::now().time_since_epoch()
+|                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+447 |             ).count()
+|             ~~~~~~~^~
+/vagrant/ml-detector/src/zmq_handler.cpp:462:20: warning: conversion to ‘uint64_t’ {aka ‘long unsigned int’} from ‘std::chrono::duration<long int, std::ratio<1, 1000000000> >::rep’ {aka ‘long int’} may change the sign of the result [-Wsign-conversion]
+460 |             std::chrono::duration_cast<std::chrono::nanoseconds>(
+|             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+461 |                 std::chrono::system_clock::now().time_since_epoch()
+|                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+462 |             ).count()
+|             ~~~~~~~^~
+/vagrant/ml-detector/src/zmq_handler.cpp:486:16: warning: conversion to ‘uint64_t’ {aka ‘long unsigned int’} from ‘std::chrono::duration<long int>::rep’ {aka ‘long int’} may change the sign of the result [-Wsign-conversion]
+484 |         ml_context.uptime_seconds          = std::chrono::duration_cast<std::chrono::seconds>(
+|                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+485 |             std::chrono::system_clock::now() - start_time_
+|             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+486 |         ).count();
+|         ~~~~~~~^~
+/vagrant/ml-detector/src/zmq_handler.cpp:837:75: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘double’ may change value [-Wconversion]
+837 |                 (stats_.avg_processing_time_ms * (stats_.events_processed - 1) + duration_ms) /
+|                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/ml-detector/src/zmq_handler.cpp: In member function ‘void ml_detector::ZMQHandler::send_enriched_event(const protobuf::NetworkSecurityEvent&)’:
+/vagrant/ml-detector/src/zmq_handler.cpp:876:64: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+876 |             std::vector<uint8_t> compressed(sizeof(uint32_t) + max_compressed);
+|                                                                ^~~~~~~~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp:885:54: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+885 |                 compressed.resize(sizeof(uint32_t) + compressed_size);
+|                                                      ^~~~~~~~~~~~~~~
+/vagrant/ml-detector/src/zmq_handler.cpp: In member function ‘uint64_t ml_detector::ZMQHandler::calculate_events_per_minute()’:
+/vagrant/ml-detector/src/zmq_handler.cpp:944:48: warning: conversion to ‘long unsigned int’ from ‘long int’ may change the sign of the result [-Wsign-conversion]
+944 |     return events_processed_total_ / (uptime_s / 60);
+|                                      ~~~~~~~~~~^~~~~
+[ 78%] Building CXX object CMakeFiles/ml-detector.dir/src/logger.cpp.o
+[ 80%] Building CXX object CMakeFiles/ml-detector.dir/src/ransomware_detector.cpp.o
+/vagrant/ml-detector/src/ransomware_detector.cpp: In member function ‘ml_defender::RansomwareDetector::Prediction ml_defender::RansomwareDetector::predict(const Features&) const’:
+/vagrant/ml-detector/src/ransomware_detector.cpp:38:55: warning: conversion to ‘std::array<float, 10>::size_type’ {aka ‘long unsigned int’} from ‘int16_t’ {aka ‘short int’} may change the sign of the result [-Wsign-conversion]
+38 |             const float feature_value = feature_array[feature_idx];
+|                                                       ^~~~~~~~~~~
+[ 82%] Building CXX object CMakeFiles/ml-detector.dir/src/etcd_client.cpp.o
+[ 84%] Building CXX object CMakeFiles/ml-detector.dir/src/csv_event_writer.cpp.o
+[ 86%] Building CXX object CMakeFiles/ml-detector.dir/proto/network_security.pb.cc.o
+/vagrant/ml-detector/src/csv_event_writer.cpp: In member function ‘std::string ml_defender::CsvEventWriter::build_section1(const protobuf::NetworkSecurityEvent&) const’:
+/vagrant/ml-detector/src/csv_event_writer.cpp:223:13: warning: conversion to ‘long long unsigned int’ from ‘uint64_t’ {aka ‘long unsigned int’} may change the sign of the result [-Wsign-conversion]
+223 |           + static_cast<uint64_t>(event.event_timestamp().nanos())
+|             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual const char* protobuf::GeoEnrichment::_InternalParse(const char*, google::protobuf::internal::ParseContext*)’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:9071:79: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+9071 |           _impl_.cache_hits_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:9079:81: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+9079 |           _impl_.cache_misses_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual uint8_t* protobuf::TricapaMLAnalysis::_InternalSerialize(uint8_t*, google::protobuf::io::EpsCopyOutputStream*) const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:11682:75: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+11682 |     const auto& repfield = this->_internal_level3_specialized_predictions(i);
+|                                                                           ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:11710:75: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+11710 |     const auto& repfield = this->_internal_level2_specialized_predictions(i);
+|                                                                           ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual size_t protobuf::TricapaMLAnalysis::ByteSizeLong() const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:11781:74: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+11781 |   total_size += 1UL * this->_internal_level3_specialized_predictions_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:11788:74: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+11788 |   total_size += 1UL * this->_internal_level2_specialized_predictions_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual const char* protobuf::DistributedNode::_InternalParse(const char*, google::protobuf::internal::ParseContext*)’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:12395:79: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+12395 |           _impl_.process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:12439:87: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+12439 |           _impl_.active_connections_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:12447:80: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+12447 |           _impl_.queue_depth_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual const char* protobuf::PipelineTracking::_InternalParse(const char*, google::protobuf::internal::ParseContext*)’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13405:87: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13405 |           _impl_.sniffer_process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13413:89: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13413 |           _impl_.processor_process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13421:88: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13421 |           _impl_.enricher_process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13429:88: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13429 |           _impl_.analyzer_process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13437:88: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13437 |           _impl_.detector_process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13445:90: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13445 |           _impl_.controller_process_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13509:88: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13509 |           _impl_.pipeline_hops_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:13527:83: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+13527 |           _impl_.retry_attempts_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual const char* protobuf::HumanFeedback::_InternalParse(const char*, google::protobuf::internal::ParseContext*)’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:14786:94: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+14786 |           _impl_.analyst_confidence_rating_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual uint8_t* protobuf::DetectionProvenance::_InternalSerialize(uint8_t*, google::protobuf::io::EpsCopyOutputStream*) const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:16090:53: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+16090 |     const auto& repfield = this->_internal_verdicts(i);
+|                                                     ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual size_t protobuf::DetectionProvenance::ByteSizeLong() const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:16158:52: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+16158 |   total_size += 1UL * this->_internal_verdicts_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual uint8_t* protobuf::NetworkSecurityEvent::_InternalSerialize(uint8_t*, google::protobuf::io::EpsCopyOutputStream*) const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:17063:73: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+17063 |     const auto& repfield = this->_internal_additional_model_predictions(i);
+|                                                                         ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual size_t protobuf::NetworkSecurityEvent::ByteSizeLong() const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:17286:72: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+17286 |   total_size += 1UL * this->_internal_additional_model_predictions_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual uint8_t* protobuf::EventBatch::_InternalSerialize(uint8_t*, google::protobuf::io::EpsCopyOutputStream*) const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:17888:51: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+17888 |     const auto& repfield = this->_internal_events(i);
+|                                                   ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual size_t protobuf::EventBatch::ByteSizeLong() const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:17946:50: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+17946 |   total_size += 1UL * this->_internal_events_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual uint8_t* protobuf::SystemConfiguration::_InternalSerialize(uint8_t*, google::protobuf::io::EpsCopyOutputStream*) const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18456:58: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+18456 |     const auto& repfield = this->_internal_cluster_nodes(i);
+|                                                          ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual size_t protobuf::SystemConfiguration::ByteSizeLong() const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18573:57: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+18573 |   total_size += 1UL * this->_internal_cluster_nodes_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual const char* protobuf::RansomwareFeatures::_InternalParse(const char*, google::protobuf::internal::ParseContext*)’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18848:89: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18848 |           _impl_.new_external_ips_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18872:95: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18872 |           _impl_.tls_self_signed_cert_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18880:97: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18880 |           _impl_.non_standard_port_http_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18888:93: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18888 |           _impl_.smb_connection_diversity_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18896:90: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18896 |           _impl_.rdp_failed_auth_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18904:97: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18904 |           _impl_.new_internal_connections_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18928:92: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18928 |           _impl_.burst_connections_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18936:92: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18936 |           _impl_.unique_destinations_30s_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:18944:96: warning: conversion to ‘int32_t’ {aka ‘int’} from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+18944 |           _impl_.large_upload_sessions_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+|                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual uint8_t* protobuf::DetectionBatch::_InternalSerialize(uint8_t*, google::protobuf::io::EpsCopyOutputStream*) const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:20517:55: warning: conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+20517 |     const auto& repfield = this->_internal_detections(i);
+|                                                       ^
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc: In member function ‘virtual size_t protobuf::DetectionBatch::ByteSizeLong() const’:
+/vagrant/ml-detector/build-debug/proto/network_security.pb.cc:20552:54: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+20552 |   total_size += 1UL * this->_internal_detections_size();
+|                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+[ 88%] Linking CXX executable ml-detector
+[100%] Built target ml-detector
+
+✅ ML Detector built (debug)
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building Sniffer [debug]                         ║
+╚════════════════════════════════════════════════════════════╝
+
+Build dir: /vagrant/sniffer/build-debug
+Flags: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG -DCMAKE_C_FLAGS=-std=c11 -g -O0 -fno-omit-frame-pointer -DDEBUG
+
+Copying protobuf files...
+Running CMake and build...
+-- Build type: Debug
+-- C++ Standard: 20
+-- CXX Flags (from Makefile): -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- 🔍 Buscando etcd-client library...
+-- ✅ Found etcd-client library: /vagrant/etcd-client/build/libetcd_client.so
+-- 🔍 Buscando crypto-transport library...
+-- ✅ Found crypto-transport library: /usr/local/lib/libcrypto_transport.so
+-- ✅ Found crypto-transport includes: /usr/local/include
+-- ✅ Found libsodium: /usr/local/lib/libsodium.so
+-- ✅ Found seed-client: /usr/local/lib/libseed_client.so
+-- ✅ Found plugin-loader: /usr/local/lib/libplugin_loader.so
+-- ✅ Protobuf unificado encontrado: /vagrant/sniffer/build-debug/proto/network_security.pb.cc
+--
+-- === ⚡ Enhanced Sniffer Configuration ===
+-- 📋 Build Info:
+--    Type: Debug
+--    C++ standard: 20
+--    Compiler: GNU 12.2.0
+--    CXX Flags: -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+--
+-- 🔧 Core Dependencies:
+--    libbpf: 1.4.6 (Variant A)
+--    ZeroMQ: 4.3.4
+--    jsoncpp: 1.9.5
+--    Protobuf: 3.21.12
+--
+-- 🗜️ Compression Support (MANDATORY):
+--    ✅ LZ4: 1.9.4 (required)
+--    ✅ Zstandard: 1.5.4 (required)
+--    ✅ Snappy: available (optional)
+--
+-- 🚀 Optional Features:
+--    ✅ etcd client: enabled
+--    ✅ NUMA optimization: enabled
+--
+-- 📦 Build Artifacts:
+--    Binary: /vagrant/sniffer/build-debug/sniffer
+--    eBPF program: /vagrant/sniffer/build-debug/sniffer.bpf.o
+--    Configuration: /vagrant/sniffer/build-debug/config/sniffer.json
+--
+-- 🎯 Sniffer Capabilities:
+--    ✅ Multi-threading support
+--    ✅ eBPF/XDP high-performance packet capture
+--    ✅ Mandatory LZ4/Zstd compression
+--    ✅ Protobuf serialization
+--    ✅ ZeroMQ communication
+--    ✅ etcd-client library: enabled
+--    ✅ crypto-transport library: enabled
+--    ✅ libsodium: enabled
+--    ✅ plugin-loader: enabled (ADR-012 PHASE 1b)
+--    🔐 Encryption ready (via etcd tokens)
+--
+-- 🎯 Single Source of Truth:
+--    Compiler Flags: Controlled by root Makefile via PROFILE
+-- ========================================
+--
+-- 🧪 Unit Test: test_payload_analyzer configured
+-- 🧪 Unit Test: test_sharded_flow_full_contract configured (Day 46 - ISSUE-003)
+-- 🧪 Unit Test: test_ring_consumer_protobuf configured (Day 46 - 40 features)
+-- 🧪 Unit Test: test_proto3_embedded_serialization configured (DAY 75 regression)
+-- 🧪 Unit Test: test_smb_scan_features configured (DAY 92 - SYN-1, SYN-2)
+-- 🧪 Unit Test: test_sharded_flow_multithread configured (Day 46 - Concurrency)
+-- 🧪 Variant B Test: test_pcap_backend_lifecycle configured
+-- 🧪 Variant B Test: test_pcap_backend_poll_null configured
+-- 🧪 Variant B Test: test_pcap_backend_callback configured
+-- 🧪 Variant B Test: test_pcap_backend_error configured
+-- 🧪 Variant B Test: test_pcap_proto_parse_tcp configured
+-- 🧪 Variant B Test: test_pcap_proto_parse_udp configured
+-- 🧪 Variant B Test: test_pcap_backend_stress configured
+-- 🧪 Variant B Test: test_pcap_backend_regression configured
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/sniffer/build-debug
+[  1%] Built target bpf_program
+[  2%] Building CXX object CMakeFiles/test_payload_analyzer.dir/tests/test_payload_analyzer.cpp.o
+[  3%] Building CXX object CMakeFiles/test_proto3_embedded_serialization.dir/tests/test_proto3_embedded_serialization.cpp.o
+[  4%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/tests/test_sharded_flow_full_contract.cpp.o
+[  5%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/tests/test_ring_consumer_protobuf.cpp.o
+/vagrant/sniffer/tests/test_payload_analyzer.cpp: In function ‘bool test_thread_local_isolation()’:
+/vagrant/sniffer/tests/test_payload_analyzer.cpp:406:10: warning: variable ‘f2’ set but not used [-Wunused-but-set-variable]
+406 |     auto f2 = analyzer.analyze(payload2.data(), payload2.size());
+|          ^~
+[  6%] Linking CXX executable test_payload_analyzer
+[  7%] Built target test_payload_analyzer
+[  8%] Building CXX object CMakeFiles/test_smb_scan_features.dir/tests/test_smb_scan_features.cpp.o
+/vagrant/sniffer/tests/test_sharded_flow_full_contract.cpp: In member function ‘virtual void ShardedFlowFullContractTest_NoFieldsLeftAtDefaultValues_Test::TestBody()’:
+/vagrant/sniffer/tests/test_sharded_flow_full_contract.cpp:276:21: warning: comparison of unsigned expression in ‘>= 0’ is always true [-Wtype-limits]
+276 |     if (stats.dpkts >= 0) populated_fields++;  // Puede ser 0 si solo hay forward
+|         ~~~~~~~~~~~~^~~~
+/vagrant/sniffer/tests/test_sharded_flow_full_contract.cpp:278:22: warning: comparison of unsigned expression in ‘>= 0’ is always true [-Wtype-limits]
+278 |     if (stats.dbytes >= 0) populated_fields++;
+|         ~~~~~~~~~~~~~^~~~
+[  9%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/flow/sharded_flow_manager.cpp.o
+[ 10%] Building CXX object CMakeFiles/test_proto3_embedded_serialization.dir/proto/network_security.pb.cc.o
+[ 11%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/flow/sharded_flow_manager.cpp.o
+[ 12%] Building CXX object CMakeFiles/test_smb_scan_features.dir/proto/network_security.pb.cc.o
+[ 13%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_manager.cpp.o
+[ 14%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_manager.cpp.o
+[ 15%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_manager.cpp.o
+[ 16%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_manager.cpp.o
+[ 17%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/time_window_aggregator.cpp.o
+[ 18%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/time_window_aggregator.cpp.o
+[ 19%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/flow_tracker.cpp.o
+[ 20%] Linking CXX executable test_proto3_embedded_serialization
+[ 21%] Linking CXX executable test_smb_scan_features
+[ 22%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ml_defender_features.cpp.o
+[ 22%] Built target test_proto3_embedded_serialization
+[ 22%] Built target test_smb_scan_features
+[ 23%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/flow_tracker.cpp.o
+[ 25%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/dns_analyzer.cpp.o
+[ 26%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/tests/test_sharded_flow_multithread.cpp.o
+[ 27%] Building CXX object CMakeFiles/test_pcap_backend_lifecycle.dir/tests/test_pcap_backend_lifecycle.cpp.o
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ddos_source_ip_dispersion(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:64:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+64 | float MLDefenderExtractor::extract_ddos_source_ip_dispersion(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_io_intensity(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:212:82: warning: unused parameter ‘flow’ [-Wunused-parameter]
+212 | float MLDefenderExtractor::extract_ransomware_io_intensity(const FlowStatistics& flow) const {
+|                                                            ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_resource_usage(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:237:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+237 | float MLDefenderExtractor::extract_ransomware_resource_usage(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_file_operations(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:259:85: warning: unused parameter ‘flow’ [-Wunused-parameter]
+259 | float MLDefenderExtractor::extract_ransomware_file_operations(const FlowStatistics& flow) const {
+|                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_process_anomaly(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:276:85: warning: unused parameter ‘flow’ [-Wunused-parameter]
+276 | float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatistics& flow) const {
+|                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_connection_rate(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:371:82: warning: unused parameter ‘flow’ [-Wunused-parameter]
+371 | float MLDefenderExtractor::extract_traffic_connection_rate(const FlowStatistics& flow) const {
+|                                                            ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:381:80: warning: unused parameter ‘flow’ [-Wunused-parameter]
+381 | float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& flow) const {
+|                                                          ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_port_entropy(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:407:79: warning: unused parameter ‘flow’ [-Wunused-parameter]
+407 | float MLDefenderExtractor::extract_traffic_port_entropy(const FlowStatistics& flow) const {
+|                                                         ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_flow_duration_std(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:419:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+419 | float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_src_ip_entropy(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:429:81: warning: unused parameter ‘flow’ [-Wunused-parameter]
+429 | float MLDefenderExtractor::extract_traffic_src_ip_entropy(const FlowStatistics& flow) const {
+|                                                           ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_dst_ip_concentration(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:442:87: warning: unused parameter ‘flow’ [-Wunused-parameter]
+442 | float MLDefenderExtractor::extract_traffic_dst_ip_concentration(const FlowStatistics& flow) const {
+|                                                                 ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_protocol_variety(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:455:83: warning: unused parameter ‘flow’ [-Wunused-parameter]
+455 | float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics& flow) const {
+|                                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_connection_rate(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:494:83: warning: unused parameter ‘flow’ [-Wunused-parameter]
+494 | float MLDefenderExtractor::extract_internal_connection_rate(const FlowStatistics& flow) const {
+|                                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_service_port_consistency(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:503:92: warning: unused parameter ‘flow’ [-Wunused-parameter]
+503 | float MLDefenderExtractor::extract_internal_service_port_consistency(const FlowStatistics& flow) const {
+|                                                                      ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_connection_duration_std(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:539:91: warning: unused parameter ‘flow’ [-Wunused-parameter]
+539 | float MLDefenderExtractor::extract_internal_connection_duration_std(const FlowStatistics& flow) const {
+|                                                                     ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_lateral_movement_score(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:548:90: warning: unused parameter ‘flow’ [-Wunused-parameter]
+548 | float MLDefenderExtractor::extract_internal_lateral_movement_score(const FlowStatistics& flow) const {
+|                                                                    ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_service_discovery_patterns(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:561:94: warning: unused parameter ‘flow’ [-Wunused-parameter]
+561 | float MLDefenderExtractor::extract_internal_service_discovery_patterns(const FlowStatistics& flow) const {
+|                                                                        ~~~~~~~~~~~~~~~~~~~~~~^~~~
+[ 28%] Building CXX object CMakeFiles/test_sharded_flow_full_contract.dir/src/userspace/ip_whitelist.cpp.o
+[ 29%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/dns_analyzer.cpp.o
+[ 30%] Linking CXX executable test_sharded_flow_full_contract
+[ 31%] Building CXX object CMakeFiles/test_pcap_backend_lifecycle.dir/src/userspace/pcap_backend.cpp.o
+[ 31%] Built target test_sharded_flow_full_contract
+[ 32%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/src/userspace/ip_whitelist.cpp.o
+[ 33%] Building CXX object CMakeFiles/test_ring_consumer_protobuf.dir/proto/network_security.pb.cc.o
+[ 34%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/flow/sharded_flow_manager.cpp.o
+[ 35%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_manager.cpp.o
+[ 36%] Linking CXX executable test_pcap_backend_lifecycle
+[ 36%] Built target test_pcap_backend_lifecycle
+[ 37%] Building CXX object CMakeFiles/test_pcap_backend_poll_null.dir/tests/test_pcap_backend_poll_null.cpp.o
+[ 38%] Building CXX object CMakeFiles/test_pcap_backend_poll_null.dir/src/userspace/pcap_backend.cpp.o
+[ 39%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_manager.cpp.o
+[ 40%] Building CXX object CMakeFiles/test_pcap_backend_callback.dir/tests/test_pcap_backend_callback.cpp.o
+[ 41%] Linking CXX executable test_pcap_backend_poll_null
+[ 41%] Built target test_pcap_backend_poll_null
+[ 42%] Building CXX object CMakeFiles/test_pcap_backend_error.dir/tests/test_pcap_backend_error.cpp.o
+[ 43%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/time_window_aggregator.cpp.o
+[ 44%] Building CXX object CMakeFiles/test_pcap_backend_callback.dir/src/userspace/pcap_backend.cpp.o
+[ 45%] Linking CXX executable test_pcap_backend_callback
+[ 46%] Building CXX object CMakeFiles/test_pcap_backend_error.dir/src/userspace/pcap_backend.cpp.o
+[ 47%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ml_defender_features.cpp.o
+[ 47%] Built target test_pcap_backend_callback
+[ 48%] Building CXX object CMakeFiles/test_pcap_proto_parse_tcp.dir/tests/test_pcap_proto_parse_tcp.cpp.o
+[ 50%] Linking CXX executable test_pcap_backend_error
+[ 50%] Built target test_pcap_backend_error
+[ 51%] Building CXX object CMakeFiles/test_pcap_proto_parse_udp.dir/tests/test_pcap_proto_parse_udp.cpp.o
+[ 52%] Linking CXX executable test_ring_consumer_protobuf
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ddos_source_ip_dispersion(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:64:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+64 | float MLDefenderExtractor::extract_ddos_source_ip_dispersion(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_io_intensity(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:212:82: warning: unused parameter ‘flow’ [-Wunused-parameter]
+212 | float MLDefenderExtractor::extract_ransomware_io_intensity(const FlowStatistics& flow) const {
+|                                                            ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_resource_usage(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:237:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+237 | float MLDefenderExtractor::extract_ransomware_resource_usage(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_file_operations(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:259:85: warning: unused parameter ‘flow’ [-Wunused-parameter]
+259 | float MLDefenderExtractor::extract_ransomware_file_operations(const FlowStatistics& flow) const {
+|                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_process_anomaly(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:276:85: warning: unused parameter ‘flow’ [-Wunused-parameter]
+276 | float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatistics& flow) const {
+|                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_connection_rate(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:371:82: warning: unused parameter ‘flow’ [-Wunused-parameter]
+371 | float MLDefenderExtractor::extract_traffic_connection_rate(const FlowStatistics& flow) const {
+|                                                            ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:381:80: warning: unused parameter ‘flow’ [-Wunused-parameter]
+381 | float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& flow) const {
+|                                                          ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_port_entropy(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:407:79: warning: unused parameter ‘flow’ [-Wunused-parameter]
+407 | float MLDefenderExtractor::extract_traffic_port_entropy(const FlowStatistics& flow) const {
+|                                                         ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_flow_duration_std(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:419:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+419 | float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_src_ip_entropy(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:429:81: warning: unused parameter ‘flow’ [-Wunused-parameter]
+429 | float MLDefenderExtractor::extract_traffic_src_ip_entropy(const FlowStatistics& flow) const {
+|                                                           ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_dst_ip_concentration(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:442:87: warning: unused parameter ‘flow’ [-Wunused-parameter]
+442 | float MLDefenderExtractor::extract_traffic_dst_ip_concentration(const FlowStatistics& flow) const {
+|                                                                 ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_protocol_variety(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:455:83: warning: unused parameter ‘flow’ [-Wunused-parameter]
+455 | float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics& flow) const {
+|                                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_connection_rate(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:494:83: warning: unused parameter ‘flow’ [-Wunused-parameter]
+494 | float MLDefenderExtractor::extract_internal_connection_rate(const FlowStatistics& flow) const {
+|                                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_service_port_consistency(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:503:92: warning: unused parameter ‘flow’ [-Wunused-parameter]
+503 | float MLDefenderExtractor::extract_internal_service_port_consistency(const FlowStatistics& flow) const {
+|                                                                      ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_connection_duration_std(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:539:91: warning: unused parameter ‘flow’ [-Wunused-parameter]
+539 | float MLDefenderExtractor::extract_internal_connection_duration_std(const FlowStatistics& flow) const {
+|                                                                     ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_lateral_movement_score(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:548:90: warning: unused parameter ‘flow’ [-Wunused-parameter]
+548 | float MLDefenderExtractor::extract_internal_lateral_movement_score(const FlowStatistics& flow) const {
+|                                                                    ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_service_discovery_patterns(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:561:94: warning: unused parameter ‘flow’ [-Wunused-parameter]
+561 | float MLDefenderExtractor::extract_internal_service_discovery_patterns(const FlowStatistics& flow) const {
+|                                                                        ~~~~~~~~~~~~~~~~~~~~~~^~~~
+[ 53%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/flow_tracker.cpp.o
+[ 53%] Built target test_ring_consumer_protobuf
+[ 54%] Building CXX object CMakeFiles/test_pcap_backend_stress.dir/tests/test_pcap_backend_stress.cpp.o
+[ 55%] Building CXX object CMakeFiles/test_pcap_proto_parse_tcp.dir/proto/network_security.pb.cc.o
+[ 56%] Building CXX object CMakeFiles/test_pcap_proto_parse_udp.dir/proto/network_security.pb.cc.o
+[ 57%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/dns_analyzer.cpp.o
+[ 58%] Building CXX object CMakeFiles/test_pcap_backend_stress.dir/src/userspace/pcap_backend.cpp.o
+[ 59%] Linking CXX executable test_pcap_backend_stress
+[ 60%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/src/userspace/ip_whitelist.cpp.o
+[ 60%] Built target test_pcap_backend_stress
+[ 61%] Building CXX object CMakeFiles/test_pcap_backend_regression.dir/tests/test_pcap_backend_regression.cpp.o
+[ 62%] Building CXX object CMakeFiles/test_sharded_flow_multithread.dir/proto/network_security.pb.cc.o
+[ 63%] Building CXX object CMakeFiles/test_pcap_backend_regression.dir/src/userspace/pcap_backend.cpp.o
+[ 64%] Linking CXX executable test_pcap_backend_regression
+[ 64%] Built target test_pcap_backend_regression
+[ 65%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/main.cpp.o
+[ 66%] Linking CXX executable test_pcap_proto_parse_tcp
+[ 67%] Linking CXX executable test_pcap_proto_parse_udp
+[ 67%] Built target test_pcap_proto_parse_tcp
+[ 68%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/config_manager.cpp.o
+[ 68%] Built target test_pcap_proto_parse_udp
+[ 69%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/config_types.cpp.o
+[ 70%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ebpf_loader.cpp.o
+[ 71%] Linking CXX executable test_sharded_flow_multithread
+[ 72%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ring_consumer.cpp.o
+[ 73%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/zmq_pool_manager.cpp.o
+[ 75%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/thread_manager.cpp.o
+[ 75%] Built target test_sharded_flow_multithread
+[ 76%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/compression_handler.cpp.o
+[ 77%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/etcd_client.cpp.o
+[ 78%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/flow_manager.cpp.o
+In file included from /vagrant/sniffer/src/userspace/ring_consumer.cpp:4:
+/vagrant/sniffer/include/ring_consumer.hpp: In constructor ‘sniffer::RingBufferConsumer::RingBufferConsumer(const sniffer::SnifferConfig&, const sniffer::FastDetectorConfig&, const std::string&)’:
+/vagrant/sniffer/include/ring_consumer.hpp:208:23: warning: ‘sniffer::RingBufferConsumer::initialized_’ will be initialized after [-Wreorder]
+208 |     std::atomic<bool> initialized_{false};
+|                       ^~~~~~~~~~~~
+/vagrant/sniffer/include/ring_consumer.hpp:206:23: warning:   ‘std::atomic<bool> sniffer::RingBufferConsumer::running_’ [-Wreorder]
+206 |     std::atomic<bool> running_{false};
+|                       ^~~~~~~~
+/vagrant/sniffer/src/userspace/ring_consumer.cpp:98:5: warning:   when initialized here [-Wreorder]
+98 |     RingBufferConsumer::RingBufferConsumer(
+|     ^~~~~~~~~~~~~~~~~~
+/vagrant/sniffer/include/ring_consumer.hpp:207:23: warning: ‘sniffer::RingBufferConsumer::should_stop_’ will be initialized after [-Wreorder]
+207 |     std::atomic<bool> should_stop_{false};
+|                       ^~~~~~~~~~~~
+/vagrant/sniffer/include/ring_consumer.hpp:205:22: warning:   ‘std::atomic<int> sniffer::RingBufferConsumer::active_consumers_’ [-Wreorder]
+205 |     std::atomic<int> active_consumers_{0};
+|                      ^~~~~~~~~~~~~~~~~
+/vagrant/sniffer/src/userspace/ring_consumer.cpp:98:5: warning:   when initialized here [-Wreorder]
+98 |     RingBufferConsumer::RingBufferConsumer(
+|     ^~~~~~~~~~~~~~~~~~
+/vagrant/sniffer/src/userspace/ring_consumer.cpp:101:24: warning: unused parameter ‘encryption_seed’ [-Wunused-parameter]
+101 |     const std::string& encryption_seed)
+|     ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+[ 79%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/feature_extractor.cpp.o
+[ 80%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/time_window_manager.cpp.o
+[ 81%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/feature_logger.cpp.o
+[ 82%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/dual_nic_manager.cpp.o
+[ 83%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/flow_tracker.cpp.o
+In file included from /vagrant/sniffer/src/userspace/dual_nic_manager.cpp:2:
+/vagrant/sniffer/include/dual_nic_manager.hpp: In constructor ‘sniffer::DualNICManager::DualNICManager(const Json::Value&)’:
+/vagrant/sniffer/include/dual_nic_manager.hpp:55:21: warning: ‘sniffer::DualNICManager::config_’ will be initialized after [-Wreorder]
+55 |         Json::Value config_;
+|                     ^~~~~~~
+/vagrant/sniffer/include/dual_nic_manager.hpp:53:21: warning:   ‘std::string sniffer::DualNICManager::deployment_mode_’ [-Wreorder]
+53 |         std::string deployment_mode_;  // "host-only", "gateway-only", "dual"
+|                     ^~~~~~~~~~~~~~~~
+/vagrant/sniffer/src/userspace/dual_nic_manager.cpp:20:1: warning:   when initialized here [-Wreorder]
+20 | DualNICManager::DualNICManager(const Json::Value& config)
+| ^~~~~~~~~~~~~~
+[ 84%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/dns_analyzer.cpp.o
+[ 85%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ip_whitelist.cpp.o
+[ 86%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/time_window_aggregator.cpp.o
+[ 87%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_extractor.cpp.o
+[ 88%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ransomware_feature_processor.cpp.o
+[ 89%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/fast_detector.cpp.o
+[ 90%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/bpf_map_manager.cpp.o
+[ 91%] Building CXX object CMakeFiles/sniffer.dir/proto/network_security.pb.cc.o
+[ 92%] Building CXX object CMakeFiles/sniffer.dir/src/userspace/ml_defender_features.cpp.o
+[ 93%] Building CXX object CMakeFiles/sniffer.dir/vagrant/ml-detector/src/ransomware_detector.cpp.o
+[ 94%] Building CXX object CMakeFiles/sniffer.dir/src/flow/sharded_flow_manager.cpp.o
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ddos_source_ip_dispersion(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:64:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+64 | float MLDefenderExtractor::extract_ddos_source_ip_dispersion(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_io_intensity(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:212:82: warning: unused parameter ‘flow’ [-Wunused-parameter]
+212 | float MLDefenderExtractor::extract_ransomware_io_intensity(const FlowStatistics& flow) const {
+|                                                            ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_resource_usage(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:237:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+237 | float MLDefenderExtractor::extract_ransomware_resource_usage(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_file_operations(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:259:85: warning: unused parameter ‘flow’ [-Wunused-parameter]
+259 | float MLDefenderExtractor::extract_ransomware_file_operations(const FlowStatistics& flow) const {
+|                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_ransomware_process_anomaly(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:276:85: warning: unused parameter ‘flow’ [-Wunused-parameter]
+276 | float MLDefenderExtractor::extract_ransomware_process_anomaly(const FlowStatistics& flow) const {
+|                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_connection_rate(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:371:82: warning: unused parameter ‘flow’ [-Wunused-parameter]
+371 | float MLDefenderExtractor::extract_traffic_connection_rate(const FlowStatistics& flow) const {
+|                                                            ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:381:80: warning: unused parameter ‘flow’ [-Wunused-parameter]
+381 | float MLDefenderExtractor::extract_traffic_tcp_udp_ratio(const FlowStatistics& flow) const {
+|                                                          ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_port_entropy(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:407:79: warning: unused parameter ‘flow’ [-Wunused-parameter]
+407 | float MLDefenderExtractor::extract_traffic_port_entropy(const FlowStatistics& flow) const {
+|                                                         ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_flow_duration_std(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:419:84: warning: unused parameter ‘flow’ [-Wunused-parameter]
+419 | float MLDefenderExtractor::extract_traffic_flow_duration_std(const FlowStatistics& flow) const {
+|                                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_src_ip_entropy(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:429:81: warning: unused parameter ‘flow’ [-Wunused-parameter]
+429 | float MLDefenderExtractor::extract_traffic_src_ip_entropy(const FlowStatistics& flow) const {
+|                                                           ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_dst_ip_concentration(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:442:87: warning: unused parameter ‘flow’ [-Wunused-parameter]
+442 | float MLDefenderExtractor::extract_traffic_dst_ip_concentration(const FlowStatistics& flow) const {
+|                                                                 ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_traffic_protocol_variety(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:455:83: warning: unused parameter ‘flow’ [-Wunused-parameter]
+455 | float MLDefenderExtractor::extract_traffic_protocol_variety(const FlowStatistics& flow) const {
+|                                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_connection_rate(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:494:83: warning: unused parameter ‘flow’ [-Wunused-parameter]
+494 | float MLDefenderExtractor::extract_internal_connection_rate(const FlowStatistics& flow) const {
+|                                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_service_port_consistency(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:503:92: warning: unused parameter ‘flow’ [-Wunused-parameter]
+503 | float MLDefenderExtractor::extract_internal_service_port_consistency(const FlowStatistics& flow) const {
+|                                                                      ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_connection_duration_std(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:539:91: warning: unused parameter ‘flow’ [-Wunused-parameter]
+539 | float MLDefenderExtractor::extract_internal_connection_duration_std(const FlowStatistics& flow) const {
+|                                                                     ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_lateral_movement_score(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:548:90: warning: unused parameter ‘flow’ [-Wunused-parameter]
+548 | float MLDefenderExtractor::extract_internal_lateral_movement_score(const FlowStatistics& flow) const {
+|                                                                    ~~~~~~~~~~~~~~~~~~~~~~^~~~
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp: In member function ‘float sniffer::MLDefenderExtractor::extract_internal_service_discovery_patterns(const sniffer::FlowStatistics&) const’:
+/vagrant/sniffer/src/userspace/ml_defender_features.cpp:561:94: warning: unused parameter ‘flow’ [-Wunused-parameter]
+561 | float MLDefenderExtractor::extract_internal_service_discovery_patterns(const FlowStatistics& flow) const {
+|                                                                        ~~~~~~~~~~~~~~~~~~~~~~^~~~
+[ 95%] Linking CXX executable sniffer
+[100%] Built target sniffer
+
+✅ Sniffer built (debug)
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building Firewall ACL Agent [debug]              ║
+╚════════════════════════════════════════════════════════════╝
+
+Build dir: /vagrant/firewall-acl-agent/build-debug
+Flags: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG -DCMAKE_C_FLAGS=-std=c11 -g -O0 -fno-omit-frame-pointer -DDEBUG
+
+Copying protobuf files...
+Running CMake and build...
+-- Build type: Debug
+-- C++ Standard: 20
+-- CXX Flags (from Makefile): -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- ⚠️  backtrace library not found - using execinfo.h fallback
+-- ✅ Found crypto-transport: /usr/local/lib/libcrypto_transport.so
+-- ✅ Found seed-client: /usr/local/lib/libseed_client.so
+-- ✅ LZ4 found: 1.9.4
+-- ✅ Found etcd-client library: /vagrant/etcd-client/build/libetcd_client.so
+-- ✅ Protobuf unificado encontrado: /vagrant/firewall-acl-agent/build-debug/proto/network_security.pb.cc
+-- ✅ Linking etcd-client library to firewall_core
+-- plugin-loader: /usr/local/lib/libplugin_loader.so
+-- ✅ Unit tests enabled (including logger tests)
+--
+-- ╔════════════════════════════════════════════════════════╗
+-- ║  ML Defender - Firewall ACL Agent Configuration       ║
+-- ║  Day 50: Comprehensive Observability Integration      ║
+-- ╚════════════════════════════════════════════════════════╝
+--
+-- Version:           1.0.0
+-- C++ Standard:      C++20
+-- Build Type:        Debug
+-- CXX Flags:         -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+--
+-- ✅ Components:
+--   Logger:          IMPLEMENTED (async + payload storage)
+--   Observability:   IMPLEMENTED (Day 50 - microsecond logging)
+--   Crash Diag:      IMPLEMENTED (backtrace + state dumps)
+--   Metrics:         TODO (unified system)
+--   ACL Intelligence: TODO (Phase 2+)
+--
+-- 🔬 Day 50 Observability:
+--   Headers:         firewall_observability_logger.hpp
+--                    crash_diagnostics.hpp
+--   Log Levels:      DEBUG, INFO, BATCH, IPSET, WARN, ERROR, CRASH
+--   Precision:       Microsecond timestamps
+--   Thread Safety:   Mutex-protected + atomic counters
+--   Crash Handling:  Signal handlers with backtrace
+--   Backtrace Lib:   FALSE
+--
+-- 📊 Logging Output:
+--   Observability:   /vagrant/logs/firewall-acl-agent/firewall_detailed.log
+--   JSON metadata:   /vagrant/logs/blocked/TIMESTAMP.json
+--   Protobuf payload: /vagrant/logs/blocked/TIMESTAMP.proto
+--   Format:          Timestamp-based (unique, sortable)
+--
+-- 🔗 RAG Integration Ready:
+--   ✅ Structured JSON for vector DB
+--   ✅ Full protobuf for forensic analysis
+--   ✅ Async design (non-blocking)
+--
+-- 🎯 Single Source of Truth:
+--   Compiler Flags: Controlled by root Makefile via PROFILE
+--
+-- ⚡ Performance Target: 1M+ packets/sec DROP rate
+-- 🎯 Design Philosophy: Via Appia Quality
+-- 🔬 Day 50 Motto: Fiat Lux - Let there be light
+--
+-- ╚════════════════════════════════════════════════════════╝
+--
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/firewall-acl-agent/build-debug
+[ 12%] Building CXX object CMakeFiles/firewall_core.dir/src/core/batch_processor.cpp.o
+[ 12%] Building CXX object CMakeFiles/firewall_core.dir/src/core/config_loader.cpp.o
+[ 18%] Building CXX object CMakeFiles/firewall_core.dir/src/core/iptables_wrapper.cpp.o
+[ 25%] Building CXX object CMakeFiles/firewall_core.dir/src/core/ipset_wrapper.cpp.o
+[ 31%] Building CXX object CMakeFiles/firewall_core.dir/src/core/etcd_client.cpp.o
+[ 37%] Building CXX object CMakeFiles/firewall_core.dir/src/api/zmq_subscriber.cpp.o
+[ 43%] Building CXX object CMakeFiles/firewall_core.dir/src/core/logger.cpp.o
+[ 50%] Building CXX object CMakeFiles/firewall_core.dir/proto/network_security.pb.cc.o
+[ 56%] Linking CXX static library libfirewall_core.a
+[ 56%] Built target firewall_core
+[ 62%] Building CXX object CMakeFiles/firewall-acl-agent.dir/src/main.cpp.o
+[ 68%] Building CXX object CMakeFiles/firewall_tests.dir/tests/unit/test_ipset_wrapper.cpp.o
+[ 75%] Building CXX object CMakeFiles/firewall_tests.dir/tests/unit/test_logger.cpp.o
+[ 81%] Building CXX object CMakeFiles/firewall_tests.dir/tests/unit/test_config_loader_traversal.cpp.o
+[ 87%] Building CXX object CMakeFiles/firewall_tests.dir/tests/unit/test_safe_exec.cpp.o
+[ 93%] Linking CXX executable firewall-acl-agent
+[ 93%] Built target firewall-acl-agent
+[100%] Linking CXX executable firewall_tests
+[100%] Built target firewall_tests
+
+✅ Firewall built (debug)
+[6/8] Desplegando modelos ML...
+✅ Modelos ML desplegados en /etc/ml-defender/models/
+[6b/8] Firmando plugins...
+Firmando plugins (ADR-025 D1)...
+
+══ Firma de plugins (ADR-025 D1) ══
+→ Plugin firmado: libplugin_test_message.so → libplugin_test_message.so.sig (64 bytes)
+→ Plugin firmado: libplugin_xgboost.so → libplugin_xgboost.so.sig (64 bytes)
+✅ 2 plugin(s) firmados correctamente
+[7/8] Verificando provisioning...
+
+╔════════════════════════════════════════════════════════════╗
+║  🔍 TEST-PROVISION-1 — CI Gate PHASE 3                   ║
+╚════════════════════════════════════════════════════════════╝
+
+── Check 1/8: Claves criptográficas ──
+
+══ Verificación de integridad ══
+✅ etcd-server: OK
+✅ sniffer: OK
+✅ ml-detector: OK
+✅ firewall-acl-agent: OK
+✅ rag-ingester: OK
+✅ rag-security: OK
+
+✅ Todas las claves verificadas correctamente
+✅ Check 1/8 OK
+
+── Check 2/8: Firmas de plugins (producción) ──
+
+══ check-plugins (DEBT-SIGN-AUTO, ADR-025) ══
+→ Modo: PRODUCCIÓN — solo verificar, nunca firmar
+→ libplugin_test_message.so: .sig válido — skip
+→ libplugin_xgboost.so: .sig válido — skip
+
+✅ 2 plugin(s) ya firmados y válidos (skip)
+✅ check-plugins completado — todos los plugins firmados y verificados
+✅ Check 2/8 OK
+
+── Check 3/8: Configs de producción (sin dev plugins) ──
+🔍 Validando que libplugin_hello NO está en configs de producción...
+✅ validate-prod-configs: libplugin_hello ausente en todos los configs
+✅ Check 3/8 OK
+
+── Check 4/8: build-active symlinks ──
+✅ Check 4/8 OK
+
+── Check 5/8: systemd units instalados ──
+✅ Check 5/8 OK
+
+
+── Check 6/8: Permisos ficheros sensibles ──
+✅ Check 6/8 OK
+
+── Check 7/8: Consistencia JSONs con plugins reales ──
+✅ Sin plugins activos en configs de producción (correcto)
+✅ Check 7/8 OK
+
+── Check 8/8: apparmor-utils instalado ──
+✅ Check 8/8 OK
+╔════════════════════════════════════════════════════════════╗
+║  ✅ TEST-PROVISION-1 PASSED — entorno listo               ║
+╚════════════════════════════════════════════════════════════╝
+
+[8/8] Arrancando pipeline...
+
+╔════════════════════════════════════════════════════════════╗
+║  🔍 TEST-PROVISION-1 — CI Gate PHASE 3                   ║
+╚════════════════════════════════════════════════════════════╝
+
+── Check 1/8: Claves criptográficas ──
+
+══ Verificación de integridad ══
+✅ etcd-server: OK
+✅ sniffer: OK
+✅ ml-detector: OK
+✅ firewall-acl-agent: OK
+✅ rag-ingester: OK
+✅ rag-security: OK
+
+✅ Todas las claves verificadas correctamente
+✅ Check 1/8 OK
+
+── Check 2/8: Firmas de plugins (producción) ──
+
+══ check-plugins (DEBT-SIGN-AUTO, ADR-025) ══
+→ Modo: PRODUCCIÓN — solo verificar, nunca firmar
+→ libplugin_test_message.so: .sig válido — skip
+→ libplugin_xgboost.so: .sig válido — skip
+
+✅ 2 plugin(s) ya firmados y válidos (skip)
+✅ check-plugins completado — todos los plugins firmados y verificados
+✅ Check 2/8 OK
+
+── Check 3/8: Configs de producción (sin dev plugins) ──
+🔍 Validando que libplugin_hello NO está en configs de producción...
+✅ validate-prod-configs: libplugin_hello ausente en todos los configs
+✅ Check 3/8 OK
+
+── Check 4/8: build-active symlinks ──
+✅ Check 4/8 OK
+
+── Check 5/8: systemd units instalados ──
+✅ Check 5/8 OK
+
+
+── Check 6/8: Permisos ficheros sensibles ──
+✅ Check 6/8 OK
+
+── Check 7/8: Consistencia JSONs con plugins reales ──
+✅ Sin plugins activos en configs de producción (correcto)
+✅ Check 7/8 OK
+
+── Check 8/8: apparmor-utils instalado ──
+✅ Check 8/8 OK
+╔════════════════════════════════════════════════════════════╗
+║  ✅ TEST-PROVISION-1 PASSED — entorno listo               ║
+╚════════════════════════════════════════════════════════════╝
+
+
+╔════════════════════════════════════════════════════════════╗
+║  🔨 Building etcd-server [debug]                     ║
+╚════════════════════════════════════════════════════════════╝
+
+Build dir: /vagrant/etcd-server/build-debug
+Flags: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG -DCMAKE_C_FLAGS=-std=c11 -g -O0 -fno-omit-frame-pointer -DDEBUG
+
+-- ========================================
+-- etcd-server Configuration
+-- ========================================
+-- Build type: Debug
+-- C++ Standard: 20
+-- CXX Flags (from Makefile): -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- ✅ OpenSSL found - HMAC support enabled
+--    Version: 3.0.19
+--    Include: /usr/include
+--    Libraries: /usr/lib/x86_64-linux-gnu/libssl.so;/usr/lib/x86_64-linux-gnu/libcrypto.so
+-- ✅ libsodium found - Using ChaCha20-Poly1305 + randombytes
+-- ✅ LZ4 found - Compression enabled
+-- ✅ Found crypto-transport library: /usr/local/lib/libcrypto_transport.so
+-- ✅ Found crypto-transport headers: /usr/local/include
+-- ✅ Found seed-client library: /usr/local/lib/libseed_client.so
+-- ✅ Found seed-client headers: /usr/local/include
+-- ========================================
+-- Building Tests
+-- ========================================
+-- ✅ Test executables configured:
+--    - test_secrets_manager
+--    - test_hmac_integration
+-- ========================================
+-- ========================================
+-- Build Configuration:
+--   C++ Standard: 20
+--   Build Type: Debug
+--   CXX Flags: -std=c++20 -Wall -Wextra -Wpedantic -g -O0 -fno-omit-frame-pointer -DDEBUG
+-- ========================================
+-- Dependencies:
+--   crypto-transport: /usr/local/lib/libcrypto_transport.so
+--   libsodium: sodium
+--   LZ4: lz4
+--   OpenSSL: /usr/lib/x86_64-linux-gnu/libssl.so;/usr/lib/x86_64-linux-gnu/libcrypto.so
+-- ========================================
+-- Sources:
+--   - src/main.cpp
+--   - src/etcd_server.cpp
+--   - src/component_registry.cpp
+--   - src/crypto_manager.cpp
+--   - src/compression_lz4.cpp
+--   - src/secrets_manager.cpp
+-- ========================================
+-- 🎯 Single Source of Truth:
+--   Compiler Flags: Controlled by root Makefile via PROFILE
+-- ========================================
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /vagrant/etcd-server/build-debug
+[ 23%] Built target test_secrets_manager_simple
+[ 46%] Built target test_hmac_integration
+[100%] Built target etcd-server
+
+✅ etcd-server built (debug)
+🚀 Starting etcd-server (Persistente)...
+════════════════════════════════════════════════════════════
+etcd-server Status:
+59743 tmux new-session -d -s etcd-server mkdir -p /vagrant/logs/lab && cd /vagrant && sudo env LD_LIBRARY_PATH=/usr/local/lib /vagrant/etcd-server/build-debug/etcd-server >> /vagrant/logs/lab/etcd-server.log 2>&1
+59744 bash -c mkdir -p /vagrant/logs/lab && cd /vagrant && sudo env LD_LIBRARY_PATH=/usr/local/lib /vagrant/etcd-server/build-debug/etcd-server >> /vagrant/logs/lab/etcd-server.log 2>&1
+59747 sudo env LD_LIBRARY_PATH=/usr/local/lib /vagrant/etcd-server/build-debug/etcd-server
+59748 sudo env LD_LIBRARY_PATH=/usr/local/lib /vagrant/etcd-server/build-debug/etcd-server
+59749 /vagrant/etcd-server/build-debug/etcd-server
+59768 bash -l -c pgrep -a -f etcd-server && echo '✅ etcd-server: RUNNING' || echo '❌ etcd-server: STOPPED'
+✅ etcd-server: RUNNING
+{"service":"etcd-server","status":"healthy","timestamp":1777692883}════════════════════════════════════════════════════════════
+⏳ Waiting for etcd-server to stabilize (Seed generation)...
+🚀 Starting rag-security (from /vagrant/rag/build-active)...
+🚀 Starting RAG Ingester (Full Context)...
+🧹 Limpiando SQLite lock anterior (si existe)...
+Ejecución desde la raíz del componente para resolver paths relativos del config...
+🚀 Starting ML Detector (Tricapa Persistente)...
+🚀 Starting Firewall ACL (SUDO + TMUX)...
+🚀 Starting Sniffer (SUDO + TMUX + Hybrid Mode)...
+Lanzamos tmux y dentro ejecutamos sudo env para preservar el path de las librerías...
+
+╔════════════════════════════════════════════════════════════╗
+║  ✅ FULL PIPELINE STARTED (DAY 103 — con provisioning)     ║
+╚════════════════════════════════════════════════════════════╝
+
+╔════════════════════════════════════════════════════════════╗
+║  📊 ML Defender Pipeline Status (via TMUX)                ║
+╚════════════════════════════════════════════════════════════╝
+✅ etcd-server:   RUNNING
+✅ rag-security:  RUNNING
+✅ rag-ingester:  RUNNING
+✅ ml-detector:   RUNNING
+✅ sniffer:       RUNNING
+✅ firewall:      RUNNING
+╚════════════════════════════════════════════════════════════╝
+
+╔════════════════════════════════════════════════════════════╗
+║  📊 ML Defender Pipeline Status (via TMUX)                ║
+╚════════════════════════════════════════════════════════════╝
+✅ etcd-server:   RUNNING
+✅ rag-security:  RUNNING
+✅ rag-ingester:  RUNNING
+✅ ml-detector:   RUNNING
+✅ sniffer:       RUNNING
+✅ firewall:      RUNNING
+╚════════════════════════════════════════════════════════════╝
+TEST-INTEG-4a-PLUGIN: variantes A/B/C...
+
+=== TEST VARIANT A ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Variant A: errors=0 result_code=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST VARIANT B ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Variant B: errors=1 → PASS (expect D8 VIOLATION log above)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST VARIANT C ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+[plugin-loader] WARNING: plugin 'test-message' overrun: 1174us > 500us budget
+Variant C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=1 errors=1
+
+=== TEST-INTEG-4a-PLUGIN: PASSED (0 failures) ===
+TEST-INTEG-4a PASSED
+TEST-INTEG-4b: plugin READ-ONLY contract (rag-ingester PHASE 2b)...
+
+=== TEST-INTEG-4b CASO A: READ-ONLY payload=nullptr ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=1 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4b CASO B: mode propagation ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso B: mode=1 (expect 1) → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4b: PASSED (0 failures) ===
+TEST-INTEG-4b PASSED
+TEST-INTEG-4c: plugin NORMAL contract (sniffer PHASE 2c)...
+
+=== TEST-INTEG-4c CASO A: NORMAL + payload real ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4c CASO B: D8 VIOLATION campo read-only ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Caso B: errors=1 → D8 VIOLATION detectada → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4c CASO C: result_code=-1 no crash ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Caso C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4c: PASSED (0 failures) ===
+TEST-INTEG-4c PASSED
+TEST-INTEG-4d: plugin NORMAL contract (ml-detector PHASE 2d)...
+
+=== TEST-INTEG-4d CASO A: NORMAL + score ML en annotation ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4d CASO B: D8 VIOLATION campo read-only ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Caso B: errors=1 → D8 VIOLATION detectada → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4d CASO C: result_code=-1 no crash ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Caso C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4d: PASSED (0 failures) ===
+TEST-INTEG-4d PASSED
+TEST-INTEG-4e: rag-security READONLY + ADR-029 D1-D5...
+
+=== TEST-INTEG-4e CASO A: READONLY + evento real ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 mode=1 result_code ignorado → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4e CASO B: g_plugin_loader=nullptr, no crash ===
+Caso B: g_plugin_loader=nullptr → invoke_all no llamado → PASS
+
+=== TEST-INTEG-4e CASO C: simulacion signal handler → shutdown limpio ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[rag-security] signal received — shutting down
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=0 overruns=0 errors=0
+Caso C: shutdown ejecutado, g_plugin_loader=nullptr → PASS
+
+=== TEST-INTEG-4e: PASSED (0 failures) ===
+TEST-INTEG-4e PASSED
+TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)...
+
+=== TEST-INTEG-SIGN-1: firma valida → carga exitosa ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+SIGN-1: loaded_count=1 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=0 overruns=0 errors=0
+
+=== TEST-INTEG-SIGN-2: firma invalida → loaded_count==0 ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-2: loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-3: .sig ausente → loaded_count==0 ===
+[plugin-loader] CRITICAL: .sig not found for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-3: loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-4: symlink attack → loaded_count==0 ===
+[plugin-loader] CRITICAL: cannot open plugin (symlink?): /usr/lib/ml-defender/plugins/libplugin_symlink_test.so
+[plugin-loader] WARNING: 'test-sign-4' skipped (sig check failed, dev mode)
+SIGN-4: symlink rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-5: path traversal → loaded_count==0 ===
+[plugin-loader] CRITICAL: path outside allowed prefix: /usr/lib/ml-defender/plugins/../../../tmp/libplugin_test_message.so
+[plugin-loader] WARNING: 'test-sign-5' skipped (sig check failed, dev mode)
+SIGN-5: traversal rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-6: clave rotada → loaded_count==0 ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-6: key mismatch rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-7: plugin truncado → loaded_count==0 ===
+[plugin-loader] CRITICAL: plugin size/type invalid: /usr/lib/ml-defender/plugins/libplugin_tiny_test.so
+[plugin-loader] WARNING: 'test-sign-7' skipped (sig check failed, dev mode)
+SIGN-7: tiny plugin rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN: PASSED (0 failures) ===
+TEST-INTEG-SIGN PASSED
+╔════════════════════════════════════════════════════════════╗
+║  ✅ Bootstrap completado — 6/6 RUNNING                    ║
+║  Siguiente: make test-all                                  ║
+╚════════════════════════════════════════════════════════════╝
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % 
+
+
+# FASE make test-all
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % make test-all
+Testing seed-client...
+─── seed-client tests ───────────────────────
+Test project /vagrant/libs/seed-client/build
+Start 1: seed_client_tests
+1/3 Test #1: seed_client_tests ................   Passed    0.03 sec
+Start 2: perms_seed_tests
+2/3 Test #2: perms_seed_tests .................   Passed    1.64 sec
+Start 3: seed_client_traversal_tests
+3/3 Test #3: seed_client_traversal_tests ......   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   1.73 sec
+Testing crypto-transport...
+Test project /vagrant/crypto-transport/build
+Start 1: test_crypto
+1/5 Test #1: test_crypto ......................   Passed    0.05 sec
+Start 2: test_compression
+2/5 Test #2: test_compression .................   Passed    0.03 sec
+Start 3: test_integration
+3/5 Test #3: test_integration .................   Passed    0.03 sec
+Start 4: test_crypto_transport
+4/5 Test #4: test_crypto_transport ............   Passed    0.07 sec
+Start 5: test_integ_contexts
+5/5 Test #5: test_integ_contexts ..............   Passed    0.05 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =   0.28 sec
+Testing etcd-client (HMAC only)...
+═══════════════════════════════════════════════════════════
+EtcdClient HMAC Utilities - Unit Tests
+═══════════════════════════════════════════════════════════
+
+✅ PASS: test_bytes_to_hex
+✅ PASS: test_hex_to_bytes
+✅ PASS: test_hex_roundtrip
+✅ PASS: test_invalid_hex
+✅ PASS: test_empty_conversions
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_consistency
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_different_data
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_different_keys
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_validation_valid
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_validation_invalid
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_validation_tampered
+⚠️  [etcd-client] component_config_path vacío — CryptoTransport no inicializado
+🔧 EtcdClient initialized (no crypto): test
+✅ PASS: test_hmac_length
+
+═══════════════════════════════════════════════════════════
+Results: 12/12 tests passed
+═══════════════════════════════════════════════════════════
+🎉 ALL TESTS PASSED!
+Testing plugin-loader...
+Testing safe-path property tests...
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from SafePathPropertyTest
+[ RUN      ] SafePathPropertyTest.ResolveSeedNeverEscapesPrefix
+[       OK ] SafePathPropertyTest.ResolveSeedNeverEscapesPrefix (2 ms)
+[ RUN      ] SafePathPropertyTest.ResolveSeedNeverAcceptsSymlinks
+[       OK ] SafePathPropertyTest.ResolveSeedNeverAcceptsSymlinks (0 ms)
+[ RUN      ] SafePathPropertyTest.ResolveConfigNeverEscapesPrefixLexical
+[       OK ] SafePathPropertyTest.ResolveConfigNeverEscapesPrefixLexical (0 ms)
+[ RUN      ] SafePathPropertyTest.ResolveConfigAcceptsSymlinksInsidePrefix
+[       OK ] SafePathPropertyTest.ResolveConfigAcceptsSymlinksInsidePrefix (0 ms)
+[ RUN      ] SafePathPropertyTest.ResolveGeneralPrefixNeverDerivesFromInput
+[       OK ] SafePathPropertyTest.ResolveGeneralPrefixNeverDerivesFromInput (0 ms)
+[----------] 5 tests from SafePathPropertyTest (6 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (7 ms total)
+[  PASSED  ] 5 tests.
+
+🧪 Testing plugin-loader...
+Test project /vagrant/plugin-loader/build
+No tests were found!!!
+TEST-INTEG-4a-PLUGIN: variantes A/B/C...
+
+=== TEST VARIANT A ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Variant A: errors=0 result_code=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST VARIANT B ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Variant B: errors=1 → PASS (expect D8 VIOLATION log above)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST VARIANT C ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Variant C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4a-PLUGIN: PASSED (0 failures) ===
+TEST-INTEG-4a PASSED
+TEST-INTEG-4b: plugin READ-ONLY contract (rag-ingester PHASE 2b)...
+
+=== TEST-INTEG-4b CASO A: READ-ONLY payload=nullptr ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=1 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4b CASO B: mode propagation ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso B: mode=1 (expect 1) → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4b: PASSED (0 failures) ===
+TEST-INTEG-4b PASSED
+TEST-INTEG-4c: plugin NORMAL contract (sniffer PHASE 2c)...
+
+=== TEST-INTEG-4c CASO A: NORMAL + payload real ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4c CASO B: D8 VIOLATION campo read-only ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Caso B: errors=1 → D8 VIOLATION detectada → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4c CASO C: result_code=-1 no crash ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Caso C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4c: PASSED (0 failures) ===
+TEST-INTEG-4c PASSED
+TEST-INTEG-4d: plugin NORMAL contract (ml-detector PHASE 2d)...
+
+=== TEST-INTEG-4d CASO A: NORMAL + score ML en annotation ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4d CASO B: D8 VIOLATION campo read-only ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Caso B: errors=1 → D8 VIOLATION detectada → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4d CASO C: result_code=-1 no crash ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Caso C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4d: PASSED (0 failures) ===
+TEST-INTEG-4d PASSED
+TEST-INTEG-4e: rag-security READONLY + ADR-029 D1-D5...
+
+=== TEST-INTEG-4e CASO A: READONLY + evento real ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 mode=1 result_code ignorado → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4e CASO B: g_plugin_loader=nullptr, no crash ===
+Caso B: g_plugin_loader=nullptr → invoke_all no llamado → PASS
+
+=== TEST-INTEG-4e CASO C: simulacion signal handler → shutdown limpio ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[rag-security] signal received — shutting down
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=0 overruns=0 errors=0
+Caso C: shutdown ejecutado, g_plugin_loader=nullptr → PASS
+
+=== TEST-INTEG-4e: PASSED (0 failures) ===
+TEST-INTEG-4e PASSED
+TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)...
+
+=== TEST-INTEG-SIGN-1: firma valida → carga exitosa ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+SIGN-1: loaded_count=1 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=0 overruns=0 errors=0
+
+=== TEST-INTEG-SIGN-2: firma invalida → loaded_count==0 ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-2: loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-3: .sig ausente → loaded_count==0 ===
+[plugin-loader] CRITICAL: .sig not found for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-3: loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-4: symlink attack → loaded_count==0 ===
+[plugin-loader] CRITICAL: cannot open plugin (symlink?): /usr/lib/ml-defender/plugins/libplugin_symlink_test.so
+[plugin-loader] WARNING: 'test-sign-4' skipped (sig check failed, dev mode)
+SIGN-4: symlink rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-5: path traversal → loaded_count==0 ===
+[plugin-loader] CRITICAL: path outside allowed prefix: /usr/lib/ml-defender/plugins/../../../tmp/libplugin_test_message.so
+[plugin-loader] WARNING: 'test-sign-5' skipped (sig check failed, dev mode)
+SIGN-5: traversal rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-6: clave rotada → loaded_count==0 ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-6: key mismatch rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-7: plugin truncado → loaded_count==0 ===
+[plugin-loader] CRITICAL: plugin size/type invalid: /usr/lib/ml-defender/plugins/libplugin_tiny_test.so
+[plugin-loader] WARNING: 'test-sign-7' skipped (sig check failed, dev mode)
+SIGN-7: tiny plugin rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN: PASSED (0 failures) ===
+TEST-INTEG-SIGN PASSED
+
+╔════════════════════════════════════════════════════════════╗
+║  🧪 Running Component Tests [debug]                  ║
+╚════════════════════════════════════════════════════════════╝
+
+Testing Sniffer...
+Test project /vagrant/sniffer/build-debug
+Start 1: test_smb_scan_features
+1/9 Test #1: test_smb_scan_features ...........   Passed    0.02 sec
+Start 2: test_pcap_backend_lifecycle
+2/9 Test #2: test_pcap_backend_lifecycle ......   Passed    0.03 sec
+Start 3: test_pcap_backend_poll_null
+3/9 Test #3: test_pcap_backend_poll_null ......   Passed    0.03 sec
+Start 4: test_pcap_backend_callback
+4/9 Test #4: test_pcap_backend_callback .......   Passed    0.03 sec
+Start 5: test_pcap_backend_error
+5/9 Test #5: test_pcap_backend_error ..........   Passed    0.03 sec
+Start 6: test_pcap_proto_parse_tcp
+6/9 Test #6: test_pcap_proto_parse_tcp ........   Passed    0.02 sec
+Start 7: test_pcap_proto_parse_udp
+7/9 Test #7: test_pcap_proto_parse_udp ........   Passed    0.02 sec
+Start 8: test_pcap_backend_stress
+8/9 Test #8: test_pcap_backend_stress .........   Passed    0.03 sec
+Start 9: test_pcap_backend_regression
+9/9 Test #9: test_pcap_backend_regression .....   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   0.33 sec
+
+Testing ML Detector...
+Test project /vagrant/ml-detector/build-debug
+Start  1: test_classifier
+1/10 Test  #1: test_classifier ..................   Passed    0.01 sec
+Start  2: test_feature_extractor
+2/10 Test  #2: test_feature_extractor ...........   Passed    0.04 sec
+Start  3: test_rag_logger_artifact_save
+3/10 Test  #3: test_rag_logger_artifact_save ....   Passed    0.01 sec
+Start  4: test_model_loader
+4/10 Test  #4: test_model_loader ................   Passed    0.01 sec
+Start  5: test_zmq_memory_overflow
+5/10 Test  #5: test_zmq_memory_overflow .........   Passed    0.01 sec
+Start  6: RansomwareDetectorUnit
+6/10 Test  #6: RansomwareDetectorUnit ...........   Passed    0.11 sec
+Start  7: test_pipeline
+7/10 Test  #7: test_pipeline ....................   Passed    0.04 sec
+Start  8: test_csv_event_writer
+8/10 Test  #8: test_csv_event_writer ............   Passed    0.05 sec
+Start  9: test_csv_feature_extraction
+9/10 Test  #9: test_csv_feature_extraction ......   Passed    0.03 sec
+Start 10: test_etcd_client_hmac
+10/10 Test #10: test_etcd_client_hmac ............   Passed   12.40 sec
+
+100% tests passed, 0 tests failed out of 10
+
+Total Test time (real) =  12.83 sec
+
+Testing RAG Ingester...
+Test project /vagrant/rag-ingester/build-debug
+Start 1: test_config_parser
+1/8 Test #1: test_config_parser ...............***Failed    0.01 sec
+[2026-05-02 03:43:11.907] [info] === Test: ConfigParser ===
+[2026-05-02 03:43:11.907] [error] ❌ Test failed: [safe_path] SECURITY VIOLATION — config path outside allowed prefix
+requested : '/vagrant/rag-ingester/config/rag-ingester.json'
+normalized: '/vagrant/rag-ingester/config/rag-ingester.json'
+allowed   : '/etc/ml-defender/'
+ACTION    : Pipeline halt. Administrator notified.
+
+    Start 2: test_config_parser_traversal
+2/8 Test #2: test_config_parser_traversal .....   Passed    0.02 sec
+Start 3: test_file_watcher
+3/8 Test #3: test_file_watcher ................   Passed    1.40 sec
+Start 4: test_csv_file_watcher
+4/8 Test #4: test_csv_file_watcher ............   Passed    2.32 sec
+Start 5: test_csv_event_loader
+5/8 Test #5: test_csv_event_loader ............   Passed    0.02 sec
+Start 6: test_csv_dir_watcher
+6/8 Test #6: test_csv_dir_watcher .............   Passed    0.66 sec
+Start 7: test_firewall_csv_event_loader
+7/8 Test #7: test_firewall_csv_event_loader ...   Passed    0.01 sec
+Start 8: test_trace_id
+8/8 Test #8: test_trace_id ....................   Passed    0.02 sec
+
+88% tests passed, 1 tests failed out of 8
+
+Total Test time (real) =   4.53 sec
+
+The following tests FAILED:
+1 - test_config_parser (Failed)
+Errors while running CTest
+⚠️  No rag-ingester tests configured
+
+Testing etcd-server...
+Test project /vagrant/etcd-server/build-debug
+Start 1: test_hmac_integration
+1/2 Test #1: test_hmac_integration ............   Passed    0.03 sec
+Start 2: test_secrets_manager_simple
+2/2 Test #2: test_secrets_manager_simple ......   Passed    9.14 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   9.19 sec
+
+Testing RAG Security...
+Test project /vagrant/rag/build
+No tests were found!!!
+
+
+╔════════════════════════════════════════════════════════════╗
+║  🔍 TEST-PROVISION-1 — CI Gate PHASE 3                   ║
+╚════════════════════════════════════════════════════════════╝
+
+── Check 1/8: Claves criptográficas ──
+
+══ Verificación de integridad ══
+✅ etcd-server: OK
+✅ sniffer: OK
+✅ ml-detector: OK
+✅ firewall-acl-agent: OK
+✅ rag-ingester: OK
+✅ rag-security: OK
+
+✅ Todas las claves verificadas correctamente
+✅ Check 1/8 OK
+
+── Check 2/8: Firmas de plugins (producción) ──
+
+══ check-plugins (DEBT-SIGN-AUTO, ADR-025) ══
+→ Modo: PRODUCCIÓN — solo verificar, nunca firmar
+→ libplugin_test_message.so: .sig válido — skip
+→ libplugin_xgboost.so: .sig válido — skip
+
+✅ 2 plugin(s) ya firmados y válidos (skip)
+✅ check-plugins completado — todos los plugins firmados y verificados
+✅ Check 2/8 OK
+
+── Check 3/8: Configs de producción (sin dev plugins) ──
+🔍 Validando que libplugin_hello NO está en configs de producción...
+✅ validate-prod-configs: libplugin_hello ausente en todos los configs
+✅ Check 3/8 OK
+
+── Check 4/8: build-active symlinks ──
+✅ Check 4/8 OK
+
+── Check 5/8: systemd units instalados ──
+✅ Check 5/8 OK
+
+
+── Check 6/8: Permisos ficheros sensibles ──
+✅ Check 6/8 OK
+
+── Check 7/8: Consistencia JSONs con plugins reales ──
+✅ Sin plugins activos en configs de producción (correcto)
+✅ Check 7/8 OK
+
+── Check 8/8: apparmor-utils instalado ──
+✅ Check 8/8 OK
+╔════════════════════════════════════════════════════════════╗
+║  ✅ TEST-PROVISION-1 PASSED — entorno listo               ║
+╚════════════════════════════════════════════════════════════╝
+
+
+── TEST-INVARIANT-SEED: 6 seeds idénticos post-reset ──
+Hashes únicos: 1
+✅ TEST-INVARIANT-SEED PASSED
+
+TEST-INTEG-4a-PLUGIN: variantes A/B/C...
+
+=== TEST VARIANT A ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Variant A: errors=0 result_code=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST VARIANT B ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Variant B: errors=1 → PASS (expect D8 VIOLATION log above)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST VARIANT C ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Variant C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4a-PLUGIN: PASSED (0 failures) ===
+TEST-INTEG-4a PASSED
+TEST-INTEG-4b: plugin READ-ONLY contract (rag-ingester PHASE 2b)...
+
+=== TEST-INTEG-4b CASO A: READ-ONLY payload=nullptr ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=1 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4b CASO B: mode propagation ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso B: mode=1 (expect 1) → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4b: PASSED (0 failures) ===
+TEST-INTEG-4b PASSED
+TEST-INTEG-4c: plugin NORMAL contract (sniffer PHASE 2c)...
+
+=== TEST-INTEG-4c CASO A: NORMAL + payload real ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4c CASO B: D8 VIOLATION campo read-only ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Caso B: errors=1 → D8 VIOLATION detectada → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4c CASO C: result_code=-1 no crash ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Caso C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4c: PASSED (0 failures) ===
+TEST-INTEG-4c PASSED
+TEST-INTEG-4d: plugin NORMAL contract (ml-detector PHASE 2d)...
+
+=== TEST-INTEG-4d CASO A: NORMAL + score ML en annotation ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 result_code=0 mode=0 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4d CASO B: D8 VIOLATION campo read-only ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=B
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant B: intentando const_cast sobre direction
+[plugin-loader] SECURITY: plugin 'test-message' modificó campos read-only en MessageContext — D8 VIOLATION
+Caso B: errors=1 → D8 VIOLATION detectada → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4d CASO C: result_code=-1 no crash ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=C
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant C: returning result_code=-1 (anomaly)
+[plugin-loader] WARNING: plugin 'test-message' returned PLUGIN_ERROR en MessageContext
+Caso C: errors=1 → PASS (no crash = OK)
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=1
+
+=== TEST-INTEG-4d: PASSED (0 failures) ===
+TEST-INTEG-4d PASSED
+TEST-INTEG-4e: rag-security READONLY + ADR-029 D1-D5...
+
+=== TEST-INTEG-4e CASO A: READONLY + evento real ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[test-message] variant A: OK
+Caso A: errors=0 mode=1 result_code ignorado → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=1 overruns=0 errors=0
+
+=== TEST-INTEG-4e CASO B: g_plugin_loader=nullptr, no crash ===
+Caso B: g_plugin_loader=nullptr → invoke_all no llamado → PASS
+
+=== TEST-INTEG-4e CASO C: simulacion signal handler → shutdown limpio ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+[rag-security] signal received — shutting down
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=0 overruns=0 errors=0
+Caso C: shutdown ejecutado, g_plugin_loader=nullptr → PASS
+
+=== TEST-INTEG-4e: PASSED (0 failures) ===
+TEST-INTEG-4e PASSED
+TEST-INTEG-SIGN: Ed25519 plugin verification (ADR-025)...
+
+=== TEST-INTEG-SIGN-1: firma valida → carga exitosa ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] INFO: 'test-message' signature OK
+[test-message] plugin_init: variant=A
+[plugin-loader] INFO: loaded plugin 'test-message' v0.1.0
+SIGN-1: loaded_count=1 → PASS
+[test-message] plugin_shutdown
+[plugin-loader] INFO: shutdown plugin 'test-message' — invocations=0 overruns=0 errors=0
+
+=== TEST-INTEG-SIGN-2: firma invalida → loaded_count==0 ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-2: loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-3: .sig ausente → loaded_count==0 ===
+[plugin-loader] CRITICAL: .sig not found for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-3: loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-4: symlink attack → loaded_count==0 ===
+[plugin-loader] CRITICAL: cannot open plugin (symlink?): /usr/lib/ml-defender/plugins/libplugin_symlink_test.so
+[plugin-loader] WARNING: 'test-sign-4' skipped (sig check failed, dev mode)
+SIGN-4: symlink rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-5: path traversal → loaded_count==0 ===
+[plugin-loader] CRITICAL: path outside allowed prefix: /usr/lib/ml-defender/plugins/../../../tmp/libplugin_test_message.so
+[plugin-loader] WARNING: 'test-sign-5' skipped (sig check failed, dev mode)
+SIGN-5: traversal rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-6: clave rotada → loaded_count==0 ===
+[plugin-loader] INFO: 'test-message' SHA-256=1a13623f603305b75f9753f52d691af1b2308ae7a89fe31894f67d1a813449b8 size=15800 mtime=1777692296
+[plugin-loader] CRITICAL: Ed25519 INVALID for 'test-message'
+[plugin-loader] WARNING: 'test-message' skipped (sig check failed, dev mode)
+SIGN-6: key mismatch rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN-7: plugin truncado → loaded_count==0 ===
+[plugin-loader] CRITICAL: plugin size/type invalid: /usr/lib/ml-defender/plugins/libplugin_tiny_test.so
+[plugin-loader] WARNING: 'test-sign-7' skipped (sig check failed, dev mode)
+SIGN-7: tiny plugin rejected, loaded_count=0 (expect 0) → PASS
+
+=== TEST-INTEG-SIGN: PASSED (0 failures) ===
+TEST-INTEG-SIGN PASSED
+
+╔════════════════════════════════════════════════════════════╗
+║  ✅ ALL TESTS COMPLETE                                    ║
+╚════════════════════════════════════════════════════════════╝
+
+(.venv) aironman@MacBook-Pro-de-Alonso test-zeromq-docker % 
