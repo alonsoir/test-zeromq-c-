@@ -834,7 +834,7 @@ void ZMQHandler::process_event(const std::string& message) {
             std::lock_guard<std::mutex> lock(stats_mutex_);
             stats_.events_processed++;
             stats_.avg_processing_time_ms =
-                (stats_.avg_processing_time_ms * (stats_.events_processed - 1) + duration_ms) /
+                (stats_.avg_processing_time_ms * static_cast<double>(stats_.events_processed - 1) + duration_ms) /
                 static_cast<double>(stats_.events_processed);
         }
 
