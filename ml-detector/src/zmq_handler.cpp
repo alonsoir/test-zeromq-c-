@@ -25,19 +25,19 @@ ZMQHandler::ZMQHandler(
     std::string hmac_key_hex
 )
     : config_(config)
-    , context_(1)
     , level1_model_(level1_model)
     , ddos_detector_(ddos_detector)
     , ransomware_detector_(ransomware_detector)
     , traffic_detector_(traffic_detector)
     , internal_detector_(internal_detector)
     , extractor_(extractor)
+    , context_(1)
+    , running_(false)
+    , last_stats_report_(std::chrono::steady_clock::now())
+    , logger_(spdlog::get("ml-detector"))
+    , start_time_(std::chrono::system_clock::now())
     // DEPRECATED DAY 98 — crypto_manager ignorado
     , hmac_key_hex_(std::move(hmac_key_hex))
-    , running_(false)
-    , logger_(spdlog::get("ml-detector"))
-    , last_stats_report_(std::chrono::steady_clock::now())
-    , start_time_(std::chrono::system_clock::now())
 {
     if (!logger_) {
         logger_ = spdlog::stdout_color_mt("zmq-handler");

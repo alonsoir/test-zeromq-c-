@@ -105,10 +105,10 @@ namespace sniffer {
     // , encryption_seed_(encryption_seed)
     , ring_buf_(nullptr)
         , ring_fd_(-1)
-        , initialized_(false)
+        , active_consumers_(0)
         , running_(false)
         , should_stop_(false)
-        , active_consumers_(0)
+        , initialized_(false)
         , socket_round_robin_(0)
         , ransomware_enabled_(false) {
 
