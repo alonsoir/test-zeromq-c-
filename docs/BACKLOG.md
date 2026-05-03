@@ -36,6 +36,10 @@
 - **REGLA PERMANENTE (DAY 134 — Consejo 8/8):** DEBT-ADR040-002 (`confidence_score` en ml-detector) es prerequisito bloqueante de DEBT-ADR040-006 (IPW). No implementar IPW sin verificar primero que el campo existe y varía en runtime.
 - **REGLA PERMANENTE (DAY 138 — Consejo 8/8):** Variant B (libpcap) es monohilo por diseño de pcap_dispatch. Los campos de multihilo no aparecen en sniffer-libpcap.json — se hardcodean en el binario con comentario explícito. No configurable, no negociable.
 - **REGLA PERMANENTE (DAY 138 — Consejo 8/8):** ODR violations en C++20 son Undefined Behaviour bloqueante. Sub-tarea P0 de DEBT-COMPILER-WARNINGS-CLEANUP-001. Ningún tag posterior sin resolver ODR primero.
+- **REGLA PERMANENTE (DAY 140 — Consejo 8/8):** `-Werror` activo en todos los CMakeLists. 0 warnings es un invariante permanente — ningún merge sin `make all 2>&1 | grep -c warning:` = 0.
+- **REGLA PERMANENTE (DAY 140 — Consejo 8/8):** Código de terceros con API deprecated → suprimir por fichero en CMake + entrada en `docs/THIRDPARTY-MIGRATIONS.md`. Nunca suprimir warnings en código propio.
+- **REGLA PERMANENTE (DAY 140 — Consejo 7/8):** En C++20, usar `[[maybe_unused]]` para parámetros no usados en interfaces virtuales y código nuevo. `/*param*/` solo en stubs temporales con DEBT asociada. Migrar progresivamente (DEBT-MAYBE-UNUSED-MIGRATION-001).
+- **REGLA PERMANENTE (DAY 140 — Consejo 8/8):** Gate ODR pre-merge obligatorio: `make PROFILE=production all` antes de cualquier merge a main. Jenkinsfile documenta el gate CI cuando el servidor FEDER esté disponible (DEBT-ODR-CI-GATE-001).
 
 ---
 
@@ -245,6 +249,46 @@ Añadir comentario de contrato de lifetime de `PcapCallbackData`:
 
 Targets `make emecas-dev`, `make emecas-prod-x86`, `make emecas-prod-arm64` con log automático fechado en `logs/emecas-<variant>-YYYYMMDD-HHMMSS.log`. Los logs son artefactos de reproducibilidad demostrables ante la comisión evaluadora FEDER. Resumen PASSED/FAILED + duración en última línea.
 **Test de cierre:** `make emecas-dev && ls logs/emecas-dev-*.log | xargs tail -1` muestra `RESULT: PASSED`
+**Estimación:** 1 sesión
+
+---
+
+### DEBT-LLAMA-API-UPGRADE-001
+**Severidad:** 🟡 Media — API deprecated, no CVE activo
+**Estado:** ABIERTO — DAY 140
+**Componente:** `rag/src/llama_integration_real.cpp:29`
+Warning suprimido temporalmente (`-Wno-deprecated-declarations`). Migración pendiente de release estable de llama.cpp. Ver `docs/THIRDPARTY-MIGRATIONS.md`.
+**Test de cierre:** `make all` sin supresión = 0 warnings.
+**Estimación:** 1 sesión
+
+---
+
+### DEBT-ODR-CI-GATE-001
+**Severidad:** 🔴 Alta — gap entre debug (sin ODR) y production (con LTO)
+**Estado:** ABIERTO — DAY 140
+**Componente:** Jenkinsfile + Makefile target `check-odr`
+Gate pre-merge `make PROFILE=production all` obligatorio. Jenkinsfile skeleton creado. Requiere servidor CI/CD (FEDER hardware).
+**Test de cierre:** `make check-odr` verde en servidor CI sin intervención manual.
+**Estimación:** 1 sesión post-hardware
+
+---
+
+### DEBT-GENERATED-CODE-CI-001
+**Severidad:** 🟡 Media — riesgo silencioso al regenerar protobuf/XGBoost
+**Estado:** ABIERTO — DAY 140
+**Componente:** Makefile target `check-generated` + Jenkinsfile semanal
+Gate semanal que regenera código y verifica 0 warnings con `-Werror`.
+**Test de cierre:** `make check-generated` verde tras upgrade de protoc.
+**Estimación:** 1 sesión post-hardware
+
+---
+
+### DEBT-MAYBE-UNUSED-MIGRATION-001
+**Severidad:** 🟢 Baja — cosmético, C++20 idiomático
+**Estado:** ABIERTO — DAY 140
+**Componente:** 30+ stubs en rag, rag-ingester, etcd-server, sniffer
+Migrar `/*param*/` → `[[maybe_unused]]` en interfaces virtuales. Consejo 7/8.
+**Test de cierre:** `grep -r "/\*.*\*/" src/ include/` sin instancias injustificadas.
 **Estimación:** 1 sesión
 
 ---
@@ -471,6 +515,10 @@ Benchmark comparativo de cuatro configuraciones: **BM-A** (x86-64 eBPF/XDP high-
 | **dontwait policy NDR** | Mejor perder paquete que bloquear loop captura. Exponer send_failures como métrica. | Consejo 8/8 · DAY 138 |
 | **nftables transaccional para IRP** | nft -f atómico. Snapshot + rollback 300s. Fallback ip link down. iptables rechazado en Debian 12. | Consejo 8/8 · DAY 138 |
 | **ODR es P0 bloqueante** | ODR violations en C++20 = UB. Bloqueante para cualquier tag posterior. | Consejo 8/8 · DAY 138 |
+| **-Werror invariante permanente** | 0 warnings es invariante. Ningún merge sin grep -c warning: = 0. | Consejo 8/8 · DAY 140 |
+| **Terceros deprecated: suprimir + doc** | APIs deprecated de terceros → suprimir por fichero + THIRDPARTY-MIGRATIONS.md. Nunca suprimir código propio. | Consejo 8/8 · DAY 140 |
+| **[[maybe_unused]] en C++20** | Interfaces virtuales y código nuevo → [[maybe_unused]]. Stubs temporales → /*param*/ con DEBT. | Consejo 7/8 · DAY 140 |
+| **Gate ODR pre-merge obligatorio** | make PROFILE=production all antes de merge a main. Jenkinsfile cuando haya servidor. | Consejo 8/8 · DAY 140 |
 | **seL4 no diseñar ahora** | CaptureBackend (5 métodos) es reutilizable. Todo lo demás reescritura. YAGNI hasta equipo especializado. | Consejo 8/8 · DAY 138 |
 
 ---
@@ -512,6 +560,10 @@ DEBT-VARIANT-B-CONFIG-001:               0% ⏳  pre-FEDER
 DEBT-IRP-NFTABLES-001:                   0% ⏳  pre-FEDER
 DEBT-IRP-QUEUE-PROCESSOR-001:            0% ⏳  post-merge
 DEBT-PCAP-CALLBACK-LIFETIME-DOC-001:     0% ⏳  trivial
+DEBT-LLAMA-API-UPGRADE-001:              0% ⏳  post-FEDER (salvo CVE)
+DEBT-ODR-CI-GATE-001:                    0% ⏳  requiere servidor CI/CD
+DEBT-GENERATED-CODE-CI-001:              0% ⏳  requiere servidor CI/CD
+DEBT-MAYBE-UNUSED-MIGRATION-001:         0% ⏳  cosmético, post deudas P0
 DEBT-EMECAS-AUTOMATION-001:              0% ⏳  post deudas P0
 DEBT-JENKINS-SEED-DISTRIBUTION-001:      0% ⏳  pre-FEDER
 DEBT-CRYPTO-MATERIAL-STORAGE-001:        0% ⏳  pre-FEDER
@@ -585,5 +637,21 @@ ADR-031 aRGus-seL4:                      0% ⏳  branch independiente
 
 Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polinomial. Un sistema estático no converge nunca.
 
-*DAY 139 — 2 Mayo 2026 · feature/variant-b-libpcap @ 91281005*
+## 📝 Notas del Consejo de Sabios — DAY 140 (8/8)
+
+> "DAY 140 — 192 → 0 warnings. `-Werror` activo como invariante permanente. ODR limpio con LTO.
+>
+> Q1 (8/8): Suprimir llama.cpp deprecated es correcto temporalmente. DEBT + THIRDPARTY-MIGRATIONS.md obligatorio. Criterio: API estable o CVE.
+> Q2 (8/8): Gap ODR inaceptable para infraestructura crítica. Gate CI pre-merge + nightly obligatorio. Jenkinsfile skeleton creado para cuando haya servidor.
+> Q3 (7/8): [[maybe_unused]] es el estándar C++20 correcto. Claude disiente para interfaces virtuales (/*param*/ comunica intención diferente). Migración progresiva aprobada.
+> Q4 (8/8): QEMU no es publicable para valores absolutos. Cloud ARM64 (AWS Graviton / Oracle) es alternativa metodológicamente válida para Fase 2. Hardware físico obligatorio para publicación final.
+> Q5 (mayoría): Supresión por fichero + gate CI semanal de regeneración. Ambos necesarios.
+>
+> 'Pasar de 192 a 0 warnings con -Werror no es cosmético, es un cambio estructural. Has eliminado una clase entera de fallos futuros.' — ChatGPT
+>
+> 'El proyecto está entrando en fase donde los errores ya no serán visibles, sino estadísticos o esporádicos. Y eso exige exactamente el tipo de disciplina que estás empezando a aplicar.' — Qwen"
+> — Consejo de Sabios (8/8) · DAY 140
+
+*DAY 140 — 3 Mayo 2026 · feature/variant-b-libpcap @ f2852de2*
+*"Via Appia Quality — Un escudo que aprende de su propia sombra."*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*

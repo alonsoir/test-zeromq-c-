@@ -34,9 +34,9 @@
 
 ---
 
-## Estado actual — DAY 139 (2026-05-02)
+## Estado actual — DAY 140 (2026-05-03)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `91281005`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `f2852de2`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
 **FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
@@ -341,7 +341,8 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - ✅ DAY 137: **feature/variant-b-libpcap · sniffer-libpcap compilable · KISS** 🎉
 - ✅ DAY 138: **ISP cerrado · pipeline Variant B completo · 8/8 tests · Consejo 8/8** 🎉
 - ✅ DAY 139: **192→67 warnings — Wreorder·OpenSSL·Wsign-conversion·Wconversion eliminados** 🎉
-- 🔜 DAY 140: **Cerrar DEBT-COMPILER-WARNINGS-CLEANUP-001 · -Werror · ODR LTO · pcap relay**
+- ✅ DAY 140: **192→0 warnings · -Werror activo · ODR limpio con LTO · Jenkinsfile skeleton · THIRDPARTY-MIGRATIONS.md** 🎉
+- 🔜 DAY 141: **DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 · DEBT-VARIANT-B-CONFIG-001 · emails Andrés Caro**
 
 ---
 
