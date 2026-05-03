@@ -254,6 +254,24 @@ make up && make bootstrap
 vagrant destroy -f && vagrant up && make bootstrap && make test-all
 ```
 
+### Build Profiles
+
+| Profile | Flags | Cuándo usarlo |
+|---------|-------|---------------|
+| `debug` (**default**) | `-g -O0` | Desarrollo diario — símbolos de depuración, sin optimización |
+| `production` | `-O3 -flto -march=native -DNDEBUG` | ODR verification, capacity benchmarks (FEDER), builds equivalentes a hardened VM |
+| `tsan` | `-fsanitize=thread -g -O1` | Detección de race conditions en código multihilo (EbpfBackend, RingBufferConsumer) |
+| `asan` | `-fsanitize=address,undefined -g -O1` | Detección de memory errors, buffer overflows, UB |
+
+```bash
+make all                        # debug (default)
+make PROFILE=production all     # ODR check via LTO — equivalente a hardened VM
+make PROFILE=tsan all           # ThreadSanitizer
+make PROFILE=asan all           # AddressSanitizer + UBSan
+```
+
+> ⚠️ `PROFILE=production` activa `-flto` (Link Time Optimization), que fuerza verificación ODR cross-module en link time. Es el único profile que detecta ODR violations — **P0 bloqueante por decisión del Consejo DAY 138 (8/8)**. Tiempo de build estimado: 30–45 min en VM por la fase LTO del linker.
+
 ### Hardened VM (ADR-030 Variant A)
 
 ```bash
