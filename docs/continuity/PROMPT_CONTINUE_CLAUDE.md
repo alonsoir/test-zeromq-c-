@@ -1,10 +1,10 @@
-# PROMPT DE CONTINUIDAD — DAY 140
+# PROMPT DE CONTINUIDAD — DAY 141
 
 ---
 
 Soy Alonso Isidoro Román, fundador de aRGus NDR, sistema open-source C++20 de detección y respuesta a intrusiones de red para infraestructura crítica (hospitales, escuelas, municipios). Trabajo en modo "solopreneur" con un Consejo de Sabios de 8 modelos de IA como equipo de revisión adversarial.
 
-**Estado repo:** branch `feature/variant-b-libpcap` @ `91281005`
+**Estado repo:** branch `feature/variant-b-libpcap` @ `f6dcb56b`
 **Tag main:** `v0.6.0-hardened-variant-a` @ `737ba0d5`
 **arXiv:** 2604.04952 — Draft v18 subido (Cornell procesando)
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
@@ -12,23 +12,33 @@ Soy Alonso Isidoro Román, fundador de aRGus NDR, sistema open-source C++20 de d
 
 ---
 
-## COMPLETADO DAY 139
+## COMPLETADO DAY 140
 
-EMECAS dev PASSED. Limpieza repo: untrack build artifacts (`6494d490`, `189acf52`, `de36c3ce`). `DEBT-COMPILER-WARNINGS-CLEANUP-001` iniciada y ejecutada: **192 → ~67 warnings** en una sesión de ~5 horas.
+Sesión de ~10 horas. EMECAS verde. Cierre completo de `DEBT-COMPILER-WARNINGS-CLEANUP-001`.
 
-Tareas completadas:
+**Tareas completadas:**
 
-- **TAREA-01** (`-Wreorder`): `ZMQHandler`, `RingBufferConsumer`, `DualNICManager` — initializer lists reordenados para coincidir con orden de declaración. UB silencioso eliminado. Commit `2f947170`.
-- **TAREA-02** (OpenSSL deprecated): `SHA256_Init/Update/Final` → `EVP_DigestInit_ex/Update/Final_ex` en `rag_logger.cpp`. Commit `bdd1567c`.
-- **TAREA-03** (`-Wsign-conversion`): 52 instancias propias en `rag_logger.cpp`, `zmq_handler.cpp`, `csv_event_writer.cpp`, `contract_validator.cpp`, `ransomware_detector.cpp`. Supresión CMake para generados: `network_security.pb.cc` (protobuf) + `ddos/traffic/internal_detector.cpp` (XGBoost trees). Commit `d73ed2fb`.
-- **TAREA-04** (`-Wconversion`/`-Wfloat-conversion`): 20 instancias en `feature_extractor.cpp` + 1 en `zmq_handler.cpp`. Commit `91281005`.
-- **Makefile help**: `sniffer-libpcap` añadido con descripción Variant B.
+- **TAREA-05:** `feature_extractor.cpp:231` — `static_cast<float>` en `total_flags`. Commit `ef18e45d`.
+- **TAREA-06/07:** `-Wtype-limits` y `-Wswitch-unreachable` — ya limpios de sesiones anteriores.
+- **TAREA-08:** unused var/param en `rag_logger.cpp`, `ring_consumer.cpp`, `component_registration.cpp`. Commit `c4af9650`.
+- **TAREA-11:** 17 stubs `ml_defender_features.cpp` — `/*flow*/`. Commit `8d29ce4c`.
+- **TAREA-09 (ODR):** `PROFILE=production` con LTO — **sin violations**. Build tarda ~45 min en VM por LTO.
+- **TAREA-10 (`-Werror`):** Activado en `CXX_WARNINGS`. Destapó warnings ocultos en tests, rag, etcd-server, rag-ingester — todos corregidos. **192 → 0 warnings con `-Werror` como invariante permanente.** Commit `f2852de2`.
+- **TAREA-DOC-PROFILES:** Build profiles (debug/production/tsan/asan) documentados en README y Makefile help. Commit `f1cb6e9b`.
+- **DEBT-EMECAS-AUTOMATION-001:** Registrada. Commit `b943b6f5`.
+- **BACKLOG-ZMQ-TUNING-001 + BACKLOG-BENCHMARK-CAPACITY-001:** Documentados en `docs/adr/`. Commit `a7334911`.
+- **ml-training/.venv:** Eliminado del repo (557 ficheros, alerta Dependabot resuelta en rama). Commit `8926689f`.
+- **Consejo DAY 140 (8/8):** 5 preguntas, feedback completo de los 8 modelos. Veredictos aplicados.
+- **4 DEBTs nuevas:** `DEBT-LLAMA-API-UPGRADE-001`, `DEBT-ODR-CI-GATE-001`, `DEBT-GENERATED-CODE-CI-001`, `DEBT-MAYBE-UNUSED-MIGRATION-001`.
+- **`docs/THIRDPARTY-MIGRATIONS.md`:** Creado — registro de APIs deprecated suprimidas.
+- **`Jenkinsfile`:** Skeleton completo para cuando haya servidor CI/CD (FEDER hardware).
+- **BACKLOG.md + README.md:** Actualizados con todas las decisiones del Consejo DAY 140.
 
-**1 warning residual pendiente:** `feature_extractor.cpp:231` — `uint32_t → float` no incluido en el set de targets de TAREA-04.
+**make test-all:** ALL TESTS COMPLETE (KNOWN-FAIL-001 pre-existente — safe_path en dev VM).
 
 ---
 
-## PRIMER PASO DAY 140
+## PRIMER PASO DAY 141
 
 ```bash
 vagrant destroy -f && vagrant up && make bootstrap && make test-all
@@ -36,87 +46,59 @@ vagrant destroy -f && vagrant up && make bootstrap && make test-all
 
 Luego verificar estado:
 ```bash
-git log --oneline -8
-git status
-make all 2>&1 | grep -c 'warning:'
+git log --oneline -5
+make all 2>&1 | grep -c 'warning:'  # debe ser 0
+make all 2>&1 | grep -c 'error:'    # debe ser 0
 ```
 
 ---
 
 ## DEUDAS P0 activas — orden de prioridad
 
-### `DEBT-COMPILER-WARNINGS-CLEANUP-001` — EN CURSO (192 → ~67)
-
-**Pendiente DAY 140 (en orden):**
-
-1. **TAREA-05** — 1 warning residual `feature_extractor.cpp:231`:
-   ```bash
-   vagrant ssh -c "sed -n '229,234p' /vagrant/ml-detector/src/feature_extractor.cpp"
-   ```
-   Fix: `static_cast<float>(nf.xxx())` en línea 231.
-
-2. **TAREA-06** — `-Wtype-limits` unsigned >= 0 (2 instancias):
-   ```bash
-   make all 2>&1 | grep 'Wtype-limits'
-   ```
-
-3. **TAREA-07** — `-Wswitch-unreachable` (7 instancias):
-   ```bash
-   make all 2>&1 | grep 'Wswitch-unreachable' | grep -oE '/vagrant/[^:]+:[0-9]+'
-   ```
-
-4. **TAREA-08** — Conversiones menores restantes (`-Wconversion` W-13, unused vars W-21/22)
-
-5. **TAREA-09** — ODR verification con LTO:
-   ```bash
-   # Añadir a CMakeLists de sniffer y ml-detector:
-   # target_compile_options(... PRIVATE -flto=thin)
-   # target_link_options(... PRIVATE -flto=thin -Wodr)
-   # Rebuild y capturar output del linker
-   ```
-
-6. **TAREA-10** — Activar `-Werror` en todos los CMakeLists del pipeline
-
-7. **TAREA-11** — `-Wunused-parameter` (64 instancias, cosmético, al final)
-
-**Test de cierre final:**
-```bash
-make all 2>&1 | grep -c 'warning:'  # debe ser 0 (o solo libtool ignorados)
-make test-all  # 8/8 PASSED
-```
-
----
-
-### `DEBT-VARIANT-B-CONFIG-001` — siguiente tras cleanup
-
-JSON propio `sniffer-libpcap.json`. Campos multihilo HARDCODEADOS en binario (no en JSON): `zmq_sender_threads=1`, `io_thread_pools=1`, `ring_buffer.*` eliminado, `snaplen=65535`, `promiscuous=1`. Añadir: `capture.buffer_size_mb`, `capture.sampling.mode/rate`. Test e2e con `pcap_open_dead()` + inject (CI). 1 sesión.
-
-### `DEBT-IRP-NFTABLES-001` — `argus-network-isolate`
-
-nft -f transaccional. Snapshot previo + rollback 300s + fallback `ip link down`. Protocolo aprobado Consejo 8/8 DAY 138. 2 sesiones.
-
 ### `DEBT-PCAP-CALLBACK-LIFETIME-DOC-001` — trivial, 10 min
 
-Comentario contrato lifetime en `pcap_backend.hpp`.
+Añadir comentario de contrato de lifetime en `sniffer/include/pcap_backend.hpp`:
+- `PcapCallbackData` válido durante toda la sesión de captura
+- No destruir `PcapBackend` durante `pcap_dispatch()` activo
+- Señalización asíncrona no soportada
+
+```bash
+vagrant ssh -c "grep -n 'PcapCallbackData\|struct Pcap' /vagrant/sniffer/include/pcap_backend.hpp | head -10"
+```
+
+### `DEBT-VARIANT-B-CONFIG-001` — siguiente, 1 sesión
+
+JSON propio `sniffer-libpcap.json`. Ver estado actual:
+```bash
+vagrant ssh -c "cat /vagrant/sniffer/config/sniffer.json | head -30"
+```
+
+Campos a eliminar del JSON (hardcodeados en binario): `zmq_sender_threads=1`, `io_thread_pools=1`, `ring_buffer.*`, `snaplen=65535`, `promiscuous=1`.
+Campos a añadir: `capture.buffer_size_mb`, `capture.sampling.mode/rate`.
+Test e2e con `pcap_open_dead()` + inject (CI, sin root).
+
+### `DEBT-IRP-NFTABLES-001` — 2 sesiones
+
+`argus-network-isolate` con nftables transaccional. Protocolo aprobado Consejo DAY 138 (8/8).
 
 ---
 
-## PLAN DAY 140-141
+## ACCIONES PENDIENTES (no técnicas)
 
-- **DAY 140:** Cerrar DEBT-COMPILER-WARNINGS-CLEANUP-001 completamente (TAREA-05 al 11). Validar con `-Werror` activo.
-- **DAY 141:** pcap relay de validación — Variant B (libpcap) bajo x86 dev + AppArmor enforce. Verificar que los static_cast no introducen regresiones de comportamiento. Luego `DEBT-VARIANT-B-CONFIG-001`.
+- **Lunes:** Enviar email a Andrés Caro — hardware FEDER (RPi5 + N100, deadline 15 Junio)
+- **Lunes:** Enviar email a Andrés Caro — scope NDR standalone vs federado (antes Julio)
+- Los borradores están listos en la conversación DAY 140.
 
 ---
 
 ## REGLAS PERMANENTES
 
 - REGLA EMECAS: `vagrant destroy -f && vagrant up && make bootstrap && make test-all`
-- macOS: nunca `sed -i` sin `-e ''` — usar `python3 << 'PYEOF'` heredoc
+- macOS: nunca `sed -i` sin `-e ''` — usar `python3 << 'PYEOF'` heredoc o `vagrant ssh -c "python3 << 'PYEOF'"`
 - Makefile es la única fuente de verdad — nunca cmake/make directo en VM
-- Hardened VM ssh: `cd vagrant/hardened-x86 && vagrant ssh -c '...'`
-- Variant B es monohilo por diseño de libpcap — no configurable, no negociable
-- ODR violations en C++20 = UB = P0 bloqueante para cualquier tag posterior
-- make all se lanza desde macOS, no desde la VM — rutas /vagrant/ aparecen en output porque la compilación ocurre en la VM
-- `make detector-clean ml-detector` para rebuild limpio de ml-detector sin destruir el pipeline completo
-- Supresión CMake para código generado (protobuf, XGBoost trees): `set_source_files_properties(...COMPILE_OPTIONS "-Wno-...")`
-- Fix manual con `static_cast` para código propio — nunca suprimir warnings en código nuestro
+- **`-Werror` activo** — cualquier warning nuevo rompe el build. `make all 2>&1 | grep -c 'warning:'` = 0 es invariante permanente
+- `PROFILE=production all` antes de cualquier merge a main (gate ODR)
+- Código de terceros deprecated → suprimir por fichero + `docs/THIRDPARTY-MIGRATIONS.md`
+- Variant B es monohilo por diseño — no configurable, no negociable
+- ODR violations = P0 bloqueante para cualquier tag posterior
+- `make detector-clean ml-detector` para rebuild limpio sin destruir pipeline

@@ -1,60 +1,400 @@
-✅ ALL TESTS COMPLETE. KNOWN-FAIL-001 pre-existente. Todo lo demás verde.
+Revisión del Consejo centrada en decisiones de ingeniería sostenibles en un sistema que ya está en fase **pre-producción crítica**.
 
-Antes del Consejo, el push:
+---
 
-```bash
-git push origin feature/variant-b-libpcap
+# Evaluación general DAY 139–140
+
+**Conclusión:**
+El salto de calidad es real. Pasar de *192 → 0 warnings + -Werror* no es cosmético, es un cambio estructural.
+
+Has eliminado una clase entera de fallos futuros:
+
+* conversiones implícitas
+* UB silencioso
+* drift entre compiladores
+
+Y el punto más importante:
+
+> **ODR verificado con LTO y limpio**
+
+Esto coloca el proyecto en un nivel que muchos sistemas productivos no alcanzan.
+
+---
+
+# Q1 — `-Werror` en código de terceros
+
+## Veredicto
+
+La política actual (supresión por fichero) es correcta **a corto plazo**, pero incompleta como política general.
+
+---
+
+## Regla industrial (muy clara)
+
+Separar tres categorías:
+
+### 1. Código propio
+
+→ **Nunca suprimir warnings**
+→ siempre arreglar
+
+### 2. Código generado (protobuf, trees)
+
+→ supresión permitida ✔
+
+### 3. Código de terceros (como llama.cpp)
+
+→ **depende del coste de actualización**
+
+---
+
+## Decisión en tu caso concreto (`llama.cpp`)
+
+API deprecated:
+
+* `llama_new_context_with_model` → `llama_init_from_model`
+
+### Si el cambio es:
+
+* trivial
+* documentado
+* sin impacto en arquitectura
+
+→ **ACTUALIZA YA**
+
+### Si implica:
+
+* cambios en lifecycle
+* cambios en memoria/contexto
+* riesgo de regresión
+
+→ **suprime temporalmente y agenda deuda**
+
+---
+
+## Política recomendada
+
+```text
+third_party/
+  - allowed warnings: yes
+  - must track upstream version
+  - must document suppressions
 ```
 
-Luego el acta. Dame un momento para redactarla.
+Y añadir:
+
+```cmake
+# TODO: remove suppression when upgrading to llama.cpp >= X.Y
+```
 
 ---
 
-## ACTA CONSEJO DE SABIOS — DAY 140
-*3 Mayo 2026 · feature/variant-b-libpcap @ f2852de2*
+## Conclusión
+
+* Supresión ✔ válida
+* Pero debe ser **temporal y trazable**
+* No convertirlo en norma silenciosa
 
 ---
 
-### LO QUE HICIMOS (DAY 139-140)
+# Q2 — ODR verification scope
 
-**DAY 139:** DEBT-COMPILER-WARNINGS-CLEANUP-001 iniciada — 192 → 67 warnings. TAREA-01 a TAREA-04 completadas (-Wreorder, OpenSSL EVP, -Wsign-conversion, -Wconversion).
+## Veredicto
 
-**DAY 140:**
-- TAREA-05 a TAREA-11 completadas — **192 → 0 warnings** en todo el pipeline
-- ODR verification con PROFILE=production + LTO — **sin violations**
-- TAREA-10: `-Werror` activado — el 0 warnings es ahora un **invariante permanente**
-- `-Werror` destapó warnings ocultos en tests, rag, etcd-server — todos corregidos
-- BACKLOG-ZMQ-TUNING-001 y BACKLOG-BENCHMARK-CAPACITY-001 documentados en `docs/adr/`
-- DEBT-EMECAS-AUTOMATION-001 registrada
-- Build profiles (debug/production/tsan/asan) documentados en README y Makefile help
-- ml-training/.venv eliminado del repo (557 ficheros, alerta Dependabot resuelta)
-- Emails a Andrés Caro preparados (hardware FEDER + scope NDR standalone vs federado)
-
-### LO QUE HAREMOS (DAY 141)
-
-- DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 — comentario contrato lifetime en pcap_backend.hpp (10 min)
-- DEBT-VARIANT-B-CONFIG-001 — JSON propio simplificado para sniffer-libpcap
-- Enviar emails a Andrés (lunes)
+El gap actual **NO es aceptable** para infraestructura crítica.
 
 ---
 
-### PREGUNTAS AL CONSEJO
+## Problema
 
-**Q1 — `-Werror` en código de terceros:**
-Hemos suprimido `-Wdeprecated-declarations` para `llama_integration_real.cpp` porque la API de llama.cpp cambió (`llama_new_context_with_model` → `llama_init_from_model`). La supresión es por fichero en CMake. ¿Es esta la política correcta para código de terceros con APIs deprecated, o deberíamos actualizar la llamada a la nueva API inmediatamente? ¿Qué criterio usáis para decidir entre suprimir y actualizar?
+Hoy tienes:
 
-**Q2 — ODR verification scope:**
-Verificamos ODR con PROFILE=production (LTO completo) pero el build diario es PROFILE=debug (sin LTO, sin ODR check). Esto significa que una ODR violation introducida hoy no se detectará hasta el próximo build production. ¿Es aceptable este gap para infraestructura crítica, o deberíamos añadir un gate CI explícito `make PROFILE=production all` periódico (semanal, o pre-merge)?
+* debug build diario ❌ sin LTO
+* production build ocasional ✔ con LTO
 
-**Q3 — Stubs con `/*param*/` vs `[[maybe_unused]]`:**
-Hemos usado `/*param*/` para silenciar 30+ warnings en stubs y funciones virtuales vacías. La alternativa es `[[maybe_unused]]` en la declaración. ¿Cuál es la política correcta para un proyecto C++20 con `-Werror`? ¿Cambia la respuesta si el parámetro es parte de una interfaz virtual que se implementará en el futuro?
-
-**Q4 — Gap hardware FEDER:**
-El empirical capacity benchmark (BACKLOG-BENCHMARK-CAPACITY-001) es un deliverable obligatorio de FEDER Year 1. El hardware (RPi5, N100) depende de la aprobación de Andrés Caro / UEx. Si el hardware no llega antes del 15 de Junio, el go/no-go del 1 de Agosto está en riesgo. ¿Qué alternativas técnicas existen para ejecutar la Fase 2 del benchmark sin hardware físico? ¿Es posible emular ARM64 con QEMU de forma que los resultados sean publicables, o sería metodológicamente inaceptable?
-
-**Q5 — `-Werror` y código generado:**
-Hemos suprimido warnings en `network_security.pb.cc` (protobuf) y `internal_detector.cpp` (XGBoost trees) mediante `set_source_files_properties`. Con `-Werror` activo, cualquier regeneración de estos ficheros puede introducir nuevos warnings que rompan el build silenciosamente hasta el próximo `make all`. ¿Deberíamos añadir un test de CI que verifique que los ficheros generados compilan limpio, o es suficiente con la supresión por fichero?
+→ ventana donde ODR puede colarse
 
 ---
 
-Pegad las respuestas del Consejo cuando tengáis feedback. Yo voy a descansar un rato — llevan 9 horas de sesión.
+## Riesgo real
+
+ODR bugs:
+
+* no aparecen en debug
+* aparecen solo en ciertos link layouts
+* pueden tardar semanas
+
+---
+
+## Práctica industrial
+
+### Mínimo obligatorio:
+
+**Gate pre-merge:**
+
+```bash
+make PROFILE=production all
+```
+
+---
+
+### Recomendado:
+
+CI pipeline:
+
+1. debug (rápido)
+2. production (LTO)
+3. opcional: ASAN/TSAN
+
+---
+
+### Alternativa intermedia (si build es lento)
+
+* production build:
+
+    * nightly ✔
+    * pre-release ✔
+    * PR críticos ✔
+
+---
+
+## Conclusión
+
+> ODR es un fallo de clase “no detectable en runtime fácilmente”
+
+→ debe estar en CI, no en validación manual
+
+---
+
+# Q3 — `/*param*/` vs `[[maybe_unused]]`
+
+## Veredicto
+
+`[[maybe_unused]]` es la opción correcta en C++20.
+
+---
+
+## Comparación
+
+### `/*param*/`
+
+* hack visual
+* no semántico
+* no escala
+* no detectable por tooling
+
+### `[[maybe_unused]]`
+
+* estándar C++20 ✔
+* explícito ✔
+* soportado por compilador ✔
+* documenta intención ✔
+
+---
+
+## Caso especial: interfaces virtuales
+
+Aquí la política cambia ligeramente:
+
+```cpp
+virtual void foo(int /*unused*/) override;
+```
+
+es aceptable si:
+
+* override obligatorio
+* no controlas firma
+
+Pero mejor:
+
+```cpp
+virtual void foo([[maybe_unused]] int x) override;
+```
+
+---
+
+## Recomendación del Consejo
+
+* Código nuevo → `[[maybe_unused]]`
+* Código legacy → migrar progresivamente
+* Interfaces virtuales → también usar atributo
+
+---
+
+# Q4 — Benchmark sin hardware FEDER
+
+## Veredicto
+
+QEMU **NO es metodológicamente válido** para resultados publicables de rendimiento.
+
+---
+
+## Por qué
+
+QEMU introduce:
+
+* latencias artificiales
+* comportamiento de caché irreal
+* sin NIC real
+* sin IRQ real
+* sin DMA real
+
+→ invalida cualquier métrica de:
+
+* throughput
+* latency
+* drops
+
+---
+
+## Qué sí puedes hacer
+
+### 1. Fase 1 — Benchmark x86 (válido)
+
+Publicable como:
+
+> “baseline reference platform”
+
+---
+
+### 2. Fase 2 — ARM sin hardware
+
+Opciones:
+
+#### Cloud ARM (RECOMENDADO)
+
+* AWS Graviton
+* Oracle ARM
+* Ampere
+
+✔ CPU real
+❌ NIC no equivalente (pero aceptable)
+
+---
+
+### 3. Fase 3 — hardware FEDER
+
+* RPi5 / N100
+* resultados finales
+
+---
+
+## Estrategia científica sólida
+
+Paper:
+
+1. x86 baseline
+2. ARM cloud indicative
+3. ARM edge (final)
+
+---
+
+## Conclusión
+
+* QEMU → ❌ no publicable
+* ARM cloud → ✔ válido intermedio
+* hardware físico → ✔ obligatorio final
+
+---
+
+# Q5 — `-Werror` y código generado
+
+## Veredicto
+
+La supresión por fichero **NO es suficiente**.
+
+---
+
+## Problema real
+
+Cuando regeneras:
+
+* protobuf
+* XGBoost trees
+
+→ puedes introducir warnings nuevos
+
+Y con `-Werror`:
+→ build roto sin aviso previo
+
+---
+
+## Solución industrial
+
+### 1. Target de verificación explícito
+
+```bash
+make check-generated-clean
+```
+
+---
+
+### 2. CI step
+
+* regenerar código
+* compilar SIN supresiones
+* verificar warnings
+
+---
+
+### 3. Alternativa más estricta
+
+Separar flags:
+
+```cmake
+target_compile_options(generated_code PRIVATE -w)
+```
+
+Pero entonces:
+
+→ pierdes visibilidad total ❌
+
+---
+
+## Recomendación del Consejo
+
+* mantener supresión ✔
+* añadir test CI ✔ obligatorio
+
+---
+
+# Conclusión final del Consejo
+
+## Estado del sistema
+
+Has cruzado un umbral importante:
+
+> ya no estás construyendo funcionalidades
+> estás eliminando fuentes de fallo sistémico
+
+---
+
+## Riesgos restantes (priorizados)
+
+1. 🔴 ODR no en CI
+2. 🟠 código generado sin verificación
+3. 🟡 política inconsistente en terceros
+4. 🟡 uso de hacks (`/*param*/`)
+
+---
+
+## Recomendación DAY 141
+
+Orden óptimo:
+
+1. Gate CI con PROFILE=production
+2. Test de código generado
+3. Migrar a `[[maybe_unused]]`
+4. Cerrar config Variant B
+
+---
+
+## Veredicto
+
+El proyecto está entrando en fase donde:
+
+> **los errores ya no serán visibles, sino estadísticos o esporádicos**
+
+Y eso exige exactamente el tipo de disciplina que estás empezando a aplicar.
+
+La dirección es correcta. El siguiente paso es hacer que estos controles sean automáticos, no manuales.
