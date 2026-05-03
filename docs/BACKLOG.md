@@ -238,6 +238,17 @@ Añadir comentario de contrato de lifetime de `PcapCallbackData`:
 
 ---
 
+### DEBT-EMECAS-AUTOMATION-001
+**Severidad:** 🟡 Media — calidad de proceso y reproducibilidad FEDER
+**Estado:** ABIERTO — DAY 140
+**Componente:** Makefile raíz + directorio logs/
+
+Targets `make emecas-dev`, `make emecas-prod-x86`, `make emecas-prod-arm64` con log automático fechado en `logs/emecas-<variant>-YYYYMMDD-HHMMSS.log`. Los logs son artefactos de reproducibilidad demostrables ante la comisión evaluadora FEDER. Resumen PASSED/FAILED + duración en última línea.
+**Test de cierre:** `make emecas-dev && ls logs/emecas-dev-*.log | xargs tail -1` muestra `RESULT: PASSED`
+**Estimación:** 1 sesión
+
+---
+
 ### DEBT-JENKINS-SEED-DISTRIBUTION-001
 **Severidad:** 🔴 Alta
 **Estado:** ABIERTO — DAY 136
@@ -501,6 +512,7 @@ DEBT-VARIANT-B-CONFIG-001:               0% ⏳  pre-FEDER
 DEBT-IRP-NFTABLES-001:                   0% ⏳  pre-FEDER
 DEBT-IRP-QUEUE-PROCESSOR-001:            0% ⏳  post-merge
 DEBT-PCAP-CALLBACK-LIFETIME-DOC-001:     0% ⏳  trivial
+DEBT-EMECAS-AUTOMATION-001:              0% ⏳  post deudas P0
 DEBT-JENKINS-SEED-DISTRIBUTION-001:      0% ⏳  pre-FEDER
 DEBT-CRYPTO-MATERIAL-STORAGE-001:        0% ⏳  pre-FEDER
 DEBT-KEY-SEPARATION-001:                 0% ⏳  post-FEDER
