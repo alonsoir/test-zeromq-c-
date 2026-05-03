@@ -227,8 +227,8 @@ std::vector<float> FeatureExtractor::extract_level2_ddos_features(
     std::vector<float> features(10);
 
     // [0] SYN/ACK Ratio
-    float total_flags = nf.fin_flag_count() + nf.syn_flag_count() +
-                       nf.rst_flag_count() + nf.psh_flag_count() +
+    float total_flags = static_cast<float>(nf.fin_flag_count()) + static_cast<float>(nf.syn_flag_count()) +
+                       static_cast<float>(nf.rst_flag_count()) + static_cast<float>(nf.psh_flag_count()) +
                        static_cast<float>(nf.ack_flag_count()) + static_cast<float>(nf.urg_flag_count());
     features[0] = safe_divide(static_cast<float>(nf.syn_flag_count()), total_flags);
 
