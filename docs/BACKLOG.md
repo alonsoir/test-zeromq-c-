@@ -1,5 +1,5 @@
 # aRGus NDR — BACKLOG
-*Última actualización: DAY 138 — 1 Mayo 2026*
+*Última actualización: DAY 140 — 3 Mayo 2026*
 
 ---
 
@@ -347,6 +347,51 @@ Separar keypairs Ed25519: pipeline-signing vs plugin-signing. Mismo keypair actu
 
 ---
 
+
+---
+
+## 📋 BACKLOG — Benchmarks Empíricos (FEDER Year 1)
+
+### BACKLOG-ZMQ-TUNING-001 — Optimización Empírica de Parámetros ZeroMQ y Pipeline
+**Estado:** ⏳ BACKLOG
+**Prioridad:** P1 — Prerequisito de BACKLOG-BENCHMARK-CAPACITY-001
+**Bloqueado por:** ADR-029 Variant A estable + ADR-029 Variant B estable + DEBT-CAPTURE-BACKEND-ISP-001 ✅
+**Estimación:** 2–4 días de sesión
+**Documento:** `docs/adr/BACKLOG-ZMQ-TUNING-001.md`
+
+Los parámetros ZeroMQ actuales (HWM, IO threads, batch size, linger, backpressure) fueron fijados bajo criterio de corrección, no de rendimiento. Los números del abstract de arXiv:2604.04952 (Draft v18) corresponden a una configuración no optimizada. Este experimento debe concluir **antes** de BACKLOG-BENCHMARK-CAPACITY-001 — de lo contrario el capacity benchmark mediría una mezcla de rendimiento real del backend y penalización artificial del tuning ZeroMQ.
+
+**Prerequisitos:**
+- [ ] ADR-029 Variant A (`EbpfBackend`) estable y mergeada a main
+- [ ] ADR-029 Variant B (`PcapBackend`) estable y mergeada a main
+- [x] DEBT-CAPTURE-BACKEND-ISP-001 ✅ cerrado DAY 138
+- [ ] Volcado de valores JSON actuales de todo el pipeline (primer paso de la sesión)
+
+**Test de cierre:** Tabla de parámetros optimizados por perfil de despliegue (x86 alto rendimiento / ARM64 recursos limitados) + curvas de sensibilidad por parámetro + JSONs de configuración actualizados con valores justificados + corrección del abstract arXiv post-experimentación.
+
+---
+
+### BACKLOG-BENCHMARK-CAPACITY-001 — Empirical Capacity Benchmark: eBPF vs libpcap vs ARM64
+**Estado:** ⏳ BACKLOG
+**Prioridad:** P1 — FEDER Year 1 Deliverable obligatorio
+**Bloqueado por:** BACKLOG-ZMQ-TUNING-001 + ADR-029 Variant A estable + ADR-029 Variant B estable
+**Estimación:** 3–5 días de sesión
+**Documento:** `docs/adr/BACKLOG-BENCHMARK-CAPACITY-001.md`
+
+Benchmark comparativo de cuatro configuraciones: **BM-A** (x86-64 eBPF/XDP high-end), **BM-B** (x86-64 libpcap high-end — control crítico para aislar coste de backend), **BM-C** (ARM64 libpcap / RPi5 — despliegue con recursos limitados), **BM-D** (x86-64 eBPF/XDP low-power / N100). Cuantifica el gap técnico entre organizaciones con más y menos recursos. Justifica directamente la frase central del prospecto FEDER: *"We need a server to know what server we need in production."* Incluye exploración multi-SBC ARM64 si BM-C muestra gap inaceptable.
+
+**Prerequisitos:**
+- [ ] BACKLOG-ZMQ-TUNING-001 concluido
+- [ ] ADR-029 Variant A (`EbpfBackend`) mergeada a main
+- [ ] ADR-029 Variant B (`PcapBackend`) mergeada a main
+- [x] DEBT-CAPTURE-BACKEND-ISP-001 ✅ cerrado DAY 138
+- [ ] Vagrantfile ARM64 operativo y reproducible
+- [ ] pcap de tráfico mixto preparado y versionado en repositorio
+- [ ] Hardware Fase 2: RPi5 (×1–3, ~80€/u) + Intel N100 board (~100–180€) adquiridos
+
+**Test de cierre:** Tabla de saturation points por configuración y tasa de inyección + curvas drop rate vs Mbps + delta eBPF vs libpcap (hardware constante) + delta ARM64 vs x86 (backend constante) + recomendaciones de hardware mínimo por tipología de despliegue hospitalario.
+
+
 ## 📋 BACKLOG — P3 Features futuras
 
 ### PHASE 5 — Loop Adversarial
@@ -382,6 +427,8 @@ Separar keypairs Ed25519: pipeline-signing vs plugin-signing. Mismo keypair actu
 - [ ] Demo técnica grabable < 10 minutos (`scripts/feder-demo.sh`)
 - [ ] ADR-041 protocolo hardware: métricas validadas en x86 + ARM (`make feder-demo`)
 - [ ] Golden set v1 creado y versionado (DEBT-ADR040-001)
+- [ ] BACKLOG-ZMQ-TUNING-001 concluido (parámetros ZMQ optimizados — inputs para benchmark)
+- [ ] BACKLOG-BENCHMARK-CAPACITY-001 concluido (Empirical Capacity Benchmark — FEDER Year 1 Deliverable)
 - [ ] Clarificación scope con Andrés: NDR standalone vs federación (antes julio 2026)
 
 ---
@@ -448,6 +495,8 @@ docs/KNOWN-DEBTS-v0.6.md:              100% ✅  DAY 136 (actualizado DAY 138)
 DEBT-CAPTURE-BACKEND-ISP-001:           100% ✅  DAY 138
 DEBT-VARIANT-B-PCAP-IMPL-001:          100% ✅  DAY 138 (8/8 tests)
 DEBT-COMPILER-WARNINGS-CLEANUP-001:      60% 🟡  DAY 139 en curso (192→67 warnings)
+BACKLOG-ZMQ-TUNING-001:                  0% ⏳  pre-FEDER (prerequisito BENCHMARK-CAPACITY)
+BACKLOG-BENCHMARK-CAPACITY-001:           0% ⏳  FEDER Year 1 Deliverable obligatorio
 DEBT-VARIANT-B-CONFIG-001:               0% ⏳  pre-FEDER
 DEBT-IRP-NFTABLES-001:                   0% ⏳  pre-FEDER
 DEBT-IRP-QUEUE-PROCESSOR-001:            0% ⏳  post-merge
