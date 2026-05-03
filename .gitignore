@@ -244,3 +244,4 @@ dist/vendor/*
 */build-prod/
 */build-production/
 firewall-acl-agent/fuzz/corpus/
+ml-training/.venv/
