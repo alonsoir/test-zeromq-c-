@@ -81,7 +81,7 @@ validate-prod-configs:
 
 # Base flags (always applied)
 CXX_STD := -std=c++20
-CXX_WARNINGS := -Wall -Wextra -Wpedantic
+CXX_WARNINGS := -Wall -Wextra -Wpedantic -Werror
 C_STD := -std=c11
 
 # Profile-specific flags

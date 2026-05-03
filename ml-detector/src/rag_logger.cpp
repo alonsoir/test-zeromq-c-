@@ -266,6 +266,7 @@ nlohmann::json RAGLogger::build_json_record(
     nlohmann::json network;
 
     if (event.has_network_features()) {
+        const auto& nf = event.network_features();
 
         network["five_tuple"] = {
             {"src_ip", nf.source_ip()},
@@ -322,6 +323,7 @@ nlohmann::json RAGLogger::build_json_record(
     nlohmann::json features;
 
     if (event.has_network_features()) {
+        const auto& nf = event.network_features();
 
         // Estadísticas básicas
         features["basic_stats"] = {

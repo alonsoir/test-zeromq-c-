@@ -163,6 +163,11 @@ set(SOURCES
 # ============================================================================
 # EJECUTABLE PRINCIPAL - RAG SECURITY
 # ============================================================================
+# Suppress deprecated-declarations for llama.cpp external API (llama_new_context_with_model)
+# llama.cpp API change: use llama_init_from_model — tracked as future upgrade
+set_source_files_properties(src/llama_integration_real.cpp
+    PROPERTIES COMPILE_OPTIONS "-Wno-deprecated-declarations")
+
 add_executable(rag-security ${SOURCES})
 
 # ============================================================================
