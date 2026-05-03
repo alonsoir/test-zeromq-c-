@@ -505,7 +505,7 @@ v0.6.0-hardened-variant-a mergeado:     100% ✅  DAY 136
 docs/KNOWN-DEBTS-v0.6.md:              100% ✅  DAY 136 (actualizado DAY 138)
 DEBT-CAPTURE-BACKEND-ISP-001:           100% ✅  DAY 138
 DEBT-VARIANT-B-PCAP-IMPL-001:          100% ✅  DAY 138 (8/8 tests)
-DEBT-COMPILER-WARNINGS-CLEANUP-001:      60% 🟡  DAY 139 en curso (192→67 warnings)
+DEBT-COMPILER-WARNINGS-CLEANUP-001:     100% ✅  DAY 140 CERRADA (192→0 warnings, ODR limpio)
 BACKLOG-ZMQ-TUNING-001:                  0% ⏳  pre-FEDER (prerequisito BENCHMARK-CAPACITY)
 BACKLOG-BENCHMARK-CAPACITY-001:           0% ⏳  FEDER Year 1 Deliverable obligatorio
 DEBT-VARIANT-B-CONFIG-001:               0% ⏳  pre-FEDER
