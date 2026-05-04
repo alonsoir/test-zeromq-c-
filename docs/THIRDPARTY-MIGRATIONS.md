@@ -80,4 +80,38 @@ verificar `make all 2>&1 | grep -c warning:` tras la regeneración.
 
 ---
 
-*Última actualización: DAY 140 — 3 Mayo 2026*
+## FAISS + libtool — build warnings de ml-defender
+
+**Estado:** DOCUMENTADO (no suprimido en CMake — build externo)
+**Ficheros afectados:**
+- `/tmp/faiss/faiss/utils/hamming_distance/generic-inl.h:312` — `-Wswitch-unreachable` (×7)
+- libtool: `'-version-info/-version-number' is ignored for convenience libraries` (×8)
+  **Supresión CMake:** no aplicable (FAISS se compila como proyecto externo en `/tmp/`)
+  **Fecha de registro:** 2026-05-04 (DAY 141)
+
+### Descripción
+
+Warnings de build de FAISS y libtool que aparecen durante la compilación de
+ml-defender. Son 100% third-party — fuera del scope de `-Werror`. No contaminan
+nuestro código propio. Aparecen prefijados con `defender:` en el output de EMECAS.
+
+### Workaround EMECAS
+
+Filtrar del grep de verificación:
+```bash
+grep 'warning:' output.md | grep -v 'defender:'
+```
+
+### Criterio de revisión
+
+Si se actualiza FAISS a una nueva versión, verificar si los warnings desaparecen.
+En ese caso, eliminar esta entrada.
+
+### Seguimiento
+
+`docs/adr/BACKLOG-BUILD-WARNING-CLASSIFIER-001.md` — clasificación automática
+de warnings de build via RAG pipeline (post-FEDER).
+
+---
+
+*Última actualización: DAY 141 — 4 Mayo 2026*

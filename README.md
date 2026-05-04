@@ -34,9 +34,9 @@
 
 ---
 
-## Estado actual — DAY 140 (2026-05-03)
+## Estado actual — DAY 141 (2026-05-04)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `f2852de2`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `63a37d9d`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
 **FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
@@ -56,23 +56,25 @@
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-COMPILER-WARNINGS-CLEANUP-001 (ODR P0) | 🟡 En curso — 192→67 warnings | DAY 140 |
-| DEBT-VARIANT-B-CONFIG-001 | 🔴 Alta | pre-FEDER |
+| DEBT-VARIANT-B-BUFFER-SIZE-001 | 🔴 P1 | pre-FEDER (pre-benchmark ARM64) |
+| DEBT-VARIANT-B-MUTEX-001 | 🔴 P1 | pre-FEDER (Nivel 1 script) |
+
 | DEBT-IRP-NFTABLES-001 | 🔴 Alta | pre-FEDER |
 | DEBT-IRP-QUEUE-PROCESSOR-001 | 🔴 Alta | post-merge |
 | DEBT-JENKINS-SEED-DISTRIBUTION-001 | 🔴 Alta | pre-FEDER |
 | DEBT-CRYPTO-MATERIAL-STORAGE-001 | 🔴 Alta | pre-FEDER |
 | DEBT-SEEDS-SECURE-TRANSFER-001 | 🔴 Alta | post-FEDER |
-| DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 | 🟢 Baja | trivial |
+
 | DEBT-KEY-SEPARATION-001 | 🟡 Media | post-FEDER |
 | DEBT-ADR040-001..012 | ⏳ | post-FEDER |
 | DEBT-ADR041-001..006 | ⏳ | pre-FEDER |
 
-### Próxima frontera — DAY 139
+### Próxima frontera — DAY 142
 1. EMECAS obligatorio
-2. `DEBT-COMPILER-WARNINGS-CLEANUP-001` sub-tarea ODR (P0 bloqueante — Consejo 8/8 unánime)
-3. O: `DEBT-VARIANT-B-CONFIG-001` (JSON propio + hardcoding + test e2e)
-4. Según decisión: `DEBT-IRP-NFTABLES-001` o `DEBT-CRYPTO-MATERIAL-STORAGE-001`
+2. `DEBT-IRP-NFTABLES-001` — sesión 1/3 (argus-network-isolate, nftables transaccional)
+3. `DEBT-VARIANT-B-BUFFER-SIZE-001` — pcap_create()+pcap_set_buffer_size()
+4. `DEBT-VARIANT-B-MUTEX-001` — script exclusión mutua Nivel 1
+
 
 ---
 
@@ -342,7 +344,8 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - ✅ DAY 138: **ISP cerrado · pipeline Variant B completo · 8/8 tests · Consejo 8/8** 🎉
 - ✅ DAY 139: **192→67 warnings — Wreorder·OpenSSL·Wsign-conversion·Wconversion eliminados** 🎉
 - ✅ DAY 140: **192→0 warnings · -Werror activo · ODR limpio con LTO · Jenkinsfile skeleton · THIRDPARTY-MIGRATIONS.md** 🎉
-- 🔜 DAY 141: **DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 · DEBT-VARIANT-B-CONFIG-001 · emails Andrés Caro**
+- ✅ DAY 141: **DEBT-VARIANT-B-CONFIG-001 · sniffer-libpcap.json · exclusión mutua · emails FEDER** 🎉
+- 🔜 DAY 142: **DEBT-IRP-NFTABLES-001 sesión 1 · DEBT-VARIANT-B-BUFFER-SIZE-001**
 
 ---
 

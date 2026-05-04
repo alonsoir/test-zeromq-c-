@@ -8,6 +8,12 @@
 namespace sniffer {
 
 // Datos pasados como 'user' a pcap_dispatch — evita friend/acceso privado
+//
+// CONTRATO DE LIFETIME (DEBT-PCAP-CALLBACK-LIFETIME-DOC-001):
+//   - PcapCallbackData debe permanecer válido durante toda la sesión de captura.
+//   - No destruir PcapBackend mientras pcap_dispatch() esté activo.
+//   - La señalización asíncrona (stop desde otro hilo) no está soportada:
+//     usar poll() con timeout y verificar condición de parada en el caller.
 struct PcapCallbackData {
     CaptureBackend::PacketCallback cb;
     void* ctx;
