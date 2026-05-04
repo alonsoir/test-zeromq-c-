@@ -87,3 +87,19 @@ Script bash/python en Makefile. Antes de arrancar cualquier variante sniffer: co
 - buffer_size_mb variable por diseño para trazar curva de optimización
 - Warning classifiers: script grep/awk determinista, no LLM
 - Código terceros deprecated → `docs/THIRDPARTY-MIGRATIONS.md`
+
+---
+
+## IDEAS REGISTRADAS — pendiente diseño formal
+
+### DEBT-VARIANT-B-PCAP-RELAY-001 — pcap relay E2E pre-merge
+Añadir al gate de merge de `feature/variant-b-libpcap` un relay real con pcap versionado (CTU-13 Neris subset + SHA-256). `tcpreplay` en loopback en VM → `sniffer-libpcap` captura → ml-detector recibe. Gate: `packets_sent > 0`, `send_failures = 0`, al menos 1 evento en ml-detector. Aplica también cuando exista Jenkins en producción/preproducción — es política de CI, no solo de merge manual.
+**Pendiente:** decidir si bloquea merge de esta feature o entra como fase del EMECAS general (DEBT-EMECAS-AUTOMATION-001).
+
+### IDEA-SEED-PLUGIN-001 — Plugin de obtención de semillas por profile
+La política de dónde buscar las seeds es una decisión de despliegue, no lógica de negocio. Candidato natural para plugin ADR-012:
+- Profile DEV → seed.bin en host (`/etc/ml-defender/*/seed.bin`) — mecanismo actual, sin cambios
+- Profile PROD/PRE-PROD/TESTING/INTEGRATION → Vault via Jenkinsfile
+
+**Tensión de bootstrap a resolver antes de diseñar:** el plugin se verifica vía Ed25519 (ADR-025), pero la seed es necesaria para verificar el plugin. ¿Quién firma al firmante? Posible resolución: seed de bootstrap para verificar el plugin de semillas viene del Vault directamente via Jenkinsfile, no del plugin mismo. Requiere Consejo antes de abrir feature.
+**Target:** post-FEDER, junto a DEBT-CRYPTO-MATERIAL-STORAGE-001 y DEBT-JENKINS-SEED-DISTRIBUTION-001.
