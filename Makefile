@@ -640,7 +640,7 @@ firewall-start:
 	@vagrant ssh -c "tmux new-session -d -s firewall 'mkdir -p /vagrant/logs/lab && cd $(FIREWALL_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib $(FIREWALL_BIN) -c $(FIREWALL_CFG) >> /vagrant/logs/lab/firewall-agent.log 2>&1'"
 	@sleep 2
 
-firewall: proto etcd-client-build plugin-loader-build
+firewall: proto seed-client-build etcd-client-build plugin-loader-build
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  🔨 Building Firewall ACL Agent [$(PROFILE)]              ║"
@@ -853,7 +853,7 @@ set-build-profile:
 # 4. sign-plugins    → firma Ed25519 (ADR-025)
 # 5. test-provision-1 → CI gate PHASE 3
 # 6. pipeline-start  → arranca los 6 componentes
-pipeline-build: crypto-transport-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer firewall-build
+pipeline-build: crypto-transport-build seed-client-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer firewall-build
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
