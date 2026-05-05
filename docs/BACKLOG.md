@@ -1,5 +1,5 @@
 # aRGus NDR — BACKLOG
-*Última actualización: DAY 141 — 4 Mayo 2026*
+*Última actualización: DAY 142 — 5 Mayo 2026*
 
 ---
 
@@ -43,6 +43,11 @@
 - **REGLA PERMANENTE (DAY 141 — Consejo 8/8):** Variant A y Variant B nunca corren simultáneamente en el mismo hardware. Exclusión mutua via script de arranque (bash/python en Makefile), pre-FEDER. La lógica de detección NO entra en los binarios — separación de responsabilidades.
 - **REGLA PERMANENTE (DAY 141 — Consejo 8/8):** `buffer_size_mb` es variable por diseño en sniffer-libpcap.json — permite trazar la curva de optimización de buffer en hardware real. Implementación pcap_create()+pcap_set_buffer_size() pre-FEDER obligatoria antes del benchmark ARM64.
 - **REGLA PERMANENTE (DAY 141 — Consejo 8/8):** Clasificadores de warnings de build: script grep/awk determinista. Un LLM no determinista no hace trabajo determinista.
+- **REGLA PERMANENTE (DAY 142 — Consejo 8/8 + founder):** El criterio de disparo del IRP nunca se basa en una señal única. Para FEDER: `threat_score >= 0.95 AND event_type IN (ransomware, lateral_movement, c2_beacon)`. En entornos hospitalarios, un falso positivo sobre un equipo médico crítico (ventilador, bomba de infusión) conectado a la intranet/DMZ es inaceptable. La señal debe ser explicable, auditable y multi-componente.
+- **REGLA PERMANENTE (DAY 142 — Consejo 8/8 + founder):** `auto_isolate: true` por defecto en `isolate.json`. El sistema protege sin que el administrador toque nada. Desactivar el aislamiento automático es un acto explícito y consciente. Instalar y funcionar.
+- **REGLA PERMANENTE (DAY 142 — Consejo 8/8):** Todo trigger de aislamiento automático usa `fork()+execv()`. El proceso padre (firewall-acl-agent) nunca muere. El agente debe sobrevivir al aislamiento para continuar registrando evidencia forense. Un agente muerto durante un ataque activo es exactamente lo que el atacante busca.
+- **REGLA PERMANENTE (DAY 142 — Consejo 8/8):** AppArmor `enforce` desde el primer deploy de cualquier nuevo componente. La fase `complain` no es una característica de seguridad — es deuda de validación. Si el perfil bloquea algo legítimo, se descubre en dev, no en producción.
+- **REGLA PERMANENTE (DAY 142 — macOS):** zsh intercepta `!` en heredocs. Para código C++ con emojis o caracteres especiales: siempre `vagrant ssh << 'SSHEOF'` con Python dentro. Nunca heredoc directo desde zsh para código complejo.
 
 ---
 
@@ -56,20 +61,47 @@
 
 ---
 
+## ✅ CERRADO DAY 142
+
+### Regresión test_config_parser — safe_path path no compliant
+- **Status:** ✅ CERRADO DAY 142 — **Commit:** `4bbc98ee`
+- **Fix:** `test_config_parser` pasaba `/vagrant/rag-ingester/config/rag-ingester.json` a `ConfigParser::load()`. ADR-037 (safe_path) bloqueaba correctamente el path de dev. Fix: usar path de producción `/etc/ml-defender/rag-ingester/rag-ingester.json`. `test_config_parser_traversal` (ataques path traversal) ya pasaba — no tocado.
+- **Invariante:** EMECAS verde — 8/8 tests rag-ingester PASSED.
+
+### DEBT-IRP-NFTABLES-001 — sesiones 1/3 y 2/3
+- **Status:** 🟡 60% — sesiones 1 y 2 cerradas — **Commits:** `6480e234` + `e8928612`
+- **Sesión 1:** Binario `argus-network-isolate` C++20 creado en `tools/argus-network-isolate/`. Pasos 1-3: snapshot selectivo (solo tabla `argus_isolate`, excluye tablas iptables-managed con `xt match` incompatibles), generate_rules con whitelist IP/port configurable, validate_dry_run (`nft -c`). Config: `tools/argus-network-isolate/config/isolate.json`. Forense JSONL en `/var/log/argus/network-isolate-forensic.jsonl`.
+- **Sesión 2:** Pasos 4-6: apply atómico (`nft -f`), timer `systemd-run --on-active=300s` idempotente (stop+reset-failed antes de crear), rollback robusto (elimina tabla `argus_isolate`, no toca tablas del sistema). Ciclo completo verificado en dev VM (eth2): NORMAL→ISOLATED→STATUS→ROLLBACK→NORMAL. SSH sobrevivió en todo momento (eth0 + whitelist).
+- **Pendiente sesión 3:** integración `firewall-acl-agent` + AppArmor profile.
+- **Makefile:** `argus-network-isolate-build`, `argus-network-isolate-install`, `argus-network-isolate-test`, `argus-network-isolate-clean`.
+
+### EMECAS reproducibility — argus-network-isolate en pipeline-build + provision
+- **Status:** ✅ CERRADO DAY 142 — **Commit:** `e3f5f9c4`
+- **Fix:** Vagrantfile: `nftables` declarado explícitamente. `provision.sh`: instala `isolate.json` en `/etc/ml-defender/firewall-acl-agent/` + crea `/var/log/argus/`. Makefile: `argus-network-isolate-build` + `argus-network-isolate-install` en `pipeline-build`. `check-system-deps` verifica nftables + binario instalado.
+
+### DEBT-VARIANT-B-BUFFER-SIZE-001 — pcap_create()+pcap_set_buffer_size()
+- **Status:** ✅ CERRADO DAY 142 — **Commit:** `7c4dba58`
+- **Fix:** `PcapBackend::open()` refactorizado de `pcap_open_live()` a `pcap_create()+pcap_set_buffer_size()+pcap_activate()`. `buffer_size_mb` del JSON ahora se aplica realmente. `CaptureBackend` interfaz actualizada con el parámetro. Crítico en ARM64/RPi donde el kernel default es 2MB vs 8MB configurado.
+- **Test de cierre:** `[pcap] Variant B opened on eth1 buffer=8MB` verificado. `make test-all` sin regresión.
+
+### DEBT-VARIANT-B-MUTEX-001 — exclusión mutua Variant A/B (Nivel 1)
+- **Status:** ✅ CERRADO DAY 142 Nivel 1 — **Commit:** `9458a90d`
+- **Fix:** `scripts/check-sniffer-mutex.sh` via sesiones tmux. Detecta si hay variant activa antes de arrancar otra. Variant A session: `sniffer`. Variant B session: `sniffer-libpcap`. Conflicto detectado → detiene variant activa + exit 1. Makefile: `sniffer-start` y `sniffer-libpcap-start` llaman al mutex. Nuevo target `sniffer-libpcap-start`.
+- **NOTA:** Nivel 1 provisional. Ver `DEBT-MUTEX-ROBUST-001` post-FEDER.
+- **Test de cierre:** Variant B activa + intento Variant A → violación detectada, Variant B detenida, exit 1. ✅
+
+---
+
 ## ✅ CERRADO DAY 141
 
 ### Bug Makefile — dependencia seed-client-build implícita
 - **Status:** ✅ CERRADO DAY 141 — **Commit:** `63a37d9d`
-- **Fix:** `firewall` y `pipeline-build` no declaraban `seed-client-build` como dependencia explícita. En VM limpia (sin binarios previos en `/vagrant`), `firewall-acl-agent` fallaba con `fatal error: seed_client/seed_client.hpp: No such file or directory`. El bug era invisible en sesiones normales porque los binarios sobreviven `vagrant destroy` al estar en carpeta compartida.
-- **Invariante:** EMECAS verde — 0 errors tras el fix. 15 warnings restantes son todos third-party (FAISS/libtool). Ver `docs/THIRDPARTY-MIGRATIONS.md`.
 
 ### DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 — Contrato lifetime PcapCallbackData
-- **Status:** ✅ CERRADO DAY 141 — **Commit:** `63a37d9d` (junto a docs)
-- **Fix:** Comentario de contrato añadido en `sniffer/include/pcap_backend.hpp` encima de `struct PcapCallbackData`: validez durante toda la sesión de captura, prohibición de destruir PcapBackend durante `pcap_dispatch()` activo, señalización asíncrona no soportada.
+- **Status:** ✅ CERRADO DAY 141 — **Commit:** `63a37d9d`
 
 ### DEBT-VARIANT-B-CONFIG-001 — JSON propio sniffer-libpcap + config-driven main
-- **Status:** ✅ CERRADO DAY 141 — **Commit:** pendiente tag
-- **Fix:** `sniffer/config/sniffer-libpcap.json` creado — derivado de `sniffer.json` eliminando todo lo irrelevante para libpcap (kernel_space, threading, af_xdp, deployment, profiles, feature_groups, ml_defender, fast_detector, backpressure, processing, auto_tuner). `main_libpcap.cpp` refactorizado: acepta `-c <config_path>`, lee interface y ZMQ endpoint desde JSON, SeedClient recibe `sniffer-libpcap.json`, stats periódicas cada 30s con `send_failures` + `drop_rate_alert`. Hardcodeado en binario con comentario: snaplen=65535, promiscuous=1, zmq_sender_threads=1 (monohilo ADR-029).
+- **Status:** ✅ CERRADO DAY 141
 - **Test de cierre:** `make sniffer-libpcap` — 0 warnings. `make test-all` — 9/9 PASSED. ✅
 
 ---
@@ -122,56 +154,85 @@ DAY 129: CWE-78 CERRADO · EtcdClientHmac 9/9
 
 ## 🔴 DEUDAS ABIERTAS — Seguridad y arquitectura
 
-### DEBT-VARIANT-B-BUFFER-SIZE-001
-**Severidad:** 🔴 Alta — P1 pre-FEDER (elevada DAY 141)
-**Estado:** ABIERTO — DAY 141
-**Componente:** `sniffer/src/userspace/pcap_backend.cpp` + `sniffer/src/userspace/main_libpcap.cpp`
+### DEBT-IRP-NFTABLES-001 — sesión 3/3 pendiente
+**Severidad:** 🔴 Alta — P0 pre-FEDER
+**Estado:** 🟡 60% — sesiones 1/3 y 2/3 CERRADAS — DAY 142
+**Componente:** `firewall-acl-agent` + `tools/argus-network-isolate/` + AppArmor
 
-`pcap_open_live()` no permite configurar el buffer del kernel — requiere refactorizar a `pcap_create()+pcap_set_buffer_size()+pcap_activate()`. El campo `capture.buffer_size_mb` existe en `sniffer-libpcap.json` pero no se aplica aún.
+Pasos 1-6 implementados y verificados en dev VM. Pendiente sesión 3:
+1. Añadir a `isolate.json`: `auto_isolate` (default true), `threat_score_threshold` (0.95), `auto_isolate_event_types` (ransomware, lateral_movement, c2_beacon).
+2. En `firewall-acl-agent`: detectar umbral + tipo superado → `fork()+execv()` a `argus-network-isolate isolate --interface <iface>`.
+3. Test integración: evento sintético score >= 0.95 + tipo correcto → aislamiento automático.
+4. AppArmor profile `enforce` para `argus-network-isolate` (combinar perfiles Gemini + Kimi DAY 142).
+5. Instalar binario en `provision.sh` para hardened VM.
 
-**Motivación:** el buffer default del kernel en RPi5 puede ser 2MB. El script de barrido paramétrico necesita poder modificar el valor entre ejecuciones para trazar la curva de optimización. Sin curva empírica, los resultados ARM64/RPi estarán contaminados por una limitación artificial del software, no por el hardware real.
+**Decisiones de diseño aprobadas (Consejo 8/8 + founder DAY 142):**
+- `auto_isolate: true` por defecto — instalar y funcionar.
+- Criterio disparo: `threat_score >= 0.95 AND event_type IN (ransomware, lateral_movement, c2_beacon)` — señal multi-componente, nunca umbral único.
+- `fork()+execv()` — el firewall-acl-agent nunca muere.
+- AppArmor `enforce` desde el primer deploy.
+- Rollback actual (eliminar solo `argus_isolate`) suficiente para FEDER.
 
-**Test de cierre:** `sniffer-libpcap -c sniffer-libpcap.json` arranca con buffer configurable. Script `tools/buffer-sweep.sh` traza curva drop_rate vs buffer_size_mb. `make test-all` 9/9 PASSED sin regresión.
-**Estimación:** 1 sesión
-
----
-
-### DEBT-VARIANT-B-MUTEX-001
-**Severidad:** 🔴 Alta — pre-FEDER
-**Estado:** ABIERTO — DAY 141
-**Componente:** `tools/argus-sniffer-check.sh` (nuevo) + Makefile targets `sniffer-start`, `sniffer-libpcap-start`
-
-Variant A y Variant B nunca deben correr simultáneamente en el mismo hardware. Un admin podría creer que correr ambos da alta disponibilidad — es un error que produce duplicación de eventos y comportamiento indefinido en etcd.
-
-**Nivel 1 (pre-FEDER obligatorio):** Script bash/python ejecutado por el Makefile antes de arrancar cualquier variante:
-1. Consultar etcd: ¿hay otro sniffer registrado en este nodo?
-2. Si sí → warn explícito al admin + stop ambos + exit 1
-3. Admin decide qué variante arrancar
-
-**Nivel 2 (post-FEDER):** Hardware-aware. Variant A verifica `bpf()` syscall disponible + kernel ≥5.8. Variant B verifica ausencia de eBPF o arquitectura ARM64. Kill de la variante incorrecta + warn + continuar. Con Nivel 1 implementado, la mitad del trabajo estará hecha.
-
-**AppArmor:** mismo perfil para ambas variantes — mismos permisos de red sin root. La distinción la hace etcd al registrarse.
-
-**Test de cierre:** `make sniffer-start && make sniffer-libpcap-start` → script detecta coexistencia → warn + exit 1. Admin no puede arrancar dos variantes sin intervención explícita.
-**Estimación:** 1 sesión
+**ADR relacionado:** ADR-042 IRP
+**Estimación:** 1 sesión (sesión 3/3)
 
 ---
 
-### DEBT-IRP-NFTABLES-001
-**Severidad:** 🔴 Alta — post-merge, pre-demo FEDER
-**Estado:** ABIERTO — DAY 136 (protocolo aprobado DAY 138)
-**Componente:** /usr/local/bin/argus-network-isolate (pendiente implementar)
+### DEBT-ETCD-HA-QUORUM-001 — etcd-server en HA con quorum
+**Severidad:** 🔴 Alta — P0 post-FEDER (OBLIGATORIO, no opcional)
+**Estado:** ABIERTO — DAY 142
+**Componente:** `etcd-server/` — arquitectura multi-nodo
 
-Protocolo aprobado por Consejo DAY 138 (8/8):
-1. Snapshot: `nft list ruleset > /tmp/argus-backup-$$.nft`
-2. Generar fichero de reglas de aislamiento
-3. Validar: `nft -c -f /tmp/argus-isolate-$$.nft`
-4. Aplicar atómico: `nft -f /tmp/argus-isolate-$$.nft`
-5. Timer rollback automático 300s
-6. Fallback emergencia: `ip link set eth0 down`
+etcd-server actual es single-node. Si cae, ningún componente puede registrarse ni coordinarse — y ningún mecanismo de mutex entre componentes puede ser robusto. Diseño requerido:
+- Múltiples instancias etcd-server con quorum (Raft o equivalente).
+- Componentes se registran ante el primer etcd disponible al arrancar.
+- Al recuperarse un nodo etcd caído, se une al quorum y sincroniza estado.
+- Quorum garantiza que todos los componentes registrados y vivos compartan el mismo estado.
+- Líder elegido — si cae, quorum inmediato para elegir nuevo líder.
+- Nuevo etcd que llega se une al quorum y, cuando le toque, es el nuevo líder.
 
-**ADR relacionado:** ADR-042 IRP enmienda E1
-**Estimación:** 3 sesiones
+**Nota:** No es deuda "eterna" — es deuda crítica que hay que cerrar. Es prerequisito de `DEBT-MUTEX-ROBUST-001` y de cualquier coordinación fiable entre componentes en producción.
+
+**Test de cierre:** `make hardened-full` con 3 instancias etcd. Kill del líder → quorum en < 5s → componentes siguen operativos → nuevo líder elegido.
+**Estimación:** 3-4 sesiones post-FEDER
+
+---
+
+### DEBT-MUTEX-ROBUST-001 — Mutex robusto entre variantes sniffer
+**Severidad:** 🟡 P1 post-FEDER
+**Estado:** ABIERTO — DAY 142 (Nivel 1 via tmux cerrado)
+**Componente:** `scripts/check-sniffer-mutex.sh` + coordinación etcd
+
+La implementación actual via sesiones tmux (Nivel 1) es provisional. No es robusta en producción — depende de una herramienta de usuario, no de un mecanismo de coordinación del sistema. Alternativas a evaluar para Nivel 2: `flock` (lockfile), PID file en `/var/run/argus/`, o coordinación via etcd cuando esté en HA (`DEBT-ETCD-HA-QUORUM-001`). La solución definitiva no puede depender de una única fuente de verdad que pueda caer.
+
+**Test de cierre:** exclusión mutua funciona incluso si tmux no está disponible o etcd está caído.
+**Estimación:** 1 sesión post-FEDER (tras DEBT-ETCD-HA-QUORUM-001)
+
+---
+
+### DEBT-IRP-MULTI-SIGNAL-001 — Criterio de disparo multi-señal IRP
+**Severidad:** 🟡 P1 post-FEDER
+**Estado:** ABIERTO — DAY 142
+**Componente:** `firewall-acl-agent` + `isolate.json`
+
+Para FEDER: dos condiciones AND mínimas (score + event_type). Para producción hospitalaria real: señal más rica. Contexto: monitores de quirófano, bombas de infusión y ventiladores mecánicos pueden estar en la intranet/DMZ del hospital — `firewall-acl-agent` en esos nodos tiene sentido. Un falso positivo que aísle un equipo médico es inaceptable. El criterio de disparo debe ser explicable, auditable y resistente a falsos positivos transitorios.
+
+**Diseño futuro (IDEA-IRP-DECISION-MATRIX-001):** matriz de decisión con score + tipo + ventana temporal + potencialmente whitelist de dispositivos críticos.
+
+**Nota sobre Platt scaling:** Qwen (Consejo DAY 142) advierte que sin calibración del score (Platt scaling o isotonic regression), el valor 0.95 no tiene significado estadístico real. Registrar como sub-tarea de DEBT-ADR040-002.
+
+**Estimación:** 2 sesiones post-FEDER
+
+---
+
+### DEBT-IRP-LAST-KNOWN-GOOD-001 — Rollback con estado persistente
+**Severidad:** 🟢 Baja post-FEDER
+**Estado:** ABIERTO — DAY 142
+**Componente:** `tools/argus-network-isolate/isolate.cpp`
+
+El rollback actual elimina solo la tabla `argus_isolate` — correcto y suficiente para FEDER. En entornos con rulesets nftables propios del cliente (hospitales con segmentación VLAN, QoS, reglas personalizadas), el rollback podría dejar el sistema en estado inconsistente. Solución: `/etc/ml-defender/firewall-acl-agent/last-known-good.nft` actualizado periódicamente, firmado Ed25519. Restauración selectiva en rollback.
+
+**Estimación:** 1 sesión post-FEDER
 
 ---
 
@@ -180,7 +241,7 @@ Protocolo aprobado por Consejo DAY 138 (8/8):
 **Estado:** ABIERTO — DAY 136
 **Componente:** ADR-042 IRP
 **Descripción:** Cola irp-queue sin límites ni procesador systemd dedicado.
-**Estimación:** 1 sesión (junto a IRP-NFTABLES)
+**Estimación:** 1 sesión (junto a IRP-NFTABLES sesión 3)
 
 ---
 
@@ -262,7 +323,7 @@ Targets `make emecas-dev/prod-x86/prod-arm64` con log automático fechado.
 | ID | Descripción | Target |
 |----|-------------|--------|
 | DEBT-ADR040-001 | Golden set v1 (≥50K flows, Parquet, SHA-256 embebido en plugin) | v1.0 |
-| DEBT-ADR040-002 | confidence_score ∈ [0,1] en salida ZeroMQ | v1.0 |
+| DEBT-ADR040-002 | confidence_score ∈ [0,1] en salida ZeroMQ + Platt scaling | v1.0 |
 | DEBT-ADR040-003 | walk_forward_split.py — mín. 3 ventanas, KS drift | v1.1 |
 | DEBT-ADR040-004 | check_guardrails.py — Recall −0.5pp / F1 −2pp → exit 1 | v1.1 |
 | DEBT-ADR040-005 | Guardrail integrado en firma Ed25519 (ADR-025) | v1.1 |
@@ -293,18 +354,14 @@ Targets `make emecas-dev/prod-x86/prod-arm64` con log automático fechado.
 ### BACKLOG-ZMQ-TUNING-001
 **Estado:** ⏳ BACKLOG | **Prioridad:** P1 — Prerequisito de BENCHMARK-CAPACITY
 **Bloqueado por:** ADR-029 Variant A + Variant B estables
-**Documento:** `docs/adr/BACKLOG-ZMQ-TUNING-001.md`
 
 ### BACKLOG-BENCHMARK-CAPACITY-001
 **Estado:** ⏳ BACKLOG | **Prioridad:** P1 — FEDER Year 1 Deliverable
 **Bloqueado por:** BACKLOG-ZMQ-TUNING-001 + hardware físico
-**Documento:** `docs/adr/BACKLOG-BENCHMARK-CAPACITY-001.md`
 
 ### BACKLOG-BUILD-WARNING-CLASSIFIER-001
 **Estado:** ⏳ BACKLOG | **Prioridad:** Post-FEDER
-**Origen:** DAY 141 — 15 warnings third-party contaminando grep EMECAS
-**Decisión Consejo DAY 141:** Implementar como **script grep/awk determinista**, no como clasificador TinyLlama. Un LLM no determinista no debe hacer trabajo determinista. Patrones conocidos: prefijo `defender:`, paths `/tmp/faiss/`, `libtool:`.
-**Workaround actual:** `grep 'warning:' output.md | grep -v 'defender:'`
+**Decisión Consejo DAY 141:** script grep/awk determinista. Workaround actual: `grep 'warning:' output.md | grep -v 'defender:'`
 
 ---
 
@@ -340,8 +397,9 @@ Targets `make emecas-dev/prod-x86/prod-arm64` con log automático fechado.
 - [x] ADR-026 mergeado a main (XGBoost F1=0.9978)
 - [x] ADR-030 Variant A infraestructura completa (DAY 133)
 - [x] Pipeline E2E en hardened VM verde (`make check-prod-all`) — DAY 134 ✅
+- [x] DEBT-VARIANT-B-BUFFER-SIZE-001 implementada ✅ DAY 142
 - [ ] ADR-030 Variant B (ARM64) estable
-- [ ] DEBT-VARIANT-B-BUFFER-SIZE-001 implementada (pre-benchmark)
+- [ ] DEBT-IRP-NFTABLES-001 sesión 3/3 — integración firewall-acl-agent
 - [ ] Demo técnica grabable < 10 minutos (`scripts/feder-demo.sh`)
 - [ ] ADR-041 protocolo hardware: métricas validadas en x86 + ARM (`make feder-demo`)
 - [ ] Golden set v1 creado y versionado (DEBT-ADR040-001)
@@ -384,10 +442,14 @@ Targets `make emecas-dev/prod-x86/prod-arm64` con log automático fechado.
 | **Gate ODR pre-merge obligatorio** | make PROFILE=production all antes de merge a main. Jenkinsfile cuando haya servidor. | Consejo 8/8 · DAY 140 |
 | **seL4 no diseñar ahora** | CaptureBackend (5 métodos) es reutilizable. Todo lo demás reescritura. YAGNI hasta equipo especializado. | Consejo 8/8 · DAY 138 |
 | **seed-client-build dependencia explícita** | firewall y pipeline-build deben declarar seed-client-build. En VM limpia sin binarios previos el build falla silenciosamente. | DAY 141 |
-| **Exclusión mutua Variant A/B** | Nunca simultáneas en el mismo hardware. Nivel 1: script bash/python en Makefile pre-FEDER. Nivel 2: hardware-aware post-FEDER. Lógica NO en binarios. | Consejo 8/8 · DAY 141 |
-| **buffer_size_mb variable por diseño** | Permite trazar curva de optimización. Implementar pcap_create()+pcap_set_buffer_size() pre-FEDER antes del benchmark ARM64. | Consejo 8/8 · DAY 141 |
-| **AppArmor: mismo perfil A y B** | Mismos permisos de red sin root. La distinción la hace etcd al registrarse. | Consejo 8/8 · DAY 141 |
+| **Exclusión mutua Variant A/B** | Nunca simultáneas en el mismo hardware. Nivel 1: script bash via tmux (pre-FEDER). Nivel 2: robusto post-FEDER (DEBT-MUTEX-ROBUST-001). Lógica NO en binarios. | Consejo 8/8 · DAY 141-142 |
+| **buffer_size_mb variable por diseño** | Permite trazar curva de optimización. pcap_create()+pcap_set_buffer_size() implementado DAY 142. | Consejo 8/8 · DAY 141 → Cerrado DAY 142 |
 | **Warning classifier: grep/awk** | Script determinista. Un LLM no determinista no hace trabajo determinista. | Consejo 8/8 · DAY 141 |
+| **auto_isolate: true por defecto** | El sistema protege sin configuración manual. Desactivar es acto explícito. | Consejo 8/8 + founder · DAY 142 |
+| **IRP criterio multi-señal** | score >= 0.95 solo no es suficiente. FEDER: score AND event_type. Producción: señal más rica. | Consejo 8/8 + founder · DAY 142 |
+| **fork()+execv() en IRP** | firewall-acl-agent nunca muere al disparar aislamiento. Operación atómica. | Consejo 8/8 · DAY 142 |
+| **AppArmor enforce desde primer deploy** | Nuevos componentes: enforce desde el commit inicial. complain máximo 1 día en dev. | Consejo 8/8 · DAY 142 |
+| **etcd-server HA es deuda crítica** | Single-node etcd no es robusta. DEBT-ETCD-HA-QUORUM-001 obligatoria post-FEDER. | Founder · DAY 142 |
 
 ---
 
@@ -425,13 +487,17 @@ DEBT-COMPILER-WARNINGS-CLEANUP-001:     100% ✅  DAY 140 (192→0 warnings, ODR
 DEBT-PCAP-CALLBACK-LIFETIME-DOC-001:   100% ✅  DAY 141
 DEBT-VARIANT-B-CONFIG-001:             100% ✅  DAY 141 (9/9 tests, 0 warnings)
 Bug Makefile seed-client-build:         100% ✅  DAY 141 (commit 63a37d9d)
-DEBT-VARIANT-B-BUFFER-SIZE-001:          0% ⏳  P1 pre-FEDER (pre-benchmark ARM64)
-DEBT-VARIANT-B-MUTEX-001:               0% ⏳  P1 pre-FEDER (Nivel 1 script)
+DEBT-VARIANT-B-BUFFER-SIZE-001:        100% ✅  DAY 142 (commit 7c4dba58)
+DEBT-VARIANT-B-MUTEX-001 (Nivel 1):    100% ✅  DAY 142 (commit 9458a90d)
+DEBT-IRP-NFTABLES-001:                  60% 🟡  DAY 142 sesiones 1-2/3 (sesión 3 pendiente)
+DEBT-ETCD-HA-QUORUM-001:                0% ⏳  P0 post-FEDER (OBLIGATORIO)
+DEBT-MUTEX-ROBUST-001:                   0% ⏳  post-FEDER (tras HA etcd)
+DEBT-IRP-MULTI-SIGNAL-001:              0% ⏳  post-FEDER
+DEBT-IRP-LAST-KNOWN-GOOD-001:           0% ⏳  post-FEDER
+DEBT-IRP-QUEUE-PROCESSOR-001:           0% ⏳  post-merge
 BACKLOG-ZMQ-TUNING-001:                  0% ⏳  pre-FEDER
 BACKLOG-BENCHMARK-CAPACITY-001:           0% ⏳  FEDER Year 1 Deliverable
 BACKLOG-BUILD-WARNING-CLASSIFIER-001:    0% ⏳  post-FEDER (grep/awk script)
-DEBT-IRP-NFTABLES-001:                   0% ⏳  pre-FEDER
-DEBT-IRP-QUEUE-PROCESSOR-001:            0% ⏳  post-merge
 DEBT-LLAMA-API-UPGRADE-001:              0% ⏳  post-FEDER (salvo CVE)
 DEBT-ODR-CI-GATE-001:                    0% ⏳  requiere servidor CI/CD
 DEBT-GENERATED-CODE-CI-001:              0% ⏳  requiere servidor CI/CD
@@ -447,38 +513,52 @@ ADR-031 aRGus-seL4:                      0% ⏳  branch independiente
 
 ---
 
+## 📝 Notas del Consejo de Sabios — DAY 142 (8/8)
+
+> "DAY 142 — Seis commits. Tres DEBTs cerradas. El IRP pasa de arquitectura a sistema ejecutable y verificable.
+>
+> P1 (8/8 + founder): Umbral único `score >= 0.95` para FEDER, pero nunca como señal única. Mínimo dos condiciones AND: score + event_type. En entornos hospitalarios, equipos médicos conectados a intranet/DMZ (monitores de quirófano, bombas de infusión) son activos que `firewall-acl-agent` debe proteger — un falso positivo que los aísle es inaceptable. La señal debe ser explicable, auditable y multi-componente. Platt scaling registrado como sub-tarea de DEBT-ADR040-002.
+>
+> P2 (8/8): `fork()+execv()` obligatorio. El firewall-acl-agent nunca puede morir durante un incidente. Es el único componente que puede registrar evidencia y ejecutar rollback. `FD_CLOEXEC` en descriptores heredados. `prctl(PR_SET_PDEATHSIG, SIGTERM)` en el hijo.
+>
+> P3 (8/8): AppArmor `enforce` desde el primer deploy. Perfiles aportados por Gemini y Kimi para combinar en sesión 3.
+>
+> P4 (8/8): Diseño actual de rollback correcto para FEDER. `DEBT-IRP-LAST-KNOWN-GOOD-001` registrada post-FEDER.
+>
+> Founder: el mutex via tmux es provisional — `DEBT-MUTEX-ROBUST-001` post-FEDER. La raíz del problema es etcd single-node — `DEBT-ETCD-HA-QUORUM-001` es deuda crítica obligatoria, no opcional. Un sistema de coordinación que depende de una única fuente de verdad que puede caer no es robusto en producción hospitalaria.
+>
+> 'auto_isolate: true por defecto. Instalar y funcionar. Un hospital que no toca la configuración debe estar protegido.' — Founder
+>
+> 'El agente de firewall debe sobrevivir al aislamiento. Un agente muerto durante un ataque activo es exactamente lo que el atacante busca.' — Claude, Grok, DeepSeek, Gemini, Kimi, Mistral, Qwen, ChatGPT (8/8)"
+> — Consejo de Sabios (8/8) · DAY 142
+
+---
+
 ## 📝 Notas del Consejo de Sabios — DAY 141 (8/8)
 
 > "DAY 141 — Bug Makefile seed-client-build cerrado. DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 cerrado. DEBT-VARIANT-B-CONFIG-001 cerrado — sniffer-libpcap.json propio + main_libpcap.cpp config-driven. 9/9 tests PASSED. 0 warnings. Emails FEDER enviados a Andrés Caro Lindo.
 >
-> Q1 (8/8 + founder): Identidad criptográfica compartida component_id='sniffer' correcta. PERO: exclusión mutua obligatoria. DEBT-VARIANT-B-MUTEX-001 registrada. Nivel 1 via script bash/python en Makefile, pre-FEDER. Nivel 2 hardware-aware post-FEDER. La lógica de detección NO entra en los binarios. AppArmor: mismo perfil para ambas variantes. La distinción la hace etcd.
+> Q1 (8/8 + founder): Exclusión mutua obligatoria. DEBT-VARIANT-B-MUTEX-001 registrada. Nivel 1 via script bash/python en Makefile, pre-FEDER. La lógica de detección NO entra en los binarios.
 >
-> Q2 (8/8 + founder): buffer_size_mb pre-FEDER obligatorio. Variable por diseño — script de barrido paramétrico para trazar curva de optimización. Sin curva, los resultados ARM64/RPi estarán contaminados por limitación artificial del software. DEBT-VARIANT-B-BUFFER-SIZE-001 elevada a P1 pre-FEDER.
+> Q2 (8/8 + founder): buffer_size_mb pre-FEDER obligatorio. Variable por diseño — script de barrido paramétrico para trazar curva de optimización.
 >
-> Q3 (8/8 + founder): Script grep/awk determinista para clasificar warnings de build. Un LLM no determinista no hace trabajo determinista. BACKLOG-BUILD-WARNING-CLASSIFIER-001 actualizado a grep/awk.
+> Q3 (8/8 + founder): Script grep/awk determinista para clasificar warnings de build.
 >
-> Q4 (8/8): EMECAS suficiente gate ahora. Jenkins cuando haya servidor FEDER.
->
-> 'buffer_size_mb no es una opción de confort — es una variable experimental. Sin ella, el benchmark ARM64 mide el default del kernel, no el hardware.' — Claude
->
-> 'La exclusión mutua en el script de arranque, no en el binario, es la decisión correcta: separación de responsabilidades, sin añadir lógica de orquestación a un componente de captura.' — Grok"
+> 'buffer_size_mb no es una opción de confort — es una variable experimental. Sin ella, el benchmark ARM64 mide el default del kernel, no el hardware.' — Claude"
 > — Consejo de Sabios (8/8) · DAY 141
 
 ---
 
 ## 📝 Notas del Consejo de Sabios — DAY 140 (8/8)
 
-> "DAY 140 — 192 → 0 warnings. `-Werror` activo como invariante permanente. ODR limpio con LTO.
-> 'Pasar de 192 a 0 warnings con -Werror no es cosmético, es un cambio estructural. Has eliminado una clase entera de fallos futuros.' — ChatGPT
-> 'El proyecto está entrando en fase donde los errores ya no serán visibles, sino estadísticos o esporádicos.' — Qwen"
+> "DAY 140 — 192 → 0 warnings. `-Werror` activo como invariante permanente. ODR limpio con LTO."
 > — Consejo de Sabios (8/8) · DAY 140
 
 ---
 
 ## 📝 Notas del Consejo de Sabios — DAY 138 (8/8)
 
-> "DAY 138 — ISP cerrado. Pipeline Variant B completo. ODR P0 bloqueante confirmado.
-> 'Los warnings ODR en C++ son bombas de reloj. En infraestructura crítica, el comportamiento indefinido no es hipotético — es inevitable.' — Grok"
+> "DAY 138 — ISP cerrado. Pipeline Variant B completo. ODR P0 bloqueante confirmado."
 > — Consejo de Sabios (8/8) · DAY 138
 
 ---
@@ -512,5 +592,5 @@ Un sistema con ACRL converge hacia cobertura de técnicas ATT&CK en tiempo polin
 
 ---
 
-*DAY 141 — 4 Mayo 2026 · feature/variant-b-libpcap @ 63a37d9d*
+*DAY 142 — 5 Mayo 2026 · feature/variant-b-libpcap @ 9458a90d*
 *"Via Appia Quality — Un escudo que aprende de su propia sombra."*

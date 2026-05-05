@@ -1,4 +1,4 @@
-````# ML Defender (aRGus NDR)
+# ML Defender (aRGus NDR)
 
 **Open-source, embedded-ML network detection and response system protecting critical infrastructure from ransomware and DDoS attacks.**
 
@@ -24,57 +24,55 @@
 [![Crypto](https://img.shields.io/badge/Crypto-HKDF_SHA256+ChaCha20_Poly1305-orange)]()
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04952_cs.CR-red)](https://arxiv.org/abs/2604.04952)
 [![TDH](https://img.shields.io/badge/Methodology-Test_Driven_Hardening-purple)](https://github.com/alonsoir/test-driven-hardening)
+[![IRP](https://img.shields.io/badge/IRP-argus--network--isolate_ADR--042-red)]()
 
 📜 Living contracts: [Protobuf schema](docs/contracts/Protobuf%20contracts.md) · [Pipeline configs](docs/contracts/JSON%20contracts.md) · [RAG API](docs/contracts/Rag%20security%20commands.md)
 
 ---
 
-✅ `main` is tagged `v0.6.0-hardened-variant-a`. Branch activa: `feature/variant-b-libpcap` — ADR-029 Variant B pipeline completo (DAY 138).
+✅ `main` is tagged `v0.6.0-hardened-variant-a`. Branch activa: `feature/variant-b-libpcap` — ADR-029 Variant B pipeline completo + IRP sesiones 1-2/3 (DAY 142).
 **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
 ---
 
-## Estado actual — DAY 141 (2026-05-04)
+## Estado actual — DAY 142 (2026-05-05)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `63a37d9d`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `9458a90d`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
 **FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
 
 ### Pipeline
-- 6/6 componentes RUNNING — validado EMECAS DAY 138 ✅
-- `make test-all`: ALL TESTS COMPLETE (9/9 sniffer, incluyendo 8 tests Variant B)
-- `make sniffer && make sniffer-libpcap`: ambos ✅ sin warnings nuevos
+- 6/6 componentes RUNNING — validado EMECAS DAY 142 ✅
+- `make test-all`: ALL TESTS COMPLETE (9/9 sniffer Variant B PASSED)
+- `make argus-network-isolate-test`: dry-run PASSED ✅
 
-### Hitos DAY 138 🎉
-- **DEBT-CAPTURE-BACKEND-ISP-001 CERRADA** — commit `1a7f723a`. `CaptureBackend` a 5 métodos puros. Métodos eBPF en `EbpfBackend`. Consejo 5-2-1 → implementado.
-- **DEBT-VARIANT-B-PCAP-IMPL-001 CERRADA** — commits `22df0099` + `da1badf7`. Pipeline completo `pcap_dispatch → proto → LZ4 → ChaCha20 → ZMQ`. Wire format idéntico a Variant A. 8/8 tests PASSED.
-- **DEBT-VARIANT-B-CONFIG-001 REGISTRADA** — JSON propio pendiente. Campos multihilo hardcodeados en binario.
-- **Consejo 8/8 DAY 138** — 7 preguntas, veredictos unánimes: ODR P0 bloqueante, dontwait correcto, nft -f transaccional, seL4 no diseñar ahora.
+### Hitos DAY 142 🎉
+- **DEBT-VARIANT-B-BUFFER-SIZE-001 CERRADA** — commit `7c4dba58`. `pcap_create()+pcap_set_buffer_size()+pcap_activate()`. Buffer configurable en ARM64/RPi. `CaptureBackend` interfaz actualizada.
+- **DEBT-VARIANT-B-MUTEX-001 CERRADA (Nivel 1)** — commit `9458a90d`. `scripts/check-sniffer-mutex.sh` via sesiones tmux. `sniffer-start` y nuevo `sniffer-libpcap-start` verifican exclusión mutua. Verificado: conflicto detectado → exit 1.
+- **DEBT-IRP-NFTABLES-001 sesiones 1/3 y 2/3** — commits `6480e234` + `e8928612`. `argus-network-isolate` C++20 con pasos 1-6 completos. Ciclo NORMAL→ISOLATED→ROLLBACK→NORMAL verificado. Timer systemd-run 300s operativo. Forense JSONL.
+- **Reproducibilidad EMECAS** — commit `e3f5f9c4`. Vagrantfile + provision.sh + Makefile garantizan que `vagrant destroy && up` reproduzca todo el trabajo.
+- **Consejo 8/8 DAY 142** — 4 preguntas IRP, veredictos unánimes: auto_isolate por defecto, fork()+execv(), AppArmor enforce, criterio multi-señal.
 
 ### Deuda técnica abierta
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-VARIANT-B-BUFFER-SIZE-001 | 🔴 P1 | pre-FEDER (pre-benchmark ARM64) |
-| DEBT-VARIANT-B-MUTEX-001 | 🔴 P1 | pre-FEDER (Nivel 1 script) |
-
-| DEBT-IRP-NFTABLES-001 | 🔴 Alta | pre-FEDER |
+| DEBT-IRP-NFTABLES-001 sesión 3/3 | 🔴 P0 | pre-FEDER (DAY 143) |
+| DEBT-ETCD-HA-QUORUM-001 | 🔴 P0 | post-FEDER (OBLIGATORIO) |
 | DEBT-IRP-QUEUE-PROCESSOR-001 | 🔴 Alta | post-merge |
 | DEBT-JENKINS-SEED-DISTRIBUTION-001 | 🔴 Alta | pre-FEDER |
 | DEBT-CRYPTO-MATERIAL-STORAGE-001 | 🔴 Alta | pre-FEDER |
+| DEBT-MUTEX-ROBUST-001 | 🟡 P1 | post-FEDER |
+| DEBT-IRP-MULTI-SIGNAL-001 | 🟡 P1 | post-FEDER |
+| DEBT-IRP-LAST-KNOWN-GOOD-001 | 🟢 Baja | post-FEDER |
 | DEBT-SEEDS-SECURE-TRANSFER-001 | 🔴 Alta | post-FEDER |
-
-| DEBT-KEY-SEPARATION-001 | 🟡 Media | post-FEDER |
 | DEBT-ADR040-001..012 | ⏳ | post-FEDER |
 | DEBT-ADR041-001..006 | ⏳ | pre-FEDER |
 
-### Próxima frontera — DAY 142
-1. EMECAS obligatorio
-2. `DEBT-IRP-NFTABLES-001` — sesión 1/3 (argus-network-isolate, nftables transaccional)
-3. `DEBT-VARIANT-B-BUFFER-SIZE-001` — pcap_create()+pcap_set_buffer_size()
-4. `DEBT-VARIANT-B-MUTEX-001` — script exclusión mutua Nivel 1
-
+### Próxima frontera — DAY 143
+1. EMECAS obligatorio + verificar reproducibilidad argus-network-isolate
+2. `DEBT-IRP-NFTABLES-001` sesión 3/3 — integración `firewall-acl-agent` + AppArmor
 
 ---
 
@@ -124,7 +122,8 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 | **BSR — Hardened VM** | **304 pkgs / 1.3 GB** | NONE (check-prod-no-compiler: OK) ✅ |
 | **AppArmor profiles** | **6/6 enforce** | cap_bpf (Linux ≥5.8), no cap_sys_admin |
 | **Falco rules** | **11 aRGus-specific** | modern_ebpf driver |
-| **Variant B tests** | **8/8 PASSED** | DAY 138 — unit/integ/stress/regression |
+| **Variant B tests** | **9/9 PASSED** | DAY 142 — buffer=8MB verificado |
+| **IRP cycle** | **PASS** | NORMAL→ISOLATED→ROLLBACK→NORMAL DAY 142 |
 
 ---
 
@@ -144,9 +143,41 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 | sniffer | `cap_net_admin,cap_net_raw,cap_bpf,cap_ipc_lock` |
 | firewall-acl-agent | `cap_net_admin` |
 | etcd-server | `cap_ipc_lock` (+ LimitMEMLOCK=16M) |
+| argus-network-isolate | `cap_net_admin` (AppArmor profile — DAY 143) |
 | ml-detector, rag-ingester, rag-security | none |
 
 ### AppArmor — 6 profiles enforce · Falco — 11 aRGus-specific rules
+
+---
+
+## 🛡️ Incident Response Protocol — ADR-042
+
+`argus-network-isolate` — binario C++20 independiente que aísla una interfaz de red via nftables en 6 pasos transaccionales:
+
+```
+1. Snapshot selectivo del ruleset actual (solo tabla argus_isolate)
+2. Generar reglas de aislamiento con whitelist IP/port configurable
+3. Validar en seco: nft -c -f (aborta sin tocar nada si falla)
+4. Aplicar atómico: nft -f (una sola operación)
+5. Timer systemd-run: rollback automático en 300s si nadie confirma
+6. Rollback: elimina tabla argus_isolate, restaura estado previo
+```
+
+**Disparado automáticamente** por `firewall-acl-agent` cuando:
+`threat_score >= 0.95 AND event_type IN (ransomware, lateral_movement, c2_beacon)`
+
+**Por defecto activo** (`auto_isolate: true`). Instalar y funcionar.
+
+```bash
+# Verificar estado
+argus-network-isolate status
+
+# Dry-run (pasos 1-3, sin aplicar)
+argus-network-isolate isolate --interface eth1 --dry-run
+
+# Rollback manual
+argus-network-isolate rollback --backup /tmp/argus-backup-<ts>.nft
+```
 
 ---
 
@@ -160,7 +191,7 @@ brew install --cask vagrant
 xcode-select --install
 ```
 
-> **Note:** `git clone --recurse-submodules` is required. `third_party/llama.cpp` is a git submodule. Cloning without this flag leaves it empty and `rag-security` builds without LLM support. Use `make submodule-init` to fix an existing clone.
+> **Note:** `git clone --recurse-submodules` is required. `third_party/llama.cpp` is a git submodule.
 
 ### Linux (Debian/Ubuntu)
 
@@ -169,7 +200,7 @@ sudo apt-get update
 sudo apt-get install -y make
 ```
 
-VirtualBox from official repo (apt may be outdated):
+VirtualBox from official repo:
 ```bash
 wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo gpg --dearmor -o /usr/share/keyrings/oracle-virtualbox.gpg
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox.gpg] https://download.virtualbox.org/virtualbox/debian $(lsb_release -cs) contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
@@ -187,66 +218,32 @@ sudo apt-get update && sudo apt-get install -y vagrant
 
 ```bash
 sudo dnf install -y make
-```
-
-VirtualBox:
-```bash
-sudo dnf install -y kernel-devel kernel-headers dkms
 sudo dnf config-manager --add-repo https://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo
 sudo dnf install -y VirtualBox-7.0
-```
-
-Vagrant:
-```bash
 sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 sudo dnf install -y vagrant
 ```
 
-> **Note:** `git clone --recurse-submodules` is required. `third_party/llama.cpp` is a git submodule. Cloning without this flag leaves it empty and `rag-security` builds without LLM support. Use `make submodule-init` to fix an existing clone.
-
-> **Note (RHEL/CentOS):** VirtualBox requires Secure Boot to be disabled or the kernel module to be signed. On WSL2, VirtualBox is not supported — use a native Linux install.
-
 ### Windows 11 (best-effort, not officially supported)
 
-> ⚠️ **aRGus NDR only produces Linux binaries** (x86-64 and ARM64). There are no Windows binaries and none are planned. The pipeline runs inside a Linux VM — Windows is only the host.
-
-Prerequisites:
 ```powershell
 winget install Git.Git
 winget install Oracle.VirtualBox
 winget install Hashicorp.Vagrant
 ```
 
-Run all commands from **Git Bash** (not CMD or PowerShell — the Makefile requires bash syntax).
-
-> ⚠️ **Hyper-V conflict:** Windows 11 enables Hyper-V by default for WSL2. VirtualBox 7.0+ has experimental Hyper-V support but with ~30% performance penalty. You must choose one of:
-> - Disable Hyper-V (loses WSL2): `bcdedit /set hypervisorlaunchtype off` + reboot
-> - Use VirtualBox 7.0+ in Hyper-V mode (slower, less stable)
-
-**Not tested by the maintainer.** If you hit issues on Windows 11, please [open an issue](https://github.com/alonsoir/argus/issues) — we'll help with the resources we have.
-
+Run all commands from **Git Bash**. Hyper-V conflict: VirtualBox 7.0+ has experimental Hyper-V support but with ~30% performance penalty.
 
 ---
 
 ## 🚀 Quick Start
 
-> ⚠️ **Vagrant is required.** Native Linux bootstrap without Vagrant is not yet implemented ([DEBT-NATIVE-LINUX-BOOTSTRAP-001](docs/KNOWN-DEBTS-v0.6.md)). Running `make` directly on a bare Linux host will fail.
-
 ```bash
-# STEP 1 — Clone with submodules (mandatory — llama.cpp is a git submodule)
+# STEP 1 — Clone with submodules (mandatory)
 git clone --recurse-submodules https://github.com/alonsoir/argus.git
 cd argus
 
-# Already cloned without --recurse-submodules? Fix it:
-# make submodule-init
-```
-
-> 📦 **TinyLlama model** (`tinyllama-1.1b-chat-v1.0.Q4_0.gguf`, ~700MB) is downloaded
-> automatically during `vagrant up`. It is gitignored and never committed to the repo.
-
-```bash
-# STEP 2 — Start VM and provision all dependencies (~20-30 min first time)
-# Downloads TinyLlama, builds llama.cpp, installs FAISS/ONNX/XGBoost/libsodium
+# STEP 2 — Start VM and provision (~20-30 min first time)
 make up && make bootstrap
 ```
 
@@ -260,19 +257,24 @@ vagrant destroy -f && vagrant up && make bootstrap && make test-all
 
 | Profile | Flags | Cuándo usarlo |
 |---------|-------|---------------|
-| `debug` (**default**) | `-g -O0` | Desarrollo diario — símbolos de depuración, sin optimización |
-| `production` | `-O3 -flto -march=native -DNDEBUG` | ODR verification, capacity benchmarks (FEDER), builds equivalentes a hardened VM |
-| `tsan` | `-fsanitize=thread -g -O1` | Detección de race conditions en código multihilo (EbpfBackend, RingBufferConsumer) |
-| `asan` | `-fsanitize=address,undefined -g -O1` | Detección de memory errors, buffer overflows, UB |
+| `debug` (**default**) | `-g -O0` | Desarrollo diario |
+| `production` | `-O3 -flto -march=native -DNDEBUG` | ODR verification, capacity benchmarks |
+| `tsan` | `-fsanitize=thread -g -O1` | Race conditions |
+| `asan` | `-fsanitize=address,undefined -g -O1` | Memory errors |
 
 ```bash
 make all                        # debug (default)
-make PROFILE=production all     # ODR check via LTO — equivalente a hardened VM
+make PROFILE=production all     # ODR check via LTO
 make PROFILE=tsan all           # ThreadSanitizer
 make PROFILE=asan all           # AddressSanitizer + UBSan
 ```
 
-> ⚠️ `PROFILE=production` activa `-flto` (Link Time Optimization), que fuerza verificación ODR cross-module en link time. Es el único profile que detecta ODR violations — **P0 bloqueante por decisión del Consejo DAY 138 (8/8)**. Tiempo de build estimado: 30–45 min en VM por la fase LTO del linker.
+### IRP Commands
+
+```bash
+make argus-network-isolate-build   # compilar
+make argus-network-isolate-test    # dry-run en eth1
+```
 
 ### Hardened VM (ADR-030 Variant A)
 
@@ -284,46 +286,43 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 
 ## 🗺️ Roadmap
 
-### ✅ DONE — DAY 138 (1 May 2026) — ADR-029 Variant B pipeline 🎉
-- [x] DEBT-CAPTURE-BACKEND-ISP-001 CERRADA — `CaptureBackend` 5 métodos puros
-- [x] DEBT-VARIANT-B-PCAP-IMPL-001 CERRADA — pipeline pcap → proto → LZ4 → ChaCha20 → ZMQ
-- [x] Suite 8 tests Variant B — 8/8 PASSED en make test-all
-- [x] `PcapCallbackData` — mecanismo callback sin friend/miembros públicos
-- [x] Wire format idéntico a Variant A — ml-detector recibe ambos sin modificación
-- [x] Consejo 8/8 DAY 138 — 7 veredictos, ODR P0 bloqueante confirmado
+### ✅ DONE — DAY 142 (5 May 2026) — IRP + Variant B completa 🎉
+- [x] DEBT-VARIANT-B-BUFFER-SIZE-001 CERRADA — `pcap_create()+pcap_set_buffer_size()` — buffer=8MB verificado
+- [x] DEBT-VARIANT-B-MUTEX-001 CERRADA (Nivel 1) — `scripts/check-sniffer-mutex.sh` via tmux
+- [x] DEBT-IRP-NFTABLES-001 sesiones 1/3 y 2/3 — pasos 1-6 implementados, ciclo completo verificado
+- [x] argus-network-isolate: timer systemd-run 300s, forense JSONL, rollback robusto
+- [x] Reproducibilidad EMECAS: Vagrantfile + provision.sh + Makefile garantizan reproducción
+- [x] Consejo 8/8 DAY 142 — auto_isolate por defecto, fork()+execv(), AppArmor enforce
 
-### ✅ DONE — DAY 137 (30 Apr 2026) — feature/variant-b-libpcap 🎉
-- [x] EMECAS dev + EMECAS hardened PASSED
-- [x] capture_backend.hpp · ebpf_backend.hpp/cpp · pcap_backend.hpp/cpp
-- [x] main_libpcap.cpp — Variant B sin #ifdef
-- [x] sniffer-libpcap compilable y arranca limpio
+### ✅ DONE — DAY 141 (4 May 2026)
+- [x] DEBT-VARIANT-B-CONFIG-001 — sniffer-libpcap.json propio, 9/9 tests
+- [x] DEBT-PCAP-CALLBACK-LIFETIME-DOC-001 — contrato lifetime
+- [x] Bug Makefile seed-client-build
+
+### ✅ DONE — DAY 140 (Apr 2026) — 192→0 warnings 🎉
+- [x] DEBT-COMPILER-WARNINGS-CLEANUP-001 — `-Werror` activo, ODR limpio
+
+### ✅ DONE — DAY 138 (1 May 2026) — ADR-029 Variant B pipeline 🎉
+- [x] DEBT-CAPTURE-BACKEND-ISP-001 — `CaptureBackend` 5 métodos puros
+- [x] DEBT-VARIANT-B-PCAP-IMPL-001 — pipeline pcap → proto → LZ4 → ChaCha20 → ZMQ
+- [x] Suite 8 tests Variant B — 8/8 PASSED
 
 ### ✅ DONE — DAY 135-136: v0.6.0 🎉
-- [x] make hardened-full EMECAS PASSED
 - [x] feature/adr030-variant-a → main MERGEADO
 - [x] Tag v0.6.0-hardened-variant-a publicado
-- [x] arXiv replace v15 → v18 ENVIADO
 
-### ✅ DONE — DAY 133-134: ADR-030 + ADR-040 + ADR-041 🎉
-- [x] AppArmor 6/6 enforce · Falco 10 reglas · cap_bpf · Paper v18
-- [x] ADR-040 ML Retraining Contract (8/8, 17 enmiendas)
-- [x] ADR-041 Hardware Acceptance Metrics FEDER (8/8)
-- [x] Pipeline E2E hardened · check-prod-all PASSED
-
-### 🔜 NEXT — DAY 139
+### 🔜 NEXT — DAY 143
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 BLOQUEANTE | `DEBT-COMPILER-WARNINGS-CLEANUP-001` — sub-tarea ODR (UB en C++20) |
-| 🔴 P0 | `DEBT-VARIANT-B-CONFIG-001` — sniffer-libpcap.json propio + test e2e |
-| 🔴 P0 | `DEBT-IRP-NFTABLES-001` — argus-network-isolate con nft -f transaccional |
-| 🟡 P1 | `DEBT-CRYPTO-MATERIAL-STORAGE-001` — prototipo HashiCorp Vault |
+| 🔴 P0 | `DEBT-IRP-NFTABLES-001` sesión 3/3 — integración firewall-acl-agent + AppArmor |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
 - DEBT-PENTESTER-LOOP-001 — ACRL completo
 - BACKLOG-FEDER-001 — presentación Andrés Caro Lindo
 - aRGus-production ARM64
+- DEBT-ETCD-HA-QUORUM-001 — etcd en HA con quorum (post-FEDER, OBLIGATORIO)
 - aRGus-seL4 research branch (post-FEDER, equipo especializado)
 
 ---
@@ -337,15 +336,14 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - ✅ DAY 124: **ADR-037 MERGED — v0.5.1-hardened** 🎉
 - ✅ DAY 129: **CWE-78 CERRADO — execv() sin shell** 🎉
 - ✅ DAY 130: **REGLA EMECAS · libFuzzer 2.4M runs** 🎉
-- ✅ DAY 133: **ADR-030 Variant A — cap_bpf · AppArmor 6/6 · Falco 10 reglas** 🎉
-- ✅ DAY 134: **ADR-040 (8/8, 17 enmiendas) · ADR-041 FEDER HW Metrics (8/8)** 🎉
+- ✅ DAY 133: **ADR-030 Variant A — cap_bpf · AppArmor 6/6 · Falco** 🎉
+- ✅ DAY 134: **ADR-040 (8/8) · ADR-041 FEDER HW Metrics (8/8)** 🎉
 - ✅ DAY 136: **v0.6.0-hardened-variant-a · merge main** 🎉
-- ✅ DAY 137: **feature/variant-b-libpcap · sniffer-libpcap compilable · KISS** 🎉
-- ✅ DAY 138: **ISP cerrado · pipeline Variant B completo · 8/8 tests · Consejo 8/8** 🎉
-- ✅ DAY 139: **192→67 warnings — Wreorder·OpenSSL·Wsign-conversion·Wconversion eliminados** 🎉
-- ✅ DAY 140: **192→0 warnings · -Werror activo · ODR limpio con LTO · Jenkinsfile skeleton · THIRDPARTY-MIGRATIONS.md** 🎉
-- ✅ DAY 141: **DEBT-VARIANT-B-CONFIG-001 · sniffer-libpcap.json · exclusión mutua · emails FEDER** 🎉
-- 🔜 DAY 142: **DEBT-IRP-NFTABLES-001 sesión 1 · DEBT-VARIANT-B-BUFFER-SIZE-001**
+- ✅ DAY 138: **ISP cerrado · pipeline Variant B completo · 8/8 tests** 🎉
+- ✅ DAY 140: **192→0 warnings · -Werror activo · ODR limpio** 🎉
+- ✅ DAY 141: **DEBT-VARIANT-B-CONFIG-001 · sniffer-libpcap.json · emails FEDER** 🎉
+- ✅ DAY 142: **IRP pasos 1-6 · buffer=8MB · mutex Nivel 1 · Consejo 8/8** 🎉
+- 🔜 DAY 143: **DEBT-IRP-NFTABLES-001 sesión 3/3 — integración firewall-acl-agent**
 
 ---
 
@@ -353,7 +351,7 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 
 **Claude** (Anthropic) · **Grok** (xAI) · **ChatGPT** (OpenAI) · **DeepSeek** · **Qwen** (Alibaba) · **Gemini** (Google) · **Kimi** (Moonshot) · **Mistral**
 
-Metodología: desacuerdo estructurado. Documentado en §6 del preprint.
+Metodología: desacuerdo estructurado. Documentado en §6 del preprint arXiv:2604.04952.
 
 ---
 
@@ -372,4 +370,4 @@ make check-prod-all         # 5/5 gates: BSR + AppArmor + cap_bpf + permissions 
 
 MIT License — See [LICENSE](LICENSE)
 
-**Via Appia Quality** 🏛️ — *Built to last decades.*````
+**Via Appia Quality** 🏛️ — *Built to last decades.*
