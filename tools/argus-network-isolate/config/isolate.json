@@ -1,0 +1,12 @@
+{
+  "_comment": "argus-network-isolate config — ADR-042 IRP",
+  "_version": "1.0.0",
+  "nft_path": "/usr/sbin/nft",
+  "backup_dir": "/tmp",
+  "rollback_timeout_sec": 300,
+  "table_name": "argus_isolate",
+  "whitelist_ips": ["127.0.0.1", "192.168.56.1"],
+  "whitelist_ports": [22],
+  "log_path": "/var/log/argus/network-isolate.log",
+  "forensic_log_path": "/var/log/argus/network-isolate-forensic.jsonl"
+}

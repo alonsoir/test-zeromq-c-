@@ -917,6 +917,34 @@ firewall-build: firewall
 etcd-server-build: etcd-server
 tools-build: tools
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# argus-network-isolate — ADR-042 Incident Response Protocol
+# DAY 142 — nftables transaccional (pasos 1-3 implementados)
+# ─────────────────────────────────────────────────────────────────────────────
+ARGUS_ISOLATE_BUILD_DIR := /vagrant/tools/build-argus-network-isolate
+
+.PHONY: argus-network-isolate-build argus-network-isolate-clean argus-network-isolate-test
+
+argus-network-isolate-build:
+	@echo ""
+	@echo "╔════════════════════════════════════════════════════════════╗"
+	@echo "║  🔨 Building argus-network-isolate [ADR-042 IRP]          ║"
+	@echo "╚════════════════════════════════════════════════════════════╝"
+	@vagrant ssh -c "rm -rf $(ARGUS_ISOLATE_BUILD_DIR) && mkdir -p $(ARGUS_ISOLATE_BUILD_DIR) && cd $(ARGUS_ISOLATE_BUILD_DIR) && cmake /vagrant/tools/argus-network-isolate -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-std=c++20 -Wall -Wextra -Wpedantic -Werror -g -O0' && make -j4"
+	@echo "✅ argus-network-isolate built"
+
+argus-network-isolate-test:
+	@echo "── argus-network-isolate: status ──"
+	@vagrant ssh -c "sudo $(ARGUS_ISOLATE_BUILD_DIR)/argus-network-isolate status --config /vagrant/tools/argus-network-isolate/config/isolate.json"
+	@echo "── argus-network-isolate: dry-run eth1 ──"
+	@vagrant ssh -c "sudo $(ARGUS_ISOLATE_BUILD_DIR)/argus-network-isolate isolate --interface eth1 --dry-run --config /vagrant/tools/argus-network-isolate/config/isolate.json"
+	@echo "✅ argus-network-isolate dry-run PASSED"
+
+argus-network-isolate-clean:
+	@vagrant ssh -c "rm -rf $(ARGUS_ISOLATE_BUILD_DIR)"
+	@echo "✅ argus-network-isolate cleaned"
+
 # ============================================================================
 # Clean Targets (REFACTORED - Day 57)
 # ============================================================================
