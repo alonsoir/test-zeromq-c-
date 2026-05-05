@@ -28,24 +28,44 @@ PcapBackend::~PcapBackend() {
 }
 
 bool PcapBackend::open(const std::string& interface,
+                        int buffer_size_mb,
                         PacketCallback cb, void* ctx) {
     cb_  = cb;
     ctx_ = ctx;
     cb_data_ = {cb, ctx};
 
     char errbuf[PCAP_ERRBUF_SIZE];
-    handle_ = pcap_open_live(interface.c_str(), 65535, 1, 1000, errbuf);
+
+    // DEBT-VARIANT-B-BUFFER-SIZE-001 closed DAY 142
+    // pcap_create()+pcap_set_buffer_size()+pcap_activate()
+    // Critico en ARM64/RPi donde kernel default es 2MB
+    handle_ = pcap_create(interface.c_str(), errbuf);
     if (!handle_) {
-        std::cerr << "❌ [pcap] pcap_open_live: " << errbuf << std::endl;
+        std::cerr << "[pcap] pcap_create: " << errbuf << std::endl;
         return false;
     }
+    int buffer_bytes = buffer_size_mb * 1024 * 1024;
+    if (pcap_set_buffer_size(handle_, buffer_bytes) != 0) {
+        std::cerr << "[pcap] pcap_set_buffer_size(" << buffer_size_mb
+                  << "MB) failed: " << pcap_geterr(handle_) << std::endl;
+        pcap_close(handle_); handle_ = nullptr; return false;
+    }
+    pcap_set_snaplen(handle_, 65535);
+    pcap_set_promisc(handle_, 1);
+    pcap_set_timeout(handle_, 1000);
+    int rc = pcap_activate(handle_);
+    if (rc < 0) {
+        std::cerr << "[pcap] pcap_activate: " << pcap_statustostr(rc) << std::endl;
+        pcap_close(handle_); handle_ = nullptr; return false;
+    }
+    if (rc > 0)
+        std::cerr << "[pcap] pcap_activate warning: " << pcap_statustostr(rc) << std::endl;
     if (pipe(pipe_fd_) != 0) {
-        std::cerr << "❌ [pcap] pipe() failed" << std::endl;
-        pcap_close(handle_);
-        handle_ = nullptr;
-        return false;
+        std::cerr << "[pcap] pipe() failed" << std::endl;
+        pcap_close(handle_); handle_ = nullptr; return false;
     }
-    std::cout << "✅ [pcap] Variant B — libpcap opened on " << interface << std::endl;
+    std::cout << "[pcap] Variant B opened on " << interface
+              << " buffer=" << buffer_size_mb << "MB" << std::endl;
     return true;
 }
 

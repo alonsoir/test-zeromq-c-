@@ -34,7 +34,7 @@ struct LibpcapConfig {
     // capture
     std::string interface       = "eth1";
     int         timeout_ms      = 1000;
-    int         buffer_size_mb  = 8;   // reservado — DEBT-VARIANT-B-BUFFER-SIZE-001
+    int         buffer_size_mb  = 8;   // closed DAY 142 — DEBT-VARIANT-B-BUFFER-SIZE-001
     // network
     std::string zmq_address     = "127.0.0.1";
     int         zmq_port        = 5571;
@@ -248,7 +248,7 @@ int main(int argc, char* argv[]) {
     // --- Abrir captura ---
     // Hardcodeado: snaplen=65535 (parser ETH/IP), promiscuous=1 (captura completa)
     sniffer::PcapBackend backend;
-    if (!backend.open(cfg.interface, packet_callback, &pc)) {
+    if (!backend.open(cfg.interface, cfg.buffer_size_mb, packet_callback, &pc)) {
         std::cerr << "❌ Failed to open libpcap on " << cfg.interface << "\n";
         return 1;
     }

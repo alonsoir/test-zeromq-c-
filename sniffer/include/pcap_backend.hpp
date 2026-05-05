@@ -25,6 +25,7 @@ public:
     ~PcapBackend() override;
 
     bool open(const std::string& interface,
+               int buffer_size_mb,
               PacketCallback cb, void* ctx) override;
     int  poll(int timeout_ms) override;
     void close() override;

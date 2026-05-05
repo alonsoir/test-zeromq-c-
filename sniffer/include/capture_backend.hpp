@@ -18,6 +18,7 @@ public:
 
     // Abrir dispositivo y registrar callback
     virtual bool open(const std::string& interface,
+                       int buffer_size_mb,
                       PacketCallback cb, void* ctx) = 0;
 
     // Poll bloqueante con timeout en ms — devuelve nº eventos o <0 error
