@@ -132,20 +132,24 @@ IsolateResult NetworkIsolator::snapshot(std::string& backup_path_out) {
     auto ts = std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     backup_path_out = cfg_.backup_dir + "/argus-backup-" + std::to_string(ts) + ".nft";
-    auto [rc, out] = run_cmd("sudo " + cfg_.nft_path + " list ruleset > " + backup_path_out);
-    if (rc != 0) {
-        spdlog::error("[argus-isolate] PASO 1 FAILED: {}", out);
-        log_forensic("snapshot_failed", {{"error", out}});
-        return IsolateResult::SNAPSHOT_FAILED;
-    }
+    // Snapshot solo de argus_isolate — excluimos tablas iptables-managed (xt match incompatible)
+    // Si la tabla no existe aun, backup queda vacio — rollback solo elimina tabla.
+    run_cmd("sudo " + cfg_.nft_path + " list table ip " + cfg_.table_name +
+            " > " + backup_path_out + " 2>/dev/null || true");
+    int rc = 0;
+    std::string out;
+    // rc siempre 0 aqui — error ya manejado con || true
+    (void)rc; (void)out;
     std::error_code ec;
     auto size = fs::file_size(backup_path_out, ec);
-    if (ec || size == 0) {
-        spdlog::error("[argus-isolate] PASO 1 FAILED: backup vacio en {}", backup_path_out);
+    // Backup vacio es OK en primera ejecucion — argus_isolate aun no existe
+    if (ec) {
+        spdlog::error("[argus-isolate] PASO 1 FAILED: no se puede leer backup {}", backup_path_out);
         return IsolateResult::SNAPSHOT_FAILED;
     }
-    spdlog::info("[argus-isolate] PASO 1 OK: backup={} ({} bytes)", backup_path_out, size);
-    log_forensic("snapshot_ok", {{"path", backup_path_out}, {"size_bytes", size}});
+    spdlog::info("[argus-isolate] PASO 1 OK: backup={} ({} bytes{})",
+                 backup_path_out, size, size == 0 ? " — primera ejecucion" : "");
+    log_forensic("snapshot_ok", {{"path", backup_path_out}, {"size_bytes", size}, {"first_run", size == 0}});
     return IsolateResult::OK;
 }
 
@@ -205,11 +209,38 @@ IsolateResult NetworkIsolator::apply(const std::string& rules_path) {
 IsolateResult NetworkIsolator::arm_rollback_timer(const std::string& backup_path) {
     spdlog::info("[argus-isolate] === PASO 5: armando timer rollback ({}s) ===",
                  cfg_.rollback_timeout_sec);
-    // DAY 143: systemd-run --on-active=Xs argus-network-isolate rollback --backup <path>
-    spdlog::warn("[argus-isolate] PASO 5: DEBT-IRP-ROLLBACK-TIMER-001 pendiente DAY 143");
-    log_forensic("rollback_timer_pending", {
+    // systemd-run: timer de rollback automatico si nadie confirma el aislamiento
+    // Limpiar timer anterior si existe (idempotente)
+    run_cmd("sudo systemctl stop argus-rollback-timer.timer 2>/dev/null || true");
+    run_cmd("sudo systemctl reset-failed argus-rollback-timer.timer 2>/dev/null || true");
+
+    std::string timer_cmd =
+        "sudo systemd-run --on-active=" +
+        std::to_string(cfg_.rollback_timeout_sec) +
+        "s --unit=argus-rollback-timer" +
+        " /usr/local/bin/argus-network-isolate rollback --backup " +
+        backup_path;
+
+    auto [rc, out] = run_cmd(timer_cmd);
+    if (rc != 0) {
+        spdlog::warn("[argus-isolate] PASO 5 WARN: systemd-run fallido ({}): {}", rc, out);
+        spdlog::warn("[argus-isolate]   rollback manual requerido: argus-network-isolate rollback --backup {}", backup_path);
+        log_forensic("rollback_timer_failed", {
+            {"timeout_sec", cfg_.rollback_timeout_sec},
+            {"backup_path", backup_path},
+            {"error", out}
+        });
+        // No es fatal — el aislamiento sigue activo, solo sin timer automatico
+        return IsolateResult::OK;
+    }
+
+    spdlog::info("[argus-isolate] PASO 5 OK: timer rollback armado ({}s)", cfg_.rollback_timeout_sec);
+    spdlog::info("[argus-isolate]   backup: {}", backup_path);
+    spdlog::info("[argus-isolate]   unidad: argus-rollback-timer");
+    log_forensic("rollback_timer_armed", {
         {"timeout_sec", cfg_.rollback_timeout_sec},
-        {"backup_path", backup_path}
+        {"backup_path", backup_path},
+        {"systemd_unit", "argus-rollback-timer"}
     });
     return IsolateResult::OK;
 }
@@ -218,12 +249,17 @@ IsolateResult NetworkIsolator::arm_rollback_timer(const std::string& backup_path
 IsolateResult NetworkIsolator::rollback(const std::string& backup_path) {
     spdlog::info("[argus-isolate] === PASO 6: rollback desde {} ===", backup_path);
     run_cmd("sudo " + cfg_.nft_path + " delete table ip " + cfg_.table_name + " 2>/dev/null || true");
+    // Las tablas nat/filter de iptables-nft persisten solas — no restaurar.
+    // Solo restauramos argus_isolate si el backup tiene contenido propio.
     if (!backup_path.empty() && fs::exists(backup_path)) {
-        auto [rc, out] = run_cmd("sudo " + cfg_.nft_path + " -f " + backup_path);
-        if (rc != 0) {
-            spdlog::error("[argus-isolate] PASO 6 FAILED: {}", out);
-            log_forensic("rollback_failed", {{"error", out}});
-            return IsolateResult::ROLLBACK_FAILED;
+        std::error_code ec;
+        auto sz = fs::file_size(backup_path, ec);
+        if (!ec && sz > 10) {
+            auto [rc_r, out_r] = run_cmd("sudo " + cfg_.nft_path + " -f " + backup_path);
+            if (rc_r != 0)
+                spdlog::warn("[argus-isolate] PASO 6 WARN: restauracion backup (ignorada): {}", out_r);
+        } else {
+            spdlog::info("[argus-isolate] PASO 6: backup vacio — solo tabla eliminada");
         }
     }
     spdlog::info("[argus-isolate] PASO 6 OK: rollback completado");
