@@ -59,7 +59,7 @@ validate-prod-configs:
 .PHONY: day38-full day38-status day38-clean day38-pipeline
 .PHONY: tsan-all tsan-quick tsan-clean tsan-summary tsan-status
 .PHONY: etcd-server-status pipeline-start pipeline-stop pipeline-status
-.PHONY: ml-detector-start firewall-start sniffer-start rag-ingester-start
+.PHONY: ml-detector-start firewall-start sniffer-start sniffer-libpcap-start rag-ingester-start
 .PHONY: etcd-server-start rag-start rag-stop dev-setup-tools pipeline-health
 .PHONY: provision provision-status provision-check provision-reprovision test-provision-1 test-invariant-seed
 .PHONY: seed-client-build seed-client-test seed-client-clean seed-client-rebuild
@@ -545,10 +545,19 @@ SNIFFER_BIN := ./build-debug/sniffer
 SNIFFER_CFG := ../config/sniffer.json
 
 sniffer-start:
-	@echo "🚀 Starting Sniffer (SUDO + TMUX + Hybrid Mode)..."
+	@echo "🚀 Starting Sniffer Variant A (eBPF/XDP)..."
+	@echo "── [mutex] Verificando exclusion mutua Variant A/B ──"
+	@vagrant ssh -c "bash /vagrant/scripts/check-sniffer-mutex.sh ebpf"
 	@vagrant ssh -c "tmux kill-session -t sniffer 2>/dev/null || true"
-	@echo "Lanzamos tmux y dentro ejecutamos sudo env para preservar el path de las librerías..."
 	@vagrant ssh -c "tmux new-session -d -s sniffer 'mkdir -p /vagrant/logs/lab && cd $(SNIFFER_DIR)/build-debug && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer -c $(SNIFFER_CFG) >> /vagrant/logs/lab/sniffer.log 2>&1'"
+	@sleep 2
+
+sniffer-libpcap-start:
+	@echo "🚀 Starting Sniffer Variant B (libpcap)..."
+	@echo "── [mutex] Verificando exclusion mutua Variant A/B ──"
+	@vagrant ssh -c "bash /vagrant/scripts/check-sniffer-mutex.sh libpcap"
+	@vagrant ssh -c "tmux kill-session -t sniffer-libpcap 2>/dev/null || true"
+	@vagrant ssh -c "tmux new-session -d -s sniffer-libpcap 'mkdir -p /vagrant/logs/lab && cd $(SNIFFER_LIBPCAP_BUILD_DIR) && sudo env LD_LIBRARY_PATH=/usr/local/lib ./sniffer-libpcap -c /etc/ml-defender/sniffer/sniffer-libpcap.json >> /vagrant/logs/lab/sniffer-libpcap.log 2>&1'"
 	@sleep 2
 
 sniffer: proto etcd-client-build plugin-loader-build
