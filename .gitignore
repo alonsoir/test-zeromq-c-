@@ -245,3 +245,4 @@ dist/vendor/*
 */build-production/
 firewall-acl-agent/fuzz/corpus/
 ml-training/.venv/
+tools/build-argus-network-isolate/
