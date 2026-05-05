@@ -102,7 +102,7 @@ Vagrant.configure("2") do |config|
 
       # 1. Instalar herramientas de red
       apt-get update -qq
-      apt-get install -y ethtool tcpdump iptables iproute2
+      apt-get install -y ethtool tcpdump iptables nftables iproute2
 
       # 2. Configurar IP forwarding para gateway mode
       echo "🌐 Activando IP forwarding para gateway mode..."

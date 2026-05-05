@@ -274,6 +274,8 @@ check-system-deps:
 	@vagrant ssh -c "bash /vagrant/tools/check-xgboost-version.sh" || { echo '❌ xgboost 3.2.0 missing'; exit 1; }
 	@vagrant ssh -c "test -f /usr/local/lib/libxgboost.so || { echo '❌ libxgboost.so missing'; exit 1; }"
 	@vagrant ssh -c "test -f /usr/local/lib/libcrypto_transport.so || { echo '❌ libcrypto_transport.so missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/sbin/nft || { echo '❌ nftables missing'; exit 1; }"
+	@vagrant ssh -c "test -f /usr/local/bin/argus-network-isolate || { echo '❌ argus-network-isolate missing — run: make pipeline-build'; exit 1; }"
 	@echo "✅ Todas las dependencias del sistema presentes"
 
 post-up-verify:
@@ -853,7 +855,7 @@ set-build-profile:
 # 4. sign-plugins    → firma Ed25519 (ADR-025)
 # 5. test-provision-1 → CI gate PHASE 3
 # 6. pipeline-start  → arranca los 6 componentes
-pipeline-build: crypto-transport-build seed-client-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer firewall-build
+pipeline-build: crypto-transport-build seed-client-build etcd-client-build plugin-loader-build plugin-test-message-build etcd-server rag-build rag-ingester-build ml-detector sniffer firewall-build argus-network-isolate-build argus-network-isolate-install
 
 tools: proto etcd-client-build crypto-transport-build
 	@echo ""
@@ -940,6 +942,11 @@ argus-network-isolate-test:
 	@echo "── argus-network-isolate: dry-run eth1 ──"
 	@vagrant ssh -c "sudo $(ARGUS_ISOLATE_BUILD_DIR)/argus-network-isolate isolate --interface eth1 --dry-run --config /vagrant/tools/argus-network-isolate/config/isolate.json"
 	@echo "✅ argus-network-isolate dry-run PASSED"
+
+argus-network-isolate-install:
+	@echo "── Instalando argus-network-isolate en /usr/local/bin/ ──"
+	@vagrant ssh -c "sudo cp $(ARGUS_ISOLATE_BUILD_DIR)/argus-network-isolate /usr/local/bin/argus-network-isolate && sudo chmod 755 /usr/local/bin/argus-network-isolate"
+	@echo "✅ argus-network-isolate instalado"
 
 argus-network-isolate-clean:
 	@vagrant ssh -c "rm -rf $(ARGUS_ISOLATE_BUILD_DIR)"
