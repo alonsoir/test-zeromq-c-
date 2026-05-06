@@ -61,6 +61,34 @@ No topología por quirófano (inviable). Todas las señales disponibles con
 pesos → probabilidad conjunta → decisión auditable + publicable.
 DEBT-PROTO-DETECTION-TYPES-001 — Ampliar enum post-MITRE/CTF.
 
+## EXPERIMENTO POST-MERGE — aRGus vs Suricata vs Zeek
+
+**Acordado DAY 143 — primer tema del Consejo post-merge.**
+
+**Contexto:** Suricata (2009), Zeek/Bro (1994), Snort (1998) llevan décadas operando.
+No hay que tenerles miedo — hay que entender empíricamente dónde están ellos y
+dónde estamos nosotros. La verdad, sea cual sea, es más valiosa que la narrativa
+que queremos contar.
+
+**Hipótesis a demostrar (no afirmar):**
+- Ellos detectan lo CONOCIDO mejor que nadie — reglas ET, firmas CVE, patrones catalogados.
+- aRGus detecta lo DESCONOCIDO mejor que ellos — comportamiento anómalo sin firma previa.
+- F1=0.9985 Recall=1.0000 sobre CTU-13 Neris es el baseline. ¿Lo igualan o superan?
+- Si el experimento dice que Suricata también lo detecta — mejor saberlo ahora que en FEDER.
+
+**Diseño del experimento (a desarrollar con el Consejo):**
+- Tráfico base: CTU-13 Neris (baseline conocido, resultados aRGus ya documentados)
+- Tráfico adversarial: MITRE ATT&CK (primer escenario real sin firma conocida)
+- Los tres sistemas sobre el mismo tráfico simultáneamente
+- Métricas: qué detecta cada uno, solapamiento, qué solo ve uno de los tres
+- Contribución científica: complementariedad de detectores para paper arXiv v19
+
+**Orden DAY 144+:**
+1. EMECAS + deudas P0 pre-merge (SIGCHLD, AUTOISO-FALSE, BACKUP-DIR)
+2. PROFILE=production gate ODR
+3. Merge feature/variant-b-libpcap → main → tag v0.7.0-variant-b
+4. Diseño experimento aRGus + Suricata + Zeek (Consejo 8/8)
+5. 
 REGLAS PERMANENTES:
 - REGLA EMECAS: vagrant destroy -f && vagrant up && make bootstrap && make test-all
 - macOS: nunca sed -i sin -e '' — usar python3 << 'PYEOF' o vagrant ssh << 'SSHEOF'
