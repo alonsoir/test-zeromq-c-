@@ -22,5 +22,6 @@
     "ransomware",
     "lateral_movement",
     "c2_beacon"
-  ]
+  ],
+  "isolate_interface": "eth1"
 }

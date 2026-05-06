@@ -37,6 +37,7 @@ IsolateConfig IsolateConfig::from_file(const std::string& path) {
     if (j.contains("auto_isolate_event_types"))
         cfg.auto_isolate_event_types =
             j["auto_isolate_event_types"].get<std::vector<std::string>>();
+    cfg.isolate_interface = j.value("isolate_interface", "eth0");
     return cfg;
 }
 

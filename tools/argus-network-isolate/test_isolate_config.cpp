@@ -21,6 +21,7 @@ int main() {
         write_json(p, R"({
             "auto_isolate": true,
             "threat_score_threshold": 0.95,
+            "isolate_interface": "eth2",
             "auto_isolate_event_types": ["ransomware","lateral_movement","c2_beacon"]
         })");
         auto cfg = argus::irp::IsolateConfig::from_file(p);
@@ -31,6 +32,10 @@ int main() {
         if (cfg.threat_score_threshold != 0.95) {
             std::cerr << "FAIL TEST-1b: threat_score_threshold debe ser 0.95\n"; ++failures;
         } else std::cout << "PASS TEST-1b: threat_score_threshold=0.95\n";
+
+        if (cfg.isolate_interface != "eth2") {
+            std::cerr << "FAIL TEST-1d: isolate_interface debe ser eth2\n"; ++failures;
+        } else std::cout << "PASS TEST-1d: isolate_interface=eth2\n";
 
         if (cfg.auto_isolate_event_types.size() != 3 ||
             cfg.auto_isolate_event_types[0] != "ransomware" ||
@@ -53,6 +58,10 @@ int main() {
             std::cerr << "FAIL TEST-2b: default threat_score_threshold debe ser 0.95\n"; ++failures;
         } else std::cout << "PASS TEST-2b: default threat_score_threshold=0.95\n";
 
+        if (cfg.isolate_interface != "eth0") {
+            std::cerr << "FAIL TEST-2d: default isolate_interface debe ser eth0\n"; ++failures;
+        } else std::cout << "PASS TEST-2d: default isolate_interface=eth0\n";
+
         if (!cfg.auto_isolate_event_types.empty()) {
             std::cerr << "FAIL TEST-2c: default auto_isolate_event_types debe ser vacío\n"; ++failures;
         } else std::cout << "PASS TEST-2c: default auto_isolate_event_types=[]\n";
@@ -74,7 +83,7 @@ int main() {
 
     std::cout << "\n";
     if (failures == 0)
-        std::cout << "✅ test_isolate_config: ALL PASSED (7/7)\n";
+        std::cout << "✅ test_isolate_config: ALL PASSED (9/9)\n";
     else
         std::cout << "❌ test_isolate_config: " << failures << " FAILED\n";
 

@@ -23,6 +23,7 @@ struct IsolateConfig {
     bool                     auto_isolate           = true;
     double                   threat_score_threshold = 0.95;
     std::vector<std::string> auto_isolate_event_types;
+    std::string              isolate_interface      = "eth0";
 
     static IsolateConfig from_file(const std::string& path);
 };
