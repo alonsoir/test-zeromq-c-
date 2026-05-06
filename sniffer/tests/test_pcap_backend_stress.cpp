@@ -35,7 +35,7 @@ TEST(PcapBackendStress, RepeatedOpenCloseNoLeak) {
     // 100 ciclos open(inválida)/close — no crash, no leak (valgrind-safe)
     for (int i = 0; i < 100; ++i) {
         PcapBackend backend;
-        backend.open("nonexistent_iface_xyz", nullptr, nullptr);
+        backend.open("nonexistent_iface_xyz", 8*1024*1024, nullptr, nullptr);
         backend.close();
         EXPECT_EQ(backend.get_fd(), -1);
     }

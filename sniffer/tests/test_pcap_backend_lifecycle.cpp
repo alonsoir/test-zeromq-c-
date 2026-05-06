@@ -9,13 +9,13 @@ using namespace sniffer;
 
 TEST(PcapBackendLifecycle, OpenInvalidIfaceReturnsFalse) {
     PcapBackend backend;
-    bool result = backend.open("nonexistent_iface_xyz", nullptr, nullptr);
+    bool result = backend.open("nonexistent_iface_xyz", 8*1024*1024, nullptr, nullptr);
     EXPECT_FALSE(result);
 }
 
 TEST(PcapBackendLifecycle, CloseAfterFailedOpenIsSafe) {
     PcapBackend backend;
-    backend.open("nonexistent_iface_xyz", nullptr, nullptr);
+    backend.open("nonexistent_iface_xyz", 8*1024*1024, nullptr, nullptr);
     EXPECT_NO_THROW(backend.close());
 }
 

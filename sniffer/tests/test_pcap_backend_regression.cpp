@@ -8,7 +8,7 @@ using namespace sniffer;
 
 TEST(PcapBackendRegression, StateCleanAfterFailedOpen) {
     PcapBackend backend;
-    backend.open("nonexistent_iface_xyz", nullptr, nullptr);
+    backend.open("nonexistent_iface_xyz", 8*1024*1024, nullptr, nullptr);
     // Estado debe ser limpio: fd=-1, count=0, poll devuelve -1
     EXPECT_EQ(backend.get_fd(), -1);
     EXPECT_EQ(backend.get_packet_count(), 0u);
@@ -18,7 +18,7 @@ TEST(PcapBackendRegression, StateCleanAfterFailedOpen) {
 TEST(PcapBackendRegression, MultipleDestructorCyclesSafe) {
     for (int i = 0; i < 50; ++i) {
         PcapBackend b;
-        b.open("nonexistent_iface_xyz", nullptr, nullptr);
+        b.open("nonexistent_iface_xyz", 8*1024*1024, nullptr, nullptr);
         // destructor al salir del scope
     }
     SUCCEED(); // si llega aquí, no hay crash
