@@ -15,5 +15,12 @@
     22
   ],
   "log_path": "/var/log/argus/network-isolate.log",
-  "forensic_log_path": "/var/log/argus/network-isolate-forensic.jsonl"
+  "forensic_log_path": "/var/log/argus/network-isolate-forensic.jsonl",
+  "auto_isolate": true,
+  "threat_score_threshold": 0.95,
+  "auto_isolate_event_types": [
+    "ransomware",
+    "lateral_movement",
+    "c2_beacon"
+  ]
 }
