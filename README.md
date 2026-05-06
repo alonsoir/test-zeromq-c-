@@ -11,7 +11,7 @@
 [![Plugin Integrity](https://img.shields.io/badge/Plugin_Integrity-ADR--025_Ed25519-brightgreen)](docs/adr/ADR-025-plugin-integrity-ed25519.md)
 [![safe_path](https://img.shields.io/badge/safe__path-ADR--037_header--only-brightgreen)](contrib/safe-path/)
 [![PHASE 4](https://img.shields.io/badge/PHASE_4-COMPLETADA-brightgreen)]()
-[![AppArmor](https://img.shields.io/badge/AppArmor-6%2F6_enforce-brightgreen)]()
+[![AppArmor](https://img.shields.io/badge/AppArmor-7%2F7_enforce-brightgreen)]()
 [![Falco](https://img.shields.io/badge/Falco-11_reglas_aRGus-brightgreen)]()
 [![BSR](https://img.shields.io/badge/BSR-cap__bpf_ADR--039-brightgreen)]()
 [![ADR-040](https://img.shields.io/badge/ADR--040-ML_Retraining_Contract-blue)](docs/adr/ADR-040-ml-plugin-retraining-contract.md)
@@ -35,9 +35,9 @@
 
 ---
 
-## Estado actual — DAY 142 (2026-05-05)
+## Estado actual — DAY 143 (2026-05-06)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `9458a90d`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `f00b1809`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
 **FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
@@ -58,7 +58,12 @@
 
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
-| DEBT-IRP-NFTABLES-001 sesión 3/3 | 🔴 P0 | pre-FEDER (DAY 143) |
+| ~~DEBT-IRP-NFTABLES-001~~ | ✅ CERRADA | DAY 143 |
+| DEBT-IRP-SIGCHLD-001 | 🔴 P0 | pre-merge (SA_NOCLDWAIT) |
+| DEBT-IRP-AUTOISO-FALSE-001 | 🔴 P0 | pre-merge (auto_isolate false) |
+| DEBT-IRP-BACKUP-DIR-001 | 🔴 P0 | pre-merge (/run/argus/irp/) |
+| DEBT-IRP-FLOAT-TYPES-001 | 🟡 P1 | pre-FEDER (tipos score) |
+| DEBT-IRP-PROB-CONJUNTA-001 | 🟡 P1 | post-FEDER (señal conjunta) |
 | DEBT-ETCD-HA-QUORUM-001 | 🔴 P0 | post-FEDER (OBLIGATORIO) |
 | DEBT-IRP-QUEUE-PROCESSOR-001 | 🔴 Alta | post-merge |
 | DEBT-JENKINS-SEED-DISTRIBUTION-001 | 🔴 Alta | pre-FEDER |
@@ -143,7 +148,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 | sniffer | `cap_net_admin,cap_net_raw,cap_bpf,cap_ipc_lock` |
 | firewall-acl-agent | `cap_net_admin` |
 | etcd-server | `cap_ipc_lock` (+ LimitMEMLOCK=16M) |
-| argus-network-isolate | `cap_net_admin` (AppArmor profile — DAY 143) |
+| argus-network-isolate | `cap_net_admin` (AppArmor enforce — DAY 143) |
 | ml-detector, rag-ingester, rag-security | none |
 
 ### AppArmor — 6 profiles enforce · Falco — 11 aRGus-specific rules
@@ -166,7 +171,7 @@ Democratize enterprise-grade cybersecurity for hospitals, schools, and small org
 **Disparado automáticamente** por `firewall-acl-agent` cuando:
 `threat_score >= 0.95 AND event_type IN (ransomware, lateral_movement, c2_beacon)`
 
-**Por defecto activo** (`auto_isolate: true`). Instalar y funcionar.
+**Por defecto:** `auto_isolate: false` — habilitar explícitamente tras configurar whitelist. (DEBT-IRP-AUTOISO-FALSE-001)
 
 ```bash
 # Verificar estado
@@ -311,11 +316,15 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - [x] feature/adr030-variant-a → main MERGEADO
 - [x] Tag v0.6.0-hardened-variant-a publicado
 
-### 🔜 NEXT — DAY 143
+### 🔜 NEXT — DAY 144
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 | `DEBT-IRP-NFTABLES-001` sesión 3/3 — integración firewall-acl-agent + AppArmor |
+| 🔴 P0 | Merge `feature/variant-b-libpcap` → main · `PROFILE=production` gate ODR |
+| 🔴 P0 | DEBT-IRP-SIGCHLD-001 — `SA_NOCLDWAIT` pre-merge |
+| 🔴 P0 | DEBT-IRP-AUTOISO-FALSE-001 — `auto_isolate: false` por defecto |
+| 🔴 P0 | DEBT-IRP-BACKUP-DIR-001 — `/run/argus/irp/` + Falco |
+| 🟡 P1 | ADR-029 Variant A vs B benchmark — contribución científica paper |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
@@ -343,7 +352,8 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - ✅ DAY 140: **192→0 warnings · -Werror activo · ODR limpio** 🎉
 - ✅ DAY 141: **DEBT-VARIANT-B-CONFIG-001 · sniffer-libpcap.json · emails FEDER** 🎉
 - ✅ DAY 142: **IRP pasos 1-6 · buffer=8MB · mutex Nivel 1 · Consejo 8/8** 🎉
-- 🔜 DAY 143: **DEBT-IRP-NFTABLES-001 sesión 3/3 — integración firewall-acl-agent**
+- ✅ DAY 143: **DEBT-IRP-NFTABLES-001 sesión 3/3 CERRADA — IRP completo · AppArmor 7/7 · 12 tests** 🎉
+- 🔜 DAY 144: **Merge feature/variant-b-libpcap → main · PROFILE=production gate · ADR-029 benchmark**
 
 ---
 

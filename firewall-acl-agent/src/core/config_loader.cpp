@@ -132,6 +132,8 @@ FirewallAgentConfig ConfigLoader::load_from_file(const std::string& config_path,
     if (root.isMember("batch_processor")) {
         config.batch_processor = parse_batch_processor(root["batch_processor"]);
     }
+    // ADR-042: cargar IRP config desde isolate.json (path fijo producción)
+    config.irp = parse_irp("/etc/ml-defender/firewall-acl-agent/isolate.json");
     
     if (root.isMember("validation")) {
         config.validation = parse_validation(root["validation"]);
@@ -242,6 +244,36 @@ IPTablesConfigNew ConfigLoader::parse_iptables(const Json::Value& json) {
     config.create_chain = get_optional<bool>(json, "create_chain", true);
     config.insert_rule_position = get_optional<int>(json, "insert_rule_position", 1);
     return config;
+}
+
+IrpConfig ConfigLoader::parse_irp(const std::string& isolate_json_path) {
+    IrpConfig cfg;
+    std::ifstream f(isolate_json_path);
+    if (!f.is_open()) {
+        // isolate.json ausente — IRP desactivado, no es error fatal
+        cfg.auto_isolate = false;
+        return cfg;
+    }
+    try {
+        Json::Value j;
+        Json::CharReaderBuilder rb;
+        std::string errs;
+        if (!Json::parseFromStream(rb, f, &j, &errs)) {
+            cfg.auto_isolate = false;
+            return cfg;
+        }
+        cfg.auto_isolate           = j.get("auto_isolate",           true).asBool();
+        cfg.threat_score_threshold = j.get("threat_score_threshold", 0.95).asDouble();
+        cfg.isolate_interface      = j.get("isolate_interface",      "eth0").asString();
+        cfg.isolate_config_path    = isolate_json_path;
+        if (j.isMember("auto_isolate_event_types")) {
+            for (const auto& v : j["auto_isolate_event_types"])
+                cfg.auto_isolate_event_types.push_back(v.asString());
+        }
+    } catch (...) {
+        cfg.auto_isolate = false;
+    }
+    return cfg;
 }
 
 BatchProcessorConfigNew ConfigLoader::parse_batch_processor(const Json::Value& json) {

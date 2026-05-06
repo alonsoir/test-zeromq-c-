@@ -578,7 +578,11 @@ int main(int argc, char** argv) {
 
         FIREWALL_LOG_INFO("Initializing batch processor");
         BatchProcessor processor(ipset, batch_config);
-        FIREWALL_LOG_INFO("Batch processor started successfully");
+        processor.set_irp_config(config.irp);  // ADR-042
+        FIREWALL_LOG_INFO("Batch processor started successfully",
+            "irp_auto_isolate", config.irp.auto_isolate,
+            "irp_threshold",    config.irp.threat_score_threshold,
+            "irp_interface",    config.irp.isolate_interface);
 
         // ───────────────────────────────────────────────────────────────────
         // ZMQ Configuration (Day 50: Enhanced transport logging)

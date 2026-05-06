@@ -154,6 +154,17 @@ struct LoggingConfigNew {
     };
 
 //===----------------------------------------------------------------------===//
+// IRP Configuration (ADR-042 — auto-isolate via argus-network-isolate)
+//===----------------------------------------------------------------------===//
+struct IrpConfig {
+    bool        auto_isolate           = true;
+    double      threat_score_threshold = 0.95;
+    std::string isolate_interface      = "eth0";
+    std::string isolate_config_path    = "/etc/ml-defender/firewall-acl-agent/isolate.json";
+    std::string isolate_binary_path    = "/usr/local/bin/argus-network-isolate";
+    std::vector<std::string> auto_isolate_event_types;
+};
+//===----------------------------------------------------------------------===//
 // MAIN CONFIGURATION STRUCTURE
 //===----------------------------------------------------------------------===//
 struct FirewallAgentConfig {
@@ -168,6 +179,7 @@ struct FirewallAgentConfig {
     EtcdConfig etcd;
     TransportConfig transport;  // ✅ Day 23: AÑADIR ESTA LÍNEA
     CsvBatchLoggerConfig csv_batch_logger;  // ✅ Day 59
+    IrpConfig irp;                           // ADR-042 auto-isolate
 
     bool is_valid() const { return true; }
     std::vector<std::string> validate() const { return {}; }
@@ -195,6 +207,7 @@ private:
     static std::map<std::string, IPSetConfigNew> parse_ipsets(const Json::Value& json);
     static IPTablesConfigNew parse_iptables(const Json::Value& json);
     static BatchProcessorConfigNew parse_batch_processor(const Json::Value& json);
+    static IrpConfig parse_irp(const std::string& isolate_json_path);
     static ValidationConfig parse_validation(const Json::Value& json);
     static LoggingConfigNew parse_logging(const Json::Value& json);
     static EtcdConfig parse_etcd(const Json::Value& json);
