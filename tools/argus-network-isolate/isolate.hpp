@@ -20,6 +20,9 @@ struct IsolateConfig {
     int         rollback_timeout_sec = 300;
     std::vector<std::string> whitelist_ips;
     std::vector<int>         whitelist_ports;
+    bool                     auto_isolate           = true;
+    double                   threat_score_threshold = 0.95;
+    std::vector<std::string> auto_isolate_event_types;
 
     static IsolateConfig from_file(const std::string& path);
 };

@@ -234,7 +234,7 @@ help:
 # DEBT-BOOTSTRAP-001 + DEBT-INFRA-VERIFY-001/002 — DAY 120
 # ============================================================================
 
-.PHONY: bootstrap check-system-deps post-up-verify
+.PHONY: bootstrap check-system-deps check-build-artifacts post-up-verify
 
 bootstrap:
 	@echo "╔════════════════════════════════════════════════════════════╗"
@@ -251,6 +251,7 @@ bootstrap:
 	@$(MAKE) install-systemd-units
 	@echo "[5/8] Compilando pipeline (incluye pubkey runtime + plugin-test-message)..."
 	@$(MAKE) pipeline-build
+	@$(MAKE) check-build-artifacts
 	@echo "[6/8] Desplegando modelos ML..."
 	@$(MAKE) deploy-models
 	@echo "[6b/8] Firmando plugins..."
@@ -275,8 +276,12 @@ check-system-deps:
 	@vagrant ssh -c "test -f /usr/local/lib/libxgboost.so || { echo '❌ libxgboost.so missing'; exit 1; }"
 	@vagrant ssh -c "test -f /usr/local/lib/libcrypto_transport.so || { echo '❌ libcrypto_transport.so missing'; exit 1; }"
 	@vagrant ssh -c "test -f /usr/sbin/nft || { echo '❌ nftables missing'; exit 1; }"
-	@vagrant ssh -c "test -f /usr/local/bin/argus-network-isolate || { echo '❌ argus-network-isolate missing — run: make pipeline-build'; exit 1; }"
 	@echo "✅ Todas las dependencias del sistema presentes"
+
+check-build-artifacts:
+	@echo "🔍 Verificando artefactos de build..."
+	@vagrant ssh -c "test -f /usr/local/bin/argus-network-isolate || { echo '❌ argus-network-isolate missing'; exit 1; }"
+	@echo "✅ Artefactos de build presentes"
 
 post-up-verify:
 	@echo "🔍 Verificando entorno post-up..."
@@ -946,6 +951,8 @@ argus-network-isolate-build:
 	@echo "✅ argus-network-isolate built"
 
 argus-network-isolate-test:
+	@echo "── argus-network-isolate: unit tests ──"
+	@vagrant ssh -c "cd $(ARGUS_ISOLATE_BUILD_DIR) && ctest --output-on-failure"
 	@echo "── argus-network-isolate: status ──"
 	@vagrant ssh -c "sudo $(ARGUS_ISOLATE_BUILD_DIR)/argus-network-isolate status --config /vagrant/tools/argus-network-isolate/config/isolate.json"
 	@echo "── argus-network-isolate: dry-run eth1 ──"
@@ -1093,7 +1100,7 @@ test-components:
 	@vagrant ssh -c "cd $(RAG_BUILD_DIR) && ctest --output-on-failure" || echo "⚠️  No rag-security tests configured"
 	@echo ""
 
-test-all: test-libs test-components test-provision-1 test-invariant-seed plugin-integ-test
+test-all: test-libs test-components test-provision-1 test-invariant-seed plugin-integ-test argus-network-isolate-test
 	@echo ""
 	@echo "╔════════════════════════════════════════════════════════════╗"
 	@echo "║  ✅ ALL TESTS COMPLETE                                    ║"

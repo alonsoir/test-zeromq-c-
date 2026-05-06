@@ -39,3 +39,13 @@ install(TARGETS argus-network-isolate RUNTIME DESTINATION /usr/local/bin)
 message(STATUS "========================================")
 message(STATUS "argus-network-isolate — ADR-042 IRP")
 message(STATUS "========================================")
+# ── Unit tests (ADR-042 DAY 143) ─────────────────────────────────────────
+add_executable(test_isolate_config
+    test_isolate_config.cpp
+    isolate.cpp
+)
+target_include_directories(test_isolate_config PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_isolate_config PRIVATE spdlog::spdlog nlohmann_json::nlohmann_json Threads::Threads)
+enable_testing()
+add_test(NAME test_isolate_config COMMAND test_isolate_config)
+

@@ -32,6 +32,11 @@ IsolateConfig IsolateConfig::from_file(const std::string& path) {
         cfg.whitelist_ips = j["whitelist_ips"].get<std::vector<std::string>>();
     if (j.contains("whitelist_ports"))
         cfg.whitelist_ports = j["whitelist_ports"].get<std::vector<int>>();
+    cfg.auto_isolate           = j.value("auto_isolate",           true);
+    cfg.threat_score_threshold = j.value("threat_score_threshold", 0.95);
+    if (j.contains("auto_isolate_event_types"))
+        cfg.auto_isolate_event_types =
+            j["auto_isolate_event_types"].get<std::vector<std::string>>();
     return cfg;
 }
 
