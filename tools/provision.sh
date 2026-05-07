@@ -1239,6 +1239,14 @@ provision_full() {
             chmod 640 "${irp_config}"
             chown root:vagrant "${irp_config}" 2>/dev/null || true
             log_item "isolate.json instalado en ${irp_config}"
+        # DEBT-IRP-BACKUP-DIR-001: directorios IRP seguros
+        mkdir -p /run/argus/irp
+        chmod 0700 /run/argus/irp
+        chown argus:argus /run/argus/irp 2>/dev/null || chown root:root /run/argus/irp
+        mkdir -p /var/lib/argus/irp
+        chmod 0700 /var/lib/argus/irp
+        chown argus:argus /var/lib/argus/irp 2>/dev/null || chown root:root /var/lib/argus/irp
+        log_item "IRP dirs: /run/argus/irp (tmpfs) + /var/lib/argus/irp (persistente)"
         else
             log_error "isolate.json no encontrado en ${src_config} — despliegue abortado (ADR-042)"
             exit 1

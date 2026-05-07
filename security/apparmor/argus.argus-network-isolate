@@ -30,9 +30,13 @@ profile argus-network-isolate /usr/local/bin/argus-network-isolate {
   # ── nft — único binario que puede invocar ──────────────────────────────────
   /usr/sbin/nft  ix,
 
-  # ── /tmp — backup nftables + ruleset temporal ──────────────────────────────
-  /tmp/argus-backup-*.nft    rw,
-  /tmp/argus-isolate-*.nft   rw,
+  # ── /run/argus/irp — backup nftables + ruleset temporal (DEBT-IRP-BACKUP-DIR-001) ──
+  /run/argus/irp/                    rw,
+  /run/argus/irp/argus-backup-*.nft  rw,
+  /run/argus/irp/argus-isolate-*.nft rw,
+
+  # ── /var/lib/argus/irp — estado IRP persistente ────────────────────────────
+  /var/lib/argus/irp/                rw,
 
   # ── Logs ───────────────────────────────────────────────────────────────────
   /var/log/argus/                        rw,

@@ -13,7 +13,7 @@ namespace argus::irp {
 
 struct IsolateConfig {
     std::string nft_path          = "/usr/sbin/nft";
-    std::string backup_dir        = "/tmp";
+    std::string backup_dir        = "/run/argus/irp";  // DEBT-IRP-BACKUP-DIR-001
     std::string table_name        = "argus_isolate";
     std::string log_path          = "/var/log/argus/network-isolate.log";
     std::string forensic_log_path = "/var/log/argus/network-isolate-forensic.jsonl";
