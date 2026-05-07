@@ -250,19 +250,27 @@ IrpConfig ConfigLoader::parse_irp(const std::string& isolate_json_path) {
     IrpConfig cfg;
     std::ifstream f(isolate_json_path);
     if (!f.is_open()) {
-        // isolate.json ausente — IRP desactivado, no es error fatal
-        cfg.auto_isolate = false;
-        return cfg;
+        // DEBT-IRP-AUTOISO-FALSE-001: isolate.json ausente = error de despliegue.
+        // No hay fallback silencioso — única fuente de verdad (ADR-042).
+        throw std::runtime_error(
+            "[IRP] isolate.json no encontrado en: " + isolate_json_path +
+            " — despliegue incompleto. Ejecute make bootstrap o provision.sh.");
     }
     try {
         Json::Value j;
         Json::CharReaderBuilder rb;
         std::string errs;
         if (!Json::parseFromStream(rb, f, &j, &errs)) {
-            cfg.auto_isolate = false;
-            return cfg;
+            throw std::runtime_error(
+                "[IRP] JSON malformado en: " + isolate_json_path + " — " + errs);
         }
-        cfg.auto_isolate           = j.get("auto_isolate",           true).asBool();
+        // DEBT-IRP-AUTOISO-FALSE-001: isolate.json es la ÚNICA fuente de verdad.
+        // Campo obligatorio — sin fallback. Si falta, es error de configuración.
+        if (!j.isMember("auto_isolate")) {
+            throw std::runtime_error("[IRP] 'auto_isolate' ausente en isolate.json. "
+                "Campo obligatorio. Revise la documentación ADR-042.");
+        }
+        cfg.auto_isolate = j["auto_isolate"].asBool();
         cfg.threat_score_threshold = j.get("threat_score_threshold", 0.95).asDouble();
         cfg.isolate_interface      = j.get("isolate_interface",      "eth0").asString();
         cfg.isolate_config_path    = isolate_json_path;
@@ -270,8 +278,11 @@ IrpConfig ConfigLoader::parse_irp(const std::string& isolate_json_path) {
             for (const auto& v : j["auto_isolate_event_types"])
                 cfg.auto_isolate_event_types.push_back(v.asString());
         }
-    } catch (...) {
-        cfg.auto_isolate = false;
+    } catch (const std::runtime_error&) {
+        throw;  // DEBT-IRP-AUTOISO-FALSE-001: no tragamos errores de config — relanzar
+    } catch (const std::exception& e) {
+        throw std::runtime_error(
+            std::string("[IRP] Error parseando isolate.json: ") + e.what());
     }
     return cfg;
 }

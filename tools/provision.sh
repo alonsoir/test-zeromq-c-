@@ -1240,7 +1240,8 @@ provision_full() {
             chown root:vagrant "${irp_config}" 2>/dev/null || true
             log_item "isolate.json instalado en ${irp_config}"
         else
-            log_warn "isolate.json no encontrado en ${src_config} — saltando"
+            log_error "isolate.json no encontrado en ${src_config} — despliegue abortado (ADR-042)"
+            exit 1
         fi
     else
         log_item "isolate.json ya presente en ${irp_config}"

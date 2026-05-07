@@ -76,6 +76,14 @@ void setup_signal_handlers() {
     sigaction(SIGTERM, &sa, nullptr);
 
     FIREWALL_LOG_INFO("Signal handlers installed", "signals", "SIGINT,SIGTERM");
+
+    // DEBT-IRP-SIGCHLD-001: evitar zombies de fork()+execv() IRP
+    // SA_NOCLDWAIT: el kernel recoge hijos automáticamente, sin necesidad de wait()
+    sa.sa_handler = SIG_DFL;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_NOCLDWAIT;
+    sigaction(SIGCHLD, &sa, nullptr);
+    FIREWALL_LOG_INFO("SIGCHLD SA_NOCLDWAIT instalado — IRP zombie prevention active");
 }
 
 //===----------------------------------------------------------------------===//
@@ -583,6 +591,16 @@ int main(int argc, char** argv) {
             "irp_auto_isolate", config.irp.auto_isolate,
             "irp_threshold",    config.irp.threat_score_threshold,
             "irp_interface",    config.irp.isolate_interface);
+
+        // DEBT-IRP-AUTOISO-FALSE-001: WARNING prominente cuando IRP desactivado
+        if (!config.irp.auto_isolate) {
+            FIREWALL_LOG_WARN("════════════════════════════════════════════════════════");
+            FIREWALL_LOG_WARN("IRP AUTO-ISOLATE DESACTIVADO (auto_isolate: false)");
+            FIREWALL_LOG_WARN("El agente NO aislara el host automaticamente.");
+            FIREWALL_LOG_WARN("Para activar: set auto_isolate=true en isolate.json");
+            FIREWALL_LOG_WARN("SOLO activar tras onboarding explicito del operador.");
+            FIREWALL_LOG_WARN("════════════════════════════════════════════════════════");
+        }
 
         // ───────────────────────────────────────────────────────────────────
         // ZMQ Configuration (Day 50: Enhanced transport logging)

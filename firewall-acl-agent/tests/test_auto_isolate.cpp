@@ -1,6 +1,9 @@
 // test_auto_isolate.cpp — ADR-042 IRP should_auto_isolate() unit tests
 // DAY 143 — lógica de decisión pura, sin fork(), sin nftables, sin root
 #include <gtest/gtest.h>
+#include <fstream>
+#include <filesystem>
+#include <csignal>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -163,3 +166,112 @@ TEST_F(AutoIsolateTest, IntegrationNoForkOnLowScore) {
 }
 
 } // namespace
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEBT-IRP-AUTOISO-FALSE-001 — parse_irp() única fuente de verdad
+// DEBT-IRP-SIGCHLD-001       — SA_NOCLDWAIT, cero zombies
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── TEST 13: struct default es false — sin leer ningún JSON ───────────────
+TEST(IrpConfigDefaultTest, DefaultStructIsFalse) {
+    IrpConfig cfg;
+    EXPECT_FALSE(cfg.auto_isolate)
+        << "IrpConfig default debe ser false — Consejo 8/8 unanime (DEBT-IRP-AUTOISO-FALSE-001)";
+}
+
+// ── TEST 14: fichero ausente → exception con ruta en mensaje ──────────────
+TEST(ParseIrpTest, FileMissingThrows) {
+    const std::string path = "/tmp/argus_test_nonexistent_isolate.json";
+    ::unlink(path.c_str());
+    EXPECT_THROW({
+        ConfigLoader::parse_irp(path);
+    }, std::runtime_error) << "fichero ausente debe lanzar runtime_error";
+
+    try {
+        ConfigLoader::parse_irp(path);
+    } catch (const std::runtime_error& e) {
+        EXPECT_NE(std::string(e.what()).find(path), std::string::npos)
+            << "mensaje de error debe contener la ruta";
+    } catch (...) {}
+}
+
+// ── TEST 15: campo auto_isolate ausente en JSON → exception ───────────────
+TEST(ParseIrpTest, MissingFieldThrows) {
+    const std::string path = "/tmp/argus_test_missing_field.json";
+    {
+        std::ofstream f(path);
+        f << R"({"nft_path":"/usr/sbin/nft","rollback_timeout_sec":300,)"
+          << R"("table_name":"argus_isolate","whitelist_ips":[],"whitelist_ports":[22]})";
+    }
+    EXPECT_THROW({
+        ConfigLoader::parse_irp(path);
+    }, std::runtime_error) << "auto_isolate ausente debe lanzar runtime_error";
+    ::unlink(path.c_str());
+}
+
+// ── TEST 16: auto_isolate: false en JSON → false en struct ────────────────
+TEST(ParseIrpTest, ExplicitFalseIsRespected) {
+    const std::string path = "/tmp/argus_test_explicit_false.json";
+    {
+        std::ofstream f(path);
+        f << R"({"auto_isolate":false,"nft_path":"/usr/sbin/nft","rollback_timeout_sec":300,)"
+          << R"("table_name":"argus_isolate","whitelist_ips":[],"whitelist_ports":[22]})";
+    }
+    auto cfg = ConfigLoader::parse_irp(path);
+    EXPECT_FALSE(cfg.auto_isolate) << "auto_isolate: false en JSON debe producir false";
+    ::unlink(path.c_str());
+}
+
+// ── TEST 17: auto_isolate: true en JSON → true en struct (opt-in funciona) ─
+TEST(ParseIrpTest, ExplicitTrueIsRespected) {
+    const std::string path = "/tmp/argus_test_explicit_true.json";
+    {
+        std::ofstream f(path);
+        f << R"({"auto_isolate":true,"nft_path":"/usr/sbin/nft","rollback_timeout_sec":300,)"
+          << R"("table_name":"argus_isolate","whitelist_ips":[],"whitelist_ports":[22]})";
+    }
+    auto cfg = ConfigLoader::parse_irp(path);
+    EXPECT_TRUE(cfg.auto_isolate) << "auto_isolate: true en JSON debe producir true — opt-in funciona";
+    ::unlink(path.c_str());
+}
+
+// ── TEST 18: SA_NOCLDWAIT — N forks con /bin/true → cero zombies ──────────
+TEST(SigchldTest, NoZombiesAfterNForks) {
+    // SA_NOCLDWAIT ya instalado por setup_signal_handlers() en producción.
+    // Aquí lo instalamos explícitamente para aislar el test.
+    struct sigaction sa{};
+    sa.sa_handler = SIG_DFL;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_NOCLDWAIT;
+    sigaction(SIGCHLD, &sa, nullptr);
+
+    constexpr int N = 20;
+    for (int i = 0; i < N; ++i) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Hijo — ejecutar /bin/true y salir
+            char* argv[] = {const_cast<char*>("/bin/true"), nullptr};
+            execv("/bin/true", argv);
+            _exit(1);
+        }
+        ASSERT_GT(pid, 0) << "fork() falló en iteración " << i;
+    }
+
+    // Esperar a que todos los hijos terminen
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // Verificar cero zombies en /proc
+    int zombies = 0;
+    for (const auto& entry : std::filesystem::directory_iterator("/proc")) {
+        std::string status_path = entry.path().string() + "/status";
+        std::ifstream sf(status_path);
+        std::string line;
+        while (std::getline(sf, line)) {
+            if (line.find("State:") != std::string::npos &&
+                line.find('Z') != std::string::npos) {
+                ++zombies;
+            }
+        }
+    }
+    EXPECT_EQ(zombies, 0) << "SA_NOCLDWAIT debe evitar zombies — encontrados: " << zombies;
+}

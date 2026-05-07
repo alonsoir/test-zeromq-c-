@@ -157,7 +157,7 @@ struct LoggingConfigNew {
 // IRP Configuration (ADR-042 — auto-isolate via argus-network-isolate)
 //===----------------------------------------------------------------------===//
 struct IrpConfig {
-    bool        auto_isolate           = true;
+    bool        auto_isolate           = false;  // sin política — siempre sobreescrito por isolate.json (única fuente de verdad)
     double      threat_score_threshold = 0.95;
     std::string isolate_interface      = "eth0";
     std::string isolate_config_path    = "/etc/ml-defender/firewall-acl-agent/isolate.json";
@@ -190,6 +190,8 @@ struct FirewallAgentConfig {
 //===----------------------------------------------------------------------===//
 class ConfigLoader {
 public:
+    // public para testabilidad directa — función pura de parseo (ADR-042, DEBT-IRP-AUTOISO-FALSE-001)
+    static IrpConfig parse_irp(const std::string& isolate_json_path);
     // Load configuration from JSON file
     static FirewallAgentConfig load_from_file(const std::string& config_path,
                                                 const std::string& allowed_prefix = "/etc/ml-defender/");
@@ -207,7 +209,6 @@ private:
     static std::map<std::string, IPSetConfigNew> parse_ipsets(const Json::Value& json);
     static IPTablesConfigNew parse_iptables(const Json::Value& json);
     static BatchProcessorConfigNew parse_batch_processor(const Json::Value& json);
-    static IrpConfig parse_irp(const std::string& isolate_json_path);
     static ValidationConfig parse_validation(const Json::Value& json);
     static LoggingConfigNew parse_logging(const Json::Value& json);
     static EtcdConfig parse_etcd(const Json::Value& json);
