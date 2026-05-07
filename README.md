@@ -30,22 +30,33 @@
 
 ---
 
-✅ `main` is tagged `v0.6.0-hardened-variant-a`. Branch activa: `feature/variant-b-libpcap` — ADR-029 Variant B pipeline completo + IRP sesiones 1-2/3 (DAY 142).
+✅ `main` is tagged `v0.6.0-hardened-variant-a`. Branch activa: `feature/variant-b-libpcap` @ `e52870d5` — 3 P0 IRP cerradas + Gate ODR production PASSED (DAY 144). Listo para merge → `v0.7.0-variant-b`.
 **PRE-PRODUCTION: do not deploy in hospitals until ACRL (DEBT-PENTESTER-LOOP-001) is complete.**
 
 ---
 
-## Estado actual — DAY 143 (2026-05-06)
+## Estado actual — DAY 144 (2026-05-07)
 
-**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `f00b1809`
+**Tag activo:** `v0.6.0-hardened-variant-a` | **Branch activa:** `feature/variant-b-libpcap` @ `e52870d5`
 **Keypair activo:** `b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa`
 **Paper:** arXiv:2604.04952 · Draft v18 (Cornell procesando)
 **FEDER deadline:** 22-Sep-2026 | **Go/no-go:** 1-Ago-2026
 
 ### Pipeline
 - 6/6 componentes RUNNING — validado EMECAS DAY 142 ✅
-- `make test-all`: ALL TESTS COMPLETE (9/9 sniffer Variant B PASSED)
+- `make test-all`: ALL TESTS COMPLETE (65/65 PASSED — 0 FAILED) ✅
+- `make PROFILE=production all`: Gate ODR — ALL COMPONENTS BUILT ✅
 - `make argus-network-isolate-test`: dry-run PASSED ✅
+
+### Hitos DAY 144 🎉
+- **Gate ODR production SUPERADO** — `make PROFILE=production all` limpio. 3 ODR violations reales detectadas y corregidas (anonymous namespace, protobuf stale, -UNDEBUG en tests).
+- **DEBT-IRP-SIGCHLD-001 CERRADA** — `SA_NOCLDWAIT` en `setup_signal_handlers()`. `SigchldTest.NoZombiesAfterNForks` PASSED.
+- **DEBT-IRP-AUTOISO-FALSE-001 CERRADA** — `isolate.json` única fuente de verdad. Campo obligatorio, fallo ruidoso si ausente. `parse_irp()` public. 5 tests nuevos PASSED.
+- **DEBT-IRP-BACKUP-DIR-001 CERRADA** — `/tmp` → `/run/argus/irp/`. AppArmor + provision.sh actualizados. Dry-run PASSED.
+- **DEBT-COMPILER-WARNINGS-CLEANUP-001 PARCIALMENTE CERRADA** — ODR violations bajo LTO.
+
+### Hitos DAY 143 🎉
+- **DEBT-IRP-NFTABLES-001 CERRADA** — IRP completo: config → disparo → fork()+execv() → AppArmor 7/7 enforce → 12/12 tests.
 
 ### Hitos DAY 142 🎉
 - **DEBT-VARIANT-B-BUFFER-SIZE-001 CERRADA** — commit `7c4dba58`. `pcap_create()+pcap_set_buffer_size()+pcap_activate()`. Buffer configurable en ARM64/RPi. `CaptureBackend` interfaz actualizada.
@@ -59,9 +70,12 @@
 | Deuda | Prioridad | Target |
 |-------|-----------|--------|
 | ~~DEBT-IRP-NFTABLES-001~~ | ✅ CERRADA | DAY 143 |
-| DEBT-IRP-SIGCHLD-001 | 🔴 P0 | pre-merge (SA_NOCLDWAIT) |
-| DEBT-IRP-AUTOISO-FALSE-001 | 🔴 P0 | pre-merge (auto_isolate false) |
-| DEBT-IRP-BACKUP-DIR-001 | 🔴 P0 | pre-merge (/run/argus/irp/) |
+| ~~DEBT-IRP-SIGCHLD-001~~ | ✅ CERRADA | DAY 144 |
+| ~~DEBT-IRP-AUTOISO-FALSE-001~~ | ✅ CERRADA | DAY 144 |
+| ~~DEBT-IRP-BACKUP-DIR-001~~ | ✅ CERRADA | DAY 144 |
+| DEBT-IRP-TMPFILES-001 | 🟡 P1 | post-merge (tmpfiles.d reboot) |
+| DEBT-IRP-IPSET-TMP-001 | 🟡 P1 | post-merge (ipset_wrapper /tmp) |
+| DEBT-EMECAS-VERIFICATION-001 | 🟢 P2 | post-merge (README devs) |
 | DEBT-IRP-FLOAT-TYPES-001 | 🟡 P1 | pre-FEDER (tipos score) |
 | DEBT-IRP-PROB-CONJUNTA-001 | 🟡 P1 | post-FEDER (señal conjunta) |
 | DEBT-ETCD-HA-QUORUM-001 | 🔴 P0 | post-FEDER (OBLIGATORIO) |
@@ -316,15 +330,17 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - [x] feature/adr030-variant-a → main MERGEADO
 - [x] Tag v0.6.0-hardened-variant-a publicado
 
-### 🔜 NEXT — DAY 144
+### 🔜 NEXT — DAY 145
 
 | Priority | Task |
 |---|---|
-| 🔴 P0 | Merge `feature/variant-b-libpcap` → main · `PROFILE=production` gate ODR |
-| 🔴 P0 | DEBT-IRP-SIGCHLD-001 — `SA_NOCLDWAIT` pre-merge |
-| 🔴 P0 | DEBT-IRP-AUTOISO-FALSE-001 — `auto_isolate: false` por defecto |
-| 🔴 P0 | DEBT-IRP-BACKUP-DIR-001 — `/run/argus/irp/` + Falco |
-| 🟡 P1 | ADR-029 Variant A vs B benchmark — contribución científica paper |
+| 🔴 P0 | EMECAS ritual obligatorio |
+| 🔴 P0 | PCAP relay x86 eBPF (Variant A) — baseline F1=0.9985 |
+| 🔴 P0 | PCAP relay x86 libpcap (Variant B) — métricas nuevas ADR-029 |
+| 🔴 P0 | Merge `feature/variant-b-libpcap` → main · tag `v0.7.0-variant-b` |
+| 🟡 P1 | Refactor Makefile — targets explícitos por arquitectura |
+| 🟡 P1 | Diseño `experiment-comparative` (aRGus + Suricata + Zeek) |
+| 🟡 P1 | Abrir `feature/adr029-variant-c-arm64` con scope definido |
 
 ### 🔜 THEN — PHASE 5: Adversarial Capture-Retrain Loop
 
@@ -353,7 +369,8 @@ make hardened-full   # destroy → up → provision → build → deploy → che
 - ✅ DAY 141: **DEBT-VARIANT-B-CONFIG-001 · sniffer-libpcap.json · emails FEDER** 🎉
 - ✅ DAY 142: **IRP pasos 1-6 · buffer=8MB · mutex Nivel 1 · Consejo 8/8** 🎉
 - ✅ DAY 143: **DEBT-IRP-NFTABLES-001 sesión 3/3 CERRADA — IRP completo · AppArmor 7/7 · 12 tests** 🎉
-- 🔜 DAY 144: **Merge feature/variant-b-libpcap → main · PROFILE=production gate · ADR-029 benchmark**
+- ✅ DAY 144: **3 deudas P0 IRP cerradas · Gate ODR production · 3 ODR violations corregidas · 65/65 tests** 🎉
+- 🔜 DAY 145: **PCAP relay Variant A vs B · Merge → main · v0.7.0-variant-b · experiment-comparative diseño**
 
 ---
 

@@ -1,94 +1,53 @@
-Soy Alonso Isidoro Román, fundador de aRGus NDR, sistema open-source C++20
-de detección y respuesta a intrusiones de red para infraestructura crítica.
+Soy Alonso Isidoro Román, fundador de aRGus NDR (arXiv:2604.04952),
+sistema open-source C++20 de detección y respuesta a intrusiones para
+infraestructura crítica.
 
-Estado repo: branch feature/variant-b-libpcap @ f00b1809 (último commit DAY 143)
-Tag main: v0.6.0-hardened-variant-a @ 737ba0d5
-arXiv: 2604.04952 — Draft v18 (Cornell procesando)
-Keypair activo: b5b6cbdf67dad75cdd7e3169d837d1d6d4c938b720e34331f8a73f478ee85daa
+Estado repo: branch feature/variant-b-libpcap @ e52870d5 (DAY 144)
+Tag main: v0.6.0-hardened-variant-a
 FEDER deadline: 22-Sep-2026 | Go/no-go: 1-Ago-2026
 
-COMPLETADO DAY 143:
-- EMECAS verde: DEBT-BOOTSTRAP-ORDER-001 resuelta, regresión firma
-  PcapBackend::open() corregida en 5 test files.
-- DEBT-IRP-NFTABLES-001 sesión 3/3 CERRADA:
-    * isolate.json: auto_isolate, threat_score_threshold, auto_isolate_event_types,
-      isolate_interface
-    * firewall-acl-agent: IrpConfig, should_auto_isolate() (función pura),
-      check_auto_isolate() fork()+execv()
-    * Bug IEEE 754 detectado por tests y corregido (tolerancia 1e-6)
-    * test_auto_isolate: 12/12 PASSED
-    * AppArmor argus.argus-network-isolate — 7/7 perfiles enforce hardened VM
-- Consejo 8/8 — 5 deudas nuevas registradas (ver abajo)
+COMPLETADO DAY 144:
+- EMECAS verde: 65/65 tests PASSED
+- DEBT-IRP-SIGCHLD-001 CERRADA: SA_NOCLDWAIT, SigchldTest.NoZombiesAfterNForks PASSED
+- DEBT-IRP-AUTOISO-FALSE-001 CERRADA: isolate.json única fuente de verdad,
+  campo obligatorio, fallo ruidoso, parse_irp() public, 5 tests PASSED
+- DEBT-IRP-BACKUP-DIR-001 CERRADA: /tmp → /run/argus/irp/, AppArmor actualizado
+- DEBT-COMPILER-WARNINGS-CLEANUP-001 PARCIAL: Gate ODR production PASSED.
+  3 ODR violations reales corregidas bajo -flto -Werror:
+  (1) anonymous namespace en inline trees hpp
+  (2) protobuf stale src/protobuf/ eliminado (40k líneas)
+  (3) -UNDEBUG en targets de test
+- README.md + docs/BACKLOG.md actualizados
 
-PRIMER PASO DAY 144:
+PRIMER PASO DAY 145:
 vagrant destroy -f && vagrant up && make bootstrap && make test-all
 
-DEUDAS P0 PRE-MERGE (bloqueantes para merge a main):
+PLAN DAY 145:
+1. EMECAS verde
+2. PCAP relay x86 eBPF (Variant A) — make test-replay-neris
+   Métricas: latencia p99, throughput, F1 bajo carga
+3. PCAP relay x86 libpcap (Variant B) — make test-replay-neris con sniffer-libpcap-start
+   Mismas métricas — contribución científica ADR-029
+4. Si ambos PASSED: merge feature/variant-b-libpcap → main → tag v0.7.0-variant-b
+5. Refactor Makefile: targets explícitos production-x86, test-replay-neris-x86-ebpf,
+   test-replay-neris-x86-libpcap
+6. Diseño experiment-comparative (aRGus + Suricata + Zeek como cooperadores,
+   no competición — paradigmas complementarios)
+7. Abrir feature/adr029-variant-c-arm64 scope definido
 
-DEBT-IRP-SIGCHLD-001 — SA_NOCLDWAIT
-fork()+execv() sin wait() acumula zombies.
-Fix: sigaction(SIGCHLD, SA_NOCLDWAIT) en main.cpp del firewall-acl-agent.
-El kernel recoge hijos automáticamente. Una línea.
-Test: N disparos IRP en loop → ps aux | grep defunct = 0.
+DEUDAS P1 POST-MERGE:
+- DEBT-IRP-TMPFILES-001: tmpfiles.d para /run/argus/irp/ en reboot
+- DEBT-IRP-IPSET-TMP-001: ipset_wrapper.cpp aún usa /tmp
+- DEBT-EMECAS-VERIFICATION-001: P2, párrafo README para devs
+- DEBT-IRP-FLOAT-TYPES-001: unificar tipos score float/double
 
-DEBT-IRP-AUTOISO-FALSE-001 — auto_isolate: false por defecto
-REEMPLAZA la regla DAY 142 ("auto_isolate: true por defecto").
-Consejo 8/8 unánime: false en hospitales. Un FP sobre ventilador mecánico
-es inaceptable sin onboarding explícito.
-Fix: isolate.json default false + WARNING prominente al arrancar
-firewall-acl-agent con IRP desactivado.
+DECISIONES CONSEJO DAY 144:
+- P3 multi-señal: adoptar acumulador de evidencia con decadencia exponencial
+  (Qwen) — determinista, sin reentrenamiento, auditable, NIST/MITRE estándar
+- P4 experimento: aRGus como cooperador de Suricata/Zeek, no sustituto
+- ARM64: post-FEDER, mencionado como trabajo futuro en paper v19
+- Andrés Caro Lindo: hablar este finde sobre FEDER scope
 
-DEBT-IRP-BACKUP-DIR-001 — /tmp peligroso
-Migrar artefactos nftables de /tmp/ a:
-- /run/argus/irp/ (tmpfs, volátil) para backup + ruleset temporal
-- /var/lib/argus/irp/ (persistente) para estado IRP
-  Permisos: 0700 argus:argus. Actualizar AppArmor + Falco vigila ambas rutas.
-
-DESPUÉS DEL MERGE (orden):
-A) make PROFILE=production all (gate ODR — invariante pre-merge)
-B) git merge --no-ff feature/variant-b-libpcap → main
-C) tag v0.7.0-variant-b
-D) ADR-029 benchmark Variant A vs B (contribución científica paper)
-
-DEUDAS P1 PRE-FEDER (no bloqueantes para merge):
-DEBT-IRP-FLOAT-TYPES-001 — Unificar tipos score float/double.
-Investigar qué tipo produce exactamente el ml-detector antes de decidir.
-La tolerancia 1e-6 es parche correcto pero no solución de raíz.
-
-DEUDAS P1 POST-FEDER:
-DEBT-IRP-PROB-CONJUNTA-001 — Función probabilidad conjunta multi-señal.
-No topología por quirófano (inviable). Todas las señales disponibles con
-pesos → probabilidad conjunta → decisión auditable + publicable.
-DEBT-PROTO-DETECTION-TYPES-001 — Ampliar enum post-MITRE/CTF.
-
-## EXPERIMENTO POST-MERGE — aRGus vs Suricata vs Zeek
-
-**Acordado DAY 143 — primer tema del Consejo post-merge.**
-
-**Contexto:** Suricata (2009), Zeek/Bro (1994), Snort (1998) llevan décadas operando.
-No hay que tenerles miedo — hay que entender empíricamente dónde están ellos y
-dónde estamos nosotros. La verdad, sea cual sea, es más valiosa que la narrativa
-que queremos contar.
-
-**Hipótesis a demostrar (no afirmar):**
-- Ellos detectan lo CONOCIDO mejor que nadie — reglas ET, firmas CVE, patrones catalogados.
-- aRGus detecta lo DESCONOCIDO mejor que ellos — comportamiento anómalo sin firma previa.
-- F1=0.9985 Recall=1.0000 sobre CTU-13 Neris es el baseline. ¿Lo igualan o superan?
-- Si el experimento dice que Suricata también lo detecta — mejor saberlo ahora que en FEDER.
-
-**Diseño del experimento (a desarrollar con el Consejo):**
-- Tráfico base: CTU-13 Neris (baseline conocido, resultados aRGus ya documentados)
-- Tráfico adversarial: MITRE ATT&CK (primer escenario real sin firma conocida)
-- Los tres sistemas sobre el mismo tráfico simultáneamente
-- Métricas: qué detecta cada uno, solapamiento, qué solo ve uno de los tres
-- Contribución científica: complementariedad de detectores para paper arXiv v19
-
-**Orden DAY 144+:**
-1. EMECAS + deudas P0 pre-merge (SIGCHLD, AUTOISO-FALSE, BACKUP-DIR)
-2. PROFILE=production gate ODR
-3. Merge feature/variant-b-libpcap → main → tag v0.7.0-variant-b
-4. Diseño experimento aRGus + Suricata + Zeek (Consejo 8/8)
-5. 
 REGLAS PERMANENTES:
 - REGLA EMECAS: vagrant destroy -f && vagrant up && make bootstrap && make test-all
 - macOS: nunca sed -i sin -e '' — usar python3 << 'PYEOF' o vagrant ssh << 'SSHEOF'
@@ -96,8 +55,6 @@ REGLAS PERMANENTES:
 - Makefile es la única fuente de verdad
 - -Werror activo — 0 warnings propios invariante permanente
 - PROFILE=production all antes de cualquier merge a main (gate ODR)
-- Variant B es monohilo por diseño — no configurable
 - Variant A y Variant B nunca simultáneas
-
-RECORDATORIO: Si Andrés Caro Lindo no ha respondido antes del viernes 8 Mayo,
-enviar WhatsApp sobre los dos emails (hardware FEDER + scope NDR).
+- isolate.json es la única fuente de verdad para auto_isolate
+- assert() activo en tests: -UNDEBUG en CMakeLists de test targets
