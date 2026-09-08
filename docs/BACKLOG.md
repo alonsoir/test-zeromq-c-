@@ -6264,3 +6264,16 @@ ser la manivela. NO arregla ninguna cabeza — despeja el terreno.
 - Hermana viva: DEBT-RANSOMWARE-ML-HEAD-INERT-001.
   **Test de cierre:** ya cerrada — `git ls-files ml-training/scripts/generate_all_models.py` = vacío.
   **Estimación:** 0 (hecha).
+
+### DEBT-GATE-BARE-CTEST-PASSES-UNCONFIGURED-001 · P3 · acuñada DAY260
+
+**Síntoma:** un componente cuyo build no está configurado pasa el gate en verde. rag-security es el caso medido: `ctest -N` da 0 tests, y al quitar la máscara `||` de test-components (DEBT-MAKEFILE-TEST-GATE-MASKED-001) no se cae, porque bare ctest en la versión de la VM devuelve exit=0 cuando no hay tests configurados.
+
+**Causa raíz:** ctest 3.25 no distingue "cero tests reales" de "el build nunca corrió configure". Ambos casos → exit=0 → verde trivial. El gate no puede diferenciar un componente sin cobertura de uno sin construir.
+
+**Fix conocido:** `ctest --no-tests=error` (introducido en CMake 3.26) convierte "cero tests" en fallo explícito, cerrando el hueco.
+
+**Bloqueante:** la VM tiene CMake 3.25; el mínimo del repo es 3.20. Aplicar `--no-tests=error` exige subir el mínimo del repo a ≥3.26 (o al menos la toolchain de la VM). Esperar a ese bump antes de tocar el gate — hacerlo ahora rompería el build en cualquier entorno <3.26.
+
+**Correlación:** enlazar con la tarea de PROMPT que ejecute el bump de CMake (BACKLOG↔PROMPT).
+
