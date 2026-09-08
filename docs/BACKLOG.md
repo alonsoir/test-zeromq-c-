@@ -6277,3 +6277,23 @@ ser la manivela. NO arregla ninguna cabeza — despeja el terreno.
 
 **Correlación:** enlazar con la tarea de PROMPT que ejecute el bump de CMake (BACKLOG↔PROMPT).
 
+
+### DEBT-DDOS-GEO-DEADCODE — geo write-only-dead tras deprecar el RAG
+
+**Síntoma:** `geographical_concentration` (campo 8 de `DDoSFeatures`) se produce en
+`ml_defender_features.cpp:34` y hoy solo la consumen los caminos de enriquecimiento
+(`csv_event_writer.cpp:405` col 83; `rag_logger`). La cabeza DDoS NO la consume desde
+DAY255: `ring_consumer:1462` y el modelo de 9 la omiten por nombre.
+
+**Causa:** decisión correcta de DAY255 (`PLAN-reparacion-cabezas-ml.md:48`, desacoplar
+entrada-de-modelo de enriquecimiento). Geo se conservó como enriquecimiento post-mortem.
+Deprecado el artefacto RAG, pierde su último consumidor → write-only-dead en todo el árbol.
+
+**Fix:** borrado coordinado en un movimiento — productor `ml_defender_features.cpp:34` +
+`extract_ddos_geographical_concentration`; `reserved 8;` en `network_security.proto` (NO
+reutilizar el tag); col 83 de `csv_event_writer` (verificar si la deprecación se la lleva);
+fixtures `test_csv_feature_extraction`, `test_rag_logger_artifact_save` y el `0.5f` de
+`test_proto3_embedded_serialization`. Árbitro: compilador + tests de serialización.
+
+**Bloqueante:** deprecación del artefacto RAG (evento externo, sin ejecutar). Ortogonal a
+la cabeza DDoS — ni Fase 1 ni Fase 2. No tocar antes: geo sigue viva mientras exista col 83.
